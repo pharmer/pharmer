@@ -1,0 +1,7 @@
+{
+  "cloud_credential": "/home/tamal/go/src/appscode.com/ark/conf/hertzner.json",
+  "name": "k-100438",
+  "nodes": "CX10:1",
+  "provider": "hertzner",
+  "zone": "de"
+}
