@@ -1,0 +1,7 @@
+{
+  "cloud_credential": "/home/tamal/go/src/appscode.com/ark/conf/softlayer.json",
+  "name": "k-161357",
+  "nodes": "1c2m:1",
+  "provider": "softlayer",
+  "zone": "dal01"
+}

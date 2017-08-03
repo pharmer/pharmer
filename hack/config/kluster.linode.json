@@ -1,0 +1,7 @@
+{
+  "cloud_credential": "/home/tamal/go/src/appscode.com/ark/conf/linode.json",
+  "name": "k-161357",
+  "nodes": "2:2",
+  "provider": "linode",
+  "zone": "2"
+}

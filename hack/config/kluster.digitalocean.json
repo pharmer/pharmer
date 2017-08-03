@@ -1,0 +1,7 @@
+{
+  "cloud_credential": "/home/tamal/go/src/appscode.com/ark/conf/do.json",
+  "name": "k-261316",
+  "nodes": "4gb:1",
+  "provider": "digitalocean",
+  "zone": "nyc3"
+}

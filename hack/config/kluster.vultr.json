@@ -1,0 +1,7 @@
+{
+  "cloud_credential": "/home/tamal/go/src/appscode.com/ark/conf/vultr.json",
+  "name": "k-162110",
+  "nodes": "94:2",
+  "provider": "vultr",
+  "zone": "1"
+}

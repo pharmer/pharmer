@@ -1,0 +1,7 @@
+{
+  "cloud_credential": "/home/tamal/go/src/appscode.com/ark/conf/scaleway.json",
+  "name": "k-261316",
+  "nodes": "VC1S:1",
+  "provider": "scaleway",
+  "zone": "par1"
+}
