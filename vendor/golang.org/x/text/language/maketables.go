@@ -1623,7 +1623,7 @@ func (b *builder) writeParents() {
 func main() {
 	gen.Init()
 
-	gen.Repackage("gen_lib.go", "lib.go", "language")
+	gen.Repackage("gen_common.go", "common.go", "language")
 
 	w := gen.NewCodeWriter()
 	defer w.WriteGoFile("tables.go", "language")

@@ -123,7 +123,7 @@ type MultiGetItem struct {
 	id          string
 	routing     string
 	fields      []string
-	version     *int64 // see org.elasticsearch.lib.lucene.uid.Versions
+	version     *int64 // see org.elasticsearch.common.lucene.uid.Versions
 	versionType string // see org.elasticsearch.index.VersionType
 	fsc         *FetchSourceContext
 }
@@ -161,7 +161,7 @@ func (item *MultiGetItem) Fields(fields ...string) *MultiGetItem {
 }
 
 // Version can be MatchAny (-3), MatchAnyPre120 (0), NotFound (-1),
-// or NotSet (-2). These are specified in org.elasticsearch.lib.lucene.uid.Versions.
+// or NotSet (-2). These are specified in org.elasticsearch.common.lucene.uid.Versions.
 // The default in Elasticsearch is MatchAny (-3).
 func (item *MultiGetItem) Version(version int64) *MultiGetItem {
 	item.version = &version
