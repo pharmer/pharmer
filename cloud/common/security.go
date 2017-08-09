@@ -24,7 +24,7 @@ func GenClusterCerts(ctx *contexts.ClusterContext) error {
 	ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Generating certificate for cluster")
 
 	var csrReq csr.CertificateRequest
-	csrReq.KeyRequest = csr.NewBasicKeyRequest() // &csr.BasicKeyRequest{A: "rsa", S: 2048}
+	csrReq.KeyRequest = &csr.BasicKeyRequest{A: "rsa", S: 2048}
 
 	////////// Cluster CA //////////
 	//caCN := system.ClusterCAName(ctx.Auth.Namespace, ctx.Name)
