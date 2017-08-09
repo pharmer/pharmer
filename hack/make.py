@@ -38,7 +38,7 @@ from os.path import expandvars, join, dirname
 libbuild.REPO_ROOT = expandvars('$GOPATH') + '/src/github.com/appscode/pharmer'
 BUILD_METADATA = libbuild.metadata(libbuild.REPO_ROOT)
 libbuild.BIN_MATRIX = {
-    'stash': {
+    'pharmer': {
         'type': 'go',
         'go_version': True,
         'use_cgo': False,
@@ -75,9 +75,9 @@ def version():
 
 
 def fmt():
-    libbuild.ungroup_go_imports('*.go', 'api', 'cloud', 'commissioner', 'common', 'contexts', 'errorhandlers', 'phid', 'storage')
-    die(call('goimports -w *.go api cloud commissioner common contexts errorhandlers phid storage'))
-    call('gofmt -s -w *.go api cloud commissioner common contexts errorhandlers phid storage')
+    libbuild.ungroup_go_imports('*.go', 'api', 'cloud', 'commissioner', 'common', 'contexts', 'errorhandlers', 'extpoints', 'phid', 'storage')
+    die(call('goimports -w *.go api cloud commissioner common contexts errorhandlers extpoints phid storage'))
+    call('gofmt -s -w *.go api cloud commissioner common contexts errorhandlers extpoints phid storage')
 
 
 def vet():
@@ -90,8 +90,12 @@ def lint():
     call('golint $(go list ./... | grep -v /vendor/)')
 
 
+def gen_extpoints():
+    die(call('go generate main.go'))
+
+
 def gen():
-    return
+    gen_extpoints()
 
 
 def build_cmd(name):
