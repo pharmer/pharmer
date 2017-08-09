@@ -1,0 +1,1141 @@
+{
+  "name": "aliyun",
+  "envs": [
+    "dev",
+    "qa"
+  ],
+  "regions": [
+    {
+      "location": "Hangzhou, China",
+      "region": "cn-hangzhou",
+      "zones": [
+        "cn-hangzhou"
+      ]
+    },
+    {
+      "location": "Qingdao, China",
+      "region": "cn-qingdao",
+      "zones": [
+        "cn-qingdao-b"
+      ]
+    },
+    {
+      "location": "Beijing, China",
+      "region": "cn-beijing",
+      "zones": [
+        "cn-beijing-a",
+        "cn-beijing-b",
+        "cn-beijing-c"
+      ]
+    },
+    {
+      "location": "Hongkong",
+      "region": "cn-hongkong",
+      "zones": [
+        "cn-hongkong-b"
+      ]
+    },
+    {
+      "location": "Shenzhen, China",
+      "region": "cn-shenzhen",
+      "zones": [
+        "cn-shenzhen-a",
+        "cn-shenzhen-b"
+      ]
+    },
+    {
+      "location": "Silicon Valley, USA",
+      "region": "us-west-1",
+      "zones": [
+        "us-west-1-a",
+        "us-west-1-b"
+      ]
+    },
+    {
+      "location": "Virginia, USA",
+      "region": "us-east-1",
+      "zones": [
+        "us-east-1-a"
+      ]
+    },
+    {
+      "location": "Singapore",
+      "region": "ap-southeast-1",
+      "zones": [
+        "ap-southeast-1-a",
+        "ap-southeast-1-b"
+      ]
+    },
+    {
+      "location": "Shanghai, China",
+      "region": "cn-shanghai",
+      "zones": [
+        "cn-shanghai-a",
+        "cn-shanghai-b",
+        "cn-shanghai-c"
+      ]
+    },
+    {
+      "location": "Dubai",
+      "region": "me-east-1",
+      "zones": [
+        "me-east-1-a"
+      ]
+    },
+    {
+      "location": "Tokyo, Japan",
+      "region": "ap-northeast-1",
+      "zones": [
+        "ap-northeast-1-a"
+      ]
+    },
+    {
+      "location": "Sydney, Australia",
+      "region": "ap-southeast-2",
+      "zones": [
+        "ap-southeast-2-a"
+      ]
+    },
+    {
+      "location": "Frankfurt, Germany",
+      "region": "eu-central-1",
+      "zones": [
+        "eu-central-1-a"
+      ]
+    }
+  ],
+  "instance_types": [
+    {
+      "external_sku": "ecs.c1.large",
+      "description": "ecs.c1.large",
+      "category": "Generation I (IO Optimized)",
+      "cpu": 8,
+      "ram": 16,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shenzhen",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.c1.small",
+      "description": "ecs.c1.small",
+      "category": "Generation I (Non IO Optimized)",
+      "cpu": 8,
+      "ram": 8,
+      "regions": [
+        "cn-beijing",
+        "cn-qingdao",
+        "cn-shenzhen"
+      ]
+    },
+    {
+      "external_sku": "ecs.c2.large",
+      "description": "ecs.c2.large",
+      "category": "Generation I (IO Optimized)",
+      "cpu": 16,
+      "ram": 32,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shenzhen",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.c2.medium",
+      "description": "ecs.c2.medium",
+      "category": "Generation I (Non IO Optimized)",
+      "cpu": 16,
+      "ram": 16,
+      "regions": [
+        "cn-beijing",
+        "cn-qingdao",
+        "cn-shenzhen"
+      ]
+    },
+    {
+      "external_sku": "ecs.c2.xlarge",
+      "description": "ecs.c2.xlarge",
+      "category": "Generation I (IO Optimized)",
+      "cpu": 16,
+      "ram": 64,
+      "regions": [
+        "cn-beijing",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shenzhen",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.e3.3xlarge",
+      "description": "ecs.e3.3xlarge",
+      "category": "Memory type e3",
+      "cpu": 16,
+      "ram": 128,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.e3.large",
+      "description": "ecs.e3.large",
+      "category": "Memory type e3",
+      "cpu": 4,
+      "ram": 32,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.e3.medium",
+      "description": "ecs.e3.medium",
+      "category": "Memory type e3",
+      "cpu": 2,
+      "ram": 16,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.e3.small",
+      "description": "ecs.n2.small",
+      "category": "Memory type e3",
+      "cpu": 1,
+      "ram": 8,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.e3.xlarge",
+      "description": "ecs.e3.xlarge",
+      "category": "Memory type e3",
+      "cpu": 8,
+      "ram": 64,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.e4.2xlarge",
+      "description": "ecs.e4.2xlarge",
+      "category": "Memory type e4",
+      "cpu": 8,
+      "ram": 64,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.e4.4xlarge",
+      "description": "ecs.e4.4xlarge",
+      "category": "Memory type e4",
+      "cpu": 16,
+      "ram": 128,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.e4.large",
+      "description": "ecs.e4.large",
+      "category": "Memory type e4",
+      "cpu": 2,
+      "ram": 16,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.e4.xlarge",
+      "description": "ecs.e4.xlarge",
+      "category": "Memory type e4",
+      "cpu": 4,
+      "ram": 32,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.m1.medium",
+      "description": "ecs.m1.medium",
+      "category": "Generation I (IO Optimized)",
+      "cpu": 4,
+      "ram": 16,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shenzhen",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.m1.xlarge",
+      "description": "ecs.m1.xlarge",
+      "category": "Generation I (IO Optimized)",
+      "cpu": 8,
+      "ram": 32,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shenzhen",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.m2.medium",
+      "description": "ecs.m2.medium",
+      "category": "Generation I (Non IO Optimized)",
+      "cpu": 8,
+      "ram": 32,
+      "regions": [
+        "cn-beijing",
+        "cn-qingdao",
+        "cn-shenzhen"
+      ]
+    },
+    {
+      "external_sku": "ecs.m2.xlarge",
+      "description": "ecs.m2.xlarge",
+      "category": "Generation I (IO Optimized)",
+      "cpu": 8,
+      "ram": 64,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-qingdao",
+        "cn-shenzhen"
+      ]
+    },
+    {
+      "external_sku": "ecs.mn4.2xlarge",
+      "description": "ecs.mn4.2xlarge",
+      "category": "Balanced type mn4",
+      "cpu": 8,
+      "ram": 32,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.mn4.4xlarge",
+      "description": "ecs.mn4.4xlarge",
+      "category": "Balanced type mn4",
+      "cpu": 16,
+      "ram": 64,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.mn4.8xlarge",
+      "description": "ecs.mn4.8xlarge",
+      "category": "Balanced type mn4",
+      "cpu": 32,
+      "ram": 128,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.mn4.large",
+      "description": "ecs.mn4.large",
+      "category": "Balanced type mn4",
+      "cpu": 2,
+      "ram": 8,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.mn4.small",
+      "description": "ecs.mn4.small",
+      "category": "Balanced type mn4",
+      "cpu": 1,
+      "ram": 4,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.mn4.xlarge",
+      "description": "ecs.mn4.xlarge",
+      "category": "Balanced type mn4",
+      "cpu": 4,
+      "ram": 16,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n1.3xlarge",
+      "description": "ecs.n1.3xlarge",
+      "category": "General type n1",
+      "cpu": 16,
+      "ram": 32,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n1.7xlarge",
+      "description": "ecs.n1.7xlarge",
+      "category": "General type n1",
+      "cpu": 32,
+      "ram": 64,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n1.large",
+      "description": "ecs.n1.large",
+      "category": "General type n1",
+      "cpu": 4,
+      "ram": 8,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n1.medium",
+      "description": "ecs.n1.medium",
+      "category": "General type n1",
+      "cpu": 2,
+      "ram": 4,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n1.small",
+      "description": "ecs.n1.small",
+      "category": "General type n1",
+      "cpu": 1,
+      "ram": 2,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n1.tiny",
+      "description": "ecs.n1.tiny",
+      "category": "General type n1",
+      "cpu": 1,
+      "ram": 1,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n1.xlarge",
+      "description": "ecs.n1.xlarge",
+      "category": "General type n1",
+      "cpu": 8,
+      "ram": 16,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n2.3xlarge",
+      "description": "ecs.n2.3xlarge",
+      "category": "General type n2",
+      "cpu": 16,
+      "ram": 64,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n2.7xlarge",
+      "description": "ecs.n2.7xlarge",
+      "category": "General type n2",
+      "cpu": 32,
+      "ram": 128,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n2.large",
+      "description": "ecs.n2.large",
+      "category": "General type n2",
+      "cpu": 4,
+      "ram": 16,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n2.medium",
+      "description": "ecs.n2.medium",
+      "category": "General type n2",
+      "cpu": 2,
+      "ram": 8,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n2.small",
+      "description": "ecs.n2.small",
+      "category": "General type n2",
+      "cpu": 1,
+      "ram": 4,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n2.xlarge",
+      "description": "ecs.n2.xlarge",
+      "category": "General type n2",
+      "cpu": 8,
+      "ram": 32,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hangzhou",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shanghai",
+        "cn-shenzhen",
+        "me-east-1",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n4.2xlarge",
+      "description": "ecs.n4.2xlarge",
+      "category": "General type n4",
+      "cpu": 8,
+      "ram": 16,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n4.4xlarge",
+      "description": "ecs.n4.4xlarge",
+      "category": "General type n4",
+      "cpu": 16,
+      "ram": 32,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n4.8xlarge",
+      "description": "ecs.n4.8xlarge",
+      "category": "General type n4",
+      "cpu": 32,
+      "ram": 64,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n4.large",
+      "description": "ecs.n4.large",
+      "category": "General type n4",
+      "cpu": 2,
+      "ram": 4,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n4.small",
+      "description": "ecs.n4.small",
+      "category": "General type n4",
+      "cpu": 1,
+      "ram": 2,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.n4.xlarge",
+      "description": "ecs.n4.xlarge",
+      "category": "General type n4",
+      "cpu": 4,
+      "ram": 8,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.s1.large",
+      "description": "ecs.s1.large",
+      "category": "Generation I (Non IO Optimized)",
+      "cpu": 1,
+      "ram": 8,
+      "regions": [
+        "cn-beijing",
+        "cn-qingdao",
+        "cn-shenzhen"
+      ]
+    },
+    {
+      "external_sku": "ecs.s1.medium",
+      "description": "ecs.s1.medium",
+      "category": "Generation I (IO Optimized)",
+      "cpu": 1,
+      "ram": 4,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-qingdao",
+        "cn-shenzhen"
+      ]
+    },
+    {
+      "external_sku": "ecs.s1.small",
+      "description": "ecs.s1.small",
+      "category": "Generation I (IO Optimized)",
+      "cpu": 1,
+      "ram": 2,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-qingdao",
+        "cn-shenzhen"
+      ]
+    },
+    {
+      "external_sku": "ecs.s2.2xlarge",
+      "description": "ecs.s2.2xlarge",
+      "category": "Generation I (Non IO Optimized)",
+      "cpu": 2,
+      "ram": 16,
+      "regions": [
+        "cn-beijing",
+        "cn-qingdao",
+        "cn-shenzhen"
+      ]
+    },
+    {
+      "external_sku": "ecs.s2.large",
+      "description": "ecs.s2.large",
+      "category": "Generation I (IO Optimized)",
+      "cpu": 2,
+      "ram": 4,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shenzhen",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.s2.small",
+      "description": "ecs.s2.small",
+      "category": "Generation I (Non IO Optimized)",
+      "cpu": 2,
+      "ram": 2,
+      "regions": [
+        "cn-beijing",
+        "cn-qingdao",
+        "cn-shenzhen"
+      ]
+    },
+    {
+      "external_sku": "ecs.s2.xlarge",
+      "description": "ecs.s2.xlarge",
+      "category": "Generation I (IO Optimized)",
+      "cpu": 2,
+      "ram": 8,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shenzhen",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.s3.large",
+      "description": "ecs.s3.large",
+      "category": "Generation I (IO Optimized)",
+      "cpu": 4,
+      "ram": 8,
+      "regions": [
+        "ap-southeast-1",
+        "cn-beijing",
+        "cn-hongkong",
+        "cn-qingdao",
+        "cn-shenzhen",
+        "us-east-1",
+        "us-west-1"
+      ]
+    },
+    {
+      "external_sku": "ecs.s3.medium",
+      "description": "ecs.s3.medium",
+      "category": "Generation I (Non IO Optimized)",
+      "cpu": 4,
+      "ram": 4,
+      "regions": [
+        "cn-beijing",
+        "cn-qingdao",
+        "cn-shenzhen"
+      ]
+    },
+    {
+      "external_sku": "ecs.t1.small",
+      "description": "ecs.t1.small",
+      "category": "Generation I (Non IO Optimized)",
+      "cpu": 1,
+      "ram": 1,
+      "regions": [
+        "cn-beijing",
+        "cn-qingdao",
+        "cn-shenzhen"
+      ]
+    },
+    {
+      "external_sku": "ecs.xn4.small",
+      "description": "ecs.n4.small",
+      "category": "Compact type xn4",
+      "cpu": 1,
+      "ram": 1,
+      "regions": [
+        "ap-northeast-1",
+        "ap-southeast-2",
+        "cn-shanghai",
+        "eu-central-1"
+      ]
+    }
+  ],
+  "kubernetes": {
+    "default_setup": {
+      "nodeset": {
+        "VC1S": 2
+      }
+    },
+    "versions_by_env": {
+      "dev": [
+        {
+          "version": "1.4.6",
+          "description": "1.4.6 (beta)",
+          "apps": {
+            "kubernetes-server": "1.4.6",
+            "kubernetes-salt": "1.4.6-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.1",
+          "description": "1.5.1 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.1",
+            "kubernetes-salt": "1.5.1-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.2",
+          "description": "1.5.2 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.2",
+            "kubernetes-salt": "1.5.2-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.3",
+          "description": "1.5.3 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.3",
+            "kubernetes-salt": "1.5.3-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.4",
+          "description": "1.5.4 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.4",
+            "kubernetes-salt": "1.5.4-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.5",
+          "description": "1.5.5 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.5",
+            "kubernetes-salt": "1.5.5-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.6",
+          "description": "1.5.6 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.6",
+            "kubernetes-salt": "1.5.6-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.7",
+          "description": "1.5.7",
+          "apps": {
+            "kubernetes-server": "1.5.7",
+            "kubernetes-salt": "1.5.7-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.7"
+          }
+        },
+        {
+          "version": "1.7.0",
+          "description": "1.7.0",
+          "apps": {
+            "kubernetes-server": "1.7.0",
+            "kubernetes-salt": "1.7.0-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.7"
+          }
+        }
+      ],
+      "qa": [
+        {
+          "version": "1.4.6",
+          "description": "1.4.6 (beta)",
+          "apps": {
+            "kubernetes-server": "1.4.6",
+            "kubernetes-salt": "1.4.6-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.1",
+          "description": "1.5.1 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.1",
+            "kubernetes-salt": "1.5.1-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.2",
+          "description": "1.5.2 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.2",
+            "kubernetes-salt": "1.5.2-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.3",
+          "description": "1.5.3 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.3",
+            "kubernetes-salt": "1.5.3-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.4",
+          "description": "1.5.4 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.4",
+            "kubernetes-salt": "1.5.4-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.5",
+          "description": "1.5.5 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.5",
+            "kubernetes-salt": "1.5.5-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.6",
+          "description": "1.5.6 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.6",
+            "kubernetes-salt": "1.5.6-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.7",
+          "description": "1.5.7",
+          "apps": {
+            "kubernetes-server": "1.5.7",
+            "kubernetes-salt": "1.5.7-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.7"
+          }
+        },
+        {
+          "version": "1.7.0",
+          "description": "1.7.0",
+          "apps": {
+            "kubernetes-server": "1.7.0",
+            "kubernetes-salt": "1.7.0-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.7"
+          }
+        }
+      ]
+    }
+  }
+}
