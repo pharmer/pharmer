@@ -1,8 +1,0 @@
-package: github.com/appscode/data
-import:
-- package: github.com/davecgh/go-spew
-  version: 3e6e67c4dcea3ac2f25fd4731abc0e1deaf36216
-- package: github.com/pmezard/go-difflib
-  version: v1.0.0
-- package: github.com/stretchr/testify
-  version: e3a8ff8ce36581f87a15341206f205b1da467059
