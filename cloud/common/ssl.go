@@ -26,7 +26,7 @@ func CreateCA(ctx *contexts.ClusterContext) (string, []byte, []byte, error) {
 		Hosts: []string{
 			"127.0.0.1",
 		},
-		KeyRequest: csr.NewBasicKeyRequest(),
+		KeyRequest: &csr.BasicKeyRequest{A: "rsa", S: 2048},
 		CA: &csr.CAConfig{
 			PathLength: 2,
 			Expiry:     d.String(),
