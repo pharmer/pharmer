@@ -9,7 +9,7 @@ import (
 	"github.com/appscode/data"
 	"github.com/appscode/errors"
 	_env "github.com/appscode/go/env"
-	"github.com/appscode/pharmer/cloud/common"
+	"github.com/appscode/pharmer/common"
 	"github.com/appscode/pharmer/system"
 )
 

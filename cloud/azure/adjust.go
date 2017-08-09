@@ -7,7 +7,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/arm/network"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/common"
+	"github.com/appscode/pharmer/common"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/system"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

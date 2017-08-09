@@ -4,7 +4,7 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/common"
+	"github.com/appscode/pharmer/common"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/util/credentialutil"

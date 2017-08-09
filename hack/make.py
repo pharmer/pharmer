@@ -75,9 +75,9 @@ def version():
 
 
 def fmt():
-    libbuild.ungroup_go_imports('*.go', 'api', 'cloud', 'commissioner', 'contexts', 'errorhandlers', 'phid', 'storage')
-    die(call('goimports -w *.go api cloud commissioner contexts errorhandlers phid storage'))
-    call('gofmt -s -w *.go api cloud commissioner contexts errorhandlers phid storage')
+    libbuild.ungroup_go_imports('*.go', 'api', 'cloud', 'commissioner', 'common', 'contexts', 'errorhandlers', 'phid', 'storage')
+    die(call('goimports -w *.go api cloud commissioner common contexts errorhandlers phid storage'))
+    call('gofmt -s -w *.go api cloud commissioner common contexts errorhandlers phid storage')
 
 
 def vet():

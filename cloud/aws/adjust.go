@@ -7,7 +7,7 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/go/types"
-	"github.com/appscode/pharmer/cloud/common"
+	"github.com/appscode/pharmer/common"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/system"
 	"github.com/aws/aws-sdk-go/service/autoscaling"

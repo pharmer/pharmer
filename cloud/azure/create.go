@@ -12,7 +12,7 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/common"
+	"github.com/appscode/pharmer/common"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
 )
