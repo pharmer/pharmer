@@ -4,7 +4,7 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 )
@@ -30,7 +30,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 
 	cm.ctx.Region = cm.ctx.Zone[:len(cm.ctx.Zone)-2]
 	cm.ctx.DoNotDelete = req.DoNotDelete
-	common.SetApps(cm.ctx)
+	lib.SetApps(cm.ctx)
 
 	cm.ctx.SetNodeGroups(req.NodeGroups)
 
@@ -41,7 +41,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	}
 	cm.ctx.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
 	cm.ctx.SSHKeyPHID = phid.NewSSHKey()
-	common.GenClusterTokens(cm.ctx)
+	lib.GenClusterTokens(cm.ctx)
 
 	cm.ctx.AppsCodeNamespace = cm.ctx.Auth.Namespace
 
@@ -49,7 +49,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 }
 
 func (cm *clusterManager) LoadDefaultContext() error {
-	err := common.LoadDefaultGenericContext(cm.ctx)
+	err := lib.LoadDefaultGenericContext(cm.ctx)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -64,7 +64,7 @@ func (cm *clusterManager) LoadDefaultContext() error {
 
 func (cm *clusterManager) UploadStartupConfig(ctx *contexts.ClusterContext) error {
 	if api.UseFirebase() {
-		return common.UploadStartupConfigInFirebase(ctx)
+		return lib.UploadStartupConfigInFirebase(ctx)
 	}
 	return nil
 }

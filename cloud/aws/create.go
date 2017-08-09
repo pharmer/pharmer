@@ -10,7 +10,7 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
 	"github.com/appscode/go/types"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
@@ -32,7 +32,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins, err = common.NewInstances(cm.ctx)
+	cm.ins, err = lib.NewInstances(cm.ctx)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -117,15 +117,15 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	for _, ng := range req.NodeGroups {
 		igm := &InstanceGroupManager{
 			cm: cm,
-			instance: common.Instance{
-				Type: common.InstanceType{
+			instance: lib.Instance{
+				Type: lib.InstanceType{
 					ContextVersion: cm.ctx.ContextVersion,
 					Sku:            ng.Sku,
 
 					Master:       false,
 					SpotInstance: false,
 				},
-				Stats: common.GroupStats{
+				Stats: lib.GroupStats{
 					Count: ng.Count,
 				},
 			},
@@ -136,22 +136,22 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
-	if err := common.EnsureDnsIPLookup(cm.ctx); err != nil {
+	if err := lib.EnsureDnsIPLookup(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// wait for nodes to start
-	if err := common.ProbeKubeAPI(cm.ctx); err != nil {
+	if err := lib.ProbeKubeAPI(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// check all components are ok
-	if err = common.CheckComponentStatuses(cm.ctx); err != nil {
+	if err = lib.CheckComponentStatuses(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// Make sure nodes are connected to master and are ready
-	if err = common.WaitForReadyNodes(cm.ctx); err != nil {
+	if err = lib.WaitForReadyNodes(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -815,7 +815,7 @@ func (cm *clusterManager) startMaster() (*contexts.KubernetesInstance, error) {
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	common.GenClusterCerts(cm.ctx)
+	lib.GenClusterCerts(cm.ctx)
 	cm.ctx.Save() // needed for master start-up config
 	cm.UploadStartupConfig()
 
@@ -846,7 +846,7 @@ func (cm *clusterManager) startMaster() (*contexts.KubernetesInstance, error) {
 	cm.ctx.MasterExternalIP = masterInstance.ExternalIP
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 
-	err = common.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
+	err = lib.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -1101,7 +1101,7 @@ func (cm *clusterManager) newKubeInstance(instanceID string) (*contexts.Kubernet
 	})
 	cm.ctx.Logger().Debug("Retrieved instance ", r1, err)
 	if err != nil {
-		return nil, common.InstanceNotFound
+		return nil, lib.InstanceNotFound
 	}
 
 	// Don't reassign internal_ip for AWS to keep the fixed 172.20.0.9 for master_internal_ip
@@ -1172,7 +1172,7 @@ func (cm *clusterManager) assignIPToInstance(instanceID string) error {
 func (cm *clusterManager) RenderStartupScript(opt *contexts.ScriptOptions, sku, role string) string {
 	cmd := fmt.Sprintf(`/usr/local/bin/aws s3api get-object --bucket %v --key kubernetes/context/%v/startup-config/%v.yaml /tmp/role.yaml
 CONFIG=$(cat /tmp/role.yaml)`, opt.BucketName, opt.ContextVersion, role)
-	return common.RenderKubeStarter(opt, sku, cmd)
+	return lib.RenderKubeStarter(opt, sku, cmd)
 }
 
 func (cm *clusterManager) createLaunchConfiguration(name, sku string) error {

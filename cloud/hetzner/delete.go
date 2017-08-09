@@ -9,7 +9,7 @@ import (
 	"github.com/appscode/errors"
 	hc "github.com/appscode/go-hetzner"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/errorhandlers"
 	"github.com/appscode/pharmer/storage"
 )
@@ -33,7 +33,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		}
 	}
 	cm.namer = namer{ctx: cm.ctx}
-	cm.ins, err = common.NewInstances(cm.ctx)
+	cm.ins, err = lib.NewInstances(cm.ctx)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -65,7 +65,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, err.Error())
 	}
 
-	if err := common.DeleteARecords(cm.ctx); err != nil {
+	if err := lib.DeleteARecords(cm.ctx); err != nil {
 		errs = append(errs, err.Error())
 	}
 

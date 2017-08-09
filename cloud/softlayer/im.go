@@ -11,7 +11,7 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
@@ -123,9 +123,9 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 }
 
 func (im *instanceManager) RenderStartupScript(opt *contexts.ScriptOptions, sku, role string) string {
-	cmd := common.StartupConfigFromAPI(opt, role)
+	cmd := lib.StartupConfigFromAPI(opt, role)
 	if api.UseFirebase() {
-		cmd = common.StartupConfigFromFirebase(opt, role)
+		cmd = lib.StartupConfigFromFirebase(opt, role)
 	}
 
 	firebaseUid := ""
@@ -170,7 +170,7 @@ systemctl enable kube-installer.service
 /usr/sbin/update-grub
 
 %v
-`, strings.Replace(common.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid, reboot)
+`, strings.Replace(lib.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid, reboot)
 }
 
 func (im *instanceManager) newKubeInstance(id int) (*contexts.KubernetesInstance, error) {

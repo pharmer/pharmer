@@ -1,4 +1,4 @@
-package common
+package lib
 
 import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"

@@ -10,7 +10,7 @@ import (
 	"github.com/appscode/errors"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
@@ -70,9 +70,9 @@ func (im *instanceManager) createStartupScript(sku, role string) (int, error) {
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
 func (im *instanceManager) RenderStartupScript(opt *contexts.ScriptOptions, sku, role string) string {
-	cmd := common.StartupConfigFromAPI(opt, role)
+	cmd := lib.StartupConfigFromAPI(opt, role)
 	if api.UseFirebase() {
-		cmd = common.StartupConfigFromFirebase(opt, role)
+		cmd = lib.StartupConfigFromFirebase(opt, role)
 	}
 
 	return fmt.Sprintf(`#!/bin/bash
@@ -125,7 +125,7 @@ EOF
 
 /usr/sbin/update-grub
 
-`, strings.Replace(common.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1))
+`, strings.Replace(lib.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1))
 }
 
 func (im *instanceManager) createInstance(name, sku string, scriptID int) (string, error) {

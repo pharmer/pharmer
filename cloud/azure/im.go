@@ -13,7 +13,7 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
@@ -251,9 +251,9 @@ func (im *instanceManager) DeleteVirtualMachine(vmName string) error {
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
 func (im *instanceManager) RenderStartupScript(opt *contexts.ScriptOptions, sku, role string) string {
-	cmd := common.StartupConfigFromAPI(opt, role)
+	cmd := lib.StartupConfigFromAPI(opt, role)
 	if api.UseFirebase() {
-		cmd = common.StartupConfigFromFirebase(opt, role)
+		cmd = lib.StartupConfigFromFirebase(opt, role)
 	}
 
 	firebaseUid := ""
@@ -293,7 +293,7 @@ systemctl enable kube-installer.service
 
 # Don't restart inside script for Azure, call api to restart
 # /sbin/reboot
-`, strings.Replace(common.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid)
+`, strings.Replace(lib.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid)
 }
 
 func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic network.Interface, pip network.PublicIPAddress) (*contexts.KubernetesInstance, error) {

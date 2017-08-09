@@ -5,7 +5,7 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 )
 
@@ -20,28 +20,28 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 	}
 
 	cm.namer = namer{ctx: cm.ctx}
-	cm.ins, err = common.NewInstances(cm.ctx)
+	cm.ins, err = lib.NewInstances(cm.ctx)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins.Load()
 
-	inst := common.Instance{
-		Type: common.InstanceType{
+	inst := lib.Instance{
+		Type: lib.InstanceType{
 			ContextVersion: cm.ctx.ContextVersion,
 			Sku:            req.Sku,
 
 			Master:       false,
 			SpotInstance: false,
 		},
-		Stats: common.GroupStats{
+		Stats: lib.GroupStats{
 			Count: req.Count,
 		},
 	}
 
 	fmt.Println(cm.ctx.NodeCount(), "<<<----------")
-	nodeAdjust, _ := common.Mutator(cm.ctx, inst)
+	nodeAdjust, _ := lib.Mutator(cm.ctx, inst)
 	fmt.Println(cm.ctx.NodeCount(), "------->>>>>>>>")
 	igm := &InstanceGroupManager{
 		cm:       cm,
@@ -68,7 +68,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 		cm.ctx.NodeGroups = append(cm.ctx.NodeGroups, ig)
 	}
 
-	if err := common.WaitForReadyNodes(cm.ctx); err != nil {
+	if err := lib.WaitForReadyNodes(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -77,7 +77,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 		igm.cm.ctx.StatusCause = err.Error()
 		//return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	common.AdjustDbInstance(igm.cm.ins, instances, req.Sku)
+	lib.AdjustDbInstance(igm.cm.ins, instances, req.Sku)
 
 	cm.ctx.Save()
 	return nil

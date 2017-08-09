@@ -7,7 +7,7 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
 	"github.com/cenkalti/backoff"
@@ -20,7 +20,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins, err = common.NewInstances(cm.ctx)
+	cm.ins, err = lib.NewInstances(cm.ctx)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -80,11 +80,11 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	fmt.Println("Master EXTERNAL IP ================", cm.ctx.MasterExternalIP)
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 
-	if err = common.GenClusterCerts(cm.ctx); err != nil {
+	if err = lib.GenClusterCerts(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = common.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
+	err = lib.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -134,23 +134,23 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
-	if err := common.EnsureDnsIPLookup(cm.ctx); err != nil {
+	if err := lib.EnsureDnsIPLookup(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// wait for nodes to start
-	if err := common.ProbeKubeAPI(cm.ctx); err != nil {
+	if err := lib.ProbeKubeAPI(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// check all components are ok
-	if err = common.CheckComponentStatuses(cm.ctx); err != nil {
+	if err = lib.CheckComponentStatuses(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// Make sure nodes are connected to master and are ready
-	if err = common.WaitForReadyNodes(cm.ctx); err != nil {
+	if err = lib.WaitForReadyNodes(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

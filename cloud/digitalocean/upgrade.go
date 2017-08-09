@@ -9,12 +9,12 @@ import (
 	"github.com/appscode/data"
 	"github.com/appscode/errors"
 	_env "github.com/appscode/go/env"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/system"
 )
 
 func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error {
-	if !common.UpgradeRequired(cm.ctx, req) {
+	if !lib.UpgradeRequired(cm.ctx, req) {
 		cm.ctx.Logger().Warningf("Upgrade command skipped for cluster %v", cm.ctx.Name)
 		return nil
 	}
@@ -50,7 +50,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	}
 
 	fmt.Println("Updating...")
-	cm.ins, err = common.NewInstances(cm.ctx)
+	cm.ins, err = lib.NewInstances(cm.ctx)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -118,7 +118,7 @@ func (cm *clusterManager) updateMaster() error {
 	cm.ctx.MasterInternalIP = masterInstance.InternalIP
 	fmt.Println("Master EXTERNAL IP ================", cm.ctx.MasterExternalIP, "<><><>", cm.ctx.MasterReservedIP)
 	cm.ctx.Logger().Infof("Rebooting master instance")
-	err = common.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
+	err = lib.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -134,7 +134,7 @@ func (cm *clusterManager) updateMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
-	if err := common.ProbeKubeAPI(cm.ctx); err != nil {
+	if err := lib.ProbeKubeAPI(cm.ctx); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	return nil
@@ -158,8 +158,8 @@ func (cm *clusterManager) updateNodes(sku string) error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		igm.instance = common.Instance{
-			Type: common.InstanceType{
+		igm.instance = lib.Instance{
+			Type: lib.InstanceType{
 				ContextVersion: cm.ctx.ContextVersion,
 				Sku:            sku,
 				Master:         false,
@@ -173,7 +173,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 
 		fmt.Println("Waiting for 1 minute")
 		time.Sleep(1 * time.Minute)
-		err = common.WaitForReadyNodes(cm.ctx)
+		err = lib.WaitForReadyNodes(cm.ctx)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
@@ -182,7 +182,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = common.AdjustDbInstance(cm.ins, currentIns, sku)
+	err = lib.AdjustDbInstance(cm.ins, currentIns, sku)
 	// cluster.ctx.Instances = append(cluster.ctx.Instances, instances...)
 	err = cm.ctx.Save()
 

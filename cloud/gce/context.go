@@ -8,7 +8,7 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/extpoints"
 	"github.com/appscode/pharmer/phid"
@@ -44,7 +44,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 
 	cm.ctx.Region = cm.ctx.Zone[0:strings.LastIndex(cm.ctx.Zone, "-")]
 	cm.ctx.DoNotDelete = req.DoNotDelete
-	common.SetApps(cm.ctx)
+	lib.SetApps(cm.ctx)
 	cm.ctx.BucketName = "kubernetes-" + cm.ctx.Name + "-" + rand.Characters(8)
 
 	for _, ng := range req.NodeGroups {
@@ -90,7 +90,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.ctx.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
 	cm.ctx.SSHKeyPHID = phid.NewSSHKey()
 
-	common.GenClusterTokens(cm.ctx)
+	lib.GenClusterTokens(cm.ctx)
 
 	cm.ctx.AppsCodeNamespace = cm.ctx.Auth.Namespace
 
@@ -208,7 +208,7 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	}
 	version = version.ToBuilder().ResetPrerelease().ResetMetadata().Done()
 
-	// https://github.com/appscode/kubernetes/blob/v1.3.6/cluster/gce/config-common.sh#L19
+	// https://github.com/appscode/kubernetes/blob/v1.3.6/cluster/gce/config-lib.sh#L19
 	v_1_3, _ := semver.NewConstraint(">= 1.3, < 1.4")
 	if v_1_3.Check(version) {
 		// Evict pods whenever compute resource availability on the nodes gets below a threshold.
@@ -220,7 +220,7 @@ func (cm *clusterManager) LoadDefaultContext() error {
 		cm.ctx.EvictionHard = `memory.available<100Mi`
 	}
 
-	// https://github.com/appscode/kubernetes/blob/1.4.0-ac/cluster/gce/config-common.sh#L19
+	// https://github.com/appscode/kubernetes/blob/1.4.0-ac/cluster/gce/config-lib.sh#L19
 	v_1_4, _ := semver.NewConstraint(">= 1.4")
 	if v_1_4.Check(version) {
 		cm.ctx.ClusterIPRange = "10.244.0.0/14"
@@ -233,7 +233,7 @@ func (cm *clusterManager) LoadDefaultContext() error {
 		cm.ctx.EnableRescheduler = true
 	}
 
-	common.BuildRuntimeConfig(cm.ctx)
+	lib.BuildRuntimeConfig(cm.ctx)
 	return nil
 }
 

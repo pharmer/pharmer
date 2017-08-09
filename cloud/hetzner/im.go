@@ -11,7 +11,7 @@ import (
 	_ssh "github.com/appscode/go/crypto/ssh"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
@@ -135,7 +135,7 @@ EOF
 /usr/sbin/update-grub
 
 /sbin/reboot
-`, strings.Replace(common.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid)
+`, strings.Replace(lib.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid)
 }
 
 func (cluster *instanceManager) executeStartupScript(serverIP string, signer ssh.Signer) error {
@@ -152,7 +152,7 @@ func (cluster *instanceManager) executeStartupScript(serverIP string, signer ssh
 func (im *instanceManager) newKubeInstance(serverIP string) (*contexts.KubernetesInstance, error) {
 	s, _, err := im.conn.client.Server.GetServer(serverIP)
 	if err != nil {
-		return nil, common.InstanceNotFound
+		return nil, lib.InstanceNotFound
 	}
 	return im.newKubeInstanceFromSummary(&s.ServerSummary)
 }

@@ -2,7 +2,7 @@ package packet
 
 import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/extpoints"
 )
@@ -21,7 +21,7 @@ func (cluster *kubeProvider) Create(ctx *contexts.ClusterContext, req *proto.Clu
 }
 
 func (cluster *kubeProvider) Scale(ctx *contexts.ClusterContext, req *proto.ClusterReconfigureRequest) error {
-	return common.UnsupportedOperation
+	return lib.UnsupportedOperation
 }
 
 func (cluster *kubeProvider) Delete(ctx *contexts.ClusterContext, req *proto.ClusterDeleteRequest) error {
@@ -29,7 +29,7 @@ func (cluster *kubeProvider) Delete(ctx *contexts.ClusterContext, req *proto.Clu
 }
 
 func (cluster *kubeProvider) SetVersion(ctx *contexts.ClusterContext, req *proto.ClusterReconfigureRequest) error {
-	return common.UnsupportedOperation
+	return lib.UnsupportedOperation
 }
 
 func (cluster *kubeProvider) UploadStartupConfig(ctx *contexts.ClusterContext) error {

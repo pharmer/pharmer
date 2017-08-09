@@ -5,7 +5,7 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
@@ -34,7 +34,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	//cluster.ctx.Zone = req.Zone
 	cm.ctx.Region = cm.ctx.Zone
 	cm.ctx.DoNotDelete = req.DoNotDelete
-	common.SetApps(cm.ctx)
+	lib.SetApps(cm.ctx)
 
 	cm.ctx.SetNodeGroups(req.NodeGroups)
 
@@ -49,7 +49,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	// cluster.ctx.MasterSGName = cluster.ctx.Name + "-master-" + rand.Characters(6)
 	// cluster.ctx.NodeSGName = cluster.ctx.Name + "-node-" + rand.Characters(6)
 
-	common.GenClusterTokens(cm.ctx)
+	lib.GenClusterTokens(cm.ctx)
 
 	cm.ctx.AppsCodeNamespace = cm.ctx.Auth.Namespace
 
@@ -173,13 +173,13 @@ func (cm *clusterManager) LoadDefaultContext() error {
 		cm.ctx.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota"
 	}
 
-	common.BuildRuntimeConfig(cm.ctx)
+	lib.BuildRuntimeConfig(cm.ctx)
 	return nil
 }
 
 func (cm *clusterManager) UploadStartupConfig() error {
 	if api.UseFirebase() {
-		return common.UploadStartupConfigInFirebase(cm.ctx)
+		return lib.UploadStartupConfigInFirebase(cm.ctx)
 	}
 	return nil
 }

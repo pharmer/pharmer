@@ -6,14 +6,14 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/system"
 	compute "google.golang.org/api/compute/v1"
 )
 
 type InstanceGroupManager struct {
 	cm       *clusterManager
-	instance common.Instance
+	instance lib.Instance
 }
 
 func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
@@ -287,7 +287,7 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, s
 	igm.cm.conn.waitForZoneOperation(resp.Name)
 	fmt.Println(resp.Name)
 	igm.cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance group %v resized", instanceGroupName))
-	/*err = common.WaitForReadyNodes(igm.cm.ctx, size-sz)
+	/*err = lib.WaitForReadyNodes(igm.cm.ctx, size-sz)
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}*/

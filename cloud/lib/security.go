@@ -1,4 +1,4 @@
-package common
+package lib
 
 import (
 	"encoding/base64"

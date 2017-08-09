@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 //go:generate stringer -type=Kind
-//go:generate go run gen.go gen_common.go gen_trieval.go
+//go:generate go run gen.go gen_lib.go gen_trieval.go
 
 // Package width provides functionality for handling different widths in text.
 //

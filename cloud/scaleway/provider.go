@@ -2,7 +2,7 @@ package scaleway
 
 import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/extpoints"
 )
@@ -21,7 +21,7 @@ func (kp *kubeProvider) Create(ctx *contexts.ClusterContext, req *proto.ClusterC
 }
 
 func (kp *kubeProvider) Scale(ctx *contexts.ClusterContext, req *proto.ClusterReconfigureRequest) error {
-	return common.UnsupportedOperation
+	return lib.UnsupportedOperation
 }
 
 func (kp *kubeProvider) Delete(ctx *contexts.ClusterContext, req *proto.ClusterDeleteRequest) error {
@@ -29,11 +29,11 @@ func (kp *kubeProvider) Delete(ctx *contexts.ClusterContext, req *proto.ClusterD
 }
 
 func (kp *kubeProvider) SetVersion(ctx *contexts.ClusterContext, req *proto.ClusterReconfigureRequest) error {
-	return common.UnsupportedOperation
+	return lib.UnsupportedOperation
 }
 
 func (cluster *kubeProvider) UploadStartupConfig(ctx *contexts.ClusterContext) error {
-	return common.UnsupportedOperation
+	return lib.UnsupportedOperation
 	/*conn, err := NewConnector(ctx)
 	if err != nil {
 		return err

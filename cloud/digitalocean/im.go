@@ -9,7 +9,7 @@ import (
 	"github.com/appscode/errors"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
@@ -100,15 +100,15 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 }
 
 func (im *instanceManager) RenderStartupScript(opt *contexts.ScriptOptions, sku, role string) string {
-	cmd := common.StartupConfigFromAPI(opt, role)
+	cmd := lib.StartupConfigFromAPI(opt, role)
 	if api.UseFirebase() {
-		cmd = common.StartupConfigFromFirebase(opt, role)
+		cmd = lib.StartupConfigFromFirebase(opt, role)
 	}
 
 	if role == system.RoleKubernetesMaster {
-		return common.RenderKubeInstaller(opt, sku, role, cmd)
+		return lib.RenderKubeInstaller(opt, sku, role, cmd)
 	}
-	return common.RenderKubeStarter(opt, sku, cmd)
+	return lib.RenderKubeStarter(opt, sku, cmd)
 }
 
 func (im *instanceManager) applyTag(dropletID int) error {
@@ -138,7 +138,7 @@ func (im *instanceManager) assignReservedIP(ip string, dropletID int) error {
 func (im *instanceManager) newKubeInstance(id int) (*contexts.KubernetesInstance, error) {
 	droplet, _, err := im.conn.client.Droplets.Get(context.TODO(), id)
 	if err != nil {
-		return nil, common.InstanceNotFound
+		return nil, lib.InstanceNotFound
 	}
 	return im.newKubeInstanceFromDroplet(droplet)
 }

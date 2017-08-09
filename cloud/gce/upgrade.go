@@ -10,14 +10,14 @@ import (
 	"github.com/appscode/errors"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/system"
 	compute "google.golang.org/api/compute/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error {
-	if !common.UpgradeRequired(cm.ctx, req) {
+	if !lib.UpgradeRequired(cm.ctx, req) {
 		cm.ctx.Logger().Warningf("Upgrade command skipped for cluster %v", cm.ctx.Name)
 		return nil // TODO check error nil
 	}
@@ -55,7 +55,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	}
 
 	fmt.Println("Updating...")
-	cm.ins, err = common.NewInstances(cm.ctx)
+	cm.ins, err = lib.NewInstances(cm.ctx)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -98,7 +98,7 @@ func (cm *clusterManager) updateMaster() error {
 	}
 	err = cm.conn.waitForZoneOperation(op)
 
-	if err := common.ProbeKubeAPI(cm.ctx); err != nil {
+	if err := lib.ProbeKubeAPI(cm.ctx); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance, err := cm.getInstance(cm.ctx.KubernetesMasterName)
@@ -128,7 +128,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	ctxV, err := common.GetExistingContextVersion(cm.ctx, sku)
+	ctxV, err := lib.GetExistingContextVersion(cm.ctx, sku)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -153,7 +153,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = common.AdjustDbInstance(cm.ins, currentIns, sku)
+	err = lib.AdjustDbInstance(cm.ins, currentIns, sku)
 	// cluster.ctx.Instances = append(cluster.ctx.Instances, instances...)
 	err = cm.ctx.Save()
 	if err != nil {
@@ -216,7 +216,7 @@ func (cm *clusterManager) rollingUpdate(oldInstances []string, newInstanceTempla
 		cm.conn.waitForZoneOperation(r.Name)
 		fmt.Println("Waiting for 1 minute")
 		time.Sleep(1 * time.Minute)
-		err = common.WaitForReadyNodes(cm.ctx)
+		err = lib.WaitForReadyNodes(cm.ctx)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}

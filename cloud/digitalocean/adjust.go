@@ -8,7 +8,7 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/common"
+	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/system"
 	"github.com/digitalocean/godo"
@@ -17,7 +17,7 @@ import (
 
 type InstanceGroupManager struct {
 	cm       *clusterManager
-	instance common.Instance
+	instance lib.Instance
 	im       *instanceManager
 }
 
@@ -34,7 +34,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	igm.cm.ctx.Load()
 	var nodeAdjust int64 = 0
 	if found {
-		nodeAdjust, _ = common.Mutator(igm.cm.ctx, igm.instance)
+		nodeAdjust, _ = lib.Mutator(igm.cm.ctx, igm.instance)
 	}
 	if !found {
 		err = igm.createInstanceGroup(igm.instance.Stats.Count)
