@@ -1,0 +1,202 @@
+[
+  {
+    "provider": "aws",
+    "display": "Amazon Web Services (AWS)",
+    "input_format": "field",
+    "fields": [
+      {
+        "envconfig": "AWS_ACCESS_KEY_ID",
+        "json": "access_key_id",
+        "name": "access_key_id",
+        "label": "Access Key Id",
+        "input": "text"
+      },
+      {
+        "envconfig": "AWS_SECRET_ACCESS_KEY",
+        "json": "secret_access_key",
+        "name": "secret_access_key",
+        "label": "Secret Access Key",
+        "input": "text"
+      },
+      {
+        "envconfig": "AWS_REGION",
+        "json": "region",
+        "name": "region",
+        "label": "Region",
+        "input": "select",
+        "option": "regions"
+      }
+    ],
+    "regions": [
+      {
+        "location": "Virginia",
+        "region": "us-east-1"
+      },
+      {
+        "location": "Ohio",
+        "region": "us-east-2"
+      },
+      {
+        "location": "California",
+        "region": "us-west-1"
+      },
+      {
+        "location": "Oregon",
+        "region": "us-west-2"
+      },
+      {
+        "location": "Ireland",
+        "region": "eu-west-1"
+      },
+      {
+        "location": "Singapore",
+        "region": "ap-southeast-1"
+      },
+      {
+        "location": "Tokyo",
+        "region": "ap-northeast-1"
+      },
+      {
+        "region": "ap-southeast-2",
+        "location": "Sydney"
+      },
+      {
+        "region": "sa-east-1",
+        "location": "São Paulo"
+      },
+      {
+        "region": "ap-south-1",
+        "location": "Mumbai"
+      },
+      {
+        "region": "eu-central-1",
+        "location": "Frankfurt"
+      }
+    ]
+  },
+  {
+    "provider": "gcloud",
+    "display": "Google Cloud Platform",
+    "input_format": "field",
+    "fields": [
+      {
+        "envconfig": "GCE_PROJECT",
+        "json": "project",
+        "name": "project",
+        "label": "Project",
+        "input": "text"
+      },
+      {
+        "name": "JsonKey",
+        "json": "credential",
+        "label": "Service Account",
+        "input": "textarea"
+      }
+    ]
+  },
+  {
+    "provider": "azure",
+    "display": "Azure",
+    "input_format": "field",
+    "fields": [
+      {
+        "envconfig": "AZURE_TENANT_ID",
+        "json": "tenant_id",
+        "name": "tenant_id",
+        "label": "Tenant Id",
+        "input": "text"
+      },
+      {
+        "envconfig": "AZURE_SUBSCRIPTION_ID",
+        "json": "subscription_id",
+        "name": "SubsctiptionId",
+        "label": "Subscription Id",
+        "input": "text"
+      },
+      {
+        "envconfig": "AZURE_CLIENT_ID",
+        "json": "client_id",
+        "name": "client_id",
+        "label": "Client Id",
+        "input": "text"
+      },
+      {
+        "envconfig": "AZURE_CLIENT_SECRET",
+        "json": "client_secret",
+        "name": "client_secret",
+        "label": "Client Secret",
+        "input": "text"
+      },
+      {
+        "envconfig": "AZURE_RESOURCE_GROUP",
+        "json": "resource_group",
+        "name": "resource_group",
+        "label": "Resource Group",
+        "input": "text"
+      }
+    ]
+  },
+  {
+    "provider": "cloudflare",
+    "display": "Cloudflare",
+    "input_format": "field",
+    "fields": [
+      {
+        "envconfig": "CLOUDFLARE_EMAIL",
+        "json": "email",
+        "name": "email",
+        "label": "Email",
+        "input": "text"
+      },
+      {
+        "envconfig": "CLOUDFLARE_API_KEY",
+        "json": "api_key",
+        "name": "api_key",
+        "label": "Api Key",
+        "input": "text"
+      }
+    ]
+  },
+  {
+    "provider": "digitalocean",
+    "display": "Digital Ocean",
+    "input_format": "field",
+    "fields": [
+      {
+        "envconfig": "DO_AUTH_TOKEN",
+        "json": "auth_token",
+        "name": "auth_token",
+        "label": "Auth Token",
+        "input": "text"
+      }
+    ]
+  },
+  {
+    "provider": "linode",
+    "display": "Linode",
+    "input_format": "field",
+    "fields": [
+      {
+        "envconfig": "LINODE_API_KEY",
+        "json": "api_key",
+        "name": "api_key",
+        "label": "Api Key",
+        "input": "text"
+      }
+    ]
+  },
+  {
+    "provider": "vultr",
+    "display": "Vultr",
+    "input_format": "field",
+    "fields": [
+      {
+        "envconfig": "VULTR_API_KEY",
+        "json": "api_key",
+        "name": "api_key",
+        "label": "Api Key",
+        "input": "text"
+      }
+    ]
+  }
+]

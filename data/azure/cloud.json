@@ -1,0 +1,854 @@
+{
+  "name": "azure",
+  "envs": [
+    "dev",
+    "qa"
+  ],
+  "regions": [
+    {
+      "location": "Virginia",
+      "region": "East US",
+      "zones": [
+        "eastus"
+      ]
+    },
+    {
+      "location": "Virginia",
+      "region": "East US 2",
+      "zones": [
+        "eastus2"
+      ]
+    },
+    {
+      "location": "Iowa",
+      "region": "Central US",
+      "zones": [
+        "centralus"
+      ]
+    },
+    {
+      "location": "Illinois",
+      "region": "North Central US",
+      "zones": [
+        "northcentralus"
+      ]
+    },
+    {
+      "location": "Texas",
+      "region": "South Central US",
+      "zones": [
+        "southcentralus"
+      ]
+    },
+    {
+      "location": "West Central US",
+      "region": "West Central US",
+      "zones": [
+        "westcentralus"
+      ]
+    },
+    {
+      "location": "California",
+      "region": "West US",
+      "zones": [
+        "westus"
+      ]
+    },
+    {
+      "location": "West US 2",
+      "region": "West US 2",
+      "zones": [
+        "westus2"
+      ]
+    },
+    {
+      "location": "Quebec City",
+      "region": "Canada East",
+      "zones": [
+        "canadaeast"
+      ]
+    },
+    {
+      "location": "Toronto",
+      "region": "Canada Central",
+      "zones": [
+        "canadacentral"
+      ]
+    },
+    {
+      "location": "Sao Paulo State",
+      "region": "Brazil South",
+      "zones": [
+        "brazilsouth"
+      ]
+    },
+    {
+      "location": "Ireland",
+      "region": "North Europe",
+      "zones": [
+        "northeurope"
+      ]
+    },
+    {
+      "location": "Netherlands",
+      "region": "West Europe",
+      "zones": [
+        "westeurope"
+      ]
+    },
+    {
+      "location": "Cardiff",
+      "region": "UK West",
+      "zones": [
+        "ukwest"
+      ]
+    },
+    {
+      "location": "London",
+      "region": "UK South",
+      "zones": [
+        "uksouth"
+      ]
+    },
+    {
+      "location": "Singapore",
+      "region": "Southeast Asia",
+      "zones": [
+        "southeastasia"
+      ]
+    },
+    {
+      "location": "Hong Kong",
+      "region": "East Asia",
+      "zones": [
+        "eastasia"
+      ]
+    },
+    {
+      "location": "New South Wales",
+      "region": "Australia East",
+      "zones": [
+        "australiaeast"
+      ]
+    },
+    {
+      "location": "Victoria",
+      "region": "Australia Southeast",
+      "zones": [
+        "australiasoutheast"
+      ]
+    },
+    {
+      "location": "Tokyo, Saitama",
+      "region": "Japan East",
+      "zones": [
+        "japaneast"
+      ]
+    },
+    {
+      "location": "Osaka",
+      "region": "Japan West",
+      "zones": [
+        "japanwest"
+      ]
+    }
+  ],
+  "instance_types": [
+    {
+      "external_sku": "Standard_A0",
+      "description": "Standard_A0",
+      "category": "A-series",
+      "cpu": 1,
+      "ram": 0.768,
+      "disk": 20
+    },
+    {
+      "external_sku": "Standard_A1",
+      "description": "Standard_A1",
+      "category": "A-series",
+      "cpu": 1,
+      "ram": 1.75,
+      "disk": 70
+    },
+    {
+      "external_sku": "Standard_A2",
+      "description": "Standard_A2",
+      "category": "A-series",
+      "cpu": 2,
+      "ram": 3.5,
+      "disk": 135
+    },
+    {
+      "external_sku": "Standard_A3",
+      "description": "Standard_A3",
+      "category": "A-series",
+      "cpu": 4,
+      "ram": 7,
+      "disk": 285
+    },
+    {
+      "external_sku": "Standard_A4",
+      "description": "Standard_A4",
+      "category": "A-series",
+      "cpu": 8,
+      "ram": 14,
+      "disk": 605
+    },
+    {
+      "external_sku": "Standard_A5",
+      "description": "Standard_A5",
+      "category": "A-series",
+      "cpu": 2,
+      "ram": 14,
+      "disk": 135
+    },
+    {
+      "external_sku": "Standard_A6",
+      "description": "Standard_A6",
+      "category": "A-series",
+      "cpu": 4,
+      "ram": 28,
+      "disk": 285
+    },
+    {
+      "external_sku": "Standard_A7",
+      "description": "Standard_A7",
+      "category": "A-series",
+      "cpu": 8,
+      "ram": 56,
+      "disk": 605
+    },
+    {
+      "external_sku": "Standard_A8",
+      "description": "Standard_A8",
+      "category": "A-series - compute-intensive instances",
+      "cpu": 8,
+      "ram": 56,
+      "disk": 382
+    },
+    {
+      "external_sku": "Standard_A9",
+      "description": "Standard_A9",
+      "category": "A-series - compute-intensive instances",
+      "cpu": 16,
+      "ram": 112,
+      "disk": 382
+    },
+    {
+      "external_sku": "Standard_A10",
+      "description": "Standard_A10",
+      "category": "A-series - compute-intensive instances",
+      "cpu": 8,
+      "ram": 56,
+      "disk": 382
+    },
+    {
+      "external_sku": "Standard_A11",
+      "description": "Standard_A11",
+      "category": "A-series - compute-intensive instances",
+      "cpu": 16,
+      "ram": 112,
+      "disk": 382
+    },
+    {
+      "external_sku": "Standard_D1",
+      "description": "Standard_D1",
+      "category": "D-series",
+      "cpu": 1,
+      "ram": 3.5,
+      "disk": 50
+    },
+    {
+      "external_sku": "Standard_D2",
+      "description": "Standard_D2",
+      "category": "D-series",
+      "cpu": 2,
+      "ram": 7,
+      "disk": 100
+    },
+    {
+      "external_sku": "Standard_D3",
+      "description": "Standard_D3",
+      "category": "D-series",
+      "cpu": 4,
+      "ram": 14,
+      "disk": 200
+    },
+    {
+      "external_sku": "Standard_D4",
+      "description": "Standard_D4",
+      "category": "D-series",
+      "cpu": 8,
+      "ram": 28,
+      "disk": 400
+    },
+    {
+      "external_sku": "Standard_D11",
+      "description": "Standard_D11",
+      "category": "D-series",
+      "cpu": 2,
+      "ram": 14,
+      "disk": 100
+    },
+    {
+      "external_sku": "Standard_D12",
+      "description": "Standard_D12",
+      "category": "D-series",
+      "cpu": 4,
+      "ram": 28,
+      "disk": 200
+    },
+    {
+      "external_sku": "Standard_D13",
+      "description": "Standard_D13",
+      "category": "D-series",
+      "cpu": 8,
+      "ram": 56,
+      "disk": 400
+    },
+    {
+      "external_sku": "Standard_D14",
+      "description": "Standard_D14",
+      "category": "D-series",
+      "cpu": 16,
+      "ram": 112,
+      "disk": 800
+    },
+    {
+      "external_sku": "Standard_D1_v2",
+      "description": "Standard_D1_v2",
+      "category": "Dv2-series",
+      "cpu": 1,
+      "ram": 3.5,
+      "disk": 50
+    },
+    {
+      "external_sku": "Standard_D2_v2",
+      "description": "Standard_D2_v2",
+      "category": "Dv2-series",
+      "cpu": 2,
+      "ram": 7,
+      "disk": 100
+    },
+    {
+      "external_sku": "Standard_D3_v2",
+      "description": "Standard_D3_v2",
+      "category": "Dv2-series",
+      "cpu": 4,
+      "ram": 14,
+      "disk": 200
+    },
+    {
+      "external_sku": "Standard_D4_v2",
+      "description": "Standard_D4_v2",
+      "category": "Dv2-series",
+      "cpu": 8,
+      "ram": 28,
+      "disk": 400
+    },
+    {
+      "external_sku": "Standard_D5_v2",
+      "description": "Standard_D5_v2",
+      "category": "Dv2-series",
+      "cpu": 16,
+      "ram": 56,
+      "disk": 800
+    },
+    {
+      "external_sku": "Standard_D11_v2",
+      "description": "Standard_D11_v2",
+      "category": "Dv2-series",
+      "cpu": 2,
+      "ram": 14,
+      "disk": 100
+    },
+    {
+      "external_sku": "Standard_D12_v2",
+      "description": "Standard_D12_v2",
+      "category": "Dv2-series",
+      "cpu": 4,
+      "ram": 28,
+      "disk": 200
+    },
+    {
+      "external_sku": "Standard_D13_v2",
+      "description": "Standard_D13_v2",
+      "category": "Dv2-series",
+      "cpu": 8,
+      "ram": 56,
+      "disk": 400
+    },
+    {
+      "external_sku": "Standard_D14_v2",
+      "description": "Standard_D14_v2",
+      "category": "Dv2-series",
+      "cpu": 16,
+      "ram": 112,
+      "disk": 800
+    },
+    {
+      "external_sku": "Standard_D15_v2",
+      "description": "Standard_D15_v2",
+      "category": "Dv2-series",
+      "cpu": 20,
+      "ram": 140,
+      "disk": 1000
+    },
+    {
+      "external_sku": "Standard_DS1",
+      "description": "Standard_DS1",
+      "category": "DS-series",
+      "cpu": 1,
+      "ram": 3.5,
+      "disk": 7
+    },
+    {
+      "external_sku": "Standard_DS2",
+      "description": "Standard_DS2",
+      "category": "DS-series",
+      "cpu": 2,
+      "ram": 7,
+      "disk": 14
+    },
+    {
+      "external_sku": "Standard_DS3",
+      "description": "Standard_DS3",
+      "category": "DS-series",
+      "cpu": 4,
+      "ram": 14,
+      "disk": 28
+    },
+    {
+      "external_sku": "Standard_DS4",
+      "description": "Standard_DS4",
+      "category": "DS-series",
+      "cpu": 8,
+      "ram": 28,
+      "disk": 56
+    },
+    {
+      "external_sku": "Standard_DS11",
+      "description": "Standard_DS11",
+      "category": "DS-series",
+      "cpu": 2,
+      "ram": 14,
+      "disk": 28
+    },
+    {
+      "external_sku": "Standard_DS12",
+      "description": "Standard_DS12",
+      "category": "DS-series",
+      "cpu": 4,
+      "ram": 28,
+      "disk": 56
+    },
+    {
+      "external_sku": "Standard_DS13",
+      "description": "Standard_DS13",
+      "category": "DS-series",
+      "cpu": 8,
+      "ram": 56,
+      "disk": 112
+    },
+    {
+      "external_sku": "Standard_DS14",
+      "description": "Standard_DS14",
+      "category": "DS-series",
+      "cpu": 16,
+      "ram": 112,
+      "disk": 224
+    },
+    {
+      "external_sku": "Standard_DS1_v2",
+      "description": "Standard_DS1_v2",
+      "category": "DSv2-series",
+      "cpu": 1,
+      "ram": 3.5,
+      "disk": 7
+    },
+    {
+      "external_sku": "Standard_DS2_v2",
+      "description": "Standard_DS2_v2",
+      "category": "DSv2-series",
+      "cpu": 2,
+      "ram": 7,
+      "disk": 14
+    },
+    {
+      "external_sku": "Standard_DS3_v2",
+      "description": "Standard_DS3_v2",
+      "category": "DSv2-series",
+      "cpu": 4,
+      "ram": 14,
+      "disk": 28
+    },
+    {
+      "external_sku": "Standard_DS4_v2",
+      "description": "Standard_DS4_v2",
+      "category": "DSv2-series",
+      "cpu": 8,
+      "ram": 28,
+      "disk": 56
+    },
+    {
+      "external_sku": "Standard_DS5_v2",
+      "description": "Standard_DS5_v2",
+      "category": "DSv2-series",
+      "cpu": 16,
+      "ram": 56,
+      "disk": 112
+    },
+    {
+      "external_sku": "Standard_DS11_v2",
+      "description": "Standard_DS11_v2",
+      "category": "DSv2-series",
+      "cpu": 2,
+      "ram": 14,
+      "disk": 28
+    },
+    {
+      "external_sku": "Standard_DS12_v2",
+      "description": "Standard_DS12_v2",
+      "category": "DSv2-series",
+      "cpu": 4,
+      "ram": 28,
+      "disk": 56
+    },
+    {
+      "external_sku": "Standard_DS13_v2",
+      "description": "Standard_DS13_v2",
+      "category": "DSv2-series",
+      "cpu": 8,
+      "ram": 56,
+      "disk": 112
+    },
+    {
+      "external_sku": "Standard_DS14_v2",
+      "description": "Standard_DS14_v2",
+      "category": "DSv2-series",
+      "cpu": 16,
+      "ram": 112,
+      "disk": 224
+    },
+    {
+      "external_sku": "Standard_DS15_v2",
+      "description": "Standard_DS15_v2",
+      "category": "DSv2-series",
+      "cpu": 20,
+      "ram": 140,
+      "disk": 280
+    },
+    {
+      "external_sku": "Standard_F1",
+      "description": "Standard_F1",
+      "category": "F-series",
+      "cpu": 1,
+      "ram": 2,
+      "disk": 16
+    },
+    {
+      "external_sku": "Standard_F2",
+      "description": "Standard_F2",
+      "category": "F-series",
+      "cpu": 2,
+      "ram": 4,
+      "disk": 32
+    },
+    {
+      "external_sku": "Standard_F4",
+      "description": "Standard_F4",
+      "category": "F-series",
+      "cpu": 4,
+      "ram": 8,
+      "disk": 64
+    },
+    {
+      "external_sku": "Standard_F8",
+      "description": "Standard_F8",
+      "category": "F-series",
+      "cpu": 8,
+      "ram": 16,
+      "disk": 128
+    },
+    {
+      "external_sku": "Standard_F16",
+      "description": "Standard_F16",
+      "category": "F-series",
+      "cpu": 16,
+      "ram": 32,
+      "disk": 256
+    },
+    {
+      "external_sku": "Standard_F1s",
+      "description": "Standard_F1s",
+      "category": "Fs-series",
+      "cpu": 1,
+      "ram": 2,
+      "disk": 4
+    },
+    {
+      "external_sku": "Standard_F2s",
+      "description": "Standard_F2s",
+      "category": "Fs-series",
+      "cpu": 2,
+      "ram": 4,
+      "disk": 8
+    },
+    {
+      "external_sku": "Standard_F4s",
+      "description": "Standard_F4s",
+      "category": "Fs-series",
+      "cpu": 4,
+      "ram": 8,
+      "disk": 16
+    },
+    {
+      "external_sku": "Standard_F8s",
+      "description": "Standard_F8s",
+      "category": "Fs-series",
+      "cpu": 8,
+      "ram": 16,
+      "disk": 32
+    },
+    {
+      "external_sku": "Standard_F16s",
+      "description": "Standard_F16s",
+      "category": "Fs-series",
+      "cpu": 16,
+      "ram": 32,
+      "disk": 64
+    },
+    {
+      "external_sku": "Standard_G1",
+      "description": "Standard_G1",
+      "category": "G-series",
+      "cpu": 2,
+      "ram": 28,
+      "disk": 384
+    },
+    {
+      "external_sku": "Standard_G2",
+      "description": "Standard_G2",
+      "category": "G-series",
+      "cpu": 4,
+      "ram": 56,
+      "disk": 768
+    },
+    {
+      "external_sku": "Standard_G3",
+      "description": "Standard_G3",
+      "category": "G-series",
+      "cpu": 8,
+      "ram": 112,
+      "disk": 1536
+    },
+    {
+      "external_sku": "Standard_G4",
+      "description": "Standard_G4",
+      "category": "G-series",
+      "cpu": 16,
+      "ram": 224,
+      "disk": 3072
+    },
+    {
+      "external_sku": "Standard_G5",
+      "description": "Standard_G5",
+      "category": "G-series",
+      "cpu": 32,
+      "ram": 448,
+      "disk": 6144
+    },
+    {
+      "external_sku": "Standard_GS1",
+      "description": "Standard_GS1",
+      "category": "GS-series",
+      "cpu": 2,
+      "ram": 28,
+      "disk": 56
+    },
+    {
+      "external_sku": "Standard_GS2",
+      "description": "Standard_GS2",
+      "category": "GS-series",
+      "cpu": 4,
+      "ram": 56,
+      "disk": 528
+    },
+    {
+      "external_sku": "Standard_GS3",
+      "description": "Standard_GS3",
+      "category": "GS-series",
+      "cpu": 8,
+      "ram": 112,
+      "disk": 1056
+    },
+    {
+      "external_sku": "Standard_GS4",
+      "description": "Standard_GS4",
+      "category": "GS-series",
+      "cpu": 16,
+      "ram": 224,
+      "disk": 2112
+    },
+    {
+      "external_sku": "Standard_GS5",
+      "description": "Standard_GS5",
+      "category": "GS-series",
+      "cpu": 32,
+      "ram": 448,
+      "disk": 4224
+    }
+  ],
+  "kubernetes": {
+    "default_setup": {
+      "nodeset": {
+        "Standard_D2_v2": 2
+      }
+    },
+    "versions_by_env": {
+      "dev": [
+        {
+          "version": "1.4.0",
+          "description": "1.4.0 (beta)",
+          "apps": {
+            "kubernetes-server": "1.4.0",
+            "kubernetes-salt": "1.4.0-ac",
+            "start-kubernetes": "0.2.10",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.4.1",
+          "description": "1.4.1 (beta)",
+          "apps": {
+            "kubernetes-server": "1.4.1",
+            "kubernetes-salt": "1.4.1-ac",
+            "start-kubernetes": "0.2.10",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.4.4",
+          "description": "1.4.4 (beta)",
+          "apps": {
+            "kubernetes-server": "1.4.4",
+            "kubernetes-salt": "1.4.4-ac",
+            "start-kubernetes": "0.2.10",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.4.5",
+          "description": "1.4.5 (beta)",
+          "apps": {
+            "kubernetes-server": "1.4.5",
+            "kubernetes-salt": "1.4.5-ac",
+            "start-kubernetes": "0.2.10",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.4.6",
+          "description": "1.4.6 (beta)",
+          "apps": {
+            "kubernetes-server": "1.4.6",
+            "kubernetes-salt": "1.4.6-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.1",
+          "description": "1.5.1 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.1",
+            "kubernetes-salt": "1.5.1-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.2",
+          "description": "1.5.2 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.2",
+            "kubernetes-salt": "1.5.2-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.3",
+          "description": "1.5.3 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.3",
+            "kubernetes-salt": "1.5.3-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.4",
+          "description": "1.5.4 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.4",
+            "kubernetes-salt": "1.5.4-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.5",
+          "description": "1.5.5 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.5",
+            "kubernetes-salt": "1.5.5-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.6",
+          "description": "1.5.6 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.6",
+            "kubernetes-salt": "1.5.6-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.7",
+          "description": "1.5.7",
+          "apps": {
+            "kubernetes-server": "1.5.7",
+            "kubernetes-salt": "1.5.7-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.7"
+          }
+        },
+        {
+          "version": "1.7.0",
+          "description": "1.7.0",
+          "apps": {
+            "kubernetes-server": "1.7.0",
+            "kubernetes-salt": "1.7.0-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.7"
+          }
+        }
+      ]
+    }
+  }
+}

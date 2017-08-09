@@ -1,0 +1,300 @@
+{
+  "name": "packet",
+  "envs": [
+    "dev",
+    "qa"
+  ],
+  "regions": [
+    {
+      "location": "NYC Metro, NY, USA",
+      "region": "US East",
+      "zones": [
+        "ewr1"
+      ]
+    },
+    {
+      "location": "San Jose, CA, USA",
+      "region": "US West",
+      "zones": [
+        "sjc1"
+      ]
+    },
+    {
+      "location": "Amsterdam, NL",
+      "region": "EU WEST",
+      "zones": [
+        "ams1"
+      ]
+    },
+    {
+      "location": "Tokyo, JP",
+      "region": "ASIA EAST",
+      "zones": [
+        "nrt1"
+      ]
+    }
+  ],
+  "instance_types": [
+    {
+      "external_sku": "baremetal_0",
+      "description": "TYPE 0: 4 x86 64bit Cores, 8GB DDR3 RAM",
+      "category": "Bare Metal",
+      "cpu": 4,
+      "ram": 8,
+      "disk": 80
+    },
+    {
+      "external_sku": "baremetal_1",
+      "description": "TYPE 1: 4 x86 64bit Cores, 32GB DDR3 RAM",
+      "category": "Bare Metal",
+      "cpu": 4,
+      "ram": 32,
+      "disk": 120
+    },
+    {
+      "external_sku": "baremetal_2",
+      "description": "TYPE 2: 24 x86 64bit Cores, 256GB DDR4 ECC RAM",
+      "category": "Bare Metal",
+      "cpu": 24,
+      "ram": 256,
+      "disk": 2880
+    },
+    {
+      "external_sku": "baremetal_3",
+      "description": "TYPE 3: 16 x86 64bit Cores, 128GB DDR4 RAM",
+      "category": "Bare Metal",
+      "cpu": 16,
+      "ram": 128,
+      "disk": 120
+    }
+  ],
+  "kubernetes": {
+    "default_setup": {
+      "nodeset": {
+        "VC1S": 2
+      }
+    },
+    "versions_by_env": {
+      "dev": [
+        {
+          "version": "1.4.5",
+          "description": "1.4.5 (beta)",
+          "apps": {
+            "kubernetes-server": "1.4.5",
+            "kubernetes-salt": "1.4.5-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.4.6",
+          "description": "1.4.6 (beta)",
+          "apps": {
+            "kubernetes-server": "1.4.6",
+            "kubernetes-salt": "1.4.6-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.1",
+          "description": "1.5.1 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.1",
+            "kubernetes-salt": "1.5.1-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.2",
+          "description": "1.5.2 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.2",
+            "kubernetes-salt": "1.5.2-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.3",
+          "description": "1.5.3 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.3",
+            "kubernetes-salt": "1.5.3-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.4",
+          "description": "1.5.4 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.4",
+            "kubernetes-salt": "1.5.4-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.5",
+          "description": "1.5.5 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.5",
+            "kubernetes-salt": "1.5.5-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.6",
+          "description": "1.5.6 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.6",
+            "kubernetes-salt": "1.5.6-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.7",
+          "description": "1.5.7",
+          "apps": {
+            "kubernetes-server": "1.5.7",
+            "kubernetes-salt": "1.5.7-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.7"
+          }
+        },
+        {
+          "version": "1.7.0",
+          "description": "1.7.0",
+          "apps": {
+            "kubernetes-server": "1.7.0",
+            "kubernetes-salt": "1.7.0-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.7"
+          }
+        }
+      ],
+      "qa": [
+        {
+          "version": "1.4.5",
+          "description": "1.4.5 (beta)",
+          "apps": {
+            "kubernetes-server": "1.4.5",
+            "kubernetes-salt": "1.4.5-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.4.6",
+          "description": "1.4.6 (beta)",
+          "apps": {
+            "kubernetes-server": "1.4.6",
+            "kubernetes-salt": "1.4.6-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.1",
+          "description": "1.5.1 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.1",
+            "kubernetes-salt": "1.5.1-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.2",
+          "description": "1.5.2 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.2",
+            "kubernetes-salt": "1.5.2-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.3",
+          "description": "1.5.3 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.3",
+            "kubernetes-salt": "1.5.3-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.4",
+          "description": "1.5.4 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.4",
+            "kubernetes-salt": "1.5.4-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.5",
+          "description": "1.5.5 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.5",
+            "kubernetes-salt": "1.5.5-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.6",
+          "description": "1.5.6 (beta)",
+          "apps": {
+            "kubernetes-server": "1.5.6",
+            "kubernetes-salt": "1.5.6-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.6"
+          },
+          "deprecated": true
+        },
+        {
+          "version": "1.5.7",
+          "description": "1.5.7",
+          "apps": {
+            "kubernetes-server": "1.5.7",
+            "kubernetes-salt": "1.5.7-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.7"
+          }
+        },
+        {
+          "version": "1.7.0",
+          "description": "1.7.0",
+          "apps": {
+            "kubernetes-server": "1.7.0",
+            "kubernetes-salt": "1.7.0-ac",
+            "start-kubernetes": "0.6.29",
+            "hostfacts": "1.5.7"
+          }
+        }
+      ]
+    }
+  }
+}
