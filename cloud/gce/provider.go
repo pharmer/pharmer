@@ -2,8 +2,8 @@ package gce
 
 import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/pharmer/cloud/extpoints"
 	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/extpoints"
 )
 
 func init() {

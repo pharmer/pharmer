@@ -29,23 +29,11 @@ var (
 // Adds the list of known types to apiv1.Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&PodAlert{},
-		&PodAlertList{},
-
-		&NodeAlert{},
-		&NodeAlertList{},
-
-		&ClusterAlert{},
-		&ClusterAlertList{},
+		&Alert{},
+		&AlertList{},
 	)
 	return nil
 }
 
-func (a *PodAlert) GetObjectKind() schema.ObjectKind       { return &a.TypeMeta }
-func (obj *PodAlertList) GetObjectKind() schema.ObjectKind { return &obj.TypeMeta }
-
-func (a *NodeAlert) GetObjectKind() schema.ObjectKind       { return &a.TypeMeta }
-func (obj *NodeAlertList) GetObjectKind() schema.ObjectKind { return &obj.TypeMeta }
-
-func (a *ClusterAlert) GetObjectKind() schema.ObjectKind       { return &a.TypeMeta }
-func (obj *ClusterAlertList) GetObjectKind() schema.ObjectKind { return &obj.TypeMeta }
+func (obj *Alert) GetObjectKind() schema.ObjectKind     { return &obj.TypeMeta }
+func (obj *AlertList) GetObjectKind() schema.ObjectKind { return &obj.TypeMeta }

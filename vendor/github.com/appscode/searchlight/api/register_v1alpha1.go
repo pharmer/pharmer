@@ -17,14 +17,8 @@ var (
 // Adds the list of known types to api.Scheme.
 func v1addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(V1alpha1SchemeGroupVersion,
-		&PodAlert{},
-		&PodAlertList{},
-
-		&NodeAlert{},
-		&NodeAlertList{},
-
-		&ClusterAlert{},
-		&ClusterAlertList{},
+		&Alert{},
+		&AlertList{},
 	)
 	metav1.AddToGroupVersion(scheme, V1alpha1SchemeGroupVersion)
 	return nil

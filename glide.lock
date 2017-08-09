@@ -1,5 +1,5 @@
-hash: a21ca94249f8e03085747c42cd9bc1a940d4d8a06aeb69b5b15398cc0ade4d21
-updated: 2017-08-03T15:22:38.255708462-07:00
+hash: bc52aff83e01c5d2a5091f2dcb2bc231f22a31eb1ac67fecc49ead26eccca70b
+updated: 2017-08-08T20:24:44.344486445-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -24,9 +24,12 @@ imports:
   - ssh/v1beta1
   - version
 - name: github.com/appscode/appctl
-  version: f4388c3bf8c2e1dacda926f275f83286150f8dcd
+  version: f690405dda8fe092b69c119a1568e1414e20a65d
   subpackages:
+  - pkg/config
+  - pkg/ssh
   - pkg/util
+  - pkg/util/timeutil
 - name: github.com/appscode/client
   version: 9844500890e8cf3df84b3c86ddc17c220db38af1
   subpackages:
@@ -45,7 +48,7 @@ imports:
   - h/log
   - h/mail
 - name: github.com/appscode/go
-  version: 95092d156baddb2d9aab547739669496d58ab6bd
+  version: 45732d59b2277b9c7ffdc41d2d5c07a899a20a70
   subpackages:
   - crypto/rand
   - crypto/ssh
@@ -58,6 +61,7 @@ imports:
   - runtime
   - strings
   - types
+  - version
   - wait
 - name: github.com/appscode/go-dns
   version: 3af047d24824ddfcc5d6b985e9454446a736de46
@@ -73,7 +77,7 @@ imports:
 - name: github.com/appscode/go-hetzner
   version: 2862c36e840d98476edf9f1826717d354547be6f
 - name: github.com/appscode/go-notify
-  version: 01720944acaff2cc7198e122eb0785b8e57a622c
+  version: c1f627b4151ce1f8b5b80eeab2eb94c2561af00c
   subpackages:
   - mailgun
   - smtp
@@ -85,16 +89,16 @@ imports:
   version: 60ff9c2dd53acbb2ba9c879ebef2ebae313720e2
 - name: github.com/appscode/log
   version: 68e0e42e42c01371f3950571fc87c2298a51dd8f
+  subpackages:
+  - golog
 - name: github.com/appscode/searchlight
-  version: 73da3c0cb337939b3ecd598682dc3f6e0ced77c4
+  version: a767d0d3c9401ac542c671aba9e80f8a2e4ee46c
   subpackages:
   - api
   - api/install
   - client/clientset
-  - data
-  - data/files
 - name: github.com/appscode/stash
-  version: f98d18770dcd9c6a75f009059c3cc2b51a705fc9
+  version: c4a3bfe3362f1acb1e464c07ebc39c130c1cfc11
   subpackages:
   - api
   - api/install
@@ -160,6 +164,8 @@ imports:
   - autorest/date
   - autorest/to
   - autorest/validation
+- name: github.com/bndr/gojenkins
+  version: 28a4e15c32d61985e4a9972fd8c56d29064cf353
 - name: github.com/cenkalti/backoff
   version: 61153c768f31ee5f130071d08fc82b85208528de
 - name: github.com/cloudflare/cfssl
@@ -190,10 +196,28 @@ imports:
   - signer/universal
 - name: github.com/cloudflare/cloudflare-go
   version: ba610b87e64f5e99e8ddd614e50669c66c2ec9b5
+- name: github.com/coreos/go-oidc
+  version: be73733bb8cc830d0205609b95d125215f8e9c70
+  subpackages:
+  - http
+  - jose
+  - key
+  - oauth2
+  - oidc
+- name: github.com/coreos/pkg
+  version: fa29b1d70f0beaddd4c7021607cc3c3be8ce94b8
+  subpackages:
+  - health
+  - httputil
+  - timeutil
+- name: github.com/cpuguy83/go-md2man
+  version: a65d4d2de4d5f7c74868dfa9b202a3c8be315aaa
+  subpackages:
+  - md2man
 - name: github.com/creack/goselect
   version: 40085cf5fd629ccd88dc328895f1f137d09a1de4
 - name: github.com/davecgh/go-spew
-  version: 3e6e67c4dcea3ac2f25fd4731abc0e1deaf36216
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
 - name: github.com/dgrijalva/jwt-go
@@ -244,7 +268,7 @@ imports:
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
 - name: github.com/go-ini/ini
-  version: d3de07a94d22b4a0972deb4b96d790c2c0ce8333
+  version: 2e44421e256d82ebbf3d4d4fcabe8930b905eff3
 - name: github.com/go-openapi/jsonpointer
   version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
 - name: github.com/go-openapi/jsonreference
@@ -304,7 +328,7 @@ imports:
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/JamesClonk/vultr
-  version: 5ace2a5cf43f0a397b06abb3afa32adbbfa171e5
+  version: 2fd0705ce648e602e6c9c57329a174270a4f6688
   subpackages:
   - lib
 - name: github.com/jaytaylor/html2text
@@ -316,12 +340,14 @@ imports:
   repo: https://github.com/jmoiron/sqlx
   subpackages:
   - reflectx
+- name: github.com/jonboulle/clockwork
+  version: 72f9bd7c4e0c2a40055ab3d0f09654f730cce982
 - name: github.com/jpillora/go-ogle-analytics
   version: 14b04e0594ef6a9fd943363b135656f0ec8c9d0e
 - name: github.com/juju/ratelimit
   version: 77ed1c8a01217656d2080ad51981f6e99adaa177
 - name: github.com/k8sdb/apimachinery
-  version: e2eda9b6cf368c5a7f6f8bb6fda9b56a2b9ef76f
+  version: e76872e7e37a2cb6f07b542331bbf00761725c36
   subpackages:
   - api
   - api/install
@@ -373,16 +399,20 @@ imports:
   version: 2d205ac6ec17a839a94bdbfd16d2fa6c6dada2e0
   subpackages:
   - fuzzy
+- name: github.com/russross/blackfriday
+  version: 300106c228d52c8941d4b3de6054a6062a86dda3
 - name: github.com/scaleway/scaleway-cli
   version: 4c4502fd13230d91b52d99a6069cffffea536a5e
   subpackages:
   - pkg/api
   - pkg/sshcommand
   - pkg/utils
+- name: github.com/shurcooL/sanitized_anchor_name
+  version: 10ef21a441db47d8b13ebcc5fd2310f636973c77
 - name: github.com/Sirupsen/logrus
-  version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
+  version: 51fe59aca108dc5680109e7b2051cbdcfa5a253c
 - name: github.com/softlayer/softlayer-go
-  version: 16162b803c70c88bda3ba343e480a1c91ed28ae9
+  version: 5e1c8cccc730778a87ca5a0c5348fcfddc02cee2
   subpackages:
   - config
   - datatypes
@@ -391,6 +421,8 @@ imports:
   - sl
 - name: github.com/spf13/cobra
   version: b26b538f693051ac6518e65672de3144ce3fbedc
+  subpackages:
+  - doc
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: github.com/ssor/bom
@@ -530,7 +562,7 @@ imports:
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/olivere/elastic.v3
-  version: 060365a7e27c56c938b234824ef7f9a3a7834b99
+  version: eaecbad7a83e6b60f131825553e5eb7fd5a50b41
   subpackages:
   - backoff
   - uritemplates
@@ -596,6 +628,7 @@ imports:
   repo: https://github.com/appscode/client-go.git
   subpackages:
   - discovery
+  - dynamic
   - kubernetes
   - kubernetes/scheme
   - kubernetes/typed/apps/v1beta1
@@ -661,8 +694,12 @@ imports:
   - pkg/util
   - pkg/util/parsers
   - pkg/version
+  - plugin/pkg/client/auth
+  - plugin/pkg/client/auth/gcp
+  - plugin/pkg/client/auth/oidc
   - rest
   - rest/watch
+  - third_party/forked/golang/template
   - tools/auth
   - tools/clientcmd
   - tools/clientcmd/api
@@ -675,6 +712,7 @@ imports:
   - util/flowcontrol
   - util/homedir
   - util/integer
+  - util/jsonpath
 - name: k8s.io/kubernetes
   version: d74e09bb4e4e7026f45becbed8310665ddcb8514
   subpackages:
