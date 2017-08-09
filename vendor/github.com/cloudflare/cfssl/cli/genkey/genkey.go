@@ -35,7 +35,7 @@ func genkeyMain(args []string, c cli.Config) (err error) {
 	}
 
 	req := csr.CertificateRequest{
-		KeyRequest: &csr.BasicKeyRequest{A: "rsa", S: 2048},
+		KeyRequest: csr.NewBasicKeyRequest(),
 	}
 	err = json.Unmarshal(csrFileBytes, &req)
 	if err != nil {

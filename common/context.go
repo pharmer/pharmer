@@ -3,8 +3,8 @@ package common
 import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
-	"github.com/appscode/pharmer/cloud/extpoints"
 	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/extpoints"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
 )
