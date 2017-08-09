@@ -10,7 +10,7 @@ import (
 	stringutil "github.com/appscode/go/strings"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/common"
+	"github.com/appscode/pharmer/common"
 	"github.com/appscode/pharmer/errorhandlers"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"

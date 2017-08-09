@@ -9,7 +9,7 @@ import (
 	"github.com/appscode/errors"
 	hc "github.com/appscode/go-hetzner"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/common"
+	"github.com/appscode/pharmer/common"
 	"github.com/appscode/pharmer/errorhandlers"
 	"github.com/appscode/pharmer/storage"
 )

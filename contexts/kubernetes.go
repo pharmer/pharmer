@@ -374,7 +374,7 @@ func (ctx *ClusterContext) NewScriptOptions() *ScriptOptions {
 
 func (ctx *ClusterContext) NewInstances(matches func(i *KubernetesInstance, md *InstanceMetadata) bool) (*ClusterInstances, error) {
 	if matches == nil {
-		return nil, errors.New(`Use "github.com/appscode/pharmer/cloud/common".NewInstances`).Err()
+		return nil, errors.New(`Use "github.com/appscode/pharmer/common".NewInstances`).Err()
 	}
 	return &ClusterInstances{
 		context:        ctx.context,

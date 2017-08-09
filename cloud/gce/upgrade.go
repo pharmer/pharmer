@@ -10,7 +10,7 @@ import (
 	"github.com/appscode/errors"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/common"
+	"github.com/appscode/pharmer/common"
 	"github.com/appscode/pharmer/system"
 	compute "google.golang.org/api/compute/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

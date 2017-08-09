@@ -11,7 +11,7 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/common"
+	"github.com/appscode/pharmer/common"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
