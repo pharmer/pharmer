@@ -1,5 +1,5 @@
 hash: bc52aff83e01c5d2a5091f2dcb2bc231f22a31eb1ac67fecc49ead26eccca70b
-updated: 2017-08-08T20:24:44.344486445-07:00
+updated: 2017-08-09T10:09:47.149742775-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -386,7 +386,7 @@ imports:
 - name: github.com/olekukonko/tablewriter
   version: cca8bbc0798408af109aaaa239cbd2634846b340
 - name: github.com/packethost/packngo
-  version: 8ff1de745a8a4fdc5323ffd9ac2bc55195ff671e
+  version: b4b9bd2ea3ad2ceb39ee86287b7f5d18928ef957
 - name: github.com/pkg/errors
   version: a22138067af1c4942683050411a841ade67fe1eb
 - name: github.com/PuerkitoBio/purell
@@ -722,4 +722,12 @@ imports:
   - pkg/util/exec
   - pkg/util/interrupt
   - pkg/util/term
-testImports: []
+testImports:
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert

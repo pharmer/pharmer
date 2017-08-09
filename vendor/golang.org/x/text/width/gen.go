@@ -20,14 +20,14 @@ import (
 	"golang.org/x/text/internal/triegen"
 )
 
-// See gen_lib.go for flags.
+// See gen_common.go for flags.
 
 func main() {
 	gen.Init()
 	genTables()
 	genTests()
 	gen.Repackage("gen_trieval.go", "trieval.go", "width")
-	gen.Repackage("gen_lib.go", "common_test.go", "width")
+	gen.Repackage("gen_common.go", "common_test.go", "width")
 }
 
 func genTables() {

@@ -61,7 +61,7 @@ var (
 var All []encoding.Encoding = listAll
 
 // TODO: implement these encodings, in order of importance.
-// ASCII, ISO8859_1:       Rather lib. Close to Windows 1252.
+// ASCII, ISO8859_1:       Rather common. Close to Windows 1252.
 // ISO8859_9:              Close to Windows 1254.
 
 // utf8Enc holds a rune's UTF-8 encoding in data[:len].
