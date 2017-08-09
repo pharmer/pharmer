@@ -17,3 +17,4 @@ kluster.json
 .vscode/
 hack/**/.env
 .idea/
+hack/credential/**
