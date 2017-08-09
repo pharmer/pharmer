@@ -28,7 +28,6 @@ type InstanceGroup struct {
 	UseSpotInstances bool   `json:"USE_SPOT_INSTANCES"`
 }
 
-// Embed this contexts in actual providers.
 // Embed this context in actual providers.
 type ClusterContext struct {
 	api.KubeEnv
