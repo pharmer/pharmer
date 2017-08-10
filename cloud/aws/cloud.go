@@ -63,6 +63,6 @@ func (conn *cloudConnector) detectJessieImage() error {
 	}
 	conn.ctx.InstanceImage = *r1.Images[0].ImageId
 	conn.ctx.RootDeviceName = *r1.Images[0].RootDeviceName
-	conn.ctx.Logger().Infof("Debain image with %v for %v detected", conn.ctx.InstanceImage, conn.ctx.RootDeviceName)
+	conn.ctx.Logger.Infof("Debain image with %v for %v detected", conn.ctx.InstanceImage, conn.ctx.RootDeviceName)
 	return nil
 }

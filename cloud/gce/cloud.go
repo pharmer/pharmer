@@ -70,7 +70,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 			}
 		}
 
-		conn.ctx.Logger().Infof("Creating %v image on %v project", containerOsImage, conn.ctx.Project)
+		conn.ctx.Logger.Infof("Creating %v image on %v project", containerOsImage, conn.ctx.Project)
 		r, err := conn.computeService.Images.Insert(conn.ctx.Project, &compute.Image{
 			Name:       containerOsImage,
 			SourceDisk: fmt.Sprintf("projects/%v/zones/%v/disks/%v", conn.ctx.Project, conn.ctx.Zone, containerOsImage),
@@ -82,7 +82,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 		if err != nil {
 			return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
-		conn.ctx.Logger().Infof("Image %v created", containerOsImage)
+		conn.ctx.Logger.Infof("Image %v created", containerOsImage)
 		for {
 			fmt.Print("Pending image creation: ")
 			if r, err := conn.computeService.Images.Get(conn.ctx.Project, containerOsImage).Do(); err != nil || r.Status != "READY" {
@@ -98,7 +98,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 			return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
 	}
-	conn.ctx.Logger().Infof("Image %v found on project %v", containerOsImage, conn.ctx.Project)
+	conn.ctx.Logger.Infof("Image %v found on project %v", containerOsImage, conn.ctx.Project)
 	return containerOsImage, nil
 }
 
@@ -176,14 +176,14 @@ update-grub`
 			},
 		},
 	}
-	conn.ctx.Logger().Info("Creating instance for disk...")
+	conn.ctx.Logger.Info("Creating instance for disk...")
 	r, err := conn.computeService.Instances.Insert(conn.ctx.Project, conn.ctx.Zone, tempInstance).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	conn.waitForZoneOperation(r.Name)
 	time.Sleep(1 * time.Minute)
-	conn.ctx.Logger().Info("Restarting instance ...")
+	conn.ctx.Logger.Info("Restarting instance ...")
 	r, err = conn.computeService.Instances.Reset(conn.ctx.Project, conn.ctx.Zone, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -198,7 +198,7 @@ update-grub`
 }
 
 func (conn *cloudConnector) deleteInstance(name string) error {
-	conn.ctx.Logger().Info("Deleting instance...")
+	conn.ctx.Logger.Info("Deleting instance...")
 	r, err := conn.computeService.Instances.Delete(conn.ctx.Project, conn.ctx.Zone, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -210,16 +210,16 @@ func (conn *cloudConnector) deleteInstance(name string) error {
 func (conn *cloudConnector) waitForGlobalOperation(operation string) error {
 	attempt := 0
 	for {
-		conn.ctx.Logger().Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
+		conn.ctx.Logger.Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
 		r1, err := conn.computeService.GlobalOperations.Get(conn.ctx.Project, operation).Do()
-		conn.ctx.Logger().Debug("Retrieved operation", r1, err)
+		conn.ctx.Logger.Debug("Retrieved operation", r1, err)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
 		if r1.Status == "DONE" {
 			return nil
 		}
-		conn.ctx.Logger().Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
+		conn.ctx.Logger.Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
 		attempt++
 		time.Sleep(5 * time.Second)
 		if attempt > 120 {
@@ -232,9 +232,9 @@ func (conn *cloudConnector) waitForGlobalOperation(operation string) error {
 func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 	attempt := 0
 	for {
-		conn.ctx.Logger().Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
+		conn.ctx.Logger.Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
 		r1, err := conn.computeService.RegionOperations.Get(conn.ctx.Project, conn.ctx.Region, operation).Do()
-		conn.ctx.Logger().Debug("Retrieved operation", r1, err)
+		conn.ctx.Logger.Debug("Retrieved operation", r1, err)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
@@ -242,7 +242,7 @@ func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 		if r1.Status == "DONE" {
 			return nil
 		}
-		conn.ctx.Logger().Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
+		conn.ctx.Logger.Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
 		attempt++
 		time.Sleep(5 * time.Second)
 		if attempt > 120 {
@@ -255,9 +255,9 @@ func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 	attempt := 0
 	for {
-		conn.ctx.Logger().Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
+		conn.ctx.Logger.Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
 		r1, err := conn.computeService.ZoneOperations.Get(conn.ctx.Project, conn.ctx.Zone, operation).Do()
-		conn.ctx.Logger().Debug("Retrieved operation", r1, err)
+		conn.ctx.Logger.Debug("Retrieved operation", r1, err)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
@@ -265,7 +265,7 @@ func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 		if r1.Status == "DONE" {
 			return nil //TODO check return value
 		}
-		conn.ctx.Logger().Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
+		conn.ctx.Logger.Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
 		attempt++
 		time.Sleep(5 * time.Second)
 		if attempt > 120 {

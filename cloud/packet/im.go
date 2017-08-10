@@ -70,7 +70,7 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 		UserData:     startupScript,
 		Tags:         []string{im.ctx.Name},
 	})
-	im.ctx.Logger().Infof("Instance %v created", name)
+	im.ctx.Logger.Infof("Instance %v created", name)
 	return device, err
 }
 
@@ -160,7 +160,7 @@ func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*
 
 // reboot does not seem to run /etc/rc.local
 func (im *instanceManager) reboot(id string) error {
-	im.ctx.Logger().Infof("Rebooting instance %v", id)
+	im.ctx.Logger.Infof("Rebooting instance %v", id)
 	_, err := im.conn.client.Devices.Reboot(id)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()

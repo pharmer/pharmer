@@ -7,7 +7,6 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/contexts"
-	"github.com/appscode/pharmer/system"
 	"github.com/cloudflare/cfssl/cli"
 	"github.com/cloudflare/cfssl/cli/genkey"
 	"github.com/cloudflare/cfssl/cli/sign"
@@ -22,7 +21,7 @@ func CreateCA(ctx *contexts.ClusterContext) (string, []byte, []byte, error) {
 	var d time.Duration
 	d = 10 * 365 * 24 * time.Hour
 	certReq := &csr.CertificateRequest{
-		CN: system.ClusterCAName(ctx.Auth.Namespace, ctx.Name),
+		CN: "pharmer",
 		Hosts: []string{
 			"127.0.0.1",
 		},

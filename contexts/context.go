@@ -7,7 +7,15 @@ import (
 
 type context struct {
 	Store  storage.Storage
-	logger Logger
+	Logger Logger
+	Extra  DomainInfo
+}
+
+// string, bool
+type DomainInfo interface {
+	Domain(cluster string) string
+	ExternalDomain(cluster string) string
+	InternalDomain(cluster string) string
 }
 
 type Logger interface {
@@ -20,18 +28,14 @@ type Logger interface {
 	Debugf(format string, args ...interface{})
 }
 
-func (c *context) Logger() Logger {
-	return c.logger
-}
-
 func NewContext() *context {
 	ctx := &context{
 		Store: nil,
 	}
-	ctx.logger = log.New(ctx)
+	ctx.Logger = log.New(ctx)
 	return ctx
 }
 
 func (c *context) String() string {
-	return "[self-hosted]"
+	return "[maverick]"
 }

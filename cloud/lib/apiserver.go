@@ -21,47 +21,47 @@ import (
 )
 
 func EnsureARecord(ctx *contexts.ClusterContext, master *contexts.KubernetesInstance) error {
-	clusterDomain := system.ClusterDomain(ctx.Auth.Namespace, ctx.Name)
+	clusterDomain := ctx.Extra.Domain(ctx.Name)
 	for _, ip := range system.Config.Compass.IPs {
 		if err := ctx.DNSProvider.EnsureARecord(clusterDomain, ip); err != nil {
 			return err
 		}
 	}
-	ctx.Logger().Infof("Cluster apps A record %v added", clusterDomain)
-	externalDomain := system.ClusterExternalDomain(ctx.Auth.Namespace, ctx.Name)
+	ctx.Logger.Infof("Cluster apps A record %v added", clusterDomain)
+	externalDomain := ctx.Extra.ExternalDomain(ctx.Name)
 	if err := ctx.DNSProvider.EnsureARecord(externalDomain, master.ExternalIP); err != nil {
 		return err
 	}
-	ctx.Logger().Infof("External A record %v added", externalDomain)
-	internalDomain := system.ClusterInternalDomain(ctx.Auth.Namespace, ctx.Name)
+	ctx.Logger.Infof("External A record %v added", externalDomain)
+	internalDomain := ctx.Extra.InternalDomain(ctx.Name)
 	if err := ctx.DNSProvider.EnsureARecord(internalDomain, master.InternalIP); err != nil {
 		return err
 	}
-	ctx.Logger().Infof("Internal A record %v added", internalDomain)
+	ctx.Logger.Infof("Internal A record %v added", internalDomain)
 	return nil
 }
 
 func DeleteARecords(ctx *contexts.ClusterContext) error {
-	clusterDomain := system.ClusterDomain(ctx.Auth.Namespace, ctx.Name)
+	clusterDomain := ctx.Extra.Domain(ctx.Name)
 	if err := ctx.DNSProvider.DeleteARecords(clusterDomain); err == nil {
-		ctx.Logger().Infof("Cluster apps A record %v deleted", clusterDomain)
+		ctx.Logger.Infof("Cluster apps A record %v deleted", clusterDomain)
 	}
 
-	externalDomain := system.ClusterExternalDomain(ctx.Auth.Namespace, ctx.Name)
+	externalDomain := ctx.Extra.ExternalDomain(ctx.Name)
 	if err := ctx.DNSProvider.DeleteARecords(externalDomain); err == nil {
-		ctx.Logger().Infof("External A record %v deleted", externalDomain)
+		ctx.Logger.Infof("External A record %v deleted", externalDomain)
 	}
 
-	internalDomain := system.ClusterInternalDomain(ctx.Auth.Namespace, ctx.Name)
+	internalDomain := ctx.Extra.InternalDomain(ctx.Name)
 	if err := ctx.DNSProvider.DeleteARecords(internalDomain); err == nil {
-		ctx.Logger().Infof("Internal A record %v deleted", internalDomain)
+		ctx.Logger.Infof("Internal A record %v deleted", internalDomain)
 	}
 
 	return nil
 }
 
 func EnsureDnsIPLookup(ctx *contexts.ClusterContext) error {
-	externalDomain := system.ClusterExternalDomain(ctx.Auth.Namespace, ctx.Name)
+	externalDomain := ctx.Extra.ExternalDomain(ctx.Name)
 	attempt := 0
 	for attempt < 120 {
 		ips, err := net.LookupIP(externalDomain)
@@ -69,12 +69,12 @@ func EnsureDnsIPLookup(ctx *contexts.ClusterContext) error {
 			return nil
 		}
 
-		ctx.Logger().Infof("Verifying external DNS %v ... attempt no. %v", externalDomain, attempt)
+		ctx.Logger.Infof("Verifying external DNS %v ... attempt no. %v", externalDomain, attempt)
 		time.Sleep(time.Duration(30) * time.Second)
 		attempt++
 	}
 
-	internalDomain := system.ClusterInternalDomain(ctx.Auth.Namespace, ctx.Name)
+	internalDomain := ctx.Extra.InternalDomain(ctx.Name)
 	attempt = 0
 	for attempt < 120 {
 		ips, err := net.LookupIP(internalDomain)
@@ -82,7 +82,7 @@ func EnsureDnsIPLookup(ctx *contexts.ClusterContext) error {
 			return nil
 		}
 
-		ctx.Logger().Infof("Verifying internal DNS %v .. attempt no. %v", internalDomain, attempt)
+		ctx.Logger.Infof("Verifying internal DNS %v .. attempt no. %v", internalDomain, attempt)
 		time.Sleep(time.Duration(30) * time.Second)
 		attempt++
 	}
@@ -117,13 +117,13 @@ func ProbeKubeAPI(ctx *contexts.ClusterContext) error {
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", ctx.KubeletToken))
 	attempt := 0
 	// try for 30 mins
-	ctx.Logger().Info("Checking Api")
+	ctx.Logger.Info("Checking Api")
 	for attempt < 40 {
-		ctx.Logger().Infof("Attempt %v: probing kubernetes api for cluster %v ...", attempt, ctx.Name)
+		ctx.Logger.Infof("Attempt %v: probing kubernetes api for cluster %v ...", attempt, ctx.Name)
 		_, err := client.Do(req)
 		fmt.Print("=")
 		if err == nil {
-			ctx.Logger().Infof("Successfully connected to kubernetes api for cluster %v", ctx.Name)
+			ctx.Logger.Infof("Successfully connected to kubernetes api for cluster %v", ctx.Name)
 			return nil
 		}
 		attempt++
@@ -154,7 +154,7 @@ func CheckComponentStatuses(ctx *contexts.ClusterContext) error {
 		}
 		return nil
 	}, backoff.NewExponentialBackOff())
-	ctx.Logger().Info("Basic componenet status are ok")
+	ctx.Logger.Info("Basic componenet status are ok")
 	return nil
 }
 
@@ -178,7 +178,7 @@ func WaitForReadyNodes(ctx *contexts.ClusterContext, newNode ...int64) error {
 		adjust = newNode[0]
 	}
 	totalNode := ctx.NodeCount() + adjust
-	ctx.Logger().Debug("Number of Nodes = ", totalNode, "adjust = ", adjust)
+	ctx.Logger.Debug("Number of Nodes = ", totalNode, "adjust = ", adjust)
 	attempt := 0
 	for attempt < 30 {
 		isReady := 0
@@ -201,11 +201,11 @@ func WaitForReadyNodes(ctx *contexts.ClusterContext, newNode ...int64) error {
 		}
 		table.SetBorder(true)
 		if isReady == int(totalNode) {
-			ctx.Logger().Info("All nodes are ready")
+			ctx.Logger.Info("All nodes are ready")
 			table.Render()
 			return nil
 		}
-		ctx.Logger().Infof("%v nodes ready, waiting...", isReady)
+		ctx.Logger.Infof("%v nodes ready, waiting...", isReady)
 		attempt++
 		time.Sleep(time.Duration(60) * time.Second)
 	}

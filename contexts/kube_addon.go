@@ -5,7 +5,6 @@ import (
 
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/contexts/auth"
-	"github.com/appscode/pharmer/system"
 	grpcContext "golang.org/x/net/context"
 )
 
@@ -142,7 +141,7 @@ func NewKubeAddonContext(c grpcContext.Context, uid string) (*KubeAddonContext, 
 // This is a onetime initializer method.
 func (ctx *KubeAddonContext) DetectApiServerURL() {
 	if ctx.ApiServerUrl == "" {
-		host := system.ClusterExternalDomain(ctx.Auth.Namespace, ctx.Name)
+		host := ctx.Extra.ExternalDomain(ctx.Name)
 		if ctx.MasterReservedIP != "" {
 			host = ctx.MasterReservedIP
 		}

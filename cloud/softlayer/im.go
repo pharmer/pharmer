@@ -87,7 +87,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 	}
 	vGuestTemplate := datatypes.Virtual_Guest{
 		Hostname:                     types.StringP(name),
-		Domain:                       types.StringP(system.ClusterExternalDomain(im.ctx.Auth.Namespace, im.ctx.Name)),
+		Domain:                       types.StringP(im.ctx.Extra.ExternalDomain(im.ctx.Name)),
 		MaxMemory:                    types.IntP(ram),
 		StartCpus:                    types.IntP(cpu),
 		Datacenter:                   &datatypes.Location{Name: types.StringP(im.ctx.Zone)},
@@ -118,7 +118,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		im.ctx.StatusCause = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger().Infof("Softlayer instance %v created", name)
+	im.ctx.Logger.Infof("Softlayer instance %v created", name)
 	return *vGuest.Id, nil
 }
 

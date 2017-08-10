@@ -34,8 +34,7 @@ type ClusterContext struct {
 	api.CommonNonEnv
 
 	// common
-	*context             `json:"-"`
-	*NotificationContext `json:"-"`
+	*context `json:"-"`
 
 	DNSProvider dns.Provider `json:"-"`
 	// request data. This is needed to give consistent access to these values for all commands.
@@ -267,12 +266,12 @@ func (ctx *ClusterContext) KubernetesClusterIP() string {
 // This is a onetime initializer method.
 func (ctx *ClusterContext) DetectApiServerURL() {
 	if ctx.ApiServerUrl == "" {
-		host := system.ClusterExternalDomain(ctx.Auth.Namespace, ctx.Name)
+		host := ctx.Extra.ExternalDomain(ctx.Name)
 		if ctx.MasterReservedIP != "" {
 			host = ctx.MasterReservedIP
 		}
 		ctx.ApiServerUrl = fmt.Sprintf("https://%v:6443", host)
-		ctx.Logger().Infoln(fmt.Sprintf("Cluster %v 's api server url: %v\n", ctx.Name, ctx.ApiServerUrl))
+		ctx.Logger.Infoln(fmt.Sprintf("Cluster %v 's api server url: %v\n", ctx.Name, ctx.ApiServerUrl))
 	}
 }
 
@@ -362,7 +361,6 @@ func (ctx *ClusterContext) NewScriptOptions() *ScriptOptions {
 
 		Name:               ctx.Name,
 		PHID:               ctx.PHID,
-		Namespace:          ctx.Auth.Namespace,
 		StartupConfigToken: ctx.StartupConfigToken,
 
 		ContextVersion: ctx.ContextVersion,

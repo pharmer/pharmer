@@ -53,7 +53,7 @@ func (cluster *kubeProvider) MatchInstance(i *contexts.KubernetesInstance, md *c
 func runFakeJob(ctx *contexts.ClusterContext, requestType string) {
 	ctx.Notifier.Notify("only_notify", fmt.Sprintf("starting %v job", requestType))
 	for i := 1; i <= 10; i++ {
-		ctx.Logger().Info(fmt.Sprint("Job completed: ", i*10, "%"))
+		ctx.Logger.Info(fmt.Sprint("Job completed: ", i*10, "%"))
 		time.Sleep(time.Second * 3)
 	}
 }

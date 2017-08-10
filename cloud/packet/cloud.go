@@ -29,7 +29,7 @@ func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
 func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 	attempt := 0
 	for true {
-		conn.ctx.Logger().Infof("Checking status of instance %v", deviceID)
+		conn.ctx.Logger.Infof("Checking status of instance %v", deviceID)
 		s, _, err := conn.client.Devices.Get(deviceID)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -37,7 +37,7 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 		if strings.ToLower(s.State) == status {
 			break
 		}
-		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", s.Hostname, s.ID, s.State)
+		conn.ctx.Logger.Infof("Instance %v (%v) is %v, waiting...", s.Hostname, s.ID, s.State)
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

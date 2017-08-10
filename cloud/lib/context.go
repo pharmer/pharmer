@@ -6,7 +6,6 @@ import (
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/extpoints"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 )
 
 // This is any provider != aws, azure, gce
@@ -16,8 +15,8 @@ func LoadDefaultGenericContext(ctx *contexts.ClusterContext) error {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
 
-	ctx.ClusterExternalDomain = system.ClusterExternalDomain(ctx.Auth.Namespace, ctx.Name)
-	ctx.ClusterInternalDomain = system.ClusterInternalDomain(ctx.Auth.Namespace, ctx.Name)
+	ctx.ClusterExternalDomain = ctx.Extra.ExternalDomain(ctx.Name)
+	ctx.ClusterInternalDomain = ctx.Extra.InternalDomain(ctx.Name)
 
 	ctx.Status = storage.KubernetesStatus_Pending
 	ctx.OS = "debian"

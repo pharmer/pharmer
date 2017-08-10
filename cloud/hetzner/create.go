@@ -36,9 +36,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		cm.ctx.Save()
 		cm.ins.Save()
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
+		cm.ctx.Logger.Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
 		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
+			cm.ctx.Logger.Infof("Cluster %v is deleting", cm.ctx.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.ctx.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -63,7 +63,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	// -------------------------------------------------------------------ASSETS
 	im := &instanceManager{ctx: cm.ctx, conn: cm.conn}
 
-	cm.ctx.Logger().Info("Creating master instance")
+	cm.ctx.Logger.Info("Creating master instance")
 	masterTx, err := im.createInstance(system.RoleKubernetesMaster, cm.ctx.MasterSKU)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
@@ -125,12 +125,12 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	//cluster.ctx.Logger().Info(">>>>>>>>>>>>>>>>>>>>>>> Rebooting master instance")
+	//cluster.ctx.Logger.Info(">>>>>>>>>>>>>>>>>>>>>>> Rebooting master instance")
 	//if err = cluster.reboot(masterDroplet.ID); err != nil {
 	//	cluster.ctx.StatusCause = err.Error()
 	//	return errors.FromErr(err).WithContext(cluster.ctx).Err()
 	//}
-	//cluster.ctx.Logger().Info(">>>>>>>>>>>>>>>>>>>>>>> Rebooted master instance")
+	//cluster.ctx.Logger.Info(">>>>>>>>>>>>>>>>>>>>>>> Rebooted master instance")
 
 	// start nodes
 	for sku, count := range req.NodeSet {
@@ -178,7 +178,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 	}
 
-	cm.ctx.Logger().Info("Waiting for cluster initialization")
+	cm.ctx.Logger.Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
 	if err := lib.EnsureDnsIPLookup(cm.ctx); err != nil {
@@ -211,7 +211,7 @@ func (cm *clusterManager) importPublicKey() error {
 		Name: cm.ctx.Name,
 		Data: string(cm.ctx.SSHKey.PublicKey),
 	})
-	cm.ctx.Logger().Infof("New ssh key with fingerprint %v created", cm.ctx.SSHKey.OpensshFingerprint)
+	cm.ctx.Logger.Infof("New ssh key with fingerprint %v created", cm.ctx.SSHKey.OpensshFingerprint)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

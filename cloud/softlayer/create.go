@@ -37,9 +37,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		cm.ctx.Save()
 		cm.ins.Save()
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
+		cm.ctx.Logger.Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
 		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
+			cm.ctx.Logger.Infof("Cluster %v is deleting", cm.ctx.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.ctx.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -95,12 +95,12 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 
 	time.Sleep(60 * time.Second)
 
-	cm.ctx.Logger().Info("Rebooting master instance")
+	cm.ctx.Logger.Info("Rebooting master instance")
 	if _, err = im.reboot(masterId); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Info("Rebooted master instance")
+	cm.ctx.Logger.Info("Rebooted master instance")
 
 	// start nodes
 	for _, ng := range req.NodeGroups {
@@ -123,7 +123,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 	}
 
-	cm.ctx.Logger().Info("Waiting for cluster initialization")
+	cm.ctx.Logger.Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
 	if err := lib.EnsureDnsIPLookup(cm.ctx); err != nil {
@@ -152,7 +152,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 }
 
 func (cm *clusterManager) importPublicKey() error {
-	cm.ctx.Logger().Debugln("Adding SSH public key")
+	cm.ctx.Logger.Debugln("Adding SSH public key")
 
 	securitySSHTemplate := datatypes.Security_Ssh_Key{
 		Label: types.StringP(cm.ctx.Name),
@@ -165,6 +165,6 @@ func (cm *clusterManager) importPublicKey() error {
 		cm.ctx.SSHKeyExternalID = strconv.Itoa(*sk.Id)
 		return err
 	}, backoff.NewExponentialBackOff())
-	cm.ctx.Logger().Debugf("Created new ssh key with fingerprint=%v", cm.ctx.SSHKey.OpensshFingerprint)
+	cm.ctx.Logger.Debugf("Created new ssh key with fingerprint=%v", cm.ctx.SSHKey.OpensshFingerprint)
 	return nil
 }

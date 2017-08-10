@@ -43,8 +43,6 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.ctx.SSHKeyPHID = phid.NewSSHKey()
 	lib.GenClusterTokens(cm.ctx)
 
-	cm.ctx.AppsCodeNamespace = cm.ctx.Auth.Namespace
-
 	return nil
 }
 

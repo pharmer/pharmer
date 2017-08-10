@@ -76,7 +76,7 @@ func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, e
 
 	}
 	return false, nil
-	//im.ctx.Logger().Infof("Found virtual machine %v", vm)
+	//im.ctx.Logger.Infof("Found virtual machine %v", vm)
 }
 
 func (igm *InstanceGroupManager) listInstances(sku string) ([]*contexts.KubernetesInstance, error) {

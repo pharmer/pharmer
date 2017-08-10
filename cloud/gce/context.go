@@ -92,8 +92,6 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 
 	lib.GenClusterTokens(cm.ctx)
 
-	cm.ctx.AppsCodeNamespace = cm.ctx.Auth.Namespace
-
 	cm.ctx.GCECloudConfig = &api.GCECloudConfig{
 		// TokenURL           :
 		// TokenBody          :
@@ -119,8 +117,8 @@ func (cm *clusterManager) updateContext() error {
 		Multizone:          bool(cm.ctx.Multizone),
 	}
 	cm.ctx.CloudConfigPath = "/etc/gce.conf"
-	cm.ctx.ClusterExternalDomain = system.ClusterExternalDomain(cm.ctx.Auth.Namespace, cm.ctx.Name)
-	cm.ctx.ClusterInternalDomain = system.ClusterInternalDomain(cm.ctx.Auth.Namespace, cm.ctx.Name)
+	cm.ctx.ClusterExternalDomain = cm.ctx.Extra.ExternalDomain(cm.ctx.Name)
+	cm.ctx.ClusterInternalDomain = cm.ctx.Extra.InternalDomain(cm.ctx.Name)
 	if cm.ctx.AppsCodeClusterCreator == "" {
 		cm.ctx.AppsCodeClusterCreator = cm.ctx.Auth.User.UserName
 	}
@@ -135,8 +133,8 @@ func (cm *clusterManager) LoadDefaultContext() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.ClusterExternalDomain = system.ClusterExternalDomain(cm.ctx.Auth.Namespace, cm.ctx.Name)
-	cm.ctx.ClusterInternalDomain = system.ClusterInternalDomain(cm.ctx.Auth.Namespace, cm.ctx.Name)
+	cm.ctx.ClusterExternalDomain = cm.ctx.Extra.ExternalDomain(cm.ctx.Name)
+	cm.ctx.ClusterInternalDomain = cm.ctx.Extra.InternalDomain(cm.ctx.Name)
 
 	cm.ctx.Status = storage.KubernetesStatus_Pending
 	cm.ctx.OS = "debian"
@@ -245,9 +243,9 @@ func (cm *clusterManager) UploadStartupConfig() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Logger().Debug("Created bucket %s", cm.ctx.BucketName)
+		cm.ctx.Logger.Debug("Created bucket %s", cm.ctx.BucketName)
 	} else {
-		cm.ctx.Logger().Debug("Bucket %s already exists", cm.ctx.BucketName)
+		cm.ctx.Logger.Debug("Bucket %s already exists", cm.ctx.BucketName)
 	}
 
 	{
