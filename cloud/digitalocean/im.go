@@ -94,8 +94,8 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 		}
 	}
 	droplet, resp, err := im.conn.client.Droplets.Create(context.TODO(), req)
-	im.ctx.Logger().Debugln("do response", resp, " errors", err)
-	im.ctx.Logger().Infof("Droplet %v created", droplet.Name)
+	im.ctx.Logger.Debugln("do response", resp, " errors", err)
+	im.ctx.Logger.Infof("Droplet %v created", droplet.Name)
 	return droplet, err
 }
 
@@ -120,7 +120,7 @@ func (im *instanceManager) applyTag(dropletID int) error {
 			},
 		},
 	})
-	im.ctx.Logger().Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+im.ctx.Name, dropletID)
+	im.ctx.Logger.Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+im.ctx.Name, dropletID)
 	return err
 }
 
@@ -129,9 +129,9 @@ func (im *instanceManager) assignReservedIP(ip string, dropletID int) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger().Debugln("do response", resp, " errors", err)
-	im.ctx.Logger().Debug("Created droplet with name", action.String())
-	im.ctx.Logger().Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
+	im.ctx.Logger.Debugln("do response", resp, " errors", err)
+	im.ctx.Logger.Debug("Created droplet with name", action.String())
+	im.ctx.Logger.Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
 	return nil
 }
 
@@ -183,12 +183,12 @@ func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*c
 
 // reboot does not seem to run /etc/rc.local
 func (im *instanceManager) reboot(id int) error {
-	im.ctx.Logger().Infof("Rebooting instance %v", id)
+	im.ctx.Logger.Infof("Rebooting instance %v", id)
 	action, _, err := im.conn.client.DropletActions.Reboot(context.TODO(), id)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger().Debugf("Instance status %v, %v", action, err)
-	im.ctx.Logger().Infof("Instance %v reboot status %v", action.ResourceID, action.Status)
+	im.ctx.Logger.Debugf("Instance status %v, %v", action, err)
+	im.ctx.Logger.Infof("Instance %v reboot status %v", action.ResourceID, action.Status)
 	return nil
 }

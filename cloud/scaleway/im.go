@@ -92,12 +92,12 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger().Infof("Instance %v created", name)
+	im.ctx.Logger.Infof("Instance %v created", name)
 	return serverID, nil
 }
 
 func (im *instanceManager) storeConfigFile(serverID, role string) error {
-	im.ctx.Logger().Infof("Storing config file for server %v", serverID)
+	im.ctx.Logger.Infof("Storing config file for server %v", serverID)
 	cfg, err := im.ctx.StartupConfigResponse(role)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
@@ -107,7 +107,7 @@ func (im *instanceManager) storeConfigFile(serverID, role string) error {
 }
 
 func (im *instanceManager) storeStartupScript(serverID, sku, role string) error {
-	im.ctx.Logger().Infof("Storing startup script for server %v", serverID)
+	im.ctx.Logger.Infof("Storing startup script for server %v", serverID)
 	startupScript := im.RenderStartupScript(im.ctx.NewScriptOptions(), sku, role)
 	key := "kubernetes_startupscript.sh"
 	return im.conn.client.PatchUserdata(serverID, key, []byte(startupScript), false)
@@ -121,10 +121,10 @@ systemctl start kube-installer.service
 }
 
 func (im *instanceManager) executeStartupScript(instance *contexts.KubernetesInstance, signer ssh.Signer) error {
-	im.ctx.Logger().Infof("SSH execing start command %v", instance.ExternalIP+":22")
+	im.ctx.Logger.Infof("SSH execing start command %v", instance.ExternalIP+":22")
 
 	stdOut, stdErr, code, err := sshtools.Exec(`/usr/bin/curl 169.254.42.42/user_data/kubernetes_startupscript.sh --local-port 1-1024 2> /dev/null | bash`, "root", instance.ExternalIP+":22", signer)
-	im.ctx.Logger().Infoln(stdOut, stdErr, code)
+	im.ctx.Logger.Infoln(stdOut, stdErr, code)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}

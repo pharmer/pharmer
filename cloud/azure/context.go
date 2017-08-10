@@ -9,7 +9,6 @@ import (
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 	"github.com/appscode/pharmer/util/credentialutil"
 	semver "github.com/hashicorp/go-version"
 )
@@ -51,8 +50,6 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 
 	lib.GenClusterTokens(cm.ctx)
 
-	cm.ctx.AppsCodeNamespace = cm.ctx.Auth.Namespace
-
 	cm.ctx.AzureCloudConfig = &api.AzureCloudConfig{
 		TenantID:           cm.ctx.CloudCredential[credentialutil.AzureCredentialTenantID],
 		SubscriptionID:     cm.ctx.CloudCredential[credentialutil.AzureCredentialSubscriptionID],
@@ -78,8 +75,8 @@ func (cm *clusterManager) LoadDefaultContext() error {
 		return errors.FromErr(err).Err()
 	}
 
-	cm.ctx.ClusterExternalDomain = system.ClusterExternalDomain(cm.ctx.Auth.Namespace, cm.ctx.Name)
-	cm.ctx.ClusterInternalDomain = system.ClusterInternalDomain(cm.ctx.Auth.Namespace, cm.ctx.Name)
+	cm.ctx.ClusterExternalDomain = cm.ctx.Extra.ExternalDomain(cm.ctx.Name)
+	cm.ctx.ClusterInternalDomain = cm.ctx.Extra.InternalDomain(cm.ctx.Name)
 
 	cm.ctx.Status = storage.KubernetesStatus_Pending
 	cm.ctx.OS = "Debian" // offer: "16.04.0-LTS"

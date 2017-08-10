@@ -37,8 +37,8 @@ type GCECloudConfig struct {
 }
 
 type MasterKubeEnv struct {
-	KubeUser        string `json:"KUBE_USER"`
-	KubePassword    string `json:"KUBE_PASSWORD"`
+	//KubeUser        string `json:"KUBE_USER"`
+	//KubePassword    string `json:"KUBE_PASSWORD"`
 	KubeBearerToken string `json:"KUBE_BEARER_TOKEN"`
 	MasterCert      string `json:"MASTER_CERT"`
 	MasterKey       string `json:"MASTER_KEY"`
@@ -61,7 +61,6 @@ type MasterKubeEnv struct {
 	NumNodes int64 `json:"NUM_NODES"`
 	// NEW
 	// APPSCODE ONLY
-	AppsCodeNamespace         string `json:"APPSCODE_NS"`
 	AppsCodeApiGrpcEndpoint   string `json:"APPSCODE_API_GRPC_ENDPOINT"` // used by icinga, daemon
 	AppsCodeApiHttpEndpoint   string `json:"APPSCODE_API_HTTP_ENDPOINT"` // used by icinga, daemon
 	AppsCodeClusterUser       string `json:"APPSCODE_CLUSTER_USER"`      // used by icinga, daemon

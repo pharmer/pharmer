@@ -107,7 +107,7 @@ func SaveInstancesInFirebase(opt *contexts.ScriptOptions, ins *contexts.ClusterI
 }
 
 func UploadStartupConfigInFirebase(ctx *contexts.ClusterContext) error {
-	ctx.Logger().Infof("Server is configured to skip startup config api")
+	ctx.Logger.Infof("Server is configured to skip startup config api")
 	{
 		cfg, err := ctx.StartupConfigResponse(system.RoleKubernetesMaster)
 		if err != nil {

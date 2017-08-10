@@ -54,7 +54,7 @@ func (im *instanceManager) GetInstance(md *contexts.InstanceMetadata) (*contexts
 }
 
 func (im *instanceManager) createStartupScript(sku, role string) (int, error) {
-	im.ctx.Logger().Infof("creating StackScript for sku %v role %v", sku, role)
+	im.ctx.Logger.Infof("creating StackScript for sku %v role %v", sku, role)
 	script := im.RenderStartupScript(im.ctx.NewScriptOptions(), sku, role)
 
 	resp, err := im.conn.client.CreateStartupScript(im.namer.StartupScriptName(sku, role), script, "boot")
@@ -158,9 +158,9 @@ func (im *instanceManager) createInstance(name, sku string, scriptID int) (strin
 		planID,
 		osID,
 		opts)
-	im.ctx.Logger().Debugln("do response", resp, " errors", err)
-	im.ctx.Logger().Debug("Created droplet with name", resp.ID)
-	im.ctx.Logger().Infof("DO droplet %v created", name)
+	im.ctx.Logger.Debugln("do response", resp, " errors", err)
+	im.ctx.Logger.Debug("Created droplet with name", resp.ID)
+	im.ctx.Logger.Infof("DO droplet %v created", name)
 	return resp.ID, err
 }
 
@@ -169,7 +169,7 @@ func (im *instanceManager) assignReservedIP(ip, serverId string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger().Infof("Reserved ip %v assigned to %v", ip, serverId)
+	im.ctx.Logger.Infof("Reserved ip %v assigned to %v", ip, serverId)
 	return nil
 }
 
@@ -188,7 +188,7 @@ func (im *instanceManager) newKubeInstance(server *gv.Server) (*contexts.Kuberne
 
 // reboot does not seem to run /etc/rc.local
 func (im *instanceManager) reboot(id string) error {
-	im.ctx.Logger().Infof("Rebooting instance %v", id)
+	im.ctx.Logger.Infof("Rebooting instance %v", id)
 	err := im.conn.client.RebootServer(id)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()

@@ -82,7 +82,7 @@ func (igm *InstanceGroupManager) startNodes(sku string, count int64) error {
 func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) error {
 	script := igm.cm.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), sku, system.RoleKubernetesPool)
 
-	igm.cm.ctx.Logger().Info("Creating node configuration assuming EnableNodePublicIP = true")
+	igm.cm.ctx.Logger.Info("Creating node configuration assuming EnableNodePublicIP = true")
 	fmt.Println(igm.cm.ctx.RootDeviceName, "<<<<<<<<--------------->>>>>>>>>>>>>>>>>>.")
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
 		LaunchConfigurationName:  types.StringP(name),
@@ -127,7 +127,7 @@ func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) err
 		UserData: types.StringP(base64.StdEncoding.EncodeToString([]byte(script))),
 	}
 	r1, err := igm.cm.conn.autoscale.CreateLaunchConfiguration(configuration)
-	igm.cm.ctx.Logger().Debug("Created node configuration", r1, err)
+	igm.cm.ctx.Logger.Debug("Created node configuration", r1, err)
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -188,7 +188,7 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroup string, size 
 }
 
 func (igm *InstanceGroupManager) listInstances(instanceGroup string) ([]*contexts.KubernetesInstance, error) {
-	igm.cm.ctx.Logger().Infof("Retrieving instances in node group %v", instanceGroup)
+	igm.cm.ctx.Logger.Infof("Retrieving instances in node group %v", instanceGroup)
 	instances := make([]*contexts.KubernetesInstance, 0)
 	group, err := igm.describeGroupInfo(instanceGroup)
 	if err != nil {

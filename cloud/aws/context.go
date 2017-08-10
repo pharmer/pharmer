@@ -78,8 +78,6 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 
 	lib.GenClusterTokens(cm.ctx)
 
-	cm.ctx.AppsCodeNamespace = cm.ctx.Auth.Namespace
-
 	return nil
 }
 
@@ -89,8 +87,8 @@ func (cm *clusterManager) LoadDefaultContext() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.ClusterExternalDomain = system.ClusterExternalDomain(cm.ctx.Auth.Namespace, cm.ctx.Name)
-	cm.ctx.ClusterInternalDomain = system.ClusterInternalDomain(cm.ctx.Auth.Namespace, cm.ctx.Name)
+	cm.ctx.ClusterExternalDomain = cm.ctx.Extra.ExternalDomain(cm.ctx.Name)
+	cm.ctx.ClusterInternalDomain = cm.ctx.Extra.InternalDomain(cm.ctx.Name)
 
 	cm.ctx.Status = storage.KubernetesStatus_Pending
 	cm.ctx.OS = "debian"
@@ -184,7 +182,7 @@ func (cm *clusterManager) UploadStartupConfig() error {
 	if err != nil {
 		_, err = cm.conn.s3.CreateBucket(&_s3.CreateBucketInput{Bucket: types.StringP(cm.ctx.BucketName)})
 		if err != nil {
-			cm.ctx.Logger().Debugf("Bucket name is no unique")
+			cm.ctx.Logger.Debugf("Bucket name is no unique")
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
@@ -238,8 +236,8 @@ func (cluster *clusterManager) waitForInstanceState(instanceId string, state str
 		if curState == state {
 			break
 		}
-		cluster.ctx.Logger().Infof("Waiting for instance %v to be %v (currently %v)", instanceId, state, curState)
-		cluster.ctx.Logger().Infof("Sleeping for 5 seconds...")
+		cluster.ctx.Logger.Infof("Waiting for instance %v to be %v (currently %v)", instanceId, state, curState)
+		cluster.ctx.Logger.Infof("Sleeping for 5 seconds...")
 		time.Sleep(5 * time.Second)
 	}
 	return nil
