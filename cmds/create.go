@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"io/ioutil"
 	"os"
-	"strconv"
-	"strings"
 
 	api "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/appctl/pkg/config"
@@ -17,12 +15,12 @@ import (
 
 func NewCmdCreate() *cobra.Command {
 	var req api.ClusterCreateRequest
-	var nodes string
+	nodes := map[string]int{}
 
 	cmd := &cobra.Command{
 		Use:     "create",
 		Short:   "Create a Kubernetes cluster for a given cloud provider",
-		Example: "create --provider=(aws|gce|cc) --nodes=t1:n1,t2:n2 --zone=us-central1-f demo-cluster",
+		Example: "create --provider=(aws|gce|cc) --nodes=t1=n1,t2= n2 --zone=us-central1-f demo-cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.EnsureRequiredFlags(cmd, "provider", "zone", "nodes")
@@ -43,23 +41,12 @@ func NewCmdCreate() *cobra.Command {
 				req.CloudCredentialData = cred
 			}
 
-			parts := strings.FieldsFunc(nodes, func(r rune) bool {
-				return r == ',' || r == ':'
-			})
-			if len(parts)%2 != 0 {
-				term.Fatalln("Nodes must be type:count pairs separated by ','")
-			}
-			req.NodeGroups = make([]*api.InstanceGroup, len(parts)/2)
+			req.NodeGroups = make([]*api.InstanceGroup, len(nodes))
 			ng := 0
-			for i := 0; i < len(parts)/2; i = i + 2 {
-				sku := strings.TrimSpace(parts[i])
-				count, err := strconv.ParseInt(strings.TrimSpace(parts[i+1]), 10, 64)
-				if err != nil {
-					term.Fatalln("Failed to parse count for nodes of type", sku)
-				}
+			for sku, count := range nodes {
 				req.NodeGroups[ng] = &api.InstanceGroup{
 					Sku:   sku,
-					Count: count,
+					Count: int64(count),
 				}
 				ng++
 			}
@@ -74,7 +61,7 @@ func NewCmdCreate() *cobra.Command {
 	cmd.Flags().StringVar(&req.Provider, "provider", "", "Provider name")
 	cmd.Flags().StringVar(&req.Zone, "zone", "", "Cloud provider zone name")
 	cmd.Flags().StringVar(&req.GceProject, "gce-project", "", "GCE project name(only applicable to `gce` provider)")
-	cmd.Flags().StringVar(&nodes, "nodes", "", "Node set configuration")
+	cmd.Flags().StringToIntVar(&nodes, "nodes", map[string]int{}, "Node set configuration")
 	cmd.Flags().StringVar(&req.CloudCredential, "cloud-credential", "", "Use preconfigured cloud credential phid")
 	cmd.Flags().StringVar(&req.SaltbaseVersion, "saltbase-version", "", "Kubernetes saltbase version")
 	cmd.Flags().StringVar(&req.KubeStarterVersion, "kube-starter-version", "", "Kube starter version")

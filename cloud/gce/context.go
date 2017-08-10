@@ -119,9 +119,9 @@ func (cm *clusterManager) updateContext() error {
 	cm.ctx.CloudConfigPath = "/etc/gce.conf"
 	cm.ctx.ClusterExternalDomain = cm.ctx.Extra.ExternalDomain(cm.ctx.Name)
 	cm.ctx.ClusterInternalDomain = cm.ctx.Extra.InternalDomain(cm.ctx.Name)
-	if cm.ctx.AppsCodeClusterCreator == "" {
-		cm.ctx.AppsCodeClusterCreator = cm.ctx.Auth.User.UserName
-	}
+	//if cm.ctx.AppsCodeClusterCreator == "" {
+	//	cm.ctx.AppsCodeClusterCreator = cm.ctx.Auth.User.UserName
+	//}
 	cm.ctx.EnableWebhookTokenAuthentication = true
 	cm.ctx.EnableApiserverBasicAudit = true
 	return nil
