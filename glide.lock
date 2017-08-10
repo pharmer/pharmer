@@ -1,5 +1,5 @@
-hash: bc52aff83e01c5d2a5091f2dcb2bc231f22a31eb1ac67fecc49ead26eccca70b
-updated: 2017-08-09T10:09:47.149742775-07:00
+hash: fe668477254a7ee7f7173631d5fdca74f87febcd4dd123ceb072534f63aa638e
+updated: 2017-08-10T10:18:35.252491015-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -424,7 +424,9 @@ imports:
   subpackages:
   - doc
 - name: github.com/spf13/pflag
-  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+  version: 572154603012a93806b0a54639c6dfc83ff54e35
+  repo: https://github.com/appscode/pflag.git
+  vcs: git
 - name: github.com/ssor/bom
   version: 6386211fdfcf24c0bfbdaceafd02849ed9a8a509
 - name: github.com/tent/http-link-go
@@ -561,11 +563,6 @@ imports:
   version: 81ebce5c23dfd25c6c67194b37d3dd3f338c98b1
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
-- name: gopkg.in/olivere/elastic.v3
-  version: eaecbad7a83e6b60f131825553e5eb7fd5a50b41
-  subpackages:
-  - backoff
-  - uritemplates
 - name: gopkg.in/square/go-jose.v1
   version: aa2e30fdd1fe9dd3394119af66451ae790d50e0d
   subpackages:
