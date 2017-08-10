@@ -9,7 +9,6 @@ import (
 	"github.com/appscode/errors"
 	hc "github.com/appscode/go-hetzner"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/errorhandlers"
 	"github.com/appscode/pharmer/storage"
 )
 
@@ -73,7 +72,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		if cm.ctx.Status == storage.KubernetesStatus_Deleting {
 			cm.ctx.StatusCause = strings.Join(errs, "\n")
 		}
-		errorhandlers.SendMailWithContextAndIgnore(cm.ctx, fmt.Errorf(strings.Join(errs, "\n")))
+		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
 	cm.ctx.Logger.Infof("Cluster %v is deleted successfully", cm.ctx.Name)

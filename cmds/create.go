@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"bufio"
+	"errors"
 	"io/ioutil"
 	"os"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/appscode/appctl/pkg/util"
 	term "github.com/appscode/go-term"
 	"github.com/appscode/go/flags"
+	"github.com/appscode/pharmer/credential"
 	"github.com/spf13/cobra"
 )
 
@@ -22,22 +24,26 @@ func NewCmdCreate() *cobra.Command {
 		Short:             "Create a Kubernetes cluster for a given cloud provider",
 		Example:           "create --provider=(aws|gce|cc) --nodes=t1=n1,t2= n2 --zone=us-central1-f demo-cluster",
 		DisableAutoGenTag: true,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			flags.EnsureRequiredFlags(cmd, "provider", "zone", "nodes")
 
 			if len(args) > 0 {
 				req.Name = args[0]
 			} else {
-				term.Fatalln("missing cluster name")
+				return errors.New("missing cluster name")
 			}
 
 			if req.CloudCredential == "" {
 				reader := bufio.NewReader(os.Stdin)
 				data, err := ioutil.ReadAll(reader)
-				term.ExitOnError(err)
+				if err != nil {
+					return err
+				}
 
-				cred, err := util.ParseCloudCredential(string(data), req.Provider)
-				term.ExitOnError(err)
+				cred, err := credential.ParseCloudCredential(string(data), req.Provider)
+				if err != nil {
+					return err
+				}
 				req.CloudCredentialData = cred
 			}
 
@@ -55,6 +61,7 @@ func NewCmdCreate() *cobra.Command {
 			_, err := c.Kubernetes().V1beta1().Cluster().Create(c.Context(), &req)
 			util.PrintStatus(err)
 			term.Successln("Request to create cluster is accepted!")
+			return nil
 		},
 	}
 
