@@ -16,9 +16,9 @@ func NewCmdList() *cobra.Command {
 	var req api.ClusterListRequest
 
 	cmd := &cobra.Command{
-		Use:     "list",
-		Short:   "Lists active Kubernetes clusters",
-		Example: "appctl cluster list",
+		Use:               "list",
+		Short:             "Lists active Kubernetes clusters",
+		Example:           "appctl cluster list",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			c := config.ClientOrDie()

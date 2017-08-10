@@ -6,7 +6,7 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/contexts"
-	"github.com/appscode/pharmer/util/credentialutil"
+	"github.com/appscode/pharmer/credential"
 	sapi "github.com/scaleway/scaleway-cli/pkg/api"
 )
 
@@ -17,13 +17,13 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
-	organization, ok := ctx.CloudCredential[credentialutil.ScalewayCredentialOrganization]
+	organization, ok := ctx.CloudCredential[credential.ScalewayOrganization]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credentialutil.ScalewayCredentialOrganization)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.ScalewayOrganization)
 	}
-	token, ok := ctx.CloudCredential[credentialutil.ScalewayCredentialToken]
+	token, ok := ctx.CloudCredential[credential.ScalewayToken]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credentialutil.ScalewayCredentialToken)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.ScalewayToken)
 	}
 
 	client, err := sapi.NewScalewayAPI(organization, token, "appscode", ctx.Zone)

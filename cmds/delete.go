@@ -12,8 +12,8 @@ func NewCmdDelete() *cobra.Command {
 	var req kubernetes.ClusterDeleteRequest
 
 	cmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Delete a Kubernetes cluster",
+		Use:               "delete",
+		Short:             "Delete a Kubernetes cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) > 0 {

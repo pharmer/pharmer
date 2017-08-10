@@ -7,7 +7,7 @@ import (
 	"github.com/appscode/errors"
 	hc "github.com/appscode/go-hetzner"
 	"github.com/appscode/pharmer/contexts"
-	"github.com/appscode/pharmer/util/credentialutil"
+	"github.com/appscode/pharmer/credential"
 )
 
 type cloudConnector struct {
@@ -16,13 +16,13 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
-	username, ok := ctx.CloudCredential[credentialutil.HertznerCredentialUsername]
+	username, ok := ctx.CloudCredential[credential.HertznerUsername]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credentialutil.HertznerCredentialUsername)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.HertznerUsername)
 	}
-	password, ok := ctx.CloudCredential[credentialutil.HertznerCredentialPassword]
+	password, ok := ctx.CloudCredential[credential.HertznerPassword]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credentialutil.HertznerCredentialPassword)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.HertznerPassword)
 	}
 	return &cloudConnector{
 		ctx:    ctx,

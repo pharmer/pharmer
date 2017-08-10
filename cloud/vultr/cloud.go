@@ -8,7 +8,7 @@ import (
 	gv "github.com/JamesClonk/vultr/lib"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/contexts"
-	"github.com/appscode/pharmer/util/credentialutil"
+	"github.com/appscode/pharmer/credential"
 )
 
 type cloudConnector struct {
@@ -17,9 +17,9 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
-	apiKey, ok := ctx.CloudCredential[credentialutil.VultrApiToken]
+	apiKey, ok := ctx.CloudCredential[credential.VultrApiToken]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credentialutil.VultrApiToken)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.VultrApiToken)
 	}
 	return &cloudConnector{
 		ctx:    ctx,

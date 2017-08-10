@@ -11,7 +11,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/contexts"
-	"github.com/appscode/pharmer/util/credentialutil"
+	"github.com/appscode/pharmer/credential"
 )
 
 type cloudConnector struct {
@@ -32,24 +32,24 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
-	subscriptionID, ok := ctx.CloudCredential[credentialutil.AzureCredentialSubscriptionID]
+	subscriptionID, ok := ctx.CloudCredential[credential.AzureSubscriptionID]
 	if !ok {
-		return nil, errors.New("Missing", credentialutil.AzureCredentialSubscriptionID).WithContext(ctx).Err()
+		return nil, errors.New("Missing", credential.AzureSubscriptionID).WithContext(ctx).Err()
 	}
 
-	tenantID, ok := ctx.CloudCredential[credentialutil.AzureCredentialTenantID]
+	tenantID, ok := ctx.CloudCredential[credential.AzureTenantID]
 	if !ok {
-		return nil, errors.New("Missing", credentialutil.AzureCredentialTenantID).WithContext(ctx).Err()
+		return nil, errors.New("Missing", credential.AzureTenantID).WithContext(ctx).Err()
 	}
 
-	clientID, ok := ctx.CloudCredential[credentialutil.AzureCredentialClientID]
+	clientID, ok := ctx.CloudCredential[credential.AzureClientID]
 	if !ok {
-		return nil, errors.New("Missing", credentialutil.AzureCredentialClientID).WithContext(ctx).Err()
+		return nil, errors.New("Missing", credential.AzureClientID).WithContext(ctx).Err()
 	}
 
-	clientSecret, ok := ctx.CloudCredential[credentialutil.AzureCredentialClientSecret]
+	clientSecret, ok := ctx.CloudCredential[credential.AzureClientSecret]
 	if !ok {
-		return nil, errors.New("Missing", credentialutil.AzureCredentialClientSecret).WithContext(ctx).Err()
+		return nil, errors.New("Missing", credential.AzureClientSecret).WithContext(ctx).Err()
 	}
 
 	/*

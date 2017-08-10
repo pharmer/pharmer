@@ -4,7 +4,7 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/contexts"
-	"github.com/appscode/pharmer/util/credentialutil"
+	"github.com/appscode/pharmer/credential"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -26,8 +26,8 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
-	id := ctx.CloudCredential[credentialutil.AWSCredentialAccessKeyID]
-	secret := ctx.CloudCredential[credentialutil.AWSCredentialSecretAccessKey]
+	id := ctx.CloudCredential[credential.AWSAccessKeyID]
+	secret := ctx.CloudCredential[credential.AWSSecretAccessKey]
 	config := &_aws.Config{
 		Region:      &ctx.Region,
 		Credentials: credentials.NewStaticCredentials(id, secret, ""),

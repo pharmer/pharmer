@@ -161,7 +161,7 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"cloud.json": cloudJson,
+	"cloud.json":      cloudJson,
 	"credential.json": credentialJson,
 }
 
@@ -204,9 +204,10 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
-	"cloud.json": &bintree{cloudJson, map[string]*bintree{}},
-	"credential.json": &bintree{credentialJson, map[string]*bintree{}},
+	"cloud.json":      {cloudJson, map[string]*bintree{}},
+	"credential.json": {credentialJson, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
@@ -255,4 +256,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-

@@ -6,7 +6,7 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/contexts"
-	"github.com/appscode/pharmer/util/credentialutil"
+	"github.com/appscode/pharmer/credential"
 	"github.com/softlayer/softlayer-go/services"
 	"github.com/softlayer/softlayer-go/session"
 )
@@ -19,13 +19,13 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
-	apiKey, ok := ctx.CloudCredential[credentialutil.SoftlayerCredentialApiKey]
+	apiKey, ok := ctx.CloudCredential[credential.SoftlayerAPIKey]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credentialutil.SoftlayerCredentialApiKey)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.SoftlayerAPIKey)
 	}
-	userName, ok := ctx.CloudCredential[credentialutil.SoftlayerCredentialUsername]
+	userName, ok := ctx.CloudCredential[credential.SoftlayerUsername]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credentialutil.SoftlayerCredentialUsername)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.SoftlayerUsername)
 	}
 
 	sess := session.New(userName, apiKey)

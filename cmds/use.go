@@ -21,9 +21,9 @@ func NewCmdUse() *cobra.Command {
 	var req api.ClusterClientConfigRequest
 
 	cmd := &cobra.Command{
-		Use:     "use",
-		Short:   "Retrieve kubectl configuration for a Kubernetes cluster and change kubectl context",
-		Example: `appctl cluster use <name>`,
+		Use:               "use",
+		Short:             "Retrieve kubectl configuration for a Kubernetes cluster and change kubectl context",
+		Example:           `appctl cluster use <name>`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) > 0 {

@@ -10,11 +10,11 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/extpoints"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
-	"github.com/appscode/pharmer/util/credentialutil"
 	semver "github.com/hashicorp/go-version"
 	bstore "google.golang.org/api/storage/v1"
 )
@@ -58,7 +58,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.ctx.SetNodeGroups(req.NodeGroups)
 	cm.ctx.Project = req.GceProject
 	if cm.ctx.Project == "" {
-		cm.ctx.Project = cm.ctx.CloudCredential[credentialutil.GCECredentialProjectID]
+		cm.ctx.Project = cm.ctx.CloudCredential[credential.GCEProjectID]
 	}
 
 	// check for instance count

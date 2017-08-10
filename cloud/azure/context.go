@@ -7,9 +7,9 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/util/credentialutil"
 	semver "github.com/hashicorp/go-version"
 )
 
@@ -51,10 +51,10 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	lib.GenClusterTokens(cm.ctx)
 
 	cm.ctx.AzureCloudConfig = &api.AzureCloudConfig{
-		TenantID:           cm.ctx.CloudCredential[credentialutil.AzureCredentialTenantID],
-		SubscriptionID:     cm.ctx.CloudCredential[credentialutil.AzureCredentialSubscriptionID],
-		AadClientID:        cm.ctx.CloudCredential[credentialutil.AzureCredentialClientID],
-		AadClientSecret:    cm.ctx.CloudCredential[credentialutil.AzureCredentialClientSecret],
+		TenantID:           cm.ctx.CloudCredential[credential.AzureTenantID],
+		SubscriptionID:     cm.ctx.CloudCredential[credential.AzureSubscriptionID],
+		AadClientID:        cm.ctx.CloudCredential[credential.AzureClientID],
+		AadClientSecret:    cm.ctx.CloudCredential[credential.AzureClientSecret],
 		ResourceGroup:      cm.namer.ResourceGroupName(),
 		Location:           cm.ctx.Zone,
 		SubnetName:         cm.namer.SubnetName(),
