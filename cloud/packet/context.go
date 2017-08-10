@@ -6,8 +6,8 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/util/credentialutil"
 )
 
 type clusterManager struct {
@@ -34,7 +34,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	lib.SetApps(cm.ctx)
 
 	cm.ctx.SetNodeGroups(req.NodeGroups)
-	cm.ctx.Project = cm.ctx.CloudCredential[credentialutil.PacketCredentialProjectID]
+	cm.ctx.Project = cm.ctx.CloudCredential[credential.PacketProjectID]
 
 	cm.ctx.KubernetesMasterName = cm.namer.MasterName()
 	cm.ctx.SSHKey, err = contexts.NewSSHKeyPair()

@@ -18,10 +18,10 @@ func NewCmdSSH() *cobra.Command {
 	var req appscodeSSH.SSHGetRequest
 
 	cmd := &cobra.Command{
-		Use:     "ssh",
-		Short:   "SSH into a Kubernetes cluster instance",
-		Long:    `SSH into a cluster instance.`,
-		Example: `appctl cluster ssh -c cluster-name node-name`,
+		Use:               "ssh",
+		Short:             "SSH into a Kubernetes cluster instance",
+		Long:              `SSH into a cluster instance.`,
+		Example:           `appctl cluster ssh -c cluster-name node-name`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) > 0 {

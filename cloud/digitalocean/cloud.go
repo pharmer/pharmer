@@ -10,7 +10,7 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/pharmer/contexts"
-	"github.com/appscode/pharmer/util/credentialutil"
+	"github.com/appscode/pharmer/credential"
 	"github.com/digitalocean/godo"
 	"golang.org/x/oauth2"
 )
@@ -23,9 +23,9 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
-	token, ok := ctx.CloudCredential[credentialutil.DigitalOceanCredentialToken]
+	token, ok := ctx.CloudCredential[credential.DigitalOceanCredentialToken]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credentialutil.DigitalOceanCredentialToken)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.DigitalOceanCredentialToken)
 	}
 
 	oauthClient := oauth2.NewClient(oauth2.NoContext, oauth2.StaticTokenSource(&oauth2.Token{

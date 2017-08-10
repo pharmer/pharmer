@@ -8,7 +8,7 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/linodego"
 	"github.com/appscode/pharmer/contexts"
-	"github.com/appscode/pharmer/util/credentialutil"
+	"github.com/appscode/pharmer/credential"
 )
 
 type cloudConnector struct {
@@ -17,9 +17,9 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
-	token, ok := ctx.CloudCredential[credentialutil.LinodeApiToken]
+	token, ok := ctx.CloudCredential[credential.LinodeApiToken]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credentialutil.LinodeApiToken)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.LinodeApiToken)
 	}
 
 	return &cloudConnector{

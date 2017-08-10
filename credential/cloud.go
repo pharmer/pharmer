@@ -1,4 +1,4 @@
-package credentialutil
+package credential
 
 import (
 	"encoding/csv"
@@ -139,11 +139,11 @@ func IsCloudCredentialValid(data map[string]string, provider string) bool {
 		return false
 	}
 	if provider == "aws" {
-		if _, ok := data[AWSCredentialAccessKeyID]; !ok {
+		if _, ok := data[AWSAccessKeyID]; !ok {
 			return false
 		}
 
-		if _, ok := data[AWSCredentialSecretAccessKey]; !ok {
+		if _, ok := data[AWSSecretAccessKey]; !ok {
 			return false
 		}
 	}
@@ -155,7 +155,7 @@ func IsCloudCredentialValid(data map[string]string, provider string) bool {
 	}
 
 	if provider == "gce" {
-		if _, ok := data[GCECredentialClientID]; !ok {
+		if _, ok := data[GCEClientID]; !ok {
 			return false
 		}
 	}

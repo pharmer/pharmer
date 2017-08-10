@@ -18,9 +18,9 @@ func NewCmdCreate() *cobra.Command {
 	nodes := map[string]int{}
 
 	cmd := &cobra.Command{
-		Use:     "create",
-		Short:   "Create a Kubernetes cluster for a given cloud provider",
-		Example: "create --provider=(aws|gce|cc) --nodes=t1=n1,t2= n2 --zone=us-central1-f demo-cluster",
+		Use:               "create",
+		Short:             "Create a Kubernetes cluster for a given cloud provider",
+		Example:           "create --provider=(aws|gce|cc) --nodes=t1=n1,t2= n2 --zone=us-central1-f demo-cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.EnsureRequiredFlags(cmd, "provider", "zone", "nodes")

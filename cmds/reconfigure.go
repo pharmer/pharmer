@@ -12,9 +12,9 @@ func NewCmdReconfigure() *cobra.Command {
 	var req kubernetes.ClusterReconfigureRequest
 
 	cmd := &cobra.Command{
-		Use:     "reconfigure",
-		Short:   "Create/Resize/Upgrade/Downgrade a Kubernetes cluster instance group",
-		Example: `appctl cluster reconfigure <name> --role=master|node --sku=n1-standard-1`,
+		Use:               "reconfigure",
+		Short:             "Create/Resize/Upgrade/Downgrade a Kubernetes cluster instance group",
+		Example:           `appctl cluster reconfigure <name> --role=master|node --sku=n1-standard-1`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) > 0 {

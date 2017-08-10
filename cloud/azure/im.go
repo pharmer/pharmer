@@ -15,9 +15,9 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/util/credentialutil"
 )
 
 const (
@@ -299,7 +299,7 @@ systemctl enable kube-installer.service
 func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic network.Interface, pip network.PublicIPAddress) (*contexts.KubernetesInstance, error) {
 	i := contexts.KubernetesInstance{
 		PHID:           phid.NewKubeInstance(),
-		ExternalID:     fmt.Sprintf(machineIDTemplate, im.ctx.CloudCredential[credentialutil.AzureCredentialSubscriptionID], im.namer.ResourceGroupName(), *vm.Name),
+		ExternalID:     fmt.Sprintf(machineIDTemplate, im.ctx.CloudCredential[credential.AzureSubscriptionID], im.namer.ResourceGroupName(), *vm.Name),
 		ExternalStatus: *vm.ProvisioningState,
 		Name:           *vm.Name,
 		InternalIP:     *(*nic.IPConfigurations)[0].PrivateIPAddress,

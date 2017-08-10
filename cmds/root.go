@@ -11,8 +11,8 @@ import (
 
 func NewRootCmd(version string) *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "pharmer [command]",
-		Short: `Pharmer by Appscode - Manages farms`,
+		Use:               "pharmer [command]",
+		Short:             `Pharmer by Appscode - Manages farms`,
 		DisableAutoGenTag: true,
 		PersistentPreRun: func(c *cobra.Command, args []string) {
 			c.Flags().VisitAll(func(flag *pflag.Flag) {
