@@ -94,8 +94,8 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 		}
 	}
 	droplet, resp, err := im.conn.client.Droplets.Create(context.TODO(), req)
-	im.ctx.Logger().V(6).Infoln("do response", resp, " errors", err)
-	im.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Droplet %v created", droplet.Name))
+	im.ctx.Logger().Debugln("do response", resp, " errors", err)
+	im.ctx.Logger().Infof("Droplet %v created", droplet.Name)
 	return droplet, err
 }
 
@@ -120,7 +120,7 @@ func (im *instanceManager) applyTag(dropletID int) error {
 			},
 		},
 	})
-	im.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Tag %v applied to droplet %v", "KubernetesCluster:"+im.ctx.Name, dropletID))
+	im.ctx.Logger().Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+im.ctx.Name, dropletID)
 	return err
 }
 
@@ -129,9 +129,9 @@ func (im *instanceManager) assignReservedIP(ip string, dropletID int) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger().V(6).Infoln("do response", resp, " errors", err)
+	im.ctx.Logger().Debugln("do response", resp, " errors", err)
 	im.ctx.Logger().Debug("Created droplet with name", action.String())
-	im.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Reserved ip %v assigned to droplet %v", ip, dropletID))
+	im.ctx.Logger().Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
 	return nil
 }
 

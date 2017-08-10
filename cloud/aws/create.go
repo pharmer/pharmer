@@ -16,7 +16,6 @@ import (
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
 	// "github.com/appscode/pharmer/templates"
-	"github.com/appscode/pharmer/api"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
@@ -50,9 +49,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		cm.ctx.Save()
 		cm.ins.Save()
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status))
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
 		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is deleting", cm.ctx.Name))
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.ctx.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -133,7 +132,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		igm.AdjustInstanceGroup()
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Waiting for cluster initialization")
+	cm.ctx.Logger().Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
 	if err := lib.EnsureDnsIPLookup(cm.ctx); err != nil {
@@ -212,7 +211,7 @@ func (cm *clusterManager) ensureIAMProfile() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Master instance profile %v created", cm.ctx.IAMProfileMaster))
+		cm.ctx.Logger().Infof("Master instance profile %v created", cm.ctx.IAMProfileMaster)
 	}
 	r2, _ := cm.conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &cm.ctx.IAMProfileNode})
 	if r2.InstanceProfile == nil {
@@ -220,7 +219,7 @@ func (cm *clusterManager) ensureIAMProfile() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Node instance profile %v created", cm.ctx.IAMProfileNode))
+		cm.ctx.Logger().Infof("Node instance profile %v created", cm.ctx.IAMProfileNode)
 	}
 	return nil
 }
@@ -233,7 +232,7 @@ func (cm *clusterManager) createIAMProfile(key string) error {
 		AssumeRolePolicyDocument: &role,
 	})
 	cm.ctx.Logger().Debug("Created IAM role", r1, err)
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("IAM role %v created", key))
+	cm.ctx.Logger().Infof("IAM role %v created", key)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -248,7 +247,7 @@ func (cm *clusterManager) createIAMProfile(key string) error {
 		PolicyDocument: &policy,
 	})
 	cm.ctx.Logger().Debug("Created IAM role-policy", r2, err)
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("IAM role-policy %v created", key))
+	cm.ctx.Logger().Infof("IAM role-policy %v created", key)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -260,7 +259,7 @@ func (cm *clusterManager) createIAMProfile(key string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("IAM instance-policy %v created", key))
+	cm.ctx.Logger().Infof("IAM instance-policy %v created", key)
 
 	r4, err := cm.conn.iam.AddRoleToInstanceProfile(&_iam.AddRoleToInstanceProfileInput{
 		InstanceProfileName: &key,
@@ -270,7 +269,7 @@ func (cm *clusterManager) createIAMProfile(key string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("IAM role %v added to instance-policy %v", key, key))
+	cm.ctx.Logger().Infof("IAM role %v added to instance-policy %v", key, key)
 	return nil
 }
 
@@ -285,18 +284,18 @@ func (cm *clusterManager) importPublicKey() error {
 	}
 	// TODO ignore "InvalidKeyPair.Duplicate" error
 	if err != nil {
-		cm.ctx.Logger().Error("Error importing public key", resp, err)
+		cm.ctx.Logger().Info("Error importing public key", resp, err)
 		//os.Exit(1)
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("SSH key with (AWS) fingerprint %v imported", cm.ctx.SSHKey.AwsFingerprint))
+	cm.ctx.Logger().Infof("SSH key with (AWS) fingerprint %v imported", cm.ctx.SSHKey.AwsFingerprint)
 
 	return nil
 }
 
 func (cm *clusterManager) setupVpc() error {
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Checking VPC tagged with %v", cm.ctx.Name))
+	cm.ctx.Logger().Infof("Checking VPC tagged with %v", cm.ctx.Name)
 	r1, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -316,10 +315,10 @@ func (cm *clusterManager) setupVpc() error {
 	cm.ctx.Logger().Debug("VPC described", r1, err)
 	if len(r1.Vpcs) > 1 {
 		cm.ctx.VpcId = *r1.Vpcs[0].VpcId
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("VPC %v found", cm.ctx.VpcId))
+		cm.ctx.Logger().Infof("VPC %v found", cm.ctx.VpcId)
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "No VPC found, creating new VPC")
+	cm.ctx.Logger().Info("No VPC found, creating new VPC")
 	r2, err := cm.conn.ec2.CreateVpc(&_ec2.CreateVpcInput{
 		CidrBlock: types.StringP(cm.ctx.VpcCidr),
 	})
@@ -328,7 +327,7 @@ func (cm *clusterManager) setupVpc() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("VPC %v created", *r2.Vpc.VpcId))
+	cm.ctx.Logger().Infof("VPC %v created", *r2.Vpc.VpcId)
 	cm.ctx.VpcId = *r2.Vpc.VpcId
 
 	r3, err := cm.conn.ec2.ModifyVpcAttribute(&_ec2.ModifyVpcAttributeInput{
@@ -338,7 +337,7 @@ func (cm *clusterManager) setupVpc() error {
 		},
 	})
 	cm.ctx.Logger().Debug("DNS support enabled", r3, err)
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Enabled DNS support for VPCID %v", cm.ctx.VpcId))
+	cm.ctx.Logger().Infof("Enabled DNS support for VPCID %v", cm.ctx.VpcId)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -350,7 +349,7 @@ func (cm *clusterManager) setupVpc() error {
 		},
 	})
 	cm.ctx.Logger().Debug("DNS hostnames enabled", r4, err)
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Enabled DNS hostnames for VPCID %v", cm.ctx.VpcId))
+	cm.ctx.Logger().Infof("Enabled DNS hostnames for VPCID %v", cm.ctx.VpcId)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -377,7 +376,7 @@ func (cm *clusterManager) addTag(id string, key string, value string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Added tag %v:%v to id %v", key, value, id))
+	cm.ctx.Logger().Infof("Added tag %v:%v to id %v", key, value, id)
 	return nil
 }
 
@@ -402,7 +401,7 @@ func (cm *clusterManager) createDHCPOptionSet() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("DHCP options created with id %v", *r1.DhcpOptions.DhcpOptionsId))
+	cm.ctx.Logger().Infof("DHCP options created with id %v", *r1.DhcpOptions.DhcpOptionsId)
 	cm.ctx.DHCPOptionsId = *r1.DhcpOptions.DhcpOptionsId
 
 	time.Sleep(preTagDelay)
@@ -417,13 +416,13 @@ func (cm *clusterManager) createDHCPOptionSet() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("DHCP options %v associated with %v", cm.ctx.DHCPOptionsId, cm.ctx.VpcId))
+	cm.ctx.Logger().Infof("DHCP options %v associated with %v", cm.ctx.DHCPOptionsId, cm.ctx.VpcId)
 
 	return nil
 }
 
 func (cm *clusterManager) setupSubnet() error {
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Checking for existing subnet")
+	cm.ctx.Logger().Info("Checking for existing subnet")
 	r1, err := cm.conn.ec2.DescribeSubnets(&_ec2.DescribeSubnetsInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -452,7 +451,7 @@ func (cm *clusterManager) setupSubnet() error {
 	}
 
 	if len(r1.Subnets) == 0 {
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "No subnet found, creating new subnet")
+		cm.ctx.Logger().Info("No subnet found, creating new subnet")
 		r2, err := cm.conn.ec2.CreateSubnet(&_ec2.CreateSubnetInput{
 			CidrBlock:        types.StringP(cm.ctx.SubnetCidr),
 			VpcId:            types.StringP(cm.ctx.VpcId),
@@ -462,7 +461,7 @@ func (cm *clusterManager) setupSubnet() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Subnet %v created", *r2.Subnet.SubnetId))
+		cm.ctx.Logger().Infof("Subnet %v created", *r2.Subnet.SubnetId)
 		cm.ctx.SubnetId = *r2.Subnet.SubnetId
 
 		time.Sleep(preTagDelay)
@@ -471,7 +470,7 @@ func (cm *clusterManager) setupSubnet() error {
 	} else {
 		cm.ctx.SubnetId = *r1.Subnets[0].SubnetId
 		existingCIDR := *r1.Subnets[0].CidrBlock
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Subnet %v found with CIDR %v", cm.ctx.SubnetId, existingCIDR))
+		cm.ctx.Logger().Infof("Subnet %v found with CIDR %v", cm.ctx.SubnetId, existingCIDR)
 
 		cm.ctx.Logger().Infof("Retrieving VPC %v", cm.ctx.VpcId)
 		r3, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
@@ -491,7 +490,7 @@ func (cm *clusterManager) setupSubnet() error {
 }
 
 func (cm *clusterManager) setupInternetGateway() error {
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Checking IGW with attached VPCID %v", cm.ctx.VpcId))
+	cm.ctx.Logger().Infof("Checking IGW with attached VPCID %v", cm.ctx.VpcId)
 	r1, err := cm.conn.ec2.DescribeInternetGateways(&_ec2.DescribeInternetGatewaysInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -508,7 +507,7 @@ func (cm *clusterManager) setupInternetGateway() error {
 	}
 
 	if len(r1.InternetGateways) == 0 {
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "No IGW found, creating new IGW")
+		cm.ctx.Logger().Info("No IGW found, creating new IGW")
 		r2, err := cm.conn.ec2.CreateInternetGateway(&_ec2.CreateInternetGatewayInput{})
 		cm.ctx.Logger().Debug("Created IGW", r2, err)
 		if err != nil {
@@ -516,7 +515,7 @@ func (cm *clusterManager) setupInternetGateway() error {
 		}
 		cm.ctx.IGWId = *r2.InternetGateway.InternetGatewayId
 		time.Sleep(preTagDelay)
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("IGW %v created", cm.ctx.IGWId))
+		cm.ctx.Logger().Infof("IGW %v created", cm.ctx.IGWId)
 
 		r3, err := cm.conn.ec2.AttachInternetGateway(&_ec2.AttachInternetGatewayInput{
 			InternetGatewayId: types.StringP(cm.ctx.IGWId),
@@ -526,19 +525,19 @@ func (cm *clusterManager) setupInternetGateway() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Attached IGW %v to VPCID %v", cm.ctx.IGWId, cm.ctx.VpcId))
+		cm.ctx.Logger().Infof("Attached IGW %v to VPCID %v", cm.ctx.IGWId, cm.ctx.VpcId)
 
 		cm.addTag(cm.ctx.IGWId, "Name", cm.namer.InternetGatewayName())
 		cm.addTag(cm.ctx.IGWId, "KubernetesCluster", cm.ctx.Name)
 	} else {
 		cm.ctx.IGWId = *r1.InternetGateways[0].InternetGatewayId
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("IGW %v found", cm.ctx.IGWId))
+		cm.ctx.Logger().Infof("IGW %v found", cm.ctx.IGWId)
 	}
 	return nil
 }
 
 func (cm *clusterManager) setupRouteTable() error {
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Checking route table for VPCID %v", cm.ctx.VpcId))
+	cm.ctx.Logger().Infof("Checking route table for VPCID %v", cm.ctx.VpcId)
 	r1, err := cm.conn.ec2.DescribeRouteTables(&_ec2.DescribeRouteTablesInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -560,7 +559,7 @@ func (cm *clusterManager) setupRouteTable() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if len(r1.RouteTables) == 0 {
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("No route table found for VPCID %v, creating new route table", cm.ctx.VpcId))
+		cm.ctx.Logger().Infof("No route table found for VPCID %v, creating new route table", cm.ctx.VpcId)
 		r2, err := cm.conn.ec2.CreateRouteTable(&_ec2.CreateRouteTableInput{
 			VpcId: types.StringP(cm.ctx.VpcId),
 		})
@@ -570,13 +569,13 @@ func (cm *clusterManager) setupRouteTable() error {
 		}
 
 		cm.ctx.RouteTableId = *r2.RouteTable.RouteTableId
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Route table %v created", cm.ctx.RouteTableId))
+		cm.ctx.Logger().Infof("Route table %v created", cm.ctx.RouteTableId)
 		time.Sleep(preTagDelay)
 		cm.addTag(cm.ctx.RouteTableId, "KubernetesCluster", cm.ctx.Name)
 
 	} else {
 		cm.ctx.RouteTableId = *r1.RouteTables[0].RouteTableId
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Route table %v found", cm.ctx.RouteTableId))
+		cm.ctx.Logger().Infof("Route table %v found", cm.ctx.RouteTableId)
 	}
 
 	r3, err := cm.conn.ec2.AssociateRouteTable(&_ec2.AssociateRouteTableInput{
@@ -587,7 +586,7 @@ func (cm *clusterManager) setupRouteTable() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Route table %v associated to subnet %v", cm.ctx.RouteTableId, cm.ctx.SubnetId))
+	cm.ctx.Logger().Infof("Route table %v associated to subnet %v", cm.ctx.RouteTableId, cm.ctx.SubnetId)
 
 	r4, err := cm.conn.ec2.CreateRoute(&_ec2.CreateRouteInput{
 		RouteTableId:         types.StringP(cm.ctx.RouteTableId),
@@ -598,7 +597,7 @@ func (cm *clusterManager) setupRouteTable() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Route added to route table %v", cm.ctx.RouteTableId))
+	cm.ctx.Logger().Infof("Route added to route table %v", cm.ctx.RouteTableId)
 	return nil
 }
 
@@ -613,7 +612,7 @@ func (cm *clusterManager) setupSecurityGroups() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Master security group %v created", cm.ctx.MasterSGName))
+		cm.ctx.Logger().Infof("Master security group %v created", cm.ctx.MasterSGName)
 	}
 	if cm.ctx.NodeSGId, ok, err = cm.getSecurityGroupId(cm.ctx.NodeSGName); !ok {
 		if err != nil {
@@ -623,7 +622,7 @@ func (cm *clusterManager) setupSecurityGroups() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Naster security group %v created", cm.ctx.NodeSGName))
+		cm.ctx.Logger().Infof("Naster security group %v created", cm.ctx.NodeSGName)
 	}
 
 	err = cm.detectSecurityGroups()
@@ -631,19 +630,19 @@ func (cm *clusterManager) setupSecurityGroups() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Masters can talk to master")
+	cm.ctx.Logger().Info("Masters can talk to master")
 	err = cm.autohrizeIngressBySGID(cm.ctx.MasterSGId, cm.ctx.MasterSGId)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Nodes can talk to nodes")
+	cm.ctx.Logger().Info("Nodes can talk to nodes")
 	err = cm.autohrizeIngressBySGID(cm.ctx.NodeSGId, cm.ctx.NodeSGId)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Masters and nodes can talk to each other")
+	cm.ctx.Logger().Info("Masters and nodes can talk to each other")
 	err = cm.autohrizeIngressBySGID(cm.ctx.MasterSGId, cm.ctx.NodeSGId)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -655,7 +654,7 @@ func (cm *clusterManager) setupSecurityGroups() error {
 
 	// TODO(justinsb): Would be fairly easy to replace 0.0.0.0/0 in these rules
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "SSH is opened to the world")
+	cm.ctx.Logger().Info("SSH is opened to the world")
 	err = cm.autohrizeIngressByPort(cm.ctx.MasterSGId, 22)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -665,7 +664,7 @@ func (cm *clusterManager) setupSecurityGroups() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "HTTPS to the master is allowed (for API access)")
+	cm.ctx.Logger().Info("HTTPS to the master is allowed (for API access)")
 	err = cm.autohrizeIngressByPort(cm.ctx.MasterSGId, 443)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -678,7 +677,7 @@ func (cm *clusterManager) setupSecurityGroups() error {
 }
 
 func (cm *clusterManager) getSecurityGroupId(groupName string) (string, bool, error) {
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Checking security group %v", groupName))
+	cm.ctx.Logger().Infof("Checking security group %v", groupName)
 	r1, err := cm.conn.ec2.DescribeSecurityGroups(&_ec2.DescribeSecurityGroupsInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -706,15 +705,15 @@ func (cm *clusterManager) getSecurityGroupId(groupName string) (string, bool, er
 		return "", false, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if len(r1.SecurityGroups) == 0 {
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("No security group %v found", groupName))
+		cm.ctx.Logger().Infof("No security group %v found", groupName)
 		return "", false, nil
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Security group %v found", groupName))
+	cm.ctx.Logger().Infof("Security group %v found", groupName)
 	return *r1.SecurityGroups[0].GroupId, true, nil
 }
 
 func (cm *clusterManager) createSecurityGroup(groupName string, description string) error {
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Creating security group %v", groupName))
+	cm.ctx.Logger().Infof("Creating security group %v", groupName)
 	r2, err := cm.conn.ec2.CreateSecurityGroup(&_ec2.CreateSecurityGroupInput{
 		GroupName:   types.StringP(groupName),
 		Description: types.StringP(description),
@@ -740,14 +739,14 @@ func (cm *clusterManager) detectSecurityGroups() error {
 		if cm.ctx.MasterSGId, ok, err = cm.getSecurityGroupId(cm.ctx.MasterSGName); !ok {
 			return errors.New("Could not detect Kubernetes master security group.  Make sure you've launched a cluster with appctl").WithContext(cm.ctx).Err()
 		} else {
-			cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Master security group %v with id %v detected", cm.ctx.MasterSGName, cm.ctx.MasterSGId))
+			cm.ctx.Logger().Infof("Master security group %v with id %v detected", cm.ctx.MasterSGName, cm.ctx.MasterSGId)
 		}
 	}
 	if cm.ctx.NodeSGId == "" {
 		if cm.ctx.NodeSGId, ok, err = cm.getSecurityGroupId(cm.ctx.NodeSGName); !ok {
 			return errors.New("Could not detect Kubernetes node security group.  Make sure you've launched a cluster with appctl").WithContext(cm.ctx).Err()
 		} else {
-			cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Node security group %v with id %v detected", cm.ctx.NodeSGName, cm.ctx.NodeSGId))
+			cm.ctx.Logger().Infof("Node security group %v with id %v detected", cm.ctx.NodeSGName, cm.ctx.NodeSGId)
 		}
 	}
 	if err != nil {
@@ -774,7 +773,7 @@ func (cm *clusterManager) autohrizeIngressBySGID(groupID string, srcGroup string
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Ingress authorized into SG %v from SG %v", groupID, srcGroup))
+	cm.ctx.Logger().Infof("Ingress authorized into SG %v from SG %v", groupID, srcGroup)
 	return nil
 }
 
@@ -798,7 +797,7 @@ func (cm *clusterManager) autohrizeIngressByPort(groupID string, port int64) err
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Authorized ingress into SG %v via port %v", groupID, port))
+	cm.ctx.Logger().Infof("Authorized ingress into SG %v via port %v", groupID, port)
 	return nil
 }
 
@@ -823,13 +822,13 @@ func (cm *clusterManager) startMaster() (*contexts.KubernetesInstance, error) {
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Waiting for master instance to be ready")
+	cm.ctx.Logger().Info("Waiting for master instance to be ready")
 	// We are not able to add an elastic ip, a route or volume to the instance until that instance is in "running" state.
 	err = cm.waitForInstanceState(masterInstanceID, "running")
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Master instance is ready")
+	cm.ctx.Logger().Info("Master instance is ready")
 	if cm.ctx.MasterReservedIP != "" {
 		err = cm.assignIPToInstance(masterInstanceID)
 		if err != nil {
@@ -867,7 +866,7 @@ func (cm *clusterManager) startMaster() (*contexts.KubernetesInstance, error) {
 	if err != nil {
 		return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Persistent data volume %v attatched to master", cm.ctx.MasterDiskId))
+	cm.ctx.Logger().Infof("Persistent data volume %v attatched to master", cm.ctx.MasterDiskId)
 
 	time.Sleep(15 * time.Second)
 	r2, err := cm.conn.ec2.CreateRoute(&_ec2.CreateRouteInput{
@@ -879,7 +878,7 @@ func (cm *clusterManager) startMaster() (*contexts.KubernetesInstance, error) {
 	if err != nil {
 		return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Master route to route table %v for ip %v created", cm.ctx.RouteTableId, masterInstanceID))
+	cm.ctx.Logger().Infof("Master route to route table %v for ip %v created", cm.ctx.RouteTableId, masterInstanceID)
 	return masterInstance, nil
 }
 
@@ -900,7 +899,7 @@ func (cm *clusterManager) ensurePd(name, diskType string, sizeGb int64) (string,
 			return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		volumeId = *r1.VolumeId
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Master disk with size %vGB, type %v created", cm.ctx.MasterDiskSize, cm.ctx.MasterDiskType))
+		cm.ctx.Logger().Infof("Master disk with size %vGB, type %v created", cm.ctx.MasterDiskSize, cm.ctx.MasterDiskType)
 
 		time.Sleep(preTagDelay)
 		err = cm.addTag(volumeId, "Name", name)
@@ -917,7 +916,7 @@ func (cm *clusterManager) ensurePd(name, diskType string, sizeGb int64) (string,
 
 func (cm *clusterManager) findPD(name string) (string, error) {
 	// name := cluster.ctx.KubernetesMasterName + "-pd"
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Searching master pd %v", name))
+	cm.ctx.Logger().Infof("Searching master pd %v", name)
 	r1, err := cm.conn.ec2.DescribeVolumes(&_ec2.DescribeVolumesInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -945,10 +944,10 @@ func (cm *clusterManager) findPD(name string) (string, error) {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if len(r1.Volumes) > 0 {
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Found master pd %v", name))
+		cm.ctx.Logger().Infof("Found master pd %v", name)
 		return *r1.Volumes[0].VolumeId, nil
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Master pd %v not found", name))
+	cm.ctx.Logger().Infof("Master pd %v not found", name)
 	return "", nil
 }
 
@@ -965,7 +964,7 @@ func (cm *clusterManager) reserveIP() error {
 		}
 		time.Sleep(5 * time.Second)
 		cm.ctx.MasterReservedIP = *r1.PublicIp
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Elastic IP %v allocated", cm.ctx.MasterReservedIP))
+		cm.ctx.Logger().Infof("Elastic IP %v allocated", cm.ctx.MasterReservedIP)
 	}
 	return nil
 }
@@ -1038,7 +1037,7 @@ func (cm *clusterManager) createMasterInstance(instanceName string, role string)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance %v created with role %v", instanceName, role))
+	cm.ctx.Logger().Infof("Instance %v created with role %v", instanceName, role)
 	instanceID := *r1.Instances[0].InstanceId
 	time.Sleep(preTagDelay)
 
@@ -1066,7 +1065,7 @@ func (cm *clusterManager) getInstancePublicIP(instanceID string) (string, bool, 
 		return "", false, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if r1.Reservations != nil && r1.Reservations[0].Instances != nil && r1.Reservations[0].Instances[0].NetworkInterfaces != nil {
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Public ip for instance id %v retrieved", instanceID))
+		cm.ctx.Logger().Infof("Public ip for instance id %v retrieved", instanceID)
 		return *r1.Reservations[0].Instances[0].NetworkInterfaces[0].Association.PublicIp, true, nil
 	}
 	return "", false, nil
@@ -1141,7 +1140,7 @@ func (cm *clusterManager) allocateElasticIp() (string, error) {
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Elastic IP %v allocated", *r1.PublicIp))
+	cm.ctx.Logger().Infof("Elastic IP %v allocated", *r1.PublicIp)
 	time.Sleep(5 * time.Second)
 	return *r1.PublicIp, nil
 }
@@ -1154,7 +1153,7 @@ func (cm *clusterManager) assignIPToInstance(instanceID string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Found allocation id %v for elastic IP %v", r1.Addresses[0].AllocationId, cm.ctx.MasterReservedIP))
+	cm.ctx.Logger().Infof("Found allocation id %v for elastic IP %v", r1.Addresses[0].AllocationId, cm.ctx.MasterReservedIP)
 	time.Sleep(1 * time.Minute)
 
 	r2, err := cm.conn.ec2.AssociateAddress(&_ec2.AssociateAddressInput{
@@ -1165,7 +1164,7 @@ func (cm *clusterManager) assignIPToInstance(instanceID string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("IP %v attached to instance %v", cm.ctx.MasterReservedIP, instanceID))
+	cm.ctx.Logger().Infof("IP %v attached to instance %v", cm.ctx.MasterReservedIP, instanceID)
 	return nil
 }
 
@@ -1225,7 +1224,7 @@ func (cm *clusterManager) createLaunchConfiguration(name, sku string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Node configuration created assuming node public ip is enabled")
+	cm.ctx.Logger().Info("Node configuration created assuming node public ip is enabled")
 	return nil
 }
 
@@ -1265,14 +1264,14 @@ func (cm *clusterManager) createAutoScalingGroup(name, launchConfig string, coun
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Autoscaling group %v created", name))
+	cm.ctx.Logger().Infof("Autoscaling group %v created", name)
 	return nil
 }
 
 func (cm *clusterManager) detectMaster() error {
 	masterID, err := cm.getInstanceIDFromName(cm.ctx.KubernetesMasterName)
 	if masterID == "" {
-		cm.ctx.Logger().Error("Could not detect Kubernetes master node.  Make sure you've launched a cluster with appctl.")
+		cm.ctx.Logger().Info("Could not detect Kubernetes master node.  Make sure you've launched a cluster with appctl.")
 		//os.Exit(0)
 	}
 	if err != nil {
@@ -1281,7 +1280,7 @@ func (cm *clusterManager) detectMaster() error {
 
 	masterIP, _, err := cm.getInstancePublicIP(masterID)
 	if masterIP == "" {
-		cm.ctx.Logger().Error("Could not detect Kubernetes master node IP.  Make sure you've launched a cluster with appctl")
+		cm.ctx.Logger().Info("Could not detect Kubernetes master node IP.  Make sure you've launched a cluster with appctl")
 		os.Exit(0)
 	}
 	cm.ctx.Logger().Infof("Using master: %v (external IP: %v)", cm.ctx.KubernetesMasterName, masterIP)

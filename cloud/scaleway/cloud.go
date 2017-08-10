@@ -1,12 +1,10 @@
 package scaleway
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/util/credentialutil"
 	sapi "github.com/scaleway/scaleway-cli/pkg/api"
@@ -84,7 +82,7 @@ func (conn *cloudConnector) waitForInstance(id, status string) error {
 		if strings.ToLower(s.State) == status {
 			break
 		}
-		conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance %v (%v) is %v, waiting...", s.Name, s.Identifier, s.State))
+		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", s.Name, s.Identifier, s.State)
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

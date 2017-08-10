@@ -9,7 +9,6 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
-	api "github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
@@ -42,9 +41,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		cm.ctx.Save()
 		cm.ins.Save()
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status))
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
 		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is deleting", cm.ctx.Name))
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.ctx.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -155,7 +154,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		igm.AdjustInstanceGroup()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Waiting for cluster initialization")
+	cm.ctx.Logger().Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
 	if err := lib.EnsureDnsIPLookup(cm.ctx); err != nil {
@@ -196,7 +195,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 }
 
 func (cm *clusterManager) importPublicKey() error {
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Importing SSH key with fingerprint: %v", cm.ctx.SSHKey.OpensshFingerprint))
+	cm.ctx.Logger().Infof("Importing SSH key with fingerprint: %v", cm.ctx.SSHKey.OpensshFingerprint)
 	pubKey := string(cm.ctx.SSHKey.PublicKey)
 	r1, err := cm.conn.computeService.Projects.SetCommonInstanceMetadata(cm.ctx.Project, &compute.Metadata{
 		Items: []*compute.MetadataItems{
@@ -215,7 +214,7 @@ func (cm *clusterManager) importPublicKey() error {
 		errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ctx.Logger().Debug("Imported SSH key")
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "SSH key imported")
+	cm.ctx.Logger().Info("SSH key imported")
 	return nil
 }
 
@@ -231,7 +230,7 @@ func (cm *clusterManager) ensureNetworks() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("New network %v is created", defaultNetwork))
+		cm.ctx.Logger().Infof("New network %v is created", defaultNetwork)
 	}
 	return nil
 }
@@ -265,7 +264,7 @@ func (cm *clusterManager) ensureFirewallRules() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Firewall rule %v created", ruleInternal))
+		cm.ctx.Logger().Infof("Firewall rule %v created", ruleInternal)
 	}
 
 	ruleSSH := defaultNetwork + "-allow-ssh"
@@ -287,7 +286,7 @@ func (cm *clusterManager) ensureFirewallRules() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Firewall rule %v created", ruleSSH))
+		cm.ctx.Logger().Infof("Firewall rule %v created", ruleSSH)
 	}
 
 	ruleHTTPS := cm.ctx.KubernetesMasterName + "-https"
@@ -314,7 +313,7 @@ func (cm *clusterManager) ensureFirewallRules() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Master created and firewalls configured")
+		cm.ctx.Logger().Info("Master created and firewalls configured")
 	}
 	return nil
 }
@@ -335,7 +334,7 @@ func (cm *clusterManager) createDisk(name, diskType string, sizeGb int64) (strin
 	if err != nil {
 		return name, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Blank disk of type %v created before creating the master VM", dType))
+	cm.ctx.Logger().Infof("Blank disk of type %v created before creating the master VM", dType)
 	return name, nil
 }
 
@@ -343,7 +342,7 @@ func (cm *clusterManager) reserveIP() error {
 	if cm.ctx.MasterReservedIP == "auto" {
 		name := cm.namer.ReserveIPName()
 
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Checking existence of reserved master ip %v", name))
+		cm.ctx.Logger().Infof("Checking existence of reserved master ip %v", name)
 		if r1, err := cm.conn.computeService.Addresses.Get(cm.ctx.Project, cm.ctx.Region, name).Do(); err == nil {
 			if r1.Status == "IN_USE" {
 				return fmt.Errorf("Found a static IP with name %v in use. Failed to reserve a new ip with the same name.", name)
@@ -351,11 +350,11 @@ func (cm *clusterManager) reserveIP() error {
 
 			cm.ctx.Logger().Debug("Found master IP was already reserved", r1, err)
 			cm.ctx.MasterReservedIP = r1.Address
-			cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Newly reserved master ip %v", cm.ctx.MasterReservedIP))
+			cm.ctx.Logger().Infof("Newly reserved master ip %v", cm.ctx.MasterReservedIP)
 			return nil
 		}
 
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Reserving master ip %v", name))
+		cm.ctx.Logger().Infof("Reserving master ip %v", name)
 		r2, err := cm.conn.computeService.Addresses.Insert(cm.ctx.Project, cm.ctx.Region, &compute.Address{Name: name}).Do()
 		cm.ctx.Logger().Debug("Reserved master IP", r2, err)
 		if err != nil {
@@ -366,12 +365,12 @@ func (cm *clusterManager) reserveIP() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Master ip %v reserved", name))
+		cm.ctx.Logger().Infof("Master ip %v reserved", name)
 		if r3, err := cm.conn.computeService.Addresses.Get(cm.ctx.Project, cm.ctx.Region, name).Do(); err == nil {
 			cm.ctx.Logger().Debug("Retrieved newly reserved master IP", r3, err)
 
 			cm.ctx.MasterReservedIP = r3.Address
-			cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Newly reserved master ip %v", cm.ctx.MasterReservedIP))
+			cm.ctx.Logger().Infof("Newly reserved master ip %v", cm.ctx.MasterReservedIP)
 		}
 	}
 
@@ -485,7 +484,7 @@ func (cm *clusterManager) createMasterIntance() (string, error) {
 	if err != nil {
 		return r1.Name, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Master instance of type %v in zone %v using persistent disk %v created", machineType, zone, pdSrc))
+	cm.ctx.Logger().Infof("Master instance of type %v in zone %v using persistent disk %v created", machineType, zone, pdSrc)
 	return r1.Name, nil
 }
 
@@ -605,7 +604,7 @@ func (cm *clusterManager) createNodeFirewallRule() (string, error) {
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Node firewall rule %v created", name))
+	cm.ctx.Logger().Infof("Node firewall rule %v created", name)
 	return r1.Name, nil
 }
 
@@ -619,7 +618,7 @@ func (cm *clusterManager) createNodeInstanceTemplate(sku string) (string, error)
 		cm.ctx.Logger().Infof("Deleting node template %v", templateName)
 		if r2, err := cm.conn.computeService.InstanceTemplates.Delete(cm.ctx.Project, templateName).Do(); err != nil {
 			cm.ctx.Logger().Debug("Delete node template called", r2, err)
-			cm.ctx.Logger().Errorln("Failed to delete existing instance template")
+			cm.ctx.Logger().Infoln("Failed to delete existing instance template")
 			os.Exit(1)
 		}
 	}
@@ -701,7 +700,7 @@ func (cm *clusterManager) createNodeInstanceTemplate(sku string) (string, error)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Node instance template %v created for sku %v", templateName, sku))
+	cm.ctx.Logger().Infof("Node instance template %v created for sku %v", templateName, sku)
 	return r1.Name, nil
 }
 
@@ -720,7 +719,7 @@ func (cm *clusterManager) createInstanceGroup(sku string, count int64) (string, 
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance group %v created with %v nodes of %v sku", name, count, sku))
+	cm.ctx.Logger().Infof("Instance group %v created with %v nodes of %v sku", name, count, sku)
 	return r1.Name, nil
 }
 
@@ -742,7 +741,7 @@ func (cm *clusterManager) createAutoscaler(sku string, count int64) (string, err
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Auto scaler %v for instance group %v created", name, target))
+	cm.ctx.Logger().Infof("Auto scaler %v for instance group %v created", name, target)
 	return r1.Name, nil
 }
 

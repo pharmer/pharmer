@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/system"
 	compute "google.golang.org/api/compute/v1"
@@ -75,10 +74,10 @@ func (igm *InstanceGroupManager) createNodeInstanceTemplate(sku string) (string,
 
 		if r2, err := igm.cm.conn.computeService.InstanceTemplates.Delete(igm.cm.ctx.Project, templateName).Do(); err != nil {
 			igm.cm.ctx.Logger().Debug("Delete node template called", r2, err)
-			igm.cm.ctx.Logger().Errorln("Failed to delete existing instance template")
+			igm.cm.ctx.Logger().Infoln("Failed to delete existing instance template")
 			os.Exit(1)
 		}
-		igm.cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Existing node template %v deleted", templateName))
+		igm.cm.ctx.Logger().Infof("Existing node template %v deleted", templateName)
 	}
 	//  if cluster.ctx.Preemptiblenode == "true" {
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
@@ -157,7 +156,7 @@ func (igm *InstanceGroupManager) createNodeInstanceTemplate(sku string) (string,
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	igm.cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance template %v created", templateName))
+	igm.cm.ctx.Logger().Infof("Instance template %v created", templateName)
 	return r1.Name, nil
 }
 
@@ -175,7 +174,7 @@ func (igm *InstanceGroupManager) createInstanceGroup(sku string, count int64) (s
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	igm.cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance group %v from template %v created", name, template))
+	igm.cm.ctx.Logger().Infof("Instance group %v from template %v created", name, template)
 	return r1.Name, nil
 }
 
@@ -196,7 +195,7 @@ func (igm *InstanceGroupManager) createAutoscaler(sku string, count int64) (stri
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	igm.cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Auto scaler %v for instance group %v is created", name, target))
+	igm.cm.ctx.Logger().Infof("Auto scaler %v for instance group %v is created", name, target)
 	return r1.Name, nil
 }
 
@@ -212,8 +211,8 @@ func (igm *InstanceGroupManager) deleteOnlyInstanceGroup(instanceGroupName, temp
 	}
 	operation := r1.Name
 	igm.cm.conn.waitForZoneOperation(operation)
-	igm.cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance group %v is deleted", instanceGroupName))
-	igm.cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance template %v is deleting", template))
+	igm.cm.ctx.Logger().Infof("Instance group %v is deleted", instanceGroupName)
+	igm.cm.ctx.Logger().Infof("Instance template %v is deleting", template)
 	r2, err := igm.cm.conn.computeService.InstanceTemplates.Delete(igm.cm.ctx.Project, template).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -222,8 +221,8 @@ func (igm *InstanceGroupManager) deleteOnlyInstanceGroup(instanceGroupName, temp
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	igm.cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance template %v is deleted", template))
-	igm.cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Autoscaler is deleting for %v", instanceGroupName))
+	igm.cm.ctx.Logger().Infof("Instance template %v is deleted", template)
+	igm.cm.ctx.Logger().Infof("Autoscaler is deleting for %v", instanceGroupName)
 	r3, err := igm.cm.conn.computeService.Autoscalers.Delete(igm.cm.ctx.Project, igm.cm.ctx.Zone, instanceGroupName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -232,7 +231,7 @@ func (igm *InstanceGroupManager) deleteOnlyInstanceGroup(instanceGroupName, temp
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	igm.cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Autoscaler is deleted for %v", instanceGroupName))
+	igm.cm.ctx.Logger().Infof("Autoscaler is deleted for %v", instanceGroupName)
 
 	return nil
 }
@@ -244,7 +243,7 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, s
 	}
 	max := r1.AutoscalingPolicy.MaxNumReplicas
 	min := r1.AutoscalingPolicy.MinNumReplicas
-	igm.cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Updating autoscaller with Max %v and Min %v num of replicas", size, size))
+	igm.cm.ctx.Logger().Infof("Updating autoscaller with Max %v and Min %v num of replicas", size, size)
 	if size > max {
 		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.ctx.Project, igm.cm.ctx.Zone, instanceGroupName, &compute.Autoscaler{
 			AutoscalingPolicy: &compute.AutoscalingPolicy{
@@ -274,7 +273,7 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, s
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	}
-	igm.cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Autoscalling group %v updated", instanceGroupName))
+	igm.cm.ctx.Logger().Infof("Autoscalling group %v updated", instanceGroupName)
 	_, err = igm.cm.conn.computeService.InstanceGroupManagers.ListManagedInstances(igm.cm.ctx.Project, igm.cm.ctx.Zone, instanceGroupName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -286,7 +285,7 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, s
 	}
 	igm.cm.conn.waitForZoneOperation(resp.Name)
 	fmt.Println(resp.Name)
-	igm.cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance group %v resized", instanceGroupName))
+	igm.cm.ctx.Logger().Infof("Instance group %v resized", instanceGroupName)
 	/*err = lib.WaitForReadyNodes(igm.cm.ctx, size-sz)
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()

@@ -8,7 +8,6 @@ import (
 	"github.com/appscode/errors"
 	sshtools "github.com/appscode/go/crypto/ssh"
 	"github.com/appscode/go/types"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
@@ -93,7 +92,7 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance %v created", name))
+	im.ctx.Logger().Infof("Instance %v created", name)
 	return serverID, nil
 }
 

@@ -9,7 +9,6 @@ import (
 	"github.com/appscode/errors"
 	stringutil "github.com/appscode/go/strings"
 	"github.com/appscode/go/types"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/errorhandlers"
 	"github.com/appscode/pharmer/storage"
@@ -130,7 +129,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errorhandlers.SendMailWithContextAndIgnore(cm.ctx, fmt.Errorf(strings.Join(errs, "\n")))
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v deleted successfully", cm.ctx.Name))
+	cm.ctx.Logger().Infof("Cluster %v deleted successfully", cm.ctx.Name)
 	return nil
 }
 
@@ -151,7 +150,7 @@ func (cluster *clusterManager) deleteAutoScalingGroup(name string) error {
 		ForceDelete:          types.TrueP(),
 		AutoScalingGroupName: types.StringP(name),
 	})
-	cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Auto scaling group %v is deleted for cluster %v", name, cluster.ctx.Name))
+	cluster.ctx.Logger().Infof("Auto scaling group %v is deleted for cluster %v", name, cluster.ctx.Name)
 	return err
 }
 
@@ -159,7 +158,7 @@ func (cluster *clusterManager) deleteLaunchConfiguration(name string) error {
 	_, err := cluster.conn.autoscale.DeleteLaunchConfiguration(&autoscaling.DeleteLaunchConfigurationInput{
 		LaunchConfigurationName: types.StringP(name),
 	})
-	cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Launch configuration %v os de;eted for cluster %v", name, cluster.ctx.Name))
+	cluster.ctx.Logger().Infof("Launch configuration %v os de;eted for cluster %v", name, cluster.ctx.Name)
 	return err
 }
 
@@ -191,7 +190,7 @@ func (cluster *clusterManager) deleteMaster() error {
 		}
 	}
 	fmt.Printf("TerminateInstances %v", stringutil.Join(masterInstances, ","))
-	cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Terminating master instance for cluster %v", cluster.ctx.Name))
+	cluster.ctx.Logger().Infof("Terminating master instance for cluster %v", cluster.ctx.Name)
 	_, err = cluster.conn.ec2.TerminateInstances(&_ec2.TerminateInstancesInput{
 		InstanceIds: masterInstances,
 	})
@@ -203,7 +202,7 @@ func (cluster *clusterManager) deleteMaster() error {
 	}
 	err = cluster.conn.ec2.WaitUntilInstanceTerminated(instanceInput)
 	fmt.Println(err, "--------------------<<<<<<<")
-	cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Master instance for cluster %v is terminated", cluster.ctx.Name))
+	cluster.ctx.Logger().Infof("Master instance for cluster %v is terminated", cluster.ctx.Name)
 	return nil
 }
 
@@ -316,7 +315,7 @@ func (cluster *clusterManager) deleteSecurityGroup() error {
 			return errors.FromErr(err).WithContext(cluster.ctx).Err()
 		}
 	}
-	cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Security groups for cluster %v is deleted", cluster.ctx.Name))
+	cluster.ctx.Logger().Infof("Security groups for cluster %v is deleted", cluster.ctx.Name)
 	return nil
 }
 
@@ -347,7 +346,7 @@ func (cluster *clusterManager) deleteSubnetId() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cluster.ctx).Err()
 		}
-		cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Subnet ID in VPC %v is deleted", *subnet.SubnetId))
+		cluster.ctx.Logger().Infof("Subnet ID in VPC %v is deleted", *subnet.SubnetId)
 	}
 	return nil
 }
@@ -382,7 +381,7 @@ func (cluster *clusterManager) deleteInternetGateway() error {
 			return errors.FromErr(err).WithContext(cluster.ctx).Err()
 		}
 	}
-	cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Internet gateway for cluster %v are deleted", cluster.ctx.Name))
+	cluster.ctx.Logger().Infof("Internet gateway for cluster %v are deleted", cluster.ctx.Name)
 	return nil
 }
 
@@ -427,7 +426,7 @@ func (cluster *clusterManager) deleteRouteTable() error {
 			}
 		}
 	}
-	cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Route tables for cluster %v are deleted", cluster.ctx.Name))
+	cluster.ctx.Logger().Infof("Route tables for cluster %v are deleted", cluster.ctx.Name)
 	return nil
 }
 
@@ -460,7 +459,7 @@ func (cluster *clusterManager) deleteDHCPOption() error {
 			return errors.FromErr(err).WithContext(cluster.ctx).Err()
 		}
 	}
-	cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("DHCP options for cluster %v are deleted", cluster.ctx.Name))
+	cluster.ctx.Logger().Infof("DHCP options for cluster %v are deleted", cluster.ctx.Name)
 	return err
 }
 
@@ -472,7 +471,7 @@ func (cluster *clusterManager) deleteVpc() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cluster.ctx).Err()
 	}
-	cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("VPC for cluster %v is deleted", cluster.ctx.Name))
+	cluster.ctx.Logger().Infof("VPC for cluster %v is deleted", cluster.ctx.Name)
 	return nil
 }
 
@@ -483,7 +482,7 @@ func (cluster *clusterManager) deleteVolume() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cluster.ctx).Err()
 	}
-	cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Master instance volume for cluster %v is deleted", cluster.ctx.MasterDiskId))
+	cluster.ctx.Logger().Infof("Master instance volume for cluster %v is deleted", cluster.ctx.MasterDiskId)
 	return nil
 }
 
@@ -495,7 +494,7 @@ func (cluster *clusterManager) deleteSSHKey() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cluster.ctx).Err()
 	}
-	cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("SSH key for cluster %v is deleted", cluster.ctx.MasterDiskId))
+	cluster.ctx.Logger().Infof("SSH key for cluster %v is deleted", cluster.ctx.MasterDiskId)
 	//updates := &storage.SSHKey{IsDeleted: 1}
 	//cond := &storage.SSHKey{PHID: cluster.ctx.SSHKeyPHID}
 	// _, err = cluster.ctx.Store.Engine.Update(updates, cond)
@@ -519,7 +518,7 @@ func (cluster *clusterManager) releaseReservedIP(publicIP string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cluster.ctx).Err()
 	}
-	cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Elastic IP for cluster %v is deleted", cluster.ctx.Name))
+	cluster.ctx.Logger().Infof("Elastic IP for cluster %v is deleted", cluster.ctx.Name)
 	return nil
 }
 
@@ -554,7 +553,7 @@ func (cluster *clusterManager) deleteNetworkInterface(vpcId string) error {
 			return errors.FromErr(err).WithContext(cluster.ctx).Err()
 		}
 	}
-	cluster.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Network interfaces for cluster %v are deleted", cluster.ctx.Name))
+	cluster.ctx.Logger().Infof("Network interfaces for cluster %v are deleted", cluster.ctx.Name)
 	return nil
 }
 

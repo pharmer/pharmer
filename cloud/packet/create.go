@@ -6,7 +6,6 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
@@ -37,9 +36,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		cm.ctx.Save()
 		cm.ins.Save()
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status))
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
 		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is deleting", cm.ctx.Name))
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.ctx.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -58,7 +57,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	// -------------------------------------------------------------------ASSETS
 	im := &instanceManager{ctx: cm.ctx, conn: cm.conn}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Creating master instance")
+	cm.ctx.Logger().Info("Creating master instance")
 	masterDroplet, err := im.createInstance(cm.ctx.KubernetesMasterName, system.RoleKubernetesMaster, cm.ctx.MasterSKU)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
@@ -102,12 +101,12 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	// reboot master to use cert with internal_ip as SANS
 	time.Sleep(60 * time.Second)
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Rebooting master instance")
+	cm.ctx.Logger().Info("Rebooting master instance")
 	if err = im.reboot(masterDroplet.ID); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Rebooted master instance")
+	cm.ctx.Logger().Info("Rebooted master instance")
 
 	// start nodes
 	for _, ng := range req.NodeGroups {
@@ -131,7 +130,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Waiting for cluster initialization")
+	cm.ctx.Logger().Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
 	if err := lib.EnsureDnsIPLookup(cm.ctx); err != nil {

@@ -7,7 +7,6 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/errorhandlers"
 	"github.com/appscode/pharmer/storage"
@@ -58,7 +57,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 			}
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Droplet %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name))
+		cm.ctx.Logger().Infof("Droplet %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name)
 	}
 
 	// Delete SSH key from DB
@@ -78,7 +77,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errorhandlers.SendMailWithContextAndIgnore(cm.ctx, fmt.Errorf(strings.Join(errs, "\n")))
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is deleted successfully", cm.ctx.Name))
+	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.ctx.Name)
 	return nil
 }
 
@@ -101,7 +100,7 @@ func (cm *clusterManager) deleteSSHKey() (err error) {
 			_, err := service.DeleteObject()
 			return err
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("SSH key for cluster %v deleted", cm.ctx.Name))
+		cm.ctx.Logger().Infof("SSH key for cluster %v deleted", cm.ctx.Name)
 	}
 
 	if cm.ctx.SSHKeyPHID != "" {

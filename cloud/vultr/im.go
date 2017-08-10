@@ -158,9 +158,9 @@ func (im *instanceManager) createInstance(name, sku string, scriptID int) (strin
 		planID,
 		osID,
 		opts)
-	im.ctx.Logger().V(6).Infoln("do response", resp, " errors", err)
+	im.ctx.Logger().Debugln("do response", resp, " errors", err)
 	im.ctx.Logger().Debug("Created droplet with name", resp.ID)
-	im.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("DO droplet %v created", name))
+	im.ctx.Logger().Infof("DO droplet %v created", name)
 	return resp.ID, err
 }
 
@@ -169,7 +169,7 @@ func (im *instanceManager) assignReservedIP(ip, serverId string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Reserved ip %v assigned to %v", ip, serverId))
+	im.ctx.Logger().Infof("Reserved ip %v assigned to %v", ip, serverId)
 	return nil
 }
 

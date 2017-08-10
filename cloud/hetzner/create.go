@@ -8,7 +8,6 @@ import (
 	"github.com/appscode/errors"
 	hc "github.com/appscode/go-hetzner"
 	_ssh "github.com/appscode/go/crypto/ssh"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
@@ -37,9 +36,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		cm.ctx.Save()
 		cm.ins.Save()
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status))
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
 		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is deleting", cm.ctx.Name))
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.ctx.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -64,7 +63,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	// -------------------------------------------------------------------ASSETS
 	im := &instanceManager{ctx: cm.ctx, conn: cm.conn}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Creating master instance")
+	cm.ctx.Logger().Info("Creating master instance")
 	masterTx, err := im.createInstance(system.RoleKubernetesMaster, cm.ctx.MasterSKU)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
@@ -179,7 +178,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Waiting for cluster initialization")
+	cm.ctx.Logger().Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
 	if err := lib.EnsureDnsIPLookup(cm.ctx); err != nil {
@@ -212,7 +211,7 @@ func (cm *clusterManager) importPublicKey() error {
 		Name: cm.ctx.Name,
 		Data: string(cm.ctx.SSHKey.PublicKey),
 	})
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("New ssh key with fingerprint %v created", cm.ctx.SSHKey.OpensshFingerprint))
+	cm.ctx.Logger().Infof("New ssh key with fingerprint %v created", cm.ctx.SSHKey.OpensshFingerprint)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

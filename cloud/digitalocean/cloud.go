@@ -9,7 +9,6 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/util/credentialutil"
 	"github.com/digitalocean/godo"
@@ -70,7 +69,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 						return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 					}
 
-					conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Started image transfer to region %v.", conn.ctx.Region))
+					conn.ctx.Logger().Infof("Started image transfer to region %v.", conn.ctx.Region)
 					// wait for the transfer to complete
 					conn.waitForTransfer(img.ID)
 					return strconv.Itoa(img.ID), nil
@@ -83,7 +82,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 		}
 	}
 
-	conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Creating droplet to build custom image")
+	conn.ctx.Logger().Info("Creating droplet to build custom image")
 	droplet, _, err := conn.client.Droplets.Create(context.TODO(), &godo.DropletCreateRequest{
 		Name:              rand.WithUniqSuffix("kubernetes"),
 		Region:            conn.ctx.Region,
@@ -100,24 +99,24 @@ update-grub`,
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Wait for custom image instance to become active")
+	conn.ctx.Logger().Info("Wait for custom image instance to become active")
 	conn.waitForInstance(droplet.ID, "active")
 	time.Sleep(30 * time.Second)
 
-	conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Power off custom image instance")
+	conn.ctx.Logger().Info("Power off custom image instance")
 	_, _, err = conn.client.DropletActions.PowerOff(context.TODO(), droplet.ID)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	conn.waitForInstance(droplet.ID, "off")
 
-	conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Start taking custom image snapshot")
+	conn.ctx.Logger().Info("Start taking custom image snapshot")
 	_, _, err = conn.client.DropletActions.Snapshot(context.TODO(), droplet.ID, containerOsImage)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 
-	conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Wait for custom image snapshot to be completed")
+	conn.ctx.Logger().Info("Wait for custom image snapshot to be completed")
 	for {
 		action, err := conn.findSnapshotAction(droplet.ID)
 		if err != nil {
@@ -149,7 +148,7 @@ update-grub`,
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Delete custom image instance")
+	conn.ctx.Logger().Info("Delete custom image instance")
 	return strconv.Itoa(k8sImage.ID), nil
 }
 
@@ -165,7 +164,7 @@ func (conn *cloudConnector) waitForInstance(id int, status string) error {
 		if strings.ToLower(droplet.Status) == status {
 			break
 		}
-		conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance %v (%v) is %v, waiting...", droplet.Name, droplet.ID, droplet.Status))
+		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", droplet.Name, droplet.ID, droplet.Status)
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

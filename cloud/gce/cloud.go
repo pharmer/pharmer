@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/contexts"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -71,7 +70,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 			}
 		}
 
-		conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Creating %v image on %v project", containerOsImage, conn.ctx.Project))
+		conn.ctx.Logger().Infof("Creating %v image on %v project", containerOsImage, conn.ctx.Project)
 		r, err := conn.computeService.Images.Insert(conn.ctx.Project, &compute.Image{
 			Name:       containerOsImage,
 			SourceDisk: fmt.Sprintf("projects/%v/zones/%v/disks/%v", conn.ctx.Project, conn.ctx.Zone, containerOsImage),
@@ -83,7 +82,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 		if err != nil {
 			return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
-		conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Image %v created", containerOsImage))
+		conn.ctx.Logger().Infof("Image %v created", containerOsImage)
 		for {
 			fmt.Print("Pending image creation: ")
 			if r, err := conn.computeService.Images.Get(conn.ctx.Project, containerOsImage).Do(); err != nil || r.Status != "READY" {
@@ -99,7 +98,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 			return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
 	}
-	conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Image %v found on project %v", containerOsImage, conn.ctx.Project))
+	conn.ctx.Logger().Infof("Image %v found on project %v", containerOsImage, conn.ctx.Project)
 	return containerOsImage, nil
 }
 
@@ -220,7 +219,7 @@ func (conn *cloudConnector) waitForGlobalOperation(operation string) error {
 		if r1.Status == "DONE" {
 			return nil
 		}
-		conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status))
+		conn.ctx.Logger().Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
 		attempt++
 		time.Sleep(5 * time.Second)
 		if attempt > 120 {
@@ -243,7 +242,7 @@ func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 		if r1.Status == "DONE" {
 			return nil
 		}
-		conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status))
+		conn.ctx.Logger().Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
 		attempt++
 		time.Sleep(5 * time.Second)
 		if attempt > 120 {
@@ -266,7 +265,7 @@ func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 		if r1.Status == "DONE" {
 			return nil //TODO check return value
 		}
-		conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status))
+		conn.ctx.Logger().Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
 		attempt++
 		time.Sleep(5 * time.Second)
 		if attempt > 120 {
