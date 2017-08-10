@@ -5,13 +5,15 @@ import (
 	"io/ioutil"
 	"os"
 
+	"errors"
+
 	api "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/appctl/pkg/config"
+	"github.com/appscode/appctl/pkg/util"
 	term "github.com/appscode/go-term"
 	"github.com/appscode/go/flags"
-	"github.com/spf13/cobra"
 	"github.com/appscode/pharmer/credential"
-	"errors"
+	"github.com/spf13/cobra"
 )
 
 func NewCmdCreate() *cobra.Command {
@@ -60,6 +62,7 @@ func NewCmdCreate() *cobra.Command {
 			_, err := c.Kubernetes().V1beta1().Cluster().Create(c.Context(), &req)
 			util.PrintStatus(err)
 			term.Successln("Request to create cluster is accepted!")
+			return nil
 		},
 	}
 

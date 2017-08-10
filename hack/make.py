@@ -90,9 +90,9 @@ def version():
 
 
 def fmt():
-    libbuild.ungroup_go_imports('*.go', 'api', 'cloud', 'commissioner', 'contexts', 'errorhandlers', 'extpoints', 'phid', 'storage')
-    die(call('goimports -w *.go api cloud cmds commissioner contexts credential data errorhandlers extpoints phid storage system util'))
-    call('gofmt -s -w *.go api cloud cmds commissioner contexts credential data errorhandlers extpoints phid storage system util')
+    libbuild.ungroup_go_imports('*.go', 'api', 'cloud', 'commissioner', 'contexts', 'extpoints', 'phid', 'storage')
+    die(call('goimports -w *.go api cloud cmds commissioner contexts credential data extpoints phid storage system util'))
+    call('gofmt -s -w *.go api cloud cmds commissioner contexts credential data extpoints phid storage system util')
 
 
 def vet():

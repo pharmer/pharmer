@@ -7,7 +7,6 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/errorhandlers"
 	"github.com/appscode/pharmer/storage"
 )
 
@@ -59,7 +58,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		if cm.ctx.Status == storage.KubernetesStatus_Deleting {
 			cm.ctx.StatusCause = strings.Join(errs, "\n")
 		}
-		errorhandlers.SendMailWithContextAndIgnore(cm.ctx, fmt.Errorf(strings.Join(errs, "\n")))
+		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 	err = cm.ins.Save()
 	if err != nil {

@@ -1,5 +1,5 @@
 hash: fe668477254a7ee7f7173631d5fdca74f87febcd4dd123ceb072534f63aa638e
-updated: 2017-08-10T10:18:35.252491015-07:00
+updated: 2017-08-10T14:19:19.122775329-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -44,9 +44,6 @@ imports:
   version: a74ef73ab982beb8f0c6060ac44da1c960fea414
 - name: github.com/appscode/errors
   version: 748883e321a9f99fe901bd2663c7af3fcae43ea4
-  subpackages:
-  - h/log
-  - h/mail
 - name: github.com/appscode/go
   version: 45732d59b2277b9c7ffdc41d2d5c07a899a20a70
   subpackages:

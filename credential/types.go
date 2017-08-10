@@ -16,8 +16,8 @@ const (
 	GCEClientID          = "client_id"
 	AzureSubscriptionID  = "subscription_id"
 	AzureTenantID        = "tenant_id"
-	AzureClientID               = "client_id"
-	AzureClientSecret           = "client_secret"
-	SoftlayerUsername           = "username"
-	SoftlayerAPIKey             = "api_key"
+	AzureClientID        = "client_id"
+	AzureClientSecret    = "client_secret"
+	SoftlayerUsername    = "username"
+	SoftlayerAPIKey      = "api_key"
 )
