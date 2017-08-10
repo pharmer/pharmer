@@ -16,7 +16,6 @@ import (
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
 	// "github.com/appscode/pharmer/templates"
-
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 	_iam "github.com/aws/aws-sdk-go/service/iam"

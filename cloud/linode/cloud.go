@@ -1,7 +1,6 @@
 package linode
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -38,7 +37,7 @@ func (conn *cloudConnector) detectInstanceImage() error {
 	for _, d := range resp.Distributions {
 		if d.Is64Bit == 1 && d.Label.String() == "Debian 8" {
 			conn.ctx.InstanceImage = strconv.Itoa(d.DistributionId)
-			conn.ctx.Logger().Infof("Instance image %v with id %v found", d.Label.String(), conn.ctx.InstanceImage))
+			conn.ctx.Logger().Infof("Instance image %v with id %v found", d.Label.String(), conn.ctx.InstanceImage)
 			return nil
 		}
 	}
@@ -84,7 +83,7 @@ func (conn *cloudConnector) waitForStatus(id, status int) (*linodego.Linode, err
 		if linode.Status == status {
 			return &linode, nil
 		}
-		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", linode.Label, linode.LinodeId, linode.Status))
+		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", linode.Label, linode.LinodeId, linode.Status)
 		attempt += 1
 		if attempt > 4*15 {
 			break // timeout after 15 mins

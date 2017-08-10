@@ -92,7 +92,7 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger().Infof("Instance %v created", name))
+	im.ctx.Logger().Infof("Instance %v created", name)
 	return serverID, nil
 }
 

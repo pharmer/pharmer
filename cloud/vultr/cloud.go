@@ -1,7 +1,6 @@
 package vultr
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -60,7 +59,7 @@ func (conn *cloudConnector) waitForActiveInstance(id string) (*gv.Server, error)
 		if strings.ToLower(server.Status) == "active" && server.PowerStatus == "running" {
 			return &server, nil
 		}
-		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", server.Name, server.ID, server.Status))
+		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", server.Name, server.ID, server.Status)
 		attempt += 1
 		if attempt > 120 {
 			break // timeout = 60 mins

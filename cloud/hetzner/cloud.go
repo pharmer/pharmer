@@ -1,7 +1,6 @@
 package hetzner
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -42,7 +41,7 @@ func (conn *cloudConnector) waitForInstance(id, status string) (*hc.Transaction,
 		if strings.ToLower(tx.Status) == status {
 			return tx, nil
 		}
-		conn.ctx.Logger().Infof("Instance %v is %v, waiting...", *tx.ServerIP, tx.Status))
+		conn.ctx.Logger().Infof("Instance %v is %v, waiting...", *tx.ServerIP, tx.Status)
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

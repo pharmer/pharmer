@@ -57,7 +57,7 @@ func (im *instanceManager) createInstance(role, sku string) (*hc.Transaction, er
 		Lang:          "en",
 		// Test:          true,
 	})
-	im.ctx.Logger().Infof("Instance with sku %v created", sku))
+	im.ctx.Logger().Infof("Instance with sku %v created", sku)
 	return tx, err
 }
 

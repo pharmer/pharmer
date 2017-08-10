@@ -1,8 +1,6 @@
 package aws
 
 import (
-	"fmt"
-
 	"github.com/appscode/errors"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/contexts"

@@ -37,9 +37,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		cm.ctx.Save()
 		cm.ins.Save()
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status))
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
 		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name))
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.ctx.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -57,7 +57,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Linode kernel %v found", cm.ctx.Kernel))
+	cm.ctx.Logger().Infof("Linode kernel %v found", cm.ctx.Kernel)
 
 	// -------------------------------------------------------------------ASSETS
 	im := &instanceManager{ctx: cm.ctx, conn: cm.conn, namer: cm.namer}
@@ -163,7 +163,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 				// ignore error, and try again
 				if err == nil {
 					linode := resp.Linodes[0]
-					cm.ctx.Logger().Infof("Instance %v (%v) is %v", linode.Label, linode.LinodeId, statusString(linode.Status)))
+					cm.ctx.Logger().Infof("Instance %v (%v) is %v", linode.Label, linode.LinodeId, statusString(linode.Status))
 					if linode.Status == LinodeStatus_PoweredOff {
 						info.state = 1
 						// create node

@@ -70,7 +70,7 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 		UserData:     startupScript,
 		Tags:         []string{im.ctx.Name},
 	})
-	im.ctx.Logger().Infof("Instance %v created", name))
+	im.ctx.Logger().Infof("Instance %v created", name)
 	return device, err
 }
 

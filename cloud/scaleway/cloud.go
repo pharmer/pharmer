@@ -1,7 +1,6 @@
 package scaleway
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -83,7 +82,7 @@ func (conn *cloudConnector) waitForInstance(id, status string) error {
 		if strings.ToLower(s.State) == status {
 			break
 		}
-		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", s.Name, s.Identifier, s.State))
+		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", s.Name, s.Identifier, s.State)
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

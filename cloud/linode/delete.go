@@ -60,11 +60,11 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 			}
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger().Infof("Linode %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name))
+		cm.ctx.Logger().Infof("Linode %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name)
 	}
 
 	backoff.Retry(cm.deleteStackscripts, backoff.NewExponentialBackOff())
-	cm.ctx.Logger().Infof("Stack scripts for cluster %v deleted", cm.ctx.Name))
+	cm.ctx.Logger().Infof("Stack scripts for cluster %v deleted", cm.ctx.Name)
 	// Delete SSH key from DB
 	if err := cm.deleteSSHKey(); err != nil {
 		errs = append(errs, err.Error())
@@ -82,7 +82,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errorhandlers.SendMailWithContextAndIgnore(cm.ctx, fmt.Errorf(strings.Join(errs, "\n")))
 	}
 
-	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.ctx.Name))
+	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.ctx.Name)
 	return nil
 }
 

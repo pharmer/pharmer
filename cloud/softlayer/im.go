@@ -118,7 +118,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		im.ctx.StatusCause = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger().Infof("Softlayer instance %v created", name))
+	im.ctx.Logger().Infof("Softlayer instance %v created", name)
 	return *vGuest.Id, nil
 }
 

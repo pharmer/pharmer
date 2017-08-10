@@ -36,9 +36,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		cm.ctx.Save()
 		cm.ins.Save()
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status))
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
 		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name))
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.ctx.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -50,7 +50,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Found vultr instance image %v", cm.ctx.InstanceImage))
+	cm.ctx.Logger().Infof("Found vultr instance image %v", cm.ctx.InstanceImage)
 
 	cm.ctx.SSHKeyExternalID, err = cm.importPublicKey()
 	if err != nil {
@@ -172,7 +172,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 				if err == nil {
 					cm.ctx.Logger().Infof("Instance %v (%v) is %v", server.Name, server.ID, server.Status)
 					if server.Status == "active" && server.PowerStatus == "running" {
-						cm.ctx.Logger().Infof("Instance %v is %v", server.Name, server.Status))
+						cm.ctx.Logger().Infof("Instance %v is %v", server.Name, server.Status)
 						info.state = 1
 						// create node
 						node, err := im.newKubeInstance(&server)
@@ -236,7 +236,7 @@ func (cm *clusterManager) importPublicKey() (string, error) {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ctx.Logger().Debugln("DO response", resp, " errors", err)
-	cm.ctx.Logger().Infof("New ssh key with name %v and id %v created", cm.ctx.SSHKeyExternalID, resp.ID))
+	cm.ctx.Logger().Infof("New ssh key with name %v and id %v created", cm.ctx.SSHKeyExternalID, resp.ID)
 	return resp.ID, nil
 }
 
@@ -258,7 +258,7 @@ func (cm *clusterManager) reserveIP() error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		cm.ctx.MasterReservedIP = ip.Subnet
-		cm.ctx.Logger().Infof("Floating ip %v reserved", ip.Subnet))
+		cm.ctx.Logger().Infof("Floating ip %v reserved", ip.Subnet)
 	}
 	return nil
 }

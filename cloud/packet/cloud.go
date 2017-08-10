@@ -1,7 +1,6 @@
 package packet
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -38,7 +37,7 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 		if strings.ToLower(s.State) == status {
 			break
 		}
-		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", s.Hostname, s.ID, s.State))
+		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", s.Hostname, s.ID, s.State)
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

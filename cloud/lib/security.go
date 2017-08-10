@@ -2,7 +2,6 @@ package lib
 
 import (
 	"encoding/base64"
-	"fmt"
 
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
@@ -99,7 +98,7 @@ func GenClusterCerts(ctx *contexts.ClusterContext) error {
 	if ctx.MasterReservedIP != "" {
 		csrReq.Hosts = append(csrReq.Hosts, ctx.MasterReservedIP)
 	}
-	ctx.Logger().Infof("Master LB Extra SANS: %v", csrReq.Hosts))
+	ctx.Logger().Infof("Master LB Extra SANS: %v", csrReq.Hosts)
 
 	defaultLBCertPHID, defaultLBCert, defaultLBKey, err := CreateClientCert(ctx, caCert, caKey, &csrReq)
 	if err != nil {
