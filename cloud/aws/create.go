@@ -50,9 +50,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		cm.ctx.Save()
 		cm.ins.Save()
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status))
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
 		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name))
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.ctx.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -233,7 +233,7 @@ func (cm *clusterManager) createIAMProfile(key string) error {
 		AssumeRolePolicyDocument: &role,
 	})
 	cm.ctx.Logger().Debug("Created IAM role", r1, err)
-	cm.ctx.Logger().Infof("IAM role %v created", key))
+	cm.ctx.Logger().Infof("IAM role %v created", key)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -248,7 +248,7 @@ func (cm *clusterManager) createIAMProfile(key string) error {
 		PolicyDocument: &policy,
 	})
 	cm.ctx.Logger().Debug("Created IAM role-policy", r2, err)
-	cm.ctx.Logger().Infof("IAM role-policy %v created", key))
+	cm.ctx.Logger().Infof("IAM role-policy %v created", key)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -296,7 +296,7 @@ func (cm *clusterManager) importPublicKey() error {
 }
 
 func (cm *clusterManager) setupVpc() error {
-	cm.ctx.Logger().Infof("Checking VPC tagged with %v", cm.ctx.Name))
+	cm.ctx.Logger().Infof("Checking VPC tagged with %v", cm.ctx.Name)
 	r1, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -316,7 +316,7 @@ func (cm *clusterManager) setupVpc() error {
 	cm.ctx.Logger().Debug("VPC described", r1, err)
 	if len(r1.Vpcs) > 1 {
 		cm.ctx.VpcId = *r1.Vpcs[0].VpcId
-		cm.ctx.Logger().Infof("VPC %v found", cm.ctx.VpcId))
+		cm.ctx.Logger().Infof("VPC %v found", cm.ctx.VpcId)
 	}
 
 	cm.ctx.Logger().Info("No VPC found, creating new VPC")
@@ -1141,7 +1141,7 @@ func (cm *clusterManager) allocateElasticIp() (string, error) {
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Elastic IP %v allocated", *r1.PublicIp))
+	cm.ctx.Logger().Infof("Elastic IP %v allocated", *r1.PublicIp)
 	time.Sleep(5 * time.Second)
 	return *r1.PublicIp, nil
 }
@@ -1265,7 +1265,7 @@ func (cm *clusterManager) createAutoScalingGroup(name, launchConfig string, coun
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Autoscaling group %v created", name))
+	cm.ctx.Logger().Infof("Autoscaling group %v created", name)
 	return nil
 }
 

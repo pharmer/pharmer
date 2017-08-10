@@ -69,7 +69,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 						return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 					}
 
-					conn.ctx.Logger().Infof("Started image transfer to region %v.", conn.ctx.Region))
+					conn.ctx.Logger().Infof("Started image transfer to region %v.", conn.ctx.Region)
 					// wait for the transfer to complete
 					conn.waitForTransfer(img.ID)
 					return strconv.Itoa(img.ID), nil
@@ -164,7 +164,7 @@ func (conn *cloudConnector) waitForInstance(id int, status string) error {
 		if strings.ToLower(droplet.Status) == status {
 			break
 		}
-		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", droplet.Name, droplet.ID, droplet.Status))
+		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", droplet.Name, droplet.ID, droplet.Status)
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

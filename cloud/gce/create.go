@@ -618,7 +618,7 @@ func (cm *clusterManager) createNodeInstanceTemplate(sku string) (string, error)
 		cm.ctx.Logger().Infof("Deleting node template %v", templateName)
 		if r2, err := cm.conn.computeService.InstanceTemplates.Delete(cm.ctx.Project, templateName).Do(); err != nil {
 			cm.ctx.Logger().Debug("Delete node template called", r2, err)
-			cm.ctx.Logger().Errorln("Failed to delete existing instance template")
+			cm.ctx.Logger().Infoln("Failed to delete existing instance template")
 			os.Exit(1)
 		}
 	}

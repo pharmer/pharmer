@@ -235,7 +235,7 @@ func (cm *clusterManager) importPublicKey() (string, error) {
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().V(6).Infoln("DO response", resp, " errors", err)
+	cm.ctx.Logger().Debugln("DO response", resp, " errors", err)
 	cm.ctx.Logger().Infof("New ssh key with name %v and id %v created", cm.ctx.SSHKeyExternalID, resp.ID))
 	return resp.ID, nil
 }
@@ -250,7 +250,7 @@ func (cm *clusterManager) reserveIP() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Logger().V(6).Infoln("DO response", ipID, " errors", err)
+		cm.ctx.Logger().Debugln("DO response", ipID, " errors", err)
 		cm.ctx.Logger().Infof("Reserved new floating IP=%v", ipID)
 
 		ip, err := cm.conn.client.GetReservedIP(ipID)

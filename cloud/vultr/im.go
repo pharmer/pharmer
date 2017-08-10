@@ -158,7 +158,7 @@ func (im *instanceManager) createInstance(name, sku string, scriptID int) (strin
 		planID,
 		osID,
 		opts)
-	im.ctx.Logger().V(6).Infoln("do response", resp, " errors", err)
+	im.ctx.Logger().Debugln("do response", resp, " errors", err)
 	im.ctx.Logger().Debug("Created droplet with name", resp.ID)
 	im.ctx.Logger().Infof("DO droplet %v created", name))
 	return resp.ID, err

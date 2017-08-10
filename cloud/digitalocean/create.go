@@ -37,9 +37,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		cm.ctx.Save()
 		cm.ins.Save()
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status))
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
 		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name))
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.ctx.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -52,7 +52,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Image %v is using to create instance", cm.ctx.InstanceImage))
+	cm.ctx.Logger().Infof("Image %v is using to create instance", cm.ctx.InstanceImage)
 
 	err = cm.importPublicKey()
 	if err != nil {
@@ -129,7 +129,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 	// start nodes
 	for _, ng := range req.NodeGroups {
-		cm.ctx.Logger().Infof("Creating %v node with sku %v", ng.Count, ng.Sku))
+		cm.ctx.Logger().Infof("Creating %v node with sku %v", ng.Count, ng.Sku)
 		igm := &InstanceGroupManager{
 			cm: cm,
 			instance: lib.Instance{
@@ -185,7 +185,7 @@ func (cm *clusterManager) importPublicKey() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().V(6).Infoln("DO response", resp, " errors", err)
+	cm.ctx.Logger().Debugln("DO response", resp, " errors", err)
 	cm.ctx.Logger().Debugf("Created new ssh key with name=%v and id=%v", cm.ctx.SSHKeyExternalID, key.ID)
 	cm.ctx.Logger().Info("SSH public key added")
 	return nil
@@ -202,7 +202,7 @@ func (cm *clusterManager) createTags() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Logger().Infof("Tag %v created", tag))
+		cm.ctx.Logger().Infof("Tag %v created", tag)
 	}
 	return nil
 }
@@ -215,8 +215,8 @@ func (cm *clusterManager) reserveIP() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Logger().V(6).Infoln("DO response", resp, " errors", err)
-		cm.ctx.Logger().Infof("New floating ip %v reserved", fip.IP))
+		cm.ctx.Logger().Debugln("DO response", resp, " errors", err)
+		cm.ctx.Logger().Infof("New floating ip %v reserved", fip.IP)
 		cm.ctx.MasterReservedIP = fip.IP
 	}
 	return nil

@@ -74,7 +74,7 @@ func (igm *InstanceGroupManager) createNodeInstanceTemplate(sku string) (string,
 
 		if r2, err := igm.cm.conn.computeService.InstanceTemplates.Delete(igm.cm.ctx.Project, templateName).Do(); err != nil {
 			igm.cm.ctx.Logger().Debug("Delete node template called", r2, err)
-			igm.cm.ctx.Logger().Errorln("Failed to delete existing instance template")
+			igm.cm.ctx.Logger().Infoln("Failed to delete existing instance template")
 			os.Exit(1)
 		}
 		igm.cm.ctx.Logger().Infof("Existing node template %v deleted", templateName))

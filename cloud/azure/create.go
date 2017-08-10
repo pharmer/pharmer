@@ -40,9 +40,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		cm.ctx.Save()
 		cm.ins.Save()
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status))
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
 		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name))
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.ctx.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -56,13 +56,13 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.ctx.Zone))
+	cm.ctx.Logger().Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.ctx.Zone)
 	as, err := cm.ensureAvailablitySet()
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Availablity set %v created", cm.namer.AvailablitySetName()))
+	cm.ctx.Logger().Infof("Availablity set %v created", cm.namer.AvailablitySetName())
 	sa, err := cm.createStorageAccount()
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
@@ -149,7 +149,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	fmt.Println(err, "<------------------------------->")
 
 	for _, ng := range req.NodeGroups {
-		cm.ctx.Logger().Infof("Creating %v node with sku %v", ng.Count, ng.Sku))
+		cm.ctx.Logger().Infof("Creating %v node with sku %v", ng.Count, ng.Sku)
 		igm := &InstanceGroupManager{
 			cm: cm,
 			instance: lib.Instance{
@@ -246,7 +246,7 @@ func (cm *clusterManager) ensureVirtualNetwork() (network.VirtualNetwork, error)
 	if err != nil {
 		return network.VirtualNetwork{}, err
 	}
-	cm.ctx.Logger().Infof("Virtual network %v created", name))
+	cm.ctx.Logger().Infof("Virtual network %v created", name)
 	return cm.conn.virtualNetworksClient.Get(cm.namer.ResourceGroupName(), name, "")
 }
 
@@ -267,7 +267,7 @@ func (cm *clusterManager) createNetworkSecurityGroup() (network.SecurityGroup, e
 	if err != nil {
 		return network.SecurityGroup{}, err
 	}
-	cm.ctx.Logger().Infof("Network security group %v created", securityGroupName))
+	cm.ctx.Logger().Infof("Network security group %v created", securityGroupName)
 	return cm.conn.securityGroupsClient.Get(cm.namer.ResourceGroupName(), securityGroupName, "")
 }
 
@@ -294,7 +294,7 @@ func (cm *clusterManager) createSubnetID(vn *network.VirtualNetwork, sg *network
 	if err != nil {
 		return network.Subnet{}, err
 	}
-	cm.ctx.Logger().Infof("Subnet name %v created", name))
+	cm.ctx.Logger().Infof("Subnet name %v created", name)
 	return cm.conn.subnetsClient.Get(cm.namer.ResourceGroupName(), *vn.Name, name, "")
 }
 
@@ -315,7 +315,7 @@ func (cm *clusterManager) createRouteTable() (network.RouteTable, error) {
 	if err != nil {
 		return network.RouteTable{}, err
 	}
-	cm.ctx.Logger().Infof("Route table %v created", name))
+	cm.ctx.Logger().Infof("Route table %v created", name)
 	return cm.conn.routeTablesClient.Get(cm.namer.ResourceGroupName(), name, "")
 }
 
@@ -338,7 +338,7 @@ func (cm *clusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 	if err != nil {
 		return err
 	}
-	cm.ctx.Logger().Infof("Network security rule %v created", sshRuleName))
+	cm.ctx.Logger().Infof("Network security rule %v created", sshRuleName)
 	sslRuleName := cm.namer.NetworkSecurityRule("ssl")
 	sslRule := network.SecurityRule{
 		Name: types.StringP(sshRuleName),
@@ -357,7 +357,7 @@ func (cm *clusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 	if err != nil {
 		return err
 	}
-	cm.ctx.Logger().Infof("Network security rule %v created", sslRuleName))
+	cm.ctx.Logger().Infof("Network security rule %v created", sslRuleName)
 
 	mastersslRuleName := cm.namer.NetworkSecurityRule("masterssl")
 	mastersslRule := network.SecurityRule{
@@ -377,7 +377,7 @@ func (cm *clusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 	if err != nil {
 		return err
 	}
-	cm.ctx.Logger().Infof("Network security rule %v created", mastersslRuleName))
+	cm.ctx.Logger().Infof("Network security rule %v created", mastersslRuleName)
 
 	return err
 }
@@ -397,7 +397,7 @@ func (cm *clusterManager) createStorageAccount() (armstorage.Account, error) {
 	if err != nil {
 		return armstorage.Account{}, err
 	}
-	cm.ctx.Logger().Infof("Storage account %v created", storageName))
+	cm.ctx.Logger().Infof("Storage account %v created", storageName)
 	keys, err := cm.conn.storageClient.ListKeys(cm.namer.ResourceGroupName(), storageName)
 	if err != nil {
 		return armstorage.Account{}, err

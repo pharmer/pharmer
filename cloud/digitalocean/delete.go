@@ -61,7 +61,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 			}
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger().Infof("Droplet %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name))
+		cm.ctx.Logger().Infof("Droplet %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name)
 	}
 
 	// delete by tag
@@ -69,7 +69,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		_, err := cm.conn.client.Droplets.DeleteByTag(context.TODO(), "KubernetesCluster:"+cm.ctx.Name)
 		return err
 	}, backoff.NewExponentialBackOff())
-	cm.ctx.Logger().Infof("Deleted droplet by tag %v", "KubernetesCluster:"+cm.ctx.Name))
+	cm.ctx.Logger().Infof("Deleted droplet by tag %v", "KubernetesCluster:"+cm.ctx.Name)
 
 	if req.ReleaseReservedIp && cm.ctx.MasterReservedIP != "" {
 		backoff.Retry(func() error {
@@ -94,17 +94,17 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errorhandlers.SendMailWithContextAndIgnore(cm.ctx, fmt.Errorf(strings.Join(errs, "\n")))
 	}
 
-	cm.ctx.Logger().Infof("Cluster %v deletion is deleted successfully", cm.ctx.Name))
+	cm.ctx.Logger().Infof("Cluster %v deletion is deleted successfully", cm.ctx.Name)
 	return nil
 }
 
 func (cm *clusterManager) releaseReservedIP(ip string) error {
 	resp, err := cm.conn.client.FloatingIPs.Delete(context.TODO(), ip)
-	cm.ctx.Logger().V(6).Infoln("DO response", resp, " errors", err)
+	cm.ctx.Logger().Debugln("DO response", resp, " errors", err)
 	if err != nil {
 		return errors.FromErr(err).Err()
 	}
-	cm.ctx.Logger().Infof("Floating ip %v deleted", ip))
+	cm.ctx.Logger().Infof("Floating ip %v deleted", ip)
 	return nil
 }
 
@@ -114,7 +114,7 @@ func (cm *clusterManager) deleteSSHKey() (err error) {
 			_, err := cm.conn.client.Keys.DeleteByFingerprint(context.TODO(), cm.ctx.SSHKey.OpensshFingerprint)
 			return err
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger().Infof("SSH key for cluster %v deleted", cm.ctx.Name))
+		cm.ctx.Logger().Infof("SSH key for cluster %v deleted", cm.ctx.Name)
 	}
 
 	//if cm.ctx.SSHKeyPHID != "" {
@@ -130,7 +130,7 @@ func (cm *clusterManager) deleteDroplet(dropletID int, nodeName string) error {
 	if err != nil {
 		return err
 	}
-	cm.ctx.Logger().Infof("Droplet %v deleted", dropletID))
+	cm.ctx.Logger().Infof("Droplet %v deleted", dropletID)
 	err = lib.DeleteNodeApiCall(cm.ctx, nodeName)
 	if err != nil {
 		return err

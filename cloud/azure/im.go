@@ -70,7 +70,7 @@ func (im *instanceManager) createPublicIP(name string, alloc network.IPAllocatio
 	if err != nil {
 		return network.PublicIPAddress{}, err
 	}
-	im.ctx.Logger().Infof("Public ip addres %v created", name))
+	im.ctx.Logger().Infof("Public ip addres %v created", name)
 	return im.conn.publicIPAddressesClient.Get(im.namer.ResourceGroupName(), name, "")
 }
 
@@ -124,7 +124,7 @@ func (im *instanceManager) createNetworkInterface(name string, subnet network.Su
 	if err != nil {
 		return network.Interface{}, err
 	}
-	im.ctx.Logger().Infof("Network interface %v created", name))
+	im.ctx.Logger().Infof("Network interface %v created", name)
 	return im.conn.interfacesClient.Get(im.namer.ResourceGroupName(), name, "")
 }
 
@@ -189,7 +189,7 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
-	im.ctx.Logger().Infof("Virtual machine with disk %v password %v created", im.namer.BootDiskURI(sa, vmName), im.ctx.InstanceRootPassword))
+	im.ctx.Logger().Infof("Virtual machine with disk %v password %v created", im.namer.BootDiskURI(sa, vmName), im.ctx.InstanceRootPassword)
 	// https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-linux-extensions-customscript?toc=%2fazure%2fvirtual-machines%2flinux%2ftoc.json
 	// https://github.com/Azure/custom-script-extension-linux
 	// old: https://github.com/Azure/azure-linux-extensions/tree/master/CustomScript
@@ -219,14 +219,14 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 		return compute.VirtualMachine{}, err
 	}
 
-	im.ctx.Logger().Infof("Restarting virtual machine %v", vmName))
+	im.ctx.Logger().Infof("Restarting virtual machine %v", vmName)
 	_, err = im.conn.vmClient.Restart(im.namer.ResourceGroupName(), vmName, nil)
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
 
 	vm, err := im.conn.vmClient.Get(im.namer.ResourceGroupName(), vmName, compute.InstanceView)
-	im.ctx.Logger().Infof("Found virtual machine %v", vm))
+	im.ctx.Logger().Infof("Found virtual machine %v", vm)
 	return vm, err
 }
 
@@ -237,7 +237,7 @@ func (im *instanceManager) DeleteVirtualMachine(vmName string) error {
 	if err != nil {
 		return err
 	}
-	im.ctx.Logger().Infof("Virtual machine %v deleted", vmName))
+	im.ctx.Logger().Infof("Virtual machine %v deleted", vmName)
 	storageClient, err := azstore.NewBasicClient(storageName, *(*(keys.Keys))[0].Value)
 	if err != nil {
 		return err
