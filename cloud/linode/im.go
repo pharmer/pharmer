@@ -77,7 +77,7 @@ func (im *instanceManager) createStackScript(sku, role string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	im.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Stack script for role %v created", role))
+	im.ctx.Logger().Infof("Stack script for role %v created", role))
 	return script.StackScriptId.StackScriptId, nil
 }
 
@@ -226,7 +226,7 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	im.ctx.Logger().Info("Running linode boot job %v", jobResp.JobId.JobId)
-	im.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Linode %v created", name))
+	im.ctx.Logger().Infof("Linode %v created", name))
 
 	return id, config.LinodeConfigId.LinodeConfigId, err
 }
@@ -245,7 +245,7 @@ func (im *instanceManager) bootToGrub2(linodeId, configId int, name string) erro
 		return err
 	}
 	_, err = im.conn.client.Linode.Boot(linodeId, configId)
-	im.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("%v booted", name))
+	im.ctx.Logger().Infof("%v booted", name))
 	return err
 }
 

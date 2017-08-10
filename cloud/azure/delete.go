@@ -6,7 +6,6 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/errorhandlers"
 	"github.com/appscode/pharmer/storage"
@@ -68,29 +67,29 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is deleted successfully", cm.ctx.Name))
+	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.ctx.Name))
 	return nil
 }
 
 func (cm *clusterManager) deleteResourceGroup(groupName string) error {
 	_, err := cm.conn.groupsClient.Delete(groupName, make(chan struct{}))
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Resource group %v deleted", groupName))
+	cm.ctx.Logger().Infof("Resource group %v deleted", groupName))
 	return err
 }
 
 func (cm *clusterManager) deleteNodeNetworkInterface(interfaceName string) error {
 	_, err := cm.conn.interfacesClient.Delete(cm.ctx.Name, interfaceName, make(chan struct{}))
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Node network interface %v deleted", interfaceName))
+	cm.ctx.Logger().Infof("Node network interface %v deleted", interfaceName))
 	return err
 }
 
 func (cm *clusterManager) deletePublicIp(ipName string) error {
 	_, err := cm.conn.publicIPAddressesClient.Delete(cm.ctx.Name, ipName, nil)
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Public ip %v deleted", ipName))
+	cm.ctx.Logger().Infof("Public ip %v deleted", ipName))
 	return err
 }
 func (cm *clusterManager) deleteVirtualMachine(machineName string) error {
 	_, err := cm.conn.vmClient.Delete(cm.ctx.Name, machineName, make(chan struct{}))
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Virtual machine %v deleted", machineName))
+	cm.ctx.Logger().Infof("Virtual machine %v deleted", machineName))
 	return err
 }

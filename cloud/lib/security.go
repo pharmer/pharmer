@@ -6,7 +6,6 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/system"
 	"github.com/cloudflare/cfssl/csr"
@@ -21,7 +20,7 @@ func GenClusterTokens(ctx *contexts.ClusterContext) {
 }
 
 func GenClusterCerts(ctx *contexts.ClusterContext) error {
-	ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Generating certificate for cluster")
+	ctx.Logger().Info("Generating certificate for cluster")
 
 	var csrReq csr.CertificateRequest
 	csrReq.KeyRequest = &csr.BasicKeyRequest{A: "rsa", S: 2048}
@@ -100,7 +99,7 @@ func GenClusterCerts(ctx *contexts.ClusterContext) error {
 	if ctx.MasterReservedIP != "" {
 		csrReq.Hosts = append(csrReq.Hosts, ctx.MasterReservedIP)
 	}
-	ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Master LB Extra SANS: %v", csrReq.Hosts))
+	ctx.Logger().Infof("Master LB Extra SANS: %v", csrReq.Hosts))
 
 	defaultLBCertPHID, defaultLBCert, defaultLBKey, err := CreateClientCert(ctx, caCert, caKey, &csrReq)
 	if err != nil {
@@ -153,6 +152,6 @@ func GenClusterCerts(ctx *contexts.ClusterContext) error {
 		ctx.Logger().Infof("Created hostfacts cert %v with PHID:%v", string(ctx.HostfactsCert), ctx.HostfactsCertPHID)
 		//////////////////////////////////
 	}
-	ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Certificates generated successfully")
+	ctx.Logger().Info("Certificates generated successfully")
 	return nil
 }

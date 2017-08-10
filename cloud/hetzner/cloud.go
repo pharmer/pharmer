@@ -7,7 +7,6 @@ import (
 
 	"github.com/appscode/errors"
 	hc "github.com/appscode/go-hetzner"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/util/credentialutil"
 )
@@ -43,7 +42,7 @@ func (conn *cloudConnector) waitForInstance(id, status string) (*hc.Transaction,
 		if strings.ToLower(tx.Status) == status {
 			return tx, nil
 		}
-		conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance %v is %v, waiting...", *tx.ServerIP, tx.Status))
+		conn.ctx.Logger().Infof("Instance %v is %v, waiting...", *tx.ServerIP, tx.Status))
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

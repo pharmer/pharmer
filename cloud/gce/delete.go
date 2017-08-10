@@ -8,7 +8,6 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/errorhandlers"
 	"github.com/appscode/pharmer/storage"
@@ -101,7 +100,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errorhandlers.SendMailWithContextAndIgnore(cm.ctx, fmt.Errorf(strings.Join(errs, "\n")))
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is deleted successfully", cm.ctx.Name))
+	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.ctx.Name))
 	return nil
 }
 
@@ -128,7 +127,7 @@ func (cm *clusterManager) listInstanceGroups() ([]*groupInfo, error) {
 
 	}
 	if len(groups) == 0 {
-		cm.ctx.Logger().Error("Enter correct cluster name")
+		cm.ctx.Logger().Info("Enter correct cluster name")
 		//os.Exit(1)
 	}
 	cm.ctx.Logger().Debugf("Retrieved InstanceGroups result %v", groups)
@@ -142,7 +141,7 @@ func (cm *clusterManager) deleteMaster() error {
 	}
 	operation := r2.Name
 	cm.conn.waitForZoneOperation(operation)
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Master instance %v deleted", cm.ctx.KubernetesMasterName))
+	cm.ctx.Logger().Infof("Master instance %v deleted", cm.ctx.KubernetesMasterName))
 	return nil
 
 }
@@ -155,7 +154,7 @@ func (cm *clusterManager) deleteInstanceGroup(instanceGroup string) error {
 	}
 	operation := r1.Name
 	cm.conn.waitForZoneOperation(operation)
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance group %v deleted", instanceGroup))
+	cm.ctx.Logger().Infof("Instance group %v deleted", instanceGroup))
 	return nil
 }
 
@@ -165,14 +164,14 @@ func (cm *clusterManager) deleteInstanceTemplate(template string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance templete %v deleted", template))
+	cm.ctx.Logger().Infof("Instance templete %v deleted", template))
 	//cluster.waitForGlobalOperation(r.Name)
 	return nil
 }
 
 //delete autoscaler
 func (cm *clusterManager) deleteAutoscaler(instanceGroup string) error {
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Removing autoscaller %v", instanceGroup))
+	cm.ctx.Logger().Infof("Removing autoscaller %v", instanceGroup))
 
 	r, err := cm.conn.computeService.Autoscalers.Delete(cm.ctx.Project, cm.ctx.Zone, instanceGroup).Do()
 	if err != nil {
@@ -182,7 +181,7 @@ func (cm *clusterManager) deleteAutoscaler(instanceGroup string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Autoscaller %v is deleted", instanceGroup))
+	cm.ctx.Logger().Infof("Autoscaller %v is deleted", instanceGroup))
 	return nil
 }
 
@@ -207,7 +206,7 @@ func (cm *clusterManager) deleteDisk() error {
 			if err != nil {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
-			cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Disk %v deleted, response %v", r7.Items[i].Name, r.Status))
+			cm.ctx.Logger().Infof("Disk %v deleted, response %v", r7.Items[i].Name, r.Status))
 			time.Sleep(5 * time.Second)
 		}
 
@@ -222,7 +221,7 @@ func (cm *clusterManager) deleteFirewalls() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Firewalls %v deleted, response %v", name, r1.Status))
+	cm.ctx.Logger().Infof("Firewalls %v deleted, response %v", name, r1.Status))
 	//cluster.waitForGlobalOperation(name)
 	time.Sleep(5 * time.Second)
 	ruleHTTPS := cm.ctx.KubernetesMasterName + "-https"
@@ -230,7 +229,7 @@ func (cm *clusterManager) deleteFirewalls() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Firewalls %v deleted, response %v", ruleHTTPS, r2.Status))
+	cm.ctx.Logger().Infof("Firewalls %v deleted, response %v", ruleHTTPS, r2.Status))
 	//cluster.waitForGlobalOperation(ruleHTTPS)
 	time.Sleep(5 * time.Second)
 	return nil
@@ -243,7 +242,7 @@ func (cm *clusterManager) releaseReservedIP() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Releasing reserved master ip %v", r1.Address))
+	cm.ctx.Logger().Infof("Releasing reserved master ip %v", r1.Address))
 	r2, err := cm.conn.computeService.Addresses.Delete(cm.ctx.Project, cm.ctx.Region, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -252,7 +251,7 @@ func (cm *clusterManager) releaseReservedIP() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Master ip %v released", r1.Address))
+	cm.ctx.Logger().Infof("Master ip %v released", r1.Address))
 	return nil
 }
 
@@ -269,7 +268,7 @@ func (cm *clusterManager) deleteRoutes() error {
 			if err != nil {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
-			cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Route %v deleted, response %v", routeName, r2.Status))
+			cm.ctx.Logger().Infof("Route %v deleted, response %v", routeName, r2.Status))
 		}
 	}
 	return nil
@@ -290,7 +289,7 @@ func (cm *clusterManager) deleteBucket() error {
 			}
 		}
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Bucket %v deleted", cm.ctx.BucketName))
+	cm.ctx.Logger().Infof("Bucket %v deleted", cm.ctx.BucketName))
 	return cm.conn.storageService.Buckets.Delete(cm.ctx.BucketName).Do()
 }
 

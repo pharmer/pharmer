@@ -7,7 +7,6 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/errorhandlers"
 	"github.com/appscode/pharmer/storage"
@@ -61,11 +60,11 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 			}
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Linode %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name))
+		cm.ctx.Logger().Infof("Linode %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name))
 	}
 
 	backoff.Retry(cm.deleteStackscripts, backoff.NewExponentialBackOff())
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Stack scripts for cluster %v deleted", cm.ctx.Name))
+	cm.ctx.Logger().Infof("Stack scripts for cluster %v deleted", cm.ctx.Name))
 	// Delete SSH key from DB
 	if err := cm.deleteSSHKey(); err != nil {
 		errs = append(errs, err.Error())
@@ -83,7 +82,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errorhandlers.SendMailWithContextAndIgnore(cm.ctx, fmt.Errorf(strings.Join(errs, "\n")))
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is deleted successfully", cm.ctx.Name))
+	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.ctx.Name))
 	return nil
 }
 

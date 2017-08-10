@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/system"
 	"github.com/cenkalti/backoff"
@@ -28,34 +27,34 @@ func EnsureARecord(ctx *contexts.ClusterContext, master *contexts.KubernetesInst
 			return err
 		}
 	}
-	ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster apps A record %v added", clusterDomain))
+	ctx.Logger().Infof("Cluster apps A record %v added", clusterDomain))
 	externalDomain := system.ClusterExternalDomain(ctx.Auth.Namespace, ctx.Name)
 	if err := ctx.DNSProvider.EnsureARecord(externalDomain, master.ExternalIP); err != nil {
 		return err
 	}
-	ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("External A record %v added", externalDomain))
+	ctx.Logger().Infof("External A record %v added", externalDomain))
 	internalDomain := system.ClusterInternalDomain(ctx.Auth.Namespace, ctx.Name)
 	if err := ctx.DNSProvider.EnsureARecord(internalDomain, master.InternalIP); err != nil {
 		return err
 	}
-	ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Internal A record %v added", internalDomain))
+	ctx.Logger().Infof("Internal A record %v added", internalDomain))
 	return nil
 }
 
 func DeleteARecords(ctx *contexts.ClusterContext) error {
 	clusterDomain := system.ClusterDomain(ctx.Auth.Namespace, ctx.Name)
 	if err := ctx.DNSProvider.DeleteARecords(clusterDomain); err == nil {
-		ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster apps A record %v deleted", clusterDomain))
+		ctx.Logger().Infof("Cluster apps A record %v deleted", clusterDomain))
 	}
 
 	externalDomain := system.ClusterExternalDomain(ctx.Auth.Namespace, ctx.Name)
 	if err := ctx.DNSProvider.DeleteARecords(externalDomain); err == nil {
-		ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("External A record %v deleted", externalDomain))
+		ctx.Logger().Infof("External A record %v deleted", externalDomain))
 	}
 
 	internalDomain := system.ClusterInternalDomain(ctx.Auth.Namespace, ctx.Name)
 	if err := ctx.DNSProvider.DeleteARecords(internalDomain); err == nil {
-		ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Internal A record %v deleted", internalDomain))
+		ctx.Logger().Infof("Internal A record %v deleted", internalDomain))
 	}
 
 	return nil
@@ -70,7 +69,7 @@ func EnsureDnsIPLookup(ctx *contexts.ClusterContext) error {
 			return nil
 		}
 
-		ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Verifying external DNS %v ... attempt no. %v", externalDomain, attempt))
+		ctx.Logger().Infof("Verifying external DNS %v ... attempt no. %v", externalDomain, attempt))
 		time.Sleep(time.Duration(30) * time.Second)
 		attempt++
 	}
@@ -83,7 +82,7 @@ func EnsureDnsIPLookup(ctx *contexts.ClusterContext) error {
 			return nil
 		}
 
-		ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Verifying internal DNS %v .. attempt no. %v", internalDomain, attempt))
+		ctx.Logger().Infof("Verifying internal DNS %v .. attempt no. %v", internalDomain, attempt))
 		time.Sleep(time.Duration(30) * time.Second)
 		attempt++
 	}
@@ -118,13 +117,13 @@ func ProbeKubeAPI(ctx *contexts.ClusterContext) error {
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", ctx.KubeletToken))
 	attempt := 0
 	// try for 30 mins
-	ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Checking Api")
+	ctx.Logger().Info("Checking Api")
 	for attempt < 40 {
-		ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Attempt %v: probing kubernetes api for cluster %v ...", attempt, ctx.Name))
+		ctx.Logger().Infof("Attempt %v: probing kubernetes api for cluster %v ...", attempt, ctx.Name))
 		_, err := client.Do(req)
 		fmt.Print("=")
 		if err == nil {
-			ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Successfully connected to kubernetes api for cluster %v", ctx.Name))
+			ctx.Logger().Infof("Successfully connected to kubernetes api for cluster %v", ctx.Name))
 			return nil
 		}
 		attempt++
@@ -155,7 +154,7 @@ func CheckComponentStatuses(ctx *contexts.ClusterContext) error {
 		}
 		return nil
 	}, backoff.NewExponentialBackOff())
-	ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Basic componenet status are ok")
+	ctx.Logger().Info("Basic componenet status are ok")
 	return nil
 }
 
@@ -202,11 +201,11 @@ func WaitForReadyNodes(ctx *contexts.ClusterContext, newNode ...int64) error {
 		}
 		table.SetBorder(true)
 		if isReady == int(totalNode) {
-			ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "All nodes are ready")
+			ctx.Logger().Info("All nodes are ready")
 			table.Render()
 			return nil
 		}
-		ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("%v nodes ready, waiting...", isReady))
+		ctx.Logger().Infof("%v nodes ready, waiting...", isReady))
 		attempt++
 		time.Sleep(time.Duration(60) * time.Second)
 	}

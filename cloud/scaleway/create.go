@@ -7,7 +7,6 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/ssh"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
@@ -38,9 +37,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		cm.ctx.Save()
 		cm.ins.Save()
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status))
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status))
 		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is deleting", cm.ctx.Name))
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name))
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.ctx.Name,
 				ReleaseReservedIp: releaseReservedIP,
@@ -53,14 +52,14 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Using image id %v", cm.ctx.InstanceImage))
+	cm.ctx.Logger().Infof("Using image id %v", cm.ctx.InstanceImage))
 
 	err = cm.conn.DetectBootscript()
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Using bootscript id %v", cm.conn.bootscriptID))
+	cm.ctx.Logger().Infof("Using bootscript id %v", cm.conn.bootscriptID))
 
 	err = cm.importPublicKey()
 	if err != nil {
@@ -93,7 +92,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	// -------------------------------------------------------------------ASSETS
 	im := &instanceManager{ctx: cm.ctx, conn: cm.conn}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Creating master instance")
+	cm.ctx.Logger().Info("Creating master instance")
 	masterID, err := im.createInstance(cm.ctx.KubernetesMasterName, system.RoleKubernetesMaster, cm.ctx.MasterSKU, masterIPID)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
@@ -162,7 +161,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, "Waiting for cluster initialization")
+	cm.ctx.Logger().Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
 	if err := lib.EnsureDnsIPLookup(cm.ctx); err != nil {
@@ -210,7 +209,7 @@ func (cm *clusterManager) importPublicKey() error {
 			SSHPublicKeys: sshPubKeys,
 		})
 	}, backoff.NewExponentialBackOff())
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("New ssh key with fingerprint %v created", cm.ctx.SSHKey.OpensshFingerprint))
+	cm.ctx.Logger().Infof("New ssh key with fingerprint %v created", cm.ctx.SSHKey.OpensshFingerprint))
 	return nil
 }
 
@@ -221,7 +220,7 @@ func (cm *clusterManager) reserveIP() (string, error) {
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("New floating ip %v reserved", fip.IP))
+	cm.ctx.Logger().Infof("New floating ip %v reserved", fip.IP))
 	cm.ctx.MasterReservedIP = fip.IP.Address
 	return fip.IP.ID, nil
 	// }

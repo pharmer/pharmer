@@ -5,7 +5,6 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/go/types"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/util/credentialutil"
 	_aws "github.com/aws/aws-sdk-go/aws"
@@ -66,6 +65,6 @@ func (conn *cloudConnector) detectJessieImage() error {
 	}
 	conn.ctx.InstanceImage = *r1.Images[0].ImageId
 	conn.ctx.RootDeviceName = *r1.Images[0].RootDeviceName
-	conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Debain image with %v for %v detected", conn.ctx.InstanceImage, conn.ctx.RootDeviceName))
+	conn.ctx.Logger().Infof("Debain image with %v for %v detected", conn.ctx.InstanceImage, conn.ctx.RootDeviceName)
 	return nil
 }

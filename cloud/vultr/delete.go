@@ -6,7 +6,6 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/errorhandlers"
 	"github.com/appscode/pharmer/storage"
@@ -57,14 +56,14 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name))
+		cm.ctx.Logger().Infof("Instance %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name))
 	}
 
 	if req.ReleaseReservedIp && cm.ctx.MasterReservedIP != "" {
 		backoff.Retry(func() error {
 			return cm.releaseReservedIP(cm.ctx.MasterReservedIP)
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Reserved ip for cluster %v", cm.ctx.Name))
+		cm.ctx.Logger().Infof("Reserved ip for cluster %v", cm.ctx.Name))
 	}
 
 	cm.ctx.Logger().Infof("Deleting startup scripts for cluster %v", cm.ctx.Name)
@@ -87,7 +86,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errorhandlers.SendMailWithContextAndIgnore(cm.ctx, fmt.Errorf(strings.Join(errs, "\n")))
 	}
 
-	cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Cluster %v is deleted successfully", cm.ctx.Name))
+	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.ctx.Name))
 	return nil
 }
 
@@ -123,7 +122,7 @@ func (cm *clusterManager) deleteSSHKey() (err error) {
 		backoff.Retry(func() error {
 			return cm.conn.client.DeleteSSHKey(cm.ctx.SSHKeyExternalID)
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("SSH key for cluster %v is deleted", cm.ctx.Name))
+		cm.ctx.Logger().Infof("SSH key for cluster %v is deleted", cm.ctx.Name))
 	}
 
 	if cm.ctx.SSHKeyPHID != "" {

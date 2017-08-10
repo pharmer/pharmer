@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/util/credentialutil"
 	"github.com/packethost/packngo"
@@ -39,7 +38,7 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 		if strings.ToLower(s.State) == status {
 			break
 		}
-		conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance %v (%v) is %v, waiting...", s.Hostname, s.ID, s.State))
+		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", s.Hostname, s.ID, s.State))
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/extpoints"
 )
@@ -54,7 +53,7 @@ func (cluster *kubeProvider) MatchInstance(i *contexts.KubernetesInstance, md *c
 func runFakeJob(ctx *contexts.ClusterContext, requestType string) {
 	ctx.Notifier.Notify("only_notify", fmt.Sprintf("starting %v job", requestType))
 	for i := 1; i <= 10; i++ {
-		ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprint("Job completed: ", i*10, "%"))
+		ctx.Logger().Info(fmt.Sprint("Job completed: ", i*10, "%"))
 		time.Sleep(time.Second * 3)
 	}
 }

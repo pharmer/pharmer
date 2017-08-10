@@ -8,7 +8,6 @@ import (
 
 	gv "github.com/JamesClonk/vultr/lib"
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/util/credentialutil"
 )
@@ -61,7 +60,7 @@ func (conn *cloudConnector) waitForActiveInstance(id string) (*gv.Server, error)
 		if strings.ToLower(server.Status) == "active" && server.PowerStatus == "running" {
 			return &server, nil
 		}
-		conn.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("Instance %v (%v) is %v, waiting...", server.Name, server.ID, server.Status))
+		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", server.Name, server.ID, server.Status))
 		attempt += 1
 		if attempt > 120 {
 			break // timeout = 60 mins
