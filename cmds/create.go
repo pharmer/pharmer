@@ -2,10 +2,9 @@ package cmds
 
 import (
 	"bufio"
+	"errors"
 	"io/ioutil"
 	"os"
-
-	"errors"
 
 	api "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/appctl/pkg/config"
