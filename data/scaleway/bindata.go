@@ -206,8 +206,8 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	"cloud.json":      &bintree{cloudJson, map[string]*bintree{}},
-	"credential.json": &bintree{credentialJson, map[string]*bintree{}},
+	"cloud.json":      {cloudJson, map[string]*bintree{}},
+	"credential.json": {credentialJson, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
