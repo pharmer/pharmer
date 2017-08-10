@@ -23,9 +23,9 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
-	token, ok := ctx.CloudCredential[credential.DigitalOceanCredentialToken]
+	token, ok := ctx.CloudCredential[credential.DigitalOceanToken]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.DigitalOceanCredentialToken)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.DigitalOceanToken)
 	}
 
 	oauthClient := oauth2.NewClient(oauth2.NoContext, oauth2.StaticTokenSource(&oauth2.Token{
