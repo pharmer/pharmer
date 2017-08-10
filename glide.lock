@@ -1,5 +1,5 @@
 hash: fe668477254a7ee7f7173631d5fdca74f87febcd4dd123ceb072534f63aa638e
-updated: 2017-08-10T02:31:19.734427459-07:00
+updated: 2017-08-10T10:18:35.252491015-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -424,7 +424,7 @@ imports:
   subpackages:
   - doc
 - name: github.com/spf13/pflag
-  version: d80b22c7750651d2f40651cb73d088713d369229
+  version: 572154603012a93806b0a54639c6dfc83ff54e35
   repo: https://github.com/appscode/pflag.git
   vcs: git
 - name: github.com/ssor/bom
