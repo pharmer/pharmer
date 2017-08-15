@@ -161,7 +161,7 @@ func (n *NodeLabels) Sign(ctx *ClusterContext) error {
 	}
 
 	checksum := sha512.Sum512([]byte(n.values(true, true)))
-	ss, err := ctx.Store.NewSecBytes(checksum[:]) // [64]byte -> []byte
+	ss, err := ctx.Store().NewSecBytes(checksum[:]) // [64]byte -> []byte
 	if err != nil {
 		return err
 	}

@@ -4,26 +4,25 @@ import (
 	"os"
 	"strconv"
 
-	api "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/appctl/pkg/config"
-	"github.com/appscode/appctl/pkg/util"
+	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/appctl/pkg/util/timeutil"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
 func NewCmdList() *cobra.Command {
-	var req api.ClusterListRequest
+	var req proto.ClusterListRequest
 
 	cmd := &cobra.Command{
 		Use:               "list",
 		Short:             "Lists active Kubernetes clusters",
 		Example:           "appctl cluster list",
 		DisableAutoGenTag: true,
-		Run: func(cmd *cobra.Command, args []string) {
-			c := config.ClientOrDie()
-			resp, err := c.Kubernetes().V1beta1().Cluster().List(c.Context(), &req)
-			util.PrintStatus(err)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			resp, err := list(&req)
+			if err != nil {
+				return err
+			}
 
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"Name", "Provider", "Zone", "Api Server URL", "Number of Nodes", "Version", "Running Since"})
@@ -43,8 +42,14 @@ func NewCmdList() *cobra.Command {
 				})
 			}
 			table.Render()
+
+			return nil
 		},
 	}
 
 	return cmd
+}
+
+func list(req *proto.ClusterListRequest) (*proto.ClusterListResponse, error) {
+	return nil, nil
 }

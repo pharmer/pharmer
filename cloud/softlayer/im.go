@@ -12,7 +12,6 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
@@ -21,13 +20,13 @@ import (
 )
 
 type instanceManager struct {
-	ctx  *contexts.ClusterContext
+	ctx  *api.Cluster
 	conn *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *contexts.InstanceMetadata) (*contexts.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
 	master := net.ParseIP(md.Name) == nil
-	var instance *contexts.KubernetesInstance
+	var instance *api.KubernetesInstance
 	backoff.Retry(func() (err error) {
 		for {
 			servers, err := im.conn.accountServiceClient.GetVirtualGuests()
@@ -87,7 +86,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 	}
 	vGuestTemplate := datatypes.Virtual_Guest{
 		Hostname:                     types.StringP(name),
-		Domain:                       types.StringP(im.ctx.Extra.ExternalDomain(im.ctx.Name)),
+		Domain:                       types.StringP(im.ctx.Extra().ExternalDomain(im.ctx.Name)),
 		MaxMemory:                    types.IntP(ram),
 		StartCpus:                    types.IntP(cpu),
 		Datacenter:                   &datatypes.Location{Name: types.StringP(im.ctx.Zone)},
@@ -118,11 +117,11 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		im.ctx.StatusCause = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger.Infof("Softlayer instance %v created", name)
+	im.ctx.Logger().Infof("Softlayer instance %v created", name)
 	return *vGuest.Id, nil
 }
 
-func (im *instanceManager) RenderStartupScript(opt *contexts.ScriptOptions, sku, role string) string {
+func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
 	cmd := lib.StartupConfigFromAPI(opt, role)
 	if api.UseFirebase() {
 		cmd = lib.StartupConfigFromFirebase(opt, role)
@@ -173,7 +172,7 @@ systemctl enable kube-installer.service
 `, strings.Replace(lib.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid, reboot)
 }
 
-func (im *instanceManager) newKubeInstance(id int) (*contexts.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(id int) (*api.KubernetesInstance, error) {
 	bluemix := im.conn.virtualServiceClient.Id(id)
 	status, err := bluemix.GetStatus()
 	if err != nil {
@@ -183,7 +182,7 @@ func (im *instanceManager) newKubeInstance(id int) (*contexts.KubernetesInstance
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	ki := &contexts.KubernetesInstance{
+	ki := &api.KubernetesInstance{
 		PHID:           phid.NewKubeInstance(),
 		ExternalID:     strconv.Itoa(id),
 		ExternalStatus: *status.Name,

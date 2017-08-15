@@ -1,0 +1,3 @@
+Stores data in memory.
+
+ 

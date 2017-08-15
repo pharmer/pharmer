@@ -22,6 +22,7 @@ Pharmer by Appscode - Manages farms
 
 ### SEE ALSO
 * [pharmer backup](pharmer_backup.md)	 - Takes backup of YAML files of cluster
+* [pharmer config](pharmer_config.md)	 - Pharmer configuration
 * [pharmer create](pharmer_create.md)	 - Create a Kubernetes cluster for a given cloud provider
 * [pharmer delete](pharmer_delete.md)	 - Delete a Kubernetes cluster
 * [pharmer list](pharmer_list.md)	 - Lists active Kubernetes clusters

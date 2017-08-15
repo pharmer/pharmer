@@ -7,16 +7,16 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/linodego"
-	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/credential"
 )
 
 type cloudConnector struct {
-	ctx    *contexts.ClusterContext
+	ctx    *api.Cluster
 	client *linodego.Client
 }
 
-func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
+func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
 	token, ok := ctx.CloudCredential[credential.LinodeApiToken]
 	if !ok {
 		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.LinodeApiToken)
@@ -33,11 +33,11 @@ func (conn *cloudConnector) detectInstanceImage() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	conn.ctx.Logger.Infof("Checking for instance image")
+	conn.ctx.Logger().Infof("Checking for instance image")
 	for _, d := range resp.Distributions {
 		if d.Is64Bit == 1 && d.Label.String() == "Debian 8" {
 			conn.ctx.InstanceImage = strconv.Itoa(d.DistributionId)
-			conn.ctx.Logger.Infof("Instance image %v with id %v found", d.Label.String(), conn.ctx.InstanceImage)
+			conn.ctx.Logger().Infof("Instance image %v with id %v found", d.Label.String(), conn.ctx.InstanceImage)
 			return nil
 		}
 	}
@@ -73,22 +73,22 @@ func (conn *cloudConnector) detectKernel() error {
 func (conn *cloudConnector) waitForStatus(id, status int) (*linodego.Linode, error) {
 	attempt := 0
 	for true {
-		conn.ctx.Logger.Infof("Checking status of instance %v", id)
+		conn.ctx.Logger().Infof("Checking status of instance %v", id)
 		resp, err := conn.client.Linode.List(id)
 		if err != nil {
 			return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
 		linode := resp.Linodes[0]
-		conn.ctx.Logger.Debugf("Instance status %v, %v", linode.Status, err)
+		conn.ctx.Logger().Debugf("Instance status %v, %v", linode.Status, err)
 		if linode.Status == status {
 			return &linode, nil
 		}
-		conn.ctx.Logger.Infof("Instance %v (%v) is %v, waiting...", linode.Label, linode.LinodeId, linode.Status)
+		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", linode.Label, linode.LinodeId, linode.Status)
 		attempt += 1
 		if attempt > 4*15 {
 			break // timeout after 15 mins
 		}
-		conn.ctx.Logger.Debugf("Attempt %v to linode %v to become %v", attempt, id, statusString(status))
+		conn.ctx.Logger().Debugf("Attempt %v to linode %v to become %v", attempt, id, statusString(status))
 		time.Sleep(15 * time.Second)
 	}
 	return nil, errors.New("Time out on waiting for linode status to become", statusString(status)).WithContext(conn.ctx).Err()

@@ -14,7 +14,6 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
@@ -25,12 +24,12 @@ const (
 )
 
 type instanceManager struct {
-	ctx   *contexts.ClusterContext
+	ctx   *api.Cluster
 	conn  *cloudConnector
 	namer namer
 }
 
-func (im *instanceManager) GetInstance(md *contexts.InstanceMetadata) (*contexts.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
 	pip, err := im.conn.publicIPAddressesClient.Get(im.namer.ResourceGroupName(), im.namer.PublicIPName(md.Name), "")
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
@@ -70,7 +69,7 @@ func (im *instanceManager) createPublicIP(name string, alloc network.IPAllocatio
 	if err != nil {
 		return network.PublicIPAddress{}, err
 	}
-	im.ctx.Logger.Infof("Public ip addres %v created", name)
+	im.ctx.Logger().Infof("Public ip addres %v created", name)
 	return im.conn.publicIPAddressesClient.Get(im.namer.ResourceGroupName(), name, "")
 }
 
@@ -124,7 +123,7 @@ func (im *instanceManager) createNetworkInterface(name string, subnet network.Su
 	if err != nil {
 		return network.Interface{}, err
 	}
-	im.ctx.Logger.Infof("Network interface %v created", name)
+	im.ctx.Logger().Infof("Network interface %v created", name)
 	return im.conn.interfacesClient.Get(im.namer.ResourceGroupName(), name, "")
 }
 
@@ -189,12 +188,12 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
-	im.ctx.Logger.Infof("Virtual machine with disk %v password %v created", im.namer.BootDiskURI(sa, vmName), im.ctx.InstanceRootPassword)
+	im.ctx.Logger().Infof("Virtual machine with disk %v password %v created", im.namer.BootDiskURI(sa, vmName), im.ctx.InstanceRootPassword)
 	// https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-linux-extensions-customscript?toc=%2fazure%2fvirtual-machines%2flinux%2ftoc.json
 	// https://github.com/Azure/custom-script-extension-linux
 	// old: https://github.com/Azure/azure-linux-extensions/tree/master/CustomScript
 	// https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-windows-classic-inject-custom-data
-	im.ctx.Logger.Infof("Running startup script in virtual machine %v", vmName)
+	im.ctx.Logger().Infof("Running startup script in virtual machine %v", vmName)
 	extName := vmName + "-script"
 	extReq := compute.VirtualMachineExtension{
 		Name:     types.StringP(extName),
@@ -219,14 +218,14 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 		return compute.VirtualMachine{}, err
 	}
 
-	im.ctx.Logger.Infof("Restarting virtual machine %v", vmName)
+	im.ctx.Logger().Infof("Restarting virtual machine %v", vmName)
 	_, err = im.conn.vmClient.Restart(im.namer.ResourceGroupName(), vmName, nil)
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
 
 	vm, err := im.conn.vmClient.Get(im.namer.ResourceGroupName(), vmName, compute.InstanceView)
-	im.ctx.Logger.Infof("Found virtual machine %v", vm)
+	im.ctx.Logger().Infof("Found virtual machine %v", vm)
 	return vm, err
 }
 
@@ -237,7 +236,7 @@ func (im *instanceManager) DeleteVirtualMachine(vmName string) error {
 	if err != nil {
 		return err
 	}
-	im.ctx.Logger.Infof("Virtual machine %v deleted", vmName)
+	im.ctx.Logger().Infof("Virtual machine %v deleted", vmName)
 	storageClient, err := azstore.NewBasicClient(storageName, *(*(keys.Keys))[0].Value)
 	if err != nil {
 		return err
@@ -250,7 +249,7 @@ func (im *instanceManager) DeleteVirtualMachine(vmName string) error {
 }
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
-func (im *instanceManager) RenderStartupScript(opt *contexts.ScriptOptions, sku, role string) string {
+func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
 	cmd := lib.StartupConfigFromAPI(opt, role)
 	if api.UseFirebase() {
 		cmd = lib.StartupConfigFromFirebase(opt, role)
@@ -296,8 +295,8 @@ systemctl enable kube-installer.service
 `, strings.Replace(lib.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid)
 }
 
-func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic network.Interface, pip network.PublicIPAddress) (*contexts.KubernetesInstance, error) {
-	i := contexts.KubernetesInstance{
+func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic network.Interface, pip network.PublicIPAddress) (*api.KubernetesInstance, error) {
+	i := api.KubernetesInstance{
 		PHID:           phid.NewKubeInstance(),
 		ExternalID:     fmt.Sprintf(machineIDTemplate, im.ctx.CloudCredential[credential.AzureSubscriptionID], im.namer.ResourceGroupName(), *vm.Name),
 		ExternalStatus: *vm.ProvisioningState,

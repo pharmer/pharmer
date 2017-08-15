@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	api "github.com/appscode/api/kubernetes/v1beta1"
+	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/appctl/pkg/config"
 	"github.com/appscode/appctl/pkg/util"
 	"github.com/appscode/go-term"
@@ -42,7 +42,7 @@ func NewCmdBackup() *cobra.Command {
 			flags.EnsureRequiredFlags(cmd, "cluster", "backup-dir")
 			restConfig, err := searchLocalKubeConfig(req.cluster)
 			if err != nil || restConfig == nil {
-				var clientConfigReq api.ClusterClientConfigRequest
+				var clientConfigReq proto.ClusterClientConfigRequest
 				clientConfigReq.Name = req.cluster
 				c := config.ClientOrDie()
 				resp, err := c.Kubernetes().V1beta1().Cluster().ClientConfig(c.Context(), &clientConfigReq)
@@ -62,7 +62,7 @@ func NewCmdBackup() *cobra.Command {
 	return cmd
 }
 
-func getConfigFromResp(resp *api.ClusterClientConfigResponse) (*rest.Config, error) {
+func getConfigFromResp(resp *proto.ClusterClientConfigResponse) (*rest.Config, error) {
 	var err error
 	var tlsCfg rest.TLSClientConfig
 	if resp.CaCert != "" {
@@ -103,11 +103,6 @@ func searchLocalKubeConfig(clusterName string) (*rest.Config, error) {
 		return nil, err
 	}
 	overrides := &clientcmd.ConfigOverrides{CurrentContext: clusterName}
-	cfg, err := clientcmd.NewDefaultClientConfig(*apiConfig, overrides).ClientConfig()
-	if err == nil {
-		return cfg, err
-	}
-	overrides = &clientcmd.ConfigOverrides{CurrentContext: getContextFromClusterName(clusterName)}
 	return clientcmd.NewDefaultClientConfig(*apiConfig, overrides).ClientConfig()
 }
 

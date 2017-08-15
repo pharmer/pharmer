@@ -90,9 +90,9 @@ def version():
 
 
 def fmt():
-    libbuild.ungroup_go_imports('*.go', 'api', 'cloud', 'cmds', 'commissioner', 'contexts', 'credential', 'data', 'extpoints', 'phid', 'storage', 'system')
-    die(call('goimports -w *.go api cloud cmds commissioner contexts credential data extpoints phid storage system'))
-    call('gofmt -s -w *.go api cloud cmds commissioner contexts credential data extpoints phid storage system')
+    libbuild.ungroup_go_imports('*.go', 'api', 'cloud', 'cmds', 'commissioner', 'context', 'credential', 'data', 'phid', 'storage', 'system')
+    die(call('goimports -w *.go api cloud cmds commissioner context credential data phid storage system'))
+    call('gofmt -s -w *.go api cloud cmds commissioner context credential data phid storage system')
 
 
 def vet():
@@ -110,13 +110,8 @@ def gen_assets():
         die(call('go-bindata -ignore=\\.go -ignore=\\.DS_Store -mode=0644 -modtime=1453795200 -o bindata.go -pkg {} .'.format(c), cwd=libbuild.REPO_ROOT + '/data/'+c))
 
 
-def gen_extpoints():
-    die(call('go generate main.go'))
-
-
 def gen():
     gen_assets()
-    gen_extpoints()
 
 
 def build_cmd(name):
@@ -147,13 +142,13 @@ def build(name=None):
 
 
 def install():
-    die(call('GO15VENDOREXPERIMENT=1 ' + libbuild.GOC + ' install .'))
+    die(call('GOBIN={} {} install *.go'.format(libbuild.GOBIN, libbuild.GOC)))
 
 
 def default():
     gen()
     fmt()
-    die(call('GO15VENDOREXPERIMENT=1 ' + libbuild.GOC + ' install .'))
+    die(call('GOBIN={} {} install *.go'.format(libbuild.GOBIN, libbuild.GOC)))
 
 
 def test(type, *args):

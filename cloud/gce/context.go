@@ -9,9 +9,7 @@ import (
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/credential"
-	"github.com/appscode/pharmer/extpoints"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
@@ -20,7 +18,7 @@ import (
 )
 
 func init() {
-	extpoints.KubeProviders.Register(new(kubeProvider), "gce")
+	extpoints.Providers.Register(new(provider), "gce")
 }
 
 const (
@@ -29,8 +27,8 @@ const (
 )
 
 type clusterManager struct {
-	ctx   *contexts.ClusterContext
-	ins   *contexts.ClusterInstances
+	ctx   *api.Cluster
+	ins   *api.ClusterInstances
 	conn  *cloudConnector
 	namer namer
 }
@@ -83,7 +81,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	// PREEMPTIBLE_NODE = false // Removed Support
 
 	cm.ctx.KubernetesMasterName = cm.namer.MasterName()
-	cm.ctx.SSHKey, err = contexts.NewSSHKeyPair()
+	cm.ctx.SSHKey, err = api.NewSSHKeyPair()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -117,8 +115,8 @@ func (cm *clusterManager) updateContext() error {
 		Multizone:          bool(cm.ctx.Multizone),
 	}
 	cm.ctx.CloudConfigPath = "/etc/gce.conf"
-	cm.ctx.ClusterExternalDomain = cm.ctx.Extra.ExternalDomain(cm.ctx.Name)
-	cm.ctx.ClusterInternalDomain = cm.ctx.Extra.InternalDomain(cm.ctx.Name)
+	cm.ctx.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.ctx.Name)
+	cm.ctx.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.ctx.Name)
 	//if cm.ctx.AppsCodeClusterCreator == "" {
 	//	cm.ctx.AppsCodeClusterCreator = cm.ctx.Auth.User.UserName
 	//}
@@ -133,8 +131,8 @@ func (cm *clusterManager) LoadDefaultContext() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.ClusterExternalDomain = cm.ctx.Extra.ExternalDomain(cm.ctx.Name)
-	cm.ctx.ClusterInternalDomain = cm.ctx.Extra.InternalDomain(cm.ctx.Name)
+	cm.ctx.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.ctx.Name)
+	cm.ctx.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.ctx.Name)
 
 	cm.ctx.Status = storage.KubernetesStatus_Pending
 	cm.ctx.OS = "debian"
@@ -243,9 +241,9 @@ func (cm *clusterManager) UploadStartupConfig() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Logger.Debug("Created bucket %s", cm.ctx.BucketName)
+		cm.ctx.Logger().Debug("Created bucket %s", cm.ctx.BucketName)
 	} else {
-		cm.ctx.Logger.Debug("Bucket %s already exists", cm.ctx.BucketName)
+		cm.ctx.Logger().Debug("Bucket %s already exists", cm.ctx.BucketName)
 	}
 
 	{

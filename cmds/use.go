@@ -2,63 +2,65 @@ package cmds
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
-	api "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/appctl/pkg/config"
-	"github.com/appscode/appctl/pkg/util"
-	"github.com/appscode/client/cli"
-	term "github.com/appscode/go-term"
+	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 )
 
 func NewCmdUse() *cobra.Command {
-	var req api.ClusterClientConfigRequest
+	var req proto.ClusterClientConfigRequest
 
 	cmd := &cobra.Command{
 		Use:               "use",
 		Short:             "Retrieve kubectl configuration for a Kubernetes cluster and change kubectl context",
 		Example:           `appctl cluster use <name>`,
 		DisableAutoGenTag: true,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				req.Name = args[0]
 			} else {
-				term.Fatalln("Missing cluster name")
+				return errors.New("Missing cluster name")
 			}
-			resp := &api.ClusterClientConfigResponse{}
+			resp := &proto.ClusterClientConfigResponse{}
 			var err error
-			c := config.ClientOrDie()
-			resp, err = c.Kubernetes().V1beta1().Cluster().ClientConfig(c.Context(), &req)
+			resp, err = clientConfig(&req)
 			if err != nil {
 				cfg, err := searchLocalKubeConfig(req.Name)
-				term.ExitOnError(err)
+				if err != nil {
+					return err
+				}
 				if cfg == nil {
-					term.Fatalln("Can't find cluster " + req.Name)
+					return errors.New("Can't find cluster " + req.Name)
 				}
 
 				// change current context
 				konfig := &KubeConfig{}
-				data, _ := ioutil.ReadFile(util.KubeConfigPath())
+				data, _ := ioutil.ReadFile(KubeConfigPath())
 				yaml.Unmarshal([]byte(data), konfig)
-				konfig.CurrentContext = getContextFromClusterName(req.Name)
+				// konfig.CurrentContext = getContextFromClusterName(req.Name) // TODO: FixIt!
 				output, _ := yaml.Marshal(konfig)
-				ioutil.WriteFile(util.KubeConfigPath(), output, 0755)
+				ioutil.WriteFile(KubeConfigPath(), output, 0755)
 			} else {
 				writeConfig(req.Name, resp)
 			}
-			term.Infoln("kubectl context set to cluster:", req.Name)
+			fmt.Println("kubectl context set to cluster:", req.Name)
+			return nil
 		},
 	}
 	return cmd
 }
 
-func writeConfig(name string, resp *api.ClusterClientConfigResponse) {
+func clientConfig(in *proto.ClusterClientConfigRequest) (*proto.ClusterClientConfigResponse, error) {
+	return nil, nil
+}
+
+func writeConfig(name string, resp *proto.ClusterClientConfigResponse) {
 	konfig := &KubeConfig{
 		APIVersion: "v1",
 		Kind:       "Config",
@@ -66,12 +68,12 @@ func writeConfig(name string, resp *api.ClusterClientConfigResponse) {
 			"colors": true,
 		},
 	}
-	_, err := os.Stat(util.KubeConfigPath())
+	_, err := os.Stat(KubeConfigPath())
 	if os.IsNotExist(err) {
-		os.MkdirAll(filepath.Dir(util.KubeConfigPath()), 0755)
+		os.MkdirAll(filepath.Dir(KubeConfigPath()), 0755)
 	}
 	if err == nil {
-		data, _ := ioutil.ReadFile(util.KubeConfigPath())
+		data, _ := ioutil.ReadFile(KubeConfigPath())
 		yaml.Unmarshal([]byte(data), konfig)
 	}
 
@@ -118,11 +120,11 @@ func writeConfig(name string, resp *api.ClusterClientConfigResponse) {
 	konfig.CurrentContext = resp.ContextName
 
 	output, _ := yaml.Marshal(konfig)
-	ioutil.WriteFile(util.KubeConfigPath(), output, 0755)
-	term.Infoln("Added cluster configuration to kubectl config")
+	ioutil.WriteFile(KubeConfigPath(), output, 0755)
+	fmt.Println("Added cluster configuration to kubectl config")
 }
 
-func setCluster(c *ClustersInfo, resp *api.ClusterClientConfigResponse) *ClustersInfo {
+func setCluster(c *ClustersInfo, resp *proto.ClusterClientConfigResponse) *ClustersInfo {
 	c.Name = resp.ClusterDomain
 	c.Cluster = map[string]interface{}{
 		"certificate-authority-data": resp.CaCert,
@@ -131,7 +133,7 @@ func setCluster(c *ClustersInfo, resp *api.ClusterClientConfigResponse) *Cluster
 	return c
 }
 
-func setUser(u *UserInfo, resp *api.ClusterClientConfigResponse) *UserInfo {
+func setUser(u *UserInfo, resp *proto.ClusterClientConfigResponse) *UserInfo {
 	u.Name = resp.ClusterUserName
 	if resp.UserToken != "" {
 		u.User = map[string]interface{}{
@@ -151,7 +153,7 @@ func setUser(u *UserInfo, resp *api.ClusterClientConfigResponse) *UserInfo {
 	return u
 }
 
-func setContext(c *ContextInfo, resp *api.ClusterClientConfigResponse) *ContextInfo {
+func setContext(c *ContextInfo, resp *proto.ClusterClientConfigResponse) *ContextInfo {
 	c.Name = resp.ContextName
 	c.Contextt = map[string]interface{}{
 		"cluster": resp.ClusterDomain,
@@ -186,13 +188,4 @@ type KubeConfig struct {
 	Preferences    map[string]interface{} `json:"preferences"`
 	Users          []*UserInfo            `json:"users"`
 	Extensions     json.RawMessage        `json:"extensions,omitempty"`
-}
-
-func getContextFromClusterName(clusterName string) string {
-	auth := cli.GetAuthOrDie()
-	baseDomain := strings.SplitN(auth.Network.ClusterUrls.BaseAddr, ":", 2)[0]
-	if auth.Env.IsHosted() {
-		return fmt.Sprintf("%v@%v-%v.%v", auth.UserName, strings.ToLower(clusterName), auth.TeamId, baseDomain)
-	}
-	return fmt.Sprintf("%v@%v.%v", auth.UserName, strings.ToLower(clusterName), baseDomain)
 }

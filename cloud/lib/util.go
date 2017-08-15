@@ -3,7 +3,7 @@ package lib
 import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/system"
 	semver "github.com/hashicorp/go-version"
 )
@@ -11,7 +11,7 @@ import (
 var InstanceNotFound = errors.New("Instance not found")
 var UnsupportedOperation = errors.New("Unsupported operation")
 
-func SetApps(ctx *contexts.ClusterContext) {
+func SetApps(ctx *api.Cluster) {
 	ctx.Apps = make(map[string]*system.Application)
 	ctx.Apps[system.AppKubeSaltbase] = system.NewAppKubernetesSalt(ctx.Provider, ctx.Region, ctx.SaltbaseVersion)
 	ctx.Apps[system.AppKubeServer] = system.NewAppKubernetesServer(ctx.Provider, ctx.Region, ctx.KubeServerVersion)
@@ -19,7 +19,7 @@ func SetApps(ctx *contexts.ClusterContext) {
 	ctx.Apps[system.AppHostfacts] = system.NewAppHostfacts(ctx.Provider, ctx.Region, ctx.HostfactsVersion)
 }
 
-func BuildRuntimeConfig(ctx *contexts.ClusterContext) {
+func BuildRuntimeConfig(ctx *api.Cluster) {
 	if ctx.EnableThirdPartyResource {
 		if ctx.RuntimeConfig == "" {
 			ctx.RuntimeConfig = "extensions/v1beta1=true,extensions/v1beta1/thirdpartyresources=true"
@@ -75,13 +75,13 @@ func BuildRuntimeConfig(ctx *contexts.ClusterContext) {
 	}
 }
 
-func UpgradeRequired(ctx *contexts.ClusterContext, req *proto.ClusterReconfigureRequest) bool {
+func UpgradeRequired(ctx *api.Cluster, req *proto.ClusterReconfigureRequest) bool {
 	return ctx.KubeServerVersion != req.KubeletVersion || ctx.SaltbaseVersion != req.SaltbaseVersion || ctx.KubeStarterVersion != req.KubeStarterVersion
 }
 
 /*
 func NewInstances(ctx *contexts.ClusterContext) (*contexts.ClusterInstances, error) {
-	kp := extpoints.KubeProviders.Lookup(ctx.Provider)
+	kp := extpoints.Providers.Lookup(ctx.Provider)
 	if kp == nil {
 		return nil, errors.New().WithMessagef("Missing cloud provider %v", ctx.Provider).Err()
 	}
@@ -89,7 +89,7 @@ func NewInstances(ctx *contexts.ClusterContext) (*contexts.ClusterInstances, err
 }
 */
 
-func SyncAddedInstances(ctx *contexts.ClusterContext, instances []*contexts.KubernetesInstance, purchasePHIDs []string) (int, error) {
+func SyncAddedInstances(ctx *api.Cluster, instances []*api.KubernetesInstance, purchasePHIDs []string) (int, error) {
 	return 0, nil
 	/*
 		m := make(map[string]*contexts.KubernetesInstance)
@@ -114,14 +114,14 @@ func SyncAddedInstances(ctx *contexts.ClusterContext, instances []*contexts.Kube
 					Role:           i.Role,
 					Status:         i.Status,
 				}
-				if has, _ := ctx.Store.Engine.Get(si); has {
+				if has, _ := ctx.Store().Engine.Get(si); has {
 					billing.NewController(ctx.Store).FailPurchase(purchasePHIDs[pi])
 					pi++
 					continue
 				}
 
 				si.PHID = i.PHID
-				if _, err := ctx.Store.Engine.Insert(si); err != nil {
+				if _, err := ctx.Store().Engine.Insert(si); err != nil {
 					return pi, errors.FromErr(err).WithContext(ctx).Err()
 				}
 				ctx.Instances = append(ctx.Instances, i)
@@ -139,7 +139,7 @@ func SyncAddedInstances(ctx *contexts.ClusterContext, instances []*contexts.Kube
 	*/
 }
 
-func SyncDeletedInstances(ctx *contexts.ClusterContext, sku string, instances []*contexts.KubernetesInstance) error {
+func SyncDeletedInstances(ctx *api.Cluster, sku string, instances []*api.KubernetesInstance) error {
 	return nil
 	/*
 		m := make(map[string]*contexts.KubernetesInstance)
@@ -160,7 +160,7 @@ func SyncDeletedInstances(ctx *contexts.ClusterContext, sku string, instances []
 			if _, found := m[i.ExternalID]; !found && i.SKU == sku && i.Role == system.RoleKubernetesPool {
 				updates := &storage.KubernetesInstance{Status: storage.KubernetesInstanceStatus_Deleted}
 				cond := &storage.KubernetesInstance{PHID: i.PHID}
-				if _, err := ctx.Store.Engine.Update(updates, cond); err != nil {
+				if _, err := ctx.Store().Engine.Update(updates, cond); err != nil {
 					return errors.FromErr(err).WithContext(ctx).Err()
 				}
 				i.Status = storage.KubernetesInstanceStatus_Deleted
@@ -168,7 +168,7 @@ func SyncDeletedInstances(ctx *contexts.ClusterContext, sku string, instances []
 					ObjectPHID: i.PHID,
 					Status:     storage.ChargeStatus_Close,
 				}
-				if has, _ := ctx.Store.Engine.Get(ki); has {
+				if has, _ := ctx.Store().Engine.Get(ki); has {
 					continue
 				}
 
@@ -186,10 +186,10 @@ func SyncDeletedInstances(ctx *contexts.ClusterContext, sku string, instances []
 	*/
 }
 
-func SyncClusterContextWithNumNode(ctx *contexts.ClusterContext, nodeAtdb, nodeInc int64, sku string) error {
+func SyncClusterContextWithNumNode(ctx *api.Cluster, nodeAtdb, nodeInc int64, sku string) error {
 	return nil
 	/*
-		kv, err := ctx.Store.GetKubernetesContext(ctx.ContextVersion)
+		kv, err := ctx.Store().GetKubernetesContext(ctx.ContextVersion)
 		if err != nil {
 			return errors.FromErr(err).WithContext(ctx).Err()
 		}

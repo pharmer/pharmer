@@ -7,16 +7,16 @@ import (
 
 	gv "github.com/JamesClonk/vultr/lib"
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/credential"
 )
 
 type cloudConnector struct {
-	ctx    *contexts.ClusterContext
+	ctx    *api.Cluster
 	client *gv.Client
 }
 
-func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
+func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
 	apiKey, ok := ctx.CloudCredential[credential.VultrApiToken]
 	if !ok {
 		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.VultrApiToken)
@@ -50,16 +50,16 @@ to determine if the VPS is powered on or not. When status is "active", you may a
 func (conn *cloudConnector) waitForActiveInstance(id string) (*gv.Server, error) {
 	attempt := 0
 	for true {
-		conn.ctx.Logger.Infof("Checking status of instance %v", id)
+		conn.ctx.Logger().Infof("Checking status of instance %v", id)
 		server, err := conn.client.GetServer(id)
 		if err != nil {
 			return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
-		conn.ctx.Logger.Debugf("Instance status %v, %v", server.Status, err)
+		conn.ctx.Logger().Debugf("Instance status %v, %v", server.Status, err)
 		if strings.ToLower(server.Status) == "active" && server.PowerStatus == "running" {
 			return &server, nil
 		}
-		conn.ctx.Logger.Infof("Instance %v (%v) is %v, waiting...", server.Name, server.ID, server.Status)
+		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", server.Name, server.ID, server.Status)
 		attempt += 1
 		if attempt > 120 {
 			break // timeout = 60 mins

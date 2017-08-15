@@ -5,14 +5,13 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
 )
 
 type clusterManager struct {
-	ctx   *contexts.ClusterContext
-	ins   *contexts.ClusterInstances
+	ctx   *api.Cluster
+	ins   *api.ClusterInstances
 	conn  *cloudConnector
 	namer namer
 }
@@ -37,7 +36,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.ctx.Project = cm.ctx.CloudCredential[credential.PacketProjectID]
 
 	cm.ctx.KubernetesMasterName = cm.namer.MasterName()
-	cm.ctx.SSHKey, err = contexts.NewSSHKeyPair()
+	cm.ctx.SSHKey, err = api.NewSSHKeyPair()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

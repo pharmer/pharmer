@@ -14,7 +14,7 @@ pharmer create [flags]
 ### Examples
 
 ```
-create --provider=(aws|gce|cc) --nodes=t1:n1,t2:n2 --zone=us-central1-f demo-cluster
+create --provider=(aws|gce|cc) --nodes=t1=1,t2=2 --zone=us-central1-f demo-cluster
 ```
 
 ### Options
@@ -24,7 +24,7 @@ create --provider=(aws|gce|cc) --nodes=t1:n1,t2:n2 --zone=us-central1-f demo-clu
       --do-not-delete             Set do not delete flag
       --gce-project gce           GCE project name(only applicable to gce provider)
   -h, --help                      help for create
-      --nodes string              Node set configuration
+      --nodes stringToInt         Node set configuration (default [])
       --provider string           Provider name
       --version string            Kubernetes version
       --zone string               Cloud provider zone name

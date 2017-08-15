@@ -19,7 +19,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	} else if cm.ctx.Status == storage.KubernetesStatus_Ready {
 		cm.ctx.Status = storage.KubernetesStatus_Deleting
 	}
-	// cm.ctx.Store.UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
+	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
 	var err error
 	if cm.conn == nil {
@@ -55,17 +55,17 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger.Infof("Instance %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name)
+		cm.ctx.Logger().Infof("Instance %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name)
 	}
 
 	if req.ReleaseReservedIp && cm.ctx.MasterReservedIP != "" {
 		backoff.Retry(func() error {
 			return cm.releaseReservedIP(cm.ctx.MasterReservedIP)
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger.Infof("Reserved ip for cluster %v", cm.ctx.Name)
+		cm.ctx.Logger().Infof("Reserved ip for cluster %v", cm.ctx.Name)
 	}
 
-	cm.ctx.Logger.Infof("Deleting startup scripts for cluster %v", cm.ctx.Name)
+	cm.ctx.Logger().Infof("Deleting startup scripts for cluster %v", cm.ctx.Name)
 	backoff.Retry(cm.deleteStartupScript, backoff.NewExponentialBackOff())
 
 	// Delete SSH key from DB
@@ -85,12 +85,12 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
-	cm.ctx.Logger.Infof("Cluster %v is deleted successfully", cm.ctx.Name)
+	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.ctx.Name)
 	return nil
 }
 
 func (cm *clusterManager) releaseReservedIP(ip string) error {
-	cm.ctx.Logger.Debugln("Deleting Floating IP", ip)
+	cm.ctx.Logger().Debugln("Deleting Floating IP", ip)
 	err := cm.conn.client.DestroyReservedIP(ip)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -115,19 +115,19 @@ func (cm *clusterManager) deleteStartupScript() error {
 }
 
 func (cm *clusterManager) deleteSSHKey() (err error) {
-	cm.ctx.Logger.Infof("Deleting ssh key for cluster %v", cm.ctx.MasterDiskId)
+	cm.ctx.Logger().Infof("Deleting ssh key for cluster %v", cm.ctx.MasterDiskId)
 
 	if cm.ctx.SSHKey != nil {
 		backoff.Retry(func() error {
 			return cm.conn.client.DeleteSSHKey(cm.ctx.SSHKeyExternalID)
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger.Infof("SSH key for cluster %v is deleted", cm.ctx.Name)
+		cm.ctx.Logger().Infof("SSH key for cluster %v is deleted", cm.ctx.Name)
 	}
 
 	if cm.ctx.SSHKeyPHID != "" {
 		//updates := &storage.SSHKey{IsDeleted: 1}
 		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
-		//_, err = cm.ctx.Store.Engine.Update(updates, cond)
+		//_, err = cm.ctx.Store().Engine.Update(updates, cond)
 	}
 	return
 }

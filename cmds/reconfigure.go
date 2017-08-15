@@ -1,31 +1,28 @@
 package cmds
 
 import (
-	kubernetes "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/appctl/pkg/config"
-	"github.com/appscode/appctl/pkg/util"
-	term "github.com/appscode/go-term"
+	"errors"
+
+	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/spf13/cobra"
 )
 
 func NewCmdReconfigure() *cobra.Command {
-	var req kubernetes.ClusterReconfigureRequest
+	var req proto.ClusterReconfigureRequest
 
 	cmd := &cobra.Command{
 		Use:               "reconfigure",
 		Short:             "Create/Resize/Upgrade/Downgrade a Kubernetes cluster instance group",
 		Example:           `appctl cluster reconfigure <name> --role=master|node --sku=n1-standard-1`,
 		DisableAutoGenTag: true,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				req.Name = args[0]
 			} else {
-				term.Fatalln("missing cluster name")
+				return errors.New("missing cluster name")
 			}
-			c := config.ClientOrDie()
-			_, err := c.Kubernetes().V1beta1().Cluster().Reconfigure(c.Context(), &req)
-			util.PrintStatus(err)
-			term.Successln("Reqeuest to reconfigure cluster is accepted!")
+
+			return reconfigure(&req)
 		},
 	}
 
@@ -44,4 +41,8 @@ func NewCmdReconfigure() *cobra.Command {
 	cmd.Flags().MarkHidden("hostfacts-version")
 
 	return cmd
+}
+
+func reconfigure(req *proto.ClusterReconfigureRequest) error {
+	return nil
 }

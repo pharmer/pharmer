@@ -10,13 +10,12 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/net/httpclient"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/system"
 	"github.com/golang/protobuf/jsonpb"
 )
 
 // This is called from a /etc/rc.local script, so always use full path for any command
-func RenderKubeStarter(opt *contexts.ScriptOptions, sku, cmd string) string {
+func RenderKubeStarter(opt *api.ScriptOptions, sku, cmd string) string {
 	return fmt.Sprintf(`#!/bin/bash -e
 set -o errexit
 set -o nounset
@@ -38,7 +37,7 @@ export LANG=en_US.UTF-8
 }
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
-func RenderKubeInstaller(opt *contexts.ScriptOptions, sku, role, cmd string) string {
+func RenderKubeInstaller(opt *api.ScriptOptions, sku, role, cmd string) string {
 	return fmt.Sprintf(`#!/bin/bash
 cat >/etc/kube-installer.sh <<EOF
 %v
@@ -66,14 +65,15 @@ systemctl enable kube-installer.service
 `, strings.Replace(RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1))
 }
 
-func SaveInstancesInFirebase(opt *contexts.ScriptOptions, ins *contexts.ClusterInstances) error {
-	ins.Logger().Infof("Server is configured to skip startup config api")
+func SaveInstancesInFirebase(opt *api.ScriptOptions, ins *api.ClusterInstances) error {
+	// TODO: FixIt
+	// ins.Logger().Infof("Server is configured to skip startup config api")
 	// store instances
 	for _, v := range ins.Instances {
 		if v.ExternalIP != "" {
 			fbPath, err := firebaseInstancePath(opt, v.ExternalIP)
 			if err != nil {
-				return errors.FromErr(err).WithContext(ins).Err()
+				return err // ors.FromErr(err).WithContext(ins).Err()
 			}
 			fmt.Println(fbPath)
 
@@ -92,22 +92,22 @@ func SaveInstancesInFirebase(opt *contexts.ScriptOptions, ins *contexts.ClusterI
 			m := jsonpb.Marshaler{}
 			err = m.Marshal(&buf, r2)
 			if err != nil {
-				return errors.FromErr(err).WithContext(ins).Err()
+				return err // ors.FromErr(err).WithContext(ins).Err()
 			}
 
 			_, err = httpclient.New(nil, nil, nil).
 				WithBaseURL(firebaseEndpoint).
 				Call(http.MethodPut, fbPath, &buf, nil, false)
 			if err != nil {
-				return errors.FromErr(err).WithContext(ins).Err()
+				return err // ors.FromErr(err).WithContext(ins).Err()
 			}
 		}
 	}
 	return nil
 }
 
-func UploadStartupConfigInFirebase(ctx *contexts.ClusterContext) error {
-	ctx.Logger.Infof("Server is configured to skip startup config api")
+func UploadStartupConfigInFirebase(ctx *api.Cluster) error {
+	ctx.Logger().Infof("Server is configured to skip startup config api")
 	{
 		cfg, err := ctx.StartupConfigResponse(system.RoleKubernetesMaster)
 		if err != nil {
@@ -148,12 +148,12 @@ func UploadStartupConfigInFirebase(ctx *contexts.ClusterContext) error {
 	return nil
 }
 
-func StartupConfigFromFirebase(opt *contexts.ScriptOptions, role string) string {
+func StartupConfigFromFirebase(opt *api.ScriptOptions, role string) string {
 	url, _ := firebaseStartupConfigPath(opt, role)
 	return fmt.Sprintf(`CONFIG=$(/usr/bin/wget -qO- '%v' 2> /dev/null)`, url)
 }
 
-func StartupConfigFromAPI(opt *contexts.ScriptOptions, role string) string {
+func StartupConfigFromAPI(opt *api.ScriptOptions, role string) string {
 	// TODO(tamal): Use wget instead of curl
 	return fmt.Sprintf(`CONFIG=$(/usr/bin/wget -qO- '%v/kubernetes/v1beta1/clusters/%v/startup-script/%v/context-versions/%v/json' --header='Authorization: Bearer %v:%v' 2> /dev/null)`,
 		system.PublicAPIHttpEndpoint(),
@@ -166,7 +166,7 @@ func StartupConfigFromAPI(opt *contexts.ScriptOptions, role string) string {
 
 const firebaseEndpoint = "https://tigerworks-kube.firebaseio.com"
 
-func firebaseStartupConfigPath(opt *contexts.ScriptOptions, role string) (string, error) {
+func firebaseStartupConfigPath(opt *api.ScriptOptions, role string) (string, error) {
 	l, err := api.FirebaseUid()
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(opt.Ctx).Err()
@@ -181,7 +181,7 @@ func firebaseStartupConfigPath(opt *contexts.ScriptOptions, role string) (string
 		opt.StartupConfigToken), nil
 }
 
-func firebaseInstancePath(opt *contexts.ScriptOptions, externalIP string) (string, error) {
+func firebaseInstancePath(opt *api.ScriptOptions, externalIP string) (string, error) {
 	l, err := api.FirebaseUid()
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(opt.Ctx).Err()

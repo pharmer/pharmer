@@ -3,20 +3,19 @@ package lib
 import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
-	"github.com/appscode/pharmer/contexts"
-	"github.com/appscode/pharmer/extpoints"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/storage"
 )
 
 // This is any provider != aws, azure, gce
-func LoadDefaultGenericContext(ctx *contexts.ClusterContext) error {
+func LoadDefaultGenericContext(ctx *api.Cluster) error {
 	err := ctx.KubeEnv.SetDefaults()
 	if err != nil {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
 
-	ctx.ClusterExternalDomain = ctx.Extra.ExternalDomain(ctx.Name)
-	ctx.ClusterInternalDomain = ctx.Extra.InternalDomain(ctx.Name)
+	ctx.ClusterExternalDomain = ctx.Extra().ExternalDomain(ctx.Name)
+	ctx.ClusterInternalDomain = ctx.Extra().InternalDomain(ctx.Name)
 
 	ctx.Status = storage.KubernetesStatus_Pending
 	ctx.OS = "debian"
@@ -74,8 +73,8 @@ func LoadDefaultGenericContext(ctx *contexts.ClusterContext) error {
 	return nil
 }
 
-func NewInstances(ctx *contexts.ClusterContext) (*contexts.ClusterInstances, error) {
-	p := extpoints.KubeProviders.Lookup(ctx.Provider)
+func NewInstances(ctx *api.Cluster) (*api.ClusterInstances, error) {
+	p := extpoints.Providers.Lookup(ctx.Provider)
 	if p == nil {
 		return nil, errors.New(ctx.Provider + " is an unknown Kubernetes lib.").WithContext(ctx).Err()
 	}

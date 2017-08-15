@@ -19,7 +19,7 @@ import (
 
 func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error {
 	if !lib.UpgradeRequired(cm.ctx, req) {
-		cm.ctx.Logger.Infof("Upgrade command skipped for cluster %v", cm.ctx.Name)
+		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.ctx.Name)
 		return nil
 	}
 
@@ -90,7 +90,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger.Infof("Update Completed")
+	cm.ctx.Logger().Infof("Update Completed")
 	return nil
 }
 
@@ -123,13 +123,13 @@ func (cm *clusterManager) restartMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.Logger.Infof("Attaching persistent data volume %v to master", cm.ctx.MasterDiskId)
+	cm.ctx.Logger().Infof("Attaching persistent data volume %v to master", cm.ctx.MasterDiskId)
 	r1, err := cm.conn.ec2.AttachVolume(&_ec2.AttachVolumeInput{
 		VolumeId:   types.StringP(cm.ctx.MasterDiskId),
 		Device:     types.StringP("/dev/sdb"),
 		InstanceId: types.StringP(masterInstanceID),
 	})
-	cm.ctx.Logger.Debugln("Attached persistent data volume to master", r1, err)
+	cm.ctx.Logger().Debugln("Attached persistent data volume to master", r1, err)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -167,7 +167,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	groupName := cm.namer.AutoScalingGroupName(sku)
-	cm.ctx.Logger.Infof(" Updating Node groups %v", groupName)
+	cm.ctx.Logger().Infof(" Updating Node groups %v", groupName)
 	// TODO: Namer needs fix
 	newLaunchConfig := cm.namer.LaunchConfigName(sku)
 	oldLaunchConfig := cm.namer.LaunchConfigNameWithContext(sku, ctxV)

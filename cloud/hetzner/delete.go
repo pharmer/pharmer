@@ -20,7 +20,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	} else if cm.ctx.Status == storage.KubernetesStatus_Ready {
 		cm.ctx.Status = storage.KubernetesStatus_Deleting
 	}
-	// cm.ctx.Store.UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
+	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
 	var err error
 	if cm.conn == nil {
@@ -75,12 +75,12 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
-	cm.ctx.Logger.Infof("Cluster %v is deleted successfully", cm.ctx.Name)
+	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.ctx.Name)
 	return nil
 }
 
 func (cm *clusterManager) deleteSSHKey() (err error) {
-	cm.ctx.Logger.Infof("Deleting SSH key for cluster", cm.ctx.Name)
+	cm.ctx.Logger().Infof("Deleting SSH key for cluster", cm.ctx.Name)
 
 	if cm.ctx.SSHKey != nil {
 		_, err = cm.conn.client.SSHKey.Delete(cm.ctx.SSHKey.OpensshFingerprint)
@@ -89,7 +89,7 @@ func (cm *clusterManager) deleteSSHKey() (err error) {
 	if cm.ctx.SSHKeyPHID != "" {
 		//updates := &storage.SSHKey{IsDeleted: 1}
 		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
-		//_, err = cm.ctx.Store.Engine.Update(updates, cond)
+		//_, err = cm.ctx.Store().Engine.Update(updates, cond)
 	}
 	return
 }

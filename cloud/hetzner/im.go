@@ -12,7 +12,6 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
@@ -20,11 +19,11 @@ import (
 )
 
 type instanceManager struct {
-	ctx  *contexts.ClusterContext
+	ctx  *api.Cluster
 	conn *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *contexts.InstanceMetadata) (*contexts.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
 	master := net.ParseIP(md.Name) == nil
 	servers, _, err := im.conn.client.Server.ListServers()
 	if err != nil {
@@ -57,12 +56,12 @@ func (im *instanceManager) createInstance(role, sku string) (*hc.Transaction, er
 		Lang:          "en",
 		// Test:          true,
 	})
-	im.ctx.Logger.Infof("Instance with sku %v created", sku)
+	im.ctx.Logger().Infof("Instance with sku %v created", sku)
 	return tx, err
 }
 
 func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Signer) error {
-	im.ctx.Logger.Infof("Storing config file for server %v", serverIP)
+	im.ctx.Logger().Infof("Storing config file for server %v", serverIP)
 	cfg, err := im.ctx.StartupConfigResponse(role)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
@@ -71,23 +70,23 @@ func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Sig
 
 	file := fmt.Sprintf("/var/cache/kubernetes_context_%v_%v.yaml", im.ctx.ContextVersion, role)
 	stdOut, stdErr, code, err := _ssh.SCP(file, []byte(cfg), "root", serverIP+":22", signer)
-	im.ctx.Logger.Debugf(stdOut, stdErr, code)
+	im.ctx.Logger().Debugf(stdOut, stdErr, code)
 	return err
 }
 
 func (im *instanceManager) storeStartupScript(serverIP, sku, role string, signer ssh.Signer) error {
-	im.ctx.Logger.Infof("Storing startup script for server %v", serverIP)
+	im.ctx.Logger().Infof("Storing startup script for server %v", serverIP)
 	startupScript := im.RenderStartupScript(im.ctx.NewScriptOptions(), sku, role)
 	fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>", startupScript)
 
 	file := "/var/cache/kubernetes_startupscript.sh"
 	stdOut, stdErr, code, err := _ssh.SCP(file, []byte(startupScript), "root", serverIP+":22", signer)
-	im.ctx.Logger.Debugf(stdOut, stdErr, code)
+	im.ctx.Logger().Debugf(stdOut, stdErr, code)
 	return err
 }
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
-func (im *instanceManager) RenderStartupScript(opt *contexts.ScriptOptions, sku, role string) string {
+func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
 	cmd := fmt.Sprintf(`CONFIG=$(cat /var/cache/kubernetes_context_%v_%v.yaml)`, opt.ContextVersion, role)
 	firebaseUid := ""
 	if api.UseFirebase() {
@@ -139,17 +138,17 @@ EOF
 }
 
 func (cluster *instanceManager) executeStartupScript(serverIP string, signer ssh.Signer) error {
-	cluster.ctx.Logger.Infof("SSH execing start command %v", serverIP+":22")
+	cluster.ctx.Logger().Infof("SSH execing start command %v", serverIP+":22")
 
 	stdOut, stdErr, code, err := _ssh.Exec(`bash /var/cache/kubernetes_startupscript.sh`, "root", serverIP+":22", signer)
-	cluster.ctx.Logger.Debugf(stdOut, stdErr, code)
+	cluster.ctx.Logger().Debugf(stdOut, stdErr, code)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cluster.ctx).Err()
 	}
 	return nil
 }
 
-func (im *instanceManager) newKubeInstance(serverIP string) (*contexts.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(serverIP string) (*api.KubernetesInstance, error) {
 	s, _, err := im.conn.client.Server.GetServer(serverIP)
 	if err != nil {
 		return nil, lib.InstanceNotFound
@@ -157,8 +156,8 @@ func (im *instanceManager) newKubeInstance(serverIP string) (*contexts.Kubernete
 	return im.newKubeInstanceFromSummary(&s.ServerSummary)
 }
 
-func (im *instanceManager) newKubeInstanceFromSummary(droplet *hc.ServerSummary) (*contexts.KubernetesInstance, error) {
-	return &contexts.KubernetesInstance{
+func (im *instanceManager) newKubeInstanceFromSummary(droplet *hc.ServerSummary) (*api.KubernetesInstance, error) {
+	return &api.KubernetesInstance{
 		PHID:           phid.NewKubeInstance(),
 		ExternalID:     strconv.Itoa(droplet.ServerNumber),
 		ExternalStatus: droplet.Status,

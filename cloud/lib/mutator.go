@@ -6,7 +6,6 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,7 +36,7 @@ type InstanceController struct {
 	Client clientset.Interface
 }
 
-func Mutator(ctx *contexts.ClusterContext, expectedInstance Instance) (int64, error) {
+func Mutator(ctx *api.Cluster, expectedInstance Instance) (int64, error) {
 	kc, err := ctx.NewKubeClient()
 	nodes, err := kc.Client.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
@@ -159,9 +158,9 @@ func Mutator(ctx *contexts.ClusterContext, expectedInstance Instance) (int64, er
 
 }
 
-func AdjustDbInstance(cm *contexts.ClusterInstances, instances []*contexts.KubernetesInstance, sku string) error {
-	dbNodes := make(map[string]*contexts.KubernetesInstance)
-	clusterNodes := make(map[string]*contexts.KubernetesInstance)
+func AdjustDbInstance(cm *api.ClusterInstances, instances []*api.KubernetesInstance, sku string) error {
+	dbNodes := make(map[string]*api.KubernetesInstance)
+	clusterNodes := make(map[string]*api.KubernetesInstance)
 	for _, i := range cm.Instances {
 		dbNodes[i.ExternalID] = i
 	}
@@ -182,7 +181,7 @@ func AdjustDbInstance(cm *contexts.ClusterInstances, instances []*contexts.Kuber
 	return nil
 }
 
-func GetExistingContextVersion(ctx *contexts.ClusterContext, sku string) (int64, error) {
+func GetExistingContextVersion(ctx *api.Cluster, sku string) (int64, error) {
 	kc, err := ctx.NewKubeClient()
 	if err != nil {
 		log.Fatal(err)

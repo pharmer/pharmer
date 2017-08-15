@@ -8,7 +8,6 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
@@ -17,14 +16,14 @@ import (
 )
 
 type instanceManager struct {
-	ctx  *contexts.ClusterContext
+	ctx  *api.Cluster
 	conn *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *contexts.InstanceMetadata) (*contexts.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *contexts.KubernetesInstance
+	var instance *api.KubernetesInstance
 	backoff.Retry(func() (err error) {
 		for {
 			var servers []packngo.Device
@@ -70,12 +69,12 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 		UserData:     startupScript,
 		Tags:         []string{im.ctx.Name},
 	})
-	im.ctx.Logger.Infof("Instance %v created", name)
+	im.ctx.Logger().Infof("Instance %v created", name)
 	return device, err
 }
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
-func (im *instanceManager) RenderStartupScript(opt *contexts.ScriptOptions, sku, role string) string {
+func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
 	cmd := lib.StartupConfigFromAPI(opt, role)
 	if api.UseFirebase() {
 		cmd = lib.StartupConfigFromFirebase(opt, role)
@@ -127,7 +126,7 @@ EOF
 `, strings.Replace(lib.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), reboot)
 }
 
-func (im *instanceManager) newKubeInstance(id string) (*contexts.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(id string) (*api.KubernetesInstance, error) {
 	s, _, err := im.conn.client.Devices.Get(id)
 	if err != nil {
 		return nil, lib.InstanceNotFound
@@ -135,8 +134,8 @@ func (im *instanceManager) newKubeInstance(id string) (*contexts.KubernetesInsta
 	return im.newKubeInstanceFromServer(s)
 }
 
-func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*contexts.KubernetesInstance, error) {
-	ki := &contexts.KubernetesInstance{
+func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*api.KubernetesInstance, error) {
+	ki := &api.KubernetesInstance{
 		PHID:           phid.NewKubeInstance(),
 		ExternalID:     droplet.ID,
 		ExternalStatus: droplet.State,
@@ -160,7 +159,7 @@ func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*
 
 // reboot does not seem to run /etc/rc.local
 func (im *instanceManager) reboot(id string) error {
-	im.ctx.Logger.Infof("Rebooting instance %v", id)
+	im.ctx.Logger().Infof("Rebooting instance %v", id)
 	_, err := im.conn.client.Devices.Reboot(id)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
