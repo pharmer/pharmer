@@ -105,7 +105,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	}
 	cm.UploadStartupConfig()
 	if api.UseFirebase() {
-		cloud.SaveInstancesInFirebase(cm.cluster.NewScriptOptions(), cm.ins)
+		cloud.SaveInstancesInFirebase(cm.cluster, cm.ins)
 	}
 
 	// reboot master to use cert with internal_ip as SANS
@@ -177,7 +177,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 
 						cm.UploadStartupConfig()
 						if api.UseFirebase() {
-							cloud.SaveInstancesInFirebase(cm.cluster.NewScriptOptions(), cm.ins)
+							cloud.SaveInstancesInFirebase(cm.cluster, cm.ins)
 						}
 					}
 				}

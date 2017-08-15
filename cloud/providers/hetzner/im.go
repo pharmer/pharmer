@@ -76,7 +76,7 @@ func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Sig
 
 func (im *instanceManager) storeStartupScript(serverIP, sku, role string, signer ssh.Signer) error {
 	im.ctx.Logger().Infof("Storing startup script for server %v", serverIP)
-	startupScript := im.RenderStartupScript(im.cluster.NewScriptOptions(), sku, role)
+	startupScript := im.RenderStartupScript(sku, role)
 	fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>", startupScript)
 
 	file := "/var/cache/kubernetes_startupscript.sh"
@@ -86,8 +86,8 @@ func (im *instanceManager) storeStartupScript(serverIP, sku, role string, signer
 }
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
-func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
-	cmd := fmt.Sprintf(`CONFIG=$(cat /var/cache/kubernetes_context_%v_%v.yaml)`, opt.ContextVersion, role)
+func (im *instanceManager) RenderStartupScript(sku, role string) string {
+	cmd := fmt.Sprintf(`CONFIG=$(cat /var/cache/kubernetes_context_%v_%v.yaml)`, im.cluster.ContextVersion, role)
 	firebaseUid := ""
 	if api.UseFirebase() {
 		firebaseUid, _ = api.FirebaseUid()
@@ -134,7 +134,7 @@ EOF
 /usr/sbin/update-grub
 
 /sbin/reboot
-`, strings.Replace(cloud.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid)
+`, strings.Replace(cloud.RenderKubeStarter(im.cluster, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid)
 }
 
 func (im *instanceManager) executeStartupScript(serverIP string, signer ssh.Signer) error {

@@ -189,7 +189,7 @@ func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
-	nodeScript := igm.im.RenderStartupScript(igm.cm.cluster.NewScriptOptions(), igm.instance.Type.Sku, api.RoleKubernetesPool)
+	nodeScript := igm.im.RenderStartupScript(igm.instance.Type.Sku, api.RoleKubernetesPool)
 	nodeVM, err := igm.im.createVirtualMachine(nodeNIC, as, sa, nodeName, nodeScript, igm.instance.Type.Sku)
 	if err != nil {
 		igm.cm.cluster.StatusCause = err.Error()

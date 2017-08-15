@@ -83,7 +83,7 @@ func (igm *InstanceGroupManager) createNodeInstanceTemplate(sku string) (string,
 	//  }
 
 	igm.cm.UploadStartupConfig()
-	startupScript := cloud.RenderKubeadmNodeStarter(igm.cm.cluster.NewScriptOptions())
+	startupScript := cloud.RenderKubeadmNodeStarter(igm.cm.cluster)
 
 	image := fmt.Sprintf("projects/%v/global/images/%v", igm.cm.cluster.InstanceImageProject, igm.cm.cluster.InstanceImage)
 	network := fmt.Sprintf("projects/%v/global/networks/%v", igm.cm.cluster.Project, defaultNetwork)

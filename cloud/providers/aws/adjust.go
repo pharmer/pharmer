@@ -80,7 +80,7 @@ func (igm *InstanceGroupManager) startNodes(sku string, count int64) error {
 
 func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) error {
 	//script := igm.cm.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), sku, system.RoleKubernetesPool)
-	script := cloud.RenderKubeadmNodeStarter(igm.cm.cluster.NewScriptOptions())
+	script := cloud.RenderKubeadmNodeStarter(igm.cm.cluster)
 
 	igm.cm.ctx.Logger().Info("Creating node configuration assuming EnableNodePublicIP = true")
 	fmt.Println(igm.cm.cluster.RootDeviceName, "<<<<<<<<--------------->>>>>>>>>>>>>>>>>>.")

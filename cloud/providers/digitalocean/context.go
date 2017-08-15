@@ -7,6 +7,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
+	"github.com/appscode/pharmer/util/kubeadm"
 )
 
 type clusterManager struct {
@@ -43,6 +44,9 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.cluster.SSHKeyPHID = phid.NewSSHKey()
 
 	cloud.GenClusterTokens(cm.cluster)
+
+	cm.cluster.KubeadmToken = kubeadm.GetRandomToken()
+	cm.cluster.KubeVersion = "v" + req.Version
 
 	return nil
 }

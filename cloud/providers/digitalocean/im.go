@@ -23,6 +23,8 @@ type instanceManager struct {
 	namer   namer
 }
 
+const DROPLET_IMAGE_SLUG = "ubuntu-16-04-x64"
+
 func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
 	master := net.ParseIP(md.Name) == nil
 
@@ -70,18 +72,24 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 }
 
 func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet, error) {
-	startupScript := im.RenderStartupScript(im.cluster.NewScriptOptions(), sku, role)
-	imgID, err := strconv.Atoi(im.cluster.InstanceImage)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
-	}
+	startupScript := im.RenderStartupScript(sku, role)
+	//imgID, err := strconv.Atoi(im.cluster.InstanceImage)
+	//if err != nil {
+	//	return nil, errors.FromErr(err).WithContext(im.ctx).Err()
+	//}
 	req := &godo.DropletCreateRequest{
 		Name:   name,
 		Region: im.cluster.Zone,
 		Size:   sku,
-		Image:  godo.DropletCreateImage{ID: imgID},
+		//Image:  godo.DropletCreateImage{ID: imgID},
+		Image: godo.DropletCreateImage{Slug: DROPLET_IMAGE_SLUG},
 		SSHKeys: []godo.DropletCreateSSHKey{
 			{Fingerprint: im.cluster.SSHKey.OpensshFingerprint},
+			{Fingerprint: "0d:ff:0d:86:0c:f1:47:1d:85:67:1e:73:c6:0e:46:17"}, // tamal@beast
+			{Fingerprint: "c0:19:c1:81:c5:2e:6d:d9:a6:db:3c:f5:c5:fd:c8:1d"}, // tamal@mbp
+			{Fingerprint: "f6:66:c5:ad:e6:60:30:d9:ab:2c:7c:75:56:e2:d7:f3"}, // tamal@asus
+			{Fingerprint: "80:b6:5a:c8:92:db:aa:fe:5f:d0:2e:99:95:de:ae:ab"}, // sanjid
+			{Fingerprint: "93:e6:c6:95:5c:d1:ac:00:5e:23:8c:f7:d2:61:b7:07"}, // dipta
 		},
 		PrivateNetworking: true,
 		IPv6:              false,
@@ -98,16 +106,22 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 	return droplet, err
 }
 
-func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
-	cmd := cloud.StartupConfigFromAPI(opt, role)
-	if api.UseFirebase() {
-		cmd = cloud.StartupConfigFromFirebase(opt, role)
-	}
-
+func (im *instanceManager) RenderStartupScript(sku, role string) string {
 	if role == api.RoleKubernetesMaster {
-		return cloud.RenderKubeInstaller(opt, sku, role, cmd)
+		cmd, _ := cloud.FireBaseCertDownloadCmd(im.ctx, im.cluster)
+		return cloud.RenderDoKubeMaster(im.ctx, im.cluster, cmd)
 	}
-	return cloud.RenderKubeStarter(opt, sku, cmd)
+	return cloud.RenderDoKubeNode(im.cluster)
+
+	//cmd := cloud.StartupConfigFromAPI(opt, role)
+	//if api.UseFirebase() {
+	//	cmd = cloud.StartupConfigFromFirebase(opt, role)
+	//}
+	//
+	//if role == api.RoleKubernetesMaster {
+	//	return cloud.RenderKubeInstaller(opt, sku, role, cmd)
+	//}
+	//return cloud.RenderKubeStarter(opt, sku, cmd)
 }
 
 func (im *instanceManager) applyTag(dropletID int) error {

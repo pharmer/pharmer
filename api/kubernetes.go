@@ -319,34 +319,6 @@ func (ctx *Cluster) NewKubeClient() (*kubeClient, error) {
 	return NewKubeClient(kubeconfig)
 }
 
-// SKU string
-// Role string
-type ScriptOptions struct {
-	Ctx *Cluster
-
-	Name               string
-	PHID               string
-	Namespace          string
-	StartupConfigToken string
-
-	ContextVersion int64
-	KubeStarterURL string
-	BucketName     string
-}
-
-func (ctx *Cluster) NewScriptOptions() *ScriptOptions {
-	return &ScriptOptions{
-		Ctx: ctx,
-
-		Name:               ctx.Name,
-		PHID:               ctx.PHID,
-		StartupConfigToken: ctx.StartupConfigToken,
-
-		ContextVersion: ctx.ContextVersion,
-		BucketName:     ctx.BucketName,
-	}
-}
-
 func (ctx *Cluster) NewInstances(matches func(i *KubernetesInstance, md *InstanceMetadata) bool) (*ClusterInstances, error) {
 	if matches == nil {
 		return nil, errors.New(`Use "github.com/appscode/pharmer/cloud/lib".NewInstances`).Err()

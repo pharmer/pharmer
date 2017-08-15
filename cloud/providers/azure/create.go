@@ -124,7 +124,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	masterScript := im.RenderStartupScript(cm.cluster.NewScriptOptions(), cm.cluster.MasterSKU, api.RoleKubernetesMaster)
+	masterScript := im.RenderStartupScript(cm.cluster.MasterSKU, api.RoleKubernetesMaster)
 	masterVM, err := im.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), masterScript, cm.cluster.MasterSKU)
 	if err != nil {
 		cm.cluster.StatusCause = err.Error()
