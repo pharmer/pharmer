@@ -6,12 +6,9 @@ import (
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/data"
 	"github.com/appscode/errors"
-	_env "github.com/appscode/go/env"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/system"
 	compute "google.golang.org/api/compute/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -36,18 +33,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	cm.updateContext()
 	// assign new timestamp and new launch_config version
 	cm.ctx.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
-	if req.Version != "" {
-		if v, err := data.LoadKubernetesVersion(cm.ctx.Provider, _env.FromHost().String(), req.Version); err == nil {
-			cm.ctx.SaltbaseVersion = v.Apps[system.AppKubeSaltbase]
-			cm.ctx.KubeServerVersion = v.Apps[system.AppKubeServer]
-			cm.ctx.KubeStarterVersion = v.Apps[system.AppKubeStarter]
-			cm.ctx.HostfactsVersion = v.Apps[system.AppHostfacts]
-		}
-	}
 	cm.ctx.KubeVersion = req.Version
-	cm.ctx.Apps[system.AppKubeSaltbase] = system.NewAppKubernetesSalt(cm.ctx.Provider, cm.ctx.Region, cm.ctx.SaltbaseVersion)
-	cm.ctx.Apps[system.AppKubeServer] = system.NewAppKubernetesServer(cm.ctx.Provider, cm.ctx.Region, cm.ctx.KubeServerVersion)
-	cm.ctx.Apps[system.AppKubeStarter] = system.NewAppStartKubernetes(cm.ctx.Provider, cm.ctx.Region, cm.ctx.KubeStarterVersion)
 	err := cm.ctx.Save()
 
 	if err != nil {

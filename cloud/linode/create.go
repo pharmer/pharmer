@@ -10,7 +10,6 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 )
 
 func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
@@ -62,7 +61,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	// -------------------------------------------------------------------ASSETS
 	im := &instanceManager{ctx: cm.ctx, conn: cm.conn, namer: cm.namer}
 
-	masterScriptId, err := im.createStackScript(cm.ctx.MasterSKU, system.RoleKubernetesMaster)
+	masterScriptId, err := im.createStackScript(cm.ctx.MasterSKU, api.RoleKubernetesMaster)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -84,7 +83,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Name = cm.namer.MasterName()
-	masterInstance.Role = system.RoleKubernetesMaster
+	masterInstance.Role = api.RoleKubernetesMaster
 	cm.ctx.MasterExternalIP = masterInstance.ExternalIP
 	cm.ctx.MasterInternalIP = masterInstance.InternalIP
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
@@ -126,7 +125,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	}
 	nodes := make([]*NodeInfo, 0)
 	for _, ng := range req.NodeGroups {
-		nodeScriptId, err := im.createStackScript(ng.Sku, system.RoleKubernetesPool)
+		nodeScriptId, err := im.createStackScript(ng.Sku, api.RoleKubernetesPool)
 		if err != nil {
 			cm.ctx.StatusCause = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -173,7 +172,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 							return errors.FromErr(err).WithContext(cm.ctx).Err()
 						}
 						node.Name = cm.ctx.Name + "-node-" + strconv.Itoa(info.nodeId)
-						node.Role = system.RoleKubernetesPool
+						node.Role = api.RoleKubernetesPool
 						cm.ins.Instances = append(cm.ins.Instances, node)
 						cm.ctx.Save()
 

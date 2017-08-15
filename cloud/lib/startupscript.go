@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strings"
 
+	"appscode.com/ark/pkg/system"
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
 	"github.com/appscode/go/net/httpclient"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/system"
 	"github.com/golang/protobuf/jsonpb"
 )
 
@@ -109,11 +109,11 @@ func SaveInstancesInFirebase(opt *api.ScriptOptions, ins *api.ClusterInstances) 
 func UploadStartupConfigInFirebase(ctx *api.Cluster) error {
 	ctx.Logger().Infof("Server is configured to skip startup config api")
 	{
-		cfg, err := ctx.StartupConfigResponse(system.RoleKubernetesMaster)
+		cfg, err := ctx.StartupConfigResponse(api.RoleKubernetesMaster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(ctx).Err()
 		}
-		fbPath, err := firebaseStartupConfigPath(ctx.NewScriptOptions(), system.RoleKubernetesMaster)
+		fbPath, err := firebaseStartupConfigPath(ctx.NewScriptOptions(), api.RoleKubernetesMaster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(ctx).Err()
 		}
@@ -128,11 +128,11 @@ func UploadStartupConfigInFirebase(ctx *api.Cluster) error {
 	}
 	{
 		// store startup config
-		cfg, err := ctx.StartupConfigResponse(system.RoleKubernetesPool)
+		cfg, err := ctx.StartupConfigResponse(api.RoleKubernetesPool)
 		if err != nil {
 			return errors.FromErr(err).WithContext(ctx).Err()
 		}
-		fbPath, err := firebaseStartupConfigPath(ctx.NewScriptOptions(), system.RoleKubernetesPool)
+		fbPath, err := firebaseStartupConfigPath(ctx.NewScriptOptions(), api.RoleKubernetesPool)
 		if err != nil {
 			return errors.FromErr(err).WithContext(ctx).Err()
 		}

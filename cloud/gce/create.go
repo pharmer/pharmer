@@ -13,7 +13,6 @@ import (
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 	compute "google.golang.org/api/compute/v1"
 )
 
@@ -108,7 +107,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Role = system.RoleKubernetesMaster
+	masterInstance.Role = api.RoleKubernetesMaster
 	cm.ctx.MasterExternalIP = masterInstance.ExternalIP
 	cm.ctx.MasterInternalIP = masterInstance.InternalIP
 	fmt.Println("Master EXTERNAL IP ================", cm.ctx.MasterExternalIP)
@@ -381,7 +380,7 @@ func (cm *clusterManager) createMasterIntance() (string, error) {
 	// MachineType:  "projects/tigerworks-kube/zones/us-central1-b/machineTypes/n1-standard-1",
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
-	startupScript := cm.RenderStartupScript(cm.ctx.NewScriptOptions(), cm.ctx.MasterSKU, system.RoleKubernetesMaster)
+	startupScript := cm.RenderStartupScript(cm.ctx.NewScriptOptions(), cm.ctx.MasterSKU, api.RoleKubernetesMaster)
 
 	machineType := fmt.Sprintf("projects/%v/zones/%v/machineTypes/%v", cm.ctx.Project, cm.ctx.Zone, cm.ctx.MasterSKU)
 	zone := fmt.Sprintf("projects/%v/zones/%v", cm.ctx.Project, cm.ctx.Zone)
@@ -525,7 +524,7 @@ func (cm *clusterManager) listInstances(instanceGroup string) ([]*api.Kubernetes
 		if err != nil {
 			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		instance.Role = system.RoleKubernetesPool
+		instance.Role = api.RoleKubernetesPool
 		instances = append(instances, instance)
 	}
 	return instances, nil
@@ -627,7 +626,7 @@ func (cm *clusterManager) createNodeInstanceTemplate(sku string) (string, error)
 	//  }
 
 	cm.UploadStartupConfig()
-	startupScript := cm.RenderStartupScript(cm.ctx.NewScriptOptions(), sku, system.RoleKubernetesPool)
+	startupScript := cm.RenderStartupScript(cm.ctx.NewScriptOptions(), sku, api.RoleKubernetesPool)
 
 	image := fmt.Sprintf("projects/%v/global/images/%v", cm.ctx.Project, cm.ctx.InstanceImage)
 	network := fmt.Sprintf("projects/%v/global/networks/%v", cm.ctx.Project, defaultNetwork)

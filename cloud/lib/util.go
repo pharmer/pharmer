@@ -4,20 +4,11 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/system"
 	semver "github.com/hashicorp/go-version"
 )
 
 var InstanceNotFound = errors.New("Instance not found")
 var UnsupportedOperation = errors.New("Unsupported operation")
-
-func SetApps(ctx *api.Cluster) {
-	ctx.Apps = make(map[string]*system.Application)
-	ctx.Apps[system.AppKubeSaltbase] = system.NewAppKubernetesSalt(ctx.Provider, ctx.Region, ctx.SaltbaseVersion)
-	ctx.Apps[system.AppKubeServer] = system.NewAppKubernetesServer(ctx.Provider, ctx.Region, ctx.KubeServerVersion)
-	ctx.Apps[system.AppKubeStarter] = system.NewAppStartKubernetes(ctx.Provider, ctx.Region, ctx.KubeStarterVersion)
-	ctx.Apps[system.AppHostfacts] = system.NewAppHostfacts(ctx.Provider, ctx.Region, ctx.HostfactsVersion)
-}
 
 func BuildRuntimeConfig(ctx *api.Cluster) {
 	if ctx.EnableThirdPartyResource {
@@ -102,7 +93,7 @@ func SyncAddedInstances(ctx *api.Cluster, instances []*api.KubernetesInstance, p
 		for _, i := range instances {
 			if _, found := m[i.ExternalID]; !found {
 				// add to KubernetesInstance table
-				i.Role = system.RoleKubernetesPool
+				i.Role = api.RoleKubernetesPool
 				si := &storage.KubernetesInstance{
 					KubernetesPHID: ctx.PHID,
 					ExternalID:     i.ExternalID,
@@ -157,7 +148,7 @@ func SyncDeletedInstances(ctx *api.Cluster, sku string, instances []*api.Kuberne
 		fi := ctx.Instances[:0]
 		deletedNode := 0
 		for _, i := range ctx.Instances {
-			if _, found := m[i.ExternalID]; !found && i.SKU == sku && i.Role == system.RoleKubernetesPool {
+			if _, found := m[i.ExternalID]; !found && i.SKU == sku && i.Role == api.RoleKubernetesPool {
 				updates := &storage.KubernetesInstance{Status: storage.KubernetesInstanceStatus_Deleted}
 				cond := &storage.KubernetesInstance{PHID: i.PHID}
 				if _, err := ctx.Store().Engine.Update(updates, cond); err != nil {

@@ -8,9 +8,9 @@ import (
 	"github.com/appscode/errors"
 	hc "github.com/appscode/go-hetzner"
 	_ssh "github.com/appscode/go/crypto/ssh"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 )
 
 func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
@@ -64,7 +64,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	im := &instanceManager{ctx: cm.ctx, conn: cm.conn}
 
 	cm.ctx.Logger().Info("Creating master instance")
-	masterTx, err := im.createInstance(system.RoleKubernetesMaster, cm.ctx.MasterSKU)
+	masterTx, err := im.createInstance(api.RoleKubernetesMaster, cm.ctx.MasterSKU)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -79,7 +79,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Role = system.RoleKubernetesMaster
+	masterInstance.Role = api.RoleKubernetesMaster
 	cm.ctx.MasterExternalIP = masterInstance.ExternalIP
 	cm.ctx.MasterInternalIP = masterInstance.InternalIP
 	fmt.Println("Master EXTERNAL IP ================", cm.ctx.MasterExternalIP)
@@ -109,12 +109,12 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		ServerIP:   *masterTx.ServerIP,
 		ServerName: cm.ctx.KubernetesMasterName,
 	})
-	err = im.storeConfigFile(*masterTx.ServerIP, system.RoleKubernetesMaster, signer)
+	err = im.storeConfigFile(*masterTx.ServerIP, api.RoleKubernetesMaster, signer)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = im.storeStartupScript(*masterTx.ServerIP, cm.ctx.MasterSKU, system.RoleKubernetesMaster, signer)
+	err = im.storeStartupScript(*masterTx.ServerIP, cm.ctx.MasterSKU, api.RoleKubernetesMaster, signer)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -135,7 +135,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	// start nodes
 	for sku, count := range req.NodeSet {
 		for i := int64(0); i < count; i++ {
-			tx, err := im.createInstance(system.RoleKubernetesPool, sku)
+			tx, err := im.createInstance(api.RoleKubernetesPool, sku)
 			if err != nil {
 				cm.ctx.StatusCause = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -151,12 +151,12 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 				ServerName: cm.namer.GenNodeName(),
 			})
 
-			err = im.storeConfigFile(*tx.ServerIP, system.RoleKubernetesPool, signer)
+			err = im.storeConfigFile(*tx.ServerIP, api.RoleKubernetesPool, signer)
 			if err != nil {
 				cm.ctx.StatusCause = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
-			err = im.storeStartupScript(*tx.ServerIP, sku, system.RoleKubernetesPool, signer)
+			err = im.storeStartupScript(*tx.ServerIP, sku, api.RoleKubernetesPool, signer)
 			if err != nil {
 				cm.ctx.StatusCause = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -173,7 +173,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 				cm.ctx.StatusCause = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
-			node.Role = system.RoleKubernetesPool
+			node.Role = api.RoleKubernetesPool
 			cm.ins.Instances = append(cm.ins.Instances, node)
 		}
 	}

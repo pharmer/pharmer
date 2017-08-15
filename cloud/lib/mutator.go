@@ -7,7 +7,6 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
 )
@@ -173,7 +172,7 @@ func AdjustDbInstance(cm *api.ClusterInstances, instances []*api.KubernetesInsta
 	}
 	// remote delete node
 	for v, i := range cm.Instances {
-		if _, found := clusterNodes[i.ExternalID]; !found && i.SKU == sku && i.Role == system.RoleKubernetesPool {
+		if _, found := clusterNodes[i.ExternalID]; !found && i.SKU == sku && i.Role == api.RoleKubernetesPool {
 			cm.Instances[v].Status = storage.KubernetesInstanceStatus_Deleted
 		}
 	}

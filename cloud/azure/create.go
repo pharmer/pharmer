@@ -11,9 +11,9 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
 	"github.com/appscode/go/types"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 )
 
 func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
@@ -125,7 +125,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	masterScript := im.RenderStartupScript(cm.ctx.NewScriptOptions(), cm.ctx.MasterSKU, system.RoleKubernetesMaster)
+	masterScript := im.RenderStartupScript(cm.ctx.NewScriptOptions(), cm.ctx.MasterSKU, api.RoleKubernetesMaster)
 	masterVM, err := im.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), masterScript, cm.ctx.MasterSKU)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
@@ -137,7 +137,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	ki.Role = system.RoleKubernetesMaster
+	ki.Role = api.RoleKubernetesMaster
 
 	fmt.Println(cm.ctx.MasterExternalIP, "------------------------------->")
 	cm.ins.Instances = append(cm.ins.Instances, ki)
@@ -430,7 +430,7 @@ for i := int64(0); i < ng.Count; i++ {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
 
-			nodeScript := im.RenderStartupScript(cm.ctx.NewScriptOptions(), ng.Sku, system.RoleKubernetesPool)
+			nodeScript := im.RenderStartupScript(cm.ctx.NewScriptOptions(), ng.Sku, api.RoleKubernetesPool)
 			nodeVM, err := im.createVirtualMachine(nodeNIC, as, sa, nodeName, nodeScript, ng.Sku)
 			if err != nil {
 				cm.ctx.StatusCause = err.Error()
@@ -448,7 +448,7 @@ for i := int64(0); i < ng.Count; i++ {
 				cm.ctx.StatusCause = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
-			ki.Role = system.RoleKubernetesPool
+			ki.Role = api.RoleKubernetesPool
 			cm.ins.Instances = append(cm.ins.Instances, ki)
 			// cm.ins.Instances = append(cm.ins.Instances, ki)
 		}

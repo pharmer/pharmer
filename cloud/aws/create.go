@@ -14,7 +14,6 @@ import (
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 	// "github.com/appscode/pharmer/templates"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
@@ -173,7 +172,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	for _, group := range r2.AutoScalingGroups {
 		for _, instance := range group.Instances {
 			ki, err := cm.newKubeInstance(*instance.InstanceId)
-			ki.Role = system.RoleKubernetesPool
+			ki.Role = api.RoleKubernetesPool
 			cm.ins.Instances = append(cm.ins.Instances, ki)
 			if err != nil {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -818,7 +817,7 @@ func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 	cm.ctx.Save() // needed for master start-up config
 	cm.UploadStartupConfig()
 
-	masterInstanceID, err := cm.createMasterInstance(cm.ctx.KubernetesMasterName, system.RoleKubernetesMaster)
+	masterInstanceID, err := cm.createMasterInstance(cm.ctx.KubernetesMasterName, api.RoleKubernetesMaster)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -841,7 +840,7 @@ func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Role = system.RoleKubernetesMaster
+	masterInstance.Role = api.RoleKubernetesMaster
 	cm.ctx.MasterExternalIP = masterInstance.ExternalIP
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 
@@ -1088,7 +1087,7 @@ func (cm *clusterManager) listInstances(groupName string) ([]*api.KubernetesInst
 			if err != nil {
 				return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
-			ki.Role = system.RoleKubernetesPool
+			ki.Role = api.RoleKubernetesPool
 			instances = append(instances, ki)
 		}
 	}
@@ -1175,7 +1174,7 @@ CONFIG=$(cat /tmp/role.yaml)`, opt.BucketName, opt.ContextVersion, role)
 }
 
 func (cm *clusterManager) createLaunchConfiguration(name, sku string) error {
-	script := cm.RenderStartupScript(cm.ctx.NewScriptOptions(), sku, system.RoleKubernetesPool)
+	script := cm.RenderStartupScript(cm.ctx.NewScriptOptions(), sku, api.RoleKubernetesPool)
 	cm.UploadStartupConfig()
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
 		LaunchConfigurationName:  types.StringP(name),

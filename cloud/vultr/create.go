@@ -7,9 +7,9 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 )
 
 func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
@@ -66,7 +66,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	// -------------------------------------------------------------------ASSETS
 	im := &instanceManager{ctx: cm.ctx, conn: cm.conn, namer: cm.namer}
 
-	masterScriptId, err := im.createStartupScript(cm.ctx.MasterSKU, system.RoleKubernetesMaster)
+	masterScriptId, err := im.createStartupScript(cm.ctx.MasterSKU, api.RoleKubernetesMaster)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -93,7 +93,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Role = system.RoleKubernetesMaster
+	masterInstance.Role = api.RoleKubernetesMaster
 	cm.ctx.MasterExternalIP = masterInstance.ExternalIP
 	cm.ctx.MasterInternalIP = masterInstance.InternalIP
 	fmt.Println("Master EXTERNAL_IP", cm.ctx.MasterExternalIP, " --- Master INTERNAL_IP", cm.ctx.MasterInternalIP)
@@ -134,7 +134,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	}
 	nodes := make([]*NodeInfo, 0)
 	for _, ng := range req.NodeGroups {
-		nodeScriptId, err := im.createStartupScript(ng.Sku, system.RoleKubernetesPool)
+		nodeScriptId, err := im.createStartupScript(ng.Sku, api.RoleKubernetesPool)
 		if err != nil {
 			cm.ctx.StatusCause = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -180,7 +180,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 							cm.ctx.StatusCause = err.Error()
 							return errors.FromErr(err).WithContext(cm.ctx).Err()
 						}
-						node.Role = system.RoleKubernetesPool
+						node.Role = api.RoleKubernetesPool
 						cm.ins.Instances = append(cm.ins.Instances, node)
 					}
 				}

@@ -9,9 +9,9 @@ import (
 	"github.com/appscode/errors"
 	stringutil "github.com/appscode/go/strings"
 	"github.com/appscode/go/types"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
@@ -167,7 +167,7 @@ func (cluster *clusterManager) deleteMaster() error {
 			{
 				Name: types.StringP("tag:Role"),
 				Values: []*string{
-					types.StringP(system.RoleKubernetesMaster),
+					types.StringP(api.RoleKubernetesMaster),
 				},
 			},
 			{
