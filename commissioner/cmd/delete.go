@@ -1,20 +1,18 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-
 	term "github.com/appscode/go-term"
 	"github.com/appscode/go/flags"
 	"github.com/appscode/pharmer/commissioner"
 	"github.com/spf13/cobra"
 )
 
-func NewCmdClusterNative() *cobra.Command {
+func NewCmdClusterDelete() *cobra.Command {
 	var name string
 	cmd := &cobra.Command{
-		Use:   "native",
-		Short: "Cluster commisioning native check",
+		Use:               "delete",
+		Short:             "Cluster commissioning delete",
+		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.SetLogLevel(4)
 			if len(args) > 0 {
@@ -24,15 +22,7 @@ func NewCmdClusterNative() *cobra.Command {
 			}
 			c, err := commissioner.NewComissionar("", name)
 			term.ExitOnError(err)
-			err = c.NativeCheck()
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err.Error())
-				os.Exit(1)
-			}
-			/*_, err := installer.Create(&req)
-			if err != nil {
-				errors.Exit(err)
-			}*/
+			c.ClusterDelete()
 		},
 	}
 	return cmd

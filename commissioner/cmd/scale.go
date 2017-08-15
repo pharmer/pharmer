@@ -14,8 +14,9 @@ func NewCmdClusterScale() *cobra.Command {
 	var provider string
 	var name string
 	cmd := &cobra.Command{
-		Use:   "scale",
-		Short: "Cluster create commisioning",
+		Use:               "scale",
+		Short:             "Cluster create commissioning",
+		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.SetLogLevel(4)
 			flags.EnsureRequiredFlags(cmd, "provider")

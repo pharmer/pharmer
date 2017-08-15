@@ -10,11 +10,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewCmdClusterNetworks() *cobra.Command {
+func NewCmdClusterAddon() *cobra.Command {
 	var name string
 	cmd := &cobra.Command{
-		Use:   "network",
-		Short: "Cluster commisioning network check",
+		Use:               "addon",
+		Short:             "Cluster commissioning addon setup",
+		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.SetLogLevel(4)
 			if len(args) > 0 {
@@ -24,7 +25,7 @@ func NewCmdClusterNetworks() *cobra.Command {
 			}
 			c, err := commissioner.NewComissionar("", name)
 			term.ExitOnError(err)
-			err = c.NetworkCheck()
+			err = c.AddonSetup()
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				os.Exit(1)

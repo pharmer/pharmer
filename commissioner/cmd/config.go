@@ -1,20 +1,18 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-
 	term "github.com/appscode/go-term"
 	"github.com/appscode/go/flags"
 	"github.com/appscode/pharmer/commissioner"
 	"github.com/spf13/cobra"
 )
 
-func NewCmdClusterAddon() *cobra.Command {
+func NewCmdClusterConfig() *cobra.Command {
 	var name string
 	cmd := &cobra.Command{
-		Use:   "addon",
-		Short: "Cluster commisioning addon setup",
+		Use:               "config",
+		Short:             "Cluster commissioning config",
+		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.SetLogLevel(4)
 			if len(args) > 0 {
@@ -24,11 +22,7 @@ func NewCmdClusterAddon() *cobra.Command {
 			}
 			c, err := commissioner.NewComissionar("", name)
 			term.ExitOnError(err)
-			err = c.AddonSetup()
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err.Error())
-				os.Exit(1)
-			}
+			c.InstallKubeConfig()
 		},
 	}
 	return cmd
