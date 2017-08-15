@@ -2,6 +2,7 @@ package aws
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
+	"github.com/appscode/pharmer/util/kubeadm"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 	_s3 "github.com/aws/aws-sdk-go/service/s3"
 	semver "github.com/hashicorp/go-version"
@@ -77,6 +79,9 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 
 	cloud.GenClusterTokens(cm.cluster)
 
+	cm.cluster.KubeadmToken = kubeadm.GetRandomToken()
+	cm.cluster.KubeVersion = "v" + req.Version
+
 	return nil
 }
 
@@ -90,7 +95,7 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	cm.cluster.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.cluster.Name)
 
 	cm.cluster.Status = api.KubernetesStatus_Pending
-	cm.cluster.OS = "debian"
+	cm.cluster.OS = "ubuntu"
 
 	cm.cluster.AppsCodeLogIndexPrefix = "logstash-"
 	cm.cluster.AppsCodeLogStorageLifetime = 90 * 24 * 3600
@@ -204,6 +209,28 @@ func (cm *clusterManager) UploadStartupConfig() error {
 		}
 	}
 	{
+		caCert, err := base64.StdEncoding.DecodeString(cm.cluster.CaCert)
+		path := fmt.Sprintf("kubernetes/context/%v/pki/ca.crt", cm.cluster.ContextVersion)
+		if err = cm.bucketStore(path, caCert); err != nil {
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		caKey, err := base64.StdEncoding.DecodeString(cm.cluster.CaKey)
+		path = fmt.Sprintf("kubernetes/context/%v/pki/ca.key", cm.cluster.ContextVersion)
+		if err = cm.bucketStore(path, caKey); err != nil {
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		frontCACert, err := base64.StdEncoding.DecodeString(cm.cluster.FrontProxyCaCert)
+		path = fmt.Sprintf("kubernetes/context/%v/pki/front-proxy-ca.crt", cm.clutser.ContextVersion)
+		if err = cm.bucketStore(path, frontCACert); err != nil {
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		frontCAKey, err := base64.StdEncoding.DecodeString(cm.cluster.FrontProxyCaKey)
+		path = fmt.Sprintf("kubernetes/context/%v/pki/front-proxy-ca.key", cm.cluster.ContextVersion)
+		if err = cm.bucketStore(path, frontCAKey); err != nil {
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+	}
+	{
 		cfg, err := cm.cluster.StartupConfigResponse(api.RoleKubernetesPool)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -219,6 +246,20 @@ func (cm *clusterManager) UploadStartupConfig() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
+	}
+	return nil
+}
+
+func (cm *clusterManager) bucketStore(path string, data []byte) error {
+	params := &_s3.PutObjectInput{
+		Bucket: types.StringP(cm.cluster.BucketName),
+		Key:    types.StringP(path),
+		ACL:    types.StringP("authenticated-read"),
+		Body:   bytes.NewReader(data),
+	}
+	_, err := cm.conn.s3.PutObject(params)
+	if err != nil {
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	return nil
 }

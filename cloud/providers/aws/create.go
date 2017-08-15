@@ -57,13 +57,14 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 	}(cm.cluster.MasterReservedIP == "auto")
 
-	if err = cm.conn.detectJessieImage(); err != nil {
+	if err = cm.conn.detectUbuntuImage(); err != nil {
 		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.cluster.InstanceImage = cm.conn.cluster.InstanceImage
-	cm.cluster.RootDeviceName = cm.conn.cluster.RootDeviceName
-	fmt.Println(cm.cluster.InstanceImage, cm.cluster.RootDeviceName, "---------------*********")
+	// TODO: FixIt!
+	//cm.cluster.RootDeviceName = cm.conn.cluster.RootDeviceName
+	//fmt.Println(cm.cluster.InstanceImage, cm.cluster.RootDeviceName, "---------------*********")
 
 	if err = cm.ensureIAMProfile(); err != nil {
 		cm.cluster.StatusCause = err.Error()
@@ -804,10 +805,11 @@ func (cm *clusterManager) autohrizeIngressByPort(groupID string, port int64) err
 //
 func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 	var err error
-	cm.cluster.MasterDiskId, err = cm.ensurePd(cm.namer.MasterPDName(), cm.cluster.MasterDiskType, cm.cluster.MasterDiskSize)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
+	// TODO: FixIt!
+	//cm.cluster.MasterDiskId, err = cm.ensurePd(cm.namer.MasterPDName(), cm.cluster.MasterDiskType, cm.cluster.MasterDiskSize)
+	//if err != nil {
+	//	return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
+	//}
 	err = cm.reserveIP()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -855,16 +857,18 @@ func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 	if err != nil {
 		return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	r1, err := cm.conn.ec2.AttachVolume(&_ec2.AttachVolumeInput{
-		VolumeId:   types.StringP(cm.cluster.MasterDiskId),
-		Device:     types.StringP("/dev/sdb"),
-		InstanceId: types.StringP(masterInstanceID),
-	})
-	cm.ctx.Logger().Debug("Attached persistent data volume to master", r1, err)
-	if err != nil {
-		return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	cm.ctx.Logger().Infof("Persistent data volume %v attatched to master", cm.cluster.MasterDiskId)
+	/*
+		r1, err := cm.conn.ec2.AttachVolume(&_ec2.AttachVolumeInput{
+			VolumeId:   types.StringP(cm.cluster.MasterDiskId),
+			Device:     types.StringP("/dev/sdb"),
+			InstanceId: types.StringP(masterInstanceID),
+		})
+		cm.ctx.Logger().Debug("Attached persistent data volume to master", r1, err)
+		if err != nil {
+			return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		cm.ctx.Logger().Infof("Persistent data volume %v attatched to master", cm.cluster.MasterDiskId)
+	*/
 
 	time.Sleep(15 * time.Second)
 	r2, err := cm.conn.ec2.CreateRoute(&_ec2.CreateRouteInput{
@@ -968,41 +972,41 @@ func (cm *clusterManager) reserveIP() error {
 }
 
 func (cm *clusterManager) createMasterInstance(instanceName string, role string) (string, error) {
-	kubeStarter := cm.RenderStartupScript(cm.cluster.NewScriptOptions(), cm.cluster.MasterSKU, role)
+	kubeStarter := cm.RenderStartupScript(cm.cluster.NewScriptOptions())
 	req := &_ec2.RunInstancesInput{
 		ImageId:  types.StringP(cm.cluster.InstanceImage),
 		MaxCount: types.Int64P(1),
 		MinCount: types.Int64P(1),
-		// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html
-		BlockDeviceMappings: []*_ec2.BlockDeviceMapping{
-			// MASTER_BLOCK_DEVICE_MAPPINGS
-			{
-				// https://github.com/appscode/kubernetes/blob/55d9dec8eb5eb02e1301045b7b81bbac689c86a1/cluster/aws/util.sh#L397
-				DeviceName: types.StringP(cm.cluster.RootDeviceName),
-				Ebs: &_ec2.EbsBlockDevice{
-					DeleteOnTermination: types.TrueP(),
-					VolumeSize:          types.Int64P(cm.cluster.MasterDiskSize),
-					VolumeType:          types.StringP(cm.cluster.MasterDiskType),
-				},
-			},
-			// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
-			{
-				DeviceName:  types.StringP("/dev/sdc"),
-				VirtualName: types.StringP("ephemeral0"),
-			},
-			{
-				DeviceName:  types.StringP("/dev/sdd"),
-				VirtualName: types.StringP("ephemeral1"),
-			},
-			{
-				DeviceName:  types.StringP("/dev/sde"),
-				VirtualName: types.StringP("ephemeral2"),
-			},
-			{
-				DeviceName:  types.StringP("/dev/sdf"),
-				VirtualName: types.StringP("ephemeral3"),
-			},
-		},
+		//// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html
+		//BlockDeviceMappings: []*_ec2.BlockDeviceMapping{
+		//	// MASTER_BLOCK_DEVICE_MAPPINGS
+		//	{
+		//		// https://github.com/appscode/kubernetes/blob/55d9dec8eb5eb02e1301045b7b81bbac689c86a1/cluster/aws/util.sh#L397
+		//		DeviceName: types.StringP(cm.cluster.RootDeviceName),
+		//		Ebs: &_ec2.EbsBlockDevice{
+		//			DeleteOnTermination: types.TrueP(),
+		//			VolumeSize:          types.Int64P(cm.cluster.MasterDiskSize),
+		//			VolumeType:          types.StringP(cm.cluster.MasterDiskType),
+		//		},
+		//	},
+		//	// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
+		//	{
+		//		DeviceName:  types.StringP("/dev/sdc"),
+		//		VirtualName: types.StringP("ephemeral0"),
+		//	},
+		//	{
+		//		DeviceName:  types.StringP("/dev/sdd"),
+		//		VirtualName: types.StringP("ephemeral1"),
+		//	},
+		//	{
+		//		DeviceName:  types.StringP("/dev/sde"),
+		//		VirtualName: types.StringP("ephemeral2"),
+		//	},
+		//	{
+		//		DeviceName:  types.StringP("/dev/sdf"),
+		//		VirtualName: types.StringP("ephemeral3"),
+		//	},
+		//},
 		IamInstanceProfile: &_ec2.IamInstanceProfileSpecification{
 			Name: types.StringP(cm.cluster.IAMProfileMaster),
 		},
@@ -1166,14 +1170,24 @@ func (cm *clusterManager) assignIPToInstance(instanceID string) error {
 	return nil
 }
 
-func (cm *clusterManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
-	cmd := fmt.Sprintf(`/usr/local/bin/aws s3api get-object --bucket %v --key kubernetes/context/%v/startup-config/%v.yaml /tmp/role.yaml
-CONFIG=$(cat /tmp/role.yaml)`, opt.BucketName, opt.ContextVersion, role)
-	return cloud.RenderKubeStarter(opt, sku, cmd)
+func (cm *clusterManager) RenderStartupScript(opt *api.ScriptOptions) string {
+	/*cmd := fmt.Sprintf(`/usr/local/bin/aws s3api get-object --bucket %v --key kubernetes/context/%v/startup-config/%v.yaml /tmp/role.yaml
+	CONFIG=$(cat /tmp/role.yaml)`, opt.BucketName, opt.ContextVersion, role)*/
+	Cert := fmt.Sprintf(`apt-get install -y  awscli \
+	&& aws s3api get-object --bucket %v --key kubernetes/context/%v/pki/ca.crt  /etc/kubernetes/pki/ca.crt \
+	&& aws s3api get-object --bucket %v --key kubernetes/context/%v/pki/ca.key  /etc/kubernetes/pki/ca.key \
+	&& aws s3api get-object --bucket %v --key kubernetes/context/%v/pki/front-proxy-ca.crt  /etc/kubernetes/pki/front-proxy-ca.crt \
+	&& aws s3api get-object --bucket %v --key kubernetes/context/%v/pki/front-proxy-ca.key  /etc/kubernetes/pki/front-proxy-ca.key`,
+		opt.Ctx.BucketName, opt.Ctx.ContextVersion,
+		opt.Ctx.BucketName, opt.Ctx.ContextVersion,
+		opt.Ctx.BucketName, opt.Ctx.ContextVersion,
+		opt.Ctx.BucketName, opt.Ctx.ContextVersion)
+	return cloud.RenderKubeadmMasterStarter(opt, Cert)
 }
 
 func (cm *clusterManager) createLaunchConfiguration(name, sku string) error {
-	script := cm.RenderStartupScript(cm.cluster.NewScriptOptions(), sku, api.RoleKubernetesPool)
+	// script := cm.RenderStartupScript(cm.cluster.NewScriptOptions(), sku, api.RoleKubernetesPool)
+	script := cloud.RenderKubeadmNodeStarter(cm.cluster.NewScriptOptions())
 	cm.UploadStartupConfig()
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
 		LaunchConfigurationName:  types.StringP(name),

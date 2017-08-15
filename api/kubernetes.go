@@ -111,6 +111,11 @@ type Cluster struct {
 	KubeAPIServerCertPHID string `json:"KUBE_API_SERVER_CERT_PHID"`
 	HostfactsCertPHID     string `json:"HOSTFACTS_CERT_PHID"`
 
+	//Kubeadm
+	FrontProxyCaCertPHID string `json:"FRONT_PROXY_CA_CERT_PHID"`
+	UserCertPHID         string `json:"USER_CERT_PHID"`
+	KubeadmToken         string `json:"KUBEADM_TOKEN"`
+
 	// only aws
 
 	// Dynamically generated SSH key used for this cluster

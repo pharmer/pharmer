@@ -68,3 +68,25 @@ func (conn *cloudConnector) detectJessieImage() error {
 	conn.ctx.Logger().Infof("Debain image with %v for %v detected", conn.cluster.InstanceImage, conn.cluster.RootDeviceName)
 	return nil
 }
+
+func (conn *cloudConnector) detectUbuntuImage() error {
+	conn.cluster.OS = "ubuntu"
+	r1, err := conn.ec2.DescribeImages(&_ec2.DescribeImagesInput{
+		Owners: []*string{types.StringP("099720109477")},
+		Filters: []*_ec2.Filter{
+			{
+				Name: types.StringP("name"),
+				Values: []*string{
+					types.StringP("ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20170619.1"),
+				},
+			},
+		},
+	})
+	if err != nil {
+		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+	conn.cluster.InstanceImage = *r1.Images[0].ImageId
+	conn.cluster.RootDeviceName = *r1.Images[0].RootDeviceName
+	conn.ctx.Logger().Infof("Ubuntu image with %v for %v detected", conn.cluster.InstanceImage, conn.cluster.RootDeviceName)
+	return nil
+}

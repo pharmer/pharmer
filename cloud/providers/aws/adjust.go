@@ -26,7 +26,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	}
 	igm.cm.cluster.ContextVersion = igm.instance.Type.ContextVersion
 	igm.cm.cluster.Load()
-	if err = igm.cm.conn.detectJessieImage(); err != nil {
+	if err = igm.cm.conn.detectUbuntuImage(); err != nil {
 		igm.cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -79,43 +79,46 @@ func (igm *InstanceGroupManager) startNodes(sku string, count int64) error {
 }
 
 func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) error {
-	script := igm.cm.RenderStartupScript(igm.cm.cluster.NewScriptOptions(), sku, api.RoleKubernetesPool)
+	//script := igm.cm.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), sku, system.RoleKubernetesPool)
+	script := cloud.RenderKubeadmNodeStarter(igm.cm.cluster.NewScriptOptions())
 
 	igm.cm.ctx.Logger().Info("Creating node configuration assuming EnableNodePublicIP = true")
 	fmt.Println(igm.cm.cluster.RootDeviceName, "<<<<<<<<--------------->>>>>>>>>>>>>>>>>>.")
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
 		LaunchConfigurationName:  types.StringP(name),
 		AssociatePublicIpAddress: types.BoolP(igm.cm.cluster.EnableNodePublicIP),
-		// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html
-		BlockDeviceMappings: []*autoscaling.BlockDeviceMapping{
-			// NODE_BLOCK_DEVICE_MAPPINGS
-			{
-				// https://github.com/appscode/kubernetes/blob/55d9dec8eb5eb02e1301045b7b81bbac689c86a1/cluster/aws/util.sh#L397
-				DeviceName: types.StringP(igm.cm.cluster.RootDeviceName),
-				Ebs: &autoscaling.Ebs{
-					DeleteOnTermination: types.TrueP(),
-					VolumeSize:          types.Int64P(igm.cm.conn.cluster.NodeDiskSize),
-					VolumeType:          types.StringP(igm.cm.cluster.NodeDiskType),
+		/*
+			// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html
+			BlockDeviceMappings: []*autoscaling.BlockDeviceMapping{
+				// NODE_BLOCK_DEVICE_MAPPINGS
+				{
+					// https://github.com/appscode/kubernetes/blob/55d9dec8eb5eb02e1301045b7b81bbac689c86a1/cluster/aws/util.sh#L397
+					DeviceName: types.StringP(igm.cm.cluster.RootDeviceName),
+					Ebs: &autoscaling.Ebs{
+						DeleteOnTermination: types.TrueP(),
+						VolumeSize:          types.Int64P(igm.cm.conn.cluster.NodeDiskSize),
+						VolumeType:          types.StringP(igm.cm.cluster.NodeDiskType),
+					},
+				},
+				// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
+				{
+					DeviceName:  types.StringP("/dev/sdc"),
+					VirtualName: types.StringP("ephemeral0"),
+				},
+				{
+					DeviceName:  types.StringP("/dev/sdd"),
+					VirtualName: types.StringP("ephemeral1"),
+				},
+				{
+					DeviceName:  types.StringP("/dev/sde"),
+					VirtualName: types.StringP("ephemeral2"),
+				},
+				{
+					DeviceName:  types.StringP("/dev/sdf"),
+					VirtualName: types.StringP("ephemeral3"),
 				},
 			},
-			// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
-			{
-				DeviceName:  types.StringP("/dev/sdc"),
-				VirtualName: types.StringP("ephemeral0"),
-			},
-			{
-				DeviceName:  types.StringP("/dev/sdd"),
-				VirtualName: types.StringP("ephemeral1"),
-			},
-			{
-				DeviceName:  types.StringP("/dev/sde"),
-				VirtualName: types.StringP("ephemeral2"),
-			},
-			{
-				DeviceName:  types.StringP("/dev/sdf"),
-				VirtualName: types.StringP("ephemeral3"),
-			},
-		},
+		*/
 		IamInstanceProfile: types.StringP(igm.cm.cluster.IAMProfileNode),
 		ImageId:            types.StringP(igm.cm.cluster.InstanceImage),
 		InstanceType:       types.StringP(sku),

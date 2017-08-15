@@ -14,6 +14,117 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 )
 
+func RenderKubeadmStarter(opt *api.ScriptOptions, sku string) string {
+	return fmt.Sprintf(`#!/bin/bash -e
+	/usr/bin/apt-get install -y apt-transport-https
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+touch /etc/apt/sources.list.d/kubernetes.list
+sh -c 'echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list'
+
+apt-get update -y
+apt-get install -y \
+    socat \
+    ebtables \
+    docker.io \
+    apt-transport-https \
+    kubelet \
+    kubeadm=1.7.0-00 \
+    cloud-utils
+
+
+systemctl enable docker
+systemctl start docker
+PUBLICIP=$(curl ipinfo.io/ip)
+PRIVATEIP=$(ifconfig | grep -A 1 ens4 | grep inet | cut -d ":" -f 2 | cut -d " " -f 1 | xargs)
+
+kubeadm reset
+kubeadm init --apiserver-bind-port 6443  --apiserver-advertise-address ${PUBLICIP} --apiserver-cert-extra-sans ${PUBLICIP} ${PRIVATEIP}
+kubectl apply \
+  -f http://docs.projectcalico.org/v2.3/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+`)
+}
+
+func RenderKubeadmMasterStarter(opt *api.ScriptOptions, cert string) string {
+	return fmt.Sprintf(`#!/bin/bash -e
+#set -o errexit
+#set -o nounset
+#set -o pipefail
+
+
+apt-get install -y wget curl apt-transport-https
+
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+touch /etc/apt/sources.list.d/kubernetes.list
+sh -c 'echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list'
+
+apt-get update -y
+apt-get install -y \
+    socat \
+    ebtables \
+    docker.io \
+    kubelet \
+    kubeadm=1.7.0-00 \
+    cloud-utils
+
+
+systemctl enable docker
+systemctl start docker
+
+mkdir -p /etc/kubernetes/pki
+PUBLICIP=$(curl ipinfo.io/ip)
+PRIVATEIP=$(ip route get 8.8.8.8 | awk '{print $NF; exit}')
+
+kubeadm reset
+%v
+
+chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
+kubeadm init --apiserver-bind-port 6443 --token %v  --apiserver-advertise-address ${PUBLICIP} --apiserver-cert-extra-sans ${PUBLICIP} ${PRIVATEIP} --pod-network-cidr 10.244.0.0/16 --kubernetes-version %v
+
+kubectl apply \
+  -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml \
+  --kubeconfig /etc/kubernetes/admin.conf
+
+kubectl apply \
+  -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel-rbac.yml \
+  --kubeconfig /etc/kubernetes/admin.conf
+
+mkdir -p ~/.kube
+sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config`, cert, opt.Ctx.KubeadmToken, opt.Ctx.KubeVersion)
+}
+
+//   \
+func RenderKubeadmNodeStarter(opt *api.ScriptOptions) string {
+	return fmt.Sprintf(`#!/bin/bash -e
+#set -o errexit
+#set -o nounset
+#set -o pipefail
+
+apt-get install -y wget curl apt-transport-https
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+touch /etc/apt/sources.list.d/kubernetes.list
+sh -c 'echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list'
+
+apt-get update -y
+apt-get install -y \
+    socat \
+    ebtables \
+    docker.io \
+    kubelet \
+    kubeadm=1.7.0-00
+
+systemctl enable docker
+systemctl start docker
+
+kubeadm reset
+kubeadm join --token %v %v:6443
+	`, opt.Ctx.KubeadmToken, opt.Ctx.MasterExternalIP)
+}
+
 // This is called from a /etc/rc.local script, so always use full path for any command
 func RenderKubeStarter(opt *api.ScriptOptions, sku, cmd string) string {
 	return fmt.Sprintf(`#!/bin/bash -e
