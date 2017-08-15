@@ -134,7 +134,7 @@ func ProbeKubeAPI(ctx context.Context, cluster *api.Cluster) error {
 }
 
 func CheckComponentStatuses(ctx context.Context, cluster *api.Cluster) error {
-	kubeClient, err := cluster.NewKubeClient()
+	kubeClient, err := NewAdminClient(cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
@@ -160,7 +160,7 @@ func CheckComponentStatuses(ctx context.Context, cluster *api.Cluster) error {
 }
 
 func DeleteNodeApiCall(ctx context.Context, cluster *api.Cluster, name string) error {
-	kubeClient, err := cluster.NewKubeClient()
+	kubeClient, err := NewAdminClient(cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
@@ -169,7 +169,7 @@ func DeleteNodeApiCall(ctx context.Context, cluster *api.Cluster, name string) e
 }
 
 func WaitForReadyNodes(ctx context.Context, cluster *api.Cluster, newNode ...int64) error {
-	kubeClient, err := cluster.NewKubeClient()
+	kubeClient, err := NewAdminClient(cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}

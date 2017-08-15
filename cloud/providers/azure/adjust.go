@@ -79,7 +79,7 @@ func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, e
 
 func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.KubernetesInstance, error) {
 	instances := make([]*api.KubernetesInstance, 0)
-	kc, err := igm.cm.cluster.NewKubeClient()
+	kc, err := cloud.NewAdminClient(igm.cm.cluster)
 	if err != nil {
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 

@@ -1,4 +1,4 @@
-package credential
+package cloud
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 
 	proto "github.com/appscode/api/credential/v1beta1"
 	"github.com/appscode/go/types"
+	"github.com/appscode/pharmer/credential"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -36,11 +37,11 @@ func CheckAuthorization(provider, gceProject string, data map[string]string) (*p
 func IsAwsUnauthorized(data map[string]string) (bool, string) {
 	var id, secret string
 	var found bool
-	if id, found = data[AWSAccessKeyID]; !found {
-		return true, "Credential missing " + AWSAccessKeyID
+	if id, found = data[credential.AWSAccessKeyID]; !found {
+		return true, "Credential missing " + credential.AWSAccessKeyID
 	}
-	if secret, found = data[AWSSecretAccessKey]; !found {
-		return true, "Credential missing " + AWSSecretAccessKey
+	if secret, found = data[credential.AWSSecretAccessKey]; !found {
+		return true, "Credential missing " + credential.AWSSecretAccessKey
 	}
 
 	defaultRegion := "us-east-1"
@@ -92,7 +93,7 @@ func IsAwsUnauthorized(data map[string]string) (bool, string) {
 // Returns true if unauthorized
 func IsGceUnauthorized(project string, data map[string]string) (bool, string) {
 	if project == "" {
-		project = data[GCEProjectID]
+		project = data[credential.GCEProjectID]
 	}
 
 	cred, err := json.Marshal(data)
@@ -121,8 +122,8 @@ func IsGceUnauthorized(project string, data map[string]string) (bool, string) {
 func IsDigitalOceanUnauthorized(data map[string]string) (bool, string) {
 	var token string
 	var found bool
-	if token, found = data[DigitalOceanToken]; !found {
-		return true, "Credential missing " + DigitalOceanToken
+	if token, found = data[credential.DigitalOceanToken]; !found {
+		return true, "Credential missing " + credential.DigitalOceanToken
 	}
 
 	client := godo.NewClient(oauth2.NewClient(context.TODO(), oauth2.StaticTokenSource(&oauth2.Token{

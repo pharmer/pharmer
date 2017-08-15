@@ -123,7 +123,7 @@ func (igm *InstanceGroupManager) deleteInstanceGroup(sku string, count int64) er
 
 func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.KubernetesInstance, error) {
 	instances := make([]*api.KubernetesInstance, 0)
-	kc, err := igm.cm.cluster.NewKubeClient()
+	kc, err := cloud.NewAdminClient(igm.cm.cluster)
 	if err != nil {
 		igm.cm.cluster.StatusCause = err.Error()
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
