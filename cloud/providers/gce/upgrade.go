@@ -2,13 +2,17 @@ package gce
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"os/exec"
+	"strings"
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/mgutz/str"
 	compute "google.golang.org/api/compute/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -48,10 +52,15 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	}
 	cm.ins.Load()
 	if req.ApplyToMaster {
-		err = cm.updateMaster()
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		for _, instance := range cm.ins.Instances {
+			if instance.Role == api.RoleKubernetesMaster {
+				cm.masterUpdate(instance.ExternalIP, instance.Name, req.Version)
+			}
 		}
+		//err = cm.updateMaster()
+		//if err != nil {
+		//	return errors.FromErr(err).WithContext(cm.ctx).Err()
+		//}
 	} else {
 		err = cm.updateNodes(req.Sku)
 		if err != nil {
@@ -65,6 +74,97 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	return nil
 }
 
+func (cm *clusterManager) masterUpdate(host, instanceName, version string) error {
+	/*fmt.Println(string(cm.ctx.SSHKey.PrivateKey))
+	signer, err := ssh.MakePrivateKeySignerFromBytes(cm.ctx.SSHKey.PrivateKey)
+	if err != nil {
+		fmt.Println(err)
+	}
+	sout, serr, code, err := ssh.Exec("ls -l /", "", host+":22", signer)
+	fmt.Println("------------------------")
+	fmt.Println(sout, serr, code, err)
+	fmt.Println("------------------------")*/
+	command := fmt.Sprintf(`gcloud compute --project "%v" ssh --zone "%v" "%v"`, cm.cluster.Project, cm.cluster.Zone, instanceName)
+	init := fmt.Sprintf(`sudo kubeadm init --apiserver-bind-port 6443 --token %v  --apiserver-advertise-address ${PUBLICIP} --apiserver-cert-extra-sans ${PUBLICIP} ${PRIVATEIP} --pod-network-cidr 10.244.0.0/16 --kubernetes-version %v --skip-preflight-checks`,
+		cm.cluster.KubeadmToken, "v"+version)
+	fmt.Println(init)
+	arg := str.ToArgv(command)
+	name, arg := arg[0], arg[1:]
+	//arg = append(arg, "--command", "ls -lah")
+	cmd := exec.Command(name, arg...)
+	stdIn := newStringReader([]string{
+		"ls -lah",
+		"sudo apt-get update",
+		"sudo apt-get upgrade",
+		"sudo systemctl restart kubelet",
+		"sudo KUBECONFIG=/etc/kubernetes/admin.conf kubectl delete daemonset kube-proxy -n kube-system",
+		"PUBLICIP=$(curl ipinfo.io/ip)",
+		"PRIVATEIP=$(ip route get 8.8.8.8 | awk '{print $NF; exit}')",
+		init,
+	})
+	cmd.Stdin = stdIn
+	cmd.Stdout = DefaultWriter
+	cmd.Stderr = DefaultWriter
+	err := cmd.Run()
+	output := DefaultWriter.Output()
+	fmt.Println(output, err)
+	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+	err = cm.cluster.Save()
+	if err != nil {
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+	/*keySigner, _ := ssh.ParsePrivateKey(cm.ctx.SSHKey.PrivateKey)
+	config := &ssh.ClientConfig{
+		User: "sanjid",
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(keySigner),
+		},
+	}
+	conn, err := ssh.Dial("tcp", fmt.Sprintf("%v:%v", host, 22), config)
+	fmt.Println(err)
+	defer conn.Close()
+	session, _ := conn.NewSession()
+	session.Stdout = DefaultWriter
+	session.Stderr = DefaultWriter
+	session.Stdin = os.Stdin
+	session.Run("ls -lah")
+	output := DefaultWriter.Output()
+	session.Close()
+	fmt.Println(output)*/
+	return nil
+}
+
+var DefaultWriter = &StringWriter{
+	data: make([]byte, 0),
+}
+
+type StringWriter struct {
+	data []byte
+}
+
+func (s *StringWriter) Flush() {
+	s.data = make([]byte, 0)
+}
+
+func (s *StringWriter) Output() string {
+	return string(s.data)
+}
+
+func (s *StringWriter) Write(b []byte) (int, error) {
+	//log.Infoln("$ ", string(b))
+	s.data = append(s.data, b...)
+	return len(b), nil
+}
+
+func newStringReader(ss []string) io.Reader {
+	formattedString := strings.Join(ss, "\n")
+	reader := strings.NewReader(formattedString)
+	return reader
+}
+
+/*
 func (cm *clusterManager) updateMaster() error {
 	fmt.Println("Updating Master...")
 	err := cm.deleteMaster()
@@ -99,6 +199,35 @@ func (cm *clusterManager) updateMaster() error {
 	}
 	fmt.Println(masterInstance)
 	fmt.Println("Master Updated")
+	return nil
+}
+*/
+
+func (cm *clusterManager) nodeUpdate(instanceName string) error {
+	command := fmt.Sprintf(`gcloud compute --project "%v" ssh --zone "%v" "%v"`, cm.cluster.Project, cm.cluster.Zone, instanceName)
+	arg := str.ToArgv(command)
+	name, arg := arg[0], arg[1:]
+	//arg = append(arg, "--command", "ls -lah")
+	cmd := exec.Command(name, arg...)
+	stdIn := newStringReader([]string{
+		"ls -lah",
+		"sudo apt-get update",
+		"sudo apt-get upgrade",
+		"sudo systemctl restart kubelet",
+	})
+	cmd.Stdin = stdIn
+	cmd.Stdout = DefaultWriter
+	cmd.Stderr = DefaultWriter
+	err := cmd.Run()
+	output := DefaultWriter.Output()
+	fmt.Println(output, err)
+	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+	err = cm.cluster.Save()
+	if err != nil {
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
 	return nil
 }
 

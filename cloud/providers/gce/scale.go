@@ -28,6 +28,18 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 	}
 	cm.ins.Load()
 
+	if req.ApplyToMaster {
+		for _, instance := range cm.ins.Instances {
+			if instance.Role == api.RoleKubernetesMaster {
+				cm.masterUpdate(instance.ExternalIP, instance.Name, req.Version)
+			}
+		}
+	}
+	for _, instance := range cm.ins.Instances {
+		if instance.Role == api.RoleKubernetesPool {
+			cm.nodeUpdate(instance.Name)
+		}
+	}
 	inst := cloud.Instance{
 		Type: cloud.InstanceType{
 			ContextVersion: cm.cluster.ContextVersion,

@@ -115,7 +115,7 @@ func ProbeKubeAPI(ctx context.Context, cluster *api.Cluster) error {
 
 	client := &http.Client{Transport: tr}
 	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", cluster.KubeletToken))
+	// req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", cluster.KubeletToken))
 	attempt := 0
 	// try for 30 mins
 	ctx.Logger().Info("Checking Api")

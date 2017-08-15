@@ -163,6 +163,13 @@ type CommonKubeEnv struct {
 	KubeletKey                   string `json:"KUBELET_KEY"`
 	StartupConfigToken           string `json:"STARTUP_CONFIG_TOKEN"`
 
+	//Kubeadm
+	FrontProxyCaCert string `json:"FRONT_PROXY_CA_CERT"`
+	CaKey            string `json:"CA_KEY"`
+	FrontProxyCaKey  string `json:"FRONT_PROXY_CA_KEY"`
+	UserCert         string `json:"USER_CERT"`
+	UserKey          string `json:"USER_KEY"`
+
 	EnableThirdPartyResource bool `json:"ENABLE_THIRD_PARTY_RESOURCE"`
 
 	EnableClusterVPN string `json:"ENABLE_CLUSTER_VPN"`
