@@ -148,7 +148,7 @@ def install():
 def default():
     gen()
     fmt()
-    die(call('GOBIN={} {} install *.go'.format(libbuild.GOBIN, libbuild.GOC)))
+    die(call('GOBIN={} {} install .'.format(libbuild.GOBIN, libbuild.GOC)))
 
 
 def test(type, *args):
