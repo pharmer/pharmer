@@ -13,8 +13,8 @@ import (
 func NewCmdClusterNetworks() *cobra.Command {
 	var name string
 	cmd := &cobra.Command{
-		Use:   "network",
-		Short: "Cluster commissioning network check",
+		Use:               "network",
+		Short:             "Cluster commissioning network check",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.SetLogLevel(4)

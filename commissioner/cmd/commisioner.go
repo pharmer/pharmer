@@ -6,8 +6,8 @@ import (
 
 func NewCmdCommisioner() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "commissioner",
-		Short: "Various commissioning commands.",
+		Use:               "commissioner",
+		Short:             "Various commissioning commands.",
 		DisableAutoGenTag: true,
 	}
 

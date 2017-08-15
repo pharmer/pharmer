@@ -13,8 +13,8 @@ import (
 func NewCmdClusterAddon() *cobra.Command {
 	var name string
 	cmd := &cobra.Command{
-		Use:   "addon",
-		Short: "Cluster commissioning addon setup",
+		Use:               "addon",
+		Short:             "Cluster commissioning addon setup",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.SetLogLevel(4)

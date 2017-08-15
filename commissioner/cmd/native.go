@@ -13,8 +13,8 @@ import (
 func NewCmdClusterNative() *cobra.Command {
 	var name string
 	cmd := &cobra.Command{
-		Use:   "native",
-		Short: "Cluster commissioning native check",
+		Use:               "native",
+		Short:             "Cluster commissioning native check",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.SetLogLevel(4)
