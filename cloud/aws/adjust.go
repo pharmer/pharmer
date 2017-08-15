@@ -8,13 +8,13 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/lib"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 )
 
 type InstanceGroupManager struct {
 	cm       *clusterManager
-	instance lib.Instance
+	instance cloud.Instance
 }
 
 func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
@@ -179,7 +179,7 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroup string, size 
 	sz := *group.AutoScalingGroups[0].DesiredCapacity
 	fmt.Println("Updating autoscaling group...")
 	time.Sleep(2 * time.Minute)
-	err = lib.WaitForReadyNodes(igm.cm.ctx, size-sz)
+	err = cloud.WaitForReadyNodes(igm.cm.ctx, size-sz)
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}

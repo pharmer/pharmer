@@ -10,7 +10,7 @@ import (
 	stringutil "github.com/appscode/go/strings"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/lib"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/storage"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
@@ -116,7 +116,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, err.Error())
 	}
 
-	if err = lib.DeleteARecords(cm.ctx); err != nil {
+	if err = cloud.DeleteARecords(cm.ctx); err != nil {
 		errs = append(errs, err.Error())
 	}
 

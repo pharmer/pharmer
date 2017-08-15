@@ -11,7 +11,7 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/linodego"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/lib"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
 	"github.com/cenkalti/backoff"
@@ -81,9 +81,9 @@ func (im *instanceManager) createStackScript(sku, role string) (int, error) {
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
 func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
-	cmd := lib.StartupConfigFromAPI(opt, role)
+	cmd := cloud.StartupConfigFromAPI(opt, role)
 	if api.UseFirebase() {
-		cmd = lib.StartupConfigFromFirebase(opt, role)
+		cmd = cloud.StartupConfigFromFirebase(opt, role)
 	}
 
 	firebaseUid := ""
@@ -148,7 +148,7 @@ EOF
 
 /usr/sbin/update-grub
 /sbin/poweroff
-`, strings.Replace(lib.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost(), firebaseUid)
+`, strings.Replace(cloud.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost(), firebaseUid)
 }
 
 func (im *instanceManager) createInstance(name string, scriptId int, sku string) (int, int, error) {

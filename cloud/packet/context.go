@@ -4,7 +4,7 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/lib"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
 )
@@ -30,7 +30,6 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 
 	cm.ctx.Region = cm.ctx.Zone
 	cm.ctx.DoNotDelete = req.DoNotDelete
-	lib.SetApps(cm.ctx)
 
 	cm.ctx.SetNodeGroups(req.NodeGroups)
 	cm.ctx.Project = cm.ctx.CloudCredential[credential.PacketProjectID]
@@ -43,13 +42,13 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.ctx.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
 	cm.ctx.SSHKeyPHID = phid.NewSSHKey()
 
-	lib.GenClusterTokens(cm.ctx)
+	cloud.GenClusterTokens(cm.ctx)
 
 	return nil
 }
 
 func (cm *clusterManager) LoadDefaultContext() error {
-	err := lib.LoadDefaultGenericContext(cm.ctx)
+	err := cloud.LoadDefaultGenericContext(cm.ctx)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -60,13 +59,13 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	cm.ctx.EnableClusterVPN = ""
 	cm.ctx.VpnPsk = ""
 
-	lib.BuildRuntimeConfig(cm.ctx)
+	cloud.BuildRuntimeConfig(cm.ctx)
 	return nil
 }
 
 func (cm *clusterManager) UploadStartupConfig() error {
 	if api.UseFirebase() {
-		return lib.UploadStartupConfigInFirebase(cm.ctx)
+		return cloud.UploadStartupConfigInFirebase(cm.ctx)
 	}
 	return nil
 }

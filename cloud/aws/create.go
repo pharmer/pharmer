@@ -11,7 +11,7 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/lib"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
 	// "github.com/appscode/pharmer/templates"
@@ -30,7 +30,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins, err = lib.NewInstances(cm.ctx)
+	cm.ins, err = cloud.NewInstances(cm.ctx)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -115,15 +115,15 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	for _, ng := range req.NodeGroups {
 		igm := &InstanceGroupManager{
 			cm: cm,
-			instance: lib.Instance{
-				Type: lib.InstanceType{
+			instance: cloud.Instance{
+				Type: cloud.InstanceType{
 					ContextVersion: cm.ctx.ContextVersion,
 					Sku:            ng.Sku,
 
 					Master:       false,
 					SpotInstance: false,
 				},
-				Stats: lib.GroupStats{
+				Stats: cloud.GroupStats{
 					Count: ng.Count,
 				},
 			},
@@ -134,22 +134,22 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	cm.ctx.Logger().Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
-	if err := lib.EnsureDnsIPLookup(cm.ctx); err != nil {
+	if err := cloud.EnsureDnsIPLookup(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// wait for nodes to start
-	if err := lib.ProbeKubeAPI(cm.ctx); err != nil {
+	if err := cloud.ProbeKubeAPI(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// check all components are ok
-	if err = lib.CheckComponentStatuses(cm.ctx); err != nil {
+	if err = cloud.CheckComponentStatuses(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// Make sure nodes are connected to master and are ready
-	if err = lib.WaitForReadyNodes(cm.ctx); err != nil {
+	if err = cloud.WaitForReadyNodes(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -813,7 +813,7 @@ func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	lib.GenClusterCerts(cm.ctx)
+	cloud.GenClusterCerts(cm.ctx)
 	cm.ctx.Save() // needed for master start-up config
 	cm.UploadStartupConfig()
 
@@ -844,7 +844,7 @@ func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 	cm.ctx.MasterExternalIP = masterInstance.ExternalIP
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 
-	err = lib.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
+	err = cloud.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -1099,7 +1099,7 @@ func (cm *clusterManager) newKubeInstance(instanceID string) (*api.KubernetesIns
 	})
 	cm.ctx.Logger().Debug("Retrieved instance ", r1, err)
 	if err != nil {
-		return nil, lib.InstanceNotFound
+		return nil, cloud.InstanceNotFound
 	}
 
 	// Don't reassign internal_ip for AWS to keep the fixed 172.20.0.9 for master_internal_ip
@@ -1170,7 +1170,7 @@ func (cm *clusterManager) assignIPToInstance(instanceID string) error {
 func (cm *clusterManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
 	cmd := fmt.Sprintf(`/usr/local/bin/aws s3api get-object --bucket %v --key kubernetes/context/%v/startup-config/%v.yaml /tmp/role.yaml
 CONFIG=$(cat /tmp/role.yaml)`, opt.BucketName, opt.ContextVersion, role)
-	return lib.RenderKubeStarter(opt, sku, cmd)
+	return cloud.RenderKubeStarter(opt, sku, cmd)
 }
 
 func (cm *clusterManager) createLaunchConfiguration(name, sku string) error {

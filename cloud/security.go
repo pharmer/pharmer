@@ -1,4 +1,4 @@
-package lib
+package cloud
 
 import (
 	"encoding/base64"
@@ -56,7 +56,7 @@ func GenClusterCerts(ctx *api.Cluster) error {
 
 	////////// Master ////////////
 	csrReq.CN = ctx.KubernetesMasterName
-	// TODO: refactor MES generation via lib function in provider/lib.go
+	// TODO: refactor MES generation via lib function in provider/cloud.go
 	// Pass *sql object
 	csrReq.Hosts = []string{
 		ctx.KubernetesClusterIP(), // 10.0.0.1

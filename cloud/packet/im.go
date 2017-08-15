@@ -7,7 +7,7 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/lib"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
 	"github.com/cenkalti/backoff"
@@ -74,9 +74,9 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
 func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
-	cmd := lib.StartupConfigFromAPI(opt, role)
+	cmd := cloud.StartupConfigFromAPI(opt, role)
 	if api.UseFirebase() {
-		cmd = lib.StartupConfigFromFirebase(opt, role)
+		cmd = cloud.StartupConfigFromFirebase(opt, role)
 	}
 
 	reboot := ""
@@ -122,13 +122,13 @@ EOF
 /bin/sed -i 's/\/boot\/vmlinuz/\/boot\/vmlinuz\ cgroup_enable=memory\ swapaccount=1/' /boot/grub/grub.cfg
 
 %v
-`, strings.Replace(lib.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), reboot)
+`, strings.Replace(cloud.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), reboot)
 }
 
 func (im *instanceManager) newKubeInstance(id string) (*api.KubernetesInstance, error) {
 	s, _, err := im.conn.client.Devices.Get(id)
 	if err != nil {
-		return nil, lib.InstanceNotFound
+		return nil, cloud.InstanceNotFound
 	}
 	return im.newKubeInstanceFromServer(s)
 }

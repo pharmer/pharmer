@@ -7,13 +7,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/arm/network"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/lib"
+	"github.com/appscode/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type InstanceGroupManager struct {
 	cm       *clusterManager
-	instance lib.Instance
+	instance cloud.Instance
 	im       *instanceManager
 }
 
@@ -31,7 +31,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	if !found {
 		err = igm.createInstanceGroup(igm.instance.Stats.Count)
 	} else if igm.instance.Stats.Count == 0 {
-		nodeAdjust, _ := lib.Mutator(igm.cm.ctx, igm.instance)
+		nodeAdjust, _ := cloud.Mutator(igm.cm.ctx, igm.instance)
 		if nodeAdjust < 0 {
 			nodeAdjust = -nodeAdjust
 		}
@@ -41,7 +41,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	} else {
-		nodeAdjust, _ := lib.Mutator(igm.cm.ctx, igm.instance)
+		nodeAdjust, _ := cloud.Mutator(igm.cm.ctx, igm.instance)
 		if nodeAdjust < 0 {
 			err := igm.deleteInstanceGroup(instanceGroupName, -nodeAdjust)
 			if err != nil {

@@ -5,7 +5,7 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/lib"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
@@ -32,7 +32,6 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	//cluster.ctx.Zone = req.Zone
 	cm.ctx.Region = cm.ctx.Zone
 	cm.ctx.DoNotDelete = req.DoNotDelete
-	lib.SetApps(cm.ctx)
 
 	cm.ctx.SetNodeGroups(req.NodeGroups)
 
@@ -47,7 +46,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	// cluster.ctx.MasterSGName = cluster.ctx.Name + "-master-" + rand.Characters(6)
 	// cluster.ctx.NodeSGName = cluster.ctx.Name + "-node-" + rand.Characters(6)
 
-	lib.GenClusterTokens(cm.ctx)
+	cloud.GenClusterTokens(cm.ctx)
 
 	cm.ctx.AzureCloudConfig = &api.AzureCloudConfig{
 		TenantID:           cm.ctx.CloudCredential[credential.AzureTenantID],
@@ -169,13 +168,13 @@ func (cm *clusterManager) LoadDefaultContext() error {
 		cm.ctx.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota"
 	}
 
-	lib.BuildRuntimeConfig(cm.ctx)
+	cloud.BuildRuntimeConfig(cm.ctx)
 	return nil
 }
 
 func (cm *clusterManager) UploadStartupConfig() error {
 	if api.UseFirebase() {
-		return lib.UploadStartupConfigInFirebase(cm.ctx)
+		return cloud.UploadStartupConfigInFirebase(cm.ctx)
 	}
 	return nil
 }

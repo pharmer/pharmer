@@ -10,7 +10,7 @@ import (
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/lib"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
@@ -39,7 +39,6 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 
 	cm.ctx.Region = cm.ctx.Zone[0 : len(cm.ctx.Zone)-1]
 	cm.ctx.DoNotDelete = req.DoNotDelete
-	lib.SetApps(cm.ctx)
 	cm.ctx.BucketName = "kubernetes-" + cm.ctx.Name + "-" + rand.Characters(8)
 
 	cm.ctx.SetNodeGroups(req.NodeGroups)
@@ -75,7 +74,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.ctx.MasterSGName = cm.namer.GenMasterSGName()
 	cm.ctx.NodeSGName = cm.namer.GenNodeSGName()
 
-	lib.GenClusterTokens(cm.ctx)
+	cloud.GenClusterTokens(cm.ctx)
 
 	return nil
 }
@@ -172,7 +171,7 @@ func (cm *clusterManager) LoadDefaultContext() error {
 		cm.ctx.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota"
 	}
 
-	lib.BuildRuntimeConfig(cm.ctx)
+	cloud.BuildRuntimeConfig(cm.ctx)
 	return nil
 }
 
