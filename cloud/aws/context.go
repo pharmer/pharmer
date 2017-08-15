@@ -13,7 +13,6 @@ import (
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 	_s3 "github.com/aws/aws-sdk-go/service/s3"
 	semver "github.com/hashicorp/go-version"
@@ -188,11 +187,11 @@ func (cm *clusterManager) UploadStartupConfig() error {
 	}
 
 	{
-		cfg, err := cm.ctx.StartupConfigResponse(system.RoleKubernetesMaster)
+		cfg, err := cm.ctx.StartupConfigResponse(api.RoleKubernetesMaster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.ctx.ContextVersion, system.RoleKubernetesMaster)
+		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.ctx.ContextVersion, api.RoleKubernetesMaster)
 		params := &_s3.PutObjectInput{
 			Bucket: types.StringP(cm.ctx.BucketName),
 			Key:    types.StringP(path),
@@ -205,11 +204,11 @@ func (cm *clusterManager) UploadStartupConfig() error {
 		}
 	}
 	{
-		cfg, err := cm.ctx.StartupConfigResponse(system.RoleKubernetesPool)
+		cfg, err := cm.ctx.StartupConfigResponse(api.RoleKubernetesPool)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.ctx.ContextVersion, system.RoleKubernetesPool)
+		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.ctx.ContextVersion, api.RoleKubernetesPool)
 		params := &_s3.PutObjectInput{
 			Bucket: types.StringP(cm.ctx.BucketName),
 			Key:    types.StringP(path),

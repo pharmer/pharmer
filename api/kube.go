@@ -8,7 +8,6 @@ import (
 	"github.com/appscode/go/crypto/rand"
 	. "github.com/appscode/go/encoding/json/types"
 	_env "github.com/appscode/go/env"
-	"github.com/appscode/pharmer/system"
 	"github.com/zabawaba99/fireauth"
 )
 
@@ -96,9 +95,10 @@ type MasterKubeEnv struct {
 
 func (k *MasterKubeEnv) SetDefaults() {
 	k.EnableManifestUrl = false
-	k.AppsCodeApiGrpcEndpoint = system.PublicAPIGrpcEndpoint()
-	k.AppsCodeApiHttpEndpoint = system.PublicAPIHttpEndpoint()
-	k.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
+	// TODO: FixIt!
+	//k.AppsCodeApiGrpcEndpoint = system.PublicAPIGrpcEndpoint()
+	//k.AppsCodeApiHttpEndpoint = system.PublicAPIHttpEndpoint()
+	//k.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
 
 	k.AppsCodeIcingaWebUser = "icingaweb"
 	k.AppsCodeIcingaWebPassword = rand.GeneratePassword()
@@ -303,10 +303,10 @@ func (k *KubeEnv) SetDefaults() error {
 		return errors.FromErr(err).Err()
 	}
 	if k.EnableWebhookTokenAuthentication {
-		k.AppscodeAuthnUrl = system.KuberntesWebhookAuthenticationURL()
+		k.AppscodeAuthnUrl = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
 	}
 	if k.EnableWebhookTokenAuthorization {
-		k.AppscodeAuthzUrl = system.KuberntesWebhookAuthorizationURL()
+		k.AppscodeAuthzUrl = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
 	}
 	return nil
 }
@@ -318,7 +318,6 @@ type KubeStartupConfig struct {
 }
 
 type CommonNonEnv struct {
-	Apps map[string]*system.Application `json:"APPS"`
 }
 
 type ClusterStartupConfig struct {

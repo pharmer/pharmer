@@ -14,7 +14,6 @@ import (
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 	"github.com/cenkalti/backoff"
 	"github.com/softlayer/softlayer-go/datatypes"
 )
@@ -43,9 +42,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 						return err
 					}
 					if master {
-						instance.Role = system.RoleKubernetesMaster
+						instance.Role = api.RoleKubernetesMaster
 					} else {
-						instance.Role = system.RoleKubernetesPool
+						instance.Role = api.RoleKubernetesPool
 					}
 					return nil
 				}
@@ -133,7 +132,7 @@ func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role
 	}
 
 	reboot := ""
-	if role == system.RoleKubernetesPool {
+	if role == api.RoleKubernetesPool {
 		reboot = "/sbin/reboot"
 	}
 

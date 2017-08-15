@@ -12,7 +12,6 @@ import (
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 	"github.com/cenkalti/backoff"
 	"github.com/digitalocean/godo"
 )
@@ -48,9 +47,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 				if internalIP == md.InternalIP {
 					instance, err = im.newKubeInstanceFromDroplet(&droplet)
 					if master {
-						instance.Role = system.RoleKubernetesMaster
+						instance.Role = api.RoleKubernetesMaster
 					} else {
-						instance.Role = system.RoleKubernetesPool
+						instance.Role = api.RoleKubernetesPool
 					}
 					return
 				}
@@ -104,7 +103,7 @@ func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role
 		cmd = lib.StartupConfigFromFirebase(opt, role)
 	}
 
-	if role == system.RoleKubernetesMaster {
+	if role == api.RoleKubernetesMaster {
 		return lib.RenderKubeInstaller(opt, sku, role, cmd)
 	}
 	return lib.RenderKubeStarter(opt, sku, cmd)

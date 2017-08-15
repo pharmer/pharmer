@@ -9,7 +9,6 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/system"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 )
 
@@ -80,7 +79,7 @@ func (igm *InstanceGroupManager) startNodes(sku string, count int64) error {
 }
 
 func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) error {
-	script := igm.cm.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), sku, system.RoleKubernetesPool)
+	script := igm.cm.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), sku, api.RoleKubernetesPool)
 
 	igm.cm.ctx.Logger().Info("Creating node configuration assuming EnableNodePublicIP = true")
 	fmt.Println(igm.cm.ctx.RootDeviceName, "<<<<<<<<--------------->>>>>>>>>>>>>>>>>>.")
@@ -197,7 +196,7 @@ func (igm *InstanceGroupManager) listInstances(instanceGroup string) ([]*api.Kub
 
 	for _, item := range group.AutoScalingGroups[0].Instances {
 		instance, err := igm.cm.newKubeInstance(*item.InstanceId)
-		instance.Role = system.RoleKubernetesPool
+		instance.Role = api.RoleKubernetesPool
 		instances = append(instances, instance)
 		if err != nil {
 			return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()

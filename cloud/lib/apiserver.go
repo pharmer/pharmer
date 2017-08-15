@@ -12,7 +12,6 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/system"
 	"github.com/cenkalti/backoff"
 	"github.com/olekukonko/tablewriter"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,11 +21,12 @@ import (
 
 func EnsureARecord(ctx *api.Cluster, master *api.KubernetesInstance) error {
 	clusterDomain := ctx.Extra().Domain(ctx.Name)
-	for _, ip := range system.Config.Compass.IPs {
-		if err := ctx.DNSProvider.EnsureARecord(clusterDomain, ip); err != nil {
-			return err
-		}
-	}
+	// TODO: FixIT!
+	//for _, ip := range system.Config.Compass.IPs {
+	//	if err := ctx.DNSProvider.EnsureARecord(clusterDomain, ip); err != nil {
+	//		return err
+	//	}
+	//}
 	ctx.Logger().Infof("Cluster apps A record %v added", clusterDomain)
 	externalDomain := ctx.Extra().ExternalDomain(ctx.Name)
 	if err := ctx.DNSProvider.EnsureARecord(externalDomain, master.ExternalIP); err != nil {

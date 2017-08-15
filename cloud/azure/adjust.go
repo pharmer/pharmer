@@ -8,7 +8,6 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/system"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -105,7 +104,7 @@ func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.KubernetesIns
 			if err != nil {
 				return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
-			instance.Role = system.RoleKubernetesPool
+			instance.Role = api.RoleKubernetesPool
 
 			instances = append(instances, instance)
 		}
@@ -190,7 +189,7 @@ func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
-	nodeScript := igm.im.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), igm.instance.Type.Sku, system.RoleKubernetesPool)
+	nodeScript := igm.im.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), igm.instance.Type.Sku, api.RoleKubernetesPool)
 	nodeVM, err := igm.im.createVirtualMachine(nodeNIC, as, sa, nodeName, nodeScript, igm.instance.Type.Sku)
 	if err != nil {
 		igm.cm.ctx.StatusCause = err.Error()
@@ -208,7 +207,7 @@ func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
 		igm.cm.ctx.StatusCause = err.Error()
 		return &api.KubernetesInstance{}, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	ki.Role = system.RoleKubernetesPool
+	ki.Role = api.RoleKubernetesPool
 	igm.cm.ins.Instances = append(igm.cm.ins.Instances, ki)
 	return ki, nil
 }

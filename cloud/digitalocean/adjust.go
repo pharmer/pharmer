@@ -9,7 +9,6 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/system"
 	"github.com/digitalocean/godo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -80,7 +79,7 @@ func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, m
 			if err != nil {
 				return flag, existingNGs, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
-			instance.Role = system.RoleKubernetesPool
+			instance.Role = api.RoleKubernetesPool
 			internalIP, err := item.PrivateIPv4()
 			existingNGs[internalIP] = instance
 		}
@@ -150,7 +149,7 @@ func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.KubernetesIns
 }
 
 func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
-	droplet, err := igm.im.createInstance(igm.cm.namer.GenNodeName(igm.instance.Type.Sku), system.RoleKubernetesPool, igm.instance.Type.Sku)
+	droplet, err := igm.im.createInstance(igm.cm.namer.GenNodeName(igm.instance.Type.Sku), api.RoleKubernetesPool, igm.instance.Type.Sku)
 	if err != nil {
 		igm.cm.ctx.StatusCause = err.Error()
 		return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -163,7 +162,7 @@ func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
 		return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	igm.im.applyTag(droplet.ID)
-	node.Role = system.RoleKubernetesPool
+	node.Role = api.RoleKubernetesPool
 	igm.cm.ins.Instances = append(igm.cm.ins.Instances, node)
 	return node, nil
 }

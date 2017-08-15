@@ -14,7 +14,6 @@ import (
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -36,9 +35,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 				return nil, err
 			}
 			if master {
-				instance.Role = system.RoleKubernetesMaster
+				instance.Role = api.RoleKubernetesMaster
 			} else {
-				instance.Role = system.RoleKubernetesPool
+				instance.Role = api.RoleKubernetesPool
 			}
 			return instance, nil
 

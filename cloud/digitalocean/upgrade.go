@@ -6,11 +6,9 @@ import (
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/data"
 	"github.com/appscode/errors"
-	_env "github.com/appscode/go/env"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/system"
 )
 
 func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error {
@@ -31,18 +29,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	cm.namer = namer{ctx: cm.ctx}
 	// assign new timestamp and new launch_config version
 	cm.ctx.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
-	if req.Version != "" {
-		if v, err := data.LoadKubernetesVersion(cm.ctx.Provider, _env.FromHost().String(), req.Version); err == nil {
-			cm.ctx.SaltbaseVersion = v.Apps[system.AppKubeSaltbase]
-			cm.ctx.KubeServerVersion = v.Apps[system.AppKubeServer]
-			cm.ctx.KubeStarterVersion = v.Apps[system.AppKubeStarter]
-			cm.ctx.HostfactsVersion = v.Apps[system.AppHostfacts]
-		}
-	}
 	cm.ctx.KubeVersion = req.Version
-	cm.ctx.Apps[system.AppKubeSaltbase] = system.NewAppKubernetesSalt(cm.ctx.Provider, cm.ctx.Region, cm.ctx.SaltbaseVersion)
-	cm.ctx.Apps[system.AppKubeServer] = system.NewAppKubernetesServer(cm.ctx.Provider, cm.ctx.Region, cm.ctx.KubeServerVersion)
-	cm.ctx.Apps[system.AppKubeStarter] = system.NewAppStartKubernetes(cm.ctx.Provider, cm.ctx.Region, cm.ctx.KubeStarterVersion)
 
 	err := cm.ctx.Save()
 	if err != nil {
@@ -91,7 +78,7 @@ func (cm *clusterManager) updateMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	masterDroplet, err := im.createInstance(cm.ctx.KubernetesMasterName, system.RoleKubernetesMaster, cm.ctx.MasterSKU)
+	masterDroplet, err := im.createInstance(cm.ctx.KubernetesMasterName, api.RoleKubernetesMaster, cm.ctx.MasterSKU)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -113,7 +100,7 @@ func (cm *clusterManager) updateMaster() error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Role = system.RoleKubernetesMaster
+	masterInstance.Role = api.RoleKubernetesMaster
 	cm.ctx.MasterExternalIP = masterInstance.ExternalIP
 	cm.ctx.MasterInternalIP = masterInstance.InternalIP
 	fmt.Println("Master EXTERNAL IP ================", cm.ctx.MasterExternalIP, "<><><>", cm.ctx.MasterReservedIP)

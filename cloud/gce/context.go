@@ -12,7 +12,6 @@ import (
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 	semver "github.com/hashicorp/go-version"
 	bstore "google.golang.org/api/storage/v1"
 )
@@ -247,12 +246,12 @@ func (cm *clusterManager) UploadStartupConfig() error {
 	}
 
 	{
-		cfg, err := cm.ctx.StartupConfigResponse(system.RoleKubernetesMaster)
+		cfg, err := cm.ctx.StartupConfigResponse(api.RoleKubernetesMaster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		data := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.ctx.ContextVersion, 10) + "/startup-config/" + system.RoleKubernetesMaster + ".yaml",
+			Name: "kubernetes/context/" + strconv.FormatInt(cm.ctx.ContextVersion, 10) + "/startup-config/" + api.RoleKubernetesMaster + ".yaml",
 		}
 		_, err = cm.conn.storageService.Objects.Insert(cm.ctx.BucketName, data).Media(strings.NewReader(cfg)).Do()
 		if err != nil {
@@ -260,12 +259,12 @@ func (cm *clusterManager) UploadStartupConfig() error {
 		}
 	}
 	{
-		cfg, err := cm.ctx.StartupConfigResponse(system.RoleKubernetesPool)
+		cfg, err := cm.ctx.StartupConfigResponse(api.RoleKubernetesPool)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		data := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.ctx.ContextVersion, 10) + "/startup-config/" + system.RoleKubernetesPool + ".yaml",
+			Name: "kubernetes/context/" + strconv.FormatInt(cm.ctx.ContextVersion, 10) + "/startup-config/" + api.RoleKubernetesPool + ".yaml",
 		}
 		_, err = cm.conn.storageService.Objects.Insert(cm.ctx.BucketName, data).Media(strings.NewReader(cfg)).Do()
 		if err != nil {

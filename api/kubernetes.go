@@ -14,7 +14,6 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/log"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 	"github.com/golang/protobuf/jsonpb"
 	"k8s.io/client-go/rest"
 )
@@ -286,7 +285,7 @@ func (ctx *Cluster) StartupConfig(role string) *ClusterStartupConfig {
 	config.KubeEnv = ctx.KubeEnv
 	config.CommonNonEnv = ctx.CommonNonEnv
 	config.Role = role
-	config.KubernetesMaster = role == system.RoleKubernetesMaster
+	config.KubernetesMaster = role == RoleKubernetesMaster
 	config.InitialEtcdCluster = ctx.KubernetesMasterName
 	config.NumNodes = ctx.NodeCount()
 	return &config
@@ -359,7 +358,6 @@ func (ctx *Cluster) NewScriptOptions() *ScriptOptions {
 		StartupConfigToken: ctx.StartupConfigToken,
 
 		ContextVersion: ctx.ContextVersion,
-		KubeStarterURL: ctx.Apps[system.AppKubeStarter].URL,
 		BucketName:     ctx.BucketName,
 	}
 }

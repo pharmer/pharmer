@@ -7,9 +7,9 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/system"
 	"github.com/digitalocean/godo"
 )
 
@@ -73,7 +73,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	im := &instanceManager{ctx: cm.ctx, conn: cm.conn, namer: cm.namer}
 
 	cm.ctx.Logger().Info("Creating master instance")
-	masterDroplet, err := im.createInstance(cm.ctx.KubernetesMasterName, system.RoleKubernetesMaster, cm.ctx.MasterSKU)
+	masterDroplet, err := im.createInstance(cm.ctx.KubernetesMasterName, api.RoleKubernetesMaster, cm.ctx.MasterSKU)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -94,7 +94,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Role = system.RoleKubernetesMaster
+	masterInstance.Role = api.RoleKubernetesMaster
 	cm.ctx.MasterExternalIP = masterInstance.ExternalIP
 	cm.ctx.MasterInternalIP = masterInstance.InternalIP
 	fmt.Println("Master EXTERNAL IP ================", cm.ctx.MasterExternalIP, "<><><><>", cm.ctx.MasterReservedIP)

@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/appscode/errors"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/system"
 	compute "google.golang.org/api/compute/v1"
 )
 
@@ -84,7 +84,7 @@ func (igm *InstanceGroupManager) createNodeInstanceTemplate(sku string) (string,
 	//  }
 
 	igm.cm.UploadStartupConfig()
-	startupScript := igm.cm.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), sku, system.RoleKubernetesPool)
+	startupScript := igm.cm.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), sku, api.RoleKubernetesPool)
 
 	image := fmt.Sprintf("projects/%v/global/images/%v", igm.cm.ctx.Project, igm.cm.ctx.InstanceImage)
 	network := fmt.Sprintf("projects/%v/global/networks/%v", igm.cm.ctx.Project, defaultNetwork)
