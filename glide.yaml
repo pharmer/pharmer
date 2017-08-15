@@ -85,3 +85,8 @@ import:
   vcs: git
 - package: github.com/ncw/swift
   version: master
+- package: github.com/go-xorm/builder
+- package: github.com/go-xorm/core
+  version: v0.5.6
+- package: github.com/go-xorm/xorm
+  version: v0.6.2
