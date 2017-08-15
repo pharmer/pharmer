@@ -1,5 +1,5 @@
 hash: 0bacb90f2db881f732894a42d9bc2c8b0f35ccd936752ca3e026b4694652df43
-updated: 2017-08-14T23:27:39.059650497-07:00
+updated: 2017-08-15T00:18:50.27043992-07:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -39,8 +39,6 @@ imports:
   version: f4f29933a76479d990f6adbd70157f8cbfbaefc7
   subpackages:
   - files
-- name: github.com/appscode/envconfig
-  version: a74ef73ab982beb8f0c6060ac44da1c960fea414
 - name: github.com/appscode/errors
   version: 748883e321a9f99fe901bd2663c7af3fcae43ea4
 - name: github.com/appscode/go
@@ -62,21 +60,11 @@ imports:
 - name: github.com/appscode/go-dns
   version: 3af047d24824ddfcc5d6b985e9454446a736de46
   subpackages:
-  - aws
-  - azure
-  - cloudflare
-  - digitalocean
-  - googlecloud
-  - linode
   - provider
-  - vultr
 - name: github.com/appscode/go-hetzner
   version: 2862c36e840d98476edf9f1826717d354547be6f
 - name: github.com/appscode/go-notify
   version: c1f627b4151ce1f8b5b80eeab2eb94c2561af00c
-  subpackages:
-  - mailgun
-  - smtp
 - name: github.com/appscode/go-term
   version: 620ebcf71e8e9dd59363149cd05ce8d3d57231e6
 - name: github.com/appscode/go-tracer
@@ -136,14 +124,12 @@ imports:
   - service/ec2
   - service/elb
   - service/iam
-  - service/route53
   - service/s3
   - service/sts
 - name: github.com/Azure/azure-sdk-for-go
   version: 0984e0641ae43b89283223034574d6465be93bf4
   subpackages:
   - arm/compute
-  - arm/dns
   - arm/network
   - arm/resources/resources
   - arm/storage
@@ -190,8 +176,6 @@ imports:
   - signer/local
   - signer/remote
   - signer/universal
-- name: github.com/cloudflare/cloudflare-go
-  version: ba610b87e64f5e99e8ddd614e50669c66c2ec9b5
 - name: github.com/coreos/go-oidc
   version: be73733bb8cc830d0205609b95d125215f8e9c70
   subpackages:
@@ -337,8 +321,6 @@ imports:
   version: 2fd0705ce648e602e6c9c57329a174270a4f6688
   subpackages:
   - lib
-- name: github.com/jaytaylor/html2text
-  version: 7c7a33a7a158a5ce395c803d2b6a209b2bbc14c8
 - name: github.com/jmespath/go-jmespath
   version: 3433f3ea46d9f8019119e7dd41274e112a2359a9
 - name: github.com/jmoiron/sqlx
@@ -358,13 +340,9 @@ imports:
   - api
   - api/install
   - client/clientset
-- name: github.com/kelseyhightower/envconfig
-  version: f611eb38b3875cc3bd991ca91c51d06446afa14c
 - name: github.com/kisielk/sqlstruct
   version: 648daed35d49dac24a4bff253b190a80da3ab6a5
   repo: https://github.com/kisielk/sqlstruct
-- name: github.com/mailgun/mailgun-go
-  version: 369a1fa57ce6fb314e627087b9fff0db5c266c0f
 - name: github.com/mailru/easyjson
   version: d5b7844b561a7bc640052f1b935f7b800330d7e0
   subpackages:
@@ -379,8 +357,6 @@ imports:
   version: d6bea18f789704b5f83375793155289da36a3c7f
 - name: github.com/mgutz/str
   version: 968bf66e3da857419e4f6e71b2d5c9ae95682dc4
-- name: github.com/miekg/dns
-  version: 5d001d020961ae1c184f9f8152fdc73810481677
 - name: github.com/mitchellh/go-homedir
   version: b8bc1bf767474819792c23f32d8286a45736f1c6
 - name: github.com/mitchellh/go-wordwrap
@@ -435,14 +411,8 @@ imports:
   version: 572154603012a93806b0a54639c6dfc83ff54e35
   repo: https://github.com/appscode/pflag.git
   vcs: git
-- name: github.com/ssor/bom
-  version: 6386211fdfcf24c0bfbdaceafd02849ed9a8a509
 - name: github.com/tent/http-link-go
   version: ac974c61c2f990f4115b119354b5e0b47550e888
-- name: github.com/timewasted/linode
-  version: 37e84520dcf74488f67654f9c775b9752c232dc1
-  subpackages:
-  - dns
 - name: github.com/ugorji/go
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:
@@ -455,12 +425,6 @@ imports:
   version: e02fc20de94c78484cd5ffb007f8af96be030a45
 - name: github.com/xeipuuv/gojsonschema
   version: 93e72a773fade158921402d6a24c819b48aba29d
-- name: github.com/xenolf/lego
-  version: 8f574e6ca289b530cd3f266f4aa73c9a1161c48a
-  repo: https://github.com/appscode/lego.git
-  vcs: git
-  subpackages:
-  - acme
 - name: github.com/zabawaba99/fireauth
   version: a96e4680fe079c9d29db732873742573c1d5b2be
 - name: golang.org/x/crypto
@@ -469,7 +433,6 @@ imports:
   - curve25519
   - ed25519
   - ed25519/internal/edwards25519
-  - ocsp
   - pkcs12
   - pkcs12/internal/rc2
   - ssh
@@ -486,7 +449,6 @@ imports:
   - idna
   - internal/timeseries
   - lex/httplex
-  - publicsuffix
   - trace
   - websocket
 - name: golang.org/x/oauth2
@@ -526,7 +488,6 @@ imports:
   version: 55146ba61254fdb1c26d65ff3c04bc1611ad73fb
   subpackages:
   - compute/v1
-  - dns/v1
   - gensupport
   - googleapi
   - googleapi/internal/uritemplates
@@ -565,17 +526,8 @@ imports:
   - status
   - tap
   - transport
-- name: gopkg.in/alexcesaro/quotedprintable.v3
-  version: 2caba252f4dc53eaf6b553000885530023f54623
-- name: gopkg.in/gomail.v2
-  version: 81ebce5c23dfd25c6c67194b37d3dd3f338c98b1
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
-- name: gopkg.in/square/go-jose.v1
-  version: aa2e30fdd1fe9dd3394119af66451ae790d50e0d
-  subpackages:
-  - cipher
-  - json
 - name: gopkg.in/yaml.v2
   version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
 - name: k8s.io/apimachinery

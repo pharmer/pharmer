@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"appscode.com/ark/pkg/system"
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
 	"github.com/appscode/go/net/httpclient"
@@ -156,7 +155,7 @@ func StartupConfigFromFirebase(opt *api.ScriptOptions, role string) string {
 func StartupConfigFromAPI(opt *api.ScriptOptions, role string) string {
 	// TODO(tamal): Use wget instead of curl
 	return fmt.Sprintf(`CONFIG=$(/usr/bin/wget -qO- '%v/kubernetes/v1beta1/clusters/%v/startup-script/%v/context-versions/%v/json' --header='Authorization: Bearer %v:%v' 2> /dev/null)`,
-		system.PublicAPIHttpEndpoint(),
+		"", // system.PublicAPIHttpEndpoint(),
 		opt.PHID,
 		role,
 		opt.Namespace,
