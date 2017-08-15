@@ -3,6 +3,7 @@ package context
 import (
 	go_ctx "context"
 
+	dns "github.com/appscode/go-dns/provider"
 	"github.com/appscode/log"
 	"github.com/appscode/pharmer/config"
 	"github.com/appscode/pharmer/storage"
@@ -11,6 +12,7 @@ import (
 type Context interface {
 	go_ctx.Context
 
+	DNSProvider() dns.Provider
 	Store() storage.Storage
 	Logger() Logger
 	Extra() DomainManager
@@ -22,6 +24,7 @@ type FakeContext struct {
 }
 
 var (
+	keyDNS    = struct{}{}
 	keyExtra  = struct{}{}
 	keyLogger = struct{}{}
 	keyStore  = struct{}{}
@@ -32,9 +35,14 @@ var _ Context = &FakeContext{}
 func NewContext(ctx go_ctx.Context, cfg *config.PharmerConfig) Context {
 	c := &FakeContext{Context: ctx}
 	c.Context = go_ctx.WithValue(c.Context, keyExtra, &NullDomainManager{})
+	c.Context = go_ctx.WithValue(c.Context, keyExtra, &NullDomainManager{})
 	c.Context = go_ctx.WithValue(c.Context, keyLogger, log.New(c))
 	c.Context = go_ctx.WithValue(c.Context, keyStore, nil)
 	return c
+}
+
+func (ctx *FakeContext) DNSProvider() dns.Provider {
+	return ctx.Value(keyDNS).(dns.Provider)
 }
 
 func (ctx *FakeContext) Store() storage.Storage {

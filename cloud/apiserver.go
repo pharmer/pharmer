@@ -24,18 +24,18 @@ func EnsureARecord(ctx context.Context, cluster *api.Cluster, master *api.Kubern
 	clusterDomain := ctx.Extra().Domain(cluster.Name)
 	// TODO: FixIT!
 	//for _, ip := range system.Config.Compass.IPs {
-	//	if err := cluster.DNSProvider.EnsureARecord(clusterDomain, ip); err != nil {
+	//	if err := ctx.DNSProvider().EnsureARecord(clusterDomain, ip); err != nil {
 	//		return err
 	//	}
 	//}
 	ctx.Logger().Infof("Cluster apps A record %v added", clusterDomain)
 	externalDomain := ctx.Extra().ExternalDomain(cluster.Name)
-	if err := cluster.DNSProvider.EnsureARecord(externalDomain, master.ExternalIP); err != nil {
+	if err := ctx.DNSProvider().EnsureARecord(externalDomain, master.ExternalIP); err != nil {
 		return err
 	}
 	ctx.Logger().Infof("External A record %v added", externalDomain)
 	internalDomain := ctx.Extra().InternalDomain(cluster.Name)
-	if err := cluster.DNSProvider.EnsureARecord(internalDomain, master.InternalIP); err != nil {
+	if err := ctx.DNSProvider().EnsureARecord(internalDomain, master.InternalIP); err != nil {
 		return err
 	}
 	ctx.Logger().Infof("Internal A record %v added", internalDomain)
@@ -44,17 +44,17 @@ func EnsureARecord(ctx context.Context, cluster *api.Cluster, master *api.Kubern
 
 func DeleteARecords(ctx context.Context, cluster *api.Cluster) error {
 	clusterDomain := ctx.Extra().Domain(cluster.Name)
-	if err := cluster.DNSProvider.DeleteARecords(clusterDomain); err == nil {
+	if err := ctx.DNSProvider().DeleteARecords(clusterDomain); err == nil {
 		ctx.Logger().Infof("Cluster apps A record %v deleted", clusterDomain)
 	}
 
 	externalDomain := ctx.Extra().ExternalDomain(cluster.Name)
-	if err := cluster.DNSProvider.DeleteARecords(externalDomain); err == nil {
+	if err := ctx.DNSProvider().DeleteARecords(externalDomain); err == nil {
 		ctx.Logger().Infof("External A record %v deleted", externalDomain)
 	}
 
 	internalDomain := ctx.Extra().InternalDomain(cluster.Name)
-	if err := cluster.DNSProvider.DeleteARecords(internalDomain); err == nil {
+	if err := ctx.DNSProvider().DeleteARecords(internalDomain); err == nil {
 		ctx.Logger().Infof("Internal A record %v deleted", internalDomain)
 	}
 

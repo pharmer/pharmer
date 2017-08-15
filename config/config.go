@@ -7,6 +7,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/appscode/go-dns/aws"
+	"github.com/appscode/go-dns/azure"
+	"github.com/appscode/go-dns/cloudflare"
+	"github.com/appscode/go-dns/digitalocean"
+	"github.com/appscode/go-dns/googlecloud"
+	"github.com/appscode/go-dns/linode"
+	"github.com/appscode/go-dns/vultr"
 	yc "github.com/appscode/go/encoding/yaml"
 	"github.com/appscode/log"
 	"github.com/ghodss/yaml"
@@ -17,7 +24,17 @@ import (
 type Context struct {
 	Name     string         `json:"name"`
 	Provider string         `json:"provider"`
-	Store    stow.ConfigMap `json:"store"`
+	Config   stow.ConfigMap `json:"config"`
+	DNS      struct {
+		Provider     string               `json:"provider,omitempty"`
+		AWS          aws.Options          `json:"aws,omitempty"`
+		Azure        azure.Options        `json:"azure,omitempty"`
+		Cloudflare   cloudflare.Options   `json:"cloudflare,omitempty"`
+		Digitalocean digitalocean.Options `json:"digitalocean,omitempty"`
+		Gcloud       googlecloud.Options  `json:"gcloud,omitempty"`
+		Linode       linode.Options       `json:"linode,omitempty"`
+		Vultr        vultr.Options        `json:"vultr,omitempty"`
+	} `json:"dns"`
 }
 
 type PharmerConfig struct {
@@ -71,7 +88,7 @@ func (config *PharmerConfig) Dial(cliCtx string) (stow.Location, error) {
 	}
 	for _, osmCtx := range config.Contexts {
 		if osmCtx.Name == ctx {
-			return stow.Dial(osmCtx.Provider, osmCtx.Store)
+			return stow.Dial(osmCtx.Provider, osmCtx.Config)
 		}
 	}
 	return nil, errors.New("Failed to determine context.")
