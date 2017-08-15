@@ -11,34 +11,34 @@ import (
 )
 
 func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error {
-	if !cloud.UpgradeRequired(cm.ctx, req) {
-		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.ctx.Name)
+	if !cloud.UpgradeRequired(cm.cluster, req) {
+		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
 		return nil
 	}
 	if cm.conn == nil {
-		conn, err := NewConnector(cm.ctx)
+		conn, err := NewConnector(cm.ctx, cm.cluster)
 		if err != nil {
-			cm.ctx.StatusCause = err.Error()
+			cm.cluster.StatusCause = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		cm.conn = conn
 	}
 
-	cm.ctx.ContextVersion = int64(0)
-	cm.namer = namer{ctx: cm.ctx}
+	cm.cluster.ContextVersion = int64(0)
+	cm.namer = namer{cluster: cm.cluster}
 	// assign new timestamp and new launch_config version
-	cm.ctx.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
-	cm.ctx.KubeVersion = req.Version
+	cm.cluster.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
+	cm.cluster.KubeVersion = req.Version
 
-	err := cm.ctx.Save()
+	err := cm.cluster.Save()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	fmt.Println("Updating...")
-	cm.ins, err = cloud.NewInstances(cm.ctx)
+	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins.Load()
@@ -53,7 +53,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	err = cm.ctx.Save()
+	err = cm.cluster.Save()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -68,45 +68,45 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 func (cm *clusterManager) updateMaster() error {
 	err := cm.deleteMaster()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	im := &instanceManager{ctx: cm.ctx, conn: cm.conn, namer: cm.namer}
+	im := &instanceManager{cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 	err = cm.UploadStartupConfig()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterNIC, err := im.conn.interfacesClient.Get(cm.namer.ResourceGroupName(), cm.namer.NetworkInterfaceName(cm.ctx.KubernetesMasterName), "")
+	masterNIC, err := im.conn.interfacesClient.Get(cm.namer.ResourceGroupName(), cm.namer.NetworkInterfaceName(cm.cluster.KubernetesMasterName), "")
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	as, err := im.getAvailablitySet()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	sa, err := im.getStorageAccount()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterScript := im.RenderStartupScript(cm.ctx.NewScriptOptions(), cm.ctx.MasterSKU, api.RoleKubernetesMaster)
-	_, err = im.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), masterScript, cm.ctx.MasterSKU)
+	masterScript := im.RenderStartupScript(cm.cluster.NewScriptOptions(), cm.cluster.MasterSKU, api.RoleKubernetesMaster)
+	_, err = im.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), masterScript, cm.cluster.MasterSKU)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	if err := cloud.ProbeKubeAPI(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	return nil
 }
 
 func (cm *clusterManager) deleteMaster() error {
-	im := &instanceManager{ctx: cm.ctx, conn: cm.conn, namer: cm.namer}
+	im := &instanceManager{cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 	err := im.DeleteVirtualMachine(cm.namer.MasterName())
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -119,7 +119,7 @@ func (cm *clusterManager) deleteMaster() error {
 func (cm *clusterManager) updateNodes(sku string) error {
 	fmt.Println("Updating Nodes...")
 
-	im := &instanceManager{ctx: cm.ctx, conn: cm.conn, namer: cm.namer}
+	im := &instanceManager{cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 
 	igm := &InstanceGroupManager{cm: cm, im: im}
 	oldinstances, err := igm.listInstances(sku)
@@ -141,7 +141,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 
 		igm.instance = cloud.Instance{
 			Type: cloud.InstanceType{
-				ContextVersion: cm.ctx.ContextVersion,
+				ContextVersion: cm.cluster.ContextVersion,
 				Sku:            sku,
 				Master:         false,
 				SpotInstance:   false,
@@ -154,7 +154,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 
 		fmt.Println("Waiting for 1 minute")
 		time.Sleep(1 * time.Minute)
-		err = cloud.WaitForReadyNodes(cm.ctx)
+		err = cloud.WaitForReadyNodes(cm.ctx, cm.cluster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
@@ -165,7 +165,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 	}
 	err = cloud.AdjustDbInstance(cm.ins, currentIns, sku)
 	// cluster.ctx.Instances = append(cluster.ctx.Instances, instances...)
-	err = cm.ctx.Save()
+	err = cm.cluster.Save()
 
 	return nil
 }

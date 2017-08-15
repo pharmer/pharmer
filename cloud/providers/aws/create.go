@@ -13,7 +13,6 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/storage"
 	// "github.com/appscode/pharmer/templates"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
@@ -27,88 +26,88 @@ const (
 func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	err := cm.initContext(req)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins, err = cloud.NewInstances(cm.ctx)
+	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.conn, err = NewConnector(cm.ctx)
+	cm.conn, err = NewConnector(cm.cluster)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Save()
+	cm.cluster.Save()
 
 	defer func(releaseReservedIp bool) {
-		if cm.ctx.Status == storage.KubernetesStatus_Pending {
-			cm.ctx.Status = storage.KubernetesStatus_Failing
+		if cm.cluster.Status == api.KubernetesStatus_Pending {
+			cm.cluster.Status = api.KubernetesStatus_Failing
 		}
-		cm.ctx.Save()
+		cm.cluster.Save()
 		cm.ins.Save()
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
-		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status)
+		if cm.cluster.Status != api.KubernetesStatus_Ready {
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
-				Name:              cm.ctx.Name,
+				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
 			})
 		}
-	}(cm.ctx.MasterReservedIP == "auto")
+	}(cm.cluster.MasterReservedIP == "auto")
 
 	if err = cm.conn.detectJessieImage(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.InstanceImage = cm.conn.ctx.InstanceImage
-	cm.ctx.RootDeviceName = cm.conn.ctx.RootDeviceName
-	fmt.Println(cm.ctx.InstanceImage, cm.ctx.RootDeviceName, "---------------*********")
+	cm.cluster.InstanceImage = cm.conn.cluster.InstanceImage
+	cm.cluster.RootDeviceName = cm.conn.cluster.RootDeviceName
+	fmt.Println(cm.cluster.InstanceImage, cm.cluster.RootDeviceName, "---------------*********")
 
 	if err = cm.ensureIAMProfile(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	if err = cm.importPublicKey(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	if err = cm.setupVpc(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	if err = cm.createDHCPOptionSet(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	if err = cm.setupSubnet(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	if err = cm.setupInternetGateway(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	if err = cm.setupRouteTable(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	if err = cm.setupSecurityGroups(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	masterInstance, err := cm.startMaster()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
@@ -117,7 +116,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 			cm: cm,
 			instance: cloud.Instance{
 				Type: cloud.InstanceType{
-					ContextVersion: cm.ctx.ContextVersion,
+					ContextVersion: cm.cluster.ContextVersion,
 					Sku:            ng.Sku,
 
 					Master:       false,
@@ -134,23 +133,23 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	cm.ctx.Logger().Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
-	if err := cloud.EnsureDnsIPLookup(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err := cloud.EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// wait for nodes to start
-	if err := cloud.ProbeKubeAPI(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// check all components are ok
-	if err = cloud.CheckComponentStatuses(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cloud.CheckComponentStatuses(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// Make sure nodes are connected to master and are ready
-	if err = cloud.WaitForReadyNodes(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cloud.WaitForReadyNodes(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
@@ -164,7 +163,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		AutoScalingGroupNames: groups,
 	})
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	fmt.Println(r2)
@@ -199,26 +198,26 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	//    build-config
 	//  fi
 	// check-cluster
-	cm.ctx.Status = storage.KubernetesStatus_Ready
+	cm.cluster.Status = api.KubernetesStatus_Ready
 	return nil
 }
 
 func (cm *clusterManager) ensureIAMProfile() error {
-	r1, _ := cm.conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &cm.ctx.IAMProfileMaster})
+	r1, _ := cm.conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &cm.cluster.IAMProfileMaster})
 	if r1.InstanceProfile == nil {
-		err := cm.createIAMProfile(cm.ctx.IAMProfileMaster)
+		err := cm.createIAMProfile(cm.cluster.IAMProfileMaster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Logger().Infof("Master instance profile %v created", cm.ctx.IAMProfileMaster)
+		cm.ctx.Logger().Infof("Master instance profile %v created", cm.cluster.IAMProfileMaster)
 	}
-	r2, _ := cm.conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &cm.ctx.IAMProfileNode})
+	r2, _ := cm.conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &cm.cluster.IAMProfileNode})
 	if r2.InstanceProfile == nil {
-		err := cm.createIAMProfile(cm.ctx.IAMProfileNode)
+		err := cm.createIAMProfile(cm.cluster.IAMProfileNode)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Logger().Infof("Node instance profile %v created", cm.ctx.IAMProfileNode)
+		cm.ctx.Logger().Infof("Node instance profile %v created", cm.cluster.IAMProfileNode)
 	}
 	return nil
 }
@@ -274,8 +273,8 @@ func (cm *clusterManager) createIAMProfile(key string) error {
 
 func (cm *clusterManager) importPublicKey() error {
 	resp, err := cm.conn.ec2.ImportKeyPair(&_ec2.ImportKeyPairInput{
-		KeyName:           types.StringP(cm.ctx.SSHKeyExternalID),
-		PublicKeyMaterial: cm.ctx.SSHKey.PublicKey,
+		KeyName:           types.StringP(cm.cluster.SSHKeyExternalID),
+		PublicKeyMaterial: cm.cluster.SSHKey.PublicKey,
 	})
 	cm.ctx.Logger().Debug("Imported SSH key", resp, err)
 	if err != nil {
@@ -288,13 +287,13 @@ func (cm *clusterManager) importPublicKey() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 
 	}
-	cm.ctx.Logger().Infof("SSH key with (AWS) fingerprint %v imported", cm.ctx.SSHKey.AwsFingerprint)
+	cm.ctx.Logger().Infof("SSH key with (AWS) fingerprint %v imported", cm.cluster.SSHKey.AwsFingerprint)
 
 	return nil
 }
 
 func (cm *clusterManager) setupVpc() error {
-	cm.ctx.Logger().Infof("Checking VPC tagged with %v", cm.ctx.Name)
+	cm.ctx.Logger().Infof("Checking VPC tagged with %v", cm.cluster.Name)
 	r1, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -306,20 +305,20 @@ func (cm *clusterManager) setupVpc() error {
 			{
 				Name: types.StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.ctx.Name), // Tag by Name or PHID?
+					types.StringP(cm.cluster.Name), // Tag by Name or PHID?
 				},
 			},
 		},
 	})
 	cm.ctx.Logger().Debug("VPC described", r1, err)
 	if len(r1.Vpcs) > 1 {
-		cm.ctx.VpcId = *r1.Vpcs[0].VpcId
-		cm.ctx.Logger().Infof("VPC %v found", cm.ctx.VpcId)
+		cm.cluster.VpcId = *r1.Vpcs[0].VpcId
+		cm.ctx.Logger().Infof("VPC %v found", cm.cluster.VpcId)
 	}
 
 	cm.ctx.Logger().Info("No VPC found, creating new VPC")
 	r2, err := cm.conn.ec2.CreateVpc(&_ec2.CreateVpcInput{
-		CidrBlock: types.StringP(cm.ctx.VpcCidr),
+		CidrBlock: types.StringP(cm.cluster.VpcCidr),
 	})
 	cm.ctx.Logger().Debug("VPC created", r2, err)
 	//errorutil.EOE(err)
@@ -327,35 +326,35 @@ func (cm *clusterManager) setupVpc() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ctx.Logger().Infof("VPC %v created", *r2.Vpc.VpcId)
-	cm.ctx.VpcId = *r2.Vpc.VpcId
+	cm.cluster.VpcId = *r2.Vpc.VpcId
 
 	r3, err := cm.conn.ec2.ModifyVpcAttribute(&_ec2.ModifyVpcAttributeInput{
-		VpcId: types.StringP(cm.ctx.VpcId),
+		VpcId: types.StringP(cm.cluster.VpcId),
 		EnableDnsSupport: &_ec2.AttributeBooleanValue{
 			Value: types.TrueP(),
 		},
 	})
 	cm.ctx.Logger().Debug("DNS support enabled", r3, err)
-	cm.ctx.Logger().Infof("Enabled DNS support for VPCID %v", cm.ctx.VpcId)
+	cm.ctx.Logger().Infof("Enabled DNS support for VPCID %v", cm.cluster.VpcId)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	r4, err := cm.conn.ec2.ModifyVpcAttribute(&_ec2.ModifyVpcAttributeInput{
-		VpcId: types.StringP(cm.ctx.VpcId),
+		VpcId: types.StringP(cm.cluster.VpcId),
 		EnableDnsHostnames: &_ec2.AttributeBooleanValue{
 			Value: types.TrueP(),
 		},
 	})
 	cm.ctx.Logger().Debug("DNS hostnames enabled", r4, err)
-	cm.ctx.Logger().Infof("Enabled DNS hostnames for VPCID %v", cm.ctx.VpcId)
+	cm.ctx.Logger().Infof("Enabled DNS hostnames for VPCID %v", cm.cluster.VpcId)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	time.Sleep(preTagDelay)
-	cm.addTag(cm.ctx.VpcId, "Name", cm.namer.VPCName())
-	cm.addTag(cm.ctx.VpcId, "KubernetesCluster", cm.ctx.Name)
+	cm.addTag(cm.cluster.VpcId, "Name", cm.namer.VPCName())
+	cm.addTag(cm.cluster.VpcId, "KubernetesCluster", cm.cluster.Name)
 	return nil
 }
 
@@ -380,8 +379,8 @@ func (cm *clusterManager) addTag(id string, key string, value string) error {
 }
 
 func (cm *clusterManager) createDHCPOptionSet() error {
-	optionSetDomain := fmt.Sprintf("%v.compute.internal", cm.ctx.Region)
-	if cm.ctx.Region == "us-east-1" {
+	optionSetDomain := fmt.Sprintf("%v.compute.internal", cm.cluster.Region)
+	if cm.cluster.Region == "us-east-1" {
 		optionSetDomain = "ec2.internal"
 	}
 	r1, err := cm.conn.ec2.CreateDhcpOptions(&_ec2.CreateDhcpOptionsInput{
@@ -401,21 +400,21 @@ func (cm *clusterManager) createDHCPOptionSet() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ctx.Logger().Infof("DHCP options created with id %v", *r1.DhcpOptions.DhcpOptionsId)
-	cm.ctx.DHCPOptionsId = *r1.DhcpOptions.DhcpOptionsId
+	cm.cluster.DHCPOptionsId = *r1.DhcpOptions.DhcpOptionsId
 
 	time.Sleep(preTagDelay)
-	cm.addTag(cm.ctx.DHCPOptionsId, "Name", cm.namer.DHCPOptionsName())
-	cm.addTag(cm.ctx.DHCPOptionsId, "KubernetesCluster", cm.ctx.Name)
+	cm.addTag(cm.cluster.DHCPOptionsId, "Name", cm.namer.DHCPOptionsName())
+	cm.addTag(cm.cluster.DHCPOptionsId, "KubernetesCluster", cm.cluster.Name)
 
 	r2, err := cm.conn.ec2.AssociateDhcpOptions(&_ec2.AssociateDhcpOptionsInput{
-		DhcpOptionsId: types.StringP(cm.ctx.DHCPOptionsId),
-		VpcId:         types.StringP(cm.ctx.VpcId),
+		DhcpOptionsId: types.StringP(cm.cluster.DHCPOptionsId),
+		VpcId:         types.StringP(cm.cluster.VpcId),
 	})
 	cm.ctx.Logger().Debug("Associated DHCP options ", r2, err)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("DHCP options %v associated with %v", cm.ctx.DHCPOptionsId, cm.ctx.VpcId)
+	cm.ctx.Logger().Infof("DHCP options %v associated with %v", cm.cluster.DHCPOptionsId, cm.cluster.VpcId)
 
 	return nil
 }
@@ -427,19 +426,19 @@ func (cm *clusterManager) setupSubnet() error {
 			{
 				Name: types.StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.ctx.Name),
+					types.StringP(cm.cluster.Name),
 				},
 			},
 			{
 				Name: types.StringP("availabilityZone"),
 				Values: []*string{
-					types.StringP(cm.ctx.Zone),
+					types.StringP(cm.cluster.Zone),
 				},
 			},
 			{
 				Name: types.StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cm.ctx.VpcId),
+					types.StringP(cm.cluster.VpcId),
 				},
 			},
 		},
@@ -452,28 +451,28 @@ func (cm *clusterManager) setupSubnet() error {
 	if len(r1.Subnets) == 0 {
 		cm.ctx.Logger().Info("No subnet found, creating new subnet")
 		r2, err := cm.conn.ec2.CreateSubnet(&_ec2.CreateSubnetInput{
-			CidrBlock:        types.StringP(cm.ctx.SubnetCidr),
-			VpcId:            types.StringP(cm.ctx.VpcId),
-			AvailabilityZone: types.StringP(cm.ctx.Zone),
+			CidrBlock:        types.StringP(cm.cluster.SubnetCidr),
+			VpcId:            types.StringP(cm.cluster.VpcId),
+			AvailabilityZone: types.StringP(cm.cluster.Zone),
 		})
 		cm.ctx.Logger().Debug("Created subnet", r2, err)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		cm.ctx.Logger().Infof("Subnet %v created", *r2.Subnet.SubnetId)
-		cm.ctx.SubnetId = *r2.Subnet.SubnetId
+		cm.cluster.SubnetId = *r2.Subnet.SubnetId
 
 		time.Sleep(preTagDelay)
-		cm.addTag(cm.ctx.SubnetId, "KubernetesCluster", cm.ctx.Name)
+		cm.addTag(cm.cluster.SubnetId, "KubernetesCluster", cm.cluster.Name)
 
 	} else {
-		cm.ctx.SubnetId = *r1.Subnets[0].SubnetId
+		cm.cluster.SubnetId = *r1.Subnets[0].SubnetId
 		existingCIDR := *r1.Subnets[0].CidrBlock
-		cm.ctx.Logger().Infof("Subnet %v found with CIDR %v", cm.ctx.SubnetId, existingCIDR)
+		cm.ctx.Logger().Infof("Subnet %v found with CIDR %v", cm.cluster.SubnetId, existingCIDR)
 
-		cm.ctx.Logger().Infof("Retrieving VPC %v", cm.ctx.VpcId)
+		cm.ctx.Logger().Infof("Retrieving VPC %v", cm.cluster.VpcId)
 		r3, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
-			VpcIds: []*string{types.StringP(cm.ctx.VpcId)},
+			VpcIds: []*string{types.StringP(cm.cluster.VpcId)},
 		})
 		cm.ctx.Logger().Debug("Retrieved VPC", r3, err)
 		if err != nil {
@@ -481,21 +480,21 @@ func (cm *clusterManager) setupSubnet() error {
 		}
 
 		octets := strings.Split(*r3.Vpcs[0].CidrBlock, ".")
-		cm.ctx.VpcCidrBase = octets[0] + "." + octets[1]
-		cm.ctx.MasterInternalIP = cm.ctx.VpcCidrBase + ".0" + cm.ctx.MasterIPSuffix
-		cm.ctx.Logger().Infof("Assuming MASTER_INTERNAL_IP=%v", cm.ctx.MasterInternalIP)
+		cm.cluster.VpcCidrBase = octets[0] + "." + octets[1]
+		cm.cluster.MasterInternalIP = cm.cluster.VpcCidrBase + ".0" + cm.cluster.MasterIPSuffix
+		cm.ctx.Logger().Infof("Assuming MASTER_INTERNAL_IP=%v", cm.cluster.MasterInternalIP)
 	}
 	return nil
 }
 
 func (cm *clusterManager) setupInternetGateway() error {
-	cm.ctx.Logger().Infof("Checking IGW with attached VPCID %v", cm.ctx.VpcId)
+	cm.ctx.Logger().Infof("Checking IGW with attached VPCID %v", cm.cluster.VpcId)
 	r1, err := cm.conn.ec2.DescribeInternetGateways(&_ec2.DescribeInternetGatewaysInput{
 		Filters: []*_ec2.Filter{
 			{
 				Name: types.StringP("attachment.vpc-id"),
 				Values: []*string{
-					types.StringP(cm.ctx.VpcId),
+					types.StringP(cm.cluster.VpcId),
 				},
 			},
 		},
@@ -512,43 +511,43 @@ func (cm *clusterManager) setupInternetGateway() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.IGWId = *r2.InternetGateway.InternetGatewayId
+		cm.cluster.IGWId = *r2.InternetGateway.InternetGatewayId
 		time.Sleep(preTagDelay)
-		cm.ctx.Logger().Infof("IGW %v created", cm.ctx.IGWId)
+		cm.ctx.Logger().Infof("IGW %v created", cm.cluster.IGWId)
 
 		r3, err := cm.conn.ec2.AttachInternetGateway(&_ec2.AttachInternetGatewayInput{
-			InternetGatewayId: types.StringP(cm.ctx.IGWId),
-			VpcId:             types.StringP(cm.ctx.VpcId),
+			InternetGatewayId: types.StringP(cm.cluster.IGWId),
+			VpcId:             types.StringP(cm.cluster.VpcId),
 		})
 		cm.ctx.Logger().Debug("Attached IGW to VPC", r3, err)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Logger().Infof("Attached IGW %v to VPCID %v", cm.ctx.IGWId, cm.ctx.VpcId)
+		cm.ctx.Logger().Infof("Attached IGW %v to VPCID %v", cm.cluster.IGWId, cm.cluster.VpcId)
 
-		cm.addTag(cm.ctx.IGWId, "Name", cm.namer.InternetGatewayName())
-		cm.addTag(cm.ctx.IGWId, "KubernetesCluster", cm.ctx.Name)
+		cm.addTag(cm.cluster.IGWId, "Name", cm.namer.InternetGatewayName())
+		cm.addTag(cm.cluster.IGWId, "KubernetesCluster", cm.cluster.Name)
 	} else {
-		cm.ctx.IGWId = *r1.InternetGateways[0].InternetGatewayId
-		cm.ctx.Logger().Infof("IGW %v found", cm.ctx.IGWId)
+		cm.cluster.IGWId = *r1.InternetGateways[0].InternetGatewayId
+		cm.ctx.Logger().Infof("IGW %v found", cm.cluster.IGWId)
 	}
 	return nil
 }
 
 func (cm *clusterManager) setupRouteTable() error {
-	cm.ctx.Logger().Infof("Checking route table for VPCID %v", cm.ctx.VpcId)
+	cm.ctx.Logger().Infof("Checking route table for VPCID %v", cm.cluster.VpcId)
 	r1, err := cm.conn.ec2.DescribeRouteTables(&_ec2.DescribeRouteTablesInput{
 		Filters: []*_ec2.Filter{
 			{
 				Name: types.StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cm.ctx.VpcId),
+					types.StringP(cm.cluster.VpcId),
 				},
 			},
 			{
 				Name: types.StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.ctx.Name),
+					types.StringP(cm.cluster.Name),
 				},
 			},
 		},
@@ -558,70 +557,70 @@ func (cm *clusterManager) setupRouteTable() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if len(r1.RouteTables) == 0 {
-		cm.ctx.Logger().Infof("No route table found for VPCID %v, creating new route table", cm.ctx.VpcId)
+		cm.ctx.Logger().Infof("No route table found for VPCID %v, creating new route table", cm.cluster.VpcId)
 		r2, err := cm.conn.ec2.CreateRouteTable(&_ec2.CreateRouteTableInput{
-			VpcId: types.StringP(cm.ctx.VpcId),
+			VpcId: types.StringP(cm.cluster.VpcId),
 		})
 		cm.ctx.Logger().Debug("Created route table", r2, err)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 
-		cm.ctx.RouteTableId = *r2.RouteTable.RouteTableId
-		cm.ctx.Logger().Infof("Route table %v created", cm.ctx.RouteTableId)
+		cm.cluster.RouteTableId = *r2.RouteTable.RouteTableId
+		cm.ctx.Logger().Infof("Route table %v created", cm.cluster.RouteTableId)
 		time.Sleep(preTagDelay)
-		cm.addTag(cm.ctx.RouteTableId, "KubernetesCluster", cm.ctx.Name)
+		cm.addTag(cm.cluster.RouteTableId, "KubernetesCluster", cm.cluster.Name)
 
 	} else {
-		cm.ctx.RouteTableId = *r1.RouteTables[0].RouteTableId
-		cm.ctx.Logger().Infof("Route table %v found", cm.ctx.RouteTableId)
+		cm.cluster.RouteTableId = *r1.RouteTables[0].RouteTableId
+		cm.ctx.Logger().Infof("Route table %v found", cm.cluster.RouteTableId)
 	}
 
 	r3, err := cm.conn.ec2.AssociateRouteTable(&_ec2.AssociateRouteTableInput{
-		RouteTableId: types.StringP(cm.ctx.RouteTableId),
-		SubnetId:     types.StringP(cm.ctx.SubnetId),
+		RouteTableId: types.StringP(cm.cluster.RouteTableId),
+		SubnetId:     types.StringP(cm.cluster.SubnetId),
 	})
 	cm.ctx.Logger().Debug("Associating route table to subnet", r3, err)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Route table %v associated to subnet %v", cm.ctx.RouteTableId, cm.ctx.SubnetId)
+	cm.ctx.Logger().Infof("Route table %v associated to subnet %v", cm.cluster.RouteTableId, cm.cluster.SubnetId)
 
 	r4, err := cm.conn.ec2.CreateRoute(&_ec2.CreateRouteInput{
-		RouteTableId:         types.StringP(cm.ctx.RouteTableId),
+		RouteTableId:         types.StringP(cm.cluster.RouteTableId),
 		DestinationCidrBlock: types.StringP("0.0.0.0/0"),
-		GatewayId:            types.StringP(cm.ctx.IGWId),
+		GatewayId:            types.StringP(cm.cluster.IGWId),
 	})
 	cm.ctx.Logger().Debug("Added route to route table", r4, err)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Route added to route table %v", cm.ctx.RouteTableId)
+	cm.ctx.Logger().Infof("Route added to route table %v", cm.cluster.RouteTableId)
 	return nil
 }
 
 func (cm *clusterManager) setupSecurityGroups() error {
 	var ok bool
 	var err error
-	if cm.ctx.MasterSGId, ok, err = cm.getSecurityGroupId(cm.ctx.MasterSGName); !ok {
+	if cm.cluster.MasterSGId, ok, err = cm.getSecurityGroupId(cm.cluster.MasterSGName); !ok {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		err = cm.createSecurityGroup(cm.ctx.MasterSGName, "Kubernetes security group applied to master instance")
+		err = cm.createSecurityGroup(cm.cluster.MasterSGName, "Kubernetes security group applied to master instance")
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Logger().Infof("Master security group %v created", cm.ctx.MasterSGName)
+		cm.ctx.Logger().Infof("Master security group %v created", cm.cluster.MasterSGName)
 	}
-	if cm.ctx.NodeSGId, ok, err = cm.getSecurityGroupId(cm.ctx.NodeSGName); !ok {
+	if cm.cluster.NodeSGId, ok, err = cm.getSecurityGroupId(cm.cluster.NodeSGName); !ok {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		err = cm.createSecurityGroup(cm.ctx.NodeSGName, "Kubernetes security group applied to node instances")
+		err = cm.createSecurityGroup(cm.cluster.NodeSGName, "Kubernetes security group applied to node instances")
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Logger().Infof("Naster security group %v created", cm.ctx.NodeSGName)
+		cm.ctx.Logger().Infof("Naster security group %v created", cm.cluster.NodeSGName)
 	}
 
 	err = cm.detectSecurityGroups()
@@ -630,23 +629,23 @@ func (cm *clusterManager) setupSecurityGroups() error {
 	}
 
 	cm.ctx.Logger().Info("Masters can talk to master")
-	err = cm.autohrizeIngressBySGID(cm.ctx.MasterSGId, cm.ctx.MasterSGId)
+	err = cm.autohrizeIngressBySGID(cm.cluster.MasterSGId, cm.cluster.MasterSGId)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	cm.ctx.Logger().Info("Nodes can talk to nodes")
-	err = cm.autohrizeIngressBySGID(cm.ctx.NodeSGId, cm.ctx.NodeSGId)
+	err = cm.autohrizeIngressBySGID(cm.cluster.NodeSGId, cm.cluster.NodeSGId)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	cm.ctx.Logger().Info("Masters and nodes can talk to each other")
-	err = cm.autohrizeIngressBySGID(cm.ctx.MasterSGId, cm.ctx.NodeSGId)
+	err = cm.autohrizeIngressBySGID(cm.cluster.MasterSGId, cm.cluster.NodeSGId)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = cm.autohrizeIngressBySGID(cm.ctx.NodeSGId, cm.ctx.MasterSGId)
+	err = cm.autohrizeIngressBySGID(cm.cluster.NodeSGId, cm.cluster.MasterSGId)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -654,21 +653,21 @@ func (cm *clusterManager) setupSecurityGroups() error {
 	// TODO(justinsb): Would be fairly easy to replace 0.0.0.0/0 in these rules
 
 	cm.ctx.Logger().Info("SSH is opened to the world")
-	err = cm.autohrizeIngressByPort(cm.ctx.MasterSGId, 22)
+	err = cm.autohrizeIngressByPort(cm.cluster.MasterSGId, 22)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = cm.autohrizeIngressByPort(cm.ctx.NodeSGId, 22)
+	err = cm.autohrizeIngressByPort(cm.cluster.NodeSGId, 22)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	cm.ctx.Logger().Info("HTTPS to the master is allowed (for API access)")
-	err = cm.autohrizeIngressByPort(cm.ctx.MasterSGId, 443)
+	err = cm.autohrizeIngressByPort(cm.cluster.MasterSGId, 443)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = cm.autohrizeIngressByPort(cm.ctx.MasterSGId, 6443)
+	err = cm.autohrizeIngressByPort(cm.cluster.MasterSGId, 6443)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -682,7 +681,7 @@ func (cm *clusterManager) getSecurityGroupId(groupName string) (string, bool, er
 			{
 				Name: types.StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cm.ctx.VpcId),
+					types.StringP(cm.cluster.VpcId),
 				},
 			},
 			{
@@ -694,7 +693,7 @@ func (cm *clusterManager) getSecurityGroupId(groupName string) (string, bool, er
 			{
 				Name: types.StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.ctx.Name),
+					types.StringP(cm.cluster.Name),
 				},
 			},
 		},
@@ -716,7 +715,7 @@ func (cm *clusterManager) createSecurityGroup(groupName string, description stri
 	r2, err := cm.conn.ec2.CreateSecurityGroup(&_ec2.CreateSecurityGroupInput{
 		GroupName:   types.StringP(groupName),
 		Description: types.StringP(description),
-		VpcId:       types.StringP(cm.ctx.VpcId),
+		VpcId:       types.StringP(cm.cluster.VpcId),
 	})
 	cm.ctx.Logger().Debug("Created security group", r2, err)
 	if err != nil {
@@ -724,7 +723,7 @@ func (cm *clusterManager) createSecurityGroup(groupName string, description stri
 	}
 
 	time.Sleep(preTagDelay)
-	err = cm.addTag(*r2.GroupId, "KubernetesCluster", cm.ctx.Name)
+	err = cm.addTag(*r2.GroupId, "KubernetesCluster", cm.cluster.Name)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -734,18 +733,18 @@ func (cm *clusterManager) createSecurityGroup(groupName string, description stri
 func (cm *clusterManager) detectSecurityGroups() error {
 	var ok bool
 	var err error
-	if cm.ctx.MasterSGId == "" {
-		if cm.ctx.MasterSGId, ok, err = cm.getSecurityGroupId(cm.ctx.MasterSGName); !ok {
+	if cm.cluster.MasterSGId == "" {
+		if cm.cluster.MasterSGId, ok, err = cm.getSecurityGroupId(cm.cluster.MasterSGName); !ok {
 			return errors.New("Could not detect Kubernetes master security group.  Make sure you've launched a cluster with appctl").WithContext(cm.ctx).Err()
 		} else {
-			cm.ctx.Logger().Infof("Master security group %v with id %v detected", cm.ctx.MasterSGName, cm.ctx.MasterSGId)
+			cm.ctx.Logger().Infof("Master security group %v with id %v detected", cm.cluster.MasterSGName, cm.cluster.MasterSGId)
 		}
 	}
-	if cm.ctx.NodeSGId == "" {
-		if cm.ctx.NodeSGId, ok, err = cm.getSecurityGroupId(cm.ctx.NodeSGName); !ok {
+	if cm.cluster.NodeSGId == "" {
+		if cm.cluster.NodeSGId, ok, err = cm.getSecurityGroupId(cm.cluster.NodeSGName); !ok {
 			return errors.New("Could not detect Kubernetes node security group.  Make sure you've launched a cluster with appctl").WithContext(cm.ctx).Err()
 		} else {
-			cm.ctx.Logger().Infof("Node security group %v with id %v detected", cm.ctx.NodeSGName, cm.ctx.NodeSGId)
+			cm.ctx.Logger().Infof("Node security group %v with id %v detected", cm.cluster.NodeSGName, cm.cluster.NodeSGId)
 		}
 	}
 	if err != nil {
@@ -805,7 +804,7 @@ func (cm *clusterManager) autohrizeIngressByPort(groupID string, port int64) err
 //
 func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 	var err error
-	cm.ctx.MasterDiskId, err = cm.ensurePd(cm.namer.MasterPDName(), cm.ctx.MasterDiskType, cm.ctx.MasterDiskSize)
+	cm.cluster.MasterDiskId, err = cm.ensurePd(cm.namer.MasterPDName(), cm.cluster.MasterDiskType, cm.cluster.MasterDiskSize)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -813,11 +812,11 @@ func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cloud.GenClusterCerts(cm.ctx)
-	cm.ctx.Save() // needed for master start-up config
+	cloud.GenClusterCerts(cm.ctx, cm.cluster)
+	cm.cluster.Save() // needed for master start-up config
 	cm.UploadStartupConfig()
 
-	masterInstanceID, err := cm.createMasterInstance(cm.ctx.KubernetesMasterName, api.RoleKubernetesMaster)
+	masterInstanceID, err := cm.createMasterInstance(cm.cluster.KubernetesMasterName, api.RoleKubernetesMaster)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -828,7 +827,7 @@ func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ctx.Logger().Info("Master instance is ready")
-	if cm.ctx.MasterReservedIP != "" {
+	if cm.cluster.MasterReservedIP != "" {
 		err = cm.assignIPToInstance(masterInstanceID)
 		if err != nil {
 			return nil, errors.FromErr(err).WithMessage("failed to assign ip").WithContext(cm.ctx).Err()
@@ -841,15 +840,15 @@ func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Role = api.RoleKubernetesMaster
-	cm.ctx.MasterExternalIP = masterInstance.ExternalIP
+	cm.cluster.MasterExternalIP = masterInstance.ExternalIP
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 
-	err = cloud.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
+	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.DetectApiServerURL()
-	err = cm.ctx.Save() // needed for node start-up config to get master_internal_ip
+	cm.cluster.DetectApiServerURL()
+	err = cm.cluster.Save() // needed for node start-up config to get master_internal_ip
 	// This is a race between instance start and volume attachment.
 	// There appears to be no way to start an AWS instance with a volume attached.
 	// To work around this, we wait for volume to be ready in setup-master-pd.sh
@@ -857,7 +856,7 @@ func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 		return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	r1, err := cm.conn.ec2.AttachVolume(&_ec2.AttachVolumeInput{
-		VolumeId:   types.StringP(cm.ctx.MasterDiskId),
+		VolumeId:   types.StringP(cm.cluster.MasterDiskId),
 		Device:     types.StringP("/dev/sdb"),
 		InstanceId: types.StringP(masterInstanceID),
 	})
@@ -865,19 +864,19 @@ func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 	if err != nil {
 		return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Persistent data volume %v attatched to master", cm.ctx.MasterDiskId)
+	cm.ctx.Logger().Infof("Persistent data volume %v attatched to master", cm.cluster.MasterDiskId)
 
 	time.Sleep(15 * time.Second)
 	r2, err := cm.conn.ec2.CreateRoute(&_ec2.CreateRouteInput{
-		RouteTableId:         types.StringP(cm.ctx.RouteTableId),
-		DestinationCidrBlock: types.StringP(cm.ctx.MasterIPRange),
+		RouteTableId:         types.StringP(cm.cluster.RouteTableId),
+		DestinationCidrBlock: types.StringP(cm.cluster.MasterIPRange),
 		InstanceId:           types.StringP(masterInstanceID),
 	})
 	cm.ctx.Logger().Debug("Created route to master", r2, err)
 	if err != nil {
 		return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Master route to route table %v for ip %v created", cm.ctx.RouteTableId, masterInstanceID)
+	cm.ctx.Logger().Infof("Master route to route table %v for ip %v created", cm.cluster.RouteTableId, masterInstanceID)
 	return masterInstance, nil
 }
 
@@ -889,7 +888,7 @@ func (cm *clusterManager) ensurePd(name, diskType string, sizeGb int64) (string,
 	if volumeId == "" {
 		// name := cluster.ctx.KubernetesMasterName + "-pd"
 		r1, err := cm.conn.ec2.CreateVolume(&_ec2.CreateVolumeInput{
-			AvailabilityZone: &cm.ctx.Zone,
+			AvailabilityZone: &cm.cluster.Zone,
 			VolumeType:       &diskType,
 			Size:             types.Int64P(sizeGb),
 		})
@@ -898,14 +897,14 @@ func (cm *clusterManager) ensurePd(name, diskType string, sizeGb int64) (string,
 			return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		volumeId = *r1.VolumeId
-		cm.ctx.Logger().Infof("Master disk with size %vGB, type %v created", cm.ctx.MasterDiskSize, cm.ctx.MasterDiskType)
+		cm.ctx.Logger().Infof("Master disk with size %vGB, type %v created", cm.cluster.MasterDiskSize, cm.cluster.MasterDiskType)
 
 		time.Sleep(preTagDelay)
 		err = cm.addTag(volumeId, "Name", name)
 		if err != nil {
 			return volumeId, errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		err = cm.addTag(volumeId, "KubernetesCluster", cm.ctx.Name)
+		err = cm.addTag(volumeId, "KubernetesCluster", cm.cluster.Name)
 		if err != nil {
 			return volumeId, errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
@@ -921,7 +920,7 @@ func (cm *clusterManager) findPD(name string) (string, error) {
 			{
 				Name: types.StringP("availability-zone"),
 				Values: []*string{
-					types.StringP(cm.ctx.Zone),
+					types.StringP(cm.cluster.Zone),
 				},
 			},
 			{
@@ -933,7 +932,7 @@ func (cm *clusterManager) findPD(name string) (string, error) {
 			{
 				Name: types.StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.ctx.Name),
+					types.StringP(cm.cluster.Name),
 				},
 			},
 		},
@@ -953,7 +952,7 @@ func (cm *clusterManager) findPD(name string) (string, error) {
 func (cm *clusterManager) reserveIP() error {
 	// Check that MASTER_RESERVED_IP looks like an IPv4 address
 	// if match, _ := regexp.MatchString("^[0-9]+.[0-9]+.[0-9]+.[0-9]+$", cluster.ctx.MasterReservedIP); !match {
-	if cm.ctx.MasterReservedIP == "auto" {
+	if cm.cluster.MasterReservedIP == "auto" {
 		r1, err := cm.conn.ec2.AllocateAddress(&_ec2.AllocateAddressInput{
 			Domain: types.StringP("vpc"),
 		})
@@ -962,16 +961,16 @@ func (cm *clusterManager) reserveIP() error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		time.Sleep(5 * time.Second)
-		cm.ctx.MasterReservedIP = *r1.PublicIp
-		cm.ctx.Logger().Infof("Elastic IP %v allocated", cm.ctx.MasterReservedIP)
+		cm.cluster.MasterReservedIP = *r1.PublicIp
+		cm.ctx.Logger().Infof("Elastic IP %v allocated", cm.cluster.MasterReservedIP)
 	}
 	return nil
 }
 
 func (cm *clusterManager) createMasterInstance(instanceName string, role string) (string, error) {
-	kubeStarter := cm.RenderStartupScript(cm.ctx.NewScriptOptions(), cm.ctx.MasterSKU, role)
+	kubeStarter := cm.RenderStartupScript(cm.cluster.NewScriptOptions(), cm.cluster.MasterSKU, role)
 	req := &_ec2.RunInstancesInput{
-		ImageId:  types.StringP(cm.ctx.InstanceImage),
+		ImageId:  types.StringP(cm.cluster.InstanceImage),
 		MaxCount: types.Int64P(1),
 		MinCount: types.Int64P(1),
 		// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html
@@ -979,11 +978,11 @@ func (cm *clusterManager) createMasterInstance(instanceName string, role string)
 			// MASTER_BLOCK_DEVICE_MAPPINGS
 			{
 				// https://github.com/appscode/kubernetes/blob/55d9dec8eb5eb02e1301045b7b81bbac689c86a1/cluster/aws/util.sh#L397
-				DeviceName: types.StringP(cm.ctx.RootDeviceName),
+				DeviceName: types.StringP(cm.cluster.RootDeviceName),
 				Ebs: &_ec2.EbsBlockDevice{
 					DeleteOnTermination: types.TrueP(),
-					VolumeSize:          types.Int64P(cm.ctx.MasterDiskSize),
-					VolumeType:          types.StringP(cm.ctx.MasterDiskType),
+					VolumeSize:          types.Int64P(cm.cluster.MasterDiskSize),
+					VolumeType:          types.StringP(cm.cluster.MasterDiskType),
 				},
 			},
 			// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
@@ -1005,10 +1004,10 @@ func (cm *clusterManager) createMasterInstance(instanceName string, role string)
 			},
 		},
 		IamInstanceProfile: &_ec2.IamInstanceProfileSpecification{
-			Name: types.StringP(cm.ctx.IAMProfileMaster),
+			Name: types.StringP(cm.cluster.IAMProfileMaster),
 		},
-		InstanceType: types.StringP(cm.ctx.MasterSKU),
-		KeyName:      types.StringP(cm.ctx.SSHKeyExternalID),
+		InstanceType: types.StringP(cm.cluster.MasterSKU),
+		KeyName:      types.StringP(cm.cluster.SSHKeyExternalID),
 		Monitoring: &_ec2.RunInstancesMonitoringEnabled{
 			Enabled: types.TrueP(),
 		},
@@ -1018,15 +1017,15 @@ func (cm *clusterManager) createMasterInstance(instanceName string, role string)
 				DeleteOnTermination:      types.TrueP(),
 				DeviceIndex:              types.Int64P(0),
 				Groups: []*string{
-					types.StringP(cm.ctx.MasterSGId),
+					types.StringP(cm.cluster.MasterSGId),
 				},
 				PrivateIpAddresses: []*_ec2.PrivateIpAddressSpecification{
 					{
-						PrivateIpAddress: types.StringP(cm.ctx.MasterInternalIP),
+						PrivateIpAddress: types.StringP(cm.cluster.MasterInternalIP),
 						Primary:          types.TrueP(),
 					},
 				},
-				SubnetId: types.StringP(cm.ctx.SubnetId),
+				SubnetId: types.StringP(cm.cluster.SubnetId),
 			},
 		},
 		UserData: types.StringP(base64.StdEncoding.EncodeToString([]byte(kubeStarter))),
@@ -1040,7 +1039,7 @@ func (cm *clusterManager) createMasterInstance(instanceName string, role string)
 	instanceID := *r1.Instances[0].InstanceId
 	time.Sleep(preTagDelay)
 
-	err = cm.addTag(instanceID, "Name", cm.ctx.KubernetesMasterName)
+	err = cm.addTag(instanceID, "Name", cm.cluster.KubernetesMasterName)
 	if err != nil {
 		return instanceID, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -1048,7 +1047,7 @@ func (cm *clusterManager) createMasterInstance(instanceName string, role string)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = cm.addTag(instanceID, "KubernetesCluster", cm.ctx.Name)
+	err = cm.addTag(instanceID, "KubernetesCluster", cm.cluster.Name)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -1077,7 +1076,7 @@ func (cm *clusterManager) listInstances(groupName string) ([]*api.KubernetesInst
 		},
 	})
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	instances := make([]*api.KubernetesInstance, 0)
@@ -1124,9 +1123,9 @@ func (cm *clusterManager) newKubeInstance(instanceID string) (*api.KubernetesIns
 		//    80 : stopped
 	*/
 	if i.ExternalStatus == "terminated" {
-		i.Status = storage.KubernetesInstanceStatus_Deleted
+		i.Status = api.KubernetesInstanceStatus_Deleted
 	} else {
-		i.Status = storage.KubernetesInstanceStatus_Ready
+		i.Status = api.KubernetesInstanceStatus_Ready
 	}
 	return &i, nil
 }
@@ -1146,13 +1145,13 @@ func (cm *clusterManager) allocateElasticIp() (string, error) {
 
 func (cm *clusterManager) assignIPToInstance(instanceID string) error {
 	r1, err := cm.conn.ec2.DescribeAddresses(&_ec2.DescribeAddressesInput{
-		PublicIps: []*string{types.StringP(cm.ctx.MasterReservedIP)},
+		PublicIps: []*string{types.StringP(cm.cluster.MasterReservedIP)},
 	})
 	cm.ctx.Logger().Debug("Retrieved allocation ID for elastic IP", r1, err)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Found allocation id %v for elastic IP %v", r1.Addresses[0].AllocationId, cm.ctx.MasterReservedIP)
+	cm.ctx.Logger().Infof("Found allocation id %v for elastic IP %v", r1.Addresses[0].AllocationId, cm.cluster.MasterReservedIP)
 	time.Sleep(1 * time.Minute)
 
 	r2, err := cm.conn.ec2.AssociateAddress(&_ec2.AssociateAddressInput{
@@ -1163,7 +1162,7 @@ func (cm *clusterManager) assignIPToInstance(instanceID string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("IP %v attached to instance %v", cm.ctx.MasterReservedIP, instanceID)
+	cm.ctx.Logger().Infof("IP %v attached to instance %v", cm.cluster.MasterReservedIP, instanceID)
 	return nil
 }
 
@@ -1174,21 +1173,21 @@ CONFIG=$(cat /tmp/role.yaml)`, opt.BucketName, opt.ContextVersion, role)
 }
 
 func (cm *clusterManager) createLaunchConfiguration(name, sku string) error {
-	script := cm.RenderStartupScript(cm.ctx.NewScriptOptions(), sku, api.RoleKubernetesPool)
+	script := cm.RenderStartupScript(cm.cluster.NewScriptOptions(), sku, api.RoleKubernetesPool)
 	cm.UploadStartupConfig()
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
 		LaunchConfigurationName:  types.StringP(name),
-		AssociatePublicIpAddress: types.BoolP(cm.ctx.EnableNodePublicIP),
+		AssociatePublicIpAddress: types.BoolP(cm.cluster.EnableNodePublicIP),
 		// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html
 		BlockDeviceMappings: []*autoscaling.BlockDeviceMapping{
 			// NODE_BLOCK_DEVICE_MAPPINGS
 			{
 				// https://github.com/appscode/kubernetes/blob/55d9dec8eb5eb02e1301045b7b81bbac689c86a1/cluster/aws/util.sh#L397
-				DeviceName: types.StringP(cm.ctx.RootDeviceName),
+				DeviceName: types.StringP(cm.cluster.RootDeviceName),
 				Ebs: &autoscaling.Ebs{
 					DeleteOnTermination: types.TrueP(),
-					VolumeSize:          types.Int64P(cm.ctx.NodeDiskSize),
-					VolumeType:          types.StringP(cm.ctx.NodeDiskType),
+					VolumeSize:          types.Int64P(cm.cluster.NodeDiskSize),
+					VolumeType:          types.StringP(cm.cluster.NodeDiskType),
 				},
 			},
 			// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
@@ -1209,12 +1208,12 @@ func (cm *clusterManager) createLaunchConfiguration(name, sku string) error {
 				VirtualName: types.StringP("ephemeral3"),
 			},
 		},
-		IamInstanceProfile: types.StringP(cm.ctx.IAMProfileNode),
-		ImageId:            types.StringP(cm.ctx.InstanceImage),
+		IamInstanceProfile: types.StringP(cm.cluster.IAMProfileNode),
+		ImageId:            types.StringP(cm.cluster.InstanceImage),
 		InstanceType:       types.StringP(sku),
-		KeyName:            types.StringP(cm.ctx.SSHKeyExternalID),
+		KeyName:            types.StringP(cm.cluster.SSHKeyExternalID),
 		SecurityGroups: []*string{
-			types.StringP(cm.ctx.NodeSGId),
+			types.StringP(cm.cluster.NodeSGId),
 		},
 		UserData: types.StringP(base64.StdEncoding.EncodeToString([]byte(script))),
 	}
@@ -1234,7 +1233,7 @@ func (cm *clusterManager) createAutoScalingGroup(name, launchConfig string, coun
 		MinSize:              types.Int64P(count),
 		DesiredCapacity:      types.Int64P(count),
 		AvailabilityZones: []*string{
-			types.StringP(cm.ctx.Zone),
+			types.StringP(cm.cluster.Zone),
 		},
 		LaunchConfigurationName: types.StringP(launchConfig),
 		Tags: []*autoscaling.Tag{
@@ -1248,16 +1247,16 @@ func (cm *clusterManager) createAutoScalingGroup(name, launchConfig string, coun
 				Key:          types.StringP("Role"),
 				ResourceId:   types.StringP(name),
 				ResourceType: types.StringP("auto-scaling-group"),
-				Value:        types.StringP(cm.ctx.Name + "-node"),
+				Value:        types.StringP(cm.cluster.Name + "-node"),
 			},
 			{
 				Key:          types.StringP("KubernetesCluster"),
 				ResourceId:   types.StringP(name),
 				ResourceType: types.StringP("auto-scaling-group"),
-				Value:        types.StringP(cm.ctx.Name),
+				Value:        types.StringP(cm.cluster.Name),
 			},
 		},
-		VPCZoneIdentifier: types.StringP(cm.ctx.SubnetId),
+		VPCZoneIdentifier: types.StringP(cm.cluster.SubnetId),
 	})
 	cm.ctx.Logger().Debug("Created autoscaling group", r2, err)
 	if err != nil {
@@ -1268,7 +1267,7 @@ func (cm *clusterManager) createAutoScalingGroup(name, launchConfig string, coun
 }
 
 func (cm *clusterManager) detectMaster() error {
-	masterID, err := cm.getInstanceIDFromName(cm.ctx.KubernetesMasterName)
+	masterID, err := cm.getInstanceIDFromName(cm.cluster.KubernetesMasterName)
 	if masterID == "" {
 		cm.ctx.Logger().Info("Could not detect Kubernetes master node.  Make sure you've launched a cluster with appctl.")
 		//os.Exit(0)
@@ -1282,7 +1281,7 @@ func (cm *clusterManager) detectMaster() error {
 		cm.ctx.Logger().Info("Could not detect Kubernetes master node IP.  Make sure you've launched a cluster with appctl")
 		os.Exit(0)
 	}
-	cm.ctx.Logger().Infof("Using master: %v (external IP: %v)", cm.ctx.KubernetesMasterName, masterIP)
+	cm.ctx.Logger().Infof("Using master: %v (external IP: %v)", cm.cluster.KubernetesMasterName, masterIP)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -1307,7 +1306,7 @@ func (cm *clusterManager) getInstanceIDFromName(tagName string) (string, error) 
 			{
 				Name: types.StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.ctx.Name),
+					types.StringP(cm.cluster.Name),
 				},
 			},
 		},

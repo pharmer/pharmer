@@ -8,18 +8,20 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/linodego"
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 )
 
 type cloudConnector struct {
-	ctx    *api.Cluster
-	client *linodego.Client
+	ctx     context.Context
+	cluster *api.Cluster
+	client  *linodego.Client
 }
 
-func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
-	token, ok := ctx.CloudCredential[credential.LinodeApiToken]
+func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
+	token, ok := cluster.CloudCredential[credential.LinodeApiToken]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.LinodeApiToken)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.LinodeApiToken)
 	}
 
 	return &cloudConnector{
@@ -36,8 +38,8 @@ func (conn *cloudConnector) detectInstanceImage() error {
 	conn.ctx.Logger().Infof("Checking for instance image")
 	for _, d := range resp.Distributions {
 		if d.Is64Bit == 1 && d.Label.String() == "Debian 8" {
-			conn.ctx.InstanceImage = strconv.Itoa(d.DistributionId)
-			conn.ctx.Logger().Infof("Instance image %v with id %v found", d.Label.String(), conn.ctx.InstanceImage)
+			conn.cluster.InstanceImage = strconv.Itoa(d.DistributionId)
+			conn.ctx.Logger().Infof("Instance image %v with id %v found", d.Label.String(), conn.cluster.InstanceImage)
 			return nil
 		}
 	}
@@ -55,7 +57,7 @@ func (conn *cloudConnector) detectKernel() error {
 	for _, d := range resp.Kernels {
 		if d.IsPVOPS == 1 {
 			if strings.HasPrefix(d.Label.String(), "Latest 64 bit") {
-				conn.ctx.Kernel = strconv.Itoa(d.KernelId)
+				conn.cluster.Kernel = strconv.Itoa(d.KernelId)
 				return nil
 			}
 			if strings.Contains(d.Label.String(), "x86_64") && d.KernelId > kernelId {
@@ -64,7 +66,7 @@ func (conn *cloudConnector) detectKernel() error {
 		}
 	}
 	if kernelId >= 0 {
-		conn.ctx.Kernel = strconv.Itoa(kernelId)
+		conn.cluster.Kernel = strconv.Itoa(kernelId)
 		return nil
 	}
 	return errors.New("Can't find Kernel").WithContext(conn.ctx).Err()

@@ -1,5 +1,5 @@
-hash: 0bacb90f2db881f732894a42d9bc2c8b0f35ccd936752ca3e026b4694652df43
-updated: 2017-08-15T00:18:50.27043992-07:00
+hash: 3071f29f6576285152a3027b0fba986b8e8d4c9bcd02acfab5fb993d2bf30d45
+updated: 2017-08-15T10:41:34.015644454-07:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -257,6 +257,12 @@ imports:
   version: 6aced65f8501fe1217321abf0749d354824ba2ff
 - name: github.com/go-openapi/swag
   version: 1d0bd113de87027671077d3c71eb3ac5d7dbba72
+- name: github.com/go-xorm/builder
+  version: c8871c857d2555fbfbd8524f895be5386d3d8836
+- name: github.com/go-xorm/core
+  version: 5bf745d7d163f4380e6c2bba8c4afa60534dd087
+- name: github.com/go-xorm/xorm
+  version: 3c8314e91603f0bfa6a228c1a0fea8a9e298f6d9
 - name: github.com/gogo/protobuf
   version: e18d7aa8f8c624c915db340349aad4c49b10d173
   subpackages:

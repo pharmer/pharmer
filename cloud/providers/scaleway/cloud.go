@@ -6,27 +6,29 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	sapi "github.com/scaleway/scaleway-cli/pkg/api"
 )
 
 type cloudConnector struct {
-	ctx          *api.Cluster
+	ctx          context.Context
+	cluster      *api.Cluster
 	client       *sapi.ScalewayAPI
 	bootscriptID string
 }
 
-func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
-	organization, ok := ctx.CloudCredential[credential.ScalewayOrganization]
+func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
+	organization, ok := cluster.CloudCredential[credential.ScalewayOrganization]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.ScalewayOrganization)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.ScalewayOrganization)
 	}
-	token, ok := ctx.CloudCredential[credential.ScalewayToken]
+	token, ok := cluster.CloudCredential[credential.ScalewayToken]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.ScalewayToken)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.ScalewayToken)
 	}
 
-	client, err := sapi.NewScalewayAPI(organization, token, "appscode", ctx.Zone)
+	client, err := sapi.NewScalewayAPI(organization, token, "appscode", cluster.Zone)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
 	}
@@ -45,7 +47,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 		if img.Name == "Debian Jessie" {
 			for _, v := range img.Versions {
 				for _, li := range v.LocalImages {
-					if li.Arch == "x86_64" && li.Zone == conn.ctx.Zone {
+					if li.Arch == "x86_64" && li.Zone == conn.cluster.Zone {
 						return li.ID, nil
 					}
 				}

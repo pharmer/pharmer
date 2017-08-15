@@ -4,7 +4,7 @@ import (
 	go_ctx "context"
 
 	"github.com/appscode/log"
-	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/config"
 	"github.com/appscode/pharmer/storage"
 )
 
@@ -12,8 +12,8 @@ type Context interface {
 	go_ctx.Context
 
 	Store() storage.Storage
-	Logger() api.Logger
-	Extra() api.DomainManager
+	Logger() Logger
+	Extra() DomainManager
 	String() string
 }
 
@@ -29,26 +29,24 @@ var (
 
 var _ Context = &FakeContext{}
 
-func NewContext() Context {
-	ctx := &FakeContext{
-		Context: go_ctx.TODO(),
-	}
-	ctx.Context = go_ctx.WithValue(ctx.Context, keyExtra, &api.NullDomainManager{})
-	ctx.Context = go_ctx.WithValue(ctx.Context, keyLogger, log.New(ctx))
-	ctx.Context = go_ctx.WithValue(ctx.Context, keyStore, nil)
-	return ctx
+func NewContext(ctx go_ctx.Context, cfg *config.PharmerConfig) Context {
+	c := &FakeContext{Context: ctx}
+	c.Context = go_ctx.WithValue(c.Context, keyExtra, &NullDomainManager{})
+	c.Context = go_ctx.WithValue(c.Context, keyLogger, log.New(c))
+	c.Context = go_ctx.WithValue(c.Context, keyStore, nil)
+	return c
 }
 
 func (ctx *FakeContext) Store() storage.Storage {
 	return ctx.Value(keyStore).(storage.Storage)
 }
 
-func (ctx *FakeContext) Logger() api.Logger {
-	return ctx.Value(keyLogger).(api.Logger)
+func (ctx *FakeContext) Logger() Logger {
+	return ctx.Value(keyLogger).(Logger)
 }
 
-func (ctx *FakeContext) Extra() api.DomainManager {
-	return ctx.Value(keyExtra).(api.DomainManager)
+func (ctx *FakeContext) Extra() DomainManager {
+	return ctx.Value(keyExtra).(DomainManager)
 }
 
 func (FakeContext) String() string {

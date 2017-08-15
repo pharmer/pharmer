@@ -11,11 +11,13 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 )
 
 type cloudConnector struct {
-	ctx *api.Cluster
+	ctx     context.Context
+	cluster *api.Cluster
 
 	availabilitySetsClient  compute.AvailabilitySetsClient
 	vmClient                compute.VirtualMachinesClient
@@ -31,23 +33,23 @@ type cloudConnector struct {
 	storageClient           storage.AccountsClient
 }
 
-func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
-	subscriptionID, ok := ctx.CloudCredential[credential.AzureSubscriptionID]
+func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
+	subscriptionID, ok := cluster.CloudCredential[credential.AzureSubscriptionID]
 	if !ok {
 		return nil, errors.New("Missing", credential.AzureSubscriptionID).WithContext(ctx).Err()
 	}
 
-	tenantID, ok := ctx.CloudCredential[credential.AzureTenantID]
+	tenantID, ok := cluster.CloudCredential[credential.AzureTenantID]
 	if !ok {
 		return nil, errors.New("Missing", credential.AzureTenantID).WithContext(ctx).Err()
 	}
 
-	clientID, ok := ctx.CloudCredential[credential.AzureClientID]
+	clientID, ok := cluster.CloudCredential[credential.AzureClientID]
 	if !ok {
 		return nil, errors.New("Missing", credential.AzureClientID).WithContext(ctx).Err()
 	}
 
-	clientSecret, ok := ctx.CloudCredential[credential.AzureClientSecret]
+	clientSecret, ok := cluster.CloudCredential[credential.AzureClientSecret]
 	if !ok {
 		return nil, errors.New("Missing", credential.AzureClientSecret).WithContext(ctx).Err()
 	}
@@ -177,7 +179,7 @@ func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
 	}
 
 	return &cloudConnector{
-		ctx: ctx,
+		cluster:                 cluster,
 		availabilitySetsClient:  availabilitySetsClient,
 		vmClient:                vmClient,
 		vmExtensionsClient:      vmExtensionsClient,

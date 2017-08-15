@@ -10,94 +10,93 @@ import (
 	_ssh "github.com/appscode/go/crypto/ssh"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/storage"
 )
 
 func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	err := cm.initContext(req)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins, err = cloud.NewInstances(cm.ctx)
+	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.conn, err = NewConnector(cm.ctx)
+	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	defer func(releaseReservedIp bool) {
-		if cm.ctx.Status == storage.KubernetesStatus_Pending {
-			cm.ctx.Status = storage.KubernetesStatus_Failing
+		if cm.cluster.Status == api.KubernetesStatus_Pending {
+			cm.cluster.Status = api.KubernetesStatus_Failing
 		}
-		cm.ctx.Save()
+		cm.cluster.Save()
 		cm.ins.Save()
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
-		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status)
+		if cm.cluster.Status != api.KubernetesStatus_Ready {
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
-				Name:              cm.ctx.Name,
+				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
 			})
 		}
-	}(cm.ctx.MasterReservedIP == "auto")
+	}(cm.cluster.MasterReservedIP == "auto")
 
-	cm.ctx.InstanceImage = "Debian 8.6 minimal"
+	cm.cluster.InstanceImage = "Debian 8.6 minimal"
 
 	err = cm.importPublicKey()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	signer, err := _ssh.MakePrivateKeySignerFromBytes(cm.ctx.SSHKey.PrivateKey)
+	signer, err := _ssh.MakePrivateKeySignerFromBytes(cm.cluster.SSHKey.PrivateKey)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// -------------------------------------------------------------------ASSETS
-	im := &instanceManager{ctx: cm.ctx, conn: cm.conn}
+	im := &instanceManager{ctx: cm.ctx, cluster: cm.cluster, conn: cm.conn}
 
 	cm.ctx.Logger().Info("Creating master instance")
-	masterTx, err := im.createInstance(api.RoleKubernetesMaster, cm.ctx.MasterSKU)
+	masterTx, err := im.createInstance(api.RoleKubernetesMaster, cm.cluster.MasterSKU)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterTx, err = cm.conn.waitForInstance(masterTx.ID, "ready")
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance, err := im.newKubeInstance(*masterTx.ServerIP)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Role = api.RoleKubernetesMaster
-	cm.ctx.MasterExternalIP = masterInstance.ExternalIP
-	cm.ctx.MasterInternalIP = masterInstance.InternalIP
-	fmt.Println("Master EXTERNAL IP ================", cm.ctx.MasterExternalIP)
+	cm.cluster.MasterExternalIP = masterInstance.ExternalIP
+	cm.cluster.MasterInternalIP = masterInstance.InternalIP
+	fmt.Println("Master EXTERNAL IP ================", cm.cluster.MasterExternalIP)
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 
-	if err = cloud.GenClusterCerts(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = cloud.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
+	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.DetectApiServerURL()
+	cm.cluster.DetectApiServerURL()
 	// needed to get master_internal_ip
-	if err = cm.ctx.Save(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cm.cluster.Save(); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// cluster.UploadStartupConfig(cluster.ctx)
@@ -107,21 +106,21 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 
 	cm.conn.client.Server.UpdateServer(&hc.ServerUpdateRequest{
 		ServerIP:   *masterTx.ServerIP,
-		ServerName: cm.ctx.KubernetesMasterName,
+		ServerName: cm.cluster.KubernetesMasterName,
 	})
 	err = im.storeConfigFile(*masterTx.ServerIP, api.RoleKubernetesMaster, signer)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = im.storeStartupScript(*masterTx.ServerIP, cm.ctx.MasterSKU, api.RoleKubernetesMaster, signer)
+	err = im.storeStartupScript(*masterTx.ServerIP, cm.cluster.MasterSKU, api.RoleKubernetesMaster, signer)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	err = im.executeStartupScript(*masterTx.ServerIP, signer)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
@@ -137,13 +136,13 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		for i := int64(0); i < count; i++ {
 			tx, err := im.createInstance(api.RoleKubernetesPool, sku)
 			if err != nil {
-				cm.ctx.StatusCause = err.Error()
+				cm.cluster.StatusCause = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
 
 			tx, err = cm.conn.waitForInstance(tx.ID, "ready")
 			if err != nil {
-				cm.ctx.StatusCause = err.Error()
+				cm.cluster.StatusCause = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
 			cm.conn.client.Server.UpdateServer(&hc.ServerUpdateRequest{
@@ -153,24 +152,24 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 
 			err = im.storeConfigFile(*tx.ServerIP, api.RoleKubernetesPool, signer)
 			if err != nil {
-				cm.ctx.StatusCause = err.Error()
+				cm.cluster.StatusCause = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
 			err = im.storeStartupScript(*tx.ServerIP, sku, api.RoleKubernetesPool, signer)
 			if err != nil {
-				cm.ctx.StatusCause = err.Error()
+				cm.cluster.StatusCause = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
 			err = im.executeStartupScript(*tx.ServerIP, signer)
 			if err != nil {
-				cm.ctx.StatusCause = err.Error()
+				cm.cluster.StatusCause = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
 
 			// record nodes
 			node, err := im.newKubeInstance(*tx.ServerIP)
 			if err != nil {
-				cm.ctx.StatusCause = err.Error()
+				cm.cluster.StatusCause = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
 			node.Role = api.RoleKubernetesPool
@@ -181,37 +180,37 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	cm.ctx.Logger().Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
-	if err := cloud.EnsureDnsIPLookup(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err := cloud.EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// wait for nodes to start
-	if err := cloud.ProbeKubeAPI(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// check all components are ok
-	if err = cloud.CheckComponentStatuses(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cloud.CheckComponentStatuses(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// Make sure nodes are connected to master and are ready
-	if err = cloud.WaitForReadyNodes(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cloud.WaitForReadyNodes(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.Status = storage.KubernetesStatus_Ready
+	cm.cluster.Status = api.KubernetesStatus_Ready
 	return nil
 }
 
 func (cm *clusterManager) importPublicKey() error {
 	_, _, err := cm.conn.client.SSHKey.Create(&hc.SSHKeyCreateRequest{
-		Name: cm.ctx.Name,
-		Data: string(cm.ctx.SSHKey.PublicKey),
+		Name: cm.cluster.Name,
+		Data: string(cm.cluster.SSHKey.PublicKey),
 	})
-	cm.ctx.Logger().Infof("New ssh key with fingerprint %v created", cm.ctx.SSHKey.OpensshFingerprint)
+	cm.ctx.Logger().Infof("New ssh key with fingerprint %v created", cm.cluster.SSHKey.OpensshFingerprint)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

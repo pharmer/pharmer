@@ -1,4 +1,4 @@
-package api
+package context
 
 // string, bool
 type DomainManager interface {

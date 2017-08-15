@@ -21,18 +21,18 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	instanceGroupName := igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku)
 	found, err := igm.checkInstanceGroup(instanceGroupName)
 	if err != nil {
-		igm.cm.ctx.StatusCause = err.Error()
+		igm.cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	igm.cm.ctx.ContextVersion = igm.instance.Type.ContextVersion
-	igm.cm.ctx.Load()
+	igm.cm.cluster.ContextVersion = igm.instance.Type.ContextVersion
+	igm.cm.cluster.Load()
 	if err = igm.cm.conn.detectJessieImage(); err != nil {
-		igm.cm.ctx.StatusCause = err.Error()
+		igm.cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	if !found {
 		if err := igm.startNodes(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
-			igm.cm.ctx.StatusCause = err.Error()
+			igm.cm.cluster.StatusCause = err.Error()
 			return errors.FromErr(err).WithMessage("failed to start node").WithContext(igm.cm.ctx).Err()
 		}
 	} else if igm.instance.Stats.Count == 0 {
@@ -51,7 +51,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	}
-	igm.cm.ctx.Save()
+	igm.cm.cluster.Save()
 	return nil
 }
 
@@ -79,23 +79,23 @@ func (igm *InstanceGroupManager) startNodes(sku string, count int64) error {
 }
 
 func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) error {
-	script := igm.cm.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), sku, api.RoleKubernetesPool)
+	script := igm.cm.RenderStartupScript(igm.cm.cluster.NewScriptOptions(), sku, api.RoleKubernetesPool)
 
 	igm.cm.ctx.Logger().Info("Creating node configuration assuming EnableNodePublicIP = true")
-	fmt.Println(igm.cm.ctx.RootDeviceName, "<<<<<<<<--------------->>>>>>>>>>>>>>>>>>.")
+	fmt.Println(igm.cm.cluster.RootDeviceName, "<<<<<<<<--------------->>>>>>>>>>>>>>>>>>.")
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
 		LaunchConfigurationName:  types.StringP(name),
-		AssociatePublicIpAddress: types.BoolP(igm.cm.ctx.EnableNodePublicIP),
+		AssociatePublicIpAddress: types.BoolP(igm.cm.cluster.EnableNodePublicIP),
 		// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html
 		BlockDeviceMappings: []*autoscaling.BlockDeviceMapping{
 			// NODE_BLOCK_DEVICE_MAPPINGS
 			{
 				// https://github.com/appscode/kubernetes/blob/55d9dec8eb5eb02e1301045b7b81bbac689c86a1/cluster/aws/util.sh#L397
-				DeviceName: types.StringP(igm.cm.ctx.RootDeviceName),
+				DeviceName: types.StringP(igm.cm.cluster.RootDeviceName),
 				Ebs: &autoscaling.Ebs{
 					DeleteOnTermination: types.TrueP(),
-					VolumeSize:          types.Int64P(igm.cm.conn.ctx.NodeDiskSize),
-					VolumeType:          types.StringP(igm.cm.ctx.NodeDiskType),
+					VolumeSize:          types.Int64P(igm.cm.conn.cluster.NodeDiskSize),
+					VolumeType:          types.StringP(igm.cm.cluster.NodeDiskType),
 				},
 			},
 			// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
@@ -116,12 +116,12 @@ func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) err
 				VirtualName: types.StringP("ephemeral3"),
 			},
 		},
-		IamInstanceProfile: types.StringP(igm.cm.ctx.IAMProfileNode),
-		ImageId:            types.StringP(igm.cm.ctx.InstanceImage),
+		IamInstanceProfile: types.StringP(igm.cm.cluster.IAMProfileNode),
+		ImageId:            types.StringP(igm.cm.cluster.InstanceImage),
 		InstanceType:       types.StringP(sku),
-		KeyName:            types.StringP(igm.cm.ctx.SSHKeyExternalID),
+		KeyName:            types.StringP(igm.cm.cluster.SSHKeyExternalID),
 		SecurityGroups: []*string{
-			types.StringP(igm.cm.ctx.NodeSGId),
+			types.StringP(igm.cm.cluster.NodeSGId),
 		},
 		UserData: types.StringP(base64.StdEncoding.EncodeToString([]byte(script))),
 	}
@@ -179,7 +179,7 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroup string, size 
 	sz := *group.AutoScalingGroups[0].DesiredCapacity
 	fmt.Println("Updating autoscaling group...")
 	time.Sleep(2 * time.Minute)
-	err = cloud.WaitForReadyNodes(igm.cm.ctx, size-sz)
+	err = cloud.WaitForReadyNodes(igm.cm.ctx, igm.cm.cluster, size-sz)
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}

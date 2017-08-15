@@ -149,12 +149,12 @@ func SyncDeletedInstances(ctx *api.Cluster, sku string, instances []*api.Kuberne
 		deletedNode := 0
 		for _, i := range ctx.Instances {
 			if _, found := m[i.ExternalID]; !found && i.SKU == sku && i.Role == api.RoleKubernetesPool {
-				updates := &storage.KubernetesInstance{Status: storage.KubernetesInstanceStatus_Deleted}
+				updates := &storage.KubernetesInstance{Status: api.KubernetesInstanceStatus_Deleted}
 				cond := &storage.KubernetesInstance{PHID: i.PHID}
 				if _, err := ctx.Store().Engine.Update(updates, cond); err != nil {
 					return errors.FromErr(err).WithContext(ctx).Err()
 				}
-				i.Status = storage.KubernetesInstanceStatus_Deleted
+				i.Status = api.KubernetesInstanceStatus_Deleted
 				ki := &storage.Purchase{
 					ObjectPHID: i.PHID,
 					Status:     storage.ChargeStatus_Close,

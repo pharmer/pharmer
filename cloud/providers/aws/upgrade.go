@@ -10,33 +10,32 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/storage"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 )
 
 func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error {
-	if !cloud.UpgradeRequired(cm.ctx, req) {
-		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.ctx.Name)
+	if !cloud.UpgradeRequired(cm.cluster, req) {
+		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
 		return nil
 	}
 
 	if cm.conn == nil {
-		conn, err := NewConnector(cm.ctx)
+		conn, err := NewConnector(cm.cluster)
 		if err != nil {
-			cm.ctx.StatusCause = err.Error()
+			cm.cluster.StatusCause = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		cm.conn = conn
 	}
 
-	cm.ctx.ContextVersion = int64(0)
-	cm.namer = namer{ctx: cm.ctx}
+	cm.cluster.ContextVersion = int64(0)
+	cm.namer = namer{cluster: cm.cluster}
 	// assign new timestamp and new launch_config version
-	cm.ctx.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
-	cm.ctx.KubeVersion = req.Version
+	cm.cluster.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
+	cm.cluster.KubeVersion = req.Version
 
-	err := cm.ctx.Save()
+	err := cm.cluster.Save()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -46,18 +45,18 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if !exists {
-		return errors.Newf("VPC %v not found for Cluster %v", cm.ctx.VpcId, cm.ctx.Name).WithContext(cm.ctx).Err()
+		return errors.Newf("VPC %v not found for Cluster %v", cm.cluster.VpcId, cm.cluster.Name).WithContext(cm.ctx).Err()
 	}
 
 	fmt.Println("Updating...")
-	cm.ins, err = cloud.NewInstances(cm.ctx)
+	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins.Load()
 	if err = cm.conn.detectJessieImage(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if req.ApplyToMaster {
@@ -72,7 +71,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 		}
 	}
 
-	err = cm.ctx.Save()
+	err = cm.cluster.Save()
 	cm.ins.Save()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -97,7 +96,7 @@ func (cm *clusterManager) restartMaster() error {
 	fmt.Println("Updating Master...")
 	cm.UploadStartupConfig()
 
-	masterInstanceID, err := cm.createMasterInstance(cm.ctx.KubernetesMasterName, api.RoleKubernetesMaster)
+	masterInstanceID, err := cm.createMasterInstance(cm.cluster.KubernetesMasterName, api.RoleKubernetesMaster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -110,9 +109,9 @@ func (cm *clusterManager) restartMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.Logger().Infof("Attaching persistent data volume %v to master", cm.ctx.MasterDiskId)
+	cm.ctx.Logger().Infof("Attaching persistent data volume %v to master", cm.cluster.MasterDiskId)
 	r1, err := cm.conn.ec2.AttachVolume(&_ec2.AttachVolumeInput{
-		VolumeId:   types.StringP(cm.ctx.MasterDiskId),
+		VolumeId:   types.StringP(cm.cluster.MasterDiskId),
 		Device:     types.StringP("/dev/sdb"),
 		InstanceId: types.StringP(masterInstanceID),
 	})
@@ -121,7 +120,7 @@ func (cm *clusterManager) restartMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	if err := cloud.ProbeKubeAPI(cm.ctx); err != nil {
+	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	instance, err := cm.newKubeInstance(masterInstanceID) // sets external IP
@@ -134,7 +133,7 @@ func (cm *clusterManager) restartMaster() error {
 	// cm.ins.Instances = append(cm.ins.Instances, instance)
 	for i := range cm.ins.Instances {
 		if cm.ins.Instances[i].Role == api.RoleKubernetesMaster {
-			cm.ins.Instances[i].Status = storage.KubernetesInstanceStatus_Deleted
+			cm.ins.Instances[i].Status = api.KubernetesInstanceStatus_Deleted
 		}
 	}
 	cm.ins.Instances = append(cm.ins.Instances, instance)
@@ -149,7 +148,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	for _, c := range gc {*/
-	ctxV, err := cloud.GetExistingContextVersion(cm.ctx, sku)
+	ctxV, err := cloud.GetExistingContextVersion(cm.cluster, sku)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -186,7 +185,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 		}
 		err = cloud.AdjustDbInstance(cm.ins, currentIns, sku)
 		// cluster.ctx.Instances = append(cluster.ctx.Instances, instances...)
-		err = cm.ctx.Save()
+		err = cm.cluster.Save()
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
@@ -217,10 +216,10 @@ func (cm *clusterManager) getChanges() ([]*change, error) {
 	for _, g := range r1.AutoScalingGroups {
 		name := *g.AutoScalingGroupName
 		for _, t := range g.Tags {
-			if *t.Key == "KubernetesCluster" && *t.Value == cm.ctx.Name {
+			if *t.Key == "KubernetesCluster" && *t.Value == cm.cluster.Name {
 				changes = append(changes, &change{
 					groupName:       name,
-					sku:             strings.TrimPrefix(name, cm.ctx.Name+"-node-group-"),
+					sku:             strings.TrimPrefix(name, cm.cluster.Name+"-node-group-"),
 					desiredCapacity: *g.DesiredCapacity,
 					maxSize:         *g.MaxSize,
 				})
@@ -255,7 +254,7 @@ func (cm *clusterManager) rollingUpdate(oldInstances []string, newLaunchConfig, 
 
 		fmt.Println("Waiting for 1 minute")
 		time.Sleep(1 * time.Minute)
-		err = cloud.WaitForReadyNodes(cm.ctx)
+		err = cloud.WaitForReadyNodes(cm.ctx, cm.cluster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}

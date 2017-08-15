@@ -13,87 +13,86 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/storage"
 )
 
 func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	err := cm.initContext(req)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins, err = cloud.NewInstances(cm.ctx)
+	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.conn, err = NewConnector(cm.ctx)
+	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Save()
+	cm.cluster.Save()
 
 	defer func(releaseReservedIp bool) {
-		if cm.ctx.Status == storage.KubernetesStatus_Pending {
-			cm.ctx.Status = storage.KubernetesStatus_Failing
+		if cm.cluster.Status == api.KubernetesStatus_Pending {
+			cm.cluster.Status = api.KubernetesStatus_Failing
 		}
-		cm.ctx.Save()
+		cm.cluster.Save()
 		cm.ins.Save()
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
-		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status)
+		if cm.cluster.Status != api.KubernetesStatus_Ready {
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
-				Name:              cm.ctx.Name,
+				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
 			})
 		}
-	}(cm.ctx.MasterReservedIP == "auto")
+	}(cm.cluster.MasterReservedIP == "auto")
 
 	// Common stuff
 	_, err = cm.ensureResourceGroup()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.ctx.Zone)
+	cm.ctx.Logger().Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.cluster.Zone)
 	as, err := cm.ensureAvailablitySet()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ctx.Logger().Infof("Availablity set %v created", cm.namer.AvailablitySetName())
 	sa, err := cm.createStorageAccount()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	vn, err := cm.ensureVirtualNetwork()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	sg, err := cm.createNetworkSecurityGroup()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	sn, err := cm.createSubnetID(&vn, &sg)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// -------------------------------------------------------------------ASSETS
-	im := &instanceManager{ctx: cm.ctx, conn: cm.conn, namer: cm.namer}
+	im := &instanceManager{cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 
 	masterPIP, err := im.createPublicIP(cm.namer.PublicIPName(cm.namer.MasterName()), network.Static)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.MasterReservedIP = types.String(masterPIP.IPAddress)
-	cm.ctx.DetectApiServerURL()
+	cm.cluster.MasterReservedIP = types.String(masterPIP.IPAddress)
+	cm.cluster.DetectApiServerURL()
 	// IP >>>>>>>>>>>>>>>>
 	// TODO(tamal): if cluster.ctx.MasterReservedIP == "auto"
 	//	name := cluster.ctx.KubernetesMasterName + "-pip"
@@ -101,48 +100,48 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	//	cluster.ctx.MasterReservedIP = *ip.IPAddress
 	//	// cluster.ctx.ApiServerUrl = "https://" + *ip.IPAddress
 
-	err = cloud.GenClusterCerts(cm.ctx)
+	err = cloud.GenClusterCerts(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// needed for master start-up config
-	if err = cm.ctx.Save(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cm.cluster.Save(); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.UploadStartupConfig()
 
 	// Master Stuff
-	masterNIC, err := im.createNetworkInterface(cm.namer.NetworkInterfaceName(cm.ctx.KubernetesMasterName), sn, network.Static, cm.ctx.MasterInternalIP, masterPIP)
+	masterNIC, err := im.createNetworkInterface(cm.namer.NetworkInterfaceName(cm.cluster.KubernetesMasterName), sn, network.Static, cm.cluster.MasterInternalIP, masterPIP)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	err = cm.createNetworkSecurityRule(&sg)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	masterScript := im.RenderStartupScript(cm.ctx.NewScriptOptions(), cm.ctx.MasterSKU, api.RoleKubernetesMaster)
-	masterVM, err := im.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), masterScript, cm.ctx.MasterSKU)
+	masterScript := im.RenderStartupScript(cm.cluster.NewScriptOptions(), cm.cluster.MasterSKU, api.RoleKubernetesMaster)
+	masterVM, err := im.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), masterScript, cm.cluster.MasterSKU)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	ki, err := im.newKubeInstance(masterVM, masterNIC, masterPIP)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	ki.Role = api.RoleKubernetesMaster
 
-	fmt.Println(cm.ctx.MasterExternalIP, "------------------------------->")
+	fmt.Println(cm.cluster.MasterExternalIP, "------------------------------->")
 	cm.ins.Instances = append(cm.ins.Instances, ki)
 
-	err = cloud.EnsureARecord(cm.ctx, ki) // works for reserved or non-reserved mode
+	err = cloud.EnsureARecord(cm.ctx, cm.cluster, ki) // works for reserved or non-reserved mode
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -154,7 +153,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 			cm: cm,
 			instance: cloud.Instance{
 				Type: cloud.InstanceType{
-					ContextVersion: cm.ctx.ContextVersion,
+					ContextVersion: cm.cluster.ContextVersion,
 					Sku:            ng.Sku,
 
 					Master:       false,
@@ -173,27 +172,27 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	cm.ctx.Logger().Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
-	if err := cloud.EnsureDnsIPLookup(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err := cloud.EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// wait for nodes to start
-	if err := cloud.ProbeKubeAPI(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// check all components are ok
-	if err = cloud.CheckComponentStatuses(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cloud.CheckComponentStatuses(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// Make sure nodes are connected to master and are ready
-	if err = cloud.WaitForReadyNodes(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cloud.WaitForReadyNodes(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.Status = storage.KubernetesStatus_Ready
+	cm.cluster.Status = api.KubernetesStatus_Ready
 	return nil
 }
 
@@ -207,9 +206,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 func (cm *clusterManager) ensureResourceGroup() (resources.ResourceGroup, error) {
 	req := resources.ResourceGroup{
 		Name:     types.StringP(cm.namer.ResourceGroupName()),
-		Location: types.StringP(cm.ctx.Zone),
+		Location: types.StringP(cm.cluster.Zone),
 		Tags: &map[string]*string{
-			"KubernetesCluster": types.StringP(cm.ctx.Name),
+			"KubernetesCluster": types.StringP(cm.cluster.Name),
 		},
 	}
 	return cm.conn.groupsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), req)
@@ -219,9 +218,9 @@ func (cm *clusterManager) ensureAvailablitySet() (compute.AvailabilitySet, error
 	name := cm.namer.AvailablitySetName()
 	req := compute.AvailabilitySet{
 		Name:     types.StringP(name),
-		Location: types.StringP(cm.ctx.Zone),
+		Location: types.StringP(cm.cluster.Zone),
 		Tags: &map[string]*string{
-			"KubernetesCluster": types.StringP(cm.ctx.Name),
+			"KubernetesCluster": types.StringP(cm.cluster.Name),
 		},
 	}
 	return cm.conn.availabilitySetsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), name, req)
@@ -231,14 +230,14 @@ func (cm *clusterManager) ensureVirtualNetwork() (network.VirtualNetwork, error)
 	name := cm.namer.VirtualNetworkName()
 	req := network.VirtualNetwork{
 		Name:     types.StringP(name),
-		Location: types.StringP(cm.ctx.Zone),
+		Location: types.StringP(cm.cluster.Zone),
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
-				AddressPrefixes: &[]string{cm.ctx.NonMasqueradeCidr},
+				AddressPrefixes: &[]string{cm.cluster.NonMasqueradeCidr},
 			},
 		},
 		Tags: &map[string]*string{
-			"KubernetesCluster": types.StringP(cm.ctx.Name),
+			"KubernetesCluster": types.StringP(cm.cluster.Name),
 		},
 	}
 
@@ -258,9 +257,9 @@ func (cm *clusterManager) createNetworkSecurityGroup() (network.SecurityGroup, e
 	securityGroupName := cm.namer.NetworkSecurityGroupName()
 	securityGroup := network.SecurityGroup{
 		Name:     types.StringP(securityGroupName),
-		Location: types.StringP(cm.ctx.Zone),
+		Location: types.StringP(cm.cluster.Zone),
 		Tags: &map[string]*string{
-			"KubernetesCluster": types.StringP(cm.ctx.Name),
+			"KubernetesCluster": types.StringP(cm.cluster.Name),
 		},
 	}
 	_, err := cm.conn.securityGroupsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), securityGroupName, securityGroup, nil)
@@ -283,7 +282,7 @@ func (cm *clusterManager) createSubnetID(vn *network.VirtualNetwork, sg *network
 			NetworkSecurityGroup: &network.SecurityGroup{
 				ID: sg.ID,
 			},
-			AddressPrefix: types.StringP(cm.ctx.SubnetCidr),
+			AddressPrefix: types.StringP(cm.cluster.SubnetCidr),
 			RouteTable: &network.RouteTable{
 				ID: routeTable.ID,
 			},
@@ -306,9 +305,9 @@ func (cm *clusterManager) createRouteTable() (network.RouteTable, error) {
 	name := cm.namer.RouteTableName()
 	req := network.RouteTable{
 		Name:     types.StringP(name),
-		Location: types.StringP(cm.ctx.Zone),
+		Location: types.StringP(cm.cluster.Zone),
 		Tags: &map[string]*string{
-			"KubernetesCluster": types.StringP(cm.ctx.Name),
+			"KubernetesCluster": types.StringP(cm.cluster.Name),
 		},
 	}
 	_, err := cm.conn.routeTablesClient.CreateOrUpdate(cm.namer.ResourceGroupName(), name, req, nil)
@@ -383,14 +382,14 @@ func (cm *clusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 }
 
 func (cm *clusterManager) createStorageAccount() (armstorage.Account, error) {
-	storageName := cm.ctx.AzureCloudConfig.StorageAccountName
+	storageName := cm.cluster.AzureCloudConfig.StorageAccountName
 	req := armstorage.AccountCreateParameters{
-		Location: types.StringP(cm.ctx.Zone),
+		Location: types.StringP(cm.cluster.Zone),
 		Sku: &armstorage.Sku{
 			Name: armstorage.StandardLRS,
 		},
 		Tags: &map[string]*string{
-			"KubernetesCluster": types.StringP(cm.ctx.Name),
+			"KubernetesCluster": types.StringP(cm.cluster.Name),
 		},
 	}
 	_, err := cm.conn.storageClient.Create(cm.namer.ResourceGroupName(), storageName, req, nil)

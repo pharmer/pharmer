@@ -6,11 +6,11 @@ import (
 )
 
 type namer struct {
-	ctx *api.Cluster
+	cluster *api.Cluster
 }
 
 func (n namer) MasterName() string {
-	return n.ctx.Name + "-master"
+	return n.cluster.Name + "-master"
 }
 
 func (n namer) GenNodeName(sku string) string {
@@ -18,10 +18,10 @@ func (n namer) GenNodeName(sku string) string {
 }
 
 func (n namer) GenSSHKeyExternalID() string {
-	return n.ctx.Name + "-" + rand.Characters(6)
+	return n.cluster.Name + "-" + rand.Characters(6)
 }
 
 func (n namer) GetInstanceGroupName(sku string) string {
-	return n.ctx.Name + "-" + sku + "-node"
+	return n.cluster.Name + "-" + sku + "-node"
 
 }

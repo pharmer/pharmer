@@ -11,18 +11,19 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/storage"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 	_s3 "github.com/aws/aws-sdk-go/service/s3"
 	semver "github.com/hashicorp/go-version"
 )
 
 type clusterManager struct {
-	ctx   *api.Cluster
-	ins   *api.ClusterInstances
-	conn  *cloudConnector
-	namer namer
+	ctx     context.Context
+	cluster *api.Cluster
+	ins     *api.ClusterInstances
+	conn    *cloudConnector
+	namer   namer
 }
 
 func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
@@ -30,130 +31,130 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.namer = namer{ctx: cm.ctx}
+	cm.namer = namer{cluster: cm.cluster}
 
 	//cluster.ctx.Name = req.Name
 	//cluster.ctx.PHID = phid.NewKubeCluster()
 	//cluster.ctx.Provider = req.Provider
 	//cluster.ctx.Zone = req.Zone
 
-	cm.ctx.Region = cm.ctx.Zone[0 : len(cm.ctx.Zone)-1]
-	cm.ctx.DoNotDelete = req.DoNotDelete
-	cm.ctx.BucketName = "kubernetes-" + cm.ctx.Name + "-" + rand.Characters(8)
+	cm.cluster.Region = cm.cluster.Zone[0 : len(cm.cluster.Zone)-1]
+	cm.cluster.DoNotDelete = req.DoNotDelete
+	cm.cluster.BucketName = "kubernetes-" + cm.cluster.Name + "-" + rand.Characters(8)
 
-	cm.ctx.SetNodeGroups(req.NodeGroups)
+	cm.cluster.SetNodeGroups(req.NodeGroups)
 
 	// https://github.com/kubernetes/kubernetes/blob/master/cluster/aws/config-default.sh#L33
-	if cm.ctx.MasterSKU == "" {
-		cm.ctx.MasterSKU = "m3.medium"
-		if cm.ctx.NodeCount() > 5 {
-			cm.ctx.MasterSKU = "m3.large"
+	if cm.cluster.MasterSKU == "" {
+		cm.cluster.MasterSKU = "m3.medium"
+		if cm.cluster.NodeCount() > 5 {
+			cm.cluster.MasterSKU = "m3.large"
 		}
-		if cm.ctx.NodeCount() > 10 {
-			cm.ctx.MasterSKU = "m3.xlarge"
+		if cm.cluster.NodeCount() > 10 {
+			cm.cluster.MasterSKU = "m3.xlarge"
 		}
-		if cm.ctx.NodeCount() > 100 {
-			cm.ctx.MasterSKU = "m3.2xlarge"
+		if cm.cluster.NodeCount() > 100 {
+			cm.cluster.MasterSKU = "m3.2xlarge"
 		}
-		if cm.ctx.NodeCount() > 250 {
-			cm.ctx.MasterSKU = "c4.4xlarge"
+		if cm.cluster.NodeCount() > 250 {
+			cm.cluster.MasterSKU = "c4.4xlarge"
 		}
-		if cm.ctx.NodeCount() > 500 {
-			cm.ctx.MasterSKU = "c4.8xlarge"
+		if cm.cluster.NodeCount() > 500 {
+			cm.cluster.MasterSKU = "c4.8xlarge"
 		}
 	}
 
-	cm.ctx.KubernetesMasterName = cm.namer.MasterName()
-	cm.ctx.SSHKey, err = api.NewSSHKeyPair()
+	cm.cluster.KubernetesMasterName = cm.namer.MasterName()
+	cm.cluster.SSHKey, err = api.NewSSHKeyPair()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
-	cm.ctx.SSHKeyPHID = phid.NewSSHKey()
+	cm.cluster.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
+	cm.cluster.SSHKeyPHID = phid.NewSSHKey()
 
-	cm.ctx.MasterSGName = cm.namer.GenMasterSGName()
-	cm.ctx.NodeSGName = cm.namer.GenNodeSGName()
+	cm.cluster.MasterSGName = cm.namer.GenMasterSGName()
+	cm.cluster.NodeSGName = cm.namer.GenNodeSGName()
 
-	cloud.GenClusterTokens(cm.ctx)
+	cloud.GenClusterTokens(cm.cluster)
 
 	return nil
 }
 
 func (cm *clusterManager) LoadDefaultContext() error {
-	err := cm.ctx.KubeEnv.SetDefaults()
+	err := cm.cluster.KubeEnv.SetDefaults()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.ctx.Name)
-	cm.ctx.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.ctx.Name)
+	cm.cluster.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.cluster.Name)
+	cm.cluster.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.cluster.Name)
 
-	cm.ctx.Status = storage.KubernetesStatus_Pending
-	cm.ctx.OS = "debian"
+	cm.cluster.Status = api.KubernetesStatus_Pending
+	cm.cluster.OS = "debian"
 
-	cm.ctx.AppsCodeLogIndexPrefix = "logstash-"
-	cm.ctx.AppsCodeLogStorageLifetime = 90 * 24 * 3600
-	cm.ctx.AppsCodeMonitoringStorageLifetime = 90 * 24 * 3600
+	cm.cluster.AppsCodeLogIndexPrefix = "logstash-"
+	cm.cluster.AppsCodeLogStorageLifetime = 90 * 24 * 3600
+	cm.cluster.AppsCodeMonitoringStorageLifetime = 90 * 24 * 3600
 
-	cm.ctx.DockerStorage = "aufs"
+	cm.cluster.DockerStorage = "aufs"
 
-	cm.ctx.IAMProfileMaster = "kubernetes-master"
-	cm.ctx.IAMProfileNode = "kubernetes-node"
+	cm.cluster.IAMProfileMaster = "kubernetes-master"
+	cm.cluster.IAMProfileNode = "kubernetes-node"
 
-	cm.ctx.MasterDiskType = "gp2"
-	cm.ctx.MasterDiskSize = 100
+	cm.cluster.MasterDiskType = "gp2"
+	cm.cluster.MasterDiskSize = 100
 	// cm.ctx.MasterDiskType = "gp2"
 	// cm.ctx.MasterDiskSize = 8
-	cm.ctx.NodeDiskType = "gp2"
-	cm.ctx.NodeDiskSize = 100
-	cm.ctx.NodeScopes = []string{}
-	cm.ctx.PollSleepInterval = 3
+	cm.cluster.NodeDiskType = "gp2"
+	cm.cluster.NodeDiskSize = 100
+	cm.cluster.NodeScopes = []string{}
+	cm.cluster.PollSleepInterval = 3
 
-	cm.ctx.ServiceClusterIPRange = "10.0.0.0/16"
-	cm.ctx.ClusterIPRange = "10.244.0.0/16"
-	cm.ctx.MasterIPRange = "10.246.0.0/24"
-	cm.ctx.MasterReservedIP = "auto"
+	cm.cluster.ServiceClusterIPRange = "10.0.0.0/16"
+	cm.cluster.ClusterIPRange = "10.244.0.0/16"
+	cm.cluster.MasterIPRange = "10.246.0.0/24"
+	cm.cluster.MasterReservedIP = "auto"
 
-	cm.ctx.EnableClusterMonitoring = "appscode"
-	cm.ctx.EnableNodeLogging = true
-	cm.ctx.LoggingDestination = "appscode-elasticsearch"
-	cm.ctx.EnableClusterLogging = true
-	cm.ctx.ElasticsearchLoggingReplicas = 1
+	cm.cluster.EnableClusterMonitoring = "appscode"
+	cm.cluster.EnableNodeLogging = true
+	cm.cluster.LoggingDestination = "appscode-elasticsearch"
+	cm.cluster.EnableClusterLogging = true
+	cm.cluster.ElasticsearchLoggingReplicas = 1
 
-	cm.ctx.ExtraDockerOpts = ""
+	cm.cluster.ExtraDockerOpts = ""
 
-	cm.ctx.EnableClusterDNS = true
-	cm.ctx.DNSServerIP = "10.0.0.10"
-	cm.ctx.DNSDomain = "cluster.local"
-	cm.ctx.DNSReplicas = 1
+	cm.cluster.EnableClusterDNS = true
+	cm.cluster.DNSServerIP = "10.0.0.10"
+	cm.cluster.DNSDomain = "cluster.local"
+	cm.cluster.DNSReplicas = 1
 
 	// TODO: Needs multiple auto scaler
-	cm.ctx.EnableNodeAutoscaler = false
+	cm.cluster.EnableNodeAutoscaler = false
 	// cm.ctx.AutoscalerMinNodes = 1
 	// cm.ctx.AutoscalerMaxNodes = 100
-	cm.ctx.TargetNodeUtilization = 0.7
+	cm.cluster.TargetNodeUtilization = 0.7
 
-	cm.ctx.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota,PersistentVolumeLabel"
+	cm.cluster.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota,PersistentVolumeLabel"
 	// aws
-	cm.ctx.RegisterMasterKubelet = true
-	cm.ctx.EnableNodePublicIP = true
+	cm.cluster.RegisterMasterKubelet = true
+	cm.cluster.EnableNodePublicIP = true
 
-	cm.ctx.AllocateNodeCIDRs = true
+	cm.cluster.AllocateNodeCIDRs = true
 
-	cm.ctx.VpcCidrBase = "172.20"
-	cm.ctx.MasterIPSuffix = ".9"
-	cm.ctx.MasterInternalIP = cm.ctx.VpcCidrBase + ".0" + cm.ctx.MasterIPSuffix
+	cm.cluster.VpcCidrBase = "172.20"
+	cm.cluster.MasterIPSuffix = ".9"
+	cm.cluster.MasterInternalIP = cm.cluster.VpcCidrBase + ".0" + cm.cluster.MasterIPSuffix
 
-	cm.ctx.VpcCidr = cm.ctx.VpcCidrBase + ".0.0/16"
-	cm.ctx.SubnetCidr = cm.ctx.VpcCidrBase + ".0.0/24"
+	cm.cluster.VpcCidr = cm.cluster.VpcCidrBase + ".0.0/16"
+	cm.cluster.SubnetCidr = cm.cluster.VpcCidrBase + ".0.0/24"
 
-	cm.ctx.NetworkProvider = "none"
-	cm.ctx.HairpinMode = "promiscuous-bridge"
-	cm.ctx.NonMasqueradeCidr = "10.0.0.0/8"
+	cm.cluster.NetworkProvider = "none"
+	cm.cluster.HairpinMode = "promiscuous-bridge"
+	cm.cluster.NonMasqueradeCidr = "10.0.0.0/8"
 
-	version, err := semver.NewVersion(cm.ctx.KubeServerVersion)
+	version, err := semver.NewVersion(cm.cluster.KubeServerVersion)
 	if err != nil {
-		version, err = semver.NewVersion(cm.ctx.KubeVersion)
+		version, err = semver.NewVersion(cm.cluster.KubeVersion)
 		if err != nil {
 			return err
 		}
@@ -162,23 +163,23 @@ func (cm *clusterManager) LoadDefaultContext() error {
 
 	v_1_3, _ := semver.NewConstraint(">= 1.3, < 1.4")
 	if v_1_3.Check(version) {
-		cm.ctx.NetworkProvider = "kubenet"
+		cm.cluster.NetworkProvider = "kubenet"
 	}
 
 	v_1_4, _ := semver.NewConstraint(">= 1.4")
 	if v_1_4.Check(version) {
-		cm.ctx.NetworkProvider = "kubenet"
-		cm.ctx.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota"
+		cm.cluster.NetworkProvider = "kubenet"
+		cm.cluster.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota"
 	}
 
-	cloud.BuildRuntimeConfig(cm.ctx)
+	cloud.BuildRuntimeConfig(cm.cluster)
 	return nil
 }
 
 func (cm *clusterManager) UploadStartupConfig() error {
-	_, err := cm.conn.s3.GetBucketLocation(&_s3.GetBucketLocationInput{Bucket: types.StringP(cm.ctx.BucketName)})
+	_, err := cm.conn.s3.GetBucketLocation(&_s3.GetBucketLocationInput{Bucket: types.StringP(cm.cluster.BucketName)})
 	if err != nil {
-		_, err = cm.conn.s3.CreateBucket(&_s3.CreateBucketInput{Bucket: types.StringP(cm.ctx.BucketName)})
+		_, err = cm.conn.s3.CreateBucket(&_s3.CreateBucketInput{Bucket: types.StringP(cm.cluster.BucketName)})
 		if err != nil {
 			cm.ctx.Logger().Debugf("Bucket name is no unique")
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -186,13 +187,13 @@ func (cm *clusterManager) UploadStartupConfig() error {
 	}
 
 	{
-		cfg, err := cm.ctx.StartupConfigResponse(api.RoleKubernetesMaster)
+		cfg, err := cm.cluster.StartupConfigResponse(api.RoleKubernetesMaster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.ctx.ContextVersion, api.RoleKubernetesMaster)
+		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.cluster.ContextVersion, api.RoleKubernetesMaster)
 		params := &_s3.PutObjectInput{
-			Bucket: types.StringP(cm.ctx.BucketName),
+			Bucket: types.StringP(cm.cluster.BucketName),
 			Key:    types.StringP(path),
 			ACL:    types.StringP("authenticated-read"),
 			Body:   bytes.NewReader([]byte(cfg)),
@@ -203,13 +204,13 @@ func (cm *clusterManager) UploadStartupConfig() error {
 		}
 	}
 	{
-		cfg, err := cm.ctx.StartupConfigResponse(api.RoleKubernetesPool)
+		cfg, err := cm.cluster.StartupConfigResponse(api.RoleKubernetesPool)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.ctx.ContextVersion, api.RoleKubernetesPool)
+		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.cluster.ContextVersion, api.RoleKubernetesPool)
 		params := &_s3.PutObjectInput{
-			Bucket: types.StringP(cm.ctx.BucketName),
+			Bucket: types.StringP(cm.cluster.BucketName),
 			Key:    types.StringP(path),
 			ACL:    types.StringP("authenticated-read"),
 			Body:   bytes.NewReader([]byte(cfg)),
@@ -222,20 +223,20 @@ func (cm *clusterManager) UploadStartupConfig() error {
 	return nil
 }
 
-func (cluster *clusterManager) waitForInstanceState(instanceId string, state string) error {
+func (cm *clusterManager) waitForInstanceState(instanceId string, state string) error {
 	for {
-		r1, err := cluster.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
+		r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 			InstanceIds: []*string{types.StringP(instanceId)},
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(cluster.ctx).Err()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		curState := *r1.Reservations[0].Instances[0].State.Name
 		if curState == state {
 			break
 		}
-		cluster.ctx.Logger().Infof("Waiting for instance %v to be %v (currently %v)", instanceId, state, curState)
-		cluster.ctx.Logger().Infof("Sleeping for 5 seconds...")
+		cm.ctx.Logger().Infof("Waiting for instance %v to be %v (currently %v)", instanceId, state, curState)
+		cm.ctx.Logger().Infof("Sleeping for 5 seconds...")
 		time.Sleep(5 * time.Second)
 	}
 	return nil

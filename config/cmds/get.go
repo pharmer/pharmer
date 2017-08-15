@@ -1,10 +1,10 @@
-package config
+package cmds
 
 import (
 	"os"
 
 	"github.com/appscode/go-term"
-	otx "github.com/appscode/pharmer/api"
+	otx "github.com/appscode/pharmer/config"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )

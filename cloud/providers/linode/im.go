@@ -12,15 +12,16 @@ import (
 	"github.com/appscode/linodego"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/storage"
 	"github.com/cenkalti/backoff"
 )
 
 type instanceManager struct {
-	ctx   *api.Cluster
-	conn  *cloudConnector
-	namer namer
+	ctx     context.Context
+	cluster *api.Cluster
+	conn    *cloudConnector
+	namer   namer
 }
 
 const (
@@ -52,7 +53,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 				if master {
 					instance.Role = api.RoleKubernetesMaster
 				} else {
-					instance.Name = im.ctx.Name + "-node-" + strconv.Itoa(fip.LinodeId)
+					instance.Name = im.cluster.Name + "-node-" + strconv.Itoa(fip.LinodeId)
 					instance.Role = api.RoleKubernetesPool
 				}
 				return nil
@@ -68,9 +69,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 }
 
 func (im *instanceManager) createStackScript(sku, role string) (int, error) {
-	startupScript := im.RenderStartupScript(im.ctx.NewScriptOptions(), sku, role)
-	script, err := im.conn.client.StackScript.Create(im.namer.StartupScriptName(sku, role), im.ctx.InstanceImage, startupScript, map[string]string{
-		"Description": im.ctx.Name,
+	startupScript := im.RenderStartupScript(im.cluster.NewScriptOptions(), sku, role)
+	script, err := im.conn.client.StackScript.Create(im.namer.StartupScriptName(sku, role), im.cluster.InstanceImage, startupScript, map[string]string{
+		"Description": im.cluster.Name,
 	})
 	if err != nil {
 		return 0, err
@@ -152,7 +153,7 @@ EOF
 }
 
 func (im *instanceManager) createInstance(name string, scriptId int, sku string) (int, int, error) {
-	dcId, err := strconv.Atoi(im.ctx.Zone)
+	dcId, err := strconv.Atoi(im.cluster.Zone)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -182,22 +183,22 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
   "cluster": "%v",
   "instance": "%v",
   "stack_script_id": "%v"
-}`, im.ctx.Name, name, scriptId)
+}`, im.cluster.Name, name, scriptId)
 	args := map[string]string{
-		"rootSSHKey": string(im.ctx.SSHKey.PublicKey),
+		"rootSSHKey": string(im.cluster.SSHKey.PublicKey),
 	}
 
 	mt, err := data.ClusterMachineType("linode", sku)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	distributionID, err := strconv.Atoi(im.ctx.InstanceImage)
+	distributionID, err := strconv.Atoi(im.cluster.InstanceImage)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	swapDiskSize := 512                // MB
 	rootDiskSize := mt.Disk*1024 - 512 // MB
-	rootDisk, err := im.conn.client.Disk.CreateFromStackscript(scriptId, id, name, stackScriptUDFResponses, distributionID, rootDiskSize, im.ctx.InstanceRootPassword, args)
+	rootDisk, err := im.conn.client.Disk.CreateFromStackscript(scriptId, id, name, stackScriptUDFResponses, distributionID, rootDiskSize, im.cluster.InstanceRootPassword, args)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -206,7 +207,7 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 
-	kernelId, err := strconv.Atoi(im.ctx.Kernel)
+	kernelId, err := strconv.Atoi(im.cluster.Kernel)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -267,7 +268,7 @@ func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.Kubern
 				ExternalIP:     externalIP,
 				InternalIP:     internalIP,
 				SKU:            strconv.Itoa(linode.PlanId),
-				Status:         storage.KubernetesInstanceStatus_Ready,
+				Status:         api.KubernetesInstanceStatus_Ready,
 				ExternalStatus: statusString(linode.Status),
 			}
 			return &i, nil

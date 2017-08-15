@@ -10,6 +10,7 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/net/httpclient"
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/context"
 	"github.com/golang/protobuf/jsonpb"
 )
 
@@ -105,14 +106,14 @@ func SaveInstancesInFirebase(opt *api.ScriptOptions, ins *api.ClusterInstances) 
 	return nil
 }
 
-func UploadStartupConfigInFirebase(ctx *api.Cluster) error {
+func UploadStartupConfigInFirebase(ctx context.Context, cluster *api.Cluster) error {
 	ctx.Logger().Infof("Server is configured to skip startup config api")
 	{
-		cfg, err := ctx.StartupConfigResponse(api.RoleKubernetesMaster)
+		cfg, err := cluster.StartupConfigResponse(api.RoleKubernetesMaster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(ctx).Err()
 		}
-		fbPath, err := firebaseStartupConfigPath(ctx.NewScriptOptions(), api.RoleKubernetesMaster)
+		fbPath, err := firebaseStartupConfigPath(cluster.NewScriptOptions(), api.RoleKubernetesMaster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(ctx).Err()
 		}
@@ -127,11 +128,11 @@ func UploadStartupConfigInFirebase(ctx *api.Cluster) error {
 	}
 	{
 		// store startup config
-		cfg, err := ctx.StartupConfigResponse(api.RoleKubernetesPool)
+		cfg, err := cluster.StartupConfigResponse(api.RoleKubernetesPool)
 		if err != nil {
 			return errors.FromErr(err).WithContext(ctx).Err()
 		}
-		fbPath, err := firebaseStartupConfigPath(ctx.NewScriptOptions(), api.RoleKubernetesPool)
+		fbPath, err := firebaseStartupConfigPath(cluster.NewScriptOptions(), api.RoleKubernetesPool)
 		if err != nil {
 			return errors.FromErr(err).WithContext(ctx).Err()
 		}
@@ -168,7 +169,7 @@ const firebaseEndpoint = "https://tigerworks-kube.firebaseio.com"
 func firebaseStartupConfigPath(opt *api.ScriptOptions, role string) (string, error) {
 	l, err := api.FirebaseUid()
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(opt.Ctx).Err()
+		return "", errors.FromErr(err).WithContext(nil).Err()
 	}
 	// https://www.firebase.com/docs/rest/guide/retrieving-data.html#section-rest-uri-params
 	return fmt.Sprintf(`/k8s/%v/%v/%v/startup-script/%v/context-versions/%v.json?auth=%v`,
@@ -183,7 +184,7 @@ func firebaseStartupConfigPath(opt *api.ScriptOptions, role string) (string, err
 func firebaseInstancePath(opt *api.ScriptOptions, externalIP string) (string, error) {
 	l, err := api.FirebaseUid()
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(opt.Ctx).Err()
+		return "", errors.FromErr(err).Err()
 	}
 	// https://www.firebase.com/docs/rest/guide/retrieving-data.html#section-rest-uri-params
 	return fmt.Sprintf(`/k8s/%v/%v/%v/instance-by-ip/%v.json?auth=%v`,

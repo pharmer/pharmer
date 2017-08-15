@@ -5,8 +5,8 @@ import (
 	"log"
 
 	v "github.com/appscode/go/version"
-	cfgCmd "github.com/appscode/pharmer/cmds/config"
 	comCmd "github.com/appscode/pharmer/commissioner/cmd"
+	cfgCmd "github.com/appscode/pharmer/config/cmds"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

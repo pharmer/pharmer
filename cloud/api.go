@@ -1,17 +1,19 @@
 package cloud
 
 import (
+	"context"
+
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/pharmer/api"
 )
 
 type Provider interface {
-	Create(ctx *api.Cluster, req *proto.ClusterCreateRequest) error
-	Scale(ctx *api.Cluster, req *proto.ClusterReconfigureRequest) error
-	Delete(ctx *api.Cluster, req *proto.ClusterDeleteRequest) error
-	SetVersion(ctx *api.Cluster, req *proto.ClusterReconfigureRequest) error
-	UploadStartupConfig(ctx *api.Cluster) error
+	Create(ctx context.Context, req *proto.ClusterCreateRequest) error
+	Scale(ctx context.Context, req *proto.ClusterReconfigureRequest) error
+	Delete(ctx context.Context, req *proto.ClusterDeleteRequest) error
+	SetVersion(ctx context.Context, req *proto.ClusterReconfigureRequest) error
+	UploadStartupConfig(ctx context.Context) error
 
-	GetInstance(ctx *api.Cluster, md *api.InstanceMetadata) (*api.KubernetesInstance, error)
+	GetInstance(ctx context.Context, md *api.InstanceMetadata) (*api.KubernetesInstance, error)
 	MatchInstance(i *api.KubernetesInstance, md *api.InstanceMetadata) bool
 }

@@ -6,17 +6,17 @@ import (
 )
 
 type namer struct {
-	ctx *api.Cluster
+	cluster *api.Cluster
 }
 
 func (n namer) MasterName() string {
-	return n.ctx.Name + "-master"
+	return n.cluster.Name + "-master"
 }
 
 func (n namer) GenNodeName() string {
-	return rand.WithUniqSuffix(n.ctx.Name + "-node")
+	return rand.WithUniqSuffix(n.cluster.Name + "-node")
 }
 
 func (n namer) GenSSHKeyExternalID() string {
-	return n.ctx.Name + "-" + rand.Characters(6)
+	return n.cluster.Name + "-" + rand.Characters(6)
 }

@@ -14,9 +14,9 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/storage"
 )
 
 const (
@@ -24,9 +24,10 @@ const (
 )
 
 type instanceManager struct {
-	ctx   *api.Cluster
-	conn  *cloudConnector
-	namer namer
+	ctx     context.Context
+	cluster *api.Cluster
+	conn    *cloudConnector
+	namer   namer
 }
 
 func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
@@ -56,12 +57,12 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 func (im *instanceManager) createPublicIP(name string, alloc network.IPAllocationMethod) (network.PublicIPAddress, error) {
 	req := network.PublicIPAddress{
 		Name:     types.StringP(name),
-		Location: types.StringP(im.ctx.Zone),
+		Location: types.StringP(im.cluster.Zone),
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAllocationMethod: alloc,
 		},
 		Tags: &map[string]*string{
-			"KubernetesCluster": types.StringP(im.ctx.Name),
+			"KubernetesCluster": types.StringP(im.cluster.Name),
 		},
 	}
 
@@ -83,7 +84,7 @@ func (im *instanceManager) getAvailablitySet() (compute.AvailabilitySet, error) 
 }
 
 func (im *instanceManager) getStorageAccount() (armstorage.Account, error) {
-	storageName := im.ctx.AzureCloudConfig.StorageAccountName
+	storageName := im.cluster.AzureCloudConfig.StorageAccountName
 	account, err := im.conn.storageClient.GetProperties(im.namer.ResourceGroupName(), storageName)
 	return account, err
 }
@@ -91,7 +92,7 @@ func (im *instanceManager) getStorageAccount() (armstorage.Account, error) {
 func (im *instanceManager) createNetworkInterface(name string, subnet network.Subnet, alloc network.IPAllocationMethod, internalIP string, pip network.PublicIPAddress) (network.Interface, error) {
 	req := network.Interface{
 		Name:     types.StringP(name),
-		Location: types.StringP(im.ctx.Zone),
+		Location: types.StringP(im.cluster.Zone),
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 			IPConfigurations: &[]network.InterfaceIPConfiguration{
 				{
@@ -110,7 +111,7 @@ func (im *instanceManager) createNetworkInterface(name string, subnet network.Su
 			EnableIPForwarding: types.TrueP(),
 		},
 		Tags: &map[string]*string{
-			"KubernetesCluster": types.StringP(im.ctx.Name),
+			"KubernetesCluster": types.StringP(im.cluster.Name),
 		},
 	}
 	if alloc == network.Static {
@@ -130,7 +131,7 @@ func (im *instanceManager) createNetworkInterface(name string, subnet network.Su
 func (im *instanceManager) createVirtualMachine(nic network.Interface, as compute.AvailabilitySet, sa armstorage.Account, vmName, data, vmSize string) (compute.VirtualMachine, error) {
 	req := compute.VirtualMachine{
 		Name:     types.StringP(vmName),
-		Location: types.StringP(im.ctx.Zone),
+		Location: types.StringP(im.cluster.Zone),
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
 			AvailabilitySet: &compute.SubResource{
 				ID: as.ID,
@@ -144,7 +145,7 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 			},
 			OsProfile: &compute.OSProfile{
 				ComputerName:  types.StringP(vmName),
-				AdminPassword: types.StringP(im.ctx.InstanceRootPassword),
+				AdminPassword: types.StringP(im.cluster.InstanceRootPassword),
 				AdminUsername: types.StringP(im.namer.AdminUsername()),
 				CustomData:    types.StringP(base64.StdEncoding.EncodeToString([]byte(data))),
 				LinuxConfiguration: &compute.LinuxConfiguration{
@@ -152,7 +153,7 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 					SSH: &compute.SSHConfiguration{
 						PublicKeys: &[]compute.SSHPublicKey{
 							{
-								KeyData: types.StringP(string(im.ctx.SSHKey.PublicKey)),
+								KeyData: types.StringP(string(im.cluster.SSHKey.PublicKey)),
 								Path:    types.StringP(fmt.Sprintf("/home/%v/.ssh/authorized_keys", im.namer.AdminUsername())),
 							},
 						},
@@ -161,10 +162,10 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 			},
 			StorageProfile: &compute.StorageProfile{
 				ImageReference: &compute.ImageReference{
-					Publisher: types.StringP(im.ctx.InstanceImageProject),
-					Offer:     types.StringP(im.ctx.OS),
-					Sku:       types.StringP(im.ctx.InstanceImage),
-					Version:   types.StringP(im.ctx.InstanceImageVersion),
+					Publisher: types.StringP(im.cluster.InstanceImageProject),
+					Offer:     types.StringP(im.cluster.OS),
+					Sku:       types.StringP(im.cluster.InstanceImage),
+					Version:   types.StringP(im.cluster.InstanceImageVersion),
 				},
 				OsDisk: &compute.OSDisk{
 					Caching:      compute.ReadWrite,
@@ -180,7 +181,7 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 			},
 		},
 		Tags: &map[string]*string{
-			"KubernetesCluster": types.StringP(im.ctx.Name),
+			"KubernetesCluster": types.StringP(im.cluster.Name),
 		},
 	}
 
@@ -188,7 +189,7 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
-	im.ctx.Logger().Infof("Virtual machine with disk %v password %v created", im.namer.BootDiskURI(sa, vmName), im.ctx.InstanceRootPassword)
+	im.ctx.Logger().Infof("Virtual machine with disk %v password %v created", im.namer.BootDiskURI(sa, vmName), im.cluster.InstanceRootPassword)
 	// https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-linux-extensions-customscript?toc=%2fazure%2fvirtual-machines%2flinux%2ftoc.json
 	// https://github.com/Azure/custom-script-extension-linux
 	// old: https://github.com/Azure/azure-linux-extensions/tree/master/CustomScript
@@ -198,7 +199,7 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 	extReq := compute.VirtualMachineExtension{
 		Name:     types.StringP(extName),
 		Type:     types.StringP("Microsoft.Compute/virtualMachines/extensions"),
-		Location: types.StringP(im.ctx.Zone),
+		Location: types.StringP(im.cluster.Zone),
 		VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
 			Publisher:               types.StringP("Microsoft.Azure.Extensions"),
 			Type:                    types.StringP("CustomScript"),
@@ -210,7 +211,7 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 			// ProvisioningState
 		},
 		Tags: &map[string]*string{
-			"KubernetesCluster": types.StringP(im.ctx.Name),
+			"KubernetesCluster": types.StringP(im.cluster.Name),
 		},
 	}
 	_, err = im.conn.vmExtensionsClient.CreateOrUpdate(im.namer.ResourceGroupName(), vmName, extName, extReq, nil)
@@ -231,7 +232,7 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 
 func (im *instanceManager) DeleteVirtualMachine(vmName string) error {
 	_, err := im.conn.vmClient.Delete(im.namer.ResourceGroupName(), vmName, nil)
-	storageName := im.ctx.AzureCloudConfig.StorageAccountName
+	storageName := im.cluster.AzureCloudConfig.StorageAccountName
 	keys, err := im.conn.storageClient.ListKeys(im.namer.ResourceGroupName(), storageName)
 	if err != nil {
 		return err
@@ -298,12 +299,12 @@ systemctl enable kube-installer.service
 func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic network.Interface, pip network.PublicIPAddress) (*api.KubernetesInstance, error) {
 	i := api.KubernetesInstance{
 		PHID:           phid.NewKubeInstance(),
-		ExternalID:     fmt.Sprintf(machineIDTemplate, im.ctx.CloudCredential[credential.AzureSubscriptionID], im.namer.ResourceGroupName(), *vm.Name),
+		ExternalID:     fmt.Sprintf(machineIDTemplate, im.cluster.CloudCredential[credential.AzureSubscriptionID], im.namer.ResourceGroupName(), *vm.Name),
 		ExternalStatus: *vm.ProvisioningState,
 		Name:           *vm.Name,
 		InternalIP:     *(*nic.IPConfigurations)[0].PrivateIPAddress,
 		SKU:            string(vm.HardwareProfile.VMSize),
-		Status:         storage.KubernetesInstanceStatus_Ready,
+		Status:         api.KubernetesInstanceStatus_Ready,
 	}
 	if pip.IPAddress != nil {
 		i.ExternalIP = *pip.IPAddress

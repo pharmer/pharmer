@@ -1,4 +1,4 @@
-package config
+package cmds
 
 import (
 	"io/ioutil"
@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/appscode/go-term"
-	otx "github.com/appscode/pharmer/api"
+	otx "github.com/appscode/pharmer/config"
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/azure"
 	gcs "github.com/graymeta/stow/google"
