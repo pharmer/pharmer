@@ -6,7 +6,6 @@ import (
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
@@ -14,8 +13,8 @@ import (
 )
 
 type clusterManager struct {
-	ctx   *contexts.ClusterContext
-	ins   *contexts.ClusterInstances
+	ctx   *api.Cluster
+	ins   *api.ClusterInstances
 	conn  *cloudConnector
 	namer namer
 }
@@ -38,7 +37,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.ctx.SetNodeGroups(req.NodeGroups)
 
 	cm.ctx.KubernetesMasterName = cm.namer.MasterName()
-	cm.ctx.SSHKey, err = contexts.NewSSHKeyPair()
+	cm.ctx.SSHKey, err = api.NewSSHKeyPair()
 	if err != nil {
 		return errors.FromErr(err).Err()
 	}
@@ -75,8 +74,8 @@ func (cm *clusterManager) LoadDefaultContext() error {
 		return errors.FromErr(err).Err()
 	}
 
-	cm.ctx.ClusterExternalDomain = cm.ctx.Extra.ExternalDomain(cm.ctx.Name)
-	cm.ctx.ClusterInternalDomain = cm.ctx.Extra.InternalDomain(cm.ctx.Name)
+	cm.ctx.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.ctx.Name)
+	cm.ctx.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.ctx.Name)
 
 	cm.ctx.Status = storage.KubernetesStatus_Pending
 	cm.ctx.OS = "Debian" // offer: "16.04.0-LTS"

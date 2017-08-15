@@ -2,37 +2,37 @@ package softlayer
 
 import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
+	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
-	"github.com/appscode/pharmer/extpoints"
 )
 
 func init() {
-	extpoints.KubeProviders.Register(new(kubeProvider), "softlayer")
+	cloud.RegisterCloudProvider("softlayer", new(provider))
 }
 
-type kubeProvider struct {
+type provider struct {
 }
 
-var _ extpoints.KubeProvider = &kubeProvider{}
+var _ cloud.Provider = &provider{}
 
-func (kp *kubeProvider) Create(ctx *contexts.ClusterContext, req *proto.ClusterCreateRequest) error {
+func (p *provider) Create(ctx *api.Cluster, req *proto.ClusterCreateRequest) error {
 	return (&clusterManager{ctx: ctx}).create(req)
 }
 
-func (kp *kubeProvider) Scale(ctx *contexts.ClusterContext, req *proto.ClusterReconfigureRequest) error {
+func (p *provider) Scale(ctx *api.Cluster, req *proto.ClusterReconfigureRequest) error {
 	return lib.UnsupportedOperation
 }
 
-func (kp *kubeProvider) Delete(ctx *contexts.ClusterContext, req *proto.ClusterDeleteRequest) error {
+func (p *provider) Delete(ctx *api.Cluster, req *proto.ClusterDeleteRequest) error {
 	return (&clusterManager{ctx: ctx}).delete(req)
 }
 
-func (kp *kubeProvider) SetVersion(ctx *contexts.ClusterContext, req *proto.ClusterReconfigureRequest) error {
+func (p *provider) SetVersion(ctx *api.Cluster, req *proto.ClusterReconfigureRequest) error {
 	return lib.UnsupportedOperation
 }
 
-func (cluster *kubeProvider) UploadStartupConfig(ctx *contexts.ClusterContext) error {
+func (p *provider) UploadStartupConfig(ctx *api.Cluster) error {
 	conn, err := NewConnector(ctx)
 	if err != nil {
 		return err
@@ -41,7 +41,7 @@ func (cluster *kubeProvider) UploadStartupConfig(ctx *contexts.ClusterContext) e
 	return cm.UploadStartupConfig(ctx)
 }
 
-func (cluster *kubeProvider) GetInstance(ctx *contexts.ClusterContext, md *contexts.InstanceMetadata) (*contexts.KubernetesInstance, error) {
+func (p *provider) GetInstance(ctx *api.Cluster, md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
 	conn, err := NewConnector(ctx)
 	if err != nil {
 		return nil, err
@@ -50,6 +50,6 @@ func (cluster *kubeProvider) GetInstance(ctx *contexts.ClusterContext, md *conte
 	return im.GetInstance(md)
 }
 
-func (cluster *kubeProvider) MatchInstance(i *contexts.KubernetesInstance, md *contexts.InstanceMetadata) bool {
+func (p *provider) MatchInstance(i *api.KubernetesInstance, md *api.InstanceMetadata) bool {
 	return i.InternalIP == md.InternalIP
 }

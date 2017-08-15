@@ -12,7 +12,6 @@ import (
 	"github.com/appscode/linodego"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
@@ -20,7 +19,7 @@ import (
 )
 
 type instanceManager struct {
-	ctx   *contexts.ClusterContext
+	ctx   *api.Cluster
 	conn  *cloudConnector
 	namer namer
 }
@@ -32,10 +31,10 @@ const (
 	LinodeStatus_PoweredOff   = 2
 )
 
-func (im *instanceManager) GetInstance(md *contexts.InstanceMetadata) (*contexts.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *contexts.KubernetesInstance
+	var instance *api.KubernetesInstance
 	backoff.Retry(func() error {
 		resp, err := im.conn.client.Ip.List(0, 0)
 		if err != nil {
@@ -77,12 +76,12 @@ func (im *instanceManager) createStackScript(sku, role string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	im.ctx.Logger.Infof("Stack script for role %v created", role)
+	im.ctx.Logger().Infof("Stack script for role %v created", role)
 	return script.StackScriptId.StackScriptId, nil
 }
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
-func (im *instanceManager) RenderStartupScript(opt *contexts.ScriptOptions, sku, role string) string {
+func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
 	cmd := lib.StartupConfigFromAPI(opt, role)
 	if api.UseFirebase() {
 		cmd = lib.StartupConfigFromFirebase(opt, role)
@@ -225,8 +224,8 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger.Info("Running linode boot job %v", jobResp.JobId.JobId)
-	im.ctx.Logger.Infof("Linode %v created", name)
+	im.ctx.Logger().Info("Running linode boot job %v", jobResp.JobId.JobId)
+	im.ctx.Logger().Infof("Linode %v created", name)
 
 	return id, config.LinodeConfigId.LinodeConfigId, err
 }
@@ -245,11 +244,11 @@ func (im *instanceManager) bootToGrub2(linodeId, configId int, name string) erro
 		return err
 	}
 	_, err = im.conn.client.Linode.Boot(linodeId, configId)
-	im.ctx.Logger.Infof("%v booted", name)
+	im.ctx.Logger().Infof("%v booted", name)
 	return err
 }
 
-func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*contexts.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.KubernetesInstance, error) {
 	var externalIP, internalIP string
 	ips, err := im.conn.client.Ip.List(linode.LinodeId, -1)
 	if err != nil {
@@ -262,7 +261,7 @@ func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*contexts.K
 			internalIP = ip.IPAddress
 		}
 		if externalIP != "" && internalIP != "" {
-			i := contexts.KubernetesInstance{
+			i := api.KubernetesInstance{
 				PHID:           phid.NewKubeInstance(),
 				ExternalID:     strconv.Itoa(linode.LinodeId),
 				Name:           linode.Label.String(),

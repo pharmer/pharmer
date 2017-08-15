@@ -15,7 +15,7 @@ import (
 
 func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error {
 	if !lib.UpgradeRequired(cm.ctx, req) {
-		cm.ctx.Logger.Infof("Upgrade command skipped for cluster %v", cm.ctx.Name)
+		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.ctx.Name)
 		return nil
 	}
 	if cm.conn == nil {
@@ -75,7 +75,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger.Infof("Update Completed")
+	cm.ctx.Logger().Infof("Update Completed")
 	return nil
 }
 
@@ -117,7 +117,7 @@ func (cm *clusterManager) updateMaster() error {
 	cm.ctx.MasterExternalIP = masterInstance.ExternalIP
 	cm.ctx.MasterInternalIP = masterInstance.InternalIP
 	fmt.Println("Master EXTERNAL IP ================", cm.ctx.MasterExternalIP, "<><><>", cm.ctx.MasterReservedIP)
-	cm.ctx.Logger.Infof("Rebooting master instance")
+	cm.ctx.Logger().Infof("Rebooting master instance")
 	err = lib.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()

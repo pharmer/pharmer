@@ -8,7 +8,6 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/system"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -76,11 +75,11 @@ func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, e
 
 	}
 	return false, nil
-	//im.ctx.Logger.Infof("Found virtual machine %v", vm)
+	//im.ctx.Logger().Infof("Found virtual machine %v", vm)
 }
 
-func (igm *InstanceGroupManager) listInstances(sku string) ([]*contexts.KubernetesInstance, error) {
-	instances := make([]*contexts.KubernetesInstance, 0)
+func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.KubernetesInstance, error) {
+	instances := make([]*api.KubernetesInstance, 0)
 	kc, err := igm.cm.ctx.NewKubeClient()
 	if err != nil {
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -155,8 +154,8 @@ func (igm *InstanceGroupManager) deleteInstanceGroup(instanceGroup string, count
 	return nil
 }
 
-func (igm *InstanceGroupManager) StartNode() (*contexts.KubernetesInstance, error) {
-	ki := &contexts.KubernetesInstance{}
+func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
+	ki := &api.KubernetesInstance{}
 
 	nodeName := igm.cm.namer.GenNodeName(igm.instance.Type.Sku)
 	nodePIP, err := igm.im.createPublicIP(igm.cm.namer.PublicIPName(nodeName), network.Dynamic)
@@ -207,7 +206,7 @@ func (igm *InstanceGroupManager) StartNode() (*contexts.KubernetesInstance, erro
 	ki, err = igm.im.newKubeInstance(nodeVM, nodeNIC, nodePIP)
 	if err != nil {
 		igm.cm.ctx.StatusCause = err.Error()
-		return &contexts.KubernetesInstance{}, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		return &api.KubernetesInstance{}, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	ki.Role = system.RoleKubernetesPool
 	igm.cm.ins.Instances = append(igm.cm.ins.Instances, ki)

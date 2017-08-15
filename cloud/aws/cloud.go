@@ -3,7 +3,7 @@ package aws
 import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/types"
-	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/credential"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -16,7 +16,7 @@ import (
 )
 
 type cloudConnector struct {
-	ctx *contexts.ClusterContext
+	ctx *api.Cluster
 
 	ec2       *_ec2.EC2
 	elb       *_elb.ELB
@@ -25,7 +25,7 @@ type cloudConnector struct {
 	s3        *_s3.S3
 }
 
-func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
+func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
 	id := ctx.CloudCredential[credential.AWSAccessKeyID]
 	secret := ctx.CloudCredential[credential.AWSSecretAccessKey]
 	config := &_aws.Config{
@@ -63,6 +63,6 @@ func (conn *cloudConnector) detectJessieImage() error {
 	}
 	conn.ctx.InstanceImage = *r1.Images[0].ImageId
 	conn.ctx.RootDeviceName = *r1.Images[0].RootDeviceName
-	conn.ctx.Logger.Infof("Debain image with %v for %v detected", conn.ctx.InstanceImage, conn.ctx.RootDeviceName)
+	conn.ctx.Logger().Infof("Debain image with %v for %v detected", conn.ctx.InstanceImage, conn.ctx.RootDeviceName)
 	return nil
 }

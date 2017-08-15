@@ -8,8 +8,8 @@ import (
 	"github.com/appscode/errors"
 	sshtools "github.com/appscode/go/crypto/ssh"
 	"github.com/appscode/go/types"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
@@ -19,14 +19,14 @@ import (
 )
 
 type instanceManager struct {
-	ctx  *contexts.ClusterContext
+	ctx  *api.Cluster
 	conn *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *contexts.InstanceMetadata) (*contexts.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *contexts.KubernetesInstance
+	var instance *api.KubernetesInstance
 	backoff.Retry(func() (err error) {
 		for {
 			var servers *[]sapi.ScalewayServer
@@ -92,12 +92,12 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger.Infof("Instance %v created", name)
+	im.ctx.Logger().Infof("Instance %v created", name)
 	return serverID, nil
 }
 
 func (im *instanceManager) storeConfigFile(serverID, role string) error {
-	im.ctx.Logger.Infof("Storing config file for server %v", serverID)
+	im.ctx.Logger().Infof("Storing config file for server %v", serverID)
 	cfg, err := im.ctx.StartupConfigResponse(role)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
@@ -107,31 +107,31 @@ func (im *instanceManager) storeConfigFile(serverID, role string) error {
 }
 
 func (im *instanceManager) storeStartupScript(serverID, sku, role string) error {
-	im.ctx.Logger.Infof("Storing startup script for server %v", serverID)
+	im.ctx.Logger().Infof("Storing startup script for server %v", serverID)
 	startupScript := im.RenderStartupScript(im.ctx.NewScriptOptions(), sku, role)
 	key := "kubernetes_startupscript.sh"
 	return im.conn.client.PatchUserdata(serverID, key, []byte(startupScript), false)
 }
 
-func (im *instanceManager) RenderStartupScript(opt *contexts.ScriptOptions, sku, role string) string {
+func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
 	cmd := fmt.Sprintf(`CONFIG=$(/usr/bin/curl 169.254.42.42/user_data/kubernetes_context_%v_%v.yaml --local-port 1-1024)`, opt.ContextVersion, role)
 	return fmt.Sprintf(`%v
 systemctl start kube-installer.service
 `, lib.RenderKubeInstaller(opt, sku, role, cmd))
 }
 
-func (im *instanceManager) executeStartupScript(instance *contexts.KubernetesInstance, signer ssh.Signer) error {
-	im.ctx.Logger.Infof("SSH execing start command %v", instance.ExternalIP+":22")
+func (im *instanceManager) executeStartupScript(instance *api.KubernetesInstance, signer ssh.Signer) error {
+	im.ctx.Logger().Infof("SSH execing start command %v", instance.ExternalIP+":22")
 
 	stdOut, stdErr, code, err := sshtools.Exec(`/usr/bin/curl 169.254.42.42/user_data/kubernetes_startupscript.sh --local-port 1-1024 2> /dev/null | bash`, "root", instance.ExternalIP+":22", signer)
-	im.ctx.Logger.Infoln(stdOut, stdErr, code)
+	im.ctx.Logger().Infoln(stdOut, stdErr, code)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	return nil
 }
 
-func (im *instanceManager) newKubeInstance(id string) (*contexts.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(id string) (*api.KubernetesInstance, error) {
 	s, err := im.conn.client.GetServer(id)
 	if err != nil {
 		return nil, lib.InstanceNotFound
@@ -139,8 +139,8 @@ func (im *instanceManager) newKubeInstance(id string) (*contexts.KubernetesInsta
 	return im.newKubeInstanceFromServer(s)
 }
 
-func (im *instanceManager) newKubeInstanceFromServer(droplet *sapi.ScalewayServer) (*contexts.KubernetesInstance, error) {
-	return &contexts.KubernetesInstance{
+func (im *instanceManager) newKubeInstanceFromServer(droplet *sapi.ScalewayServer) (*api.KubernetesInstance, error) {
+	return &api.KubernetesInstance{
 		PHID:           phid.NewKubeInstance(),
 		ExternalID:     droplet.Identifier,
 		ExternalStatus: droplet.State,

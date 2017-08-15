@@ -1,8 +1,8 @@
-hash: fe668477254a7ee7f7173631d5fdca74f87febcd4dd123ceb072534f63aa638e
-updated: 2017-08-10T14:19:19.122775329-07:00
+hash: 0bacb90f2db881f732894a42d9bc2c8b0f35ccd936752ca3e026b4694652df43
+updated: 2017-08-14T23:27:39.059650497-07:00
 imports:
 - name: cloud.google.com/go
-  version: 3b1ae45394a234c385be014e9a488f2bb6eef821
+  version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
   subpackages:
   - compute/metadata
   - internal
@@ -27,7 +27,6 @@ imports:
   version: f690405dda8fe092b69c119a1568e1414e20a65d
   subpackages:
   - pkg/config
-  - pkg/ssh
   - pkg/util
   - pkg/util/timeutil
 - name: github.com/appscode/client
@@ -162,7 +161,7 @@ imports:
   - autorest/to
   - autorest/validation
 - name: github.com/bndr/gojenkins
-  version: 28a4e15c32d61985e4a9972fd8c56d29064cf353
+  version: c579ca22978e7188aca04fa20d9b382fed95eb32
 - name: github.com/cenkalti/backoff
   version: 61153c768f31ee5f130071d08fc82b85208528de
 - name: github.com/cloudflare/cfssl
@@ -305,6 +304,16 @@ imports:
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/gorilla/websocket
   version: 1f512fc3f05332ba7117626cdfb4e07474e58e60
+- name: github.com/graymeta/stow
+  version: 6d41bc29db644d13a73c20b2aa584ff73bf7a2df
+  repo: https://github.com/appscode/stow.git
+  vcs: git
+  subpackages:
+  - azure
+  - google
+  - local
+  - s3
+  - swift
 - name: github.com/grpc-ecosystem/grpc-gateway
   version: 42a2d1c4991e79a4a8318984e5c81031b21f3c76
   repo: https://github.com/appscode/grpc-gateway.git
@@ -380,10 +389,12 @@ imports:
   version: 609b752a95effbbef26d134ac18ed6f57e01b98e
 - name: github.com/moul/gotty-client
   version: 92f0c24d5b2985522174e3ff5ad882a1c4d7f1d9
+- name: github.com/ncw/swift
+  version: af59a5adcdb59d343cc10d09804a9cbfbc32d385
 - name: github.com/olekukonko/tablewriter
   version: cca8bbc0798408af109aaaa239cbd2634846b340
 - name: github.com/packethost/packngo
-  version: b4b9bd2ea3ad2ceb39ee86287b7f5d18928ef957
+  version: 9d9409c8c09de7695281e900a776cca03676026a
 - name: github.com/pkg/errors
   version: a22138067af1c4942683050411a841ade67fe1eb
 - name: github.com/PuerkitoBio/purell
@@ -407,7 +418,7 @@ imports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 10ef21a441db47d8b13ebcc5fd2310f636973c77
 - name: github.com/Sirupsen/logrus
-  version: 51fe59aca108dc5680109e7b2051cbdcfa5a253c
+  version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
 - name: github.com/softlayer/softlayer-go
   version: 5e1c8cccc730778a87ca5a0c5348fcfddc02cee2
   subpackages:
@@ -417,7 +428,7 @@ imports:
   - session
   - sl
 - name: github.com/spf13/cobra
-  version: b26b538f693051ac6518e65672de3144ce3fbedc
+  version: cb731b898346822cc0c225c28550a8a29d93c732
   subpackages:
   - doc
 - name: github.com/spf13/pflag
@@ -445,7 +456,7 @@ imports:
 - name: github.com/xeipuuv/gojsonschema
   version: 93e72a773fade158921402d6a24c819b48aba29d
 - name: github.com/xenolf/lego
-  version: e1e824640f726118b9d74d43b7c50a024e7a26af
+  version: 8f574e6ca289b530cd3f266f4aa73c9a1161c48a
   repo: https://github.com/appscode/lego.git
   vcs: git
   subpackages:
@@ -534,7 +545,7 @@ imports:
   - internal/urlfetch
   - urlfetch
 - name: google.golang.org/genproto
-  version: 09f6ed296fc66555a25fe4ce95173148778dfa85
+  version: 6b7d9516179cd47f4714cfeb0103ad1dede756c4
   subpackages:
   - googleapis/api/annotations
   - googleapis/rpc/status
@@ -566,7 +577,7 @@ imports:
   - cipher
   - json
 - name: gopkg.in/yaml.v2
-  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
+  version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
 - name: k8s.io/apimachinery
   version: 75b8dd260ef0469d96d578705a87cffd0e09dab8
   subpackages:

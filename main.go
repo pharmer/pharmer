@@ -1,4 +1,3 @@
-//go:generate go-extpoints extpoints
 package main
 
 import (

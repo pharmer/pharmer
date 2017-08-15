@@ -9,8 +9,8 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/types"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
 	"github.com/appscode/pharmer/system"
@@ -20,8 +20,8 @@ import (
 )
 
 type clusterManager struct {
-	ctx   *contexts.ClusterContext
-	ins   *contexts.ClusterInstances
+	ctx   *api.Cluster
+	ins   *api.ClusterInstances
 	conn  *cloudConnector
 	namer namer
 }
@@ -66,7 +66,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	}
 
 	cm.ctx.KubernetesMasterName = cm.namer.MasterName()
-	cm.ctx.SSHKey, err = contexts.NewSSHKeyPair()
+	cm.ctx.SSHKey, err = api.NewSSHKeyPair()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -87,8 +87,8 @@ func (cm *clusterManager) LoadDefaultContext() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.ClusterExternalDomain = cm.ctx.Extra.ExternalDomain(cm.ctx.Name)
-	cm.ctx.ClusterInternalDomain = cm.ctx.Extra.InternalDomain(cm.ctx.Name)
+	cm.ctx.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.ctx.Name)
+	cm.ctx.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.ctx.Name)
 
 	cm.ctx.Status = storage.KubernetesStatus_Pending
 	cm.ctx.OS = "debian"
@@ -182,7 +182,7 @@ func (cm *clusterManager) UploadStartupConfig() error {
 	if err != nil {
 		_, err = cm.conn.s3.CreateBucket(&_s3.CreateBucketInput{Bucket: types.StringP(cm.ctx.BucketName)})
 		if err != nil {
-			cm.ctx.Logger.Debugf("Bucket name is no unique")
+			cm.ctx.Logger().Debugf("Bucket name is no unique")
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
@@ -236,8 +236,8 @@ func (cluster *clusterManager) waitForInstanceState(instanceId string, state str
 		if curState == state {
 			break
 		}
-		cluster.ctx.Logger.Infof("Waiting for instance %v to be %v (currently %v)", instanceId, state, curState)
-		cluster.ctx.Logger.Infof("Sleeping for 5 seconds...")
+		cluster.ctx.Logger().Infof("Waiting for instance %v to be %v (currently %v)", instanceId, state, curState)
+		cluster.ctx.Logger().Infof("Sleeping for 5 seconds...")
 		time.Sleep(5 * time.Second)
 	}
 	return nil

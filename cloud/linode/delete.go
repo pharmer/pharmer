@@ -20,7 +20,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	} else if cm.ctx.Status == storage.KubernetesStatus_Ready {
 		cm.ctx.Status = storage.KubernetesStatus_Deleting
 	}
-	// cm.ctx.Store.UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
+	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
 	var err error
 	if cm.conn == nil {
@@ -59,11 +59,11 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 			}
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger.Infof("Linode %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name)
+		cm.ctx.Logger().Infof("Linode %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name)
 	}
 
 	backoff.Retry(cm.deleteStackscripts, backoff.NewExponentialBackOff())
-	cm.ctx.Logger.Infof("Stack scripts for cluster %v deleted", cm.ctx.Name)
+	cm.ctx.Logger().Infof("Stack scripts for cluster %v deleted", cm.ctx.Name)
 	// Delete SSH key from DB
 	if err := cm.deleteSSHKey(); err != nil {
 		errs = append(errs, err.Error())
@@ -81,7 +81,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
-	cm.ctx.Logger.Infof("Cluster %v is deleted successfully", cm.ctx.Name)
+	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.ctx.Name)
 	return nil
 }
 
@@ -105,7 +105,7 @@ func (cm *clusterManager) deleteSSHKey() (err error) {
 	if cm.ctx.SSHKeyPHID != "" {
 		//updates := &storage.SSHKey{IsDeleted: 1}
 		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
-		//_, err = cm.ctx.Store.Engine.Update(updates, cond)
+		//_, err = cm.ctx.Store().Engine.Update(updates, cond)
 		//cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("SSH key for cluster %v deleted", cm.ctx.MasterDiskId))
 	}
 	return

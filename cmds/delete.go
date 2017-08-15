@@ -1,31 +1,28 @@
 package cmds
 
 import (
-	kubernetes "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/appctl/pkg/config"
-	"github.com/appscode/appctl/pkg/util"
-	term "github.com/appscode/go-term"
+	"errors"
+
+	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/spf13/cobra"
 )
 
 func NewCmdDelete() *cobra.Command {
-	var req kubernetes.ClusterDeleteRequest
+	var req proto.ClusterDeleteRequest
 
 	cmd := &cobra.Command{
 		Use:               "delete",
 		Short:             "Delete a Kubernetes cluster",
 		DisableAutoGenTag: true,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				req.Name = args[0]
 				req.ReleaseReservedIp = true
 			} else {
-				term.Fatalln("Missing cluster name")
+				return errors.New("Missing cluster name")
 			}
-			c := config.ClientOrDie()
-			_, err := c.Kubernetes().V1beta1().Cluster().Delete(c.Context(), &req)
-			util.PrintStatus(err)
-			term.Successln("Request to delete cluster is accepted!")
+
+			return delete2(&req)
 		},
 	}
 
@@ -35,4 +32,8 @@ func NewCmdDelete() *cobra.Command {
 	cmd.Flags().BoolVar(&req.DeleteDynamicVolumes, "delete-dynamic-volumes", false, "Delete dynamically provisioned volumes")
 
 	return cmd
+}
+
+func delete2(req *proto.ClusterDeleteRequest) error {
+	return nil
 }

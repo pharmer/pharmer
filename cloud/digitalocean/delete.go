@@ -1,7 +1,7 @@
 package digitalocean
 
 import (
-	"context"
+	go_ctx "context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -21,7 +21,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	} else if cm.ctx.Status == storage.KubernetesStatus_Ready {
 		cm.ctx.Status = storage.KubernetesStatus_Deleting
 	}
-	// cm.ctx.Store.UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
+	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
 	var err error
 	if cm.conn == nil {
@@ -54,21 +54,21 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 			if err != nil {
 				return err
 			}
-			_, err = cm.conn.client.Droplets.Delete(context.TODO(), dropletID)
+			_, err = cm.conn.client.Droplets.Delete(go_ctx.TODO(), dropletID)
 			if err != nil {
 				return err
 			}
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger.Infof("Droplet %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name)
+		cm.ctx.Logger().Infof("Droplet %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.ctx.Name)
 	}
 
 	// delete by tag
 	backoff.Retry(func() error {
-		_, err := cm.conn.client.Droplets.DeleteByTag(context.TODO(), "KubernetesCluster:"+cm.ctx.Name)
+		_, err := cm.conn.client.Droplets.DeleteByTag(go_ctx.TODO(), "KubernetesCluster:"+cm.ctx.Name)
 		return err
 	}, backoff.NewExponentialBackOff())
-	cm.ctx.Logger.Infof("Deleted droplet by tag %v", "KubernetesCluster:"+cm.ctx.Name)
+	cm.ctx.Logger().Infof("Deleted droplet by tag %v", "KubernetesCluster:"+cm.ctx.Name)
 
 	if req.ReleaseReservedIp && cm.ctx.MasterReservedIP != "" {
 		backoff.Retry(func() error {
@@ -93,43 +93,43 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
-	cm.ctx.Logger.Infof("Cluster %v deletion is deleted successfully", cm.ctx.Name)
+	cm.ctx.Logger().Infof("Cluster %v deletion is deleted successfully", cm.ctx.Name)
 	return nil
 }
 
 func (cm *clusterManager) releaseReservedIP(ip string) error {
-	resp, err := cm.conn.client.FloatingIPs.Delete(context.TODO(), ip)
-	cm.ctx.Logger.Debugln("DO response", resp, " errors", err)
+	resp, err := cm.conn.client.FloatingIPs.Delete(go_ctx.TODO(), ip)
+	cm.ctx.Logger().Debugln("DO response", resp, " errors", err)
 	if err != nil {
 		return errors.FromErr(err).Err()
 	}
-	cm.ctx.Logger.Infof("Floating ip %v deleted", ip)
+	cm.ctx.Logger().Infof("Floating ip %v deleted", ip)
 	return nil
 }
 
 func (cm *clusterManager) deleteSSHKey() (err error) {
 	if cm.ctx.SSHKey != nil {
 		backoff.Retry(func() error {
-			_, err := cm.conn.client.Keys.DeleteByFingerprint(context.TODO(), cm.ctx.SSHKey.OpensshFingerprint)
+			_, err := cm.conn.client.Keys.DeleteByFingerprint(go_ctx.TODO(), cm.ctx.SSHKey.OpensshFingerprint)
 			return err
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger.Infof("SSH key for cluster %v deleted", cm.ctx.Name)
+		cm.ctx.Logger().Infof("SSH key for cluster %v deleted", cm.ctx.Name)
 	}
 
 	//if cm.ctx.SSHKeyPHID != "" {
 	//	//updates := &storage.SSHKey{IsDeleted: 1}
 	//	//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
-	//	// _, err = cm.ctx.Store.Engine.Update(updates, cond)
+	//	// _, err = cm.ctx.Store().Engine.Update(updates, cond)
 	//}
 	return
 }
 
 func (cm *clusterManager) deleteDroplet(dropletID int, nodeName string) error {
-	_, err := cm.conn.client.Droplets.Delete(context.TODO(), dropletID)
+	_, err := cm.conn.client.Droplets.Delete(go_ctx.TODO(), dropletID)
 	if err != nil {
 		return err
 	}
-	cm.ctx.Logger.Infof("Droplet %v deleted", dropletID)
+	cm.ctx.Logger().Infof("Droplet %v deleted", dropletID)
 	err = lib.DeleteNodeApiCall(cm.ctx, nodeName)
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func (cm *clusterManager) deleteDroplet(dropletID int, nodeName string) error {
 }
 
 func (cm *clusterManager) deleteMaster(dropletID int) error {
-	_, err := cm.conn.client.Droplets.Delete(context.TODO(), dropletID)
+	_, err := cm.conn.client.Droplets.Delete(go_ctx.TODO(), dropletID)
 	if err != nil {
 		return err
 	}

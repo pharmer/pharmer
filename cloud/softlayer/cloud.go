@@ -5,20 +5,20 @@ import (
 	"time"
 
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/credential"
 	"github.com/softlayer/softlayer-go/services"
 	"github.com/softlayer/softlayer-go/session"
 )
 
 type cloudConnector struct {
-	ctx                   *contexts.ClusterContext
+	ctx                   *api.Cluster
 	virtualServiceClient  services.Virtual_Guest
 	accountServiceClient  services.Account
 	securityServiceClient services.Security_Ssh_Key
 }
 
-func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
+func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
 	apiKey, ok := ctx.CloudCredential[credential.SoftlayerAPIKey]
 	if !ok {
 		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.SoftlayerAPIKey)

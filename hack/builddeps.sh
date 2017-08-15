@@ -8,5 +8,4 @@ go get github.com/Masterminds/glide
 go get github.com/sgotti/glide-vc
 go get github.com/onsi/ginkgo/ginkgo
 go install github.com/onsi/ginkgo/ginkgo
-go install github.com/progrium/go-extpoints
 go get -u github.com/jteeuwen/go-bindata/...

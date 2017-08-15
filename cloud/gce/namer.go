@@ -5,11 +5,11 @@ import (
 
 	"github.com/appscode/go/crypto/rand"
 	stringutil "github.com/appscode/go/strings"
-	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/api"
 )
 
 type namer struct {
-	ctx *contexts.ClusterContext
+	ctx *api.Cluster
 }
 
 func (n namer) MasterName() string {

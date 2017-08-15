@@ -1,7 +1,7 @@
 package digitalocean
 
 import (
-	"context"
+	go_ctx "context"
 	"fmt"
 	"time"
 
@@ -37,9 +37,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 		cm.ctx.Save()
 		cm.ins.Save()
-		cm.ctx.Logger.Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
 		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Logger.Infof("Cluster %v is deleting", cm.ctx.Name)
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.ctx.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -52,7 +52,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger.Infof("Image %v is using to create instance", cm.ctx.InstanceImage)
+	cm.ctx.Logger().Infof("Image %v is using to create instance", cm.ctx.InstanceImage)
 
 	err = cm.importPublicKey()
 	if err != nil {
@@ -72,7 +72,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	// -------------------------------------------------------------------ASSETS
 	im := &instanceManager{ctx: cm.ctx, conn: cm.conn, namer: cm.namer}
 
-	cm.ctx.Logger.Info("Creating master instance")
+	cm.ctx.Logger().Info("Creating master instance")
 	masterDroplet, err := im.createInstance(cm.ctx.KubernetesMasterName, system.RoleKubernetesMaster, cm.ctx.MasterSKU)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
@@ -120,16 +120,16 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	// reboot master to use cert with internal_ip as SANS
 	time.Sleep(60 * time.Second)
 
-	cm.ctx.Logger.Info("Rebooting master instance")
+	cm.ctx.Logger().Info("Rebooting master instance")
 	if err = im.reboot(masterDroplet.ID); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger.Info("Rebooted master instance")
+	cm.ctx.Logger().Info("Rebooted master instance")
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 	// start nodes
 	for _, ng := range req.NodeGroups {
-		cm.ctx.Logger.Infof("Creating %v node with sku %v", ng.Count, ng.Sku)
+		cm.ctx.Logger().Infof("Creating %v node with sku %v", ng.Count, ng.Sku)
 		igm := &InstanceGroupManager{
 			cm: cm,
 			instance: lib.Instance{
@@ -149,7 +149,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		err = igm.AdjustInstanceGroup()
 	}
 
-	cm.ctx.Logger.Info("Waiting for cluster initialization")
+	cm.ctx.Logger().Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
 	if err := lib.EnsureDnsIPLookup(cm.ctx); err != nil {
@@ -178,45 +178,45 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 }
 
 func (cm *clusterManager) importPublicKey() error {
-	key, resp, err := cm.conn.client.Keys.Create(context.TODO(), &godo.KeyCreateRequest{
+	key, resp, err := cm.conn.client.Keys.Create(go_ctx.TODO(), &godo.KeyCreateRequest{
 		Name:      cm.ctx.SSHKeyExternalID,
 		PublicKey: string(cm.ctx.SSHKey.PublicKey),
 	})
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger.Debugln("DO response", resp, " errors", err)
-	cm.ctx.Logger.Debugf("Created new ssh key with name=%v and id=%v", cm.ctx.SSHKeyExternalID, key.ID)
-	cm.ctx.Logger.Info("SSH public key added")
+	cm.ctx.Logger().Debugln("DO response", resp, " errors", err)
+	cm.ctx.Logger().Debugf("Created new ssh key with name=%v and id=%v", cm.ctx.SSHKeyExternalID, key.ID)
+	cm.ctx.Logger().Info("SSH public key added")
 	return nil
 }
 
 func (cm *clusterManager) createTags() error {
 	tag := "KubernetesCluster:" + cm.ctx.Name
-	_, _, err := cm.conn.client.Tags.Get(context.TODO(), tag)
+	_, _, err := cm.conn.client.Tags.Get(go_ctx.TODO(), tag)
 	if err != nil {
 		// Tag does not already exist
-		_, _, err := cm.conn.client.Tags.Create(context.TODO(), &godo.TagCreateRequest{
+		_, _, err := cm.conn.client.Tags.Create(go_ctx.TODO(), &godo.TagCreateRequest{
 			Name: tag,
 		})
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Logger.Infof("Tag %v created", tag)
+		cm.ctx.Logger().Infof("Tag %v created", tag)
 	}
 	return nil
 }
 
 func (cm *clusterManager) reserveIP() error {
 	if cm.ctx.MasterReservedIP == "auto" {
-		fip, resp, err := cm.conn.client.FloatingIPs.Create(context.TODO(), &godo.FloatingIPCreateRequest{
+		fip, resp, err := cm.conn.client.FloatingIPs.Create(go_ctx.TODO(), &godo.FloatingIPCreateRequest{
 			Region: cm.ctx.Region,
 		})
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Logger.Debugln("DO response", resp, " errors", err)
-		cm.ctx.Logger.Infof("New floating ip %v reserved", fip.IP)
+		cm.ctx.Logger().Debugln("DO response", resp, " errors", err)
+		cm.ctx.Logger().Infof("New floating ip %v reserved", fip.IP)
 		cm.ctx.MasterReservedIP = fip.IP
 	}
 	return nil

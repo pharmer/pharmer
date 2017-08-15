@@ -5,8 +5,8 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 )
 
 func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
@@ -63,7 +63,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 		//fmt.Println(k.String(), " = ", v.Count)
 	}
 	if !flag {
-		ig := &contexts.InstanceGroup{
+		ig := &api.InstanceGroup{
 			Sku:              req.Sku,
 			Count:            req.Count,
 			UseSpotInstances: false,

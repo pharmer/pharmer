@@ -74,3 +74,14 @@ import:
 - package: k8s.io/client-go
   repo: https://github.com/appscode/client-go.git
   version: 3.0.0-ac
+- package: github.com/mitchellh/go-homedir
+- package: gopkg.in/yaml.v2
+  version: v2
+- package: github.com/ghodss/yaml
+  version: v1.0.0
+- package: github.com/graymeta/stow
+  repo: https://github.com/appscode/stow.git
+  version: master
+  vcs: git
+- package: github.com/ncw/swift
+  version: master

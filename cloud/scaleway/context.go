@@ -3,15 +3,15 @@ package scaleway
 import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/phid"
 )
 
 // scalewayCluster is a ClusterManager
 type clusterManager struct {
-	ctx   *contexts.ClusterContext
-	ins   *contexts.ClusterInstances
+	ctx   *api.Cluster
+	ins   *api.ClusterInstances
 	conn  *cloudConnector
 	namer namer
 }
@@ -35,7 +35,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.ctx.SetNodeGroups(req.NodeGroups)
 
 	cm.ctx.KubernetesMasterName = cm.namer.MasterName()
-	cm.ctx.SSHKey, err = contexts.NewSSHKeyPair()
+	cm.ctx.SSHKey, err = api.NewSSHKeyPair()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

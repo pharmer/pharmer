@@ -3,36 +3,36 @@ package aws
 import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/contexts"
-	"github.com/appscode/pharmer/extpoints"
+	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/cloud"
 )
 
 func init() {
-	extpoints.KubeProviders.Register(new(kubeProvider), "aws")
+	cloud.RegisterCloudProvider("aws", new(provider))
 }
 
-type kubeProvider struct {
+type provider struct {
 }
 
-var _ extpoints.KubeProvider = &kubeProvider{}
+var _ cloud.Provider = &provider{}
 
-func (kp *kubeProvider) Create(ctx *contexts.ClusterContext, req *proto.ClusterCreateRequest) error {
+func (p *provider) Create(ctx *api.Cluster, req *proto.ClusterCreateRequest) error {
 	return (&clusterManager{ctx: ctx}).create(req)
 }
 
-func (kp *kubeProvider) Scale(ctx *contexts.ClusterContext, req *proto.ClusterReconfigureRequest) error {
+func (p *provider) Scale(ctx *api.Cluster, req *proto.ClusterReconfigureRequest) error {
 	return (&clusterManager{ctx: ctx}).scale(req)
 }
 
-func (kp *kubeProvider) Delete(ctx *contexts.ClusterContext, req *proto.ClusterDeleteRequest) error {
+func (p *provider) Delete(ctx *api.Cluster, req *proto.ClusterDeleteRequest) error {
 	return (&clusterManager{ctx: ctx}).delete(req)
 }
 
-func (kp *kubeProvider) SetVersion(ctx *contexts.ClusterContext, req *proto.ClusterReconfigureRequest) error {
+func (p *provider) SetVersion(ctx *api.Cluster, req *proto.ClusterReconfigureRequest) error {
 	return (&clusterManager{ctx: ctx}).setVersion(req)
 }
 
-func (cluster *kubeProvider) UploadStartupConfig(ctx *contexts.ClusterContext) error {
+func (p *provider) UploadStartupConfig(ctx *api.Cluster) error {
 	conn, err := NewConnector(ctx)
 	if err != nil {
 		return err
@@ -41,7 +41,7 @@ func (cluster *kubeProvider) UploadStartupConfig(ctx *contexts.ClusterContext) e
 	return cm.UploadStartupConfig()
 }
 
-func (kp *kubeProvider) GetInstance(ctx *contexts.ClusterContext, md *contexts.InstanceMetadata) (*contexts.KubernetesInstance, error) {
+func (p *provider) GetInstance(ctx *api.Cluster, md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
 	conn, err := NewConnector(ctx)
 	if err != nil {
 		return nil, err
@@ -55,6 +55,6 @@ func (kp *kubeProvider) GetInstance(ctx *contexts.ClusterContext, md *contexts.I
 	return i, nil
 }
 
-func (kp *kubeProvider) MatchInstance(i *contexts.KubernetesInstance, md *contexts.InstanceMetadata) bool {
+func (p *provider) MatchInstance(i *api.KubernetesInstance, md *api.InstanceMetadata) bool {
 	return i.ExternalID == md.ExternalID
 }

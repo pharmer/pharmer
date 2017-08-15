@@ -5,18 +5,18 @@ import (
 	"time"
 
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/credential"
 	sapi "github.com/scaleway/scaleway-cli/pkg/api"
 )
 
 type cloudConnector struct {
-	ctx          *contexts.ClusterContext
+	ctx          *api.Cluster
 	client       *sapi.ScalewayAPI
 	bootscriptID string
 }
 
-func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
+func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
 	organization, ok := ctx.CloudCredential[credential.ScalewayOrganization]
 	if !ok {
 		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.ScalewayOrganization)
@@ -74,7 +74,7 @@ func (conn *cloudConnector) DetectBootscript() error {
 func (conn *cloudConnector) waitForInstance(id, status string) error {
 	attempt := 0
 	for true {
-		conn.ctx.Logger.Infof("Checking status of instance %v", id)
+		conn.ctx.Logger().Infof("Checking status of instance %v", id)
 		s, err := conn.client.GetServer(id)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -82,7 +82,7 @@ func (conn *cloudConnector) waitForInstance(id, status string) error {
 		if strings.ToLower(s.State) == status {
 			break
 		}
-		conn.ctx.Logger.Infof("Instance %v (%v) is %v, waiting...", s.Name, s.Identifier, s.State)
+		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", s.Name, s.Identifier, s.State)
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

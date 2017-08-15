@@ -14,7 +14,7 @@ import (
 
 func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error {
 	if !lib.UpgradeRequired(cm.ctx, req) {
-		cm.ctx.Logger.Infof("Upgrade command skipped for cluster %v", cm.ctx.Name)
+		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.ctx.Name)
 		return nil
 	}
 	if cm.conn == nil {
@@ -74,7 +74,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger.Infof("Update Completed")
+	cm.ctx.Logger().Infof("Update Completed")
 	return nil
 }
 

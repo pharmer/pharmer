@@ -1,7 +1,7 @@
 package digitalocean
 
 import (
-	"context"
+	go_ctx "context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,7 +9,6 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud/lib"
-	"github.com/appscode/pharmer/contexts"
 	"github.com/appscode/pharmer/system"
 	"github.com/digitalocean/godo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,11 +64,11 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	return nil
 }
 
-func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, map[string]*contexts.KubernetesInstance, error) {
+func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, map[string]*api.KubernetesInstance, error) {
 	var flag bool = false
-	igm.im.conn.client.Droplets.List(context.TODO(), &godo.ListOptions{})
-	existingNGs := make(map[string]*contexts.KubernetesInstance)
-	droplets, _, err := igm.cm.conn.client.Droplets.List(context.TODO(), &godo.ListOptions{})
+	igm.im.conn.client.Droplets.List(go_ctx.TODO(), &godo.ListOptions{})
+	existingNGs := make(map[string]*api.KubernetesInstance)
+	droplets, _, err := igm.cm.conn.client.Droplets.List(go_ctx.TODO(), &godo.ListOptions{})
 	if err != nil {
 		return flag, existingNGs, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -123,8 +122,8 @@ func (igm *InstanceGroupManager) deleteInstanceGroup(sku string, count int64) er
 	return nil
 }
 
-func (igm *InstanceGroupManager) listInstances(sku string) ([]*contexts.KubernetesInstance, error) {
-	instances := make([]*contexts.KubernetesInstance, 0)
+func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.KubernetesInstance, error) {
+	instances := make([]*api.KubernetesInstance, 0)
 	kc, err := igm.cm.ctx.NewKubeClient()
 	if err != nil {
 		igm.cm.ctx.StatusCause = err.Error()
@@ -150,7 +149,7 @@ func (igm *InstanceGroupManager) listInstances(sku string) ([]*contexts.Kubernet
 	return instances, nil
 }
 
-func (igm *InstanceGroupManager) StartNode() (*contexts.KubernetesInstance, error) {
+func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
 	droplet, err := igm.im.createInstance(igm.cm.namer.GenNodeName(igm.instance.Type.Sku), system.RoleKubernetesPool, igm.instance.Type.Sku)
 	if err != nil {
 		igm.cm.ctx.StatusCause = err.Error()

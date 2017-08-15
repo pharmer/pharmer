@@ -6,23 +6,21 @@ import (
 	"io/ioutil"
 	"os"
 
-	api "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/appctl/pkg/config"
-	"github.com/appscode/appctl/pkg/util"
-	term "github.com/appscode/go-term"
+	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/flags"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/spf13/cobra"
 )
 
 func NewCmdCreate() *cobra.Command {
-	var req api.ClusterCreateRequest
+	var req proto.ClusterCreateRequest
 	nodes := map[string]int{}
 
 	cmd := &cobra.Command{
 		Use:               "create",
 		Short:             "Create a Kubernetes cluster for a given cloud provider",
-		Example:           "create --provider=(aws|gce|cc) --nodes=t1=n1,t2= n2 --zone=us-central1-f demo-cluster",
+		Example:           "create --provider=(aws|gce|cc) --nodes=t1=1,t2=2 --zone=us-central1-f demo-cluster",
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			flags.EnsureRequiredFlags(cmd, "provider", "zone", "nodes")
@@ -47,21 +45,16 @@ func NewCmdCreate() *cobra.Command {
 				req.CloudCredentialData = cred
 			}
 
-			req.NodeGroups = make([]*api.InstanceGroup, len(nodes))
+			req.NodeGroups = make([]*proto.InstanceGroup, len(nodes))
 			ng := 0
 			for sku, count := range nodes {
-				req.NodeGroups[ng] = &api.InstanceGroup{
+				req.NodeGroups[ng] = &proto.InstanceGroup{
 					Sku:   sku,
 					Count: int64(count),
 				}
 				ng++
 			}
-
-			c := config.ClientOrDie()
-			_, err := c.Kubernetes().V1beta1().Cluster().Create(c.Context(), &req)
-			util.PrintStatus(err)
-			term.Successln("Request to create cluster is accepted!")
-			return nil
+			return create(&req)
 		},
 	}
 
@@ -83,4 +76,10 @@ func NewCmdCreate() *cobra.Command {
 	cmd.Flags().MarkHidden("hostfacts-version")
 
 	return cmd
+}
+
+func create(req *proto.ClusterCreateRequest) error {
+	context.NewContext()
+
+	return nil
 }

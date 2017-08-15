@@ -10,12 +10,12 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/contexts"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/credential"
 )
 
 type cloudConnector struct {
-	ctx *contexts.ClusterContext
+	ctx *api.Cluster
 
 	availabilitySetsClient  compute.AvailabilitySetsClient
 	vmClient                compute.VirtualMachinesClient
@@ -31,7 +31,7 @@ type cloudConnector struct {
 	storageClient           storage.AccountsClient
 }
 
-func NewConnector(ctx *contexts.ClusterContext) (*cloudConnector, error) {
+func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
 	subscriptionID, ok := ctx.CloudCredential[credential.AzureSubscriptionID]
 	if !ok {
 		return nil, errors.New("Missing", credential.AzureSubscriptionID).WithContext(ctx).Err()
