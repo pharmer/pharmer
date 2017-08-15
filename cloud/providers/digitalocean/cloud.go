@@ -1,6 +1,7 @@
 package digitalocean
 
 import (
+	go_ctx "context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -40,7 +41,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 	imgPage := 0
 	const imgPageSize = 20
 	for {
-		imgs, _, err := conn.client.Images.ListUser(api.TODO(), &godo.ListOptions{
+		imgs, _, err := conn.client.Images.ListUser(go_ctx.TODO(), &godo.ListOptions{
 			Page:    imgPage,
 			PerPage: imgPageSize,
 		})
@@ -60,7 +61,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 					}
 				}
 				if !found {
-					_, _, err := conn.client.ImageActions.Transfer(api.TODO(), img.ID, &godo.ActionRequest{
+					_, _, err := conn.client.ImageActions.Transfer(go_ctx.TODO(), img.ID, &godo.ActionRequest{
 						"type":   "transfer",
 						"region": conn.ctx.Region,
 					})
@@ -82,7 +83,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 	}
 
 	conn.ctx.Logger().Info("Creating droplet to build custom image")
-	droplet, _, err := conn.client.Droplets.Create(api.TODO(), &godo.DropletCreateRequest{
+	droplet, _, err := conn.client.Droplets.Create(go_ctx.TODO(), &godo.DropletCreateRequest{
 		Name:              rand.WithUniqSuffix("kubernetes"),
 		Region:            conn.ctx.Region,
 		Size:              "512mb",
@@ -103,14 +104,14 @@ update-grub`,
 	time.Sleep(30 * time.Second)
 
 	conn.ctx.Logger().Info("Power off custom image instance")
-	_, _, err = conn.client.DropletActions.PowerOff(api.TODO(), droplet.ID)
+	_, _, err = conn.client.DropletActions.PowerOff(go_ctx.TODO(), droplet.ID)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	conn.waitForInstance(droplet.ID, "off")
 
 	conn.ctx.Logger().Info("Start taking custom image snapshot")
-	_, _, err = conn.client.DropletActions.Snapshot(api.TODO(), droplet.ID, containerOsImage)
+	_, _, err = conn.client.DropletActions.Snapshot(go_ctx.TODO(), droplet.ID, containerOsImage)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
@@ -129,7 +130,7 @@ update-grub`,
 	}
 
 	var k8sImage *godo.Image
-	snaps, _, err := conn.client.Droplets.Snapshots(api.TODO(), droplet.ID, &godo.ListOptions{
+	snaps, _, err := conn.client.Droplets.Snapshots(go_ctx.TODO(), droplet.ID, &godo.ListOptions{
 		Page:    0,
 		PerPage: 1, // there can be only one snapshot for the new custom image droplet
 	})
@@ -143,7 +144,7 @@ update-grub`,
 	}
 	conn.ctx.Logger().Debugln("New K8s base image id", k8sImage.ID, ", name: ", k8sImage.Name)
 
-	_, err = conn.client.Droplets.Delete(api.TODO(), droplet.ID)
+	_, err = conn.client.Droplets.Delete(go_ctx.TODO(), droplet.ID)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
@@ -155,7 +156,7 @@ func (conn *cloudConnector) waitForInstance(id int, status string) error {
 	attempt := 0
 	for true {
 		conn.ctx.Logger().Infof("Checking status of instance %v", id)
-		droplet, _, err := conn.client.Droplets.Get(api.TODO(), id)
+		droplet, _, err := conn.client.Droplets.Get(go_ctx.TODO(), id)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
@@ -171,7 +172,7 @@ func (conn *cloudConnector) waitForInstance(id int, status string) error {
 }
 
 func (conn *cloudConnector) findSnapshotAction(id int) (*godo.Action, error) {
-	actions, _, err := conn.client.Droplets.Actions(api.TODO(), id, &godo.ListOptions{
+	actions, _, err := conn.client.Droplets.Actions(go_ctx.TODO(), id, &godo.ListOptions{
 		Page:    0,
 		PerPage: 100,
 	})
@@ -190,7 +191,7 @@ func (conn *cloudConnector) waitForTransfer(id int) error {
 	conn.ctx.Logger().Infof("Wait for the transfer to complete")
 	attempt := 0
 	for {
-		img, _, err := conn.client.Images.GetByID(api.TODO(), id)
+		img, _, err := conn.client.Images.GetByID(go_ctx.TODO(), id)
 		if err != nil {
 			return err
 		}
