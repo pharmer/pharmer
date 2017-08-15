@@ -7,8 +7,12 @@ import (
 	"github.com/appscode/pharmer/cloud/lib"
 )
 
+const (
+	UID = "softlayer"
+)
+
 func init() {
-	cloud.RegisterCloudProvider("softlayer", new(provider))
+	cloud.RegisterProvider("softlayer", new(provider))
 }
 
 type provider struct {

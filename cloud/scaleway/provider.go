@@ -7,8 +7,12 @@ import (
 	"github.com/appscode/pharmer/cloud/lib"
 )
 
+const (
+	UID = "scaleway"
+)
+
 func init() {
-	cloud.RegisterCloudProvider("scaleway", new(provider))
+	cloud.RegisterProvider(UID, new(provider))
 }
 
 type provider struct {

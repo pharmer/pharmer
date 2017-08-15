@@ -9,8 +9,12 @@ import (
 	"github.com/appscode/pharmer/cloud"
 )
 
+const (
+	UID = "fake"
+)
+
 func init() {
-	cloud.RegisterCloudProvider("fake", new(kubeProvider))
+	cloud.RegisterProvider(UID, new(kubeProvider))
 }
 
 type kubeProvider struct {

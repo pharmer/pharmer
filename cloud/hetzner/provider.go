@@ -7,8 +7,12 @@ import (
 	"github.com/appscode/pharmer/cloud/lib"
 )
 
+const (
+	UID = "hetzner"
+)
+
 func init() {
-	cloud.RegisterCloudProvider("hetzner", new(provider))
+	cloud.RegisterProvider(UID, new(provider))
 }
 
 type provider struct {
