@@ -6,7 +6,7 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/lib"
+	"github.com/appscode/pharmer/cloud"
 )
 
 func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
@@ -21,7 +21,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 
 	//purchasePHIDs := cm.ctx.Metadata["PurchasePhids"].([]string)
 	cm.namer = namer{ctx: cm.ctx}
-	cm.ins, err = lib.NewInstances(cm.ctx)
+	cm.ins, err = cloud.NewInstances(cm.ctx)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -29,21 +29,21 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 	cm.ins.Load()
 	im := &instanceManager{ctx: cm.ctx, conn: cm.conn, namer: cm.namer}
 
-	inst := lib.Instance{
-		Type: lib.InstanceType{
+	inst := cloud.Instance{
+		Type: cloud.InstanceType{
 			ContextVersion: cm.ctx.ContextVersion,
 			Sku:            req.Sku,
 
 			Master:       false,
 			SpotInstance: false,
 		},
-		Stats: lib.GroupStats{
+		Stats: cloud.GroupStats{
 			Count: req.Count,
 		},
 	}
 
 	fmt.Println(cm.ctx.NodeCount(), "<<<----------")
-	nodeAdjust, _ := lib.Mutator(cm.ctx, inst)
+	nodeAdjust, _ := cloud.Mutator(cm.ctx, inst)
 	fmt.Println(cm.ctx.NodeCount(), "------->>>>>>>>")
 	igm := &InstanceGroupManager{
 		cm:       cm,
@@ -71,7 +71,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 		cm.ctx.NodeGroups = append(cm.ctx.NodeGroups, ig)
 	}
 
-	if err := lib.WaitForReadyNodes(cm.ctx); err != nil {
+	if err := cloud.WaitForReadyNodes(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -80,7 +80,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 		igm.cm.ctx.StatusCause = err.Error()
 		//return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	lib.AdjustDbInstance(cm.ins, instances, req.Sku)
+	cloud.AdjustDbInstance(cm.ins, instances, req.Sku)
 
 	cm.ctx.Save()
 	return nil

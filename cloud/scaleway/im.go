@@ -9,7 +9,7 @@ import (
 	sshtools "github.com/appscode/go/crypto/ssh"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/lib"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/storage"
 	"github.com/cenkalti/backoff"
@@ -116,7 +116,7 @@ func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role
 	cmd := fmt.Sprintf(`CONFIG=$(/usr/bin/curl 169.254.42.42/user_data/kubernetes_context_%v_%v.yaml --local-port 1-1024)`, opt.ContextVersion, role)
 	return fmt.Sprintf(`%v
 systemctl start kube-installer.service
-`, lib.RenderKubeInstaller(opt, sku, role, cmd))
+`, cloud.RenderKubeInstaller(opt, sku, role, cmd))
 }
 
 func (im *instanceManager) executeStartupScript(instance *api.KubernetesInstance, signer ssh.Signer) error {
@@ -133,7 +133,7 @@ func (im *instanceManager) executeStartupScript(instance *api.KubernetesInstance
 func (im *instanceManager) newKubeInstance(id string) (*api.KubernetesInstance, error) {
 	s, err := im.conn.client.GetServer(id)
 	if err != nil {
-		return nil, lib.InstanceNotFound
+		return nil, cloud.InstanceNotFound
 	}
 	return im.newKubeInstanceFromServer(s)
 }

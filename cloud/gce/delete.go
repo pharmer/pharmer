@@ -8,7 +8,7 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/cloud/lib"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/storage"
 )
 
@@ -82,7 +82,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, err.Error())
 	}
 
-	if err := lib.DeleteARecords(cm.ctx); err != nil {
+	if err := cloud.DeleteARecords(cm.ctx); err != nil {
 		errs = append(errs, err.Error())
 	}
 

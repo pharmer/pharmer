@@ -1,4 +1,4 @@
-package lib
+package cloud
 
 import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"

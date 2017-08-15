@@ -1,4 +1,4 @@
-package lib
+package cloud
 
 import (
 	"fmt"

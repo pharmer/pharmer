@@ -4,11 +4,14 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/cloud/lib"
+)
+
+const (
+	UID = "softlayer"
 )
 
 func init() {
-	cloud.RegisterCloudProvider("softlayer", new(provider))
+	cloud.RegisterProvider("softlayer", new(provider))
 }
 
 type provider struct {
@@ -21,7 +24,7 @@ func (p *provider) Create(ctx *api.Cluster, req *proto.ClusterCreateRequest) err
 }
 
 func (p *provider) Scale(ctx *api.Cluster, req *proto.ClusterReconfigureRequest) error {
-	return lib.UnsupportedOperation
+	return cloud.UnsupportedOperation
 }
 
 func (p *provider) Delete(ctx *api.Cluster, req *proto.ClusterDeleteRequest) error {
@@ -29,7 +32,7 @@ func (p *provider) Delete(ctx *api.Cluster, req *proto.ClusterDeleteRequest) err
 }
 
 func (p *provider) SetVersion(ctx *api.Cluster, req *proto.ClusterReconfigureRequest) error {
-	return lib.UnsupportedOperation
+	return cloud.UnsupportedOperation
 }
 
 func (p *provider) UploadStartupConfig(ctx *api.Cluster) error {

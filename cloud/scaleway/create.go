@@ -8,7 +8,7 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/ssh"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud/lib"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/storage"
 	"github.com/cenkalti/backoff"
 	sapi "github.com/scaleway/scaleway-cli/pkg/api"
@@ -20,7 +20,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins, err = lib.NewInstances(cm.ctx)
+	cm.ins, err = cloud.NewInstances(cm.ctx)
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -80,7 +80,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	}
 
 	cm.ctx.DetectApiServerURL()
-	if err = lib.GenClusterCerts(cm.ctx); err != nil {
+	if err = cloud.GenClusterCerts(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -114,7 +114,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	fmt.Println("Master EXTERNAL IP ================", cm.ctx.MasterExternalIP)
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 
-	err = lib.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
+	err = cloud.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -164,23 +164,23 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	cm.ctx.Logger().Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
-	if err := lib.EnsureDnsIPLookup(cm.ctx); err != nil {
+	if err := cloud.EnsureDnsIPLookup(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// wait for nodes to start
-	if err := lib.ProbeKubeAPI(cm.ctx); err != nil {
+	if err := cloud.ProbeKubeAPI(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// check all components are ok
-	if err = lib.CheckComponentStatuses(cm.ctx); err != nil {
+	if err = cloud.CheckComponentStatuses(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// Make sure nodes are connected to master and are ready
-	if err = lib.WaitForReadyNodes(cm.ctx); err != nil {
+	if err = cloud.WaitForReadyNodes(cm.ctx); err != nil {
 		cm.ctx.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

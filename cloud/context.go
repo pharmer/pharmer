@@ -1,4 +1,4 @@
-package lib
+package cloud
 
 import (
 	"github.com/appscode/errors"
@@ -76,7 +76,7 @@ func LoadDefaultGenericContext(ctx *api.Cluster) error {
 func NewInstances(ctx *api.Cluster) (*api.ClusterInstances, error) {
 	p := extpoints.Providers.Lookup(ctx.Provider)
 	if p == nil {
-		return nil, errors.New(ctx.Provider + " is an unknown Kubernetes lib.").WithContext(ctx).Err()
+		return nil, errors.New(ctx.Provider + " is an unknown Kubernetes cloud.").WithContext(ctx).Err()
 	}
 	return ctx.NewInstances(p.MatchInstance)
 }

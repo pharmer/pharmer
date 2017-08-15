@@ -12,9 +12,9 @@ var (
 	providers      = make(map[string]Provider)
 )
 
-// RegisterCloudProvider registers a cloudprovider.Factory by name.  This
+// RegisterProvider registers a cloudprovider.Factory by name.  This
 // is expected to happen during app startup.
-func RegisterCloudProvider(name string, cloud Provider) {
+func RegisterProvider(name string, cloud Provider) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	if _, found := providers[name]; found {
@@ -24,18 +24,18 @@ func RegisterCloudProvider(name string, cloud Provider) {
 	providers[name] = cloud
 }
 
-// IsCloudProvider returns true if name corresponds to an already registered
+// IsProvider returns true if name corresponds to an already registered
 // cloud provider.
-func IsCloudProvider(name string) bool {
+func IsProvider(name string) bool {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	_, found := providers[name]
 	return found
 }
 
-// CloudProviders returns the name of all registered cloud providers in a
+// Providers returns the name of all registered cloud providers in a
 // string slice
-func CloudProviders() []string {
+func Providers() []string {
 	names := []string{}
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
@@ -45,12 +45,12 @@ func CloudProviders() []string {
 	return names
 }
 
-// GetCloudProvider creates an instance of the named cloud provider, or nil if
+// GetProvider creates an instance of the named cloud provider, or nil if
 // the name is not known.  The error return is only used if the named provider
 // was known but failed to initialize. The config parameter specifies the
 // api.PharmerConfig handler of the configuration file for the cloud provider, or nil
 // for no configuation.
-func GetCloudProvider(name string) (Provider, error) {
+func GetProvider(name string) (Provider, error) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	f, found := providers[name]

@@ -6,8 +6,12 @@ import (
 	"github.com/appscode/pharmer/cloud"
 )
 
+const (
+	UID = "digitalocean"
+)
+
 func init() {
-	cloud.RegisterCloudProvider("digitalocean", new(provider))
+	cloud.RegisterProvider(UID, new(provider))
 }
 
 type provider struct {
