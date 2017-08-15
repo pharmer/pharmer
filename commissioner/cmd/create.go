@@ -18,7 +18,8 @@ func NewCmdClusterCreate() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "Cluster create commisioning",
+		Short: "Cluster create commissioning",
+		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.SetLogLevel(4)
 			flags.EnsureRequiredFlags(cmd, "provider")

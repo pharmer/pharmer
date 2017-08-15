@@ -10,11 +10,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewCmdClusterNative() *cobra.Command {
+func NewCmdClusterNetworks() *cobra.Command {
 	var name string
 	cmd := &cobra.Command{
-		Use:   "native",
-		Short: "Cluster commisioning native check",
+		Use:   "network",
+		Short: "Cluster commissioning network check",
+		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.SetLogLevel(4)
 			if len(args) > 0 {
@@ -24,15 +25,11 @@ func NewCmdClusterNative() *cobra.Command {
 			}
 			c, err := commissioner.NewComissionar("", name)
 			term.ExitOnError(err)
-			err = c.NativeCheck()
+			err = c.NetworkCheck()
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				os.Exit(1)
 			}
-			/*_, err := installer.Create(&req)
-			if err != nil {
-				errors.Exit(err)
-			}*/
 		},
 	}
 	return cmd

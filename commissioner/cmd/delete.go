@@ -11,7 +11,8 @@ func NewCmdClusterDelete() *cobra.Command {
 	var name string
 	cmd := &cobra.Command{
 		Use:   "delete",
-		Short: "Cluster commisioning delete",
+		Short: "Cluster commissioning delete",
+		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.SetLogLevel(4)
 			if len(args) > 0 {
