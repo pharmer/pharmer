@@ -10,16 +10,17 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/storage"
 	"github.com/cenkalti/backoff"
 	"github.com/digitalocean/godo"
 )
 
 type instanceManager struct {
-	ctx   *api.Cluster
-	conn  *cloudConnector
-	namer namer
+	ctx     context.Context
+	cluster *api.Cluster
+	conn    *cloudConnector
+	namer   namer
 }
 
 func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
@@ -69,18 +70,18 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 }
 
 func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet, error) {
-	startupScript := im.RenderStartupScript(im.ctx.NewScriptOptions(), sku, role)
-	imgID, err := strconv.Atoi(im.ctx.InstanceImage)
+	startupScript := im.RenderStartupScript(im.cluster.NewScriptOptions(), sku, role)
+	imgID, err := strconv.Atoi(im.cluster.InstanceImage)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	req := &godo.DropletCreateRequest{
 		Name:   name,
-		Region: im.ctx.Zone,
+		Region: im.cluster.Zone,
 		Size:   sku,
 		Image:  godo.DropletCreateImage{ID: imgID},
 		SSHKeys: []godo.DropletCreateSSHKey{
-			{Fingerprint: im.ctx.SSHKey.OpensshFingerprint},
+			{Fingerprint: im.cluster.SSHKey.OpensshFingerprint},
 		},
 		PrivateNetworking: true,
 		IPv6:              false,
@@ -88,7 +89,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 	}
 	if _env.FromHost().IsPublic() {
 		req.SSHKeys = []godo.DropletCreateSSHKey{
-			{Fingerprint: im.ctx.SSHKey.OpensshFingerprint},
+			{Fingerprint: im.cluster.SSHKey.OpensshFingerprint},
 		}
 	}
 	droplet, resp, err := im.conn.client.Droplets.Create(go_ctx.TODO(), req)
@@ -110,7 +111,7 @@ func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role
 }
 
 func (im *instanceManager) applyTag(dropletID int) error {
-	_, err := im.conn.client.Tags.TagResources(go_ctx.TODO(), "KubernetesCluster:"+im.ctx.Name, &godo.TagResourcesRequest{
+	_, err := im.conn.client.Tags.TagResources(go_ctx.TODO(), "KubernetesCluster:"+im.cluster.Name, &godo.TagResourcesRequest{
 		Resources: []godo.Resource{
 			{
 				ID:   strconv.Itoa(dropletID),
@@ -118,7 +119,7 @@ func (im *instanceManager) applyTag(dropletID int) error {
 			},
 		},
 	})
-	im.ctx.Logger().Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+im.ctx.Name, dropletID)
+	im.ctx.Logger().Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+im.cluster.Name, dropletID)
 	return err
 }
 
@@ -174,8 +175,8 @@ func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*a
 		Name:           droplet.Name,
 		ExternalIP:     externalIP,
 		InternalIP:     internalIP,
-		SKU:            droplet.SizeSlug,                       // 512mb // convert to SKU
-		Status:         storage.KubernetesInstanceStatus_Ready, // droplet.Status == active
+		SKU:            droplet.SizeSlug,                   // 512mb // convert to SKU
+		Status:         api.KubernetesInstanceStatus_Ready, // droplet.Status == active
 	}, nil
 }
 

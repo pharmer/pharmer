@@ -8,33 +8,33 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/storage"
 )
 
 func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
-	defer cm.ctx.Delete()
+	defer cm.cluster.Delete()
 
-	if cm.ctx.Status == storage.KubernetesStatus_Pending {
-		cm.ctx.Status = storage.KubernetesStatus_Failing
-	} else if cm.ctx.Status == storage.KubernetesStatus_Ready {
-		cm.ctx.Status = storage.KubernetesStatus_Deleting
+	if cm.cluster.Status == api.KubernetesStatus_Pending {
+		cm.cluster.Status = api.KubernetesStatus_Failing
+	} else if cm.cluster.Status == api.KubernetesStatus_Ready {
+		cm.cluster.Status = api.KubernetesStatus_Deleting
 	}
 	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
 	if cm.conn == nil {
-		conn, err := NewConnector(cm.ctx)
+		conn, err := NewConnector(cm.ctx, cm.cluster)
 		if err != nil {
-			cm.ctx.StatusCause = err.Error()
+			cm.cluster.StatusCause = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		cm.conn = conn
 	}
-	cm.namer = namer{ctx: cm.ctx}
+	cm.namer = namer{cluster: cm.cluster}
 
 	var errs []string
-	if cm.ctx.StatusCause != "" {
-		errs = append(errs, cm.ctx.StatusCause)
+	if cm.cluster.StatusCause != "" {
+		errs = append(errs, cm.cluster.StatusCause)
 	}
 
 	if l, err := cm.listInstanceGroups(); err == nil {
@@ -82,7 +82,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, err.Error())
 	}
 
-	if err := cloud.DeleteARecords(cm.ctx); err != nil {
+	if err := cloud.DeleteARecords(cm.ctx, cm.cluster); err != nil {
 		errs = append(errs, err.Error())
 	}
 
@@ -93,13 +93,13 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 
 	if len(errs) > 0 {
 		// Preserve statusCause for failed cluster
-		if cm.ctx.Status == storage.KubernetesStatus_Deleting {
-			cm.ctx.StatusCause = strings.Join(errs, "\n")
+		if cm.cluster.Status == api.KubernetesStatus_Deleting {
+			cm.cluster.StatusCause = strings.Join(errs, "\n")
 		}
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
-	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.ctx.Name)
+	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.cluster.Name)
 	return nil
 }
 
@@ -111,16 +111,16 @@ type groupInfo struct {
 func (cm *clusterManager) listInstanceGroups() ([]*groupInfo, error) {
 	groups := make([]*groupInfo, 0)
 
-	r1, err := cm.conn.computeService.InstanceGroups.List(cm.ctx.Project, cm.ctx.Zone).Do()
+	r1, err := cm.conn.computeService.InstanceGroups.List(cm.cluster.Project, cm.cluster.Zone).Do()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	for _, g := range r1.Items {
 		name := g.Name
-		if strings.HasPrefix(name, cm.ctx.Name) {
+		if strings.HasPrefix(name, cm.cluster.Name) {
 			groups = append(groups, &groupInfo{
 				groupName: name,
-				sku:       strings.TrimSuffix(strings.TrimPrefix(name, cm.ctx.Name+"-"), "-v"+strconv.FormatInt(cm.ctx.ContextVersion, 10)),
+				sku:       strings.TrimSuffix(strings.TrimPrefix(name, cm.cluster.Name+"-"), "-v"+strconv.FormatInt(cm.cluster.ContextVersion, 10)),
 			})
 		}
 
@@ -134,20 +134,20 @@ func (cm *clusterManager) listInstanceGroups() ([]*groupInfo, error) {
 }
 
 func (cm *clusterManager) deleteMaster() error {
-	r2, err := cm.conn.computeService.Instances.Delete(cm.ctx.Project, cm.ctx.Zone, cm.ctx.KubernetesMasterName).Do()
+	r2, err := cm.conn.computeService.Instances.Delete(cm.cluster.Project, cm.cluster.Zone, cm.cluster.KubernetesMasterName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	operation := r2.Name
 	cm.conn.waitForZoneOperation(operation)
-	cm.ctx.Logger().Infof("Master instance %v deleted", cm.ctx.KubernetesMasterName)
+	cm.ctx.Logger().Infof("Master instance %v deleted", cm.cluster.KubernetesMasterName)
 	return nil
 
 }
 
 //delete instance group
 func (cm *clusterManager) deleteInstanceGroup(instanceGroup string) error {
-	r1, err := cm.conn.computeService.InstanceGroupManagers.Delete(cm.ctx.Project, cm.ctx.Zone, instanceGroup).Do()
+	r1, err := cm.conn.computeService.InstanceGroupManagers.Delete(cm.cluster.Project, cm.cluster.Zone, instanceGroup).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -159,7 +159,7 @@ func (cm *clusterManager) deleteInstanceGroup(instanceGroup string) error {
 
 //delete template
 func (cm *clusterManager) deleteInstanceTemplate(template string) error {
-	_, err := cm.conn.computeService.InstanceTemplates.Delete(cm.ctx.Project, template).Do()
+	_, err := cm.conn.computeService.InstanceTemplates.Delete(cm.cluster.Project, template).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -172,7 +172,7 @@ func (cm *clusterManager) deleteInstanceTemplate(template string) error {
 func (cm *clusterManager) deleteAutoscaler(instanceGroup string) error {
 	cm.ctx.Logger().Infof("Removing autoscaller %v", instanceGroup)
 
-	r, err := cm.conn.computeService.Autoscalers.Delete(cm.ctx.Project, cm.ctx.Zone, instanceGroup).Do()
+	r, err := cm.conn.computeService.Autoscalers.Delete(cm.cluster.Project, cm.cluster.Zone, instanceGroup).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -187,21 +187,21 @@ func (cm *clusterManager) deleteAutoscaler(instanceGroup string) error {
 //delete disk
 func (cm *clusterManager) deleteDisk() error {
 	masterDisk := cm.namer.MasterPDName()
-	r6, err := cm.conn.computeService.Disks.Delete(cm.ctx.Project, cm.ctx.Zone, masterDisk).Do()
+	r6, err := cm.conn.computeService.Disks.Delete(cm.cluster.Project, cm.cluster.Zone, masterDisk).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ctx.Logger().Debugf("Master Disk response %v", r6)
 	time.Sleep(5 * time.Second)
-	r7, err := cm.conn.computeService.Disks.List(cm.ctx.Project, cm.ctx.Zone).Do()
+	r7, err := cm.conn.computeService.Disks.List(cm.cluster.Project, cm.cluster.Zone).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	for i := range r7.Items {
 		s := strings.Split(r7.Items[i].Name, "-")
-		if s[0] == cm.ctx.Name {
+		if s[0] == cm.cluster.Name {
 
-			r, err := cm.conn.computeService.Disks.Delete(cm.ctx.Project, cm.ctx.Zone, r7.Items[i].Name).Do()
+			r, err := cm.conn.computeService.Disks.Delete(cm.cluster.Project, cm.cluster.Zone, r7.Items[i].Name).Do()
 			if err != nil {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
@@ -215,16 +215,16 @@ func (cm *clusterManager) deleteDisk() error {
 
 //delete firewalls
 func (cm *clusterManager) deleteFirewalls() error {
-	name := cm.ctx.Name + "-node-all"
-	r1, err := cm.conn.computeService.Firewalls.Delete(cm.ctx.Project, name).Do()
+	name := cm.cluster.Name + "-node-all"
+	r1, err := cm.conn.computeService.Firewalls.Delete(cm.cluster.Project, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ctx.Logger().Infof("Firewalls %v deleted, response %v", name, r1.Status)
 	//cluster.waitForGlobalOperation(name)
 	time.Sleep(5 * time.Second)
-	ruleHTTPS := cm.ctx.KubernetesMasterName + "-https"
-	r2, err := cm.conn.computeService.Firewalls.Delete(cm.ctx.Project, ruleHTTPS).Do()
+	ruleHTTPS := cm.cluster.KubernetesMasterName + "-https"
+	r2, err := cm.conn.computeService.Firewalls.Delete(cm.cluster.Project, ruleHTTPS).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -237,12 +237,12 @@ func (cm *clusterManager) deleteFirewalls() error {
 // delete reserve ip
 func (cm *clusterManager) releaseReservedIP() error {
 	name := cm.namer.ReserveIPName()
-	r1, err := cm.conn.computeService.Addresses.Get(cm.ctx.Project, cm.ctx.Region, name).Do()
+	r1, err := cm.conn.computeService.Addresses.Get(cm.cluster.Project, cm.cluster.Region, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ctx.Logger().Infof("Releasing reserved master ip %v", r1.Address)
-	r2, err := cm.conn.computeService.Addresses.Delete(cm.ctx.Project, cm.ctx.Region, name).Do()
+	r2, err := cm.conn.computeService.Addresses.Delete(cm.cluster.Project, cm.cluster.Region, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -255,15 +255,15 @@ func (cm *clusterManager) releaseReservedIP() error {
 }
 
 func (cm *clusterManager) deleteRoutes() error {
-	r1, err := cm.conn.computeService.Routes.List(cm.ctx.Project).Do()
+	r1, err := cm.conn.computeService.Routes.List(cm.cluster.Project).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	for i := range r1.Items {
 		routeName := r1.Items[i].Name
-		if strings.HasPrefix(routeName, cm.ctx.Name) {
+		if strings.HasPrefix(routeName, cm.cluster.Name) {
 			fmt.Println(routeName)
-			r2, err := cm.conn.computeService.Routes.Delete(cm.ctx.Project, routeName).Do()
+			r2, err := cm.conn.computeService.Routes.Delete(cm.cluster.Project, routeName).Do()
 			if err != nil {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
@@ -278,7 +278,7 @@ func (cm *clusterManager) deleteBucket() error {
 	start := time.Now().Unix()
 
 	for {
-		objs, err := cm.conn.storageService.Objects.List(cm.ctx.BucketName).Do()
+		objs, err := cm.conn.storageService.Objects.List(cm.cluster.BucketName).Do()
 		if err == nil {
 			for _, obj := range objs.Items {
 				cm.conn.storageService.Objects.Delete(obj.Bucket, obj.Name).Do()
@@ -288,12 +288,12 @@ func (cm *clusterManager) deleteBucket() error {
 			}
 		}
 	}
-	cm.ctx.Logger().Infof("Bucket %v deleted", cm.ctx.BucketName)
-	return cm.conn.storageService.Buckets.Delete(cm.ctx.BucketName).Do()
+	cm.ctx.Logger().Infof("Bucket %v deleted", cm.cluster.BucketName)
+	return cm.conn.storageService.Buckets.Delete(cm.cluster.BucketName).Do()
 }
 
 func (cm *clusterManager) deleteSSHKey() (err error) {
-	if cm.ctx.SSHKeyPHID != "" {
+	if cm.cluster.SSHKeyPHID != "" {
 		//updates := &storage.SSHKey{IsDeleted: 1}
 		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
 		//_, err = cm.ctx.Store().Engine.Update(updates, cond)

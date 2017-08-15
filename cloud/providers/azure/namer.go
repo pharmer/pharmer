@@ -10,19 +10,19 @@ import (
 )
 
 type namer struct {
-	ctx *api.Cluster
+	cluster *api.Cluster
 }
 
 func (n namer) MasterName() string {
-	return n.ctx.Name + "-master"
+	return n.cluster.Name + "-master"
 }
 
 func (n namer) GenSSHKeyExternalID() string {
-	return n.ctx.Name + "-" + rand.Characters(6)
+	return n.cluster.Name + "-" + rand.Characters(6)
 }
 
 func (n namer) GenNodeName(sku string) string {
-	return rand.WithUniqSuffix(n.ctx.Name + "-" + strings.Replace(sku, "_", "-", -1) + "-node")
+	return rand.WithUniqSuffix(n.cluster.Name + "-" + strings.Replace(sku, "_", "-", -1) + "-node")
 }
 
 func (n namer) NetworkInterfaceName(instanceName string) string {
@@ -34,43 +34,43 @@ func (n namer) PublicIPName(instanceName string) string {
 }
 
 func (n namer) ResourceGroupName() string {
-	return n.ctx.Name
+	return n.cluster.Name
 }
 
 func (n namer) AvailablitySetName() string {
-	return n.ctx.Name + "-as"
+	return n.cluster.Name + "-as"
 }
 
 func (n namer) VirtualNetworkName() string {
-	return n.ctx.Name + "-vnet"
+	return n.cluster.Name + "-vnet"
 }
 
 func (n namer) NetworkSecurityGroupName() string {
-	return n.ctx.Name + "-nsg"
+	return n.cluster.Name + "-nsg"
 }
 
 func (n namer) SubnetName() string {
-	return n.ctx.Name + "-subnet"
+	return n.cluster.Name + "-subnet"
 }
 
 func (n namer) RouteTableName() string {
-	return n.ctx.Name + "-rt"
+	return n.cluster.Name + "-rt"
 }
 
 func (n namer) NetworkSecurityRule(protocol string) string {
-	return n.ctx.Name + "-" + protocol
+	return n.cluster.Name + "-" + protocol
 }
 
 func (n namer) GenStorageAccountName() string {
-	return strings.Replace("k8s-"+rand.WithUniqSuffix(n.ctx.Name), "-", "", -1)
+	return strings.Replace("k8s-"+rand.WithUniqSuffix(n.cluster.Name), "-", "", -1)
 }
 
 func (n namer) StorageContainerName() string {
-	return n.ctx.Name + "-data"
+	return n.cluster.Name + "-data"
 }
 
 func (n namer) GetInstanceGroupName(sku string) string {
-	return n.ctx.Name + "-" + strings.Replace(sku, "_", "-", -1) + "-node"
+	return n.cluster.Name + "-" + strings.Replace(sku, "_", "-", -1) + "-node"
 
 }
 
@@ -84,7 +84,7 @@ func (n namer) BootDiskName(instanceName string) string {
 
 // https://k1g09f7j8mf0htzaq7mq4k8s.blob.core.windows.net/strgkubernetes/kubernetes-master-osdisk.vhd
 func (n namer) BootDiskURI(sa storage.Account, instanceName string) string {
-	return types.String(sa.PrimaryEndpoints.Blob) + n.ctx.AzureCloudConfig.StorageAccountName + "/" + instanceName + "-osdisk.vhd"
+	return types.String(sa.PrimaryEndpoints.Blob) + n.cluster.AzureCloudConfig.StorageAccountName + "/" + instanceName + "-osdisk.vhd"
 }
 
 func (n namer) BlobName(instanceName string) string {

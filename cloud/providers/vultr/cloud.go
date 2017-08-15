@@ -8,22 +8,25 @@ import (
 	gv "github.com/JamesClonk/vultr/lib"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 )
 
 type cloudConnector struct {
-	ctx    *api.Cluster
-	client *gv.Client
+	ctx     context.Context
+	cluster *api.Cluster
+	client  *gv.Client
 }
 
-func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
-	apiKey, ok := ctx.CloudCredential[credential.VultrApiToken]
+func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
+	apiKey, ok := cluster.CloudCredential[credential.VultrApiToken]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.VultrApiToken)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.VultrApiToken)
 	}
 	return &cloudConnector{
-		ctx:    ctx,
-		client: gv.NewClient(apiKey, &gv.Options{}),
+		ctx:     ctx,
+		cluster: cluster,
+		client:  gv.NewClient(apiKey, &gv.Options{}),
 	}, nil
 }
 
@@ -34,7 +37,7 @@ func (conn *cloudConnector) detectInstanceImage() error {
 	}
 	for _, os := range oses {
 		if os.Arch == "x64" && os.Family == "debian" && strings.HasPrefix(os.Name, "Debian 8") {
-			conn.ctx.InstanceImage = strconv.Itoa(os.ID)
+			conn.cluster.InstanceImage = strconv.Itoa(os.ID)
 			return nil
 		}
 	}

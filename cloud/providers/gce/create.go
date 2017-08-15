@@ -12,126 +12,125 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/storage"
 	compute "google.golang.org/api/compute/v1"
 )
 
 func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	err := cm.initContext(req)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins, err = cloud.NewInstances(cm.ctx)
+	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.conn, err = NewConnector(cm.ctx)
+	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Save()
+	cm.cluster.Save()
 
 	defer func(releaseReservedIp bool) {
-		if cm.ctx.Status == storage.KubernetesStatus_Pending {
-			cm.ctx.Status = storage.KubernetesStatus_Failing
+		if cm.cluster.Status == api.KubernetesStatus_Pending {
+			cm.cluster.Status = api.KubernetesStatus_Failing
 		}
-		cm.ctx.Save()
+		cm.cluster.Save()
 		cm.ins.Save()
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.ctx.Name, cm.ctx.Status)
-		if cm.ctx.Status != storage.KubernetesStatus_Ready {
-			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.ctx.Name)
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status)
+		if cm.cluster.Status != api.KubernetesStatus_Ready {
+			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
-				Name:              cm.ctx.Name,
+				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
 			})
 		}
-	}(cm.ctx.MasterReservedIP == "auto")
+	}(cm.cluster.MasterReservedIP == "auto")
 
-	if cm.ctx.InstanceImage, err = cm.conn.getInstanceImage(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if cm.cluster.InstanceImage, err = cm.conn.getInstanceImage(); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	if err = cm.importPublicKey(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// TODO: Should we add *IfMissing suffix to all these functions
 	if err = cm.ensureNetworks(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if err = cm.ensureFirewallRules(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.MasterDiskId, err = cm.createDisk(cm.namer.MasterPDName(), cm.ctx.MasterDiskType, cm.ctx.MasterDiskSize)
+	cm.cluster.MasterDiskId, err = cm.createDisk(cm.namer.MasterPDName(), cm.cluster.MasterDiskType, cm.cluster.MasterDiskSize)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	if err = cm.reserveIP(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	if err = cloud.GenClusterCerts(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// needed for master start-up config
-	if err = cm.ctx.Save(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cm.cluster.Save(); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.UploadStartupConfig()
 
 	op1, err := cm.createMasterIntance()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	err = cm.conn.waitForZoneOperation(op1)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	masterInstance, err := cm.getInstance(cm.ctx.KubernetesMasterName)
+	masterInstance, err := cm.getInstance(cm.cluster.KubernetesMasterName)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Role = api.RoleKubernetesMaster
-	cm.ctx.MasterExternalIP = masterInstance.ExternalIP
-	cm.ctx.MasterInternalIP = masterInstance.InternalIP
-	fmt.Println("Master EXTERNAL IP ================", cm.ctx.MasterExternalIP)
+	cm.cluster.MasterExternalIP = masterInstance.ExternalIP
+	cm.cluster.MasterInternalIP = masterInstance.InternalIP
+	fmt.Println("Master EXTERNAL IP ================", cm.cluster.MasterExternalIP)
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 
-	err = cloud.EnsureARecord(cm.ctx, masterInstance) // works for reserved or non-reserved mode
+	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.DetectApiServerURL()
+	cm.cluster.DetectApiServerURL()
 	// needed for node start-up config to get master_internal_ip
-	if err = cm.ctx.Save(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cm.cluster.Save(); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// Use zone operation to wait and block.
 	if op2, err := cm.createNodeFirewallRule(); err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	} else {
 		if err = cm.conn.waitForGlobalOperation(op2); err != nil {
-			cm.ctx.StatusCause = err.Error()
+			cm.cluster.StatusCause = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
@@ -140,7 +139,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 			cm: cm,
 			instance: cloud.Instance{
 				Type: cloud.InstanceType{
-					ContextVersion: cm.ctx.ContextVersion,
+					ContextVersion: cm.cluster.ContextVersion,
 					Sku:            ng.Sku,
 
 					Master:       false,
@@ -156,23 +155,23 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	cm.ctx.Logger().Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
-	if err := cloud.EnsureDnsIPLookup(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err := cloud.EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// wait for nodes to start
-	if err := cloud.ProbeKubeAPI(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// check all components are ok
-	if err = cloud.CheckComponentStatuses(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cloud.CheckComponentStatuses(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// Make sure nodes are connected to master and are ready
-	if err = cloud.WaitForReadyNodes(cm.ctx); err != nil {
-		cm.ctx.StatusCause = err.Error()
+	if err = cloud.WaitForReadyNodes(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
@@ -183,23 +182,23 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	for _, ng := range req.NodeGroups {
 		instances, err := cm.listInstances(cm.namer.InstanceGroupName(ng.Sku))
 		if err != nil {
-			cm.ctx.StatusCause = err.Error()
+			cm.cluster.StatusCause = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		cm.ins.Instances = append(cm.ins.Instances, instances...)
 	}
 
-	cm.ctx.Status = storage.KubernetesStatus_Ready
+	cm.cluster.Status = api.KubernetesStatus_Ready
 	return nil
 }
 
 func (cm *clusterManager) importPublicKey() error {
-	cm.ctx.Logger().Infof("Importing SSH key with fingerprint: %v", cm.ctx.SSHKey.OpensshFingerprint)
-	pubKey := string(cm.ctx.SSHKey.PublicKey)
-	r1, err := cm.conn.computeService.Projects.SetCommonInstanceMetadata(cm.ctx.Project, &compute.Metadata{
+	cm.ctx.Logger().Infof("Importing SSH key with fingerprint: %v", cm.cluster.SSHKey.OpensshFingerprint)
+	pubKey := string(cm.cluster.SSHKey.PublicKey)
+	r1, err := cm.conn.computeService.Projects.SetCommonInstanceMetadata(cm.cluster.Project, &compute.Metadata{
 		Items: []*compute.MetadataItems{
 			{
-				Key:   cm.ctx.SSHKeyExternalID,
+				Key:   cm.cluster.SSHKeyExternalID,
 				Value: &pubKey,
 			},
 		},
@@ -218,10 +217,10 @@ func (cm *clusterManager) importPublicKey() error {
 }
 
 func (cm *clusterManager) ensureNetworks() error {
-	cm.ctx.Logger().Infof("Retrieving network %v for project %v", defaultNetwork, cm.ctx.Project)
-	if r1, err := cm.conn.computeService.Networks.Get(cm.ctx.Project, defaultNetwork).Do(); err != nil {
+	cm.ctx.Logger().Infof("Retrieving network %v for project %v", defaultNetwork, cm.cluster.Project)
+	if r1, err := cm.conn.computeService.Networks.Get(cm.cluster.Project, defaultNetwork).Do(); err != nil {
 		cm.ctx.Logger().Debug("Retrieve network result", r1, err)
-		r2, err := cm.conn.computeService.Networks.Insert(cm.ctx.Project, &compute.Network{
+		r2, err := cm.conn.computeService.Networks.Insert(cm.cluster.Project, &compute.Network{
 			IPv4Range: "10.240.0.0/16",
 			Name:      defaultNetwork,
 		}).Do()
@@ -235,13 +234,13 @@ func (cm *clusterManager) ensureNetworks() error {
 }
 
 func (cm *clusterManager) ensureFirewallRules() error {
-	network := fmt.Sprintf("projects/%v/global/networks/%v", cm.ctx.Project, defaultNetwork)
+	network := fmt.Sprintf("projects/%v/global/networks/%v", cm.cluster.Project, defaultNetwork)
 	ruleInternal := defaultNetwork + "-allow-internal"
 	cm.ctx.Logger().Infof("Retrieving firewall rule %v", ruleInternal)
-	if r1, err := cm.conn.computeService.Firewalls.Get(cm.ctx.Project, ruleInternal).Do(); err != nil {
+	if r1, err := cm.conn.computeService.Firewalls.Get(cm.cluster.Project, ruleInternal).Do(); err != nil {
 		cm.ctx.Logger().Debug("Retrieved firewall rule", r1, err)
 
-		r2, err := cm.conn.computeService.Firewalls.Insert(cm.ctx.Project, &compute.Firewall{
+		r2, err := cm.conn.computeService.Firewalls.Insert(cm.cluster.Project, &compute.Firewall{
 			Name:         ruleInternal,
 			Network:      network,
 			SourceRanges: []string{"10.128.0.0/9"}, // 10.0.0.0/8
@@ -267,10 +266,10 @@ func (cm *clusterManager) ensureFirewallRules() error {
 	}
 
 	ruleSSH := defaultNetwork + "-allow-ssh"
-	if r3, err := cm.conn.computeService.Firewalls.Get(cm.ctx.Project, ruleSSH).Do(); err != nil {
+	if r3, err := cm.conn.computeService.Firewalls.Get(cm.cluster.Project, ruleSSH).Do(); err != nil {
 		cm.ctx.Logger().Debug("Retrieved firewall rule", r3, err)
 
-		r4, err := cm.conn.computeService.Firewalls.Insert(cm.ctx.Project, &compute.Firewall{
+		r4, err := cm.conn.computeService.Firewalls.Insert(cm.cluster.Project, &compute.Firewall{
 			Name:         ruleSSH,
 			Network:      network,
 			SourceRanges: []string{"0.0.0.0/0"},
@@ -288,11 +287,11 @@ func (cm *clusterManager) ensureFirewallRules() error {
 		cm.ctx.Logger().Infof("Firewall rule %v created", ruleSSH)
 	}
 
-	ruleHTTPS := cm.ctx.KubernetesMasterName + "-https"
-	if r5, err := cm.conn.computeService.Firewalls.Get(cm.ctx.Project, ruleHTTPS).Do(); err != nil {
+	ruleHTTPS := cm.cluster.KubernetesMasterName + "-https"
+	if r5, err := cm.conn.computeService.Firewalls.Get(cm.cluster.Project, ruleHTTPS).Do(); err != nil {
 		cm.ctx.Logger().Debug("Retrieved firewall rule", r5, err)
 
-		r6, err := cm.conn.computeService.Firewalls.Insert(cm.ctx.Project, &compute.Firewall{
+		r6, err := cm.conn.computeService.Firewalls.Insert(cm.cluster.Project, &compute.Firewall{
 			Name:         ruleHTTPS,
 			Network:      network,
 			SourceRanges: []string{"0.0.0.0/0"},
@@ -306,7 +305,7 @@ func (cm *clusterManager) ensureFirewallRules() error {
 					Ports:      []string{"6443"},
 				},
 			},
-			TargetTags: []string{cm.ctx.Name + "-master"},
+			TargetTags: []string{cm.cluster.Name + "-master"},
 		}).Do()
 		cm.ctx.Logger().Debug("Created master and configuring firewalls", r6, err)
 		if err != nil {
@@ -321,11 +320,11 @@ func (cm *clusterManager) createDisk(name, diskType string, sizeGb int64) (strin
 	// Type:        "https://www.googleapis.com/compute/v1/projects/tigerworks-kube/zones/us-central1-b/diskTypes/pd-ssd",
 	// SourceImage: "https://www.googleapis.com/compute/v1/projects/google-containers/global/images/container-vm-v20150806",
 
-	dType := fmt.Sprintf("projects/%v/zones/%v/diskTypes/%v", cm.ctx.Project, cm.ctx.Zone, diskType)
+	dType := fmt.Sprintf("projects/%v/zones/%v/diskTypes/%v", cm.cluster.Project, cm.cluster.Zone, diskType)
 
-	r1, err := cm.conn.computeService.Disks.Insert(cm.ctx.Project, cm.ctx.Zone, &compute.Disk{
+	r1, err := cm.conn.computeService.Disks.Insert(cm.cluster.Project, cm.cluster.Zone, &compute.Disk{
 		Name:   name,
-		Zone:   cm.ctx.Zone,
+		Zone:   cm.cluster.Zone,
 		Type:   dType,
 		SizeGb: sizeGb,
 	}).Do()
@@ -338,23 +337,23 @@ func (cm *clusterManager) createDisk(name, diskType string, sizeGb int64) (strin
 }
 
 func (cm *clusterManager) reserveIP() error {
-	if cm.ctx.MasterReservedIP == "auto" {
+	if cm.cluster.MasterReservedIP == "auto" {
 		name := cm.namer.ReserveIPName()
 
 		cm.ctx.Logger().Infof("Checking existence of reserved master ip %v", name)
-		if r1, err := cm.conn.computeService.Addresses.Get(cm.ctx.Project, cm.ctx.Region, name).Do(); err == nil {
+		if r1, err := cm.conn.computeService.Addresses.Get(cm.cluster.Project, cm.cluster.Region, name).Do(); err == nil {
 			if r1.Status == "IN_USE" {
 				return fmt.Errorf("Found a static IP with name %v in use. Failed to reserve a new ip with the same name.", name)
 			}
 
 			cm.ctx.Logger().Debug("Found master IP was already reserved", r1, err)
-			cm.ctx.MasterReservedIP = r1.Address
-			cm.ctx.Logger().Infof("Newly reserved master ip %v", cm.ctx.MasterReservedIP)
+			cm.cluster.MasterReservedIP = r1.Address
+			cm.ctx.Logger().Infof("Newly reserved master ip %v", cm.cluster.MasterReservedIP)
 			return nil
 		}
 
 		cm.ctx.Logger().Infof("Reserving master ip %v", name)
-		r2, err := cm.conn.computeService.Addresses.Insert(cm.ctx.Project, cm.ctx.Region, &compute.Address{Name: name}).Do()
+		r2, err := cm.conn.computeService.Addresses.Insert(cm.cluster.Project, cm.cluster.Region, &compute.Address{Name: name}).Do()
 		cm.ctx.Logger().Debug("Reserved master IP", r2, err)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -365,11 +364,11 @@ func (cm *clusterManager) reserveIP() error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		cm.ctx.Logger().Infof("Master ip %v reserved", name)
-		if r3, err := cm.conn.computeService.Addresses.Get(cm.ctx.Project, cm.ctx.Region, name).Do(); err == nil {
+		if r3, err := cm.conn.computeService.Addresses.Get(cm.cluster.Project, cm.cluster.Region, name).Do(); err == nil {
 			cm.ctx.Logger().Debug("Retrieved newly reserved master IP", r3, err)
 
-			cm.ctx.MasterReservedIP = r3.Address
-			cm.ctx.Logger().Infof("Newly reserved master ip %v", cm.ctx.MasterReservedIP)
+			cm.cluster.MasterReservedIP = r3.Address
+			cm.ctx.Logger().Infof("Newly reserved master ip %v", cm.cluster.MasterReservedIP)
 		}
 	}
 
@@ -380,25 +379,25 @@ func (cm *clusterManager) createMasterIntance() (string, error) {
 	// MachineType:  "projects/tigerworks-kube/zones/us-central1-b/machineTypes/n1-standard-1",
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
-	startupScript := cm.RenderStartupScript(cm.ctx.NewScriptOptions(), cm.ctx.MasterSKU, api.RoleKubernetesMaster)
+	startupScript := cm.RenderStartupScript(cm.cluster.NewScriptOptions(), cm.cluster.MasterSKU, api.RoleKubernetesMaster)
 
-	machineType := fmt.Sprintf("projects/%v/zones/%v/machineTypes/%v", cm.ctx.Project, cm.ctx.Zone, cm.ctx.MasterSKU)
-	zone := fmt.Sprintf("projects/%v/zones/%v", cm.ctx.Project, cm.ctx.Zone)
-	pdSrc := fmt.Sprintf("projects/%v/zones/%v/disks/%v", cm.ctx.Project, cm.ctx.Zone, cm.namer.MasterPDName())
-	srcImage := fmt.Sprintf("projects/%v/global/images/%v", cm.ctx.Project, cm.ctx.InstanceImage)
+	machineType := fmt.Sprintf("projects/%v/zones/%v/machineTypes/%v", cm.cluster.Project, cm.cluster.Zone, cm.cluster.MasterSKU)
+	zone := fmt.Sprintf("projects/%v/zones/%v", cm.cluster.Project, cm.cluster.Zone)
+	pdSrc := fmt.Sprintf("projects/%v/zones/%v/disks/%v", cm.cluster.Project, cm.cluster.Zone, cm.namer.MasterPDName())
+	srcImage := fmt.Sprintf("projects/%v/global/images/%v", cm.cluster.Project, cm.cluster.InstanceImage)
 
 	instance := &compute.Instance{
-		Name:        cm.ctx.KubernetesMasterName,
+		Name:        cm.cluster.KubernetesMasterName,
 		Zone:        zone,
 		MachineType: machineType,
 		// --image-project="${MASTER_IMAGE_PROJECT}"
 		// --image "${MASTER_IMAGE}"
 		Tags: &compute.Tags{
-			Items: []string{cm.ctx.Name + "-master"},
+			Items: []string{cm.cluster.Name + "-master"},
 		},
 		NetworkInterfaces: []*compute.NetworkInterface{
 			{
-				Network: fmt.Sprintf("projects/%v/global/networks/%v", cm.ctx.Project, defaultNetwork),
+				Network: fmt.Sprintf("projects/%v/global/networks/%v", cm.cluster.Project, defaultNetwork),
 			},
 		},
 		ServiceAccounts: []*compute.ServiceAccount{
@@ -464,7 +463,7 @@ func (cm *clusterManager) createMasterIntance() (string, error) {
 			},
 		},
 	}
-	if cm.ctx.MasterReservedIP == "" {
+	if cm.cluster.MasterReservedIP == "" {
 		instance.NetworkInterfaces[0].AccessConfigs = []*compute.AccessConfig{
 			{
 				Name: "Master External IP",
@@ -474,11 +473,11 @@ func (cm *clusterManager) createMasterIntance() (string, error) {
 	} else {
 		instance.NetworkInterfaces[0].AccessConfigs = []*compute.AccessConfig{
 			{
-				NatIP: cm.ctx.MasterReservedIP,
+				NatIP: cm.cluster.MasterReservedIP,
 			},
 		}
 	}
-	r1, err := cm.conn.computeService.Instances.Insert(cm.ctx.Project, cm.ctx.Zone, instance).Do()
+	r1, err := cm.conn.computeService.Instances.Insert(cm.cluster.Project, cm.cluster.Zone, instance).Do()
 	cm.ctx.Logger().Debug("Created master instance", r1, err)
 	if err != nil {
 		return r1.Name, errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -494,8 +493,8 @@ func (cm *clusterManager) RenderStartupScript(opt *api.ScriptOptions, sku, role 
 
 // Instance
 func (cm *clusterManager) getInstance(instance string) (*api.KubernetesInstance, error) {
-	cm.ctx.Logger().Infof("Retrieving instance %v in zone %v", instance, cm.ctx.Zone)
-	r1, err := cm.conn.computeService.Instances.Get(cm.ctx.Project, cm.ctx.Zone, instance).Do()
+	cm.ctx.Logger().Infof("Retrieving instance %v in zone %v", instance, cm.cluster.Zone)
+	r1, err := cm.conn.computeService.Instances.Get(cm.cluster.Project, cm.cluster.Zone, instance).Do()
 	cm.ctx.Logger().Debug("Retrieved instance", r1, err)
 	if err != nil {
 		return nil, err
@@ -506,7 +505,7 @@ func (cm *clusterManager) getInstance(instance string) (*api.KubernetesInstance,
 func (cm *clusterManager) listInstances(instanceGroup string) ([]*api.KubernetesInstance, error) {
 	cm.ctx.Logger().Infof("Retrieving instances in node group %v", instanceGroup)
 	instances := make([]*api.KubernetesInstance, 0)
-	r1, err := cm.conn.computeService.InstanceGroups.ListInstances(cm.ctx.Project, cm.ctx.Zone, instanceGroup, &compute.InstanceGroupsListInstancesRequest{
+	r1, err := cm.conn.computeService.InstanceGroups.ListInstances(cm.cluster.Project, cm.cluster.Zone, instanceGroup, &compute.InstanceGroupsListInstancesRequest{
 		InstanceState: "ALL",
 	}).Do()
 	cm.ctx.Logger().Debug("Retrieved instance", r1, err)
@@ -516,7 +515,7 @@ func (cm *clusterManager) listInstances(instanceGroup string) ([]*api.Kubernetes
 
 	for _, item := range r1.Items {
 		name := item.Instance[strings.LastIndex(item.Instance, "/")+1:]
-		r2, err := cm.conn.computeService.Instances.Get(cm.ctx.Project, cm.ctx.Zone, name).Do()
+		r2, err := cm.conn.computeService.Instances.Get(cm.cluster.Project, cm.cluster.Zone, name).Do()
 		if err != nil {
 			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
@@ -559,9 +558,9 @@ func (cm *clusterManager) newKubeInstance(r1 *compute.Instance) (*api.Kubernetes
 				//   "TERMINATED"
 			*/
 			if r1.Status == "TERMINATED" {
-				i.Status = storage.KubernetesInstanceStatus_Deleted
+				i.Status = api.KubernetesInstanceStatus_Deleted
 			} else {
-				i.Status = storage.KubernetesInstanceStatus_Ready
+				i.Status = api.KubernetesInstanceStatus_Ready
 			}
 			return &i, nil
 		}
@@ -570,14 +569,14 @@ func (cm *clusterManager) newKubeInstance(r1 *compute.Instance) (*api.Kubernetes
 }
 
 func (cm *clusterManager) createNodeFirewallRule() (string, error) {
-	name := cm.ctx.Name + "-node-all"
-	network := fmt.Sprintf("projects/%v/global/networks/%v", cm.ctx.Project, defaultNetwork)
+	name := cm.cluster.Name + "-node-all"
+	network := fmt.Sprintf("projects/%v/global/networks/%v", cm.cluster.Project, defaultNetwork)
 
-	r1, err := cm.conn.computeService.Firewalls.Insert(cm.ctx.Project, &compute.Firewall{
+	r1, err := cm.conn.computeService.Firewalls.Insert(cm.cluster.Project, &compute.Firewall{
 		Name:         name,
 		Network:      network,
-		SourceRanges: []string{cm.ctx.ClusterIPRange},
-		TargetTags:   []string{cm.ctx.Name + "-node"},
+		SourceRanges: []string{cm.cluster.ClusterIPRange},
+		TargetTags:   []string{cm.cluster.Name + "-node"},
 		Allowed: []*compute.FirewallAllowed{
 			{
 				IPProtocol: "tcp",
@@ -611,11 +610,11 @@ func (cm *clusterManager) createNodeInstanceTemplate(sku string) (string, error)
 	templateName := cm.namer.InstanceTemplateName(sku)
 
 	cm.ctx.Logger().Infof("Retrieving node template %v", templateName)
-	if r1, err := cm.conn.computeService.InstanceTemplates.Get(cm.ctx.Project, templateName).Do(); err == nil {
+	if r1, err := cm.conn.computeService.InstanceTemplates.Get(cm.cluster.Project, templateName).Do(); err == nil {
 		cm.ctx.Logger().Debug("Retrieved node template", r1, err)
 
 		cm.ctx.Logger().Infof("Deleting node template %v", templateName)
-		if r2, err := cm.conn.computeService.InstanceTemplates.Delete(cm.ctx.Project, templateName).Do(); err != nil {
+		if r2, err := cm.conn.computeService.InstanceTemplates.Delete(cm.cluster.Project, templateName).Do(); err != nil {
 			cm.ctx.Logger().Debug("Delete node template called", r2, err)
 			cm.ctx.Logger().Infoln("Failed to delete existing instance template")
 			os.Exit(1)
@@ -626,10 +625,10 @@ func (cm *clusterManager) createNodeInstanceTemplate(sku string) (string, error)
 	//  }
 
 	cm.UploadStartupConfig()
-	startupScript := cm.RenderStartupScript(cm.ctx.NewScriptOptions(), sku, api.RoleKubernetesPool)
+	startupScript := cm.RenderStartupScript(cm.cluster.NewScriptOptions(), sku, api.RoleKubernetesPool)
 
-	image := fmt.Sprintf("projects/%v/global/images/%v", cm.ctx.Project, cm.ctx.InstanceImage)
-	network := fmt.Sprintf("projects/%v/global/networks/%v", cm.ctx.Project, defaultNetwork)
+	image := fmt.Sprintf("projects/%v/global/images/%v", cm.cluster.Project, cm.cluster.InstanceImage)
+	network := fmt.Sprintf("projects/%v/global/networks/%v", cm.cluster.Project, defaultNetwork)
 
 	cm.ctx.Logger().Infof("Create instance template %v", templateName)
 	tpl := &compute.InstanceTemplate{
@@ -645,14 +644,14 @@ func (cm *clusterManager) createNodeInstanceTemplate(sku string) (string, error)
 					AutoDelete: true,
 					Boot:       true,
 					InitializeParams: &compute.AttachedDiskInitializeParams{
-						DiskType:    cm.ctx.NodeDiskType,
-						DiskSizeGb:  cm.ctx.NodeDiskSize,
+						DiskType:    cm.cluster.NodeDiskType,
+						DiskSizeGb:  cm.cluster.NodeDiskSize,
 						SourceImage: image,
 					},
 				},
 			},
 			Tags: &compute.Tags{
-				Items: []string{cm.ctx.Name + "-node"},
+				Items: []string{cm.cluster.Name + "-node"},
 			},
 			NetworkInterfaces: []*compute.NetworkInterface{
 				{
@@ -686,7 +685,7 @@ func (cm *clusterManager) createNodeInstanceTemplate(sku string) (string, error)
 			},
 		},
 	}
-	if cm.ctx.EnableNodePublicIP {
+	if cm.cluster.EnableNodePublicIP {
 		tpl.Properties.NetworkInterfaces[0].AccessConfigs = []*compute.AccessConfig{
 			{
 				Name: "Node External IP",
@@ -694,7 +693,7 @@ func (cm *clusterManager) createNodeInstanceTemplate(sku string) (string, error)
 			},
 		}
 	}
-	r1, err := cm.conn.computeService.InstanceTemplates.Insert(cm.ctx.Project, tpl).Do()
+	r1, err := cm.conn.computeService.InstanceTemplates.Insert(cm.cluster.Project, tpl).Do()
 	cm.ctx.Logger().Debug("Create instance template called", r1, err)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -705,12 +704,12 @@ func (cm *clusterManager) createNodeInstanceTemplate(sku string) (string, error)
 
 func (cm *clusterManager) createInstanceGroup(sku string, count int64) (string, error) {
 	name := cm.namer.InstanceGroupName(sku)
-	template := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", cm.ctx.Project, cm.namer.InstanceTemplateName(sku))
+	template := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", cm.cluster.Project, cm.namer.InstanceTemplateName(sku))
 
 	cm.ctx.Logger().Infof("Creating instance group %v from template %v", name, template)
-	r1, err := cm.conn.computeService.InstanceGroupManagers.Insert(cm.ctx.Project, cm.ctx.Zone, &compute.InstanceGroupManager{
+	r1, err := cm.conn.computeService.InstanceGroupManagers.Insert(cm.cluster.Project, cm.cluster.Zone, &compute.InstanceGroupManager{
 		Name:             name,
-		BaseInstanceName: cm.ctx.Name + "-node-" + sku,
+		BaseInstanceName: cm.cluster.Name + "-node-" + sku,
 		TargetSize:       count,
 		InstanceTemplate: template,
 	}).Do()
@@ -725,10 +724,10 @@ func (cm *clusterManager) createInstanceGroup(sku string, count int64) (string, 
 // Not used since Kube 1.3
 func (cm *clusterManager) createAutoscaler(sku string, count int64) (string, error) {
 	name := cm.namer.InstanceGroupName(sku)
-	target := fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%v/zones/%v/instanceGroupManagers/%v", cm.ctx.Project, cm.ctx.Zone, name)
+	target := fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%v/zones/%v/instanceGroupManagers/%v", cm.cluster.Project, cm.cluster.Zone, name)
 
 	cm.ctx.Logger().Infof("Creating auto scaler %v for instance group %v", name, target)
-	r1, err := cm.conn.computeService.Autoscalers.Insert(cm.ctx.Project, cm.ctx.Zone, &compute.Autoscaler{
+	r1, err := cm.conn.computeService.Autoscalers.Insert(cm.cluster.Project, cm.cluster.Zone, &compute.Autoscaler{
 		Name:   name,
 		Target: target,
 		AutoscalingPolicy: &compute.AutoscalingPolicy{
@@ -745,7 +744,7 @@ func (cm *clusterManager) createAutoscaler(sku string, count int64) (string, err
 }
 
 func (cm *clusterManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
-	r2, err := cm.conn.computeService.Instances.Get(cm.ctx.Project, cm.ctx.Zone, md.Name).Do()
+	r2, err := cm.conn.computeService.Instances.Get(cm.cluster.Project, cm.cluster.Zone, md.Name).Do()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

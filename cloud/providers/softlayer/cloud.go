@@ -18,20 +18,20 @@ type cloudConnector struct {
 	securityServiceClient services.Security_Ssh_Key
 }
 
-func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
-	apiKey, ok := ctx.CloudCredential[credential.SoftlayerAPIKey]
+func NewConnector(cluster *api.Cluster) (*cloudConnector, error) {
+	apiKey, ok := cluster.CloudCredential[credential.SoftlayerAPIKey]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.SoftlayerAPIKey)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.SoftlayerAPIKey)
 	}
-	userName, ok := ctx.CloudCredential[credential.SoftlayerUsername]
+	userName, ok := cluster.CloudCredential[credential.SoftlayerUsername]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.SoftlayerUsername)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.SoftlayerUsername)
 	}
 
 	sess := session.New(userName, apiKey)
 	sess.Debug = true
 	return &cloudConnector{
-		ctx:                   ctx,
+		ctx:                   cluster,
 		virtualServiceClient:  services.GetVirtualGuestService(sess),
 		accountServiceClient:  services.GetAccountService(sess),
 		securityServiceClient: services.GetSecuritySshKeyService(sess),

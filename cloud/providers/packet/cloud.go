@@ -6,19 +6,21 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/packethost/packngo"
 )
 
 type cloudConnector struct {
-	ctx    *api.Cluster
-	client *packngo.Client
+	ctx     context.Context
+	cluster *api.Cluster
+	client  *packngo.Client
 }
 
-func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
-	apiKey, ok := ctx.CloudCredential[credential.PacketApiKey]
+func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
+	apiKey, ok := cluster.CloudCredential[credential.PacketApiKey]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.PacketApiKey)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.PacketApiKey)
 	}
 	return &cloudConnector{
 		ctx:    ctx,

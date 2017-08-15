@@ -6,16 +6,17 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/context"
 	"github.com/cloudflare/cfssl/csr"
 )
 
-func GenClusterTokens(ctx *api.Cluster) {
-	ctx.KubeBearerToken = rand.GenerateToken()
-	ctx.KubeletToken = rand.GenerateToken()
-	ctx.KubeProxyToken = rand.GenerateToken()
+func GenClusterTokens(cluster *api.Cluster) {
+	cluster.KubeBearerToken = rand.GenerateToken()
+	cluster.KubeletToken = rand.GenerateToken()
+	cluster.KubeProxyToken = rand.GenerateToken()
 }
 
-func GenClusterCerts(ctx *api.Cluster) error {
+func GenClusterCerts(ctx context.Context, cluster *api.Cluster) error {
 	ctx.Logger().Info("Generating certificate for cluster")
 
 	var csrReq csr.CertificateRequest
@@ -50,31 +51,31 @@ func GenClusterCerts(ctx *api.Cluster) error {
 	//	}
 	//	ctx.Logger().Infof("Created CA cert with PHID:%v", ctx.CaCertPHID)
 	//}
-	ctx.CaCertPHID = caCertPHID
-	ctx.CaCert = base64.StdEncoding.EncodeToString(caCert)
+	cluster.CaCertPHID = caCertPHID
+	cluster.CaCert = base64.StdEncoding.EncodeToString(caCert)
 	////////////////////////
 
 	////////// Master ////////////
-	csrReq.CN = ctx.KubernetesMasterName
+	csrReq.CN = cluster.KubernetesMasterName
 	// TODO: refactor MES generation via lib function in provider/cloud.go
 	// Pass *sql object
 	csrReq.Hosts = []string{
-		ctx.KubernetesClusterIP(), // 10.0.0.1
+		cluster.KubernetesClusterIP(), // 10.0.0.1
 		"kubernetes",
 		"api.default",
 		"api.default.svc",
-		"api.default.svc." + ctx.DNSDomain,
-		ctx.KubernetesMasterName,
-		ctx.Extra().ExternalDomain(ctx.Name),
-		ctx.Extra().InternalDomain(ctx.Name),
+		"api.default.svc." + cluster.DNSDomain,
+		cluster.KubernetesMasterName,
+		ctx.Extra().ExternalDomain(cluster.Name),
+		ctx.Extra().InternalDomain(cluster.Name),
 	}
-	if ctx.MasterReservedIP != "" {
-		csrReq.Hosts = append(csrReq.Hosts, ctx.MasterReservedIP)
-	} else if ctx.MasterExternalIP != "" {
-		csrReq.Hosts = append(csrReq.Hosts, ctx.MasterExternalIP)
+	if cluster.MasterReservedIP != "" {
+		csrReq.Hosts = append(csrReq.Hosts, cluster.MasterReservedIP)
+	} else if cluster.MasterExternalIP != "" {
+		csrReq.Hosts = append(csrReq.Hosts, cluster.MasterExternalIP)
 	}
-	if ctx.MasterInternalIP != "" {
-		csrReq.Hosts = append(csrReq.Hosts, ctx.MasterInternalIP)
+	if cluster.MasterInternalIP != "" {
+		csrReq.Hosts = append(csrReq.Hosts, cluster.MasterInternalIP)
 	}
 	ctx.Logger().Infof("Master Extra SANS: %v", csrReq.Hosts)
 
@@ -82,17 +83,17 @@ func GenClusterCerts(ctx *api.Cluster) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
-	ctx.MasterCertPHID = masterCertPHID
-	ctx.MasterCert = base64.StdEncoding.EncodeToString(masterCert)
-	ctx.MasterKey = base64.StdEncoding.EncodeToString(masterKey)
-	ctx.Logger().Infof("Created master cert %v with PHID:%v", string(ctx.MasterCert), ctx.MasterCertPHID)
+	cluster.MasterCertPHID = masterCertPHID
+	cluster.MasterCert = base64.StdEncoding.EncodeToString(masterCert)
+	cluster.MasterKey = base64.StdEncoding.EncodeToString(masterKey)
+	ctx.Logger().Infof("Created master cert %v with PHID:%v", string(cluster.MasterCert), cluster.MasterCertPHID)
 	//////////////////////////////
 
 	////////// Default LB ////////////
-	csrReq.CN = ctx.Extra().ExternalDomain(ctx.Name) //cluster-ns.appscode.(tools | tech)
+	csrReq.CN = ctx.Extra().ExternalDomain(cluster.Name) //cluster-ns.appscode.(tools | tech)
 	csrReq.Hosts = []string{"127.0.0.1"}
-	if ctx.MasterReservedIP != "" {
-		csrReq.Hosts = append(csrReq.Hosts, ctx.MasterReservedIP)
+	if cluster.MasterReservedIP != "" {
+		csrReq.Hosts = append(csrReq.Hosts, cluster.MasterReservedIP)
 	}
 	ctx.Logger().Infof("Master LB Extra SANS: %v", csrReq.Hosts)
 
@@ -100,10 +101,10 @@ func GenClusterCerts(ctx *api.Cluster) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
-	ctx.DefaultLBCertPHID = defaultLBCertPHID
-	ctx.DefaultLBCert = base64.StdEncoding.EncodeToString(defaultLBCert)
-	ctx.DefaultLBKey = base64.StdEncoding.EncodeToString(defaultLBKey)
-	ctx.Logger().Infof("Created Default LB cert %v with PHID:%v", string(ctx.DefaultLBCert), ctx.DefaultLBCertPHID)
+	cluster.DefaultLBCertPHID = defaultLBCertPHID
+	cluster.DefaultLBCert = base64.StdEncoding.EncodeToString(defaultLBCert)
+	cluster.DefaultLBKey = base64.StdEncoding.EncodeToString(defaultLBKey)
+	ctx.Logger().Infof("Created Default LB cert %v with PHID:%v", string(cluster.DefaultLBCert), cluster.DefaultLBCertPHID)
 	//////////////////////////////
 
 	////////// Kubelet //////////
@@ -113,13 +114,13 @@ func GenClusterCerts(ctx *api.Cluster) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
-	ctx.KubeletCertPHID = kubeletCertPHID
-	ctx.KubeletCert = base64.StdEncoding.EncodeToString(kubeletCert)
-	ctx.KubeletKey = base64.StdEncoding.EncodeToString(kubeletKey)
-	ctx.Logger().Infof("Created kubelet cert %v with PHID:%v", string(ctx.KubeletCert), ctx.KubeletCertPHID)
+	cluster.KubeletCertPHID = kubeletCertPHID
+	cluster.KubeletCert = base64.StdEncoding.EncodeToString(kubeletCert)
+	cluster.KubeletKey = base64.StdEncoding.EncodeToString(kubeletKey)
+	ctx.Logger().Infof("Created kubelet cert %v with PHID:%v", string(cluster.KubeletCert), cluster.KubeletCertPHID)
 	/////////////////////////////
 
-	if ctx.EnableClusterVPN == "h2h-psk" {
+	if cluster.EnableClusterVPN == "h2h-psk" {
 		////////// Kube api server //////////
 		csrReq.CN = "system:apiserver"
 		csrReq.Hosts = []string{"127.0.0.1"}
@@ -127,10 +128,10 @@ func GenClusterCerts(ctx *api.Cluster) error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(ctx).Err()
 		}
-		ctx.KubeAPIServerCertPHID = kubeAPIServerPHID
-		ctx.KubeAPIServerCert = base64.StdEncoding.EncodeToString(kubeAPIServerCert)
-		ctx.KubeAPIServerKey = base64.StdEncoding.EncodeToString(kubeAPIServerKey)
-		ctx.Logger().Infof("Created kube apiserver cert %v with PHID:%v", string(ctx.KubeAPIServerCert), ctx.KubeAPIServerCertPHID)
+		cluster.KubeAPIServerCertPHID = kubeAPIServerPHID
+		cluster.KubeAPIServerCert = base64.StdEncoding.EncodeToString(kubeAPIServerCert)
+		cluster.KubeAPIServerKey = base64.StdEncoding.EncodeToString(kubeAPIServerKey)
+		ctx.Logger().Infof("Created kube apiserver cert %v with PHID:%v", string(cluster.KubeAPIServerCert), cluster.KubeAPIServerCertPHID)
 		//////////////////////////////////
 
 		////////// Hostfacts server //////////
@@ -140,11 +141,11 @@ func GenClusterCerts(ctx *api.Cluster) error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(ctx).Err()
 		}
-		ctx.HostfactsCertPHID = hostfactsPHID
-		ctx.HostfactsCert = base64.StdEncoding.EncodeToString(hostfactsCert)
-		ctx.HostfactsKey = base64.StdEncoding.EncodeToString(hostfactsKey)
-		ctx.HostfactsAuthToken = rand.GenerateToken()
-		ctx.Logger().Infof("Created hostfacts cert %v with PHID:%v", string(ctx.HostfactsCert), ctx.HostfactsCertPHID)
+		cluster.HostfactsCertPHID = hostfactsPHID
+		cluster.HostfactsCert = base64.StdEncoding.EncodeToString(hostfactsCert)
+		cluster.HostfactsKey = base64.StdEncoding.EncodeToString(hostfactsKey)
+		cluster.HostfactsAuthToken = rand.GenerateToken()
+		ctx.Logger().Infof("Created hostfacts cert %v with PHID:%v", string(cluster.HostfactsCert), cluster.HostfactsCertPHID)
 		//////////////////////////////////
 	}
 	ctx.Logger().Info("Certificates generated successfully")

@@ -21,37 +21,37 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	instanceGroupName := igm.cm.namer.GetInstanceGroupName(igm.instance.Type.Sku) //igm.cm.ctx.Name + "-" + strings.Replace(igm.instance.Type.Sku, "_", "-", -1) + "-node"
 	found, err := igm.GetInstanceGroup(instanceGroupName)
 	if err != nil {
-		igm.cm.ctx.StatusCause = err.Error()
+		igm.cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
-	igm.cm.ctx.ContextVersion = igm.instance.Type.ContextVersion
-	igm.cm.ctx.Load()
+	igm.cm.cluster.ContextVersion = igm.instance.Type.ContextVersion
+	igm.cm.cluster.Load()
 
 	if !found {
 		err = igm.createInstanceGroup(igm.instance.Stats.Count)
 	} else if igm.instance.Stats.Count == 0 {
-		nodeAdjust, _ := cloud.Mutator(igm.cm.ctx, igm.instance)
+		nodeAdjust, _ := cloud.Mutator(igm.cm.cluster, igm.instance)
 		if nodeAdjust < 0 {
 			nodeAdjust = -nodeAdjust
 		}
 		err := igm.deleteInstanceGroup(instanceGroupName, nodeAdjust)
 		if err != nil {
-			igm.cm.ctx.StatusCause = err.Error()
+			igm.cm.cluster.StatusCause = err.Error()
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	} else {
-		nodeAdjust, _ := cloud.Mutator(igm.cm.ctx, igm.instance)
+		nodeAdjust, _ := cloud.Mutator(igm.cm.cluster, igm.instance)
 		if nodeAdjust < 0 {
 			err := igm.deleteInstanceGroup(instanceGroupName, -nodeAdjust)
 			if err != nil {
-				igm.cm.ctx.StatusCause = err.Error()
+				igm.cm.cluster.StatusCause = err.Error()
 				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
 		} else {
 			err := igm.createInstanceGroup(nodeAdjust)
 			if err != nil {
-				igm.cm.ctx.StatusCause = err.Error()
+				igm.cm.cluster.StatusCause = err.Error()
 				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
 		}
@@ -62,7 +62,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, error) {
 	vm, err := igm.cm.conn.vmClient.List(igm.cm.namer.ResourceGroupName())
 	if err != nil {
-		igm.cm.ctx.StatusCause = err.Error()
+		igm.cm.cluster.StatusCause = err.Error()
 		return false, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 
 	}
@@ -79,7 +79,7 @@ func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, e
 
 func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.KubernetesInstance, error) {
 	instances := make([]*api.KubernetesInstance, 0)
-	kc, err := igm.cm.ctx.NewKubeClient()
+	kc, err := igm.cm.cluster.NewKubeClient()
 	if err != nil {
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 
@@ -116,7 +116,7 @@ func (igm *InstanceGroupManager) createInstanceGroup(count int64) error {
 	for i := int64(0); i < count; i++ {
 		_, err := igm.StartNode()
 		if err != nil {
-			igm.cm.ctx.StatusCause = err.Error()
+			igm.cm.cluster.StatusCause = err.Error()
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 
 		}
@@ -127,7 +127,7 @@ func (igm *InstanceGroupManager) createInstanceGroup(count int64) error {
 func (igm *InstanceGroupManager) deleteInstanceGroup(instanceGroup string, count int64) error {
 	vm, err := igm.cm.conn.vmClient.List(igm.cm.namer.ResourceGroupName())
 	if err != nil {
-		igm.cm.ctx.StatusCause = err.Error()
+		igm.cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 
 	}
@@ -159,7 +159,7 @@ func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
 	nodeName := igm.cm.namer.GenNodeName(igm.instance.Type.Sku)
 	nodePIP, err := igm.im.createPublicIP(igm.cm.namer.PublicIPName(nodeName), network.Dynamic)
 	if err != nil {
-		igm.cm.ctx.StatusCause = err.Error()
+		igm.cm.cluster.StatusCause = err.Error()
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
@@ -180,7 +180,7 @@ func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
 
 	nodeNIC, err := igm.im.createNetworkInterface(igm.cm.namer.NetworkInterfaceName(nodeName), sn, network.Dynamic, "", nodePIP)
 	if err != nil {
-		igm.cm.ctx.StatusCause = err.Error()
+		igm.cm.cluster.StatusCause = err.Error()
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
@@ -189,22 +189,22 @@ func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
-	nodeScript := igm.im.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), igm.instance.Type.Sku, api.RoleKubernetesPool)
+	nodeScript := igm.im.RenderStartupScript(igm.cm.cluster.NewScriptOptions(), igm.instance.Type.Sku, api.RoleKubernetesPool)
 	nodeVM, err := igm.im.createVirtualMachine(nodeNIC, as, sa, nodeName, nodeScript, igm.instance.Type.Sku)
 	if err != nil {
-		igm.cm.ctx.StatusCause = err.Error()
+		igm.cm.cluster.StatusCause = err.Error()
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
 	nodePIP, err = igm.im.getPublicIP(igm.cm.namer.PublicIPName(nodeName))
 	if err != nil {
-		igm.cm.ctx.StatusCause = err.Error()
+		igm.cm.cluster.StatusCause = err.Error()
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
 	ki, err = igm.im.newKubeInstance(nodeVM, nodeNIC, nodePIP)
 	if err != nil {
-		igm.cm.ctx.StatusCause = err.Error()
+		igm.cm.cluster.StatusCause = err.Error()
 		return &api.KubernetesInstance{}, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	ki.Role = api.RoleKubernetesPool

@@ -10,6 +10,7 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/digitalocean/godo"
 	"golang.org/x/oauth2"
@@ -18,22 +19,23 @@ import (
 const containerOsImage = "appscode-containeros"
 
 type cloudConnector struct {
-	ctx    *api.Cluster
-	client *godo.Client
+	ctx     context.Context
+	cluster *api.Cluster
+	client  *godo.Client
 }
 
-func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
-	token, ok := ctx.CloudCredential[credential.DigitalOceanToken]
+func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
+	token, ok := cluster.CloudCredential[credential.DigitalOceanToken]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", ctx.Name, credential.DigitalOceanToken)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.DigitalOceanToken)
 	}
 
 	oauthClient := oauth2.NewClient(oauth2.NoContext, oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: token,
 	}))
 	return &cloudConnector{
-		ctx:    ctx,
-		client: godo.NewClient(oauthClient),
+		cluster: cluster,
+		client:  godo.NewClient(oauthClient),
 	}, nil
 }
 
@@ -54,22 +56,22 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 			if img.Name == containerOsImage && img.Distribution == "Debian" {
 				found := false
 				for _, region := range img.Regions {
-					if region == conn.ctx.Region {
+					if region == conn.cluster.Region {
 						found = true
-						conn.ctx.Logger().Debugf("Image already exists in region %v.", conn.ctx.Region)
+						conn.ctx.Logger().Debugf("Image already exists in region %v.", conn.cluster.Region)
 						return strconv.Itoa(img.ID), nil
 					}
 				}
 				if !found {
 					_, _, err := conn.client.ImageActions.Transfer(go_ctx.TODO(), img.ID, &godo.ActionRequest{
 						"type":   "transfer",
-						"region": conn.ctx.Region,
+						"region": conn.cluster.Region,
 					})
 					if err != nil {
 						return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 					}
 
-					conn.ctx.Logger().Infof("Started image transfer to region %v.", conn.ctx.Region)
+					conn.ctx.Logger().Infof("Started image transfer to region %v.", conn.cluster.Region)
 					// wait for the transfer to complete
 					conn.waitForTransfer(img.ID)
 					return strconv.Itoa(img.ID), nil
@@ -85,7 +87,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 	conn.ctx.Logger().Info("Creating droplet to build custom image")
 	droplet, _, err := conn.client.Droplets.Create(go_ctx.TODO(), &godo.DropletCreateRequest{
 		Name:              rand.WithUniqSuffix("kubernetes"),
-		Region:            conn.ctx.Region,
+		Region:            conn.cluster.Region,
 		Size:              "512mb",
 		Image:             godo.DropletCreateImage{Slug: "debian-8-x64"},
 		PrivateNetworking: false,
@@ -196,7 +198,7 @@ func (conn *cloudConnector) waitForTransfer(id int) error {
 			return err
 		}
 		for _, r := range img.Regions {
-			if r == conn.ctx.Region {
+			if r == conn.cluster.Region {
 				return nil
 			}
 		}

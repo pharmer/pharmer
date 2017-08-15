@@ -12,14 +12,15 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/storage"
 	"golang.org/x/crypto/ssh"
 )
 
 type instanceManager struct {
-	ctx  *api.Cluster
-	conn *cloudConnector
+	ctx     context.Context
+	cluster *api.Cluster
+	conn    *cloudConnector
 }
 
 func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
@@ -49,8 +50,8 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 func (im *instanceManager) createInstance(role, sku string) (*hc.Transaction, error) {
 	tx, _, err := im.conn.client.Ordering.CreateTransaction(&hc.CreateTransactionRequest{
 		ProductID:     sku,
-		AuthorizedKey: []string{im.ctx.SSHKey.OpensshFingerprint},
-		Dist:          im.ctx.InstanceImage,
+		AuthorizedKey: []string{im.cluster.SSHKey.OpensshFingerprint},
+		Dist:          im.cluster.InstanceImage,
 		Arch:          64,
 		Lang:          "en",
 		// Test:          true,
@@ -61,13 +62,13 @@ func (im *instanceManager) createInstance(role, sku string) (*hc.Transaction, er
 
 func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Signer) error {
 	im.ctx.Logger().Infof("Storing config file for server %v", serverIP)
-	cfg, err := im.ctx.StartupConfigResponse(role)
+	cfg, err := im.cluster.StartupConfigResponse(role)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>", cfg)
 
-	file := fmt.Sprintf("/var/cache/kubernetes_context_%v_%v.yaml", im.ctx.ContextVersion, role)
+	file := fmt.Sprintf("/var/cache/kubernetes_context_%v_%v.yaml", im.cluster.ContextVersion, role)
 	stdOut, stdErr, code, err := _ssh.SCP(file, []byte(cfg), "root", serverIP+":22", signer)
 	im.ctx.Logger().Debugf(stdOut, stdErr, code)
 	return err
@@ -75,7 +76,7 @@ func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Sig
 
 func (im *instanceManager) storeStartupScript(serverIP, sku, role string, signer ssh.Signer) error {
 	im.ctx.Logger().Infof("Storing startup script for server %v", serverIP)
-	startupScript := im.RenderStartupScript(im.ctx.NewScriptOptions(), sku, role)
+	startupScript := im.RenderStartupScript(im.cluster.NewScriptOptions(), sku, role)
 	fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>", startupScript)
 
 	file := "/var/cache/kubernetes_startupscript.sh"
@@ -136,13 +137,13 @@ EOF
 `, strings.Replace(cloud.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid)
 }
 
-func (cluster *instanceManager) executeStartupScript(serverIP string, signer ssh.Signer) error {
-	cluster.ctx.Logger().Infof("SSH execing start command %v", serverIP+":22")
+func (im *instanceManager) executeStartupScript(serverIP string, signer ssh.Signer) error {
+	im.ctx.Logger().Infof("SSH execing start command %v", serverIP+":22")
 
 	stdOut, stdErr, code, err := _ssh.Exec(`bash /var/cache/kubernetes_startupscript.sh`, "root", serverIP+":22", signer)
-	cluster.ctx.Logger().Debugf(stdOut, stdErr, code)
+	im.ctx.Logger().Debugf(stdOut, stdErr, code)
 	if err != nil {
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	return nil
 }
@@ -164,6 +165,6 @@ func (im *instanceManager) newKubeInstanceFromSummary(droplet *hc.ServerSummary)
 		ExternalIP:     droplet.ServerIP,
 		InternalIP:     "",
 		SKU:            droplet.Product,
-		Status:         storage.KubernetesInstanceStatus_Ready, // droplet.Status == active
+		Status:         api.KubernetesInstanceStatus_Ready, // droplet.Status == active
 	}, nil
 }

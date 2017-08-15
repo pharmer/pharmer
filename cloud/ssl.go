@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/context"
 	"github.com/cloudflare/cfssl/cli"
 	"github.com/cloudflare/cfssl/cli/genkey"
 	"github.com/cloudflare/cfssl/cli/sign"
@@ -17,7 +17,7 @@ import (
 )
 
 // Returns PHID, cert []byte, key []byte, error
-func CreateCA(ctx *api.Cluster) (string, []byte, []byte, error) {
+func CreateCA(ctx context.Context) (string, []byte, []byte, error) {
 	var d time.Duration
 	d = 10 * 365 * 24 * time.Hour
 	certReq := &csr.CertificateRequest{
@@ -46,7 +46,7 @@ func CreateCA(ctx *api.Cluster) (string, []byte, []byte, error) {
 	return phid, cert, key, nil
 }
 
-func CreateClientCert(ctx *api.Cluster, caCert, caKey []byte, csrReq *csr.CertificateRequest) (string, []byte, []byte, error) {
+func CreateClientCert(ctx context.Context, caCert, caKey []byte, csrReq *csr.CertificateRequest) (string, []byte, []byte, error) {
 	g := &csr.Generator{Validator: genkey.Validator}
 	csrPem, key, err := g.ProcessRequest(csrReq)
 	if err != nil {

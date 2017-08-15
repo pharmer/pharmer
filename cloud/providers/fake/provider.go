@@ -1,12 +1,15 @@
 package fake
 
 import (
+	go_ctx "context"
 	"fmt"
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/config"
+	"github.com/appscode/pharmer/context"
 )
 
 const (
@@ -14,50 +17,52 @@ const (
 )
 
 func init() {
-	cloud.RegisterProvider(UID, new(kubeProvider))
+	cloud.RegisterProvider(UID, func(cfg *config.PharmerConfig) (cloud.Provider, error) { return &provider{cfg: cfg}, nil })
 }
 
-type kubeProvider struct {
+type provider struct {
+	cfg *config.PharmerConfig
 }
 
-var _ cloud.Provider = &kubeProvider{}
+var _ cloud.Provider = &provider{}
 
-func (cluster *kubeProvider) Create(ctx *api.Cluster, req *proto.ClusterCreateRequest) error {
-	runFakeJob(ctx, "cluster create")
+func (p *provider) Create(ctx go_ctx.Context, req *proto.ClusterCreateRequest) error {
+	p.runFakeJob(ctx, "cluster create")
 	return nil
 }
 
-func (cluster *kubeProvider) Scale(ctx *api.Cluster, req *proto.ClusterReconfigureRequest) error {
-	runFakeJob(ctx, "cluster scale")
+func (p *provider) Scale(ctx go_ctx.Context, req *proto.ClusterReconfigureRequest) error {
+	p.runFakeJob(ctx, "cluster scale")
 	return nil
 }
 
-func (cluster *kubeProvider) Delete(ctx *api.Cluster, req *proto.ClusterDeleteRequest) error {
-	runFakeJob(ctx, "cluster delete")
+func (p *provider) Delete(ctx go_ctx.Context, req *proto.ClusterDeleteRequest) error {
+	p.runFakeJob(ctx, "cluster delete")
 	return nil
 }
 
-func (cluster *kubeProvider) SetVersion(ctx *api.Cluster, req *proto.ClusterReconfigureRequest) error {
-	runFakeJob(ctx, "cluster set version")
+func (p *provider) SetVersion(ctx go_ctx.Context, req *proto.ClusterReconfigureRequest) error {
+	p.runFakeJob(ctx, "cluster set version")
 	return nil
 }
 
-func (cluster *kubeProvider) UploadStartupConfig(ctx *api.Cluster) error {
+func (p *provider) UploadStartupConfig(ctx go_ctx.Context) error {
 	return nil
 }
 
-func (cluster *kubeProvider) GetInstance(ctx *api.Cluster, md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (p *provider) GetInstance(ctx go_ctx.Context, md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
 	return &api.KubernetesInstance{}, nil
 }
 
-func (cluster *kubeProvider) MatchInstance(i *api.KubernetesInstance, md *api.InstanceMetadata) bool {
+func (p *provider) MatchInstance(i *api.KubernetesInstance, md *api.InstanceMetadata) bool {
 	return true
 }
 
-func runFakeJob(ctx *api.Cluster, requestType string) {
-	ctx.Logger().Infof("starting %v job", requestType)
+func (p *provider) runFakeJob(ctx go_ctx.Context, requestType string) {
+	c := context.NewContext(ctx, p.cfg)
+	c.Logger().Infof("starting %v job", requestType)
 	for i := 1; i <= 10; i++ {
-		ctx.Logger().Info(fmt.Sprint("Job completed: ", i*10, "%"))
+		c.Logger().Info(fmt.Sprint("Job completed: ", i*10, "%"))
 		time.Sleep(time.Second * 3)
 	}
 }

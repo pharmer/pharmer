@@ -6,17 +6,18 @@ import (
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/storage"
 	semver "github.com/hashicorp/go-version"
 )
 
 type clusterManager struct {
-	ctx   *api.Cluster
-	ins   *api.ClusterInstances
-	conn  *cloudConnector
-	namer namer
+	ctx     context.Context
+	cluster *api.Cluster
+	ins     *api.ClusterInstances
+	conn    *cloudConnector
+	namer   namer
 }
 
 func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
@@ -24,67 +25,67 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	if err != nil {
 		return errors.FromErr(err).Err()
 	}
-	cm.namer = namer{ctx: cm.ctx}
+	cm.namer = namer{cluster: cm.cluster}
 
 	//cluster.ctx.Name = req.Name
 	//cluster.ctx.PHID = phid.NewKubeCluster()
 	//cluster.ctx.Provider = req.Provider
 	//cluster.ctx.Zone = req.Zone
-	cm.ctx.Region = cm.ctx.Zone
-	cm.ctx.DoNotDelete = req.DoNotDelete
+	cm.cluster.Region = cm.cluster.Zone
+	cm.cluster.DoNotDelete = req.DoNotDelete
 
-	cm.ctx.SetNodeGroups(req.NodeGroups)
+	cm.cluster.SetNodeGroups(req.NodeGroups)
 
-	cm.ctx.KubernetesMasterName = cm.namer.MasterName()
-	cm.ctx.SSHKey, err = api.NewSSHKeyPair()
+	cm.cluster.KubernetesMasterName = cm.namer.MasterName()
+	cm.cluster.SSHKey, err = api.NewSSHKeyPair()
 	if err != nil {
 		return errors.FromErr(err).Err()
 	}
-	cm.ctx.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
-	cm.ctx.SSHKeyPHID = phid.NewSSHKey()
+	cm.cluster.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
+	cm.cluster.SSHKeyPHID = phid.NewSSHKey()
 
 	// cluster.ctx.MasterSGName = cluster.ctx.Name + "-master-" + rand.Characters(6)
 	// cluster.ctx.NodeSGName = cluster.ctx.Name + "-node-" + rand.Characters(6)
 
-	cloud.GenClusterTokens(cm.ctx)
+	cloud.GenClusterTokens(cm.cluster)
 
-	cm.ctx.AzureCloudConfig = &api.AzureCloudConfig{
-		TenantID:           cm.ctx.CloudCredential[credential.AzureTenantID],
-		SubscriptionID:     cm.ctx.CloudCredential[credential.AzureSubscriptionID],
-		AadClientID:        cm.ctx.CloudCredential[credential.AzureClientID],
-		AadClientSecret:    cm.ctx.CloudCredential[credential.AzureClientSecret],
+	cm.cluster.AzureCloudConfig = &api.AzureCloudConfig{
+		TenantID:           cm.cluster.CloudCredential[credential.AzureTenantID],
+		SubscriptionID:     cm.cluster.CloudCredential[credential.AzureSubscriptionID],
+		AadClientID:        cm.cluster.CloudCredential[credential.AzureClientID],
+		AadClientSecret:    cm.cluster.CloudCredential[credential.AzureClientSecret],
 		ResourceGroup:      cm.namer.ResourceGroupName(),
-		Location:           cm.ctx.Zone,
+		Location:           cm.cluster.Zone,
 		SubnetName:         cm.namer.SubnetName(),
 		SecurityGroupName:  cm.namer.NetworkSecurityGroupName(),
 		VnetName:           cm.namer.VirtualNetworkName(),
 		RouteTableName:     cm.namer.RouteTableName(),
 		StorageAccountName: cm.namer.GenStorageAccountName(),
 	}
-	cm.ctx.CloudConfigPath = "/etc/kubernetes/azure.json"
-	cm.ctx.AzureStorageAccountName = cm.ctx.AzureCloudConfig.StorageAccountName
+	cm.cluster.CloudConfigPath = "/etc/kubernetes/azure.json"
+	cm.cluster.AzureStorageAccountName = cm.cluster.AzureCloudConfig.StorageAccountName
 
 	return nil
 }
 
 func (cm *clusterManager) LoadDefaultContext() error {
-	err := cm.ctx.KubeEnv.SetDefaults()
+	err := cm.cluster.KubeEnv.SetDefaults()
 	if err != nil {
 		return errors.FromErr(err).Err()
 	}
 
-	cm.ctx.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.ctx.Name)
-	cm.ctx.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.ctx.Name)
+	cm.cluster.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.cluster.Name)
+	cm.cluster.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.cluster.Name)
 
-	cm.ctx.Status = storage.KubernetesStatus_Pending
-	cm.ctx.OS = "Debian" // offer: "16.04.0-LTS"
+	cm.cluster.Status = api.KubernetesStatus_Pending
+	cm.cluster.OS = "Debian" // offer: "16.04.0-LTS"
 	// https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-windows-sizes#d-series
-	cm.ctx.MasterSKU = "Standard_D2_v2" // CPU 2 Memory 7 disk 4
-	cm.ctx.InstanceRootPassword = rand.GeneratePassword()
+	cm.cluster.MasterSKU = "Standard_D2_v2" // CPU 2 Memory 7 disk 4
+	cm.cluster.InstanceRootPassword = rand.GeneratePassword()
 
-	cm.ctx.AppsCodeLogIndexPrefix = "logstash-"
-	cm.ctx.AppsCodeLogStorageLifetime = 90 * 24 * 3600
-	cm.ctx.AppsCodeMonitoringStorageLifetime = 90 * 24 * 3600
+	cm.cluster.AppsCodeLogIndexPrefix = "logstash-"
+	cm.cluster.AppsCodeLogStorageLifetime = 90 * 24 * 3600
+	cm.cluster.AppsCodeMonitoringStorageLifetime = 90 * 24 * 3600
 
 	// Disk size can't be set for boot disk
 	// cm.ctx.MasterDiskType = "pd-standard" // "pd-ssd"
@@ -100,62 +101,62 @@ func (cm *clusterManager) LoadDefaultContext() error {
 			"version": "latest"
 		}
 	*/
-	cm.ctx.InstanceImageProject = "credativ" // publisher
-	cm.ctx.InstanceImage = "8"               // sku
-	cm.ctx.InstanceImageVersion = "latest"   // version
+	cm.cluster.InstanceImageProject = "credativ" // publisher
+	cm.cluster.InstanceImage = "8"               // sku
+	cm.cluster.InstanceImageVersion = "latest"   // version
 
 	// REGISTER_MASTER_KUBELET = false // always false, keep master lightweight
 
 	// PREEMPTIBLE_NODE = false // Removed Support
 
-	cm.ctx.MasterReservedIP = "auto" // GCE - change to "" for avoid allocating Elastic IP
-	cm.ctx.MasterIPRange = "10.246.0.0/24"
-	cm.ctx.ClusterIPRange = "10.244.0.0/16"
-	cm.ctx.ServiceClusterIPRange = "10.0.0.0/16"
-	cm.ctx.PollSleepInterval = 3
+	cm.cluster.MasterReservedIP = "auto" // GCE - change to "" for avoid allocating Elastic IP
+	cm.cluster.MasterIPRange = "10.246.0.0/24"
+	cm.cluster.ClusterIPRange = "10.244.0.0/16"
+	cm.cluster.ServiceClusterIPRange = "10.0.0.0/16"
+	cm.cluster.PollSleepInterval = 3
 
-	cm.ctx.RegisterMasterKubelet = true
-	cm.ctx.EnableNodePublicIP = true // from aws
+	cm.cluster.RegisterMasterKubelet = true
+	cm.cluster.EnableNodePublicIP = true // from aws
 
 	//gcs
-	cm.ctx.AllocateNodeCIDRs = true
+	cm.cluster.AllocateNodeCIDRs = true
 
-	cm.ctx.EnableClusterMonitoring = "appscode"
-	cm.ctx.EnableNodeLogging = true
-	cm.ctx.LoggingDestination = "appscode-elasticsearch"
-	cm.ctx.EnableClusterLogging = true
-	cm.ctx.ElasticsearchLoggingReplicas = 1
+	cm.cluster.EnableClusterMonitoring = "appscode"
+	cm.cluster.EnableNodeLogging = true
+	cm.cluster.LoggingDestination = "appscode-elasticsearch"
+	cm.cluster.EnableClusterLogging = true
+	cm.cluster.ElasticsearchLoggingReplicas = 1
 
-	cm.ctx.ExtraDockerOpts = ""
+	cm.cluster.ExtraDockerOpts = ""
 
-	cm.ctx.EnableClusterDNS = true
-	cm.ctx.DNSServerIP = "10.0.0.10"
-	cm.ctx.DNSDomain = "cluster.local"
-	cm.ctx.DNSReplicas = 1
+	cm.cluster.EnableClusterDNS = true
+	cm.cluster.DNSServerIP = "10.0.0.10"
+	cm.cluster.DNSDomain = "cluster.local"
+	cm.cluster.DNSReplicas = 1
 
 	// TODO(admin): Node autoscaler is always on, make it a choice
-	cm.ctx.EnableNodeAutoscaler = false
+	cm.cluster.EnableNodeAutoscaler = false
 	// cm.ctx.AutoscalerMinNodes = 1
 	// cm.ctx.AutoscalerMaxNodes = 100
-	cm.ctx.TargetNodeUtilization = 0.7
+	cm.cluster.TargetNodeUtilization = 0.7
 
-	cm.ctx.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota"
+	cm.cluster.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota"
 	// KUBE_UP_AUTOMATIC_CLEANUP
 
-	cm.ctx.VpcCidrBase = "10.240"
-	cm.ctx.MasterIPSuffix = ".4"
-	cm.ctx.MasterInternalIP = cm.ctx.VpcCidrBase + ".1" + cm.ctx.MasterIPSuffix // "10.240.1.4"
+	cm.cluster.VpcCidrBase = "10.240"
+	cm.cluster.MasterIPSuffix = ".4"
+	cm.cluster.MasterInternalIP = cm.cluster.VpcCidrBase + ".1" + cm.cluster.MasterIPSuffix // "10.240.1.4"
 
 	//cm.ctx.VpcCidr = cm.ctx.VpcCidrBase + ".0.0/16"
-	cm.ctx.SubnetCidr = "10.240.0.0/16"
+	cm.cluster.SubnetCidr = "10.240.0.0/16"
 
-	cm.ctx.NetworkProvider = "none"
-	cm.ctx.HairpinMode = "promiscuous-bridge"
-	cm.ctx.NonMasqueradeCidr = "10.0.0.0/8"
+	cm.cluster.NetworkProvider = "none"
+	cm.cluster.HairpinMode = "promiscuous-bridge"
+	cm.cluster.NonMasqueradeCidr = "10.0.0.0/8"
 
-	version, err := semver.NewVersion(cm.ctx.KubeServerVersion)
+	version, err := semver.NewVersion(cm.cluster.KubeServerVersion)
 	if err != nil {
-		version, err = semver.NewVersion(cm.ctx.KubeVersion)
+		version, err = semver.NewVersion(cm.cluster.KubeVersion)
 		if err != nil {
 			return err
 		}
@@ -164,17 +165,17 @@ func (cm *clusterManager) LoadDefaultContext() error {
 
 	v_1_4, _ := semver.NewConstraint(">= 1.4")
 	if v_1_4.Check(version) {
-		cm.ctx.NetworkProvider = "kubenet"
-		cm.ctx.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota"
+		cm.cluster.NetworkProvider = "kubenet"
+		cm.cluster.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota"
 	}
 
-	cloud.BuildRuntimeConfig(cm.ctx)
+	cloud.BuildRuntimeConfig(cm.cluster)
 	return nil
 }
 
 func (cm *clusterManager) UploadStartupConfig() error {
 	if api.UseFirebase() {
-		return cloud.UploadStartupConfigInFirebase(cm.ctx)
+		return cloud.UploadStartupConfigInFirebase(cm.ctx, cm.cluster)
 	}
 	return nil
 }

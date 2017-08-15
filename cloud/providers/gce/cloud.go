@@ -7,6 +7,7 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
@@ -17,16 +18,17 @@ import (
 const containerOsImage = "appscode-containeros"
 
 type cloudConnector struct {
-	ctx *api.Cluster
+	ctx     context.Context
+	cluster *api.Cluster
 
 	computeService *compute.Service
 	storageService *gcs.Service
 	updateService  *rupdate.Service
 }
 
-func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
+func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
 	var err error
-	credGCP, err := json.Marshal(ctx.CloudCredential)
+	credGCP, err := json.Marshal(cluster.CloudCredential)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
 	}
@@ -53,6 +55,7 @@ func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
 
 	return &cloudConnector{
 		ctx:            ctx,
+		cluster:        cluster,
 		computeService: computeService,
 		storageService: storageService,
 		updateService:  updateService,
@@ -60,7 +63,7 @@ func NewConnector(ctx *api.Cluster) (*cloudConnector, error) {
 }
 
 func (conn *cloudConnector) getInstanceImage() (string, error) {
-	_, err := conn.computeService.Images.Get(conn.ctx.Project, containerOsImage).Do()
+	_, err := conn.computeService.Images.Get(conn.cluster.Project, containerOsImage).Do()
 
 	if err != nil {
 		if !conn.checkDiskExists(containerOsImage) {
@@ -70,10 +73,10 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 			}
 		}
 
-		conn.ctx.Logger().Infof("Creating %v image on %v project", containerOsImage, conn.ctx.Project)
-		r, err := conn.computeService.Images.Insert(conn.ctx.Project, &compute.Image{
+		conn.ctx.Logger().Infof("Creating %v image on %v project", containerOsImage, conn.cluster.Project)
+		r, err := conn.computeService.Images.Insert(conn.cluster.Project, &compute.Image{
 			Name:       containerOsImage,
-			SourceDisk: fmt.Sprintf("projects/%v/zones/%v/disks/%v", conn.ctx.Project, conn.ctx.Zone, containerOsImage),
+			SourceDisk: fmt.Sprintf("projects/%v/zones/%v/disks/%v", conn.cluster.Project, conn.cluster.Zone, containerOsImage),
 		}).Do()
 		if err != nil {
 			return "", errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -85,7 +88,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 		conn.ctx.Logger().Infof("Image %v created", containerOsImage)
 		for {
 			fmt.Print("Pending image creation: ")
-			if r, err := conn.computeService.Images.Get(conn.ctx.Project, containerOsImage).Do(); err != nil || r.Status != "READY" {
+			if r, err := conn.computeService.Images.Get(conn.cluster.Project, containerOsImage).Do(); err != nil || r.Status != "READY" {
 				fmt.Print("~")
 				time.Sleep(10 * time.Second)
 			} else {
@@ -93,17 +96,17 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 			}
 		}
 
-		_, err = conn.computeService.Disks.Delete(conn.ctx.Project, conn.ctx.Zone, containerOsImage).Do()
+		_, err = conn.computeService.Disks.Delete(conn.cluster.Project, conn.cluster.Zone, containerOsImage).Do()
 		if err != nil {
 			return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
 	}
-	conn.ctx.Logger().Infof("Image %v found on project %v", containerOsImage, conn.ctx.Project)
+	conn.ctx.Logger().Infof("Image %v found on project %v", containerOsImage, conn.cluster.Project)
 	return containerOsImage, nil
 }
 
 func (conn *cloudConnector) checkDiskExists(name string) bool {
-	_, err := conn.computeService.Disks.Get(conn.ctx.Project, conn.ctx.Zone, name).Do()
+	_, err := conn.computeService.Disks.Get(conn.cluster.Project, conn.cluster.Zone, name).Do()
 	if err != nil {
 		return false
 	}
@@ -124,7 +127,7 @@ func (conn *cloudConnector) getSrcImage() (string, error) {
 }
 
 func (conn *cloudConnector) createImageDisk(name string) error {
-	machineType := fmt.Sprintf("projects/%v/zones/%v/machineTypes/n1-standard-1", conn.ctx.Project, conn.ctx.Zone)
+	machineType := fmt.Sprintf("projects/%v/zones/%v/machineTypes/n1-standard-1", conn.cluster.Project, conn.cluster.Zone)
 	img, err := conn.getSrcImage()
 	if err != nil || img == "" {
 		return errors.FromErr(err).WithMessage("No debian image found").WithContext(conn.ctx).Err()
@@ -150,7 +153,7 @@ update-grub`
 		},
 		NetworkInterfaces: []*compute.NetworkInterface{
 			{
-				Network: fmt.Sprintf("projects/%v/global/networks/%v", conn.ctx.Project, "default"),
+				Network: fmt.Sprintf("projects/%v/global/networks/%v", conn.cluster.Project, "default"),
 				AccessConfigs: []*compute.AccessConfig{
 					{
 						Type: "ONE_TO_ONE_NAT",
@@ -177,14 +180,14 @@ update-grub`
 		},
 	}
 	conn.ctx.Logger().Info("Creating instance for disk...")
-	r, err := conn.computeService.Instances.Insert(conn.ctx.Project, conn.ctx.Zone, tempInstance).Do()
+	r, err := conn.computeService.Instances.Insert(conn.cluster.Project, conn.cluster.Zone, tempInstance).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	conn.waitForZoneOperation(r.Name)
 	time.Sleep(1 * time.Minute)
 	conn.ctx.Logger().Info("Restarting instance ...")
-	r, err = conn.computeService.Instances.Reset(conn.ctx.Project, conn.ctx.Zone, name).Do()
+	r, err = conn.computeService.Instances.Reset(conn.cluster.Project, conn.cluster.Zone, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
@@ -199,7 +202,7 @@ update-grub`
 
 func (conn *cloudConnector) deleteInstance(name string) error {
 	conn.ctx.Logger().Info("Deleting instance...")
-	r, err := conn.computeService.Instances.Delete(conn.ctx.Project, conn.ctx.Zone, name).Do()
+	r, err := conn.computeService.Instances.Delete(conn.cluster.Project, conn.cluster.Zone, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
@@ -211,7 +214,7 @@ func (conn *cloudConnector) waitForGlobalOperation(operation string) error {
 	attempt := 0
 	for {
 		conn.ctx.Logger().Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
-		r1, err := conn.computeService.GlobalOperations.Get(conn.ctx.Project, operation).Do()
+		r1, err := conn.computeService.GlobalOperations.Get(conn.cluster.Project, operation).Do()
 		conn.ctx.Logger().Debug("Retrieved operation", r1, err)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -233,7 +236,7 @@ func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 	attempt := 0
 	for {
 		conn.ctx.Logger().Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
-		r1, err := conn.computeService.RegionOperations.Get(conn.ctx.Project, conn.ctx.Region, operation).Do()
+		r1, err := conn.computeService.RegionOperations.Get(conn.cluster.Project, conn.cluster.Region, operation).Do()
 		conn.ctx.Logger().Debug("Retrieved operation", r1, err)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -256,7 +259,7 @@ func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 	attempt := 0
 	for {
 		conn.ctx.Logger().Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
-		r1, err := conn.computeService.ZoneOperations.Get(conn.ctx.Project, conn.ctx.Zone, operation).Do()
+		r1, err := conn.computeService.ZoneOperations.Get(conn.cluster.Project, conn.cluster.Zone, operation).Do()
 		conn.ctx.Logger().Debug("Retrieved operation", r1, err)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()

@@ -9,16 +9,12 @@ import (
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/storage"
 	semver "github.com/hashicorp/go-version"
 	bstore "google.golang.org/api/storage/v1"
 )
-
-func init() {
-	extpoints.Providers.Register(new(provider), "gce")
-}
 
 const (
 	maxInstancesPerMIG = 5 // Should be 500
@@ -26,10 +22,11 @@ const (
 )
 
 type clusterManager struct {
-	ctx   *api.Cluster
-	ins   *api.ClusterInstances
-	conn  *cloudConnector
-	namer namer
+	ctx     context.Context
+	cluster *api.Cluster
+	ins     *api.ClusterInstances
+	conn    *cloudConnector
+	namer   namer
 }
 
 func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
@@ -37,11 +34,11 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.namer = namer{ctx: cm.ctx}
+	cm.namer = namer{cluster: cm.cluster}
 
-	cm.ctx.Region = cm.ctx.Zone[0:strings.LastIndex(cm.ctx.Zone, "-")]
-	cm.ctx.DoNotDelete = req.DoNotDelete
-	cm.ctx.BucketName = "kubernetes-" + cm.ctx.Name + "-" + rand.Characters(8)
+	cm.cluster.Region = cm.cluster.Zone[0:strings.LastIndex(cm.cluster.Zone, "-")]
+	cm.cluster.DoNotDelete = req.DoNotDelete
+	cm.cluster.BucketName = "kubernetes-" + cm.cluster.Name + "-" + rand.Characters(8)
 
 	for _, ng := range req.NodeGroups {
 		if ng.Count < 0 {
@@ -51,151 +48,151 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 			ng.Count = maxInstancesPerMIG
 		}
 	}
-	cm.ctx.SetNodeGroups(req.NodeGroups)
-	cm.ctx.Project = req.GceProject
-	if cm.ctx.Project == "" {
-		cm.ctx.Project = cm.ctx.CloudCredential[credential.GCEProjectID]
+	cm.cluster.SetNodeGroups(req.NodeGroups)
+	cm.cluster.Project = req.GceProject
+	if cm.cluster.Project == "" {
+		cm.cluster.Project = cm.cluster.CloudCredential[credential.GCEProjectID]
 	}
 
 	// check for instance count
-	cm.ctx.MasterSKU = "n1-standard-1"
-	if cm.ctx.NodeCount() > 5 {
-		cm.ctx.MasterSKU = "n1-standard-2"
+	cm.cluster.MasterSKU = "n1-standard-1"
+	if cm.cluster.NodeCount() > 5 {
+		cm.cluster.MasterSKU = "n1-standard-2"
 	}
-	if cm.ctx.NodeCount() > 10 {
-		cm.ctx.MasterSKU = "n1-standard-4"
+	if cm.cluster.NodeCount() > 10 {
+		cm.cluster.MasterSKU = "n1-standard-4"
 	}
-	if cm.ctx.NodeCount() > 100 {
-		cm.ctx.MasterSKU = "n1-standard-8"
+	if cm.cluster.NodeCount() > 100 {
+		cm.cluster.MasterSKU = "n1-standard-8"
 	}
-	if cm.ctx.NodeCount() > 250 {
-		cm.ctx.MasterSKU = "n1-standard-16"
+	if cm.cluster.NodeCount() > 250 {
+		cm.cluster.MasterSKU = "n1-standard-16"
 	}
-	if cm.ctx.NodeCount() > 500 {
-		cm.ctx.MasterSKU = "n1-standard-32"
+	if cm.cluster.NodeCount() > 500 {
+		cm.cluster.MasterSKU = "n1-standard-32"
 	}
 
 	// REGISTER_MASTER_KUBELET = false // always false, keep master lightweight
 	// PREEMPTIBLE_NODE = false // Removed Support
 
-	cm.ctx.KubernetesMasterName = cm.namer.MasterName()
-	cm.ctx.SSHKey, err = api.NewSSHKeyPair()
+	cm.cluster.KubernetesMasterName = cm.namer.MasterName()
+	cm.cluster.SSHKey, err = api.NewSSHKeyPair()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
-	cm.ctx.SSHKeyPHID = phid.NewSSHKey()
+	cm.cluster.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
+	cm.cluster.SSHKeyPHID = phid.NewSSHKey()
 
-	cloud.GenClusterTokens(cm.ctx)
+	cloud.GenClusterTokens(cm.cluster)
 
-	cm.ctx.GCECloudConfig = &api.GCECloudConfig{
+	cm.cluster.GCECloudConfig = &api.GCECloudConfig{
 		// TokenURL           :
 		// TokenBody          :
-		ProjectID:          cm.ctx.Project,
+		ProjectID:          cm.cluster.Project,
 		NetworkName:        "default",
 		NodeTags:           []string{cm.namer.NodePrefix()},
 		NodeInstancePrefix: cm.namer.NodePrefix(),
-		Multizone:          bool(cm.ctx.Multizone),
+		Multizone:          bool(cm.cluster.Multizone),
 	}
-	cm.ctx.CloudConfigPath = "/etc/gce.conf"
+	cm.cluster.CloudConfigPath = "/etc/gce.conf"
 
 	return nil
 }
 
 func (cm *clusterManager) updateContext() error {
-	cm.ctx.GCECloudConfig = &api.GCECloudConfig{
+	cm.cluster.GCECloudConfig = &api.GCECloudConfig{
 		// TokenURL           :
 		// TokenBody          :
-		ProjectID:          cm.ctx.Project,
+		ProjectID:          cm.cluster.Project,
 		NetworkName:        "default",
 		NodeTags:           []string{cm.namer.NodePrefix()},
 		NodeInstancePrefix: cm.namer.NodePrefix(),
-		Multizone:          bool(cm.ctx.Multizone),
+		Multizone:          bool(cm.cluster.Multizone),
 	}
-	cm.ctx.CloudConfigPath = "/etc/gce.conf"
-	cm.ctx.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.ctx.Name)
-	cm.ctx.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.ctx.Name)
+	cm.cluster.CloudConfigPath = "/etc/gce.conf"
+	cm.cluster.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.cluster.Name)
+	cm.cluster.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.cluster.Name)
 	//if cm.ctx.AppsCodeClusterCreator == "" {
 	//	cm.ctx.AppsCodeClusterCreator = cm.ctx.Auth.User.UserName
 	//}
-	cm.ctx.EnableWebhookTokenAuthentication = true
-	cm.ctx.EnableApiserverBasicAudit = true
+	cm.cluster.EnableWebhookTokenAuthentication = true
+	cm.cluster.EnableApiserverBasicAudit = true
 	return nil
 }
 
 func (cm *clusterManager) LoadDefaultContext() error {
-	err := cm.ctx.KubeEnv.SetDefaults()
+	err := cm.cluster.KubeEnv.SetDefaults()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.ctx.Name)
-	cm.ctx.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.ctx.Name)
+	cm.cluster.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.cluster.Name)
+	cm.cluster.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.cluster.Name)
 
-	cm.ctx.Status = storage.KubernetesStatus_Pending
-	cm.ctx.OS = "debian"
-	cm.ctx.MasterSKU = "n1-standard-2"
+	cm.cluster.Status = api.KubernetesStatus_Pending
+	cm.cluster.OS = "debian"
+	cm.cluster.MasterSKU = "n1-standard-2"
 
-	cm.ctx.AppsCodeLogIndexPrefix = "logstash-"
-	cm.ctx.AppsCodeLogStorageLifetime = 90 * 24 * 3600
-	cm.ctx.AppsCodeMonitoringStorageLifetime = 90 * 24 * 3600
+	cm.cluster.AppsCodeLogIndexPrefix = "logstash-"
+	cm.cluster.AppsCodeLogStorageLifetime = 90 * 24 * 3600
+	cm.cluster.AppsCodeMonitoringStorageLifetime = 90 * 24 * 3600
 
-	cm.ctx.MasterDiskType = "pd-standard" // "pd-ssd"
-	cm.ctx.MasterDiskSize = 100
-	cm.ctx.NodeDiskType = "pd-standard"
-	cm.ctx.NodeDiskSize = 100
+	cm.cluster.MasterDiskType = "pd-standard" // "pd-ssd"
+	cm.cluster.MasterDiskSize = 100
+	cm.cluster.NodeDiskType = "pd-standard"
+	cm.cluster.NodeDiskSize = 100
 
 	// https://cloud.google.com/compute/docs/containers/container_vms
 	// Comes pre installed with Docker and Kubelet
-	cm.ctx.InstanceImage = "kube12-tamal"   // "debian-8-jessie-v20160219" // "container-vm-v20151215"
-	cm.ctx.InstanceImageProject = "k8s-dev" // "debian-cloud"              // "google-containers"
+	cm.cluster.InstanceImage = "kube12-tamal"   // "debian-8-jessie-v20160219" // "container-vm-v20151215"
+	cm.cluster.InstanceImageProject = "k8s-dev" // "debian-cloud"              // "google-containers"
 
 	// REGISTER_MASTER_KUBELET = false // always false, keep master lightweight
 
 	// PREEMPTIBLE_NODE = false // Removed Support
 
-	cm.ctx.MasterReservedIP = "auto" // GCE - change to "" for avoid allocating Elastic IP
-	cm.ctx.MasterIPRange = "10.246.0.0/24"
-	cm.ctx.ClusterIPRange = "10.244.0.0/16"
-	cm.ctx.ServiceClusterIPRange = "10.0.0.0/16"
-	cm.ctx.NodeScopes = []string{"compute-rw", "monitoring", "logging-write", "storage-ro"}
-	cm.ctx.PollSleepInterval = 3
+	cm.cluster.MasterReservedIP = "auto" // GCE - change to "" for avoid allocating Elastic IP
+	cm.cluster.MasterIPRange = "10.246.0.0/24"
+	cm.cluster.ClusterIPRange = "10.244.0.0/16"
+	cm.cluster.ServiceClusterIPRange = "10.0.0.0/16"
+	cm.cluster.NodeScopes = []string{"compute-rw", "monitoring", "logging-write", "storage-ro"}
+	cm.cluster.PollSleepInterval = 3
 
-	cm.ctx.RegisterMasterKubelet = true
-	cm.ctx.EnableNodePublicIP = true // from aws
+	cm.cluster.RegisterMasterKubelet = true
+	cm.cluster.EnableNodePublicIP = true // from aws
 
 	//gcs
-	cm.ctx.AllocateNodeCIDRs = true
+	cm.cluster.AllocateNodeCIDRs = true
 
-	cm.ctx.EnableClusterMonitoring = "appscode"
-	cm.ctx.EnableNodeLogging = true
-	cm.ctx.LoggingDestination = "appscode-elasticsearch"
-	cm.ctx.EnableClusterLogging = true
-	cm.ctx.ElasticsearchLoggingReplicas = 1
+	cm.cluster.EnableClusterMonitoring = "appscode"
+	cm.cluster.EnableNodeLogging = true
+	cm.cluster.LoggingDestination = "appscode-elasticsearch"
+	cm.cluster.EnableClusterLogging = true
+	cm.cluster.ElasticsearchLoggingReplicas = 1
 
-	cm.ctx.ExtraDockerOpts = ""
+	cm.cluster.ExtraDockerOpts = ""
 
-	cm.ctx.EnableClusterDNS = true
-	cm.ctx.DNSServerIP = "10.0.0.10"
-	cm.ctx.DNSDomain = "cluster.local"
-	cm.ctx.DNSReplicas = 1
+	cm.cluster.EnableClusterDNS = true
+	cm.cluster.DNSServerIP = "10.0.0.10"
+	cm.cluster.DNSDomain = "cluster.local"
+	cm.cluster.DNSReplicas = 1
 
 	// TODO(admin): Node autoscaler is always on, make it a choice
-	cm.ctx.EnableNodeAutoscaler = false
+	cm.cluster.EnableNodeAutoscaler = false
 	// cm.ctx.AutoscalerMinNodes = 1
 	// cm.ctx.AutoscalerMaxNodes = 100
-	cm.ctx.TargetNodeUtilization = 0.7
+	cm.cluster.TargetNodeUtilization = 0.7
 
-	cm.ctx.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota,PersistentVolumeLabel"
+	cm.cluster.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota,PersistentVolumeLabel"
 	// KUBE_UP_AUTOMATIC_CLEANUP
 
-	cm.ctx.NetworkProvider = "none"
-	cm.ctx.HairpinMode = "promiscuous-bridge"
+	cm.cluster.NetworkProvider = "none"
+	cm.cluster.HairpinMode = "promiscuous-bridge"
 	// cm.ctx.KubeletPort = "10250"
 
-	version, err := semver.NewVersion(cm.ctx.KubeServerVersion)
+	version, err := semver.NewVersion(cm.cluster.KubeServerVersion)
 	if err != nil {
-		version, err = semver.NewVersion(cm.ctx.KubeVersion)
+		version, err = semver.NewVersion(cm.cluster.KubeVersion)
 		if err != nil {
 			return err
 		}
@@ -206,66 +203,66 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	v_1_3, _ := semver.NewConstraint(">= 1.3, < 1.4")
 	if v_1_3.Check(version) {
 		// Evict pods whenever compute resource availability on the nodes gets below a threshold.
-		cm.ctx.EvictionHard = `memory.available<100Mi`
+		cm.cluster.EvictionHard = `memory.available<100Mi`
 
-		cm.ctx.NetworkProvider = "kubenet"
+		cm.cluster.NetworkProvider = "kubenet"
 
 		// Evict pods whenever compute resource availability on the nodes gets below a threshold.
-		cm.ctx.EvictionHard = `memory.available<100Mi`
+		cm.cluster.EvictionHard = `memory.available<100Mi`
 	}
 
 	// https://github.com/appscode/kubernetes/blob/1.4.0-ac/cluster/gce/config-cloud.sh#L19
 	v_1_4, _ := semver.NewConstraint(">= 1.4")
 	if v_1_4.Check(version) {
-		cm.ctx.ClusterIPRange = "10.244.0.0/14"
-		cm.ctx.NetworkProvider = "kubenet"
+		cm.cluster.ClusterIPRange = "10.244.0.0/14"
+		cm.cluster.NetworkProvider = "kubenet"
 
 		// Evict pods whenever compute resource availability on the nodes gets below a threshold.
-		cm.ctx.EvictionHard = `memory.available<100Mi,nodefs.available<10%,nodefs.inodesFree<5%`
+		cm.cluster.EvictionHard = `memory.available<100Mi,nodefs.available<10%,nodefs.inodesFree<5%`
 
-		cm.ctx.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota"
-		cm.ctx.EnableRescheduler = true
+		cm.cluster.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota"
+		cm.cluster.EnableRescheduler = true
 	}
 
-	cloud.BuildRuntimeConfig(cm.ctx)
+	cloud.BuildRuntimeConfig(cm.cluster)
 	return nil
 }
 
 func (cm *clusterManager) UploadStartupConfig() error {
-	if _, err := cm.conn.storageService.Buckets.Get(cm.ctx.BucketName).Do(); err != nil {
-		_, err := cm.conn.storageService.Buckets.Insert(cm.ctx.Project, &bstore.Bucket{
-			Name: cm.ctx.BucketName,
+	if _, err := cm.conn.storageService.Buckets.Get(cm.cluster.BucketName).Do(); err != nil {
+		_, err := cm.conn.storageService.Buckets.Insert(cm.cluster.Project, &bstore.Bucket{
+			Name: cm.cluster.BucketName,
 		}).Do()
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ctx.Logger().Debug("Created bucket %s", cm.ctx.BucketName)
+		cm.ctx.Logger().Debug("Created bucket %s", cm.cluster.BucketName)
 	} else {
-		cm.ctx.Logger().Debug("Bucket %s already exists", cm.ctx.BucketName)
+		cm.ctx.Logger().Debug("Bucket %s already exists", cm.cluster.BucketName)
 	}
 
 	{
-		cfg, err := cm.ctx.StartupConfigResponse(api.RoleKubernetesMaster)
+		cfg, err := cm.cluster.StartupConfigResponse(api.RoleKubernetesMaster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		data := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.ctx.ContextVersion, 10) + "/startup-config/" + api.RoleKubernetesMaster + ".yaml",
+			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ContextVersion, 10) + "/startup-config/" + api.RoleKubernetesMaster + ".yaml",
 		}
-		_, err = cm.conn.storageService.Objects.Insert(cm.ctx.BucketName, data).Media(strings.NewReader(cfg)).Do()
+		_, err = cm.conn.storageService.Objects.Insert(cm.cluster.BucketName, data).Media(strings.NewReader(cfg)).Do()
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
 	{
-		cfg, err := cm.ctx.StartupConfigResponse(api.RoleKubernetesPool)
+		cfg, err := cm.cluster.StartupConfigResponse(api.RoleKubernetesPool)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		data := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.ctx.ContextVersion, 10) + "/startup-config/" + api.RoleKubernetesPool + ".yaml",
+			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ContextVersion, 10) + "/startup-config/" + api.RoleKubernetesPool + ".yaml",
 		}
-		_, err = cm.conn.storageService.Objects.Insert(cm.ctx.BucketName, data).Media(strings.NewReader(cfg)).Do()
+		_, err = cm.conn.storageService.Objects.Insert(cm.cluster.BucketName, data).Media(strings.NewReader(cfg)).Do()
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}

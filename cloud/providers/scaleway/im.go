@@ -10,16 +10,17 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/storage"
 	"github.com/cenkalti/backoff"
 	sapi "github.com/scaleway/scaleway-cli/pkg/api"
 	"golang.org/x/crypto/ssh"
 )
 
 type instanceManager struct {
-	ctx  *api.Cluster
-	conn *cloudConnector
+	ctx     context.Context
+	cluster *api.Cluster
+	conn    *cloudConnector
 }
 
 func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
@@ -64,11 +65,11 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 	}
 	serverID, err := im.conn.client.PostServer(sapi.ScalewayServerDefinition{
 		Name:  name,
-		Image: types.StringP(im.ctx.InstanceImage),
+		Image: types.StringP(im.cluster.InstanceImage),
 		//Volumes map[string]string `json:"volumes,omitempty"`
 		DynamicIPRequired: types.TrueP(),
 		Bootscript:        types.StringP(im.conn.bootscriptID),
-		Tags:              []string{"KubernetesCluster:" + im.ctx.Name},
+		Tags:              []string{"KubernetesCluster:" + im.cluster.Name},
 		// Organization:   organization,
 		CommercialType: sku,
 		PublicIP:       publicIPID,
@@ -97,17 +98,17 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 
 func (im *instanceManager) storeConfigFile(serverID, role string) error {
 	im.ctx.Logger().Infof("Storing config file for server %v", serverID)
-	cfg, err := im.ctx.StartupConfigResponse(role)
+	cfg, err := im.cluster.StartupConfigResponse(role)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	dataKey := fmt.Sprintf("kubernetes_context_%v_%v.yaml", im.ctx.ContextVersion, role)
+	dataKey := fmt.Sprintf("kubernetes_context_%v_%v.yaml", im.cluster.ContextVersion, role)
 	return im.conn.client.PatchUserdata(serverID, dataKey, []byte(cfg), false)
 }
 
 func (im *instanceManager) storeStartupScript(serverID, sku, role string) error {
 	im.ctx.Logger().Infof("Storing startup script for server %v", serverID)
-	startupScript := im.RenderStartupScript(im.ctx.NewScriptOptions(), sku, role)
+	startupScript := im.RenderStartupScript(im.cluster.NewScriptOptions(), sku, role)
 	key := "kubernetes_startupscript.sh"
 	return im.conn.client.PatchUserdata(serverID, key, []byte(startupScript), false)
 }
@@ -147,6 +148,6 @@ func (im *instanceManager) newKubeInstanceFromServer(droplet *sapi.ScalewayServe
 		ExternalIP:     droplet.PublicAddress.IP,
 		InternalIP:     droplet.PrivateIP,
 		SKU:            droplet.CommercialType,
-		Status:         storage.KubernetesInstanceStatus_Ready, // droplet.Status == active
+		Status:         api.KubernetesInstanceStatus_Ready, // droplet.Status == active
 	}, nil
 }

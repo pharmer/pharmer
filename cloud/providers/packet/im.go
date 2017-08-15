@@ -8,15 +8,16 @@ import (
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/storage"
 	"github.com/cenkalti/backoff"
 	"github.com/packethost/packngo"
 )
 
 type instanceManager struct {
-	ctx  *api.Cluster
-	conn *cloudConnector
+	ctx     context.Context
+	cluster *api.Cluster
+	conn    *cloudConnector
 }
 
 func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
@@ -26,7 +27,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 	backoff.Retry(func() (err error) {
 		for {
 			var servers []packngo.Device
-			servers, _, err = im.conn.client.Devices.List(im.ctx.Project)
+			servers, _, err = im.conn.client.Devices.List(im.cluster.Project)
 			if err != nil {
 				return
 			}
@@ -57,16 +58,16 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 }
 
 func (im *instanceManager) createInstance(name, role, sku string, ipid ...string) (*packngo.Device, error) {
-	startupScript := im.RenderStartupScript(im.ctx.NewScriptOptions(), sku, role)
+	startupScript := im.RenderStartupScript(im.cluster.NewScriptOptions(), sku, role)
 	device, _, err := im.conn.client.Devices.Create(&packngo.DeviceCreateRequest{
 		HostName:     name,
 		Plan:         sku,
-		Facility:     im.ctx.Zone,
-		OS:           im.ctx.InstanceImage,
+		Facility:     im.cluster.Zone,
+		OS:           im.cluster.InstanceImage,
 		BillingCycle: "hourly",
-		ProjectID:    im.ctx.Project,
+		ProjectID:    im.cluster.Project,
 		UserData:     startupScript,
-		Tags:         []string{im.ctx.Name},
+		Tags:         []string{im.cluster.Name},
 	})
 	im.ctx.Logger().Infof("Instance %v created", name)
 	return device, err
@@ -142,7 +143,7 @@ func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*
 		// ExternalIP:     droplet.PublicAddress.IP,
 		// InternalIP:     droplet.PrivateIP,
 		SKU:    droplet.Plan.ID,
-		Status: storage.KubernetesInstanceStatus_Ready, // droplet.Status == active
+		Status: api.KubernetesInstanceStatus_Ready, // droplet.Status == active
 	}
 	for _, addr := range droplet.Network {
 		if addr.AddressFamily == 4 {

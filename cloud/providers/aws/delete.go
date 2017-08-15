@@ -11,7 +11,6 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/storage"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
@@ -20,39 +19,39 @@ import (
 )
 
 func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
-	defer cm.ctx.Delete()
+	defer cm.cluster.Delete()
 
-	if cm.ctx.Status == storage.KubernetesStatus_Pending {
-		cm.ctx.Status = storage.KubernetesStatus_Failing
-	} else if cm.ctx.Status == storage.KubernetesStatus_Ready {
-		cm.ctx.Status = storage.KubernetesStatus_Deleting
+	if cm.cluster.Status == api.KubernetesStatus_Pending {
+		cm.cluster.Status = api.KubernetesStatus_Failing
+	} else if cm.cluster.Status == api.KubernetesStatus_Ready {
+		cm.cluster.Status = api.KubernetesStatus_Deleting
 	}
 	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
 	if cm.conn == nil {
-		conn, err := NewConnector(cm.ctx)
+		conn, err := NewConnector(cm.cluster)
 		if err != nil {
-			cm.ctx.StatusCause = err.Error()
+			cm.cluster.StatusCause = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		cm.conn = conn
 	}
-	cm.namer = namer{ctx: cm.ctx}
+	cm.namer = namer{cluster: cm.cluster}
 
 	exists, err := cm.findVPC()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if !exists {
-		return errors.Newf("VPC %v not found for Cluster %v", cm.ctx.VpcId, cm.ctx.Name).WithContext(cm.ctx).Err()
+		return errors.Newf("VPC %v not found for Cluster %v", cm.cluster.VpcId, cm.cluster.Name).WithContext(cm.ctx).Err()
 	}
 
 	var errs []string
-	if cm.ctx.StatusCause != "" {
-		errs = append(errs, cm.ctx.StatusCause)
+	if cm.cluster.StatusCause != "" {
+		errs = append(errs, cm.cluster.StatusCause)
 	}
 
-	for _, ng := range cm.ctx.NodeGroups {
+	for _, ng := range cm.cluster.NodeGroups {
 		if err = cm.deleteAutoScalingGroup(cm.namer.AutoScalingGroupName(ng.Sku)); err != nil {
 			errs = append(errs, err.Error())
 		}
@@ -63,7 +62,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	if err = cm.ensureInstancesDeleted(); err != nil {
 		errs = append(errs, err.Error())
 	}
-	for _, ng := range cm.ctx.NodeGroups {
+	for _, ng := range cm.cluster.NodeGroups {
 		if err = cm.deleteLaunchConfiguration(cm.namer.AutoScalingGroupName(ng.Sku)); err != nil {
 			errs = append(errs, err.Error())
 		}
@@ -73,8 +72,8 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, err.Error())
 	}
 
-	if req.ReleaseReservedIp && cm.ctx.MasterReservedIP != "" {
-		if err = cm.releaseReservedIP(cm.ctx.MasterReservedIP); err != nil {
+	if req.ReleaseReservedIp && cm.cluster.MasterReservedIP != "" {
+		if err = cm.releaseReservedIP(cm.cluster.MasterReservedIP); err != nil {
 			errs = append(errs, err.Error())
 		}
 	}
@@ -116,53 +115,53 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, err.Error())
 	}
 
-	if err = cloud.DeleteARecords(cm.ctx); err != nil {
+	if err = cloud.DeleteARecords(cm.ctx, cm.cluster); err != nil {
 		errs = append(errs, err.Error())
 	}
 
 	if len(errs) > 0 {
 		// Preserve statusCause for failed cluster
-		if cm.ctx.Status == storage.KubernetesStatus_Deleting {
-			cm.ctx.StatusCause = strings.Join(errs, "\n")
+		if cm.cluster.Status == api.KubernetesStatus_Deleting {
+			cm.cluster.StatusCause = strings.Join(errs, "\n")
 		}
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
-	cm.ctx.Logger().Infof("Cluster %v deleted successfully", cm.ctx.Name)
+	cm.ctx.Logger().Infof("Cluster %v deleted successfully", cm.cluster.Name)
 	return nil
 }
 
-func (cluster *clusterManager) findVPC() (bool, error) {
-	r1, err := cluster.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
+func (cm *clusterManager) findVPC() (bool, error) {
+	r1, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
 		VpcIds: []*string{
-			types.StringP(cluster.ctx.VpcId),
+			types.StringP(cm.cluster.VpcId),
 		},
 	})
 	if err != nil {
-		return false, errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return false, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	return len(r1.Vpcs) > 0, nil
 }
 
-func (cluster *clusterManager) deleteAutoScalingGroup(name string) error {
-	_, err := cluster.conn.autoscale.DeleteAutoScalingGroup(&autoscaling.DeleteAutoScalingGroupInput{
+func (cm *clusterManager) deleteAutoScalingGroup(name string) error {
+	_, err := cm.conn.autoscale.DeleteAutoScalingGroup(&autoscaling.DeleteAutoScalingGroupInput{
 		ForceDelete:          types.TrueP(),
 		AutoScalingGroupName: types.StringP(name),
 	})
-	cluster.ctx.Logger().Infof("Auto scaling group %v is deleted for cluster %v", name, cluster.ctx.Name)
+	cm.ctx.Logger().Infof("Auto scaling group %v is deleted for cluster %v", name, cm.cluster.Name)
 	return err
 }
 
-func (cluster *clusterManager) deleteLaunchConfiguration(name string) error {
-	_, err := cluster.conn.autoscale.DeleteLaunchConfiguration(&autoscaling.DeleteLaunchConfigurationInput{
+func (cm *clusterManager) deleteLaunchConfiguration(name string) error {
+	_, err := cm.conn.autoscale.DeleteLaunchConfiguration(&autoscaling.DeleteLaunchConfigurationInput{
 		LaunchConfigurationName: types.StringP(name),
 	})
-	cluster.ctx.Logger().Infof("Launch configuration %v os de;eted for cluster %v", name, cluster.ctx.Name)
+	cm.ctx.Logger().Infof("Launch configuration %v os de;eted for cluster %v", name, cm.cluster.Name)
 	return err
 }
 
-func (cluster *clusterManager) deleteMaster() error {
-	r1, err := cluster.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
+func (cm *clusterManager) deleteMaster() error {
+	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 		Filters: []*_ec2.Filter{
 			{
 				Name: types.StringP("tag:Role"),
@@ -173,13 +172,13 @@ func (cluster *clusterManager) deleteMaster() error {
 			{
 				Name: types.StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cluster.ctx.Name),
+					types.StringP(cm.cluster.Name),
 				},
 			},
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	masterInstances := make([]*string, 0)
@@ -189,37 +188,37 @@ func (cluster *clusterManager) deleteMaster() error {
 		}
 	}
 	fmt.Printf("TerminateInstances %v", stringutil.Join(masterInstances, ","))
-	cluster.ctx.Logger().Infof("Terminating master instance for cluster %v", cluster.ctx.Name)
-	_, err = cluster.conn.ec2.TerminateInstances(&_ec2.TerminateInstancesInput{
+	cm.ctx.Logger().Infof("Terminating master instance for cluster %v", cm.cluster.Name)
+	_, err = cm.conn.ec2.TerminateInstances(&_ec2.TerminateInstancesInput{
 		InstanceIds: masterInstances,
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	instanceInput := &_ec2.DescribeInstancesInput{
 		InstanceIds: masterInstances,
 	}
-	err = cluster.conn.ec2.WaitUntilInstanceTerminated(instanceInput)
+	err = cm.conn.ec2.WaitUntilInstanceTerminated(instanceInput)
 	fmt.Println(err, "--------------------<<<<<<<")
-	cluster.ctx.Logger().Infof("Master instance for cluster %v is terminated", cluster.ctx.Name)
+	cm.ctx.Logger().Infof("Master instance for cluster %v is terminated", cm.cluster.Name)
 	return nil
 }
 
-func (cluster *clusterManager) ensureInstancesDeleted() error {
+func (cm *clusterManager) ensureInstancesDeleted() error {
 	const desiredState = "terminated"
 
-	r1, err := cluster.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
+	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 		Filters: []*_ec2.Filter{
 			{
 				Name: types.StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cluster.ctx.Name),
+					types.StringP(cm.cluster.Name),
 				},
 			},
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	instances := make(map[string]bool)
 	for _, reservation := range r1.Reservations {
@@ -239,9 +238,9 @@ func (cluster *clusterManager) ensureInstancesDeleted() error {
 		}
 		fmt.Println("Waiting for instances to terminate", stringutil.Join(ris, ","))
 
-		r2, err := cluster.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{InstanceIds: ris})
+		r2, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{InstanceIds: ris})
 		if err != nil {
-			return errors.FromErr(err).WithContext(cluster.ctx).Err()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		stillRunning := false
 		for _, reservation := range r2.Reservations {
@@ -263,134 +262,134 @@ func (cluster *clusterManager) ensureInstancesDeleted() error {
 	return nil
 }
 
-func (cluster *clusterManager) deleteSecurityGroup() error {
-	r, err := cluster.conn.ec2.DescribeSecurityGroups(&_ec2.DescribeSecurityGroupsInput{
+func (cm *clusterManager) deleteSecurityGroup() error {
+	r, err := cm.conn.ec2.DescribeSecurityGroups(&_ec2.DescribeSecurityGroupsInput{
 		Filters: []*_ec2.Filter{
 			{
 				Name: types.StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cluster.ctx.VpcId),
+					types.StringP(cm.cluster.VpcId),
 				},
 			},
 			{
 				Name: types.StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cluster.ctx.Name),
+					types.StringP(cm.cluster.Name),
 				},
 			},
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	for _, sg := range r.SecurityGroups {
 		if len(sg.IpPermissions) > 0 {
-			_, err := cluster.conn.ec2.RevokeSecurityGroupIngress(&_ec2.RevokeSecurityGroupIngressInput{
+			_, err := cm.conn.ec2.RevokeSecurityGroupIngress(&_ec2.RevokeSecurityGroupIngressInput{
 				GroupId:       sg.GroupId,
 				IpPermissions: sg.IpPermissions,
 			})
 			if err != nil {
-				return errors.FromErr(err).WithContext(cluster.ctx).Err()
+				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
 		}
 
 		if len(sg.IpPermissionsEgress) > 0 {
-			_, err := cluster.conn.ec2.RevokeSecurityGroupEgress(&_ec2.RevokeSecurityGroupEgressInput{
+			_, err := cm.conn.ec2.RevokeSecurityGroupEgress(&_ec2.RevokeSecurityGroupEgressInput{
 				GroupId:       sg.GroupId,
 				IpPermissions: sg.IpPermissionsEgress,
 			})
 			if err != nil {
-				return errors.FromErr(err).WithContext(cluster.ctx).Err()
+				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
 		}
 	}
 
 	for _, sg := range r.SecurityGroups {
-		_, err := cluster.conn.ec2.DeleteSecurityGroup(&_ec2.DeleteSecurityGroupInput{
+		_, err := cm.conn.ec2.DeleteSecurityGroup(&_ec2.DeleteSecurityGroupInput{
 			GroupId: sg.GroupId,
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(cluster.ctx).Err()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	cluster.ctx.Logger().Infof("Security groups for cluster %v is deleted", cluster.ctx.Name)
+	cm.ctx.Logger().Infof("Security groups for cluster %v is deleted", cm.cluster.Name)
 	return nil
 }
 
-func (cluster *clusterManager) deleteSubnetId() error {
-	r, err := cluster.conn.ec2.DescribeSubnets(&_ec2.DescribeSubnetsInput{
+func (cm *clusterManager) deleteSubnetId() error {
+	r, err := cm.conn.ec2.DescribeSubnets(&_ec2.DescribeSubnetsInput{
 		Filters: []*_ec2.Filter{
 			{
 				Name: types.StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cluster.ctx.VpcId),
+					types.StringP(cm.cluster.VpcId),
 				},
 			},
 			{
 				Name: types.StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cluster.ctx.Name),
+					types.StringP(cm.cluster.Name),
 				},
 			},
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	for _, subnet := range r.Subnets {
-		_, err := cluster.conn.ec2.DeleteSubnet(&_ec2.DeleteSubnetInput{
+		_, err := cm.conn.ec2.DeleteSubnet(&_ec2.DeleteSubnetInput{
 			SubnetId: subnet.SubnetId,
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(cluster.ctx).Err()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cluster.ctx.Logger().Infof("Subnet ID in VPC %v is deleted", *subnet.SubnetId)
+		cm.ctx.Logger().Infof("Subnet ID in VPC %v is deleted", *subnet.SubnetId)
 	}
 	return nil
 }
 
-func (cluster *clusterManager) deleteInternetGateway() error {
-	r1, err := cluster.conn.ec2.DescribeInternetGateways(&_ec2.DescribeInternetGatewaysInput{
+func (cm *clusterManager) deleteInternetGateway() error {
+	r1, err := cm.conn.ec2.DescribeInternetGateways(&_ec2.DescribeInternetGatewaysInput{
 		Filters: []*_ec2.Filter{
 			{
 				Name: types.StringP("attachment.vpc-id"),
 				Values: []*string{
-					types.StringP(cluster.ctx.VpcId),
+					types.StringP(cm.cluster.VpcId),
 				},
 			},
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	for _, igw := range r1.InternetGateways {
-		_, err := cluster.conn.ec2.DetachInternetGateway(&_ec2.DetachInternetGatewayInput{
+		_, err := cm.conn.ec2.DetachInternetGateway(&_ec2.DetachInternetGatewayInput{
 			InternetGatewayId: igw.InternetGatewayId,
-			VpcId:             types.StringP(cluster.ctx.VpcId),
+			VpcId:             types.StringP(cm.cluster.VpcId),
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(cluster.ctx).Err()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 
-		_, err = cluster.conn.ec2.DeleteInternetGateway(&_ec2.DeleteInternetGatewayInput{
+		_, err = cm.conn.ec2.DeleteInternetGateway(&_ec2.DeleteInternetGatewayInput{
 			InternetGatewayId: igw.InternetGatewayId,
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(cluster.ctx).Err()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	cluster.ctx.Logger().Infof("Internet gateway for cluster %v are deleted", cluster.ctx.Name)
+	cm.ctx.Logger().Infof("Internet gateway for cluster %v are deleted", cm.cluster.Name)
 	return nil
 }
 
-func (cluster *clusterManager) deleteRouteTable() error {
-	r1, err := cluster.conn.ec2.DescribeRouteTables(&_ec2.DescribeRouteTablesInput{
+func (cm *clusterManager) deleteRouteTable() error {
+	r1, err := cm.conn.ec2.DescribeRouteTables(&_ec2.DescribeRouteTablesInput{
 		Filters: []*_ec2.Filter{
 			{
 				Name: types.StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cluster.ctx.VpcId),
+					types.StringP(cm.cluster.VpcId),
 				},
 			},
 		},
@@ -398,7 +397,7 @@ func (cluster *clusterManager) deleteRouteTable() error {
 
 	if err != nil {
 		fmt.Println(err)
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	for _, rt := range r1.RouteTables {
 		mainTable := false
@@ -406,94 +405,94 @@ func (cluster *clusterManager) deleteRouteTable() error {
 			if _aws.BoolValue(assoc.Main) {
 				mainTable = true
 			} else {
-				_, err := cluster.conn.ec2.DisassociateRouteTable(&_ec2.DisassociateRouteTableInput{
+				_, err := cm.conn.ec2.DisassociateRouteTable(&_ec2.DisassociateRouteTableInput{
 					AssociationId: assoc.RouteTableAssociationId,
 				})
 				if err != nil {
 					fmt.Println(err)
-					return errors.FromErr(err).WithContext(cluster.ctx).Err()
+					return errors.FromErr(err).WithContext(cm.ctx).Err()
 				}
 			}
 		}
 		if !mainTable {
-			_, err := cluster.conn.ec2.DeleteRouteTable(&_ec2.DeleteRouteTableInput{
+			_, err := cm.conn.ec2.DeleteRouteTable(&_ec2.DeleteRouteTableInput{
 				RouteTableId: rt.RouteTableId,
 			})
 			if err != nil {
 				fmt.Println(err)
-				return errors.FromErr(err).WithContext(cluster.ctx).Err()
+				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
 		}
 	}
-	cluster.ctx.Logger().Infof("Route tables for cluster %v are deleted", cluster.ctx.Name)
+	cm.ctx.Logger().Infof("Route tables for cluster %v are deleted", cm.cluster.Name)
 	return nil
 }
 
-func (cluster *clusterManager) deleteDHCPOption() error {
-	_, err := cluster.conn.ec2.AssociateDhcpOptions(&_ec2.AssociateDhcpOptionsInput{
-		VpcId:         types.StringP(cluster.ctx.VpcId),
+func (cm *clusterManager) deleteDHCPOption() error {
+	_, err := cm.conn.ec2.AssociateDhcpOptions(&_ec2.AssociateDhcpOptionsInput{
+		VpcId:         types.StringP(cm.cluster.VpcId),
 		DhcpOptionsId: types.StringP("default"),
 	})
 	if err != nil {
 		fmt.Println(err)
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	r, err := cluster.conn.ec2.DescribeDhcpOptions(&_ec2.DescribeDhcpOptionsInput{
+	r, err := cm.conn.ec2.DescribeDhcpOptions(&_ec2.DescribeDhcpOptionsInput{
 		Filters: []*_ec2.Filter{
 			{
 				Name: types.StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cluster.ctx.Name),
+					types.StringP(cm.cluster.Name),
 				},
 			},
 		},
 	})
 	for _, dhcp := range r.DhcpOptions {
-		_, err = cluster.conn.ec2.DeleteDhcpOptions(&_ec2.DeleteDhcpOptionsInput{
+		_, err = cm.conn.ec2.DeleteDhcpOptions(&_ec2.DeleteDhcpOptionsInput{
 			DhcpOptionsId: dhcp.DhcpOptionsId,
 		})
 		if err != nil {
 			fmt.Println(err)
-			return errors.FromErr(err).WithContext(cluster.ctx).Err()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	cluster.ctx.Logger().Infof("DHCP options for cluster %v are deleted", cluster.ctx.Name)
+	cm.ctx.Logger().Infof("DHCP options for cluster %v are deleted", cm.cluster.Name)
 	return err
 }
 
-func (cluster *clusterManager) deleteVpc() error {
-	_, err := cluster.conn.ec2.DeleteVpc(&_ec2.DeleteVpcInput{
-		VpcId: types.StringP(cluster.ctx.VpcId),
+func (cm *clusterManager) deleteVpc() error {
+	_, err := cm.conn.ec2.DeleteVpc(&_ec2.DeleteVpcInput{
+		VpcId: types.StringP(cm.cluster.VpcId),
 	})
 
 	if err != nil {
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cluster.ctx.Logger().Infof("VPC for cluster %v is deleted", cluster.ctx.Name)
+	cm.ctx.Logger().Infof("VPC for cluster %v is deleted", cm.cluster.Name)
 	return nil
 }
 
-func (cluster *clusterManager) deleteVolume() error {
-	_, err := cluster.conn.ec2.DeleteVolume(&_ec2.DeleteVolumeInput{
-		VolumeId: types.StringP(cluster.ctx.MasterDiskId),
+func (cm *clusterManager) deleteVolume() error {
+	_, err := cm.conn.ec2.DeleteVolume(&_ec2.DeleteVolumeInput{
+		VolumeId: types.StringP(cm.cluster.MasterDiskId),
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cluster.ctx.Logger().Infof("Master instance volume for cluster %v is deleted", cluster.ctx.MasterDiskId)
+	cm.ctx.Logger().Infof("Master instance volume for cluster %v is deleted", cm.cluster.MasterDiskId)
 	return nil
 }
 
-func (cluster *clusterManager) deleteSSHKey() error {
+func (cm *clusterManager) deleteSSHKey() error {
 	var err error
-	_, err = cluster.conn.ec2.DeleteKeyPair(&_ec2.DeleteKeyPairInput{
-		KeyName: types.StringP(cluster.ctx.SSHKeyExternalID),
+	_, err = cm.conn.ec2.DeleteKeyPair(&_ec2.DeleteKeyPairInput{
+		KeyName: types.StringP(cm.cluster.SSHKeyExternalID),
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cluster.ctx.Logger().Infof("SSH key for cluster %v is deleted", cluster.ctx.MasterDiskId)
+	cm.ctx.Logger().Infof("SSH key for cluster %v is deleted", cm.cluster.MasterDiskId)
 	//updates := &storage.SSHKey{IsDeleted: 1}
 	//cond := &storage.SSHKey{PHID: cluster.ctx.SSHKeyPHID}
 	// _, err = cluster.ctx.Store().Engine.Update(updates, cond)
@@ -501,28 +500,28 @@ func (cluster *clusterManager) deleteSSHKey() error {
 	return err
 }
 
-func (cluster *clusterManager) releaseReservedIP(publicIP string) error {
-	r1, err := cluster.conn.ec2.DescribeAddresses(&_ec2.DescribeAddressesInput{
+func (cm *clusterManager) releaseReservedIP(publicIP string) error {
+	r1, err := cm.conn.ec2.DescribeAddresses(&_ec2.DescribeAddressesInput{
 		PublicIps: []*string{
 			types.StringP(publicIP),
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	_, err = cluster.conn.ec2.ReleaseAddress(&_ec2.ReleaseAddressInput{
+	_, err = cm.conn.ec2.ReleaseAddress(&_ec2.ReleaseAddressInput{
 		AllocationId: r1.Addresses[0].AllocationId,
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cluster.ctx.Logger().Infof("Elastic IP for cluster %v is deleted", cluster.ctx.Name)
+	cm.ctx.Logger().Infof("Elastic IP for cluster %v is deleted", cm.cluster.Name)
 	return nil
 }
 
-func (cluster *clusterManager) deleteNetworkInterface(vpcId string) error {
-	r, err := cluster.conn.ec2.DescribeNetworkInterfaces(&_ec2.DescribeNetworkInterfacesInput{
+func (cm *clusterManager) deleteNetworkInterface(vpcId string) error {
+	r, err := cm.conn.ec2.DescribeNetworkInterfaces(&_ec2.DescribeNetworkInterfacesInput{
 		Filters: []*_ec2.Filter{
 			{
 				Name: types.StringP("vpc-id"),
@@ -533,46 +532,46 @@ func (cluster *clusterManager) deleteNetworkInterface(vpcId string) error {
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(cluster.ctx).Err()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	for _, iface := range r.NetworkInterfaces {
-		_, err = cluster.conn.ec2.DetachNetworkInterface(&_ec2.DetachNetworkInterfaceInput{
+		_, err = cm.conn.ec2.DetachNetworkInterface(&_ec2.DetachNetworkInterfaceInput{
 			AttachmentId: iface.Attachment.AttachmentId,
 			Force:        types.TrueP(),
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(cluster.ctx).Err()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 
 		time.Sleep(1 * time.Minute)
-		_, err = cluster.conn.ec2.DeleteNetworkInterface(&_ec2.DeleteNetworkInterfaceInput{
+		_, err = cm.conn.ec2.DeleteNetworkInterface(&_ec2.DeleteNetworkInterfaceInput{
 			NetworkInterfaceId: iface.NetworkInterfaceId,
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(cluster.ctx).Err()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	cluster.ctx.Logger().Infof("Network interfaces for cluster %v are deleted", cluster.ctx.Name)
+	cm.ctx.Logger().Infof("Network interfaces for cluster %v are deleted", cm.cluster.Name)
 	return nil
 }
 
-func (cluster *clusterManager) deleteBucket() error {
+func (cm *clusterManager) deleteBucket() error {
 	// http://docs.aws.amazon.com/AmazonS3/latest/dev/delete-or-empty-bucket.html#delete-bucket-awscli
-	cluster.ctx.Logger().Infof("Deleting startupconfig bucket for cluster %v", cluster.ctx.Name)
+	cm.ctx.Logger().Infof("Deleting startupconfig bucket for cluster %v", cm.cluster.Name)
 	var timeout int64 = 30 * 60 // Give max 30 min to empty the bucket
 	start := time.Now().Unix()
 
 	for {
-		r1, err := cluster.conn.s3.ListObjectsV2(&_s3.ListObjectsV2Input{
-			Bucket: types.StringP(cluster.ctx.BucketName),
+		r1, err := cm.conn.s3.ListObjectsV2(&_s3.ListObjectsV2Input{
+			Bucket: types.StringP(cm.cluster.BucketName),
 		})
 		if err == nil && len(r1.Contents) > 0 {
 			oIds := make([]*_s3.ObjectIdentifier, len(r1.Contents))
 			for i, obj := range r1.Contents {
 				oIds[i] = &_s3.ObjectIdentifier{Key: obj.Key}
 			}
-			cluster.conn.s3.DeleteObjects(&_s3.DeleteObjectsInput{
-				Bucket: types.StringP(cluster.ctx.BucketName),
+			cm.conn.s3.DeleteObjects(&_s3.DeleteObjectsInput{
+				Bucket: types.StringP(cm.cluster.BucketName),
 				Delete: &_s3.Delete{Objects: oIds},
 			})
 		}
@@ -582,16 +581,16 @@ func (cluster *clusterManager) deleteBucket() error {
 	}
 
 	for {
-		r1, err := cluster.conn.s3.ListObjectVersions(&_s3.ListObjectVersionsInput{
-			Bucket: types.StringP(cluster.ctx.BucketName),
+		r1, err := cm.conn.s3.ListObjectVersions(&_s3.ListObjectVersionsInput{
+			Bucket: types.StringP(cm.cluster.BucketName),
 		})
 		if err == nil && len(r1.DeleteMarkers) > 0 {
 			oIds := make([]*_s3.ObjectIdentifier, len(r1.DeleteMarkers))
 			for i, obj := range r1.DeleteMarkers {
 				oIds[i] = &_s3.ObjectIdentifier{Key: obj.Key, VersionId: obj.VersionId}
 			}
-			cluster.conn.s3.DeleteObjects(&_s3.DeleteObjectsInput{
-				Bucket: types.StringP(cluster.ctx.BucketName),
+			cm.conn.s3.DeleteObjects(&_s3.DeleteObjectsInput{
+				Bucket: types.StringP(cm.cluster.BucketName),
 				Delete: &_s3.Delete{Objects: oIds},
 			})
 		}
@@ -600,8 +599,8 @@ func (cluster *clusterManager) deleteBucket() error {
 		}
 	}
 
-	_, err := cluster.conn.s3.DeleteBucket(&_s3.DeleteBucketInput{
-		Bucket: types.StringP(cluster.ctx.BucketName),
+	_, err := cm.conn.s3.DeleteBucket(&_s3.DeleteBucketInput{
+		Bucket: types.StringP(cm.cluster.BucketName),
 	})
 	return err
 }

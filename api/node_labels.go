@@ -136,7 +136,7 @@ func (n *NodeLabels) Verify() (bool, error) {
 			return false, err
 		}
 
-		ss, err := storage.NewSecEnvelopeBytes(envelope)
+		ss, err := NewSecEnvelopeBytes(envelope)
 		if err != nil {
 			return false, err
 		}

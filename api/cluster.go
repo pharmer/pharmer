@@ -1,4 +1,4 @@
-package storage
+package api
 
 import "time"
 
@@ -134,7 +134,7 @@ const (
 	KubernetesInstanceStatus_Deleted = "DELETED"
 )
 
-type KubernetesInstance struct {
+type S_KubernetesInstance struct {
 	ID             int64     `xorm:"bigint not null 'id'"`
 	PHID           string    `xorm:"text not null 'phid'"`
 	KubernetesPHID string    `xorm:"text not null 'kubernetesPHID'"`
@@ -150,6 +150,6 @@ type KubernetesInstance struct {
 	DateModified   time.Time `xorm:"bigint updated 'dateModified'"`
 }
 
-func (t KubernetesInstance) TableName() string {
+func (t S_KubernetesInstance) TableName() string {
 	return `"ac_cluster"."kubernetes_instance"`
 }

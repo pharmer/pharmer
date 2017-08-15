@@ -2,8 +2,6 @@ package api
 
 import (
 	"sync"
-
-	"github.com/appscode/pharmer/storage"
 )
 
 type InstanceMetadata struct {
@@ -61,12 +59,12 @@ func (ins *ClusterInstances) FindInstance(md *InstanceMetadata) (*KubernetesInst
 // Does not modify ctx.NumNodes; Reduce ctx.NumNodes separately
 func (ins *ClusterInstances) DeleteInstance(instance *KubernetesInstance) (*KubernetesInstance, error) {
 	// TODO(tamal): FixIt!
-	//updates := &storage.KubernetesInstance{Status: storage.KubernetesInstanceStatus_Deleted}
-	//cond := &storage.KubernetesInstance{PHID: instance.PHID}
+	//updates := &KubernetesInstance{Status: KubernetesInstanceStatus_Deleted}
+	//cond := &KubernetesInstance{PHID: instance.PHID}
 	//if _, err := ins.Store().Engine.Update(updates, cond); err != nil {
 	//	return nil, errors.FromErr(err).WithContext(ins).Err()
 	//} else {
-	instance.Status = storage.KubernetesInstanceStatus_Deleted
+	instance.Status = KubernetesInstanceStatus_Deleted
 	return instance, nil
 	//}
 }

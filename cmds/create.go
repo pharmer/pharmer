@@ -8,7 +8,6 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/flags"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/spf13/cobra"
 )
@@ -79,7 +78,5 @@ func NewCmdCreate() *cobra.Command {
 }
 
 func create(req *proto.ClusterCreateRequest) error {
-	context.NewContext()
-
 	return nil
 }

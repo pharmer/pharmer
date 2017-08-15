@@ -6,67 +6,67 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/storage"
 )
 
 func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
-	defer cm.ctx.Delete()
+	defer cm.cluster.Delete()
 
-	if cm.ctx.Status == storage.KubernetesStatus_Pending {
-		cm.ctx.Status = storage.KubernetesStatus_Failing
-	} else if cm.ctx.Status == storage.KubernetesStatus_Ready {
-		cm.ctx.Status = storage.KubernetesStatus_Deleting
+	if cm.cluster.Status == api.KubernetesStatus_Pending {
+		cm.cluster.Status = api.KubernetesStatus_Failing
+	} else if cm.cluster.Status == api.KubernetesStatus_Ready {
+		cm.cluster.Status = api.KubernetesStatus_Deleting
 	}
 	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
 	var err error
 	if cm.conn == nil {
-		cm.conn, err = NewConnector(cm.ctx)
+		cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 		if err != nil {
-			cm.ctx.StatusCause = err.Error()
+			cm.cluster.StatusCause = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	cm.namer = namer{ctx: cm.ctx}
-	cm.ins, err = cloud.NewInstances(cm.ctx)
+	cm.namer = namer{cluster: cm.cluster}
+	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	err = cm.ins.Load()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	var errs []string
-	if cm.ctx.StatusCause != "" {
-		errs = append(errs, cm.ctx.StatusCause)
+	if cm.cluster.StatusCause != "" {
+		errs = append(errs, cm.cluster.StatusCause)
 	}
 
 	cm.deleteResourceGroup(req.Name)
 	for i := range cm.ins.Instances {
-		cm.ins.Instances[i].Status = storage.KubernetesStatus_Deleted
+		cm.ins.Instances[i].Status = api.KubernetesStatus_Deleted
 	}
-	if err := cloud.DeleteARecords(cm.ctx); err != nil {
+	if err := cloud.DeleteARecords(cm.ctx, cm.cluster); err != nil {
 		errs = append(errs, err.Error())
 	}
 
 	if len(errs) > 0 {
 		// Preserve statusCause for failed cluster
-		if cm.ctx.Status == storage.KubernetesStatus_Deleting {
-			cm.ctx.StatusCause = strings.Join(errs, "\n")
+		if cm.cluster.Status == api.KubernetesStatus_Deleting {
+			cm.cluster.StatusCause = strings.Join(errs, "\n")
 		}
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 	err = cm.ins.Save()
 	if err != nil {
-		cm.ctx.StatusCause = err.Error()
+		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.ctx.Name)
+	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.cluster.Name)
 	return nil
 }
 
@@ -77,18 +77,18 @@ func (cm *clusterManager) deleteResourceGroup(groupName string) error {
 }
 
 func (cm *clusterManager) deleteNodeNetworkInterface(interfaceName string) error {
-	_, err := cm.conn.interfacesClient.Delete(cm.ctx.Name, interfaceName, make(chan struct{}))
+	_, err := cm.conn.interfacesClient.Delete(cm.cluster.Name, interfaceName, make(chan struct{}))
 	cm.ctx.Logger().Infof("Node network interface %v deleted", interfaceName)
 	return err
 }
 
 func (cm *clusterManager) deletePublicIp(ipName string) error {
-	_, err := cm.conn.publicIPAddressesClient.Delete(cm.ctx.Name, ipName, nil)
+	_, err := cm.conn.publicIPAddressesClient.Delete(cm.cluster.Name, ipName, nil)
 	cm.ctx.Logger().Infof("Public ip %v deleted", ipName)
 	return err
 }
 func (cm *clusterManager) deleteVirtualMachine(machineName string) error {
-	_, err := cm.conn.vmClient.Delete(cm.ctx.Name, machineName, make(chan struct{}))
+	_, err := cm.conn.vmClient.Delete(cm.cluster.Name, machineName, make(chan struct{}))
 	cm.ctx.Logger().Infof("Virtual machine %v deleted", machineName)
 	return err
 }

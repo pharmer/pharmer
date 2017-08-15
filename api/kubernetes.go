@@ -12,8 +12,6 @@ import (
 	dns "github.com/appscode/go-dns/provider"
 	"github.com/appscode/go/crypto/rand"
 	_env "github.com/appscode/go/env"
-	"github.com/appscode/log"
-	"github.com/appscode/pharmer/storage"
 	"github.com/golang/protobuf/jsonpb"
 	"k8s.io/client-go/rest"
 )
@@ -154,22 +152,6 @@ type Cluster struct {
 	InstanceRootPassword string `json:"INSTANCE_ROOT_PASSWORD"`
 }
 
-func (ctx *Cluster) Store() storage.Storage {
-	return nil
-}
-
-func (ctx *Cluster) Logger() Logger {
-	return log.New(nil)
-}
-
-func (ctx *Cluster) Extra() DomainManager {
-	return &NullDomainManager{}
-}
-
-func (ctx *Cluster) String() string {
-	return "TODO: FixIt!"
-}
-
 func (ctx *Cluster) SetNodeGroups(ng []*proto.InstanceGroup) {
 	ctx.NodeGroups = make([]*InstanceGroup, len(ng))
 	for i, g := range ng {
@@ -185,7 +167,7 @@ func (ctx *Cluster) Save() error {
 	return nil
 }
 
-func (ctx *Cluster) AddEdge(src, dst string, typ storage.ClusterOP) error {
+func (ctx *Cluster) AddEdge(src, dst string, typ ClusterOP) error {
 	return nil
 }
 
@@ -197,7 +179,7 @@ func (ctx *Cluster) Load() error {
 
 /*
 func (ctx *ClusterContext) UpdateNodeCount() error {
-	kv := &storage.KubernetesVersion{ID: ctx.ContextVersion}
+	kv := &KubernetesVersion{ID: ctx.ContextVersion}
 	hasCtxVersion, err := ctx.Store().Engine.Get(kv)
 	if err != nil {
 		return err
@@ -227,17 +209,17 @@ func (ctx *ClusterContext) UpdateNodeCount() error {
 */
 
 func (ctx *Cluster) Delete() error {
-	if ctx.Status == storage.KubernetesStatus_Pending || ctx.Status == storage.KubernetesStatus_Failing || ctx.Status == storage.KubernetesStatus_Failed {
-		ctx.Status = storage.KubernetesStatus_Failed
+	if ctx.Status == KubernetesStatus_Pending || ctx.Status == KubernetesStatus_Failing || ctx.Status == KubernetesStatus_Failed {
+		ctx.Status = KubernetesStatus_Failed
 	} else {
-		ctx.Status = storage.KubernetesStatus_Deleted
+		ctx.Status = KubernetesStatus_Deleted
 	}
 	if err := ctx.Save(); err != nil {
 		return err
 	}
 
 	n := rand.WithUniqSuffix(ctx.Name)
-	//if _, err := ctx.Store().Engine.Update(&storage.Kubernetes{Name: n}, &storage.Kubernetes{PHID: ctx.PHID}); err != nil {
+	//if _, err := ctx.Store().Engine.Update(&Kubernetes{Name: n}, &Kubernetes{PHID: ctx.PHID}); err != nil {
 	//	return err
 	//}
 	ctx.Name = n

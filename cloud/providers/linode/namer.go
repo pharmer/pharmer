@@ -8,21 +8,21 @@ import (
 )
 
 type namer struct {
-	ctx *api.Cluster
+	cluster *api.Cluster
 }
 
 func (n namer) MasterName() string {
-	return n.ctx.Name + "-master"
+	return n.cluster.Name + "-master"
 }
 
 func (n namer) GenNodeName() string {
-	return rand.WithUniqSuffix(n.ctx.Name + "-node")
+	return rand.WithUniqSuffix(n.cluster.Name + "-node")
 }
 
 func (n namer) GenSSHKeyExternalID() string {
-	return n.ctx.Name + "-" + rand.Characters(6)
+	return n.cluster.Name + "-" + rand.Characters(6)
 }
 
 func (n namer) StartupScriptName(sku, role string) string {
-	return n.ctx.Name + "-" + sku + "-" + role + "-V" + strconv.FormatInt(n.ctx.ContextVersion, 10)
+	return n.cluster.Name + "-" + sku + "-" + role + "-V" + strconv.FormatInt(n.cluster.ContextVersion, 10)
 }

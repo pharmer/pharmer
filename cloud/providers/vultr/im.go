@@ -11,15 +11,16 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/storage"
 	"github.com/cenkalti/backoff"
 )
 
 type instanceManager struct {
-	ctx   *api.Cluster
-	conn  *cloudConnector
-	namer namer
+	ctx     context.Context
+	cluster *api.Cluster
+	conn    *cloudConnector
+	namer   namer
 }
 
 func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
@@ -53,7 +54,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 
 func (im *instanceManager) createStartupScript(sku, role string) (int, error) {
 	im.ctx.Logger().Infof("creating StackScript for sku %v role %v", sku, role)
-	script := im.RenderStartupScript(im.ctx.NewScriptOptions(), sku, role)
+	script := im.RenderStartupScript(im.cluster.NewScriptOptions(), sku, role)
 
 	resp, err := im.conn.client.CreateStartupScript(im.namer.StartupScriptName(sku, role), script, "boot")
 	if err != nil {
@@ -127,7 +128,7 @@ EOF
 }
 
 func (im *instanceManager) createInstance(name, sku string, scriptID int) (string, error) {
-	regionID, err := strconv.Atoi(im.ctx.Zone)
+	regionID, err := strconv.Atoi(im.cluster.Zone)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -135,20 +136,20 @@ func (im *instanceManager) createInstance(name, sku string, scriptID int) (strin
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	osID, err := strconv.Atoi(im.ctx.InstanceImage)
+	osID, err := strconv.Atoi(im.cluster.InstanceImage)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	opts := &gv.ServerOptions{
-		SSHKey:               im.ctx.SSHKeyExternalID + ",57dcbce7cd3b6,58027d56a1190,58a498ec7ee19",
+		SSHKey:               im.cluster.SSHKeyExternalID + ",57dcbce7cd3b6,58027d56a1190,58a498ec7ee19",
 		PrivateNetworking:    true,
 		DontNotifyOnActivate: false,
 		Script:               scriptID,
 		Hostname:             name,
-		Tag:                  im.ctx.Name,
+		Tag:                  im.cluster.Name,
 	}
 	if _env.FromHost().IsPublic() {
-		opts.SSHKey = im.ctx.SSHKeyExternalID
+		opts.SSHKey = im.cluster.SSHKeyExternalID
 	}
 	resp, err := im.conn.client.CreateServer(
 		name,
@@ -179,8 +180,8 @@ func (im *instanceManager) newKubeInstance(server *gv.Server) (*api.KubernetesIn
 		Name:           server.Name,
 		ExternalIP:     server.MainIP,
 		InternalIP:     server.InternalIP,
-		SKU:            strconv.Itoa(server.PlanID),            // 512mb // convert to SKU
-		Status:         storage.KubernetesInstanceStatus_Ready, // active
+		SKU:            strconv.Itoa(server.PlanID),        // 512mb // convert to SKU
+		Status:         api.KubernetesInstanceStatus_Ready, // active
 	}, nil
 }
 
