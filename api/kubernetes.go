@@ -9,7 +9,6 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	ssh "github.com/appscode/api/ssh/v1beta1"
 	"github.com/appscode/errors"
-	dns "github.com/appscode/go-dns/provider"
 	"github.com/appscode/go/crypto/rand"
 	_env "github.com/appscode/go/env"
 	"github.com/golang/protobuf/jsonpb"
@@ -27,7 +26,6 @@ type Cluster struct {
 	KubeEnv
 	CommonNonEnv
 
-	DNSProvider dns.Provider `json:"-"`
 	// request data. This is needed to give consistent access to these values for all commands.
 	Region              string            `json:"REGION"`
 	MasterSKU           string            `json:"MASTER_SKU"`

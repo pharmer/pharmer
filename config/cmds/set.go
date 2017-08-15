@@ -101,84 +101,84 @@ func setContext(req *setContextRequest, configPath string) {
 	nc := &otx.Context{
 		Name:     req.Name,
 		Provider: req.Provider,
-		Store:    stow.ConfigMap{},
+		Config:   stow.ConfigMap{},
 	}
 	switch req.Provider {
 	case s3.Kind:
 		nc.Provider = s3.Kind
 		if req.s3ConfigAccessKeyID != "" {
-			nc.Store[s3.ConfigAccessKeyID] = req.s3ConfigAccessKeyID
+			nc.Config[s3.ConfigAccessKeyID] = req.s3ConfigAccessKeyID
 		}
 		if req.s3ConfigEndpoint != "" {
-			nc.Store[s3.ConfigEndpoint] = req.s3ConfigEndpoint
+			nc.Config[s3.ConfigEndpoint] = req.s3ConfigEndpoint
 		}
 		if req.s3ConfigRegion != "" {
-			nc.Store[s3.ConfigRegion] = req.s3ConfigRegion
+			nc.Config[s3.ConfigRegion] = req.s3ConfigRegion
 		}
 		if req.s3ConfigSecretKey != "" {
-			nc.Store[s3.ConfigSecretKey] = req.s3ConfigSecretKey
+			nc.Config[s3.ConfigSecretKey] = req.s3ConfigSecretKey
 		}
 		if req.s3ConfigAuthType != "" {
-			nc.Store[s3.ConfigAuthType] = req.s3ConfigAuthType
+			nc.Config[s3.ConfigAuthType] = req.s3ConfigAuthType
 		}
-		nc.Store[s3.ConfigDisableSSL] = strconv.FormatBool(req.s3ConfigDisableSSL)
+		nc.Config[s3.ConfigDisableSSL] = strconv.FormatBool(req.s3ConfigDisableSSL)
 	case gcs.Kind:
 		nc.Provider = gcs.Kind
 		if req.gcsConfigJSONKeyPath != "" {
 			jsonKey, err := ioutil.ReadFile(req.gcsConfigJSONKeyPath)
 			term.ExitOnError(err)
-			nc.Store[gcs.ConfigJSON] = string(jsonKey)
+			nc.Config[gcs.ConfigJSON] = string(jsonKey)
 		}
 		if req.gcsConfigProjectId != "" {
-			nc.Store[gcs.ConfigProjectId] = req.gcsConfigProjectId
+			nc.Config[gcs.ConfigProjectId] = req.gcsConfigProjectId
 		}
 		if req.gcsConfigScopes != "" {
-			nc.Store[gcs.ConfigScopes] = req.gcsConfigScopes
+			nc.Config[gcs.ConfigScopes] = req.gcsConfigScopes
 		}
 	case azure.Kind:
 		if req.azureConfigAccount != "" {
-			nc.Store[azure.ConfigAccount] = req.azureConfigAccount
+			nc.Config[azure.ConfigAccount] = req.azureConfigAccount
 		}
 		if req.azureConfigKey != "" {
-			nc.Store[azure.ConfigKey] = req.azureConfigKey
+			nc.Config[azure.ConfigKey] = req.azureConfigKey
 		}
 	case local.Kind:
 		if req.localConfigKeyPath != "" {
-			nc.Store[local.ConfigKeyPath] = req.localConfigKeyPath
+			nc.Config[local.ConfigKeyPath] = req.localConfigKeyPath
 		}
 	case swift.Kind:
 		if req.swiftConfigKey != "" {
-			nc.Store[swift.ConfigKey] = req.swiftConfigKey
+			nc.Config[swift.ConfigKey] = req.swiftConfigKey
 		}
 		if req.swiftConfigTenantAuthURL != "" {
-			nc.Store[swift.ConfigTenantAuthURL] = req.swiftConfigTenantAuthURL
+			nc.Config[swift.ConfigTenantAuthURL] = req.swiftConfigTenantAuthURL
 		}
 		if req.swiftConfigTenantName != "" {
-			nc.Store[swift.ConfigTenantName] = req.swiftConfigTenantName
+			nc.Config[swift.ConfigTenantName] = req.swiftConfigTenantName
 		}
 		if req.swiftConfigUsername != "" {
-			nc.Store[swift.ConfigUsername] = req.swiftConfigUsername
+			nc.Config[swift.ConfigUsername] = req.swiftConfigUsername
 		}
 		if req.swiftConfigDomain != "" {
-			nc.Store[swift.ConfigDomain] = req.swiftConfigDomain
+			nc.Config[swift.ConfigDomain] = req.swiftConfigDomain
 		}
 		if req.swiftConfigRegion != "" {
-			nc.Store[swift.ConfigRegion] = req.swiftConfigRegion
+			nc.Config[swift.ConfigRegion] = req.swiftConfigRegion
 		}
 		if req.swiftConfigTenantId != "" {
-			nc.Store[swift.ConfigTenantId] = req.swiftConfigTenantId
+			nc.Config[swift.ConfigTenantId] = req.swiftConfigTenantId
 		}
 		if req.swiftConfigTenantDomain != "" {
-			nc.Store[swift.ConfigTenantDomain] = req.swiftConfigTenantDomain
+			nc.Config[swift.ConfigTenantDomain] = req.swiftConfigTenantDomain
 		}
 		if req.swiftConfigTrustId != "" {
-			nc.Store[swift.ConfigTrustId] = req.swiftConfigTrustId
+			nc.Config[swift.ConfigTrustId] = req.swiftConfigTrustId
 		}
 		if req.swiftConfigStorageURL != "" {
-			nc.Store[swift.ConfigStorageURL] = req.swiftConfigStorageURL
+			nc.Config[swift.ConfigStorageURL] = req.swiftConfigStorageURL
 		}
 		if req.swiftConfigAuthToken != "" {
-			nc.Store[swift.ConfigAuthToken] = req.swiftConfigAuthToken
+			nc.Config[swift.ConfigAuthToken] = req.swiftConfigAuthToken
 		}
 	default:
 		term.Fatalln("Unknown provider:" + req.Provider)
