@@ -220,7 +220,7 @@ func (cm *clusterManager) UploadStartupConfig() error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		frontCACert, err := base64.StdEncoding.DecodeString(cm.cluster.FrontProxyCaCert)
-		path = fmt.Sprintf("kubernetes/context/%v/pki/front-proxy-ca.crt", cm.clutser.ContextVersion)
+		path = fmt.Sprintf("kubernetes/context/%v/pki/front-proxy-ca.crt", cm.cluster.ContextVersion)
 		if err = cm.bucketStore(path, frontCACert); err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}

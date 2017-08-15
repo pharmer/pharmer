@@ -54,7 +54,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 
 func (im *instanceManager) createStartupScript(sku, role string) (int, error) {
 	im.ctx.Logger().Infof("creating StackScript for sku %v role %v", sku, role)
-	script := im.RenderStartupScript(im.cluster.NewScriptOptions(), sku, role)
+	script := im.RenderStartupScript(sku, role)
 
 	resp, err := im.conn.client.CreateStartupScript(im.namer.StartupScriptName(sku, role), script, "boot")
 	if err != nil {
@@ -68,10 +68,10 @@ func (im *instanceManager) createStartupScript(sku, role string) (int, error) {
 }
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
-func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
-	cmd := cloud.StartupConfigFromAPI(opt, role)
+func (im *instanceManager) RenderStartupScript(sku, role string) string {
+	cmd := cloud.StartupConfigFromAPI(im.cluster, role)
 	if api.UseFirebase() {
-		cmd = cloud.StartupConfigFromFirebase(opt, role)
+		cmd = cloud.StartupConfigFromFirebase(im.cluster, role)
 	}
 
 	return fmt.Sprintf(`#!/bin/bash
@@ -124,7 +124,7 @@ EOF
 
 /usr/sbin/update-grub
 
-`, strings.Replace(cloud.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1))
+`, strings.Replace(cloud.RenderKubeStarter(im.cluster, sku, cmd), "$", "\\$", -1))
 }
 
 func (im *instanceManager) createInstance(name, sku string, scriptID int) (string, error) {

@@ -58,7 +58,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 }
 
 func (im *instanceManager) createInstance(name, role, sku string, ipid ...string) (*packngo.Device, error) {
-	startupScript := im.RenderStartupScript(im.cluster.NewScriptOptions(), sku, role)
+	startupScript := im.RenderStartupScript(sku, role)
 	device, _, err := im.conn.client.Devices.Create(&packngo.DeviceCreateRequest{
 		HostName:     name,
 		Plan:         sku,
@@ -74,10 +74,10 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 }
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
-func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
-	cmd := cloud.StartupConfigFromAPI(opt, role)
+func (im *instanceManager) RenderStartupScript(sku, role string) string {
+	cmd := cloud.StartupConfigFromAPI(im.cluster, role)
 	if api.UseFirebase() {
-		cmd = cloud.StartupConfigFromFirebase(opt, role)
+		cmd = cloud.StartupConfigFromFirebase(im.cluster, role)
 	}
 
 	reboot := ""
@@ -123,7 +123,7 @@ EOF
 /bin/sed -i 's/\/boot\/vmlinuz/\/boot\/vmlinuz\ cgroup_enable=memory\ swapaccount=1/' /boot/grub/grub.cfg
 
 %v
-`, strings.Replace(cloud.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), reboot)
+`, strings.Replace(cloud.RenderKubeStarter(im.cluster, sku, cmd), "$", "\\$", -1), reboot)
 }
 
 func (im *instanceManager) newKubeInstance(id string) (*api.KubernetesInstance, error) {

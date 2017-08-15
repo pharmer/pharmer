@@ -62,7 +62,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 }
 
 func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
-	startupScript := im.RenderStartupScript(im.cluster.NewScriptOptions(), sku, role)
+	startupScript := im.RenderStartupScript(sku, role)
 	instance, err := data.ClusterMachineType(im.cluster.Provider, sku)
 	if err != nil {
 		im.cluster.StatusCause = err.Error()
@@ -121,10 +121,10 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 	return *vGuest.Id, nil
 }
 
-func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
-	cmd := cloud.StartupConfigFromAPI(opt, role)
+func (im *instanceManager) RenderStartupScript(sku, role string) string {
+	cmd := cloud.StartupConfigFromAPI(im.cluster, role)
 	if api.UseFirebase() {
-		cmd = cloud.StartupConfigFromFirebase(opt, role)
+		cmd = cloud.StartupConfigFromFirebase(im.cluster, role)
 	}
 
 	firebaseUid := ""
@@ -169,7 +169,7 @@ systemctl enable kube-installer.service
 /usr/sbin/update-grub
 
 %v
-`, strings.Replace(cloud.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid, reboot)
+`, strings.Replace(cloud.RenderKubeStarter(im.cluster, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid, reboot)
 }
 
 func (im *instanceManager) newKubeInstance(id int) (*api.KubernetesInstance, error) {

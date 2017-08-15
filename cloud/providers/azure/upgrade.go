@@ -92,7 +92,7 @@ func (cm *clusterManager) updateMaster() error {
 		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterScript := im.RenderStartupScript(cm.cluster.NewScriptOptions(), cm.cluster.MasterSKU, api.RoleKubernetesMaster)
+	masterScript := im.RenderStartupScript(cm.cluster.MasterSKU, api.RoleKubernetesMaster)
 	_, err = im.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), masterScript, cm.cluster.MasterSKU)
 	if err != nil {
 		cm.cluster.StatusCause = err.Error()

@@ -3,7 +3,6 @@ package digitalocean
 import (
 	go_ctx "context"
 	"fmt"
-	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/errors"
@@ -46,12 +45,12 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		}
 	}(cm.cluster.MasterReservedIP == "auto")
 
-	cm.cluster.InstanceImage, err = cm.conn.getInstanceImage()
-	if err != nil {
-		cm.cluster.StatusCause = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	cm.ctx.Logger().Infof("Image %v is using to create instance", cm.cluster.InstanceImage)
+	//cm.cluster.InstanceImage, err = cm.conn.getInstanceImage()
+	//if err != nil {
+	//	cm.cluster.StatusCause = err.Error()
+	//	return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//}
+	//cm.ctx.Logger().Infof("Image %v is using to create instance", cm.cluster.InstanceImage)
 
 	err = cm.importPublicKey()
 	if err != nil {
@@ -64,6 +63,18 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 
 	err = cm.reserveIP()
 	if err != nil {
+		cm.cluster.StatusCause = err.Error()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+
+	// ------------------------Generate Certs and upload in Firebase @dipta----------------------
+
+	if err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
+		cm.cluster.StatusCause = err.Error()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+
+	if err = cm.UploadStartupConfig(cm.cluster); err != nil {
 		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -99,10 +110,10 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.MasterExternalIP, "<><><><>", cm.cluster.MasterReservedIP)
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 
-	if err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.StatusCause = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
+	//if err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
+	//	cm.cluster.StatusCause = err.Error()
+	//	return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//}
 	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		cm.cluster.StatusCause = err.Error()
@@ -114,17 +125,17 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.UploadStartupConfig(cm.cluster)
+	//cm.UploadStartupConfig(cm.cluster)
+	//
+	//// reboot master to use cert with internal_ip as SANS
+	//time.Sleep(60 * time.Second)
 
-	// reboot master to use cert with internal_ip as SANS
-	time.Sleep(60 * time.Second)
-
-	cm.ctx.Logger().Info("Rebooting master instance")
-	if err = im.reboot(masterDroplet.ID); err != nil {
-		cm.cluster.StatusCause = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	cm.ctx.Logger().Info("Rebooted master instance")
+	//cm.ctx.Logger().Info("Rebooting master instance")
+	//if err = im.reboot(masterDroplet.ID); err != nil {
+	//	cm.cluster.StatusCause = err.Error()
+	//	return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//}
+	//cm.ctx.Logger().Info("Rebooted master instance")
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 	// start nodes
 	for _, ng := range req.NodeGroups {

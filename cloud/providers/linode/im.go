@@ -69,7 +69,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 }
 
 func (im *instanceManager) createStackScript(sku, role string) (int, error) {
-	startupScript := im.RenderStartupScript(im.cluster.NewScriptOptions(), sku, role)
+	startupScript := im.RenderStartupScript(sku, role)
 	script, err := im.conn.client.StackScript.Create(im.namer.StartupScriptName(sku, role), im.cluster.InstanceImage, startupScript, map[string]string{
 		"Description": im.cluster.Name,
 	})
@@ -81,10 +81,10 @@ func (im *instanceManager) createStackScript(sku, role string) (int, error) {
 }
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
-func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
-	cmd := cloud.StartupConfigFromAPI(opt, role)
+func (im *instanceManager) RenderStartupScript(sku, role string) string {
+	cmd := cloud.StartupConfigFromAPI(im.cluster, role)
 	if api.UseFirebase() {
-		cmd = cloud.StartupConfigFromFirebase(opt, role)
+		cmd = cloud.StartupConfigFromFirebase(im.cluster, role)
 	}
 
 	firebaseUid := ""
@@ -149,7 +149,7 @@ EOF
 
 /usr/sbin/update-grub
 /sbin/poweroff
-`, strings.Replace(cloud.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost(), firebaseUid)
+`, strings.Replace(cloud.RenderKubeStarter(im.cluster, sku, cmd), "$", "\\$", -1), _env.FromHost(), firebaseUid)
 }
 
 func (im *instanceManager) createInstance(name string, scriptId int, sku string) (int, int, error) {

@@ -379,8 +379,8 @@ func (cm *clusterManager) createMasterIntance() (string, error) {
 	// MachineType:  "projects/tigerworks-kube/zones/us-central1-b/machineTypes/n1-standard-1",
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
-	// startupScript := cm.RenderStartupScript(cm.cluster.NewScriptOptions(), cm.cluster.MasterSKU, api.RoleKubernetesMaster)
-	startupScript := cm.RenderMasterStartupScript(cm.cluster.NewScriptOptions())
+	// startupScript := cm.RenderStartupScript(cm.cluster, cm.cluster.MasterSKU, api.RoleKubernetesMaster)
+	startupScript := cm.RenderMasterStartupScript()
 
 	machineType := fmt.Sprintf("projects/%v/zones/%v/machineTypes/%v", cm.cluster.Project, cm.cluster.Zone, cm.cluster.MasterSKU)
 	zone := fmt.Sprintf("projects/%v/zones/%v", cm.cluster.Project, cm.cluster.Zone)
@@ -487,22 +487,22 @@ func (cm *clusterManager) createMasterIntance() (string, error) {
 	return r1.Name, nil
 }
 
-func (cm *clusterManager) RenderMasterStartupScript(opt *api.ScriptOptions) string {
+func (cm *clusterManager) RenderMasterStartupScript() string {
 	Cert := fmt.Sprintf(`gsutil cat gs://%v/kubernetes/context/%v/pki/ca.crt > /etc/kubernetes/pki/ca.crt \
 	&& gsutil cat gs://%v/kubernetes/context/%v/pki/ca.key > /etc/kubernetes/pki/ca.key \
 	&& gsutil cat gs://%v/kubernetes/context/%v/pki/front-proxy-ca.crt > /etc/kubernetes/pki/front-proxy-ca.crt \
 	&& gsutil cat gs://%v/kubernetes/context/%v/pki/front-proxy-ca.key > /etc/kubernetes/pki/front-proxy-ca.key`,
-		opt.Ctx.BucketName, opt.Ctx.ContextVersion,
-		opt.Ctx.BucketName, opt.Ctx.ContextVersion,
-		opt.Ctx.BucketName, opt.Ctx.ContextVersion,
-		opt.Ctx.BucketName, opt.Ctx.ContextVersion)
+		cm.cluster.BucketName, cm.cluster.ContextVersion,
+		cm.cluster.BucketName, cm.cluster.ContextVersion,
+		cm.cluster.BucketName, cm.cluster.ContextVersion,
+		cm.cluster.BucketName, cm.cluster.ContextVersion)
 
-	return cloud.RenderKubeadmMasterStarter(opt, Cert)
+	return cloud.RenderKubeadmMasterStarter(cm.cluster, Cert)
 }
 
-func (cm *clusterManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
+func (cm *clusterManager) RenderStartupScript(sku, role string) string {
 	//cmd := fmt.Sprintf(`CONFIG=$(/usr/bin/gsutil cat gs://%v/kubernetes/context/%v/startup-config/%v.yaml 2> /dev/null)`, opt.BucketName, opt.ContextVersion, role)
-	return cloud.RenderKubeadmStarter(opt, sku)
+	return cloud.RenderKubeadmStarter(cm.cluster, sku)
 }
 
 // Instance
@@ -639,7 +639,7 @@ func (cm *clusterManager) createNodeInstanceTemplate(sku string) (string, error)
 	//  }
 
 	cm.UploadStartupConfig()
-	startupScript := cm.RenderStartupScript(cm.cluster.NewScriptOptions(), sku, api.RoleKubernetesPool)
+	startupScript := cm.RenderStartupScript(sku, api.RoleKubernetesPool)
 
 	image := fmt.Sprintf("projects/%v/global/images/%v", cm.cluster.Project, cm.cluster.InstanceImage)
 	network := fmt.Sprintf("projects/%v/global/networks/%v", cm.cluster.Project, defaultNetwork)

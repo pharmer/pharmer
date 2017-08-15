@@ -972,7 +972,7 @@ func (cm *clusterManager) reserveIP() error {
 }
 
 func (cm *clusterManager) createMasterInstance(instanceName string, role string) (string, error) {
-	kubeStarter := cm.RenderStartupScript(cm.cluster.NewScriptOptions())
+	kubeStarter := cm.RenderStartupScript()
 	req := &_ec2.RunInstancesInput{
 		ImageId:  types.StringP(cm.cluster.InstanceImage),
 		MaxCount: types.Int64P(1),
@@ -1170,7 +1170,7 @@ func (cm *clusterManager) assignIPToInstance(instanceID string) error {
 	return nil
 }
 
-func (cm *clusterManager) RenderStartupScript(opt *api.ScriptOptions) string {
+func (cm *clusterManager) RenderStartupScript() string {
 	/*cmd := fmt.Sprintf(`/usr/local/bin/aws s3api get-object --bucket %v --key kubernetes/context/%v/startup-config/%v.yaml /tmp/role.yaml
 	CONFIG=$(cat /tmp/role.yaml)`, opt.BucketName, opt.ContextVersion, role)*/
 	Cert := fmt.Sprintf(`apt-get install -y  awscli \
@@ -1178,16 +1178,16 @@ func (cm *clusterManager) RenderStartupScript(opt *api.ScriptOptions) string {
 	&& aws s3api get-object --bucket %v --key kubernetes/context/%v/pki/ca.key  /etc/kubernetes/pki/ca.key \
 	&& aws s3api get-object --bucket %v --key kubernetes/context/%v/pki/front-proxy-ca.crt  /etc/kubernetes/pki/front-proxy-ca.crt \
 	&& aws s3api get-object --bucket %v --key kubernetes/context/%v/pki/front-proxy-ca.key  /etc/kubernetes/pki/front-proxy-ca.key`,
-		opt.Ctx.BucketName, opt.Ctx.ContextVersion,
-		opt.Ctx.BucketName, opt.Ctx.ContextVersion,
-		opt.Ctx.BucketName, opt.Ctx.ContextVersion,
-		opt.Ctx.BucketName, opt.Ctx.ContextVersion)
-	return cloud.RenderKubeadmMasterStarter(opt, Cert)
+		cm.cluster.BucketName, cm.cluster.ContextVersion,
+		cm.cluster.BucketName, cm.cluster.ContextVersion,
+		cm.cluster.BucketName, cm.cluster.ContextVersion,
+		cm.cluster.BucketName, cm.cluster.ContextVersion)
+	return cloud.RenderKubeadmMasterStarter(cm.cluster, Cert)
 }
 
 func (cm *clusterManager) createLaunchConfiguration(name, sku string) error {
-	// script := cm.RenderStartupScript(cm.cluster.NewScriptOptions(), sku, api.RoleKubernetesPool)
-	script := cloud.RenderKubeadmNodeStarter(cm.cluster.NewScriptOptions())
+	// script := cm.RenderStartupScript(cm.cluster, sku, api.RoleKubernetesPool)
+	script := cloud.RenderKubeadmNodeStarter(cm.cluster)
 	cm.UploadStartupConfig()
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
 		LaunchConfigurationName:  types.StringP(name),

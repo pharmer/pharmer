@@ -108,16 +108,16 @@ func (im *instanceManager) storeConfigFile(serverID, role string) error {
 
 func (im *instanceManager) storeStartupScript(serverID, sku, role string) error {
 	im.ctx.Logger().Infof("Storing startup script for server %v", serverID)
-	startupScript := im.RenderStartupScript(im.cluster.NewScriptOptions(), sku, role)
+	startupScript := im.RenderStartupScript(sku, role)
 	key := "kubernetes_startupscript.sh"
 	return im.conn.client.PatchUserdata(serverID, key, []byte(startupScript), false)
 }
 
-func (im *instanceManager) RenderStartupScript(opt *api.ScriptOptions, sku, role string) string {
-	cmd := fmt.Sprintf(`CONFIG=$(/usr/bin/curl 169.254.42.42/user_data/kubernetes_context_%v_%v.yaml --local-port 1-1024)`, opt.ContextVersion, role)
+func (im *instanceManager) RenderStartupScript(sku, role string) string {
+	cmd := fmt.Sprintf(`CONFIG=$(/usr/bin/curl 169.254.42.42/user_data/kubernetes_context_%v_%v.yaml --local-port 1-1024)`, im.cluster.ContextVersion, role)
 	return fmt.Sprintf(`%v
 systemctl start kube-installer.service
-`, cloud.RenderKubeInstaller(opt, sku, role, cmd))
+`, cloud.RenderKubeInstaller(im.cluster, sku, role, cmd))
 }
 
 func (im *instanceManager) executeStartupScript(instance *api.KubernetesInstance, signer ssh.Signer) error {
