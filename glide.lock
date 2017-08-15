@@ -1,5 +1,5 @@
 hash: 3071f29f6576285152a3027b0fba986b8e8d4c9bcd02acfab5fb993d2bf30d45
-updated: 2017-08-15T10:41:34.015644454-07:00
+updated: 2017-08-15T12:29:43.925114618-07:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -60,7 +60,14 @@ imports:
 - name: github.com/appscode/go-dns
   version: 3af047d24824ddfcc5d6b985e9454446a736de46
   subpackages:
+  - aws
+  - azure
+  - cloudflare
+  - digitalocean
+  - googlecloud
+  - linode
   - provider
+  - vultr
 - name: github.com/appscode/go-hetzner
   version: 2862c36e840d98476edf9f1826717d354547be6f
 - name: github.com/appscode/go-notify
@@ -124,12 +131,14 @@ imports:
   - service/ec2
   - service/elb
   - service/iam
+  - service/route53
   - service/s3
   - service/sts
 - name: github.com/Azure/azure-sdk-for-go
   version: 0984e0641ae43b89283223034574d6465be93bf4
   subpackages:
   - arm/compute
+  - arm/dns
   - arm/network
   - arm/resources/resources
   - arm/storage
@@ -176,6 +185,8 @@ imports:
   - signer/local
   - signer/remote
   - signer/universal
+- name: github.com/cloudflare/cloudflare-go
+  version: ba610b87e64f5e99e8ddd614e50669c66c2ec9b5
 - name: github.com/coreos/go-oidc
   version: be73733bb8cc830d0205609b95d125215f8e9c70
   subpackages:
@@ -346,6 +357,8 @@ imports:
   - api
   - api/install
   - client/clientset
+- name: github.com/kelseyhightower/envconfig
+  version: f611eb38b3875cc3bd991ca91c51d06446afa14c
 - name: github.com/kisielk/sqlstruct
   version: 648daed35d49dac24a4bff253b190a80da3ab6a5
   repo: https://github.com/kisielk/sqlstruct
@@ -363,6 +376,8 @@ imports:
   version: d6bea18f789704b5f83375793155289da36a3c7f
 - name: github.com/mgutz/str
   version: 968bf66e3da857419e4f6e71b2d5c9ae95682dc4
+- name: github.com/miekg/dns
+  version: 5d001d020961ae1c184f9f8152fdc73810481677
 - name: github.com/mitchellh/go-homedir
   version: b8bc1bf767474819792c23f32d8286a45736f1c6
 - name: github.com/mitchellh/go-wordwrap
@@ -419,6 +434,10 @@ imports:
   vcs: git
 - name: github.com/tent/http-link-go
   version: ac974c61c2f990f4115b119354b5e0b47550e888
+- name: github.com/timewasted/linode
+  version: 37e84520dcf74488f67654f9c775b9752c232dc1
+  subpackages:
+  - dns
 - name: github.com/ugorji/go
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:
@@ -431,6 +450,12 @@ imports:
   version: e02fc20de94c78484cd5ffb007f8af96be030a45
 - name: github.com/xeipuuv/gojsonschema
   version: 93e72a773fade158921402d6a24c819b48aba29d
+- name: github.com/xenolf/lego
+  version: 8f574e6ca289b530cd3f266f4aa73c9a1161c48a
+  repo: https://github.com/appscode/lego.git
+  vcs: git
+  subpackages:
+  - acme
 - name: github.com/zabawaba99/fireauth
   version: a96e4680fe079c9d29db732873742573c1d5b2be
 - name: golang.org/x/crypto
@@ -439,6 +464,7 @@ imports:
   - curve25519
   - ed25519
   - ed25519/internal/edwards25519
+  - ocsp
   - pkcs12
   - pkcs12/internal/rc2
   - ssh
@@ -455,6 +481,7 @@ imports:
   - idna
   - internal/timeseries
   - lex/httplex
+  - publicsuffix
   - trace
   - websocket
 - name: golang.org/x/oauth2
@@ -494,6 +521,7 @@ imports:
   version: 55146ba61254fdb1c26d65ff3c04bc1611ad73fb
   subpackages:
   - compute/v1
+  - dns/v1
   - gensupport
   - googleapi
   - googleapi/internal/uritemplates
@@ -534,6 +562,11 @@ imports:
   - transport
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
+- name: gopkg.in/square/go-jose.v1
+  version: aa2e30fdd1fe9dd3394119af66451ae790d50e0d
+  subpackages:
+  - cipher
+  - json
 - name: gopkg.in/yaml.v2
   version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
 - name: k8s.io/apimachinery
