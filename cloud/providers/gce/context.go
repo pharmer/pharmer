@@ -98,7 +98,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	}
 	cm.cluster.CloudConfigPath = "/etc/gce.conf"
 	cm.cluster.KubeadmToken = kubeadm.GetRandomToken()
-	cm.cluster.KubeVersion = "v" + req.Version
+	cm.cluster.KubernetesVersion = "v" + req.Version
 	return nil
 }
 
@@ -135,10 +135,6 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	cm.cluster.Status = api.KubernetesStatus_Pending
 	cm.cluster.OS = "ubuntu"
 	cm.cluster.MasterSKU = "n1-standard-2"
-
-	cm.cluster.AppsCodeLogIndexPrefix = "logstash-"
-	cm.cluster.AppsCodeLogStorageLifetime = 90 * 24 * 3600
-	cm.cluster.AppsCodeMonitoringStorageLifetime = 90 * 24 * 3600
 
 	cm.cluster.MasterDiskType = "pd-standard" // "pd-ssd"
 	cm.cluster.MasterDiskSize = 100
@@ -193,9 +189,9 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	cm.cluster.HairpinMode = "promiscuous-bridge"
 	// cm.ctx.KubeletPort = "10250"
 
-	version, err := semver.NewVersion(cm.cluster.KubeServerVersion)
+	version, err := semver.NewVersion(cm.cluster.KubernetesVersion)
 	if err != nil {
-		version, err = semver.NewVersion(cm.cluster.KubeVersion)
+		version, err = semver.NewVersion(cm.cluster.KubernetesVersion)
 		if err != nil {
 			return err
 		}

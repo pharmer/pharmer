@@ -20,10 +20,6 @@ func LoadDefaultGenericContext(ctx context.Context, cluster *api.Cluster) error 
 	cluster.Status = api.KubernetesStatus_Pending
 	cluster.OS = "debian"
 
-	cluster.AppsCodeLogIndexPrefix = "logstash-"
-	cluster.AppsCodeLogStorageLifetime = 90 * 24 * 3600
-	cluster.AppsCodeMonitoringStorageLifetime = 90 * 24 * 3600
-
 	//-------------------------- ctx.MasterSKU = "94" // 2 cpu
 	cluster.DockerStorage = "aufs"
 

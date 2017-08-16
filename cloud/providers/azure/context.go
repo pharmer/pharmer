@@ -51,7 +51,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cloud.GenClusterTokens(cm.cluster)
 
 	cm.cluster.KubeadmToken = kubeadm.GetRandomToken()
-	cm.cluster.KubeVersion = "v" + req.Version
+	cm.cluster.KubernetesVersion = "v" + req.Version
 
 	cm.cluster.AzureCloudConfig = &api.AzureCloudConfig{
 		TenantID:           cm.cluster.CloudCredential[credential.AzureTenantID],
@@ -87,10 +87,6 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	// https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-windows-sizes#d-series
 	cm.cluster.MasterSKU = "Standard_D2_v2" // CPU 2 Memory 7 disk 4
 	cm.cluster.InstanceRootPassword = rand.GeneratePassword()
-
-	cm.cluster.AppsCodeLogIndexPrefix = "logstash-"
-	cm.cluster.AppsCodeLogStorageLifetime = 90 * 24 * 3600
-	cm.cluster.AppsCodeMonitoringStorageLifetime = 90 * 24 * 3600
 
 	// Disk size can't be set for boot disk
 	// cm.cluster.MasterDiskType = "pd-standard" // "pd-ssd"
@@ -166,9 +162,9 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	cm.cluster.HairpinMode = "promiscuous-bridge"
 	cm.cluster.NonMasqueradeCidr = "10.0.0.0/8"
 
-	version, err := semver.NewVersion(cm.cluster.KubeServerVersion)
+	version, err := semver.NewVersion(cm.cluster.KubernetesVersion)
 	if err != nil {
-		version, err = semver.NewVersion(cm.cluster.KubeVersion)
+		version, err = semver.NewVersion(cm.cluster.KubernetesVersion)
 		if err != nil {
 			return err
 		}

@@ -95,7 +95,7 @@ kubectl apply \
   --kubeconfig /etc/kubernetes/admin.conf
 
 mkdir -p ~/.kube
-sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config`, cert, cluster.KubeadmToken, cluster.KubeVersion)
+sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config`, cert, cluster.KubeadmToken, cluster.KubernetesVersion)
 }
 
 //   \
