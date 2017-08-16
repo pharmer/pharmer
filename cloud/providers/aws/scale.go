@@ -29,7 +29,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 
 	inst := cloud.Instance{
 		Type: cloud.InstanceType{
-			ContextVersion: cm.cluster.ContextVersion,
+			ContextVersion: cm.cluster.ResourceVersion,
 			Sku:            req.Sku,
 
 			Master:       false,

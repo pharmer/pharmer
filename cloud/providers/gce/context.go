@@ -13,7 +13,6 @@ import (
 	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/util/kubeadm"
 	semver "github.com/hashicorp/go-version"
 	bstore "google.golang.org/api/storage/v1"
 )
@@ -97,7 +96,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 		Multizone:          bool(cm.cluster.Multizone),
 	}
 	cm.cluster.CloudConfigPath = "/etc/gce.conf"
-	cm.cluster.KubeadmToken = kubeadm.GetRandomToken()
+	cm.cluster.KubeadmToken = cloud.GetKubeadmToken()
 	cm.cluster.KubernetesVersion = "v" + req.Version
 	return nil
 }
@@ -242,7 +241,7 @@ func (cm *clusterManager) UploadStartupConfig() error {
 
 	{
 		caData := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ContextVersion, 10) + "/pki/" + "ca.crt",
+			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ResourceVersion, 10) + "/pki/" + "ca.crt",
 		}
 		caCert, err := base64.StdEncoding.DecodeString(cm.cluster.CaCert)
 		if _, err = cm.conn.storageService.Objects.Insert(cm.cluster.BucketName, caData).Media(strings.NewReader(string(caCert))).Do(); err != nil {
@@ -250,7 +249,7 @@ func (cm *clusterManager) UploadStartupConfig() error {
 		}
 
 		caKeyData := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ContextVersion, 10) + "/pki/" + "ca.key",
+			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ResourceVersion, 10) + "/pki/" + "ca.key",
 		}
 		caKey, err := base64.StdEncoding.DecodeString(cm.cluster.CaKey)
 
@@ -258,14 +257,14 @@ func (cm *clusterManager) UploadStartupConfig() error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		frontCAData := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ContextVersion, 10) + "/pki/" + "front-proxy-ca.crt",
+			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ResourceVersion, 10) + "/pki/" + "front-proxy-ca.crt",
 		}
 		frontCACert, err := base64.StdEncoding.DecodeString(cm.cluster.FrontProxyCaCert)
 		if _, err = cm.conn.storageService.Objects.Insert(cm.cluster.BucketName, frontCAData).Media(strings.NewReader(string(frontCACert))).Do(); err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		frontCAKeyData := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ContextVersion, 10) + "/pki/" + "front-proxy-ca.key",
+			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ResourceVersion, 10) + "/pki/" + "front-proxy-ca.key",
 		}
 		frontCAKey, err := base64.StdEncoding.DecodeString(cm.cluster.FrontProxyCaKey)
 		if _, err = cm.conn.storageService.Objects.Insert(cm.cluster.BucketName, frontCAKeyData).Media(strings.NewReader(string(frontCAKey))).Do(); err != nil {
@@ -279,7 +278,7 @@ func (cm *clusterManager) UploadStartupConfig() error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		data := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ContextVersion, 10) + "/startup-config/" + api.RoleKubernetesMaster + ".yaml",
+			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ResourceVersion, 10) + "/startup-config/" + api.RoleKubernetesMaster + ".yaml",
 		}
 		_, err = cm.conn.storageService.Objects.Insert(cm.cluster.BucketName, data).Media(strings.NewReader(cfg)).Do()
 		if err != nil {
@@ -292,7 +291,7 @@ func (cm *clusterManager) UploadStartupConfig() error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		data := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ContextVersion, 10) + "/startup-config/" + api.RoleKubernetesPool + ".yaml",
+			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.ResourceVersion, 10) + "/startup-config/" + api.RoleKubernetesPool + ".yaml",
 		}
 		_, err = cm.conn.storageService.Objects.Insert(cm.cluster.BucketName, data).Media(strings.NewReader(cfg)).Do()
 		if err != nil {

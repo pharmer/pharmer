@@ -213,11 +213,7 @@ type CommonKubeEnv struct {
 	GCECloudConfig   *GCECloudConfig   `json:"GCE_CLOUD_CONFIG"`
 
 	// Context Version is assigned on insert. If you want to force new version, set this value to 0 and call ctx.Save()
-	ContextVersion int64 `json:"APPSCODE_CONTEXT_VERSION"`
-
-	// Kubelet auth: https://kubernetes.io/docs/admin/kubelet-authentication-authorization/#kubelet-authorization
-	KubeAPIServerCert string `json:"KUBE_API_SERVER_CERT"`
-	KubeAPIServerKey  string `json:"KUBE_API_SERVER_KEY"`
+	ResourceVersion int64 `json:"RESOURCE_VERSION"`
 
 	// https://linux-tips.com/t/what-is-kernel-soft-lockup/78
 	SoftlockupPanic bool `json:"SOFTLOCKUP_PANIC"`

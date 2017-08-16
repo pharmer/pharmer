@@ -24,7 +24,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 		igm.cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	igm.cm.cluster.ContextVersion = igm.instance.Type.ContextVersion
+	igm.cm.cluster.ResourceVersion = igm.instance.Type.ContextVersion
 	igm.cm.cluster, _ = igm.cm.ctx.Store().Clusters().LoadCluster(igm.cm.cluster.Name)
 	if err = igm.cm.conn.detectUbuntuImage(); err != nil {
 		igm.cm.cluster.StatusCause = err.Error()

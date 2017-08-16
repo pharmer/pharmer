@@ -9,7 +9,6 @@ import (
 	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/util/kubeadm"
 	semver "github.com/hashicorp/go-version"
 )
 
@@ -50,7 +49,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 
 	cloud.GenClusterTokens(cm.cluster)
 
-	cm.cluster.KubeadmToken = kubeadm.GetRandomToken()
+	cm.cluster.KubeadmToken = cloud.GetKubeadmToken()
 	cm.cluster.KubernetesVersion = "v" + req.Version
 
 	cm.cluster.AzureCloudConfig = &api.AzureCloudConfig{

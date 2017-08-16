@@ -14,7 +14,6 @@ import (
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
-	"github.com/appscode/pharmer/util/kubeadm"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 	_s3 "github.com/aws/aws-sdk-go/service/s3"
 	semver "github.com/hashicorp/go-version"
@@ -79,7 +78,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 
 	cloud.GenClusterTokens(cm.cluster)
 
-	cm.cluster.KubeadmToken = kubeadm.GetRandomToken()
+	cm.cluster.KubeadmToken = cloud.GetKubeadmToken()
 	cm.cluster.KubernetesVersion = "v" + req.Version
 
 	return nil
@@ -192,7 +191,7 @@ func (cm *clusterManager) UploadStartupConfig() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.cluster.ContextVersion, api.RoleKubernetesMaster)
+		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.cluster.ResourceVersion, api.RoleKubernetesMaster)
 		params := &_s3.PutObjectInput{
 			Bucket: types.StringP(cm.cluster.BucketName),
 			Key:    types.StringP(path),
@@ -206,22 +205,22 @@ func (cm *clusterManager) UploadStartupConfig() error {
 	}
 	{
 		caCert, err := base64.StdEncoding.DecodeString(cm.cluster.CaCert)
-		path := fmt.Sprintf("kubernetes/context/%v/pki/ca.crt", cm.cluster.ContextVersion)
+		path := fmt.Sprintf("kubernetes/context/%v/pki/ca.crt", cm.cluster.ResourceVersion)
 		if err = cm.bucketStore(path, caCert); err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		caKey, err := base64.StdEncoding.DecodeString(cm.cluster.CaKey)
-		path = fmt.Sprintf("kubernetes/context/%v/pki/ca.key", cm.cluster.ContextVersion)
+		path = fmt.Sprintf("kubernetes/context/%v/pki/ca.key", cm.cluster.ResourceVersion)
 		if err = cm.bucketStore(path, caKey); err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		frontCACert, err := base64.StdEncoding.DecodeString(cm.cluster.FrontProxyCaCert)
-		path = fmt.Sprintf("kubernetes/context/%v/pki/front-proxy-ca.crt", cm.cluster.ContextVersion)
+		path = fmt.Sprintf("kubernetes/context/%v/pki/front-proxy-ca.crt", cm.cluster.ResourceVersion)
 		if err = cm.bucketStore(path, frontCACert); err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		frontCAKey, err := base64.StdEncoding.DecodeString(cm.cluster.FrontProxyCaKey)
-		path = fmt.Sprintf("kubernetes/context/%v/pki/front-proxy-ca.key", cm.cluster.ContextVersion)
+		path = fmt.Sprintf("kubernetes/context/%v/pki/front-proxy-ca.key", cm.cluster.ResourceVersion)
 		if err = cm.bucketStore(path, frontCAKey); err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
@@ -231,7 +230,7 @@ func (cm *clusterManager) UploadStartupConfig() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.cluster.ContextVersion, api.RoleKubernetesPool)
+		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.cluster.ResourceVersion, api.RoleKubernetesPool)
 		params := &_s3.PutObjectInput{
 			Bucket: types.StringP(cm.cluster.BucketName),
 			Key:    types.StringP(path),

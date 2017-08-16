@@ -120,7 +120,7 @@ func (cm *clusterManager) listInstanceGroups() ([]*groupInfo, error) {
 		if strings.HasPrefix(name, cm.cluster.Name) {
 			groups = append(groups, &groupInfo{
 				groupName: name,
-				sku:       strings.TrimSuffix(strings.TrimPrefix(name, cm.cluster.Name+"-"), "-v"+strconv.FormatInt(cm.cluster.ContextVersion, 10)),
+				sku:       strings.TrimSuffix(strings.TrimPrefix(name, cm.cluster.Name+"-"), "-v"+strconv.FormatInt(cm.cluster.ResourceVersion, 10)),
 			})
 		}
 

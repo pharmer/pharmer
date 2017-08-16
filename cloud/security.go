@@ -2,7 +2,9 @@ package cloud
 
 import (
 	"encoding/base64"
+	"fmt"
 	"io/ioutil"
+	mrnd "math/rand"
 	"os"
 	"time"
 
@@ -18,6 +20,25 @@ import (
 	"github.com/cloudflare/cfssl/initca"
 	"github.com/cloudflare/cfssl/signer"
 )
+
+func GetKubeadmToken() string {
+	return fmt.Sprintf("%s.%s", RandStringRunes(6), RandStringRunes(16))
+}
+
+func init() {
+	mrnd.Seed(time.Now().UnixNano())
+}
+
+// Hexidecimal
+var letterRunes = []rune("0123456789abcdef")
+
+func RandStringRunes(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[mrnd.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
 
 func GenClusterTokens(cluster *api.Cluster) {
 	cluster.KubeBearerToken = rand.GenerateToken()

@@ -18,7 +18,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	fmt.Println(cm.cluster.ContextVersion, "*****************")
+	fmt.Println(cm.cluster.ResourceVersion, "*****************")
 	cm.namer = namer{cluster: cm.cluster}
 	//purchasePHIDs := cm.ctx.Metadata["PurchasePhids"].([]string)
 	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
@@ -42,7 +42,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 	}
 	inst := cloud.Instance{
 		Type: cloud.InstanceType{
-			ContextVersion: cm.cluster.ContextVersion,
+			ContextVersion: cm.cluster.ResourceVersion,
 			Sku:            req.Sku,
 
 			Master:       false,
