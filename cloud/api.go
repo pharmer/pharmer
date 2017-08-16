@@ -7,6 +7,11 @@ import (
 	"github.com/appscode/pharmer/api"
 )
 
+type Cloud interface {
+	Clusters() Provider
+	Credentials() ClooudCredential
+}
+
 type Provider interface {
 	Create(ctx context.Context, req *proto.ClusterCreateRequest) error
 	Scale(ctx context.Context, req *proto.ClusterReconfigureRequest) error
@@ -16,4 +21,9 @@ type Provider interface {
 
 	GetInstance(ctx context.Context, md *api.InstanceMetadata) (*api.KubernetesInstance, error)
 	MatchInstance(i *api.KubernetesInstance, md *api.InstanceMetadata) bool
+}
+
+type ClooudCredential interface {
+	IsValid() bool
+	AsMap() map[string]string
 }
