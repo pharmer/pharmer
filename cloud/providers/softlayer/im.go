@@ -109,7 +109,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 				Value: types.StringP(startupScript),
 			},
 		},
-		PostInstallScriptUri: types.StringP("https://cdn.appscode.com/scripts/softlayer.sh"),
+		PostInstallScriptUri: types.StringP("https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/softlayer/startupscript.sh"),
 	}
 
 	vGuest, err := im.conn.virtualServiceClient.Mask("id;domain").CreateObject(&vGuestTemplate)
