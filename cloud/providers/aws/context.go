@@ -80,7 +80,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cloud.GenClusterTokens(cm.cluster)
 
 	cm.cluster.KubeadmToken = kubeadm.GetRandomToken()
-	cm.cluster.KubeVersion = "v" + req.Version
+	cm.cluster.KubernetesVersion = "v" + req.Version
 
 	return nil
 }
@@ -96,10 +96,6 @@ func (cm *clusterManager) LoadDefaultContext() error {
 
 	cm.cluster.Status = api.KubernetesStatus_Pending
 	cm.cluster.OS = "ubuntu"
-
-	cm.cluster.AppsCodeLogIndexPrefix = "logstash-"
-	cm.cluster.AppsCodeLogStorageLifetime = 90 * 24 * 3600
-	cm.cluster.AppsCodeMonitoringStorageLifetime = 90 * 24 * 3600
 
 	cm.cluster.DockerStorage = "aufs"
 
@@ -157,9 +153,9 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	cm.cluster.HairpinMode = "promiscuous-bridge"
 	cm.cluster.NonMasqueradeCidr = "10.0.0.0/8"
 
-	version, err := semver.NewVersion(cm.cluster.KubeServerVersion)
+	version, err := semver.NewVersion(cm.cluster.KubernetesVersion)
 	if err != nil {
-		version, err = semver.NewVersion(cm.cluster.KubeVersion)
+		version, err = semver.NewVersion(cm.cluster.KubernetesVersion)
 		if err != nil {
 			return err
 		}

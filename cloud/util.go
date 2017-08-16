@@ -10,18 +10,18 @@ import (
 var InstanceNotFound = errors.New("Instance not found")
 var UnsupportedOperation = errors.New("Unsupported operation")
 
-func BuildRuntimeConfig(ctx *api.Cluster) {
-	if ctx.EnableThirdPartyResource {
-		if ctx.RuntimeConfig == "" {
-			ctx.RuntimeConfig = "extensions/v1beta1=true,extensions/v1beta1/thirdpartyresources=true"
+func BuildRuntimeConfig(cluster *api.Cluster) {
+	if cluster.EnableThirdPartyResource {
+		if cluster.RuntimeConfig == "" {
+			cluster.RuntimeConfig = "extensions/v1beta1=true,extensions/v1beta1/thirdpartyresources=true"
 		} else {
-			ctx.RuntimeConfig += ",extensions/v1beta1=true,extensions/v1beta1/thirdpartyresources=true"
+			cluster.RuntimeConfig += ",extensions/v1beta1=true,extensions/v1beta1/thirdpartyresources=true"
 		}
 	}
 
-	version, err := semver.NewVersion(ctx.KubeServerVersion)
+	version, err := semver.NewVersion(cluster.KubernetesVersion)
 	if err != nil {
-		version, err = semver.NewVersion(ctx.KubeVersion)
+		version, err = semver.NewVersion(cluster.KubernetesVersion)
 		if err != nil {
 			return
 		}
@@ -31,43 +31,43 @@ func BuildRuntimeConfig(ctx *api.Cluster) {
 	v_1_4, _ := semver.NewConstraint(">= 1.4")
 	if v_1_4.Check(version) {
 		// Enable ScheduledJobs: http://kubernetes.io/docs/user-guide/scheduled-jobs/#prerequisites
-		if ctx.EnableScheduledJobResource {
-			if ctx.RuntimeConfig == "" {
-				ctx.RuntimeConfig = "batch/v2alpha1"
+		if cluster.EnableScheduledJobResource {
+			if cluster.RuntimeConfig == "" {
+				cluster.RuntimeConfig = "batch/v2alpha1"
 			} else {
-				ctx.RuntimeConfig += ",batch/v2alpha1"
+				cluster.RuntimeConfig += ",batch/v2alpha1"
 			}
 		}
 
 		// http://kubernetes.io/docs/admin/authentication/
-		if ctx.EnableWebhookTokenAuthentication {
-			if ctx.RuntimeConfig == "" {
-				ctx.RuntimeConfig = "authentication.k8s.io/v1beta1=true"
+		if cluster.EnableWebhookTokenAuthentication {
+			if cluster.RuntimeConfig == "" {
+				cluster.RuntimeConfig = "authentication.k8s.io/v1beta1=true"
 			} else {
-				ctx.RuntimeConfig += ",authentication.k8s.io/v1beta1=true"
+				cluster.RuntimeConfig += ",authentication.k8s.io/v1beta1=true"
 			}
 		}
 
 		// http://kubernetes.io/docs/admin/authorization/
-		if ctx.EnableWebhookTokenAuthorization {
-			if ctx.RuntimeConfig == "" {
-				ctx.RuntimeConfig = "authorization.k8s.io/v1beta1=true"
+		if cluster.EnableWebhookTokenAuthorization {
+			if cluster.RuntimeConfig == "" {
+				cluster.RuntimeConfig = "authorization.k8s.io/v1beta1=true"
 			} else {
-				ctx.RuntimeConfig += ",authorization.k8s.io/v1beta1=true"
+				cluster.RuntimeConfig += ",authorization.k8s.io/v1beta1=true"
 			}
 		}
-		if ctx.EnableRBACAuthorization {
-			if ctx.RuntimeConfig == "" {
-				ctx.RuntimeConfig = "rbac.authorization.k8s.io/v1alpha1=true"
+		if cluster.EnableRBACAuthorization {
+			if cluster.RuntimeConfig == "" {
+				cluster.RuntimeConfig = "rbac.authorization.k8s.io/v1alpha1=true"
 			} else {
-				ctx.RuntimeConfig += ",rbac.authorization.k8s.io/v1alpha1=true"
+				cluster.RuntimeConfig += ",rbac.authorization.k8s.io/v1alpha1=true"
 			}
 		}
 	}
 }
 
-func UpgradeRequired(ctx *api.Cluster, req *proto.ClusterReconfigureRequest) bool {
-	return ctx.KubeServerVersion != req.KubeletVersion || ctx.SaltbaseVersion != req.SaltbaseVersion || ctx.KubeStarterVersion != req.KubeStarterVersion
+func UpgradeRequired(cluster *api.Cluster, req *proto.ClusterReconfigureRequest) bool {
+	return cluster.KubernetesVersion != req.KubeletVersion
 }
 
 /*

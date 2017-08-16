@@ -74,20 +74,6 @@ type MasterKubeEnv struct {
 	AppsCodeClusterRootDomain string `json:"APPSCODE_CLUSTER_ROOT_DOMAIN"`
 	AppsCodeClusterCreator    string `json:"APPSCODE_CLUSTER_CREATOR"` // Username used for Initial ClusterRoleBinding
 
-	AppsCodeIcingaWebUser     string `json:"APPSCODE_ICINGA_WEB_USER"`
-	AppsCodeIcingaWebPassword string `json:"APPSCODE_ICINGA_WEB_PASSWORD"`
-	AppsCodeIcingaIdoUser     string `json:"APPSCODE_ICINGA_IDO_USER"`
-	AppsCodeIcingaIdoPassword string `json:"APPSCODE_ICINGA_IDO_PASSWORD"`
-	AppsCodeIcingaApiUser     string `json:"APPSCODE_ICINGA_API_USER"`
-	AppsCodeIcingaApiPassword string `json:"APPSCODE_ICINGA_API_PASSWORD"`
-
-	AppsCodeInfluxAdminUser     string `json:"APPSCODE_INFLUX_ADMIN_USER"`
-	AppsCodeInfluxAdminPassword string `json:"APPSCODE_INFLUX_ADMIN_PASSWORD"`
-	AppsCodeInfluxReadUser      string `json:"APPSCODE_INFLUX_READ_USER"`
-	AppsCodeInfluxReadPassword  string `json:"APPSCODE_INFLUX_READ_PASSWORD"`
-	AppsCodeInfluxWriteUser     string `json:"APPSCODE_INFLUX_WRITE_USER"`
-	AppsCodeInfluxWritePassword string `json:"APPSCODE_INFLUX_WRITE_PASSWORD"`
-
 	// Kube 1.3
 	AppscodeAuthnUrl string `json:"APPSCODE_AUTHN_URL"`
 	AppscodeAuthzUrl string `json:"APPSCODE_AUTHZ_URL"`
@@ -106,20 +92,6 @@ func (k *MasterKubeEnv) SetDefaults() {
 	//k.AppsCodeApiGrpcEndpoint = system.PublicAPIGrpcEndpoint()
 	//k.AppsCodeApiHttpEndpoint = system.PublicAPIHttpEndpoint()
 	//k.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
-
-	k.AppsCodeIcingaWebUser = "icingaweb"
-	k.AppsCodeIcingaWebPassword = rand.GeneratePassword()
-	k.AppsCodeIcingaIdoUser = "icingaido"
-	k.AppsCodeIcingaIdoPassword = rand.GeneratePassword()
-	k.AppsCodeIcingaApiUser = "icingaapi"
-	k.AppsCodeIcingaApiPassword = rand.GeneratePassword()
-
-	k.AppsCodeInfluxAdminUser = "acadmin"
-	k.AppsCodeInfluxAdminPassword = rand.GeneratePassword()
-	k.AppsCodeInfluxReadUser = "acreader"
-	k.AppsCodeInfluxReadPassword = rand.GeneratePassword()
-	k.AppsCodeInfluxWriteUser = "acwriter"
-	k.AppsCodeInfluxWritePassword = rand.GeneratePassword()
 
 	k.StorageBackend = "etcd2"
 	k.EnableApiserverBasicAudit = true
@@ -331,12 +303,8 @@ type KubeStartupConfig struct {
 	InitialEtcdCluster string `json:"INITIAL_ETCD_CLUSTER"`
 }
 
-type CommonNonEnv struct {
-}
-
 type ClusterStartupConfig struct {
 	KubeEnv
-	CommonNonEnv
 	KubeStartupConfig
 }
 
@@ -361,7 +329,6 @@ type InstanceGroup struct {
 // Embed this context in actual providers.
 type Cluster struct {
 	KubeEnv
-	CommonNonEnv
 
 	// request data. This is needed to give consistent access to these values for all commands.
 	Region              string            `json:"REGION"`
@@ -375,15 +342,7 @@ type Cluster struct {
 	DoNotDelete         bool              `json:"-"`
 	DefaultAccessLevel  string            `json:"-"`
 
-	KubeVersion        string `json:"KUBE_VERSION"`
-	KubeServerVersion  string `json:"KUBE_SERVER_VERSION"`
-	SaltbaseVersion    string `json:"SALTBASE_VERSION"`
-	KubeStarterVersion string `json:"KUBE_STARTER_VERSION"`
-	HostfactsVersion   string `json:"HOSTFACTS_VERSION"`
-
-	AppsCodeLogIndexPrefix            string `json:"APPSCODE_LOG_INDEX_PREFIX"`
-	AppsCodeLogStorageLifetime        int64  `json:"APPSCODE_LOG_STORAGE_LIFETIME"`
-	AppsCodeMonitoringStorageLifetime int64  `json:"APPSCODE_MONITORING_STORAGE_LIFETIME"`
+	KubernetesVersion string `json:"KUBERNETES_VERSION"`
 
 	// config
 	// Some of these parameters might be useful to expose to users to configure as they please.
@@ -441,12 +400,7 @@ type Cluster struct {
 	ContainerSubnet string `json:"CONTAINER_SUBNET"` // TODO:where used?
 
 	// https://github.com/kubernetes/kubernetes/blob/master/cluster/gce/util.sh#L538
-	CaCertPHID            string `json:"CA_CERT_PHID"`
-	MasterCertPHID        string `json:"MASTER_CERT_PHID"`
-	DefaultLBCertPHID     string `json:"DEFAULT_LB_CERT_PHID"`
-	KubeletCertPHID       string `json:"KUBELET_CERT_PHID"`
-	KubeAPIServerCertPHID string `json:"KUBE_API_SERVER_CERT_PHID"`
-	HostfactsCertPHID     string `json:"HOSTFACTS_CERT_PHID"`
+	CaCertPHID string `json:"CA_CERT_PHID"`
 
 	//Kubeadm
 	FrontProxyCaCertPHID string `json:"FRONT_PROXY_CA_CERT_PHID"`
@@ -596,7 +550,6 @@ func (ctx *Cluster) NodeCount() int64 {
 func (ctx *Cluster) StartupConfig(role string) *ClusterStartupConfig {
 	var config ClusterStartupConfig
 	config.KubeEnv = ctx.KubeEnv
-	config.CommonNonEnv = ctx.CommonNonEnv
 	config.Role = role
 	config.KubernetesMaster = role == RoleKubernetesMaster
 	config.InitialEtcdCluster = ctx.KubernetesMasterName
