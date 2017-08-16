@@ -284,7 +284,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 }
 
 func (cm *clusterManager) getExistingContextVersion(sku string) (error, int64) {
-	kc, err := cm.cluster.NewKubeClient()
+	kc, err := cloud.NewAdminClient(cm.cluster)
 	if err != nil {
 		log.Fatal(err)
 	}

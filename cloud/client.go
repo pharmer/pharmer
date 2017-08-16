@@ -1,9 +1,12 @@
-package api
+package cloud
 
 import (
+	"encoding/base64"
 	"sync"
 
 	"github.com/appscode/errors"
+	_env "github.com/appscode/go/env"
+	"github.com/appscode/pharmer/api"
 	_ "github.com/appscode/searchlight/api/install"
 	scs "github.com/appscode/searchlight/client/clientset"
 	_ "github.com/appscode/stash/api/install"
@@ -33,29 +36,48 @@ type fakeKubeClient struct {
 
 var fakeKube = fakeKubeClient{useFakeServer: false}
 
-func NewKubeClient(config *rest.Config) (*kubeClient, error) {
+// WARNING:
+// Returned KubeClient uses admin bearer token. This should only be used for cluster provisioning operations.
+// For other cluster operations initiated by users, use KubeAddon context.
+func NewAdminClient(cluster *api.Cluster) (*kubeClient, error) {
+	kubeconfig := &rest.Config{
+		Host:        cluster.ApiServerUrl,
+		BearerToken: cluster.KubeBearerToken,
+	}
+	if _env.FromHost().DevMode() {
+		kubeconfig.Insecure = true
+	} else {
+		caCert, err := base64.StdEncoding.DecodeString(cluster.CaCert)
+		if err != nil {
+			return nil, err
+		}
+		kubeconfig.TLSClientConfig = rest.TLSClientConfig{
+			CAData: caCert,
+		}
+	}
+
 	if fakeKube.useFakeServer { //for fake kube client
 		return fakeKube.fakeClient, nil
 	}
 
 	// Initiate real kube client
-	client, err := clientset.NewForConfig(config)
+	client, err := clientset.NewForConfig(kubeconfig)
 	if err != nil {
 		return nil, errors.FromErr(err).Err()
 	}
-	voyagerClient, err := vcs.NewForConfig(config)
+	voyagerClient, err := vcs.NewForConfig(kubeconfig)
 	if err != nil {
 		return nil, errors.FromErr(err).Err()
 	}
-	searchlightClient, err := scs.NewForConfig(config)
+	searchlightClient, err := scs.NewForConfig(kubeconfig)
 	if err != nil {
 		return nil, errors.FromErr(err).Err()
 	}
-	kubedbClient, err := k8sdb.NewForConfig(config)
+	kubedbClient, err := k8sdb.NewForConfig(kubeconfig)
 	if err != nil {
 		return nil, errors.FromErr(err).Err()
 	}
-	stashClient, err := rc.NewForConfig(config)
+	stashClient, err := rc.NewForConfig(kubeconfig)
 	if err != nil {
 		return nil, errors.FromErr(err).Err()
 	}
@@ -65,7 +87,7 @@ func NewKubeClient(config *rest.Config) (*kubeClient, error) {
 		SearchlightClient: searchlightClient,
 		KubeDBClient:      kubedbClient,
 		StashClient:       stashClient,
-		config:            config,
+		config:            kubeconfig,
 	}, nil
 }
 

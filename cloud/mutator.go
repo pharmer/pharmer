@@ -34,8 +34,8 @@ type InstanceController struct {
 	Client clientset.Interface
 }
 
-func Mutator(ctx *api.Cluster, expectedInstance Instance) (int64, error) {
-	kc, err := ctx.NewKubeClient()
+func Mutator(cluster *api.Cluster, expectedInstance Instance) (int64, error) {
+	kc, err := NewAdminClient(cluster)
 	nodes, err := kc.Client.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
@@ -179,8 +179,8 @@ func AdjustDbInstance(cm *api.ClusterInstances, instances []*api.KubernetesInsta
 	return nil
 }
 
-func GetExistingContextVersion(ctx *api.Cluster, sku string) (int64, error) {
-	kc, err := ctx.NewKubeClient()
+func GetExistingContextVersion(cluster *api.Cluster, sku string) (int64, error) {
+	kc, err := NewAdminClient(cluster)
 	if err != nil {
 		log.Fatal(err)
 	}
