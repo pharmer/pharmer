@@ -21,7 +21,7 @@ import (
 	"github.com/cloudflare/cfssl/signer"
 )
 
-func GetRandomToken() string {
+func GetKubeadmToken() string {
 	return fmt.Sprintf("%s.%s", RandStringRunes(6), RandStringRunes(16))
 }
 

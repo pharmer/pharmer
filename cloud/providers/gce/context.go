@@ -96,7 +96,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 		Multizone:          bool(cm.cluster.Multizone),
 	}
 	cm.cluster.CloudConfigPath = "/etc/gce.conf"
-	cm.cluster.KubeadmToken = cloud.GetRandomToken()
+	cm.cluster.KubeadmToken = cloud.GetKubeadmToken()
 	cm.cluster.KubernetesVersion = "v" + req.Version
 	return nil
 }
