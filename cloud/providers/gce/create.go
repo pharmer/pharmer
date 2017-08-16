@@ -139,7 +139,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 			cm: cm,
 			instance: cloud.Instance{
 				Type: cloud.InstanceType{
-					ContextVersion: cm.cluster.ContextVersion,
+					ContextVersion: cm.cluster.ResourceVersion,
 					Sku:            ng.Sku,
 
 					Master:       false,
@@ -492,10 +492,10 @@ func (cm *clusterManager) RenderMasterStartupScript() string {
 	&& gsutil cat gs://%v/kubernetes/context/%v/pki/ca.key > /etc/kubernetes/pki/ca.key \
 	&& gsutil cat gs://%v/kubernetes/context/%v/pki/front-proxy-ca.crt > /etc/kubernetes/pki/front-proxy-ca.crt \
 	&& gsutil cat gs://%v/kubernetes/context/%v/pki/front-proxy-ca.key > /etc/kubernetes/pki/front-proxy-ca.key`,
-		cm.cluster.BucketName, cm.cluster.ContextVersion,
-		cm.cluster.BucketName, cm.cluster.ContextVersion,
-		cm.cluster.BucketName, cm.cluster.ContextVersion,
-		cm.cluster.BucketName, cm.cluster.ContextVersion)
+		cm.cluster.BucketName, cm.cluster.ResourceVersion,
+		cm.cluster.BucketName, cm.cluster.ResourceVersion,
+		cm.cluster.BucketName, cm.cluster.ResourceVersion,
+		cm.cluster.BucketName, cm.cluster.ResourceVersion)
 
 	return cloud.RenderKubeadmMasterStarter(cm.cluster, Cert)
 }

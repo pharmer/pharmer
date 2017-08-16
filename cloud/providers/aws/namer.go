@@ -47,7 +47,7 @@ func (n namer) MasterPDName() string {
 
 // AWS's versin of node template
 func (n namer) LaunchConfigName(sku string) string {
-	return stringutil.DomainForm(n.cluster.Name + "-" + strings.Replace(sku, ".", "-", -1) + "-V" + strconv.FormatInt(n.cluster.ContextVersion, 10))
+	return stringutil.DomainForm(n.cluster.Name + "-" + strings.Replace(sku, ".", "-", -1) + "-V" + strconv.FormatInt(n.cluster.ResourceVersion, 10))
 }
 
 func (n namer) LaunchConfigNameWithContext(sku string, ctxVersion int64) string {

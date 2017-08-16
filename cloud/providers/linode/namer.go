@@ -24,5 +24,5 @@ func (n namer) GenSSHKeyExternalID() string {
 }
 
 func (n namer) StartupScriptName(sku, role string) string {
-	return n.cluster.Name + "-" + sku + "-" + role + "-V" + strconv.FormatInt(n.cluster.ContextVersion, 10)
+	return n.cluster.Name + "-" + sku + "-" + role + "-V" + strconv.FormatInt(n.cluster.ResourceVersion, 10)
 }

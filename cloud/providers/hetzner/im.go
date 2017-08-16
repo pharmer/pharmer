@@ -68,7 +68,7 @@ func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Sig
 	}
 	fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>", cfg)
 
-	file := fmt.Sprintf("/var/cache/kubernetes_context_%v_%v.yaml", im.cluster.ContextVersion, role)
+	file := fmt.Sprintf("/var/cache/kubernetes_context_%v_%v.yaml", im.cluster.ResourceVersion, role)
 	stdOut, stdErr, code, err := _ssh.SCP(file, []byte(cfg), "root", serverIP+":22", signer)
 	im.ctx.Logger().Debugf(stdOut, stdErr, code)
 	return err
@@ -87,7 +87,7 @@ func (im *instanceManager) storeStartupScript(serverIP, sku, role string, signer
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
 func (im *instanceManager) RenderStartupScript(sku, role string) string {
-	cmd := fmt.Sprintf(`CONFIG=$(cat /var/cache/kubernetes_context_%v_%v.yaml)`, im.cluster.ContextVersion, role)
+	cmd := fmt.Sprintf(`CONFIG=$(cat /var/cache/kubernetes_context_%v_%v.yaml)`, im.cluster.ResourceVersion, role)
 	firebaseUid := ""
 	if api.UseFirebase() {
 		firebaseUid, _ = api.FirebaseUid()

@@ -17,7 +17,7 @@ type InstanceGroupManager struct {
 func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	instanceGroupName := igm.cm.namer.InstanceGroupName(igm.instance.Type.Sku)
 	found := igm.cm.checkInstanceGroup(instanceGroupName)
-	igm.cm.cluster.ContextVersion = igm.instance.Type.ContextVersion
+	igm.cm.cluster.ResourceVersion = igm.instance.Type.ContextVersion
 	igm.cm.cluster, _ = igm.cm.ctx.Store().Clusters().LoadCluster(igm.cm.cluster.Name)
 	if !found {
 		if op2, err := igm.createNodeInstanceTemplate(igm.instance.Type.Sku); err != nil {

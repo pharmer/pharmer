@@ -159,7 +159,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 			cm: cm,
 			instance: cloud.Instance{
 				Type: cloud.InstanceType{
-					ContextVersion: cm.cluster.ContextVersion,
+					ContextVersion: cm.cluster.ResourceVersion,
 					Sku:            ng.Sku,
 
 					Master:       false,

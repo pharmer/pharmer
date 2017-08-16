@@ -185,7 +185,7 @@ func FirebaseCertPath(ctx context.Context, cluster *api.Cluster, certName string
 		l,
 		"team",       // TODO: FixIt!
 		cluster.Name, // phid is grpc api
-		cluster.ContextVersion,
+		cluster.ResourceVersion,
 		certName,
 		cluster.StartupConfigToken), nil
 }
@@ -444,7 +444,7 @@ func StartupConfigFromAPI(cluster *api.Cluster, role string) string {
 		cluster.PHID,
 		role,
 		"", /* cluster.Namespace */
-		cluster.ContextVersion,
+		cluster.ResourceVersion,
 		cluster.StartupConfigToken)
 }
 
@@ -461,7 +461,7 @@ func firebaseStartupConfigPath(cluster *api.Cluster, role string) (string, error
 		"",           /* cluster.Namespace */
 		cluster.Name, // phid is grpc api
 		role,
-		cluster.ContextVersion,
+		cluster.ResourceVersion,
 		cluster.StartupConfigToken), nil
 }
 
