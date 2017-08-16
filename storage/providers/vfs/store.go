@@ -23,20 +23,20 @@ type FileStore struct {
 
 var _ storage.Store = &FileStore{}
 
-func (s *FileStore) Clusters() (storage.ClusterStore, bool) {
-	return s, true
+func (s *FileStore) Clusters() storage.ClusterStore {
+	return s
 }
 
-func (s *FileStore) Instances() (storage.InstanceStore, bool) {
-	return s, true
+func (s *FileStore) Instances() storage.InstanceStore {
+	return s
 }
 
-func (s *FileStore) Credentials() (storage.CredentialStore, bool) {
-	return s, true
+func (s *FileStore) Credentials() storage.CredentialStore {
+	return s
 }
 
-func (s *FileStore) Certificates() (storage.CertificateStore, bool) {
-	return s, true
+func (s *FileStore) Certificates() storage.CertificateStore {
+	return s
 }
 
 // ClusterStore _______________________________________________________________

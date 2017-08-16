@@ -23,20 +23,20 @@ type FakeStore struct {
 
 var _ storage.Store = &FakeStore{}
 
-func (s *FakeStore) Clusters() (storage.ClusterStore, bool) {
-	return s, true
+func (s *FakeStore) Clusters() storage.ClusterStore {
+	return s
 }
 
-func (s *FakeStore) Instances() (storage.InstanceStore, bool) {
-	return s, true
+func (s *FakeStore) Instances() storage.InstanceStore {
+	return s
 }
 
-func (s *FakeStore) Credentials() (storage.CredentialStore, bool) {
-	return s, true
+func (s *FakeStore) Credentials() storage.CredentialStore {
+	return s
 }
 
-func (s *FakeStore) Certificates() (storage.CertificateStore, bool) {
-	return s, true
+func (s *FakeStore) Certificates() storage.CertificateStore {
+	return s
 }
 
 // ClusterStore _______________________________________________________________

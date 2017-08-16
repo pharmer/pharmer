@@ -23,20 +23,20 @@ type SqlStore struct {
 
 var _ storage.Store = &SqlStore{}
 
-func (s *SqlStore) Clusters() (storage.ClusterStore, bool) {
-	return s, true
+func (s *SqlStore) Clusters() storage.ClusterStore {
+	return s
 }
 
-func (s *SqlStore) Instances() (storage.InstanceStore, bool) {
-	return s, true
+func (s *SqlStore) Instances() storage.InstanceStore {
+	return s
 }
 
-func (s *SqlStore) Credentials() (storage.CredentialStore, bool) {
-	return s, true
+func (s *SqlStore) Credentials() storage.CredentialStore {
+	return s
 }
 
-func (s *SqlStore) Certificates() (storage.CertificateStore, bool) {
-	return s, true
+func (s *SqlStore) Certificates() storage.CertificateStore {
+	return s
 }
 
 // ClusterStore _______________________________________________________________
