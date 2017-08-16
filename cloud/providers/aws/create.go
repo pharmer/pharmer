@@ -39,14 +39,14 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.cluster.Save()
+	cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 
 	defer func(releaseReservedIp bool) {
 		if cm.cluster.Status == api.KubernetesStatus_Pending {
 			cm.cluster.Status = api.KubernetesStatus_Failing
 		}
-		cm.cluster.Save()
-		cm.ins.Save()
+		cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
+		cm.ctx.Store().Instances().SaveInstances(cm.ins.Instances)
 		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status)
 		if cm.cluster.Status != api.KubernetesStatus_Ready {
 			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
@@ -815,7 +815,7 @@ func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cloud.GenClusterCerts(cm.ctx, cm.cluster)
-	cm.cluster.Save() // needed for master start-up config
+	cm.ctx.Store().Clusters().SaveCluster(cm.cluster) // needed for master start-up config
 	cm.UploadStartupConfig()
 
 	masterInstanceID, err := cm.createMasterInstance(cm.cluster.KubernetesMasterName, api.RoleKubernetesMaster)
@@ -850,7 +850,7 @@ func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 		return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.cluster.DetectApiServerURL()
-	err = cm.cluster.Save() // needed for node start-up config to get master_internal_ip
+	err = cm.ctx.Store().Clusters().SaveCluster(cm.cluster) // needed for node start-up config to get master_internal_ip
 	// This is a race between instance start and volume attachment.
 	// There appears to be no way to start an AWS instance with a volume attached.
 	// To work around this, we wait for volume to be ready in setup-master-pd.sh

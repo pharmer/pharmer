@@ -15,13 +15,14 @@ import (
 	"github.com/appscode/log"
 	"github.com/appscode/pharmer/config"
 	"github.com/appscode/pharmer/storage"
+	"github.com/appscode/pharmer/storage/providers/fake"
 )
 
 type Context interface {
 	go_ctx.Context
 
 	DNSProvider() dns.Provider
-	Store() storage.Storage
+	Store() storage.Store
 	Logger() Logger
 	Extra() DomainManager
 	String() string
@@ -44,7 +45,7 @@ func NewContext(ctx go_ctx.Context, cfg *config.PharmerConfig) Context {
 	c := &FakeContext{Context: ctx}
 	c.Context = go_ctx.WithValue(c.Context, keyExtra, &NullDomainManager{})
 	c.Context = go_ctx.WithValue(c.Context, keyLogger, log.New(c))
-	c.Context = go_ctx.WithValue(c.Context, keyStore, nil)
+	c.Context = go_ctx.WithValue(c.Context, keyStore, fake.FakeStore{Config: cfg})
 	if dp, err := newDNSProvider(cfg); err == nil {
 		c.Context = go_ctx.WithValue(c.Context, keyDNS, dp)
 	}
@@ -77,8 +78,8 @@ func (ctx *FakeContext) DNSProvider() dns.Provider {
 	return ctx.Value(keyDNS).(dns.Provider)
 }
 
-func (ctx *FakeContext) Store() storage.Storage {
-	return ctx.Value(keyStore).(storage.Storage)
+func (ctx *FakeContext) Store() storage.Store {
+	return ctx.Value(keyStore).(storage.Store)
 }
 
 func (ctx *FakeContext) Logger() Logger {

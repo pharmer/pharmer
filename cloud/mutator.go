@@ -6,6 +6,7 @@ import (
 
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
 )
@@ -156,7 +157,7 @@ func Mutator(cluster *api.Cluster, expectedInstance Instance) (int64, error) {
 
 }
 
-func AdjustDbInstance(cm *api.ClusterInstances, instances []*api.KubernetesInstance, sku string) error {
+func AdjustDbInstance(ctx context.Context, cm *api.ClusterInstances, instances []*api.KubernetesInstance, sku string) error {
 	dbNodes := make(map[string]*api.KubernetesInstance)
 	clusterNodes := make(map[string]*api.KubernetesInstance)
 	for _, i := range cm.Instances {
@@ -170,12 +171,15 @@ func AdjustDbInstance(cm *api.ClusterInstances, instances []*api.KubernetesInsta
 		clusterNodes[i.ExternalID] = i
 	}
 	// remote delete node
-	for v, i := range cm.Instances {
+	for ix, i := range cm.Instances {
 		if _, found := clusterNodes[i.ExternalID]; !found && i.SKU == sku && i.Role == api.RoleKubernetesPool {
-			cm.Instances[v].Status = api.KubernetesInstanceStatus_Deleted
+			cm.Instances[ix].Status = api.KubernetesInstanceStatus_Deleted
 		}
 	}
-	cm.Save()
+
+	for _, i := range cm.Instances {
+		ctx.Store().Instances().SaveInstance(i)
+	}
 	return nil
 }
 
