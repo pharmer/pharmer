@@ -34,8 +34,8 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		if cm.cluster.Status == api.KubernetesStatus_Pending {
 			cm.cluster.Status = api.KubernetesStatus_Failing
 		}
-		cm.cluster.Save()
-		cm.ins.Save()
+		cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
+		cm.ctx.Store().Instances().SaveInstances(cm.ins.Instances)
 		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status)
 		if cm.cluster.Status != api.KubernetesStatus_Ready {
 			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
@@ -84,7 +84,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 
 	cm.cluster.DetectApiServerURL()
 	// needed to get master_internal_ip
-	if err = cm.cluster.Save(); err != nil {
+	if err = cm.ctx.Store().Clusters().SaveCluster(cm.cluster); err != nil {
 		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

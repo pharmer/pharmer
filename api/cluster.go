@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"os/user"
 	"strconv"
 	"strings"
@@ -502,19 +503,9 @@ func (ctx *Cluster) SetNodeGroups(ng []*proto.InstanceGroup) {
 	}
 }
 
-func (ctx *Cluster) Save() error {
-	return nil
-}
-
 //func (ctx *Cluster) AddEdge(src, dst string, typ ClusterOP) error {
 //	return nil
 //}
-
-// Set ctx.Name (required)
-// Set ctx.ContextVersion (optional) to load specific version
-func (ctx *Cluster) Load() error {
-	return nil
-}
 
 /*
 func (ctx *ClusterContext) UpdateNodeCount() error {
@@ -553,9 +544,10 @@ func (ctx *Cluster) Delete() error {
 	} else {
 		ctx.Status = KubernetesStatus_Deleted
 	}
-	if err := ctx.Save(); err != nil {
-		return err
-	}
+	fmt.Println("FixIt!")
+	//if err := ctx.Save(); err != nil {
+	//	return err
+	//}
 
 	n := rand.WithUniqSuffix(ctx.Name)
 	//if _, err := ctx.Store().Engine.Update(&Kubernetes{Name: n}, &Kubernetes{PHID: ctx.PHID}); err != nil {

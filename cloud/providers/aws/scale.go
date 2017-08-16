@@ -25,7 +25,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins.Load()
+	cm.ins.Instances, _ = cm.ctx.Store().Instances().LoadInstances(cm.cluster.Name)
 
 	inst := cloud.Instance{
 		Type: cloud.InstanceType{
@@ -79,6 +79,6 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 	}
 	cloud.AdjustDbInstance(igm.cm.ins, instances, req.Sku)
 
-	cm.cluster.Save()
+	cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 	return nil
 }

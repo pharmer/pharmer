@@ -35,17 +35,6 @@ type ClusterInstances struct {
 	matches func(i *KubernetesInstance, md *InstanceMetadata) bool
 }
 
-func (ins *ClusterInstances) Save() error {
-	return nil
-}
-
-// Set ctx.Name (required)
-// Set ctx.ContextVersion (optional) to load specific version
-func (ins *ClusterInstances) Load() error {
-
-	return nil
-}
-
 // Does not modify ctx.NumNodes; Reduce ctx.NumNodes separately
 func (ins *ClusterInstances) FindInstance(md *InstanceMetadata) (*KubernetesInstance, bool) {
 	for _, i := range ins.Instances {
