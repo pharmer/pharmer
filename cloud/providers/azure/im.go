@@ -3,7 +3,6 @@ package azure
 import (
 	"encoding/base64"
 	"fmt"
-	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
 	"github.com/Azure/azure-sdk-for-go/arm/network"
@@ -89,7 +88,7 @@ func (im *instanceManager) getStorageAccount() (armstorage.Account, error) {
 	return account, err
 }
 
-func (im *instanceManager) createNetworkInterface(name string, subnet network.Subnet, alloc network.IPAllocationMethod, internalIP string, pip network.PublicIPAddress) (network.Interface, error) {
+func (im *instanceManager) createNetworkInterface(name string, sg network.SecurityGroup, subnet network.Subnet, alloc network.IPAllocationMethod, internalIP string, pip network.PublicIPAddress) (network.Interface, error) {
 	req := network.Interface{
 		Name:     types.StringP(name),
 		Location: types.StringP(im.cluster.Zone),
@@ -109,6 +108,9 @@ func (im *instanceManager) createNetworkInterface(name string, subnet network.Su
 				},
 			},
 			EnableIPForwarding: types.TrueP(),
+			NetworkSecurityGroup: &network.SecurityGroup{
+				ID: sg.ID,
+			},
 		},
 		Tags: &map[string]*string{
 			"KubernetesCluster": types.StringP(im.cluster.Name),
@@ -219,11 +221,11 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 		return compute.VirtualMachine{}, err
 	}
 
-	im.ctx.Logger().Infof("Restarting virtual machine %v", vmName)
-	_, err = im.conn.vmClient.Restart(im.namer.ResourceGroupName(), vmName, nil)
-	if err != nil {
-		return compute.VirtualMachine{}, err
-	}
+	//im.ctx.Logger().Infof("Restarting virtual machine %v", vmName)
+	//_, err = im.conn.vmClient.Restart(im.namer.ResourceGroupName(), vmName, nil)
+	//if err != nil {
+	//	return compute.VirtualMachine{}, err
+	//}
 
 	vm, err := im.conn.vmClient.Get(im.namer.ResourceGroupName(), vmName, compute.InstanceView)
 	im.ctx.Logger().Infof("Found virtual machine %v", vm)
@@ -251,49 +253,58 @@ func (im *instanceManager) DeleteVirtualMachine(vmName string) error {
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
 func (im *instanceManager) RenderStartupScript(sku, role string) string {
-	cmd := cloud.StartupConfigFromAPI(im.cluster, role)
-	if api.UseFirebase() {
-		cmd = cloud.StartupConfigFromFirebase(im.cluster, role)
+	/*cmd := provider.StartupConfigFromAPI(opt, role)
+		if env.UseFirebase() {
+			cmd = provider.StartupConfigFromFirebase(opt, role)
+		}
+
+		firebaseUid := ""
+		if env.UseFirebase() {
+			firebaseUid, _ = env.FirebaseUid()
+		}
+		return fmt.Sprintf(`#!/bin/bash
+	cat >/etc/kube-installer.sh <<EOF
+	%v
+	rm /lib/systemd/system/kube-installer.service
+	systemctl daemon-reload
+	exit 0
+	EOF
+	chmod +x /etc/kube-installer.sh
+
+	cat >/lib/systemd/system/kube-installer.service <<EOF
+	[Unit]
+	Description=Install Kubernetes Master
+
+	[Service]
+	Type=simple
+	Environment="APPSCODE_ENV=%v"
+	Environment="FIREBASE_UID=%v"
+
+	ExecStart=/bin/bash -e /etc/kube-installer.sh
+	Restart=on-failure
+	StartLimitInterval=5
+
+	[Install]
+	WantedBy=multi-user.target
+	EOF
+	systemctl daemon-reload
+	systemctl enable kube-installer.service
+
+	/bin/sed -i 's/GRUB_CMDLINE_LINUX="/GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1 /' /etc/default/grub
+	/usr/sbin/update-grub
+
+	# Don't restart inside script for Azure, call api to restart
+	# /sbin/reboot
+	`, strings.Replace(provider.RenderKubeStarter(opt, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid)*/
+
+	if role == api.RoleKubernetesMaster {
+		//return provider.RenderKubeInstaller(opt, sku, role, cmd)
+		cmd, _ := cloud.FireBaseCertDownloadCmd(im.ctx, im.cluster)
+		return cloud.RenderDoKubeMaster(im.ctx, im.cluster, cmd)
 	}
 
-	firebaseUid := ""
-	if api.UseFirebase() {
-		firebaseUid, _ = api.FirebaseUid()
-	}
-	return fmt.Sprintf(`#!/bin/bash
-cat >/etc/kube-installer.sh <<EOF
-%v
-rm /lib/systemd/system/kube-installer.service
-systemctl daemon-reload
-exit 0
-EOF
-chmod +x /etc/kube-installer.sh
-
-cat >/lib/systemd/system/kube-installer.service <<EOF
-[Unit]
-Description=Install Kubernetes Master
-
-[Service]
-Type=simple
-Environment="APPSCODE_ENV=%v"
-Environment="FIREBASE_UID=%v"
-
-ExecStart=/bin/bash -e /etc/kube-installer.sh
-Restart=on-failure
-StartLimitInterval=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-systemctl daemon-reload
-systemctl enable kube-installer.service
-
-/bin/sed -i 's/GRUB_CMDLINE_LINUX="/GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1 /' /etc/default/grub
-/usr/sbin/update-grub
-
-# Don't restart inside script for Azure, call api to restart
-# /sbin/reboot
-`, strings.Replace(cloud.RenderKubeStarter(im.cluster, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid)
+	// return cloud.RenderKubeStarter(opt, sku, cmd)
+	return cloud.RenderDoKubeNode(im.cluster)
 }
 
 func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic network.Interface, pip network.PublicIPAddress) (*api.KubernetesInstance, error) {

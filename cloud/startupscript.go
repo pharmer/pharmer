@@ -213,18 +213,19 @@ func FireBaseCertDownloadCmd(ctx context.Context, cluster *api.Cluster) (string,
 	return certCmd, nil
 }
 
-// DO kubeadm startup script @dipta
+// kubeadm startup script (DO, Azure) @dipta
 
 func RenderDoKubeMaster(ctx context.Context, cluster *api.Cluster, cmd string) string {
 	return fmt.Sprintf(`#!/usr/bin/env bash
 set -e
+set -x
 cd ~
 
 LOGFILE=startup-script.log
 exec > >(tee -a $LOGFILE)
 exec 2>&1
 
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 touch /etc/apt/sources.list.d/kubernetes.list
 sh -c 'echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list'
 
@@ -235,7 +236,7 @@ apt-get install -y \
     docker.io \
     apt-transport-https \
     kubelet \
-    kubeadm=1.7.0-00 \
+    kubeadm=1.7.3-01 \
     cloud-utils \
     jq
 
@@ -254,7 +255,6 @@ chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 
 kubeadm init --apiserver-bind-port 6443 --token %v --apiserver-advertise-address ${PUBLICIP} --apiserver-cert-extra-sans=${PUBLICIP},${PRIVATEIP},%v
 
-# Thanks Kelsey :)
 kubectl apply \
   -f http://docs.projectcalico.org/v2.3/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
@@ -269,30 +269,31 @@ cp /etc/kubernetes/admin.conf ~/.kube/config`,
 func RenderDoKubeNode(cluster *api.Cluster) string {
 	return fmt.Sprintf(`#!/usr/bin/env bash
 set -e
+set -x
 cd ~
 
 LOGFILE=startup-script.log
 exec > >(tee -a $LOGFILE)
 exec 2>&1
 
-sudo curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-sudo touch /etc/apt/sources.list.d/kubernetes.list
-sudo sh -c 'echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list'
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+touch /etc/apt/sources.list.d/kubernetes.list
+sh -c 'echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list'
 
-sudo apt-get update -y
-sudo apt-get install -y \
-    socat \
-    ebtables \
-    docker.io \
-    apt-transport-https \
-    kubelet \
-    kubeadm=1.7.0-00
+apt-get update -y
+apt-get install -y \
+socat \
+ebtables \
+docker.io \
+apt-transport-https \
+kubelet \
+kubeadm=1.7.3-01
 
-sudo systemctl enable docker
-sudo systemctl start docker
+systemctl enable docker
+systemctl start docker
 
-sudo -E kubeadm reset
-sudo -E kubeadm join --token %v %v:6443`, cluster.KubeadmToken, cluster.MasterExternalIP)
+kubeadm reset
+kubeadm join --token %v %v:6443`, cluster.KubeadmToken, cluster.MasterExternalIP)
 }
 
 // -----------------------------------------------------------------------------------

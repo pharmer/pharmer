@@ -178,7 +178,12 @@ func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
-	nodeNIC, err := igm.im.createNetworkInterface(igm.cm.namer.NetworkInterfaceName(nodeName), sn, network.Dynamic, "", nodePIP)
+	sg, err := igm.cm.getNetworkSecurityGroup()
+	if err != nil {
+		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	}
+
+	nodeNIC, err := igm.im.createNetworkInterface(igm.cm.namer.NetworkInterfaceName(nodeName), sg, sn, network.Dynamic, "", nodePIP)
 	if err != nil {
 		igm.cm.cluster.StatusCause = err.Error()
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()

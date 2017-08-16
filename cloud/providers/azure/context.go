@@ -9,6 +9,7 @@ import (
 	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
+	"github.com/appscode/pharmer/util/kubeadm"
 	semver "github.com/hashicorp/go-version"
 )
 
@@ -49,6 +50,9 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 
 	cloud.GenClusterTokens(cm.cluster)
 
+	cm.cluster.KubeadmToken = kubeadm.GetRandomToken()
+	cm.cluster.KubeVersion = "v" + req.Version
+
 	cm.cluster.AzureCloudConfig = &api.AzureCloudConfig{
 		TenantID:           cm.cluster.CloudCredential[credential.AzureTenantID],
 		SubscriptionID:     cm.cluster.CloudCredential[credential.AzureSubscriptionID],
@@ -78,7 +82,8 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	cm.cluster.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.cluster.Name)
 
 	cm.cluster.Status = api.KubernetesStatus_Pending
-	cm.cluster.OS = "Debian" // offer: "16.04.0-LTS"
+	// cm.cluster.OS = "Debian" // offer: "16.04.0-LTS"
+
 	// https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-windows-sizes#d-series
 	cm.cluster.MasterSKU = "Standard_D2_v2" // CPU 2 Memory 7 disk 4
 	cm.cluster.InstanceRootPassword = rand.GeneratePassword()
@@ -88,10 +93,10 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	cm.cluster.AppsCodeMonitoringStorageLifetime = 90 * 24 * 3600
 
 	// Disk size can't be set for boot disk
-	// cm.ctx.MasterDiskType = "pd-standard" // "pd-ssd"
-	// cm.ctx.MasterDiskSize = 100
-	// cm.ctx.NodeDiskType = "pd-standard"
-	// cm.ctx.NodeDiskSize = 100
+	// cm.cluster.MasterDiskType = "pd-standard" // "pd-ssd"
+	// cm.cluster.MasterDiskSize = 100
+	// cm.cluster.NodeDiskType = "pd-standard"
+	// cm.cluster.NodeDiskSize = 100
 
 	/*
 		"imageReference": {
@@ -101,9 +106,16 @@ func (cm *clusterManager) LoadDefaultContext() error {
 			"version": "latest"
 		}
 	*/
-	cm.cluster.InstanceImageProject = "credativ" // publisher
-	cm.cluster.InstanceImage = "8"               // sku
-	cm.cluster.InstanceImageVersion = "latest"   // version
+	//cm.cluster.InstanceImageProject = "credativ" // publisher
+	//cm.cluster.InstanceImage = "8"               // sku
+	//cm.cluster.InstanceImageVersion = "latest"   // version
+
+	// https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage
+	// Canonical:UbuntuServer:16.04-LTS:latest @dipta
+	cm.cluster.OS = "UbuntuServer"
+	cm.cluster.InstanceImageProject = "Canonical"
+	cm.cluster.InstanceImage = "16.04-LTS"
+	cm.cluster.InstanceImageVersion = "latest"
 
 	// REGISTER_MASTER_KUBELET = false // always false, keep master lightweight
 
@@ -175,7 +187,7 @@ func (cm *clusterManager) LoadDefaultContext() error {
 
 func (cm *clusterManager) UploadStartupConfig() error {
 	if api.UseFirebase() {
-		return cloud.UploadStartupConfigInFirebase(cm.ctx, cm.cluster)
+		return cloud.UploadAllCertsInFirebase(cm.ctx, cm.cluster)
 	}
 	return nil
 }

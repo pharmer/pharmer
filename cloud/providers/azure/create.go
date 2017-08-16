@@ -93,6 +93,12 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	}
 	cm.cluster.MasterReservedIP = types.String(masterPIP.IPAddress)
 	cm.cluster.DetectApiServerURL()
+
+	// @dipta
+	if cm.cluster.MasterExternalIP == "" {
+		cm.cluster.MasterExternalIP = cm.cluster.MasterReservedIP
+	}
+
 	// IP >>>>>>>>>>>>>>>>
 	// TODO(tamal): if cluster.ctx.MasterReservedIP == "auto"
 	//	name := cluster.ctx.KubernetesMasterName + "-pip"
@@ -113,7 +119,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	cm.UploadStartupConfig()
 
 	// Master Stuff
-	masterNIC, err := im.createNetworkInterface(cm.namer.NetworkInterfaceName(cm.cluster.KubernetesMasterName), sn, network.Static, cm.cluster.MasterInternalIP, masterPIP)
+	masterNIC, err := im.createNetworkInterface(cm.namer.NetworkInterfaceName(cm.cluster.KubernetesMasterName), sg, sn, network.Static, cm.cluster.MasterInternalIP, masterPIP)
 	if err != nil {
 		cm.cluster.StatusCause = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -267,6 +273,11 @@ func (cm *clusterManager) createNetworkSecurityGroup() (network.SecurityGroup, e
 		return network.SecurityGroup{}, err
 	}
 	cm.ctx.Logger().Infof("Network security group %v created", securityGroupName)
+	return cm.conn.securityGroupsClient.Get(cm.namer.ResourceGroupName(), securityGroupName, "")
+}
+
+func (cm *clusterManager) getNetworkSecurityGroup() (network.SecurityGroup, error) {
+	securityGroupName := cm.namer.NetworkSecurityGroupName()
 	return cm.conn.securityGroupsClient.Get(cm.namer.ResourceGroupName(), securityGroupName, "")
 }
 
