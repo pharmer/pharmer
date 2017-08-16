@@ -163,7 +163,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = cloud.AdjustDbInstance(cm.ins, currentIns, sku)
+	err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
 	// cluster.ctx.Instances = append(cluster.ctx.Instances, instances...)
 	err = cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 

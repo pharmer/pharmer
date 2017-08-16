@@ -80,7 +80,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 		igm.cm.cluster.StatusCause = err.Error()
 		//return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	cloud.AdjustDbInstance(cm.ins, instances, req.Sku)
+	cloud.AdjustDbInstance(cm.ctx, cm.ins, instances, req.Sku)
 
 	cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 	return nil
