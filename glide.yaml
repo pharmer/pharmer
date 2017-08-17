@@ -1,9 +1,9 @@
 package: github.com/appscode/pharmer
 import:
 - package: github.com/Azure/azure-sdk-for-go
-  version: v7.0.1-beta
+  version: v10.2.1-beta
 - package: github.com/Azure/go-autorest
-  version: v7.2.3
+  version: ~8.1.1
 - package: github.com/JamesClonk/vultr
   version: master
 - package: github.com/appscode/api
@@ -90,3 +90,5 @@ import:
   version: v0.5.6
 - package: github.com/go-xorm/xorm
   version: v0.6.2
+- package: gopkg.in/square/go-jose.v1
+  version: 1.1.0
