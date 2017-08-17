@@ -1,11 +1,13 @@
 hash: 6cebf64366e1d164ffcb1208662c1510b70bb9da7ade6ba152711aee8bbeffc5
-updated: 2017-08-17T05:24:45.472115306-07:00
+updated: 2017-08-17T05:35:24.667205602-07:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
   subpackages:
   - compute/metadata
   - internal
+- name: github.com/andrew-d/go-termutil
+  version: 009166a695a2f516c749a26b4ac1f183d89aa336
 - name: github.com/appscode/api
   version: d98df977c923189d5e4856bf8d428f5528b6bdd1
   subpackages:
@@ -26,6 +28,7 @@ imports:
 - name: github.com/appscode/appctl
   version: d89bb8baed5a0436301be5fc943a11084f65c960
   subpackages:
+  - pkg/cmds/credential/cloud
   - pkg/config
   - pkg/util
   - pkg/util/timeutil
@@ -137,10 +140,13 @@ imports:
 - name: github.com/Azure/azure-sdk-for-go
   version: 2d49bb8f2cee530cc16f1f1a9f0aae763dee257d
   subpackages:
+  - arm/authorization
   - arm/compute
   - arm/dns
+  - arm/graphrbac
   - arm/network
   - arm/resources/resources
+  - arm/resources/subscriptions
   - arm/storage
   - storage
 - name: github.com/Azure/go-ansiterm
@@ -394,6 +400,8 @@ imports:
   version: cca8bbc0798408af109aaaa239cbd2634846b340
 - name: github.com/packethost/packngo
   version: 9d9409c8c09de7695281e900a776cca03676026a
+- name: github.com/pborman/uuid
+  version: ca53cad383cad2479bbba7f7a1a05797ec1386e4
 - name: github.com/pkg/errors
   version: a22138067af1c4942683050411a841ade67fe1eb
 - name: github.com/PuerkitoBio/purell
@@ -420,6 +428,10 @@ imports:
   version: 10ef21a441db47d8b13ebcc5fd2310f636973c77
 - name: github.com/Sirupsen/logrus
   version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
+- name: github.com/skratchdot/open-golang
+  version: 75fb7ed4208cf72d323d7d02fd1a5964a7a9073c
+  subpackages:
+  - open
 - name: github.com/softlayer/softlayer-go
   version: 5e1c8cccc730778a87ca5a0c5348fcfddc02cee2
   subpackages:
@@ -524,11 +536,13 @@ imports:
 - name: google.golang.org/api
   version: 55146ba61254fdb1c26d65ff3c04bc1611ad73fb
   subpackages:
+  - cloudresourcemanager/v1
   - compute/v1
   - dns/v1
   - gensupport
   - googleapi
   - googleapi/internal/uritemplates
+  - iam/v1
   - replicapoolupdater/v1beta1
   - storage/v1
 - name: google.golang.org/appengine
