@@ -1,5 +1,5 @@
-hash: 3071f29f6576285152a3027b0fba986b8e8d4c9bcd02acfab5fb993d2bf30d45
-updated: 2017-08-15T12:29:43.925114618-07:00
+hash: 6cebf64366e1d164ffcb1208662c1510b70bb9da7ade6ba152711aee8bbeffc5
+updated: 2017-08-17T05:24:45.472115306-07:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -24,7 +24,7 @@ imports:
   - ssh/v1beta1
   - version
 - name: github.com/appscode/appctl
-  version: f690405dda8fe092b69c119a1568e1414e20a65d
+  version: d89bb8baed5a0436301be5fc943a11084f65c960
   subpackages:
   - pkg/config
   - pkg/util
@@ -58,7 +58,7 @@ imports:
   - version
   - wait
 - name: github.com/appscode/go-dns
-  version: 3af047d24824ddfcc5d6b985e9454446a736de46
+  version: dba9b228226c3f7560cb541ed62cb5dde47ec464
   subpackages:
   - aws
   - azure
@@ -73,7 +73,7 @@ imports:
 - name: github.com/appscode/go-notify
   version: c1f627b4151ce1f8b5b80eeab2eb94c2561af00c
 - name: github.com/appscode/go-term
-  version: 620ebcf71e8e9dd59363149cd05ce8d3d57231e6
+  version: be3033ef24ff3c8750f0296c02ef0146ff9b07f2
 - name: github.com/appscode/go-tracer
   version: 01dab6fa8d48a96bf54d07ee082b60bad8b44449
 - name: github.com/appscode/linodego
@@ -135,7 +135,7 @@ imports:
   - service/s3
   - service/sts
 - name: github.com/Azure/azure-sdk-for-go
-  version: 0984e0641ae43b89283223034574d6465be93bf4
+  version: 2d49bb8f2cee530cc16f1f1a9f0aae763dee257d
   subpackages:
   - arm/compute
   - arm/dns
@@ -148,9 +148,10 @@ imports:
   subpackages:
   - winterm
 - name: github.com/Azure/go-autorest
-  version: d7c034a8af24eda120dd6460bfcd6d9ed14e43ca
+  version: f6e08fe5e4d45c9a66e40196d3fed5f37331d224
   subpackages:
   - autorest
+  - autorest/adal
   - autorest/azure
   - autorest/date
   - autorest/to
@@ -209,6 +210,7 @@ imports:
   version: 40085cf5fd629ccd88dc328895f1f137d09a1de4
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  repo: https://github.com/davecgh/go-spew
   subpackages:
   - spew
 - name: github.com/dgrijalva/jwt-go
@@ -306,7 +308,7 @@ imports:
 - name: github.com/gorilla/websocket
   version: 1f512fc3f05332ba7117626cdfb4e07474e58e60
 - name: github.com/graymeta/stow
-  version: 6d41bc29db644d13a73c20b2aa584ff73bf7a2df
+  version: 062b7428392f2e60ce332cb7492beebbcac82d15
   repo: https://github.com/appscode/stow.git
   vcs: git
   subpackages:
@@ -406,6 +408,8 @@ imports:
   - fuzzy
 - name: github.com/russross/blackfriday
   version: 300106c228d52c8941d4b3de6054a6062a86dda3
+- name: github.com/satori/uuid
+  version: 5bf94b69c6b68ee1b541973bb8e1144db23a194b
 - name: github.com/scaleway/scaleway-cli
   version: 4c4502fd13230d91b52d99a6069cffffea536a5e
   subpackages:
@@ -429,7 +433,7 @@ imports:
   subpackages:
   - doc
 - name: github.com/spf13/pflag
-  version: 572154603012a93806b0a54639c6dfc83ff54e35
+  version: 0f53e09b6e0414581a4e540b3731ea7aa721e7fe
   repo: https://github.com/appscode/pflag.git
   vcs: git
 - name: github.com/tent/http-link-go
@@ -720,7 +724,8 @@ imports:
   - pkg/util/term
 testImports:
 - name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  repo: https://github.com/pmezard/go-difflib
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
