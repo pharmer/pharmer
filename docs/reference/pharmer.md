@@ -25,6 +25,7 @@ Pharmer by Appscode - Manages farms
 * [pharmer commissioner](pharmer_commissioner.md)	 - Various commissioning commands.
 * [pharmer config](pharmer_config.md)	 - Pharmer configuration
 * [pharmer create](pharmer_create.md)	 - Create a Kubernetes cluster for a given cloud provider
+* [pharmer credential](pharmer_credential.md)	 - Manage cloud provider credentials
 * [pharmer delete](pharmer_delete.md)	 - Delete a Kubernetes cluster
 * [pharmer list](pharmer_list.md)	 - Lists active Kubernetes clusters
 * [pharmer reconfigure](pharmer_reconfigure.md)	 - Create/Resize/Upgrade/Downgrade a Kubernetes cluster instance group

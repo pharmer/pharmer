@@ -7,6 +7,7 @@ import (
 	v "github.com/appscode/go/version"
 	comCmd "github.com/appscode/pharmer/commissioner/cmd"
 	cfgCmd "github.com/appscode/pharmer/config/cmds"
+	credCmd "github.com/appscode/pharmer/credential/cmds"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -26,6 +27,7 @@ func NewRootCmd(version string) *cobra.Command {
 	// ref: https://github.com/kubernetes/kubernetes/issues/17162#issuecomment-225596212
 	flag.CommandLine.Parse([]string{})
 
+	rootCmd.AddCommand(credCmd.NewCmdCredential())
 	rootCmd.AddCommand(comCmd.NewCmdCommisioner())
 	rootCmd.AddCommand(cfgCmd.NewCmdConfig())
 	rootCmd.AddCommand(NewCmdCreate())
