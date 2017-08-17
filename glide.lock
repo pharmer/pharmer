@@ -1,5 +1,5 @@
 hash: 6cebf64366e1d164ffcb1208662c1510b70bb9da7ade6ba152711aee8bbeffc5
-updated: 2017-08-17T05:35:24.667205602-07:00
+updated: 2017-08-17T15:38:47.827366626-07:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -26,9 +26,8 @@ imports:
   - ssh/v1beta1
   - version
 - name: github.com/appscode/appctl
-  version: d89bb8baed5a0436301be5fc943a11084f65c960
+  version: 51b7c060ac949d4cb645ef8d4d5f081bec1ee652
   subpackages:
-  - pkg/cmds/credential/cloud
   - pkg/config
   - pkg/util
   - pkg/util/timeutil
@@ -136,6 +135,8 @@ imports:
   - service/iam
   - service/route53
   - service/s3
+  - service/s3/s3iface
+  - service/s3/s3manager
   - service/sts
 - name: github.com/Azure/azure-sdk-for-go
   version: 2d49bb8f2cee530cc16f1f1a9f0aae763dee257d
@@ -163,7 +164,7 @@ imports:
   - autorest/to
   - autorest/validation
 - name: github.com/bndr/gojenkins
-  version: c579ca22978e7188aca04fa20d9b382fed95eb32
+  version: 10d416706df701ae959182e4ae94fde6984c7c22
 - name: github.com/cenkalti/backoff
   version: 61153c768f31ee5f130071d08fc82b85208528de
 - name: github.com/cloudflare/cfssl
@@ -314,7 +315,7 @@ imports:
 - name: github.com/gorilla/websocket
   version: 1f512fc3f05332ba7117626cdfb4e07474e58e60
 - name: github.com/graymeta/stow
-  version: 062b7428392f2e60ce332cb7492beebbcac82d15
+  version: 3c6848a44916f9a5c422d54979e46f12d6dea8e1
   repo: https://github.com/appscode/stow.git
   vcs: git
   subpackages:
@@ -377,7 +378,7 @@ imports:
   - jlexer
   - jwriter
 - name: github.com/mattn/go-colorable
-  version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
+  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
 - name: github.com/mattn/go-isatty
   version: 56b76bdf51f7708750eac80fa38b952bb9f32639
 - name: github.com/mattn/go-runewidth
@@ -399,9 +400,9 @@ imports:
 - name: github.com/olekukonko/tablewriter
   version: cca8bbc0798408af109aaaa239cbd2634846b340
 - name: github.com/packethost/packngo
-  version: 9d9409c8c09de7695281e900a776cca03676026a
+  version: 131798f2804a1b3e895ca98047d56f0d7e094e2a
 - name: github.com/pborman/uuid
-  version: ca53cad383cad2479bbba7f7a1a05797ec1386e4
+  version: a97ce2ca70fa5a848076093f05e639a89ca34d06
 - name: github.com/pkg/errors
   version: a22138067af1c4942683050411a841ade67fe1eb
 - name: github.com/PuerkitoBio/purell
