@@ -41,9 +41,9 @@ func RandStringRunes(n int) string {
 }
 
 func GenClusterTokens(cluster *api.Cluster) {
-	cluster.KubeBearerToken = rand.GenerateToken()
-	cluster.KubeletToken = rand.GenerateToken()
-	cluster.KubeProxyToken = rand.GenerateToken()
+	cluster.Spec.KubeBearerToken = rand.GenerateToken()
+	cluster.Spec.KubeletToken = rand.GenerateToken()
+	cluster.Spec.KubeProxyToken = rand.GenerateToken()
 }
 
 func GenClusterCerts(ctx context.Context, cluster *api.Cluster) error {
@@ -53,17 +53,17 @@ func GenClusterCerts(ctx context.Context, cluster *api.Cluster) error {
 	csrReq.KeyRequest = &csr.BasicKeyRequest{A: "rsa", S: 2048}
 
 	////////// Cluster CA //////////
-	//caCN := system.ClusterCAName(cluster.Auth.Namespace, cluster.Name)
+	//caCN := system.ClusterCAName(cluster.Spec.Auth.Namespace, cluster.Name)
 	var caCertPHID string
 	var caCert, caKey []byte
 
 	// TODO: FixIt!
 	//caRow := &storage.Certificate{
-	//	CommonName: cluster.PHID,
+	//	CommonName: cluster.UID,
 	//}
-	//has, err := cluster.Store.Engine.Get(caRow)
+	//has, err := cluster.Spec.Store.Engine.Get(caRow)
 	//if err == nil && has {
-	//	ctx.Logger().Infof("Found existing CA cert with PHID:%v", cluster.CaCertPHID)
+	//	ctx.Logger().Infof("Found existing CA cert with PHID:%v", cluster.Spec.CaCertPHID)
 	//
 	//	caCertPHID = caRow.PHID
 	//	caCert = []byte(caRow.Cert)
@@ -84,18 +84,18 @@ func GenClusterCerts(ctx context.Context, cluster *api.Cluster) error {
 	}
 	ctx.Logger().Infof("Created CA cert with PHID:%v", caCertPHID)
 
-	cluster.CaCertPHID = caCertPHID
-	cluster.CaCert = base64.StdEncoding.EncodeToString(caCert)
-	cluster.CaKey = base64.StdEncoding.EncodeToString(caKey)
+	cluster.Spec.CaCertPHID = caCertPHID
+	cluster.Spec.CaCert = base64.StdEncoding.EncodeToString(caCert)
+	cluster.Spec.CaKey = base64.StdEncoding.EncodeToString(caKey)
 	////////////////////////
 	////////// Front Proxy CA ////////
 	frontCACertPHID, frontCACert, frontCAKey, err := CreateCA(ctx)
 	if err != nil {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
-	cluster.FrontProxyCaCertPHID = frontCACertPHID
-	cluster.FrontProxyCaCert = base64.StdEncoding.EncodeToString(frontCACert)
-	cluster.FrontProxyCaKey = base64.StdEncoding.EncodeToString(frontCAKey)
+	cluster.Spec.FrontProxyCaCertPHID = frontCACertPHID
+	cluster.Spec.FrontProxyCaCert = base64.StdEncoding.EncodeToString(frontCACert)
+	cluster.Spec.FrontProxyCaKey = base64.StdEncoding.EncodeToString(frontCAKey)
 
 	csrReq.CN = "kubernetes-user"
 	//csrReq.Hosts = []string{"127.0.0.1"}
@@ -109,10 +109,10 @@ func GenClusterCerts(ctx context.Context, cluster *api.Cluster) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
-	cluster.UserCertPHID = userCertPHID
-	cluster.UserCert = base64.StdEncoding.EncodeToString(userCert)
-	cluster.UserKey = base64.StdEncoding.EncodeToString(userKey)
-	ctx.Logger().Infof("Created user cert %v  key %v with PHID:%v", string(userCert), string(userKey), cluster.UserCertPHID)
+	cluster.Spec.UserCertPHID = userCertPHID
+	cluster.Spec.UserCert = base64.StdEncoding.EncodeToString(userCert)
+	cluster.Spec.UserKey = base64.StdEncoding.EncodeToString(userKey)
+	ctx.Logger().Infof("Created user cert %v  key %v with PHID:%v", string(userCert), string(userKey), cluster.Spec.UserCertPHID)
 
 	ctx.Logger().Infoln("Certificates generated successfully")
 	return nil

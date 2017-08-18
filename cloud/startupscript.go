@@ -95,7 +95,7 @@ kubectl apply \
   --kubeconfig /etc/kubernetes/admin.conf
 
 mkdir -p ~/.kube
-sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config`, cert, cluster.KubeadmToken, cluster.KubernetesVersion)
+sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config`, cert, cluster.Spec.KubeadmToken, cluster.Spec.KubernetesVersion)
 }
 
 //   \
@@ -123,7 +123,7 @@ systemctl start docker
 
 kubeadm reset
 kubeadm join --token %v %v:6443
-`, cluster.KubeadmToken, cluster.MasterExternalIP)
+`, cluster.Spec.KubeadmToken, cluster.Spec.MasterExternalIP)
 }
 
 // firebase certs upload @dipta
@@ -160,10 +160,10 @@ func UploadCertInFirebase(ctx context.Context, cluster *api.Cluster, certName st
 
 func UploadAllCertsInFirebase(ctx context.Context, cluster *api.Cluster) error {
 	kubeadmCerts := [][]string{
-		{"ca-crt", cluster.CaCert},
-		{"ca-key", cluster.CaKey},
-		{"front-proxy-ca-crt", cluster.FrontProxyCaCert},
-		{"front-proxy-ca-key", cluster.FrontProxyCaKey}}
+		{"ca-crt", cluster.Spec.CaCert},
+		{"ca-key", cluster.Spec.CaKey},
+		{"front-proxy-ca-crt", cluster.Spec.FrontProxyCaCert},
+		{"front-proxy-ca-key", cluster.Spec.FrontProxyCaKey}}
 
 	for _, cert := range kubeadmCerts {
 		err := UploadCertInFirebase(ctx, cluster, cert[0], cert[1])
@@ -185,9 +185,9 @@ func FirebaseCertPath(ctx context.Context, cluster *api.Cluster, certName string
 		l,
 		"team",       // TODO: FixIt!
 		cluster.Name, // phid is grpc api
-		cluster.ResourceVersion,
+		cluster.Spec.ResourceVersion,
 		certName,
-		cluster.StartupConfigToken), nil
+		cluster.Spec.StartupConfigToken), nil
 }
 
 func FireBaseCertDownloadCmd(ctx context.Context, cluster *api.Cluster) (string, error) {
@@ -262,7 +262,7 @@ kubectl apply \
 mkdir -p ~/.kube
 cp /etc/kubernetes/admin.conf ~/.kube/config`,
 		cmd,
-		cluster.KubeadmToken,
+		cluster.Spec.KubeadmToken,
 		ctx.Extra().ExternalDomain(cluster.Name))
 }
 
@@ -293,7 +293,7 @@ systemctl enable docker
 systemctl start docker
 
 kubeadm reset
-kubeadm join --token %v %v:6443`, cluster.KubeadmToken, cluster.MasterExternalIP)
+kubeadm join --token %v %v:6443`, cluster.Spec.KubeadmToken, cluster.Spec.MasterExternalIP)
 }
 
 // -----------------------------------------------------------------------------------
@@ -317,7 +317,7 @@ export LANG=en_US.UTF-8
 /bin/echo $CONFIG | ./start-kubernetes --v=3 --sku=%v
 /bin/rm start-kubernetes
 `,
-		cmd, "FixIt!" /*cluster.KubeStarterURL*/, sku)
+		cmd, "FixIt!" /*cluster.Spec.KubeStarterURL*/, sku)
 }
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
@@ -441,11 +441,11 @@ func StartupConfigFromAPI(cluster *api.Cluster, role string) string {
 	// TODO(tamal): Use wget instead of curl
 	return fmt.Sprintf(`CONFIG=$(/usr/bin/wget -qO- '%v/kubernetes/v1beta1/clusters/%v/startup-script/%v/context-versions/%v/json' --header='Authorization: Bearer %v:%v' 2> /dev/null)`,
 		"", // system.PublicAPIHttpEndpoint(),
-		cluster.PHID,
+		cluster.UID,
 		role,
 		"", /* cluster.Namespace */
-		cluster.ResourceVersion,
-		cluster.StartupConfigToken)
+		cluster.Spec.ResourceVersion,
+		cluster.Spec.StartupConfigToken)
 }
 
 const firebaseEndpoint = "https://tigerworks-kube.firebaseio.com"
@@ -461,8 +461,8 @@ func firebaseStartupConfigPath(cluster *api.Cluster, role string) (string, error
 		"",           /* cluster.Namespace */
 		cluster.Name, // phid is grpc api
 		role,
-		cluster.ResourceVersion,
-		cluster.StartupConfigToken), nil
+		cluster.Spec.ResourceVersion,
+		cluster.Spec.StartupConfigToken), nil
 }
 
 func firebaseInstancePath(cluster *api.Cluster, externalIP string) (string, error) {
@@ -476,5 +476,5 @@ func firebaseInstancePath(cluster *api.Cluster, externalIP string) (string, erro
 		"",           /* cluster.Namespace */
 		cluster.Name, // phid is grpc api
 		strings.Replace(externalIP, ".", "_", -1),
-		cluster.StartupConfigToken), nil
+		cluster.Spec.StartupConfigToken), nil
 }

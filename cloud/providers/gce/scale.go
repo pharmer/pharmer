@@ -14,16 +14,16 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 	if cm.conn == nil {
 		cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 		if err != nil {
-			cm.cluster.StatusCause = err.Error()
+			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	fmt.Println(cm.cluster.ResourceVersion, "*****************")
+	fmt.Println(cm.cluster.Spec.ResourceVersion, "*****************")
 	cm.namer = namer{cluster: cm.cluster}
 	//purchasePHIDs := cm.ctx.Metadata["PurchasePhids"].([]string)
 	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins.Instances, _ = cm.ctx.Store().Instances().LoadInstances(cm.cluster.Name)
@@ -42,7 +42,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 	}
 	inst := cloud.Instance{
 		Type: cloud.InstanceType{
-			ContextVersion: cm.cluster.ResourceVersion,
+			ContextVersion: cm.cluster.Spec.ResourceVersion,
 			Sku:            req.Sku,
 
 			Master:       false,
@@ -62,9 +62,9 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 	fmt.Println(igm)
 	igm.AdjustInstanceGroup()
 	flag := false
-	for x := range cm.cluster.NodeGroups {
-		if cm.cluster.NodeGroups[x].Sku == req.Sku {
-			cm.cluster.NodeGroups[x].Count += nodeAdjust
+	for x := range cm.cluster.Spec.NodeGroups {
+		if cm.cluster.Spec.NodeGroups[x].Sku == req.Sku {
+			cm.cluster.Spec.NodeGroups[x].Count += nodeAdjust
 			flag = true
 			//fmt.Println(ctx.NodeGroups[k].Count, "*********************************>>")
 		}
@@ -77,16 +77,16 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 			Count:            req.Count,
 			UseSpotInstances: false,
 		}
-		cm.cluster.NodeGroups = append(cm.cluster.NodeGroups, ig)
+		cm.cluster.Spec.NodeGroups = append(cm.cluster.Spec.NodeGroups, ig)
 	}
 
 	if err := cloud.WaitForReadyNodes(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	instances, err := igm.cm.listInstances(igm.cm.namer.InstanceGroupName(req.Sku))
 	if err != nil {
-		igm.cm.cluster.StatusCause = err.Error()
+		igm.cm.cluster.Status.Reason = err.Error()
 		//return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
@@ -97,7 +97,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 }
 
 func (cm *clusterManager) checkInstanceGroup(instanceGroupName string) bool {
-	_, err := cm.conn.computeService.InstanceGroupManagers.Get(cm.cluster.Project, cm.cluster.Zone, instanceGroupName).Do()
+	_, err := cm.conn.computeService.InstanceGroupManagers.Get(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceGroupName).Do()
 	if err != nil {
 		return false
 	}

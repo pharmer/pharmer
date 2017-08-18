@@ -50,8 +50,8 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 func (im *instanceManager) createInstance(role, sku string) (*hc.Transaction, error) {
 	tx, _, err := im.conn.client.Ordering.CreateTransaction(&hc.CreateTransactionRequest{
 		ProductID:     sku,
-		AuthorizedKey: []string{im.cluster.SSHKey.OpensshFingerprint},
-		Dist:          im.cluster.InstanceImage,
+		AuthorizedKey: []string{im.cluster.Spec.SSHKey.OpensshFingerprint},
+		Dist:          im.cluster.Spec.InstanceImage,
 		Arch:          64,
 		Lang:          "en",
 		// Test:          true,
@@ -68,7 +68,7 @@ func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Sig
 	}
 	fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>", cfg)
 
-	file := fmt.Sprintf("/var/cache/kubernetes_context_%v_%v.yaml", im.cluster.ResourceVersion, role)
+	file := fmt.Sprintf("/var/cache/kubernetes_context_%v_%v.yaml", im.cluster.Spec.ResourceVersion, role)
 	stdOut, stdErr, code, err := _ssh.SCP(file, []byte(cfg), "root", serverIP+":22", signer)
 	im.ctx.Logger().Debugf(stdOut, stdErr, code)
 	return err
@@ -87,7 +87,7 @@ func (im *instanceManager) storeStartupScript(serverIP, sku, role string, signer
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
 func (im *instanceManager) RenderStartupScript(sku, role string) string {
-	cmd := fmt.Sprintf(`CONFIG=$(cat /var/cache/kubernetes_context_%v_%v.yaml)`, im.cluster.ResourceVersion, role)
+	cmd := fmt.Sprintf(`CONFIG=$(cat /var/cache/kubernetes_context_%v_%v.yaml)`, im.cluster.Spec.ResourceVersion, role)
 	firebaseUid := ""
 	if api.UseFirebase() {
 		firebaseUid, _ = api.FirebaseUid()

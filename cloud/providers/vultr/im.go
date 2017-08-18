@@ -128,7 +128,7 @@ EOF
 }
 
 func (im *instanceManager) createInstance(name, sku string, scriptID int) (string, error) {
-	regionID, err := strconv.Atoi(im.cluster.Zone)
+	regionID, err := strconv.Atoi(im.cluster.Spec.Zone)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -136,12 +136,12 @@ func (im *instanceManager) createInstance(name, sku string, scriptID int) (strin
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	osID, err := strconv.Atoi(im.cluster.InstanceImage)
+	osID, err := strconv.Atoi(im.cluster.Spec.InstanceImage)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	opts := &gv.ServerOptions{
-		SSHKey:               im.cluster.SSHKeyExternalID + ",57dcbce7cd3b6,58027d56a1190,58a498ec7ee19",
+		SSHKey:               im.cluster.Spec.SSHKeyExternalID + ",57dcbce7cd3b6,58027d56a1190,58a498ec7ee19",
 		PrivateNetworking:    true,
 		DontNotifyOnActivate: false,
 		Script:               scriptID,
@@ -149,7 +149,7 @@ func (im *instanceManager) createInstance(name, sku string, scriptID int) (strin
 		Tag:                  im.cluster.Name,
 	}
 	if _env.FromHost().IsPublic() {
-		opts.SSHKey = im.cluster.SSHKeyExternalID
+		opts.SSHKey = im.cluster.Spec.SSHKeyExternalID
 	}
 	resp, err := im.conn.client.CreateServer(
 		name,

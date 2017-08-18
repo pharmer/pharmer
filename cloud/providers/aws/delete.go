@@ -21,17 +21,17 @@ import (
 func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
-	if cm.cluster.Status == api.KubernetesStatus_Pending {
-		cm.cluster.Status = api.KubernetesStatus_Failing
-	} else if cm.cluster.Status == api.KubernetesStatus_Ready {
-		cm.cluster.Status = api.KubernetesStatus_Deleting
+	if cm.cluster.Status.Phase == api.KubernetesStatus_Pending {
+		cm.cluster.Status.Phase = api.KubernetesStatus_Failing
+	} else if cm.cluster.Status.Phase == api.KubernetesStatus_Ready {
+		cm.cluster.Status.Phase = api.KubernetesStatus_Deleting
 	}
 	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
 	if cm.conn == nil {
 		conn, err := NewConnector(cm.cluster)
 		if err != nil {
-			cm.cluster.StatusCause = err.Error()
+			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		cm.conn = conn
@@ -43,15 +43,15 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if !exists {
-		return errors.Newf("VPC %v not found for Cluster %v", cm.cluster.VpcId, cm.cluster.Name).WithContext(cm.ctx).Err()
+		return errors.Newf("VPC %v not found for Cluster %v", cm.cluster.Spec.VpcId, cm.cluster.Name).WithContext(cm.ctx).Err()
 	}
 
 	var errs []string
-	if cm.cluster.StatusCause != "" {
-		errs = append(errs, cm.cluster.StatusCause)
+	if cm.cluster.Status.Reason != "" {
+		errs = append(errs, cm.cluster.Status.Reason)
 	}
 
-	for _, ng := range cm.cluster.NodeGroups {
+	for _, ng := range cm.cluster.Spec.NodeGroups {
 		if err = cm.deleteAutoScalingGroup(cm.namer.AutoScalingGroupName(ng.Sku)); err != nil {
 			errs = append(errs, err.Error())
 		}
@@ -62,7 +62,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	if err = cm.ensureInstancesDeleted(); err != nil {
 		errs = append(errs, err.Error())
 	}
-	for _, ng := range cm.cluster.NodeGroups {
+	for _, ng := range cm.cluster.Spec.NodeGroups {
 		if err = cm.deleteLaunchConfiguration(cm.namer.AutoScalingGroupName(ng.Sku)); err != nil {
 			errs = append(errs, err.Error())
 		}
@@ -72,8 +72,8 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, err.Error())
 	}
 
-	if req.ReleaseReservedIp && cm.cluster.MasterReservedIP != "" {
-		if err = cm.releaseReservedIP(cm.cluster.MasterReservedIP); err != nil {
+	if req.ReleaseReservedIp && cm.cluster.Spec.MasterReservedIP != "" {
+		if err = cm.releaseReservedIP(cm.cluster.Spec.MasterReservedIP); err != nil {
 			errs = append(errs, err.Error())
 		}
 	}
@@ -121,8 +121,8 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 
 	if len(errs) > 0 {
 		// Preserve statusCause for failed cluster
-		if cm.cluster.Status == api.KubernetesStatus_Deleting {
-			cm.cluster.StatusCause = strings.Join(errs, "\n")
+		if cm.cluster.Status.Phase == api.KubernetesStatus_Deleting {
+			cm.cluster.Status.Reason = strings.Join(errs, "\n")
 		}
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
@@ -134,7 +134,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 func (cm *clusterManager) findVPC() (bool, error) {
 	r1, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
 		VpcIds: []*string{
-			types.StringP(cm.cluster.VpcId),
+			types.StringP(cm.cluster.Spec.VpcId),
 		},
 	})
 	if err != nil {
@@ -268,7 +268,7 @@ func (cm *clusterManager) deleteSecurityGroup() error {
 			{
 				Name: types.StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cm.cluster.VpcId),
+					types.StringP(cm.cluster.Spec.VpcId),
 				},
 			},
 			{
@@ -323,7 +323,7 @@ func (cm *clusterManager) deleteSubnetId() error {
 			{
 				Name: types.StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cm.cluster.VpcId),
+					types.StringP(cm.cluster.Spec.VpcId),
 				},
 			},
 			{
@@ -355,7 +355,7 @@ func (cm *clusterManager) deleteInternetGateway() error {
 			{
 				Name: types.StringP("attachment.vpc-id"),
 				Values: []*string{
-					types.StringP(cm.cluster.VpcId),
+					types.StringP(cm.cluster.Spec.VpcId),
 				},
 			},
 		},
@@ -366,7 +366,7 @@ func (cm *clusterManager) deleteInternetGateway() error {
 	for _, igw := range r1.InternetGateways {
 		_, err := cm.conn.ec2.DetachInternetGateway(&_ec2.DetachInternetGatewayInput{
 			InternetGatewayId: igw.InternetGatewayId,
-			VpcId:             types.StringP(cm.cluster.VpcId),
+			VpcId:             types.StringP(cm.cluster.Spec.VpcId),
 		})
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -389,7 +389,7 @@ func (cm *clusterManager) deleteRouteTable() error {
 			{
 				Name: types.StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cm.cluster.VpcId),
+					types.StringP(cm.cluster.Spec.VpcId),
 				},
 			},
 		},
@@ -430,7 +430,7 @@ func (cm *clusterManager) deleteRouteTable() error {
 
 func (cm *clusterManager) deleteDHCPOption() error {
 	_, err := cm.conn.ec2.AssociateDhcpOptions(&_ec2.AssociateDhcpOptionsInput{
-		VpcId:         types.StringP(cm.cluster.VpcId),
+		VpcId:         types.StringP(cm.cluster.Spec.VpcId),
 		DhcpOptionsId: types.StringP("default"),
 	})
 	if err != nil {
@@ -463,7 +463,7 @@ func (cm *clusterManager) deleteDHCPOption() error {
 
 func (cm *clusterManager) deleteVpc() error {
 	_, err := cm.conn.ec2.DeleteVpc(&_ec2.DeleteVpcInput{
-		VpcId: types.StringP(cm.cluster.VpcId),
+		VpcId: types.StringP(cm.cluster.Spec.VpcId),
 	})
 
 	if err != nil {
@@ -475,27 +475,27 @@ func (cm *clusterManager) deleteVpc() error {
 
 func (cm *clusterManager) deleteVolume() error {
 	_, err := cm.conn.ec2.DeleteVolume(&_ec2.DeleteVolumeInput{
-		VolumeId: types.StringP(cm.cluster.MasterDiskId),
+		VolumeId: types.StringP(cm.cluster.Spec.MasterDiskId),
 	})
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Master instance volume for cluster %v is deleted", cm.cluster.MasterDiskId)
+	cm.ctx.Logger().Infof("Master instance volume for cluster %v is deleted", cm.cluster.Spec.MasterDiskId)
 	return nil
 }
 
 func (cm *clusterManager) deleteSSHKey() error {
 	var err error
 	_, err = cm.conn.ec2.DeleteKeyPair(&_ec2.DeleteKeyPairInput{
-		KeyName: types.StringP(cm.cluster.SSHKeyExternalID),
+		KeyName: types.StringP(cm.cluster.Spec.SSHKeyExternalID),
 	})
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("SSH key for cluster %v is deleted", cm.cluster.MasterDiskId)
+	cm.ctx.Logger().Infof("SSH key for cluster %v is deleted", cm.cluster.Spec.MasterDiskId)
 	//updates := &storage.SSHKey{IsDeleted: 1}
-	//cond := &storage.SSHKey{PHID: cluster.ctx.SSHKeyPHID}
-	// _, err = cluster.ctx.Store().Engine.Update(updates, cond)
+	//cond := &storage.SSHKey{PHID: cluster.Spec.ctx.SSHKeyPHID}
+	// _, err = cluster.Spec.ctx.Store().Engine.Update(updates, cond)
 
 	return err
 }
@@ -563,7 +563,7 @@ func (cm *clusterManager) deleteBucket() error {
 
 	for {
 		r1, err := cm.conn.s3.ListObjectsV2(&_s3.ListObjectsV2Input{
-			Bucket: types.StringP(cm.cluster.BucketName),
+			Bucket: types.StringP(cm.cluster.Spec.BucketName),
 		})
 		if err == nil && len(r1.Contents) > 0 {
 			oIds := make([]*_s3.ObjectIdentifier, len(r1.Contents))
@@ -571,7 +571,7 @@ func (cm *clusterManager) deleteBucket() error {
 				oIds[i] = &_s3.ObjectIdentifier{Key: obj.Key}
 			}
 			cm.conn.s3.DeleteObjects(&_s3.DeleteObjectsInput{
-				Bucket: types.StringP(cm.cluster.BucketName),
+				Bucket: types.StringP(cm.cluster.Spec.BucketName),
 				Delete: &_s3.Delete{Objects: oIds},
 			})
 		}
@@ -582,7 +582,7 @@ func (cm *clusterManager) deleteBucket() error {
 
 	for {
 		r1, err := cm.conn.s3.ListObjectVersions(&_s3.ListObjectVersionsInput{
-			Bucket: types.StringP(cm.cluster.BucketName),
+			Bucket: types.StringP(cm.cluster.Spec.BucketName),
 		})
 		if err == nil && len(r1.DeleteMarkers) > 0 {
 			oIds := make([]*_s3.ObjectIdentifier, len(r1.DeleteMarkers))
@@ -590,7 +590,7 @@ func (cm *clusterManager) deleteBucket() error {
 				oIds[i] = &_s3.ObjectIdentifier{Key: obj.Key, VersionId: obj.VersionId}
 			}
 			cm.conn.s3.DeleteObjects(&_s3.DeleteObjectsInput{
-				Bucket: types.StringP(cm.cluster.BucketName),
+				Bucket: types.StringP(cm.cluster.Spec.BucketName),
 				Delete: &_s3.Delete{Objects: oIds},
 			})
 		}
@@ -600,7 +600,7 @@ func (cm *clusterManager) deleteBucket() error {
 	}
 
 	_, err := cm.conn.s3.DeleteBucket(&_s3.DeleteBucketInput{
-		Bucket: types.StringP(cm.cluster.BucketName),
+		Bucket: types.StringP(cm.cluster.Spec.BucketName),
 	})
 	return err
 }

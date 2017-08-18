@@ -24,23 +24,23 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	}
 	cm.namer = namer{cluster: cm.cluster}
 
-	//cluster.ctx.Name = req.Name
-	//cluster.ctx.PHID = phid.NewKubeCluster()
-	//cluster.ctx.Provider = req.Provider
-	//cluster.ctx.Zone = req.Zone
+	//cluster.Spec.ctx.Name = req.Name
+	//cluster.Spec.ctx.PHID = phid.NewKubeCluster()
+	//cluster.Spec.ctx.Provider = req.Provider
+	//cluster.Spec.ctx.Zone = req.Zone
 
-	cm.cluster.Region = cm.cluster.Zone
-	cm.cluster.DoNotDelete = req.DoNotDelete
+	cm.cluster.Spec.Region = cm.cluster.Spec.Zone
+	cm.cluster.Spec.DoNotDelete = req.DoNotDelete
 
 	cm.cluster.SetNodeGroups(req.NodeGroups)
 
-	cm.cluster.KubernetesMasterName = cm.namer.MasterName()
-	cm.cluster.SSHKey, err = api.NewSSHKeyPair()
+	cm.cluster.Spec.KubernetesMasterName = cm.namer.MasterName()
+	cm.cluster.Spec.SSHKey, err = api.NewSSHKeyPair()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.cluster.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
-	cm.cluster.SSHKeyPHID = phid.NewSSHKey()
+	cm.cluster.Spec.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
+	cm.cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
 
 	cloud.GenClusterTokens(cm.cluster)
 
@@ -53,8 +53,8 @@ func (cm *clusterManager) LoadDefaultContext() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.cluster.OS = "debian"
-	cm.cluster.MasterSKU = "CX10" // CX20
+	cm.cluster.Spec.OS = "debian"
+	cm.cluster.Spec.MasterSKU = "CX10" // CX20
 
 	cloud.BuildRuntimeConfig(cm.cluster)
 	return nil

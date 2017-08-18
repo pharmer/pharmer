@@ -23,12 +23,12 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	instanceGroupName := igm.cm.namer.GetInstanceGroupName(igm.instance.Type.Sku) //igm.cm.ctx.Name + "-" + strings.Replace(igm.instance.Type.Sku, "_", "-", -1) + "-node"
 	found, _, err := igm.GetInstanceGroup(instanceGroupName)
 	if err != nil {
-		igm.cm.cluster.StatusCause = err.Error()
+		igm.cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	fmt.Println(found)
 
-	igm.cm.cluster.ResourceVersion = igm.instance.Type.ContextVersion
+	igm.cm.cluster.Spec.ResourceVersion = igm.instance.Type.ContextVersion
 	igm.cm.cluster, _ = igm.cm.ctx.Store().Clusters().LoadCluster(igm.cm.cluster.Name)
 	var nodeAdjust int64 = 0
 	if found {
@@ -42,20 +42,20 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 		}
 		err := igm.deleteInstanceGroup(igm.instance.Type.Sku, nodeAdjust)
 		if err != nil {
-			igm.cm.cluster.StatusCause = err.Error()
+			igm.cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	} else {
 		if nodeAdjust < 0 {
 			err := igm.deleteInstanceGroup(igm.instance.Type.Sku, -nodeAdjust)
 			if err != nil {
-				igm.cm.cluster.StatusCause = err.Error()
+				igm.cm.cluster.Status.Reason = err.Error()
 				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
 		} else {
 			err := igm.createInstanceGroup(nodeAdjust)
 			if err != nil {
-				igm.cm.cluster.StatusCause = err.Error()
+				igm.cm.cluster.Status.Reason = err.Error()
 				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
 		}
@@ -125,7 +125,7 @@ func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.KubernetesIns
 	instances := make([]*api.KubernetesInstance, 0)
 	kc, err := cloud.NewAdminClient(igm.cm.cluster)
 	if err != nil {
-		igm.cm.cluster.StatusCause = err.Error()
+		igm.cm.cluster.Status.Reason = err.Error()
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 
 	}
@@ -151,14 +151,14 @@ func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.KubernetesIns
 func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
 	droplet, err := igm.im.createInstance(igm.cm.namer.GenNodeName(igm.instance.Type.Sku), api.RoleKubernetesPool, igm.instance.Type.Sku)
 	if err != nil {
-		igm.cm.cluster.StatusCause = err.Error()
+		igm.cm.cluster.Status.Reason = err.Error()
 		return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	// record nodes
 	igm.cm.conn.waitForInstance(droplet.ID, "active")
 	node, err := igm.im.newKubeInstance(droplet.ID)
 	if err != nil {
-		igm.cm.cluster.StatusCause = err.Error()
+		igm.cm.cluster.Status.Reason = err.Error()
 		return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	igm.im.applyTag(droplet.ID)

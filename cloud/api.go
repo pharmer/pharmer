@@ -9,7 +9,7 @@ import (
 
 type Cloud interface {
 	Clusters() Provider
-	Credentials() ClooudCredential
+	Credentials() CloudCredential
 }
 
 type Provider interface {
@@ -23,7 +23,7 @@ type Provider interface {
 	MatchInstance(i *api.KubernetesInstance, md *api.InstanceMetadata) bool
 }
 
-type ClooudCredential interface {
+type CloudCredential interface {
 	IsValid() bool
 	AsMap() map[string]string
 }

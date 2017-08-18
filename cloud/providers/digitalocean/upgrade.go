@@ -19,17 +19,17 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	if cm.conn == nil {
 		conn, err := NewConnector(cm.ctx, cm.cluster)
 		if err != nil {
-			cm.cluster.StatusCause = err.Error()
+			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		cm.conn = conn
 	}
 
-	cm.cluster.ResourceVersion = int64(0)
+	cm.cluster.Spec.ResourceVersion = int64(0)
 	cm.namer = namer{cluster: cm.cluster}
 	// assign new timestamp and new launch_config version
-	cm.cluster.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
-	cm.cluster.KubernetesVersion = req.Version
+	cm.cluster.Spec.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
+	cm.cluster.Spec.KubernetesVersion = req.Version
 
 	err := cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 	if err != nil {
@@ -39,7 +39,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	fmt.Println("Updating...")
 	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins.Instances, _ = cm.ctx.Store().Instances().LoadInstances(cm.cluster.Name)
@@ -78,36 +78,36 @@ func (cm *clusterManager) updateMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	masterDroplet, err := im.createInstance(cm.cluster.KubernetesMasterName, api.RoleKubernetesMaster, cm.cluster.MasterSKU)
+	masterDroplet, err := im.createInstance(cm.cluster.Spec.KubernetesMasterName, api.RoleKubernetesMaster, cm.cluster.Spec.MasterSKU)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if err = cm.conn.waitForInstance(masterDroplet.ID, "active"); err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	im.applyTag(masterDroplet.ID)
 	time.Sleep(1 * time.Minute)
-	if cm.cluster.MasterReservedIP != "" {
-		if err = im.assignReservedIP(cm.cluster.MasterReservedIP, masterDroplet.ID); err != nil {
-			cm.cluster.StatusCause = err.Error()
+	if cm.cluster.Spec.MasterReservedIP != "" {
+		if err = im.assignReservedIP(cm.cluster.Spec.MasterReservedIP, masterDroplet.ID); err != nil {
+			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
 
 	masterInstance, err := im.newKubeInstance(masterDroplet.ID)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Role = api.RoleKubernetesMaster
-	cm.cluster.MasterExternalIP = masterInstance.ExternalIP
-	cm.cluster.MasterInternalIP = masterInstance.InternalIP
-	fmt.Println("Master EXTERNAL IP ================", cm.cluster.MasterExternalIP, "<><><>", cm.cluster.MasterReservedIP)
+	cm.cluster.Spec.MasterExternalIP = masterInstance.ExternalIP
+	cm.cluster.Spec.MasterInternalIP = masterInstance.InternalIP
+	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP, "<><><>", cm.cluster.Spec.MasterReservedIP)
 	cm.ctx.Logger().Infof("Rebooting master instance")
 	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
@@ -117,7 +117,7 @@ func (cm *clusterManager) updateMaster() error {
 	}
 
 	if err = im.reboot(masterDroplet.ID); err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
@@ -147,7 +147,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 		}
 		igm.instance = cloud.Instance{
 			Type: cloud.InstanceType{
-				ContextVersion: cm.cluster.ResourceVersion,
+				ContextVersion: cm.cluster.Spec.ResourceVersion,
 				Sku:            sku,
 				Master:         false,
 				SpotInstance:   false,
@@ -170,7 +170,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
-	// cluster.ctx.Instances = append(cluster.ctx.Instances, instances...)
+	// cluster.Spec.ctx.Instances = append(cluster.Spec.ctx.Instances, instances...)
 	err = cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 
 	return nil

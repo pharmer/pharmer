@@ -18,11 +18,11 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	username, ok := cluster.CloudCredential[credential.HertznerUsername]
+	username, ok := cluster.Spec.CloudCredential[credential.HertznerUsername]
 	if !ok {
 		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.HertznerUsername)
 	}
-	password, ok := cluster.CloudCredential[credential.HertznerPassword]
+	password, ok := cluster.Spec.CloudCredential[credential.HertznerPassword]
 	if !ok {
 		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.HertznerPassword)
 	}

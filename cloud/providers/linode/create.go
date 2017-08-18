@@ -14,93 +14,93 @@ import (
 func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	err := cm.initContext(req)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 
 	defer func(releaseReservedIp bool) {
-		if cm.cluster.Status == api.KubernetesStatus_Pending {
-			cm.cluster.Status = api.KubernetesStatus_Failing
+		if cm.cluster.Status.Phase == api.KubernetesStatus_Pending {
+			cm.cluster.Status.Phase = api.KubernetesStatus_Failing
 		}
 		cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 		cm.ctx.Store().Instances().SaveInstances(cm.ins.Instances)
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status)
-		if cm.cluster.Status != api.KubernetesStatus_Ready {
+		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
+		if cm.cluster.Status.Phase != api.KubernetesStatus_Ready {
 			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
 			})
 		}
-	}(cm.cluster.MasterReservedIP == "auto")
+	}(cm.cluster.Spec.MasterReservedIP == "auto")
 
 	if err = cm.conn.detectInstanceImage(); err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Debugln("Linode instance image", cm.cluster.InstanceImage)
+	cm.ctx.Logger().Debugln("Linode instance image", cm.cluster.Spec.InstanceImage)
 
 	if err = cm.conn.detectKernel(); err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Linode kernel %v found", cm.cluster.Kernel)
+	cm.ctx.Logger().Infof("Linode kernel %v found", cm.cluster.Spec.Kernel)
 
 	// -------------------------------------------------------------------ASSETS
 	im := &instanceManager{ctx: cm.ctx, cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 
-	masterScriptId, err := im.createStackScript(cm.cluster.MasterSKU, api.RoleKubernetesMaster)
+	masterScriptId, err := im.createStackScript(cm.cluster.Spec.MasterSKU, api.RoleKubernetesMaster)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterLinodeId, masterLinodeConfigId, err := im.createInstance(cm.cluster.KubernetesMasterName, masterScriptId, cm.cluster.MasterSKU)
+	masterLinodeId, masterLinodeConfigId, err := im.createInstance(cm.cluster.Spec.KubernetesMasterName, masterScriptId, cm.cluster.Spec.MasterSKU)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterLinode, err := cm.conn.waitForStatus(masterLinodeId, LinodeStatus_PoweredOff)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ctx.Logger().Debugln("Linode", masterLinodeId, "is powered off.")
 	masterInstance, err := im.newKubeInstance(masterLinode)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Name = cm.namer.MasterName()
 	masterInstance.Role = api.RoleKubernetesMaster
-	cm.cluster.MasterExternalIP = masterInstance.ExternalIP
-	cm.cluster.MasterInternalIP = masterInstance.InternalIP
+	cm.cluster.Spec.MasterExternalIP = masterInstance.ExternalIP
+	cm.cluster.Spec.MasterInternalIP = masterInstance.InternalIP
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
-	fmt.Println("Master EXTERNAL_IP", cm.cluster.MasterExternalIP, " ----- Master INTERNAL_IP", cm.cluster.MasterInternalIP)
+	fmt.Println("Master EXTERNAL_IP", cm.cluster.Spec.MasterExternalIP, " ----- Master INTERNAL_IP", cm.cluster.Spec.MasterInternalIP)
 
 	if err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.cluster.DetectApiServerURL()
 	// needed to get master_internal_ip
 	if err = cm.ctx.Store().Clusters().SaveCluster(cm.cluster); err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.UploadStartupConfig()
@@ -111,7 +111,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	// reboot master to use cert with internal_ip as SANS
 	err = im.bootToGrub2(masterLinodeId, masterLinodeConfigId, masterInstance.Name)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// -----------------------------------------------------------------------------------
@@ -126,13 +126,13 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	for _, ng := range req.NodeGroups {
 		nodeScriptId, err := im.createStackScript(ng.Sku, api.RoleKubernetesPool)
 		if err != nil {
-			cm.cluster.StatusCause = err.Error()
+			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		for i := int64(0); i < ng.Count; i++ {
 			linodeId, configId, err := im.createInstance(cm.namer.GenNodeName(), nodeScriptId, ng.Sku)
 			if err != nil {
-				cm.cluster.StatusCause = err.Error()
+				cm.cluster.Status.Reason = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
 			nodes = append(nodes, &NodeInfo{
@@ -167,7 +167,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 						// create node
 						node, err := im.newKubeInstance(&linode)
 						if err != nil {
-							cm.cluster.StatusCause = err.Error()
+							cm.cluster.Status.Reason = err.Error()
 							return errors.FromErr(err).WithContext(cm.ctx).Err()
 						}
 						node.Name = cm.cluster.Name + "-node-" + strconv.Itoa(info.nodeId)
@@ -203,26 +203,26 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 
 	// Wait for master A record to propagate
 	if err := cloud.EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// wait for nodes to start
 	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// check all components are ok
 	if err = cloud.CheckComponentStatuses(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// Make sure nodes are connected to master and are ready
 	if err = cloud.WaitForReadyNodes(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.cluster.Status = api.KubernetesStatus_Ready
+	cm.cluster.Status.Phase = api.KubernetesStatus_Ready
 	return nil
 }

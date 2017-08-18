@@ -73,18 +73,18 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 
 func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet, error) {
 	startupScript := im.RenderStartupScript(sku, role)
-	//imgID, err := strconv.Atoi(im.cluster.InstanceImage)
+	//imgID, err := strconv.Atoi(im.cluster.Spec.InstanceImage)
 	//if err != nil {
 	//	return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	//}
 	req := &godo.DropletCreateRequest{
 		Name:   name,
-		Region: im.cluster.Zone,
+		Region: im.cluster.Spec.Zone,
 		Size:   sku,
 		//Image:  godo.DropletCreateImage{ID: imgID},
 		Image: godo.DropletCreateImage{Slug: DROPLET_IMAGE_SLUG},
 		SSHKeys: []godo.DropletCreateSSHKey{
-			{Fingerprint: im.cluster.SSHKey.OpensshFingerprint},
+			{Fingerprint: im.cluster.Spec.SSHKey.OpensshFingerprint},
 			{Fingerprint: "0d:ff:0d:86:0c:f1:47:1d:85:67:1e:73:c6:0e:46:17"}, // tamal@beast
 			{Fingerprint: "c0:19:c1:81:c5:2e:6d:d9:a6:db:3c:f5:c5:fd:c8:1d"}, // tamal@mbp
 			{Fingerprint: "f6:66:c5:ad:e6:60:30:d9:ab:2c:7c:75:56:e2:d7:f3"}, // tamal@asus
@@ -97,7 +97,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 	}
 	if _env.FromHost().IsPublic() {
 		req.SSHKeys = []godo.DropletCreateSSHKey{
-			{Fingerprint: im.cluster.SSHKey.OpensshFingerprint},
+			{Fingerprint: im.cluster.Spec.SSHKey.OpensshFingerprint},
 		}
 	}
 	droplet, resp, err := im.conn.client.Droplets.Create(go_ctx.TODO(), req)

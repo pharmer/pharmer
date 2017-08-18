@@ -19,7 +19,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	apiKey, ok := cluster.CloudCredential[credential.VultrApiToken]
+	apiKey, ok := cluster.Spec.CloudCredential[credential.VultrApiToken]
 	if !ok {
 		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.VultrApiToken)
 	}
@@ -37,7 +37,7 @@ func (conn *cloudConnector) detectInstanceImage() error {
 	}
 	for _, os := range oses {
 		if os.Arch == "x64" && os.Family == "debian" && strings.HasPrefix(os.Name, "Debian 8") {
-			conn.cluster.InstanceImage = strconv.Itoa(os.ID)
+			conn.cluster.Spec.InstanceImage = strconv.Itoa(os.ID)
 			return nil
 		}
 	}

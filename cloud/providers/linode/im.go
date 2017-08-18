@@ -70,7 +70,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 
 func (im *instanceManager) createStackScript(sku, role string) (int, error) {
 	startupScript := im.RenderStartupScript(sku, role)
-	script, err := im.conn.client.StackScript.Create(im.namer.StartupScriptName(sku, role), im.cluster.InstanceImage, startupScript, map[string]string{
+	script, err := im.conn.client.StackScript.Create(im.namer.StartupScriptName(sku, role), im.cluster.Spec.InstanceImage, startupScript, map[string]string{
 		"Description": im.cluster.Name,
 	})
 	if err != nil {
@@ -153,7 +153,7 @@ EOF
 }
 
 func (im *instanceManager) createInstance(name string, scriptId int, sku string) (int, int, error) {
-	dcId, err := strconv.Atoi(im.cluster.Zone)
+	dcId, err := strconv.Atoi(im.cluster.Spec.Zone)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -185,20 +185,20 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
   "stack_script_id": "%v"
 }`, im.cluster.Name, name, scriptId)
 	args := map[string]string{
-		"rootSSHKey": string(im.cluster.SSHKey.PublicKey),
+		"rootSSHKey": string(im.cluster.Spec.SSHKey.PublicKey),
 	}
 
 	mt, err := data.ClusterMachineType("linode", sku)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	distributionID, err := strconv.Atoi(im.cluster.InstanceImage)
+	distributionID, err := strconv.Atoi(im.cluster.Spec.InstanceImage)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	swapDiskSize := 512                // MB
 	rootDiskSize := mt.Disk*1024 - 512 // MB
-	rootDisk, err := im.conn.client.Disk.CreateFromStackscript(scriptId, id, name, stackScriptUDFResponses, distributionID, rootDiskSize, im.cluster.InstanceRootPassword, args)
+	rootDisk, err := im.conn.client.Disk.CreateFromStackscript(scriptId, id, name, stackScriptUDFResponses, distributionID, rootDiskSize, im.cluster.Spec.InstanceRootPassword, args)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -207,7 +207,7 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 
-	kernelId, err := strconv.Atoi(im.cluster.Kernel)
+	kernelId, err := strconv.Atoi(im.cluster.Spec.Kernel)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}

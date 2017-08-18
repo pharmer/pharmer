@@ -26,18 +26,18 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	if cm.conn == nil {
 		conn, err := NewConnector(cm.ctx, cm.cluster)
 		if err != nil {
-			cm.cluster.StatusCause = err.Error()
+			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		cm.conn = conn
 	}
 
-	cm.cluster.ResourceVersion = int64(0)
+	cm.cluster.Spec.ResourceVersion = int64(0)
 	cm.namer = namer{cluster: cm.cluster}
 	cm.updateContext()
 	// assign new timestamp and new launch_config version
-	cm.cluster.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
-	cm.cluster.KubernetesVersion = req.Version
+	cm.cluster.Spec.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
+	cm.cluster.Spec.KubernetesVersion = req.Version
 	err := cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 
 	if err != nil {
@@ -47,7 +47,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	fmt.Println("Updating...")
 	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins.Instances, _ = cm.ctx.Store().Instances().LoadInstances(cm.cluster.Name)
@@ -84,9 +84,9 @@ func (cm *clusterManager) masterUpdate(host, instanceName, version string) error
 	fmt.Println("------------------------")
 	fmt.Println(sout, serr, code, err)
 	fmt.Println("------------------------")*/
-	command := fmt.Sprintf(`gcloud compute --project "%v" ssh --zone "%v" "%v"`, cm.cluster.Project, cm.cluster.Zone, instanceName)
+	command := fmt.Sprintf(`gcloud compute --project "%v" ssh --zone "%v" "%v"`, cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceName)
 	init := fmt.Sprintf(`sudo kubeadm init --apiserver-bind-port 6443 --token %v  --apiserver-advertise-address ${PUBLICIP} --apiserver-cert-extra-sans ${PUBLICIP} ${PRIVATEIP} --pod-network-cidr 10.244.0.0/16 --kubernetes-version %v --skip-preflight-checks`,
-		cm.cluster.KubeadmToken, "v"+version)
+		cm.cluster.Spec.KubeadmToken, "v"+version)
 	fmt.Println(init)
 	arg := str.ToArgv(command)
 	name, arg := arg[0], arg[1:]
@@ -175,7 +175,7 @@ func (cm *clusterManager) updateMaster() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.cluster.InstanceImage = img
+	cm.cluster.Spec.InstanceImage = img
 	cm.UploadStartupConfig()
 
 	op, err := cm.createMasterIntance()
@@ -187,7 +187,7 @@ func (cm *clusterManager) updateMaster() error {
 	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance, err := cm.getInstance(cm.cluster.KubernetesMasterName)
+	masterInstance, err := cm.getInstance(cm.cluster.Spec.KubernetesMasterName)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -204,7 +204,7 @@ func (cm *clusterManager) updateMaster() error {
 */
 
 func (cm *clusterManager) nodeUpdate(instanceName string) error {
-	command := fmt.Sprintf(`gcloud compute --project "%v" ssh --zone "%v" "%v"`, cm.cluster.Project, cm.cluster.Zone, instanceName)
+	command := fmt.Sprintf(`gcloud compute --project "%v" ssh --zone "%v" "%v"`, cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceName)
 	arg := str.ToArgv(command)
 	name, arg := arg[0], arg[1:]
 	//arg = append(arg, "--command", "ls -lah")
@@ -254,7 +254,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	instances := []string{}
-	prefix := "https://www.googleapis.com/compute/v1/projects/" + cm.cluster.Project + "/zones/" + cm.cluster.Zone + "/instances/"
+	prefix := "https://www.googleapis.com/compute/v1/projects/" + cm.cluster.Spec.Project + "/zones/" + cm.cluster.Spec.Zone + "/instances/"
 	for _, instance := range oldinstances {
 		instanceName := prefix + instance.Name
 		instances = append(instances, instanceName)
@@ -269,7 +269,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
-	// cluster.ctx.Instances = append(cluster.ctx.Instances, instances...)
+	// cluster.Spec.ctx.Instances = append(cluster.Spec.ctx.Instances, instances...)
 	err = cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -306,11 +306,11 @@ func (cm *clusterManager) getExistingContextVersion(sku string) (error, int64) {
 
 func (cm *clusterManager) rollingUpdate(oldInstances []string, newInstanceTemplate, sku string) error {
 	groupName := cm.namer.InstanceGroupName(sku)
-	newTemplate := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", cm.cluster.Project, newInstanceTemplate)
+	newTemplate := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", cm.cluster.Spec.Project, newInstanceTemplate)
 	template := &compute.InstanceGroupManagersSetInstanceTemplateRequest{
 		InstanceTemplate: newTemplate,
 	}
-	tmpR, err := cm.conn.computeService.InstanceGroupManagers.SetInstanceTemplate(cm.cluster.Project, cm.cluster.Zone, groupName, template).Do()
+	tmpR, err := cm.conn.computeService.InstanceGroupManagers.SetInstanceTemplate(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, groupName, template).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -323,7 +323,7 @@ func (cm *clusterManager) rollingUpdate(oldInstances []string, newInstanceTempla
 		updates := &compute.InstanceGroupManagersRecreateInstancesRequest{
 			Instances: []string{instance},
 		}
-		r, err := cm.conn.computeService.InstanceGroupManagers.RecreateInstances(cm.cluster.Project, cm.cluster.Zone, groupName, updates).Do()
+		r, err := cm.conn.computeService.InstanceGroupManagers.RecreateInstances(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, groupName, updates).Do()
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}

@@ -98,13 +98,13 @@ func ProbeKubeAPI(ctx context.Context, cluster *api.Cluster) error {
 		  --max-time 5 --fail --output /dev/null --silent \
 		  "https://${KUBE_MASTER_IP}/api/v1/pods"
 	*/
-	caCert, err := base64.StdEncoding.DecodeString(cluster.CaCert)
+	caCert, err := base64.StdEncoding.DecodeString(cluster.Spec.CaCert)
 	if err != nil {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
 
 	cluster.DetectApiServerURL()
-	url := cluster.ApiServerUrl + "/api"
+	url := cluster.Spec.ApiServerUrl + "/api"
 	mTLSConfig := &tls.Config{}
 	certs := x509.NewCertPool()
 	certs.AppendCertsFromPEM([]byte(caCert))
@@ -115,7 +115,7 @@ func ProbeKubeAPI(ctx context.Context, cluster *api.Cluster) error {
 
 	client := &http.Client{Transport: tr}
 	req, _ := http.NewRequest("GET", url, nil)
-	// req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", cluster.KubeletToken))
+	// req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", cluster.Spec.KubeletToken))
 	attempt := 0
 	// try for 30 mins
 	ctx.Logger().Info("Checking Api")

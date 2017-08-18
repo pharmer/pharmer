@@ -63,9 +63,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 
 func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 	startupScript := im.RenderStartupScript(sku, role)
-	instance, err := data.ClusterMachineType(im.cluster.Provider, sku)
+	instance, err := data.ClusterMachineType(im.cluster.Spec.Provider, sku)
 	if err != nil {
-		im.cluster.StatusCause = err.Error()
+		im.cluster.Status.Reason = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	cpu := instance.CPU
@@ -79,9 +79,9 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		return 0, fmt.Errorf("Failed to parse memory metadata for sku %v", sku)
 	}
 
-	sshid, err := strconv.Atoi(im.cluster.SSHKeyExternalID)
+	sshid, err := strconv.Atoi(im.cluster.Spec.SSHKeyExternalID)
 	if err != nil {
-		im.cluster.StatusCause = err.Error()
+		im.cluster.Status.Reason = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	vGuestTemplate := datatypes.Virtual_Guest{
@@ -89,14 +89,14 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		Domain:                       types.StringP(im.ctx.Extra().ExternalDomain(im.cluster.Name)),
 		MaxMemory:                    types.IntP(ram),
 		StartCpus:                    types.IntP(cpu),
-		Datacenter:                   &datatypes.Location{Name: types.StringP(im.cluster.Zone)},
-		OperatingSystemReferenceCode: types.StringP(im.cluster.OS),
+		Datacenter:                   &datatypes.Location{Name: types.StringP(im.cluster.Spec.Zone)},
+		OperatingSystemReferenceCode: types.StringP(im.cluster.Spec.OS),
 		LocalDiskFlag:                types.TrueP(),
 		HourlyBillingFlag:            types.TrueP(),
 		SshKeys: []datatypes.Security_Ssh_Key{
 			{
 				Id:          types.IntP(sshid),
-				Fingerprint: types.StringP(im.cluster.SSHKey.OpensshFingerprint),
+				Fingerprint: types.StringP(im.cluster.Spec.SSHKey.OpensshFingerprint),
 			},
 		},
 		UserData: []datatypes.Virtual_Guest_Attribute{
@@ -114,7 +114,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 
 	vGuest, err := im.conn.virtualServiceClient.Mask("id;domain").CreateObject(&vGuestTemplate)
 	if err != nil {
-		im.cluster.StatusCause = err.Error()
+		im.cluster.Status.Reason = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	im.ctx.Logger().Infof("Softlayer instance %v created", name)

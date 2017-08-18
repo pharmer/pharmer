@@ -28,10 +28,10 @@ type cloudConnector struct {
 }
 
 func NewConnector(cluster *api.Cluster) (*cloudConnector, error) {
-	id := cluster.CloudCredential[credential.AWSAccessKeyID]
-	secret := cluster.CloudCredential[credential.AWSSecretAccessKey]
+	id := cluster.Spec.CloudCredential[credential.AWSAccessKeyID]
+	secret := cluster.Spec.CloudCredential[credential.AWSSecretAccessKey]
 	config := &_aws.Config{
-		Region:      &cluster.Region,
+		Region:      &cluster.Spec.Region,
 		Credentials: credentials.NewStaticCredentials(id, secret, ""),
 	}
 
@@ -48,7 +48,7 @@ func NewConnector(cluster *api.Cluster) (*cloudConnector, error) {
 // https://github.com/kubernetes/kubernetes/blob/master/cluster/aws/jessie/util.sh#L28
 // Based on https://github.com/kubernetes/kube-deploy/tree/master/imagebuilder
 func (conn *cloudConnector) detectJessieImage() error {
-	conn.cluster.OS = "debian"
+	conn.cluster.Spec.OS = "debian"
 	r1, err := conn.ec2.DescribeImages(&_ec2.DescribeImagesInput{
 		Owners: []*string{types.StringP("282335181503")},
 		Filters: []*_ec2.Filter{
@@ -63,14 +63,14 @@ func (conn *cloudConnector) detectJessieImage() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	conn.cluster.InstanceImage = *r1.Images[0].ImageId
-	conn.cluster.RootDeviceName = *r1.Images[0].RootDeviceName
-	conn.ctx.Logger().Infof("Debain image with %v for %v detected", conn.cluster.InstanceImage, conn.cluster.RootDeviceName)
+	conn.cluster.Spec.InstanceImage = *r1.Images[0].ImageId
+	conn.cluster.Spec.RootDeviceName = *r1.Images[0].RootDeviceName
+	conn.ctx.Logger().Infof("Debain image with %v for %v detected", conn.cluster.Spec.InstanceImage, conn.cluster.Spec.RootDeviceName)
 	return nil
 }
 
 func (conn *cloudConnector) detectUbuntuImage() error {
-	conn.cluster.OS = "ubuntu"
+	conn.cluster.Spec.OS = "ubuntu"
 	r1, err := conn.ec2.DescribeImages(&_ec2.DescribeImagesInput{
 		Owners: []*string{types.StringP("099720109477")},
 		Filters: []*_ec2.Filter{
@@ -85,8 +85,8 @@ func (conn *cloudConnector) detectUbuntuImage() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	conn.cluster.InstanceImage = *r1.Images[0].ImageId
-	conn.cluster.RootDeviceName = *r1.Images[0].RootDeviceName
-	conn.ctx.Logger().Infof("Ubuntu image with %v for %v detected", conn.cluster.InstanceImage, conn.cluster.RootDeviceName)
+	conn.cluster.Spec.InstanceImage = *r1.Images[0].ImageId
+	conn.cluster.Spec.RootDeviceName = *r1.Images[0].RootDeviceName
+	conn.ctx.Logger().Infof("Ubuntu image with %v for %v detected", conn.cluster.Spec.InstanceImage, conn.cluster.Spec.RootDeviceName)
 	return nil
 }

@@ -41,13 +41,13 @@ var fakeKube = fakeKubeClient{useFakeServer: false}
 // For other cluster operations initiated by users, use KubeAddon context.
 func NewAdminClient(cluster *api.Cluster) (*kubeClient, error) {
 	kubeconfig := &rest.Config{
-		Host:        cluster.ApiServerUrl,
-		BearerToken: cluster.KubeBearerToken,
+		Host:        cluster.Spec.ApiServerUrl,
+		BearerToken: cluster.Spec.KubeBearerToken,
 	}
 	if _env.FromHost().DevMode() {
 		kubeconfig.Insecure = true
 	} else {
-		caCert, err := base64.StdEncoding.DecodeString(cluster.CaCert)
+		caCert, err := base64.StdEncoding.DecodeString(cluster.Spec.CaCert)
 		if err != nil {
 			return nil, err
 		}

@@ -16,10 +16,10 @@ import (
 func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
-	if cm.cluster.Status == api.KubernetesStatus_Pending {
-		cm.cluster.Status = api.KubernetesStatus_Failing
-	} else if cm.cluster.Status == api.KubernetesStatus_Ready {
-		cm.cluster.Status = api.KubernetesStatus_Deleting
+	if cm.cluster.Status.Phase == api.KubernetesStatus_Pending {
+		cm.cluster.Status.Phase = api.KubernetesStatus_Failing
+	} else if cm.cluster.Status.Phase == api.KubernetesStatus_Ready {
+		cm.cluster.Status.Phase = api.KubernetesStatus_Deleting
 	}
 	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
@@ -27,25 +27,25 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	if cm.conn == nil {
 		cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 		if err != nil {
-			cm.cluster.StatusCause = err.Error()
+			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
 	cm.namer = namer{cluster: cm.cluster}
 	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins.Instances, err = cm.ctx.Store().Instances().LoadInstances(cm.cluster.Name)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	var errs []string
-	if cm.cluster.StatusCause != "" {
-		errs = append(errs, cm.cluster.StatusCause)
+	if cm.cluster.Status.Reason != "" {
+		errs = append(errs, cm.cluster.Status.Reason)
 	}
 
 	for _, i := range cm.ins.Instances {
@@ -70,9 +70,9 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	}, backoff.NewExponentialBackOff())
 	cm.ctx.Logger().Infof("Deleted droplet by tag %v", "KubernetesCluster:"+cm.cluster.Name)
 
-	if req.ReleaseReservedIp && cm.cluster.MasterReservedIP != "" {
+	if req.ReleaseReservedIp && cm.cluster.Spec.MasterReservedIP != "" {
 		backoff.Retry(func() error {
-			return cm.releaseReservedIP(cm.cluster.MasterReservedIP)
+			return cm.releaseReservedIP(cm.cluster.Spec.MasterReservedIP)
 		}, backoff.NewExponentialBackOff())
 	}
 
@@ -87,8 +87,8 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 
 	if len(errs) > 0 {
 		// Preserve statusCause for failed cluster
-		if cm.cluster.Status == api.KubernetesStatus_Deleting {
-			cm.cluster.StatusCause = strings.Join(errs, "\n")
+		if cm.cluster.Status.Phase == api.KubernetesStatus_Deleting {
+			cm.cluster.Status.Reason = strings.Join(errs, "\n")
 		}
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
@@ -108,9 +108,9 @@ func (cm *clusterManager) releaseReservedIP(ip string) error {
 }
 
 func (cm *clusterManager) deleteSSHKey() (err error) {
-	if cm.cluster.SSHKey != nil {
+	if cm.cluster.Spec.SSHKey != nil {
 		backoff.Retry(func() error {
-			_, err := cm.conn.client.Keys.DeleteByFingerprint(go_ctx.TODO(), cm.cluster.SSHKey.OpensshFingerprint)
+			_, err := cm.conn.client.Keys.DeleteByFingerprint(go_ctx.TODO(), cm.cluster.Spec.SSHKey.OpensshFingerprint)
 			return err
 		}, backoff.NewExponentialBackOff())
 		cm.ctx.Logger().Infof("SSH key for cluster %v deleted", cm.cluster.Name)

@@ -21,18 +21,18 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	instanceGroupName := igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku)
 	found, err := igm.checkInstanceGroup(instanceGroupName)
 	if err != nil {
-		igm.cm.cluster.StatusCause = err.Error()
+		igm.cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	igm.cm.cluster.ResourceVersion = igm.instance.Type.ContextVersion
+	igm.cm.cluster.Spec.ResourceVersion = igm.instance.Type.ContextVersion
 	igm.cm.cluster, _ = igm.cm.ctx.Store().Clusters().LoadCluster(igm.cm.cluster.Name)
 	if err = igm.cm.conn.detectUbuntuImage(); err != nil {
-		igm.cm.cluster.StatusCause = err.Error()
+		igm.cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	if !found {
 		if err := igm.startNodes(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
-			igm.cm.cluster.StatusCause = err.Error()
+			igm.cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithMessage("failed to start node").WithContext(igm.cm.ctx).Err()
 		}
 	} else if igm.instance.Stats.Count == 0 {
@@ -83,21 +83,21 @@ func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) err
 	script := cloud.RenderKubeadmNodeStarter(igm.cm.cluster)
 
 	igm.cm.ctx.Logger().Info("Creating node configuration assuming EnableNodePublicIP = true")
-	fmt.Println(igm.cm.cluster.RootDeviceName, "<<<<<<<<--------------->>>>>>>>>>>>>>>>>>.")
+	fmt.Println(igm.cm.cluster.Spec.RootDeviceName, "<<<<<<<<--------------->>>>>>>>>>>>>>>>>>.")
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
 		LaunchConfigurationName:  types.StringP(name),
-		AssociatePublicIpAddress: types.BoolP(igm.cm.cluster.EnableNodePublicIP),
+		AssociatePublicIpAddress: types.BoolP(igm.cm.cluster.Spec.EnableNodePublicIP),
 		/*
 			// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html
 			BlockDeviceMappings: []*autoscaling.BlockDeviceMapping{
 				// NODE_BLOCK_DEVICE_MAPPINGS
 				{
 					// https://github.com/appscode/kubernetes/blob/55d9dec8eb5eb02e1301045b7b81bbac689c86a1/cluster/aws/util.sh#L397
-					DeviceName: types.StringP(igm.cm.cluster.RootDeviceName),
+					DeviceName: types.StringP(igm.cm.cluster.Spec.RootDeviceName),
 					Ebs: &autoscaling.Ebs{
 						DeleteOnTermination: types.TrueP(),
-						VolumeSize:          types.Int64P(igm.cm.conn.cluster.NodeDiskSize),
-						VolumeType:          types.StringP(igm.cm.cluster.NodeDiskType),
+						VolumeSize:          types.Int64P(igm.cm.conn.cluster.Spec.NodeDiskSize),
+						VolumeType:          types.StringP(igm.cm.cluster.Spec.NodeDiskType),
 					},
 				},
 				// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
@@ -119,12 +119,12 @@ func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) err
 				},
 			},
 		*/
-		IamInstanceProfile: types.StringP(igm.cm.cluster.IAMProfileNode),
-		ImageId:            types.StringP(igm.cm.cluster.InstanceImage),
+		IamInstanceProfile: types.StringP(igm.cm.cluster.Spec.IAMProfileNode),
+		ImageId:            types.StringP(igm.cm.cluster.Spec.InstanceImage),
 		InstanceType:       types.StringP(sku),
-		KeyName:            types.StringP(igm.cm.cluster.SSHKeyExternalID),
+		KeyName:            types.StringP(igm.cm.cluster.Spec.SSHKeyExternalID),
 		SecurityGroups: []*string{
-			types.StringP(igm.cm.cluster.NodeSGId),
+			types.StringP(igm.cm.cluster.Spec.NodeSGId),
 		},
 		UserData: types.StringP(base64.StdEncoding.EncodeToString([]byte(script))),
 	}

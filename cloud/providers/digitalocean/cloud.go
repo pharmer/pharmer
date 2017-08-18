@@ -25,7 +25,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	token, ok := cluster.CloudCredential[credential.DigitalOceanToken]
+	token, ok := cluster.Spec.CloudCredential[credential.DigitalOceanToken]
 	if !ok {
 		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.DigitalOceanToken)
 	}
@@ -56,22 +56,22 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 			if img.Name == containerOsImage && img.Distribution == "Debian" {
 				found := false
 				for _, region := range img.Regions {
-					if region == conn.cluster.Region {
+					if region == conn.cluster.Spec.Region {
 						found = true
-						conn.ctx.Logger().Debugf("Image already exists in region %v.", conn.cluster.Region)
+						conn.ctx.Logger().Debugf("Image already exists in region %v.", conn.cluster.Spec.Region)
 						return strconv.Itoa(img.ID), nil
 					}
 				}
 				if !found {
 					_, _, err := conn.client.ImageActions.Transfer(go_ctx.TODO(), img.ID, &godo.ActionRequest{
 						"type":   "transfer",
-						"region": conn.cluster.Region,
+						"region": conn.cluster.Spec.Region,
 					})
 					if err != nil {
 						return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 					}
 
-					conn.ctx.Logger().Infof("Started image transfer to region %v.", conn.cluster.Region)
+					conn.ctx.Logger().Infof("Started image transfer to region %v.", conn.cluster.Spec.Region)
 					// wait for the transfer to complete
 					conn.waitForTransfer(img.ID)
 					return strconv.Itoa(img.ID), nil
@@ -87,7 +87,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 	conn.ctx.Logger().Info("Creating droplet to build custom image")
 	droplet, _, err := conn.client.Droplets.Create(go_ctx.TODO(), &godo.DropletCreateRequest{
 		Name:              rand.WithUniqSuffix("kubernetes"),
-		Region:            conn.cluster.Region,
+		Region:            conn.cluster.Spec.Region,
 		Size:              "512mb",
 		Image:             godo.DropletCreateImage{Slug: "debian-8-x64"},
 		PrivateNetworking: false,
@@ -198,7 +198,7 @@ func (conn *cloudConnector) waitForTransfer(id int) error {
 			return err
 		}
 		for _, r := range img.Regions {
-			if r == conn.cluster.Region {
+			if r == conn.cluster.Spec.Region {
 				return nil
 			}
 		}

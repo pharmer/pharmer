@@ -19,11 +19,11 @@ type cloudConnector struct {
 }
 
 func NewConnector(cluster *api.Cluster) (*cloudConnector, error) {
-	apiKey, ok := cluster.CloudCredential[credential.SoftlayerAPIKey]
+	apiKey, ok := cluster.Spec.CloudCredential[credential.SoftlayerAPIKey]
 	if !ok {
 		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.SoftlayerAPIKey)
 	}
-	userName, ok := cluster.CloudCredential[credential.SoftlayerUsername]
+	userName, ok := cluster.Spec.CloudCredential[credential.SoftlayerUsername]
 	if !ok {
 		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.SoftlayerUsername)
 	}
