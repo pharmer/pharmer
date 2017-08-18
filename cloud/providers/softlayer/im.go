@@ -24,9 +24,9 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
-	var instance *api.KubernetesInstance
+	var instance *api.Instance
 	backoff.Retry(func() (err error) {
 		for {
 			servers, err := im.conn.accountServiceClient.GetVirtualGuests()
@@ -38,14 +38,14 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 				if interIp == md.InternalIP {
 					instance, err = im.newKubeInstance(*s.Id)
 					sku := strconv.Itoa(*s.MaxCpu) + "c" + strconv.Itoa(*s.MaxMemory) + "m"
-					instance.SKU = sku
+					instance.Spec.SKU = sku
 					if err != nil {
 						return err
 					}
 					if master {
-						instance.Role = api.RoleKubernetesMaster
+						instance.Spec.Role = api.RoleKubernetesMaster
 					} else {
-						instance.Role = api.RoleKubernetesPool
+						instance.Spec.Role = api.RoleKubernetesPool
 					}
 					return nil
 				}
@@ -63,9 +63,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 
 func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 	startupScript := im.RenderStartupScript(sku, role)
-	instance, err := data.ClusterMachineType(im.cluster.Provider, sku)
+	instance, err := data.ClusterMachineType(im.cluster.Spec.Provider, sku)
 	if err != nil {
-		im.cluster.StatusCause = err.Error()
+		im.cluster.Status.Reason = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	cpu := instance.CPU
@@ -79,9 +79,9 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		return 0, fmt.Errorf("Failed to parse memory metadata for sku %v", sku)
 	}
 
-	sshid, err := strconv.Atoi(im.cluster.SSHKeyExternalID)
+	sshid, err := strconv.Atoi(im.cluster.Spec.SSHKeyExternalID)
 	if err != nil {
-		im.cluster.StatusCause = err.Error()
+		im.cluster.Status.Reason = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	vGuestTemplate := datatypes.Virtual_Guest{
@@ -89,14 +89,14 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		Domain:                       types.StringP(im.ctx.Extra().ExternalDomain(im.cluster.Name)),
 		MaxMemory:                    types.IntP(ram),
 		StartCpus:                    types.IntP(cpu),
-		Datacenter:                   &datatypes.Location{Name: types.StringP(im.cluster.Zone)},
-		OperatingSystemReferenceCode: types.StringP(im.cluster.OS),
+		Datacenter:                   &datatypes.Location{Name: types.StringP(im.cluster.Spec.Zone)},
+		OperatingSystemReferenceCode: types.StringP(im.cluster.Spec.OS),
 		LocalDiskFlag:                types.TrueP(),
 		HourlyBillingFlag:            types.TrueP(),
 		SshKeys: []datatypes.Security_Ssh_Key{
 			{
 				Id:          types.IntP(sshid),
-				Fingerprint: types.StringP(im.cluster.SSHKey.OpensshFingerprint),
+				Fingerprint: types.StringP(im.cluster.Spec.SSHKey.OpensshFingerprint),
 			},
 		},
 		UserData: []datatypes.Virtual_Guest_Attribute{
@@ -114,7 +114,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 
 	vGuest, err := im.conn.virtualServiceClient.Mask("id;domain").CreateObject(&vGuestTemplate)
 	if err != nil {
-		im.cluster.StatusCause = err.Error()
+		im.cluster.Status.Reason = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	im.ctx.Logger().Infof("Softlayer instance %v created", name)
@@ -172,7 +172,7 @@ systemctl enable kube-installer.service
 `, strings.Replace(cloud.RenderKubeStarter(im.cluster, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid, reboot)
 }
 
-func (im *instanceManager) newKubeInstance(id int) (*api.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {
 	bluemix := im.conn.virtualServiceClient.Id(id)
 	status, err := bluemix.GetStatus()
 	if err != nil {
@@ -182,24 +182,28 @@ func (im *instanceManager) newKubeInstance(id int) (*api.KubernetesInstance, err
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	ki := &api.KubernetesInstance{
-		PHID:           phid.NewKubeInstance(),
-		ExternalID:     strconv.Itoa(id),
-		ExternalStatus: *status.Name,
-		Name:           *d.FullyQualifiedDomainName,
-		Status:         api.KubernetesInstanceStatus_Ready, // droplet.Status == active
+	ki := &api.Instance{
+		ObjectMeta: api.ObjectMeta{
+			UID:  phid.NewKubeInstance(),
+			Name: *d.FullyQualifiedDomainName,
+		},
+		Status: api.InstanceStatus{
+			ExternalID:    strconv.Itoa(id),
+			ExternalPhase: *status.Name,
+			Phase:         api.InstancePhaseReady, // droplet.Status == active
+		},
 	}
 
-	ki.ExternalIP, err = bluemix.GetPrimaryIpAddress()
+	ki.Status.ExternalIP, err = bluemix.GetPrimaryIpAddress()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	ki.ExternalIP = strings.Trim(ki.ExternalIP, `"`)
-	ki.InternalIP, err = bluemix.GetPrimaryBackendIpAddress()
+	ki.Status.ExternalIP = strings.Trim(ki.Status.ExternalIP, `"`)
+	ki.Status.InternalIP, err = bluemix.GetPrimaryBackendIpAddress()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	ki.InternalIP = strings.Trim(ki.InternalIP, `"`)
+	ki.Status.InternalIP = strings.Trim(ki.Status.InternalIP, `"`)
 
 	return ki, nil
 }

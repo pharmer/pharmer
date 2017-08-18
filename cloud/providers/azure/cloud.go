@@ -8,6 +8,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/arm/resources/resources"
 	"github.com/Azure/azure-sdk-for-go/arm/storage"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/appscode/errors"
 	"github.com/appscode/pharmer/api"
@@ -34,22 +35,22 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	subscriptionID, ok := cluster.CloudCredential[credential.AzureSubscriptionID]
+	subscriptionID, ok := cluster.Spec.CloudCredential[credential.AzureSubscriptionID]
 	if !ok {
 		return nil, errors.New("Missing", credential.AzureSubscriptionID).WithContext(ctx).Err()
 	}
 
-	tenantID, ok := cluster.CloudCredential[credential.AzureTenantID]
+	tenantID, ok := cluster.Spec.CloudCredential[credential.AzureTenantID]
 	if !ok {
 		return nil, errors.New("Missing", credential.AzureTenantID).WithContext(ctx).Err()
 	}
 
-	clientID, ok := cluster.CloudCredential[credential.AzureClientID]
+	clientID, ok := cluster.Spec.CloudCredential[credential.AzureClientID]
 	if !ok {
 		return nil, errors.New("Missing", credential.AzureClientID).WithContext(ctx).Err()
 	}
 
-	clientSecret, ok := cluster.CloudCredential[credential.AzureClientSecret]
+	clientSecret, ok := cluster.Spec.CloudCredential[credential.AzureClientSecret]
 	if !ok {
 		return nil, errors.New("Missing", credential.AzureClientSecret).WithContext(ctx).Err()
 	}
@@ -66,24 +67,23 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	*/
 	baseURI := azure.PublicCloud.ResourceManagerEndpoint
 
-	config, err := azure.PublicCloud.OAuthConfigForTenant(tenantID)
+	config, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, tenantID)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
 	}
 
-	spt, err := azure.NewServicePrincipalToken(*config, clientID, clientSecret, baseURI)
+	spt, err := adal.NewServicePrincipalToken(*config, clientID, clientSecret, baseURI)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
 	}
 
 	client := autorest.NewClientWithUserAgent(fmt.Sprintf("Azure-SDK-for-Go/%s", compute.Version()))
-	client.Authorizer = spt
+	client.Authorizer = autorest.NewBearerAuthorizer(spt)
 
 	availabilitySetsClient := compute.AvailabilitySetsClient{
 		ManagementClient: compute.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			APIVersion:     compute.APIVersion,
 			SubscriptionID: subscriptionID,
 		},
 	}
@@ -91,7 +91,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: compute.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			APIVersion:     compute.APIVersion,
 			SubscriptionID: subscriptionID,
 		},
 	}
@@ -99,7 +98,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: compute.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			APIVersion:     compute.APIVersion,
 			SubscriptionID: subscriptionID,
 		},
 	}
@@ -108,7 +106,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: resources.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			APIVersion:     resources.APIVersion,
 			SubscriptionID: subscriptionID,
 		},
 	}
@@ -116,7 +113,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			APIVersion:     network.APIVersion,
 			SubscriptionID: subscriptionID,
 		},
 	}
@@ -124,7 +120,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			APIVersion:     network.APIVersion,
 			SubscriptionID: subscriptionID,
 		},
 	}
@@ -132,7 +127,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			APIVersion:     network.APIVersion,
 			SubscriptionID: subscriptionID,
 		},
 	}
@@ -140,7 +134,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			APIVersion:     network.APIVersion,
 			SubscriptionID: subscriptionID,
 		},
 	}
@@ -148,7 +141,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			APIVersion:     network.APIVersion,
 			SubscriptionID: subscriptionID,
 		},
 	}
@@ -156,7 +148,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			APIVersion:     network.APIVersion,
 			SubscriptionID: subscriptionID,
 		},
 	}
@@ -164,7 +155,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			APIVersion:     network.APIVersion,
 			SubscriptionID: subscriptionID,
 		},
 	}
@@ -173,7 +163,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: storage.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			APIVersion:     storage.APIVersion,
 			SubscriptionID: subscriptionID,
 		},
 	}

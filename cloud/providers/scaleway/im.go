@@ -1,4 +1,4 @@
-// Instance Provisioner: There is only 1 instance provisioner per cluster.
+// Instance Provisioner: There is only 1 instance provisioner per cluster.Spec.
 package scaleway
 
 import (
@@ -23,10 +23,10 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *api.KubernetesInstance
+	var instance *api.Instance
 	backoff.Retry(func() (err error) {
 		for {
 			var servers *[]sapi.ScalewayServer
@@ -41,9 +41,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 						return
 					}
 					if master {
-						instance.Role = api.RoleKubernetesMaster
+						instance.Spec.Role = api.RoleKubernetesMaster
 					} else {
-						instance.Role = api.RoleKubernetesPool
+						instance.Spec.Role = api.RoleKubernetesPool
 					}
 					return
 				}
@@ -65,7 +65,7 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 	}
 	serverID, err := im.conn.client.PostServer(sapi.ScalewayServerDefinition{
 		Name:  name,
-		Image: types.StringP(im.cluster.InstanceImage),
+		Image: types.StringP(im.cluster.Spec.InstanceImage),
 		//Volumes map[string]string `json:"volumes,omitempty"`
 		DynamicIPRequired: types.TrueP(),
 		Bootscript:        types.StringP(im.conn.bootscriptID),
@@ -102,7 +102,7 @@ func (im *instanceManager) storeConfigFile(serverID, role string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	dataKey := fmt.Sprintf("kubernetes_context_%v_%v.yaml", im.cluster.ResourceVersion, role)
+	dataKey := fmt.Sprintf("kubernetes_context_%v_%v.yaml", im.cluster.Spec.ResourceVersion, role)
 	return im.conn.client.PatchUserdata(serverID, dataKey, []byte(cfg), false)
 }
 
@@ -114,16 +114,16 @@ func (im *instanceManager) storeStartupScript(serverID, sku, role string) error 
 }
 
 func (im *instanceManager) RenderStartupScript(sku, role string) string {
-	cmd := fmt.Sprintf(`CONFIG=$(/usr/bin/curl 169.254.42.42/user_data/kubernetes_context_%v_%v.yaml --local-port 1-1024)`, im.cluster.ResourceVersion, role)
+	cmd := fmt.Sprintf(`CONFIG=$(/usr/bin/curl 169.254.42.42/user_data/kubernetes_context_%v_%v.yaml --local-port 1-1024)`, im.cluster.Spec.ResourceVersion, role)
 	return fmt.Sprintf(`%v
 systemctl start kube-installer.service
 `, cloud.RenderKubeInstaller(im.cluster, sku, role, cmd))
 }
 
-func (im *instanceManager) executeStartupScript(instance *api.KubernetesInstance, signer ssh.Signer) error {
-	im.ctx.Logger().Infof("SSH execing start command %v", instance.ExternalIP+":22")
+func (im *instanceManager) executeStartupScript(instance *api.Instance, signer ssh.Signer) error {
+	im.ctx.Logger().Infof("SSH execing start command %v", instance.Status.ExternalIP+":22")
 
-	stdOut, stdErr, code, err := sshtools.Exec(`/usr/bin/curl 169.254.42.42/user_data/kubernetes_startupscript.sh --local-port 1-1024 2> /dev/null | bash`, "root", instance.ExternalIP+":22", signer)
+	stdOut, stdErr, code, err := sshtools.Exec(`/usr/bin/curl 169.254.42.42/user_data/kubernetes_startupscript.sh --local-port 1-1024 2> /dev/null | bash`, "root", instance.Status.ExternalIP+":22", signer)
 	im.ctx.Logger().Infoln(stdOut, stdErr, code)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
@@ -131,7 +131,7 @@ func (im *instanceManager) executeStartupScript(instance *api.KubernetesInstance
 	return nil
 }
 
-func (im *instanceManager) newKubeInstance(id string) (*api.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(id string) (*api.Instance, error) {
 	s, err := im.conn.client.GetServer(id)
 	if err != nil {
 		return nil, cloud.InstanceNotFound
@@ -139,15 +139,21 @@ func (im *instanceManager) newKubeInstance(id string) (*api.KubernetesInstance, 
 	return im.newKubeInstanceFromServer(s)
 }
 
-func (im *instanceManager) newKubeInstanceFromServer(droplet *sapi.ScalewayServer) (*api.KubernetesInstance, error) {
-	return &api.KubernetesInstance{
-		PHID:           phid.NewKubeInstance(),
-		ExternalID:     droplet.Identifier,
-		ExternalStatus: droplet.State,
-		Name:           droplet.Name,
-		ExternalIP:     droplet.PublicAddress.IP,
-		InternalIP:     droplet.PrivateIP,
-		SKU:            droplet.CommercialType,
-		Status:         api.KubernetesInstanceStatus_Ready, // droplet.Status == active
+func (im *instanceManager) newKubeInstanceFromServer(droplet *sapi.ScalewayServer) (*api.Instance, error) {
+	return &api.Instance{
+		ObjectMeta: api.ObjectMeta{
+			UID:  phid.NewKubeInstance(),
+			Name: droplet.Name,
+		},
+		Spec: api.InstanceSpec{
+			SKU: droplet.CommercialType,
+		},
+		Status: api.InstanceStatus{
+			ExternalID:    droplet.Identifier,
+			ExternalPhase: droplet.State,
+			ExternalIP:    droplet.PublicAddress.IP,
+			InternalIP:    droplet.PrivateIP,
+			Phase:         api.InstancePhaseReady, // droplet.Status == active
+		},
 	}, nil
 }

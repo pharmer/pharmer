@@ -20,14 +20,14 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *api.KubernetesInstance
+	var instance *api.Instance
 	backoff.Retry(func() (err error) {
 		for {
 			var servers []packngo.Device
-			servers, _, err = im.conn.client.Devices.List(im.cluster.Project)
+			servers, _, err = im.conn.client.Devices.List(im.cluster.Spec.Project)
 			if err != nil {
 				return
 			}
@@ -39,9 +39,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 							return
 						}
 						if master {
-							instance.Role = api.RoleKubernetesMaster
+							instance.Spec.Role = api.RoleKubernetesMaster
 						} else {
-							instance.Role = api.RoleKubernetesPool
+							instance.Spec.Role = api.RoleKubernetesPool
 						}
 						return
 					}
@@ -62,10 +62,10 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 	device, _, err := im.conn.client.Devices.Create(&packngo.DeviceCreateRequest{
 		HostName:     name,
 		Plan:         sku,
-		Facility:     im.cluster.Zone,
-		OS:           im.cluster.InstanceImage,
+		Facility:     im.cluster.Spec.Zone,
+		OS:           im.cluster.Spec.InstanceImage,
 		BillingCycle: "hourly",
-		ProjectID:    im.cluster.Project,
+		ProjectID:    im.cluster.Spec.Project,
 		UserData:     startupScript,
 		Tags:         []string{im.cluster.Name},
 	})
@@ -126,7 +126,7 @@ EOF
 `, strings.Replace(cloud.RenderKubeStarter(im.cluster, sku, cmd), "$", "\\$", -1), reboot)
 }
 
-func (im *instanceManager) newKubeInstance(id string) (*api.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(id string) (*api.Instance, error) {
 	s, _, err := im.conn.client.Devices.Get(id)
 	if err != nil {
 		return nil, cloud.InstanceNotFound
@@ -134,23 +134,29 @@ func (im *instanceManager) newKubeInstance(id string) (*api.KubernetesInstance, 
 	return im.newKubeInstanceFromServer(s)
 }
 
-func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*api.KubernetesInstance, error) {
-	ki := &api.KubernetesInstance{
-		PHID:           phid.NewKubeInstance(),
-		ExternalID:     droplet.ID,
-		ExternalStatus: droplet.State,
-		Name:           droplet.Hostname,
-		// ExternalIP:     droplet.PublicAddress.IP,
-		// InternalIP:     droplet.PrivateIP,
-		SKU:    droplet.Plan.ID,
-		Status: api.KubernetesInstanceStatus_Ready, // droplet.Status == active
+func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*api.Instance, error) {
+	ki := &api.Instance{
+		ObjectMeta: api.ObjectMeta{
+			UID:  phid.NewKubeInstance(),
+			Name: droplet.Hostname,
+		},
+		Spec: api.InstanceSpec{
+			SKU: droplet.Plan.ID,
+		},
+		Status: api.InstanceStatus{
+			// ExternalIP:     droplet.PublicAddress.IP,
+			// InternalIP:     droplet.PrivateIP,
+			ExternalID:    droplet.ID,
+			ExternalPhase: droplet.State,
+			Phase:         api.InstancePhaseReady, // droplet.Status == active
+		},
 	}
 	for _, addr := range droplet.Network {
 		if addr.AddressFamily == 4 {
 			if addr.Public {
-				ki.ExternalIP = addr.Address
+				ki.Status.ExternalIP = addr.Address
 			} else {
-				ki.InternalIP = addr.Address
+				ki.Status.InternalIP = addr.Address
 			}
 		}
 	}

@@ -11,17 +11,17 @@ var InstanceNotFound = errors.New("Instance not found")
 var UnsupportedOperation = errors.New("Unsupported operation")
 
 func BuildRuntimeConfig(cluster *api.Cluster) {
-	if cluster.EnableThirdPartyResource {
-		if cluster.RuntimeConfig == "" {
-			cluster.RuntimeConfig = "extensions/v1beta1=true,extensions/v1beta1/thirdpartyresources=true"
+	if cluster.Spec.EnableThirdPartyResource {
+		if cluster.Spec.RuntimeConfig == "" {
+			cluster.Spec.RuntimeConfig = "extensions/v1beta1=true,extensions/v1beta1/thirdpartyresources=true"
 		} else {
-			cluster.RuntimeConfig += ",extensions/v1beta1=true,extensions/v1beta1/thirdpartyresources=true"
+			cluster.Spec.RuntimeConfig += ",extensions/v1beta1=true,extensions/v1beta1/thirdpartyresources=true"
 		}
 	}
 
-	version, err := semver.NewVersion(cluster.KubernetesVersion)
+	version, err := semver.NewVersion(cluster.Spec.KubernetesVersion)
 	if err != nil {
-		version, err = semver.NewVersion(cluster.KubernetesVersion)
+		version, err = semver.NewVersion(cluster.Spec.KubernetesVersion)
 		if err != nil {
 			return
 		}
@@ -31,43 +31,43 @@ func BuildRuntimeConfig(cluster *api.Cluster) {
 	v_1_4, _ := semver.NewConstraint(">= 1.4")
 	if v_1_4.Check(version) {
 		// Enable ScheduledJobs: http://kubernetes.io/docs/user-guide/scheduled-jobs/#prerequisites
-		if cluster.EnableScheduledJobResource {
-			if cluster.RuntimeConfig == "" {
-				cluster.RuntimeConfig = "batch/v2alpha1"
+		if cluster.Spec.EnableScheduledJobResource {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "batch/v2alpha1"
 			} else {
-				cluster.RuntimeConfig += ",batch/v2alpha1"
+				cluster.Spec.RuntimeConfig += ",batch/v2alpha1"
 			}
 		}
 
 		// http://kubernetes.io/docs/admin/authentication/
-		if cluster.EnableWebhookTokenAuthentication {
-			if cluster.RuntimeConfig == "" {
-				cluster.RuntimeConfig = "authentication.k8s.io/v1beta1=true"
+		if cluster.Spec.EnableWebhookTokenAuthentication {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "authentication.k8s.io/v1beta1=true"
 			} else {
-				cluster.RuntimeConfig += ",authentication.k8s.io/v1beta1=true"
+				cluster.Spec.RuntimeConfig += ",authentication.k8s.io/v1beta1=true"
 			}
 		}
 
 		// http://kubernetes.io/docs/admin/authorization/
-		if cluster.EnableWebhookTokenAuthorization {
-			if cluster.RuntimeConfig == "" {
-				cluster.RuntimeConfig = "authorization.k8s.io/v1beta1=true"
+		if cluster.Spec.EnableWebhookTokenAuthorization {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "authorization.k8s.io/v1beta1=true"
 			} else {
-				cluster.RuntimeConfig += ",authorization.k8s.io/v1beta1=true"
+				cluster.Spec.RuntimeConfig += ",authorization.k8s.io/v1beta1=true"
 			}
 		}
-		if cluster.EnableRBACAuthorization {
-			if cluster.RuntimeConfig == "" {
-				cluster.RuntimeConfig = "rbac.authorization.k8s.io/v1alpha1=true"
+		if cluster.Spec.EnableRBACAuthorization {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "rbac.authorization.k8s.io/v1alpha1=true"
 			} else {
-				cluster.RuntimeConfig += ",rbac.authorization.k8s.io/v1alpha1=true"
+				cluster.Spec.RuntimeConfig += ",rbac.authorization.k8s.io/v1alpha1=true"
 			}
 		}
 	}
 }
 
 func UpgradeRequired(cluster *api.Cluster, req *proto.ClusterReconfigureRequest) bool {
-	return cluster.KubernetesVersion != req.KubeletVersion
+	return cluster.Spec.KubernetesVersion != req.KubeletVersion
 }
 
 /*
@@ -80,7 +80,7 @@ func NewInstances(ctx *contexts.ClusterContext) (*contexts.ClusterInstances, err
 }
 */
 
-func SyncAddedInstances(ctx *api.Cluster, instances []*api.KubernetesInstance, purchasePHIDs []string) (int, error) {
+func SyncAddedInstances(ctx *api.Cluster, instances []*api.Instance, purchasePHIDs []string) (int, error) {
 	return 0, nil
 	/*
 		m := make(map[string]*contexts.KubernetesInstance)
@@ -130,7 +130,7 @@ func SyncAddedInstances(ctx *api.Cluster, instances []*api.KubernetesInstance, p
 	*/
 }
 
-func SyncDeletedInstances(ctx *api.Cluster, sku string, instances []*api.KubernetesInstance) error {
+func SyncDeletedInstances(ctx *api.Cluster, sku string, instances []*api.Instance) error {
 	return nil
 	/*
 		m := make(map[string]*contexts.KubernetesInstance)
@@ -149,12 +149,12 @@ func SyncDeletedInstances(ctx *api.Cluster, sku string, instances []*api.Kuberne
 		deletedNode := 0
 		for _, i := range ctx.Instances {
 			if _, found := m[i.ExternalID]; !found && i.SKU == sku && i.Role == api.RoleKubernetesPool {
-				updates := &storage.KubernetesInstance{Status: api.KubernetesInstanceStatus_Deleted}
+				updates := &storage.KubernetesInstance{Status: api.InstancePhaseDeleted}
 				cond := &storage.KubernetesInstance{PHID: i.PHID}
 				if _, err := ctx.Store().Engine.Update(updates, cond); err != nil {
 					return errors.FromErr(err).WithContext(ctx).Err()
 				}
-				i.Status = api.KubernetesInstanceStatus_Deleted
+				i.Status = api.InstancePhaseDeleted
 				ki := &storage.Purchase{
 					ObjectPHID: i.PHID,
 					Status:     storage.ChargeStatus_Close,

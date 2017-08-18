@@ -157,23 +157,23 @@ func Mutator(cluster *api.Cluster, expectedInstance Instance) (int64, error) {
 
 }
 
-func AdjustDbInstance(ctx context.Context, cm *api.ClusterInstances, instances []*api.KubernetesInstance, sku string) error {
-	dbNodes := make(map[string]*api.KubernetesInstance)
-	clusterNodes := make(map[string]*api.KubernetesInstance)
+func AdjustDbInstance(ctx context.Context, cm *api.ClusterInstances, instances []*api.Instance, sku string) error {
+	dbNodes := make(map[string]*api.Instance)
+	clusterNodes := make(map[string]*api.Instance)
 	for _, i := range cm.Instances {
-		dbNodes[i.ExternalID] = i
+		dbNodes[i.Status.ExternalID] = i
 	}
 	// add newely inserted node
 	for _, i := range instances {
-		if _, found := dbNodes[i.ExternalID]; !found {
+		if _, found := dbNodes[i.Status.ExternalID]; !found {
 			cm.Instances = append(cm.Instances, i)
 		}
-		clusterNodes[i.ExternalID] = i
+		clusterNodes[i.Status.ExternalID] = i
 	}
 	// remote delete node
 	for ix, i := range cm.Instances {
-		if _, found := clusterNodes[i.ExternalID]; !found && i.SKU == sku && i.Role == api.RoleKubernetesPool {
-			cm.Instances[ix].Status = api.KubernetesInstanceStatus_Deleted
+		if _, found := clusterNodes[i.Status.ExternalID]; !found && i.Spec.SKU == sku && i.Spec.Role == api.RoleKubernetesPool {
+			cm.Instances[ix].Status.Phase = api.InstancePhaseDeleted
 		}
 	}
 

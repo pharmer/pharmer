@@ -15,10 +15,10 @@ const (
 )
 
 const (
-	JobStatus_Requested = "REQUESTED"
-	JobStatus_Running   = "RUNNING"
-	JobStatus_Done      = "DONE"
-	JobStatus_Failed    = "FAILED"
+	JobPhaseRequested = "REQUESTED"
+	JobPhaseRunning   = "RUNNING"
+	JobPhaseDone      = "DONE"
+	JobPhaseFailed    = "FAILED"
 )
 
 /*
@@ -46,12 +46,12 @@ const (
    +---------+
 */
 const (
-	KubernetesStatus_Pending  = "PENDING"
-	KubernetesStatus_Failing  = "FAILING"
-	KubernetesStatus_Failed   = "FAILED"
-	KubernetesStatus_Ready    = "READY"
-	KubernetesStatus_Deleting = "DELETING"
-	KubernetesStatus_Deleted  = "DELETED"
+	ClusterPhasePending  = "PENDING"
+	ClusterPhaseFailing  = "FAILING"
+	ClusterPhaseFailed   = "FAILED"
+	ClusterPhaseReady    = "READY"
+	ClusterPhaseDeleting = "DELETING"
+	ClusterPhaseDeleted  = "DELETED"
 
 	// ref: https://github.com/liggitt/kubernetes.github.io/blob/1d14da9c42266801c9ac13cb9608b9f8010dda49/docs/admin/authorization/rbac.md#default-clusterroles-and-clusterrolebindings
 	KubernetesAccessModeGroupTeamAdmin    = "kubernetes:team-admin"
@@ -63,6 +63,6 @@ const (
 )
 
 const (
-	KubernetesInstanceStatus_Ready   = "READY"
-	KubernetesInstanceStatus_Deleted = "DELETED"
+	InstancePhaseReady   = "READY"
+	InstancePhaseDeleted = "DELETED"
 )

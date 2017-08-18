@@ -24,23 +24,23 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	}
 	cm.namer = namer{cluster: cm.cluster}
 
-	//cluster.ctx.Name = req.Name
-	//cluster.ctx.PHID = phid.NewKubeCluster()
-	//cluster.ctx.Provider = req.Provider
-	//cluster.ctx.Zone = req.Zone
+	//cluster.Spec.ctx.Name = req.Name
+	//cluster.Spec.ctx.PHID = phid.NewKubeCluster()
+	//cluster.Spec.ctx.Provider = req.Provider
+	//cluster.Spec.ctx.Zone = req.Zone
 
-	cm.cluster.Region = cm.cluster.Zone[:len(cm.cluster.Zone)-2]
-	cm.cluster.DoNotDelete = req.DoNotDelete
+	cm.cluster.Spec.Region = cm.cluster.Spec.Zone[:len(cm.cluster.Spec.Zone)-2]
+	cm.cluster.Spec.DoNotDelete = req.DoNotDelete
 
 	cm.cluster.SetNodeGroups(req.NodeGroups)
 
-	cm.cluster.KubernetesMasterName = cm.namer.MasterName()
-	cm.cluster.SSHKey, err = api.NewSSHKeyPair()
+	cm.cluster.Spec.KubernetesMasterName = cm.namer.MasterName()
+	cm.cluster.Spec.SSHKey, err = api.NewSSHKeyPair()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.cluster.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
-	cm.cluster.SSHKeyPHID = phid.NewSSHKey()
+	cm.cluster.Spec.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
+	cm.cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
 	cloud.GenClusterTokens(cm.cluster)
 
 	return nil
@@ -52,11 +52,11 @@ func (cm *clusterManager) LoadDefaultContext() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.cluster.OS = "DEBIAN_8_64"
-	cm.cluster.MasterSKU = "1c2m"
+	cm.cluster.Spec.OS = "DEBIAN_8_64"
+	cm.cluster.Spec.MasterSKU = "1c2m"
 
-	cm.cluster.EnableClusterVPN = ""
-	cm.cluster.VpnPsk = ""
+	cm.cluster.Spec.EnableClusterVPN = ""
+	cm.cluster.Spec.VpnPsk = ""
 	return nil
 }
 

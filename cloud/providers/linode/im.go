@@ -31,10 +31,10 @@ const (
 	LinodeStatus_PoweredOff   = 2
 )
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *api.KubernetesInstance
+	var instance *api.Instance
 	backoff.Retry(func() error {
 		resp, err := im.conn.client.Ip.List(0, 0)
 		if err != nil {
@@ -51,10 +51,10 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 					return err
 				}
 				if master {
-					instance.Role = api.RoleKubernetesMaster
+					instance.Spec.Role = api.RoleKubernetesMaster
 				} else {
 					instance.Name = im.cluster.Name + "-node-" + strconv.Itoa(fip.LinodeId)
-					instance.Role = api.RoleKubernetesPool
+					instance.Spec.Role = api.RoleKubernetesPool
 				}
 				return nil
 			}
@@ -70,7 +70,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 
 func (im *instanceManager) createStackScript(sku, role string) (int, error) {
 	startupScript := im.RenderStartupScript(sku, role)
-	script, err := im.conn.client.StackScript.Create(im.namer.StartupScriptName(sku, role), im.cluster.InstanceImage, startupScript, map[string]string{
+	script, err := im.conn.client.StackScript.Create(im.namer.StartupScriptName(sku, role), im.cluster.Spec.InstanceImage, startupScript, map[string]string{
 		"Description": im.cluster.Name,
 	})
 	if err != nil {
@@ -153,7 +153,7 @@ EOF
 }
 
 func (im *instanceManager) createInstance(name string, scriptId int, sku string) (int, int, error) {
-	dcId, err := strconv.Atoi(im.cluster.Zone)
+	dcId, err := strconv.Atoi(im.cluster.Spec.Zone)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -185,20 +185,20 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
   "stack_script_id": "%v"
 }`, im.cluster.Name, name, scriptId)
 	args := map[string]string{
-		"rootSSHKey": string(im.cluster.SSHKey.PublicKey),
+		"rootSSHKey": string(im.cluster.Spec.SSHKey.PublicKey),
 	}
 
 	mt, err := data.ClusterMachineType("linode", sku)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	distributionID, err := strconv.Atoi(im.cluster.InstanceImage)
+	distributionID, err := strconv.Atoi(im.cluster.Spec.InstanceImage)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	swapDiskSize := 512                // MB
 	rootDiskSize := mt.Disk*1024 - 512 // MB
-	rootDisk, err := im.conn.client.Disk.CreateFromStackscript(scriptId, id, name, stackScriptUDFResponses, distributionID, rootDiskSize, im.cluster.InstanceRootPassword, args)
+	rootDisk, err := im.conn.client.Disk.CreateFromStackscript(scriptId, id, name, stackScriptUDFResponses, distributionID, rootDiskSize, im.cluster.Spec.InstanceRootPassword, args)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -207,7 +207,7 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 
-	kernelId, err := strconv.Atoi(im.cluster.Kernel)
+	kernelId, err := strconv.Atoi(im.cluster.Spec.Kernel)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -248,7 +248,7 @@ func (im *instanceManager) bootToGrub2(linodeId, configId int, name string) erro
 	return err
 }
 
-func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.Instance, error) {
 	var externalIP, internalIP string
 	ips, err := im.conn.client.Ip.List(linode.LinodeId, -1)
 	if err != nil {
@@ -261,15 +261,21 @@ func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.Kubern
 			internalIP = ip.IPAddress
 		}
 		if externalIP != "" && internalIP != "" {
-			i := api.KubernetesInstance{
-				PHID:           phid.NewKubeInstance(),
-				ExternalID:     strconv.Itoa(linode.LinodeId),
-				Name:           linode.Label.String(),
-				ExternalIP:     externalIP,
-				InternalIP:     internalIP,
-				SKU:            strconv.Itoa(linode.PlanId),
-				Status:         api.KubernetesInstanceStatus_Ready,
-				ExternalStatus: statusString(linode.Status),
+			i := api.Instance{
+				ObjectMeta: api.ObjectMeta{
+					UID:  phid.NewKubeInstance(),
+					Name: linode.Label.String(),
+				},
+				Spec: api.InstanceSpec{
+					SKU: strconv.Itoa(linode.PlanId),
+				},
+				Status: api.InstanceStatus{
+					ExternalID:    strconv.Itoa(linode.LinodeId),
+					ExternalIP:    externalIP,
+					InternalIP:    internalIP,
+					Phase:         api.InstancePhaseReady,
+					ExternalPhase: statusString(linode.Status),
+				},
 			}
 			return &i, nil
 		}

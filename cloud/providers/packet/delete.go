@@ -14,10 +14,10 @@ import (
 func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
-	if cm.cluster.Status == api.KubernetesStatus_Pending {
-		cm.cluster.Status = api.KubernetesStatus_Failing
-	} else if cm.cluster.Status == api.KubernetesStatus_Ready {
-		cm.cluster.Status = api.KubernetesStatus_Deleting
+	if cm.cluster.Status.Phase == api.ClusterPhasePending {
+		cm.cluster.Status.Phase = api.ClusterPhaseFailing
+	} else if cm.cluster.Status.Phase == api.ClusterPhaseReady {
+		cm.cluster.Status.Phase = api.ClusterPhaseDeleting
 	}
 	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
@@ -25,36 +25,36 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	if cm.conn == nil {
 		cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 		if err != nil {
-			cm.cluster.StatusCause = err.Error()
+			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
 	cm.namer = namer{cluster: cm.cluster}
 	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins.Instances, err = cm.ctx.Store().Instances().LoadInstances(cm.cluster.Name)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	var errs []string
-	if cm.cluster.StatusCause != "" {
-		errs = append(errs, cm.cluster.StatusCause)
+	if cm.cluster.Status.Reason != "" {
+		errs = append(errs, cm.cluster.Status.Reason)
 	}
 
 	for _, i := range cm.ins.Instances {
 		backoff.Retry(func() error {
-			_, err := cm.conn.client.Devices.Delete(i.ExternalID)
+			_, err := cm.conn.client.Devices.Delete(i.Status.ExternalID)
 			if err != nil {
 				return err
 			}
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger().Infof("Droplet %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.cluster.Name)
+		cm.ctx.Logger().Infof("Droplet %v with id %v for clutser is deleted", i.Name, i.Status.ExternalID, cm.cluster.Name)
 	}
 
 	// Delete SSH key from DB
@@ -68,8 +68,8 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 
 	if len(errs) > 0 {
 		// Preserve statusCause for failed cluster
-		if cm.cluster.Status == api.KubernetesStatus_Deleting {
-			cm.cluster.StatusCause = strings.Join(errs, "\n")
+		if cm.cluster.Status.Phase == api.ClusterPhaseDeleting {
+			cm.cluster.Status.Reason = strings.Join(errs, "\n")
 		}
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
@@ -81,14 +81,14 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 func (cm *clusterManager) deleteSSHKey() (err error) {
 	cm.ctx.Logger().Infof("Deleting SSH key for cluster", cm.cluster.Name)
 
-	if cm.cluster.SSHKey != nil {
+	if cm.cluster.Spec.SSHKey != nil {
 		backoff.Retry(func() error {
-			_, err := cm.conn.client.SSHKeys.Delete(cm.cluster.SSHKeyExternalID)
+			_, err := cm.conn.client.SSHKeys.Delete(cm.cluster.Spec.SSHKeyExternalID)
 			return err
 		}, backoff.NewExponentialBackOff())
 	}
 
-	if cm.cluster.SSHKeyPHID != "" {
+	if cm.cluster.Spec.SSHKeyPHID != "" {
 		//updates := &storage.SSHKey{IsDeleted: 1}
 		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
 		//_, err = cm.ctx.Store().Engine.Update(updates, cond)

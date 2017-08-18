@@ -15,10 +15,10 @@ import (
 func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
-	if cm.cluster.Status == api.KubernetesStatus_Pending {
-		cm.cluster.Status = api.KubernetesStatus_Failing
-	} else if cm.cluster.Status == api.KubernetesStatus_Ready {
-		cm.cluster.Status = api.KubernetesStatus_Deleting
+	if cm.cluster.Status.Phase == api.ClusterPhasePending {
+		cm.cluster.Status.Phase = api.ClusterPhaseFailing
+	} else if cm.cluster.Status.Phase == api.ClusterPhaseReady {
+		cm.cluster.Status.Phase = api.ClusterPhaseDeleting
 	}
 	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
@@ -26,30 +26,30 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	if cm.conn == nil {
 		cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 		if err != nil {
-			cm.cluster.StatusCause = err.Error()
+			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
 	cm.namer = namer{cluster: cm.cluster}
 	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins.Instances, err = cm.ctx.Store().Instances().LoadInstances(cm.cluster.Name)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	var errs []string
-	if cm.cluster.StatusCause != "" {
-		errs = append(errs, cm.cluster.StatusCause)
+	if cm.cluster.Status.Reason != "" {
+		errs = append(errs, cm.cluster.Status.Reason)
 	}
 
 	for _, i := range cm.ins.Instances {
 		backoff.Retry(func() error {
-			linodeId, err := strconv.Atoi(i.ExternalID)
+			linodeId, err := strconv.Atoi(i.Status.ExternalID)
 			if err != nil {
 				return err
 			}
@@ -59,7 +59,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 			}
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger().Infof("Linode %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.cluster.Name)
+		cm.ctx.Logger().Infof("Linode %v with id %v for clutser is deleted", i.Name, i.Status.ExternalID, cm.cluster.Name)
 	}
 
 	backoff.Retry(cm.deleteStackscripts, backoff.NewExponentialBackOff())
@@ -75,8 +75,8 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 
 	if len(errs) > 0 {
 		// Preserve statusCause for failed cluster
-		if cm.cluster.Status == api.KubernetesStatus_Deleting {
-			cm.cluster.StatusCause = strings.Join(errs, "\n")
+		if cm.cluster.Status.Phase == api.ClusterPhaseDeleting {
+			cm.cluster.Status.Reason = strings.Join(errs, "\n")
 		}
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
@@ -102,11 +102,11 @@ func (cm *clusterManager) deleteStackscripts() error {
 }
 
 func (cm *clusterManager) deleteSSHKey() (err error) {
-	if cm.cluster.SSHKeyPHID != "" {
+	if cm.cluster.Spec.SSHKeyPHID != "" {
 		//updates := &storage.SSHKey{IsDeleted: 1}
 		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
 		//_, err = cm.ctx.Store().Engine.Update(updates, cond)
-		//cm.ctx.Notifier.StoreAndNotify(api.JobStatus_Running, fmt.Sprintf("SSH key for cluster %v deleted", cm.ctx.MasterDiskId))
+		//cm.ctx.Notifier.StoreAndNotify(api.JobPhaseRunning, fmt.Sprintf("SSH key for cluster %v deleted", cm.ctx.MasterDiskId))
 	}
 	return
 }

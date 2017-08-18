@@ -50,11 +50,11 @@ func (p *provider) UploadStartupConfig(ctx go_ctx.Context) error {
 	return nil
 }
 
-func (p *provider) GetInstance(ctx go_ctx.Context, md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
-	return &api.KubernetesInstance{}, nil
+func (p *provider) GetInstance(ctx go_ctx.Context, md *api.InstanceMetadata) (*api.Instance, error) {
+	return &api.Instance{}, nil
 }
 
-func (p *provider) MatchInstance(i *api.KubernetesInstance, md *api.InstanceMetadata) bool {
+func (p *provider) MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool {
 	return true
 }
 

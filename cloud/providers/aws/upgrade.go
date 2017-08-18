@@ -23,17 +23,17 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	if cm.conn == nil {
 		conn, err := NewConnector(cm.cluster)
 		if err != nil {
-			cm.cluster.StatusCause = err.Error()
+			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		cm.conn = conn
 	}
 
-	cm.cluster.ResourceVersion = int64(0)
+	cm.cluster.Spec.ResourceVersion = int64(0)
 	cm.namer = namer{cluster: cm.cluster}
 	// assign new timestamp and new launch_config version
-	cm.cluster.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
-	cm.cluster.KubernetesVersion = req.Version
+	cm.cluster.Spec.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
+	cm.cluster.Spec.KubernetesVersion = req.Version
 
 	err := cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 	if err != nil {
@@ -45,18 +45,18 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if !exists {
-		return errors.Newf("VPC %v not found for Cluster %v", cm.cluster.VpcId, cm.cluster.Name).WithContext(cm.ctx).Err()
+		return errors.Newf("VPC %v not found for Cluster %v", cm.cluster.Spec.VpcId, cm.cluster.Name).WithContext(cm.ctx).Err()
 	}
 
 	fmt.Println("Updating...")
 	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins.Instances, _ = cm.ctx.Store().Instances().LoadInstances(cm.cluster.Name)
 	if err = cm.conn.detectJessieImage(); err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if req.ApplyToMaster {
@@ -96,7 +96,7 @@ func (cm *clusterManager) restartMaster() error {
 	fmt.Println("Updating Master...")
 	cm.UploadStartupConfig()
 
-	masterInstanceID, err := cm.createMasterInstance(cm.cluster.KubernetesMasterName, api.RoleKubernetesMaster)
+	masterInstanceID, err := cm.createMasterInstance(cm.cluster.Spec.KubernetesMasterName, api.RoleKubernetesMaster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -109,9 +109,9 @@ func (cm *clusterManager) restartMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.Logger().Infof("Attaching persistent data volume %v to master", cm.cluster.MasterDiskId)
+	cm.ctx.Logger().Infof("Attaching persistent data volume %v to master", cm.cluster.Spec.MasterDiskId)
 	r1, err := cm.conn.ec2.AttachVolume(&_ec2.AttachVolumeInput{
-		VolumeId:   types.StringP(cm.cluster.MasterDiskId),
+		VolumeId:   types.StringP(cm.cluster.Spec.MasterDiskId),
 		Device:     types.StringP("/dev/sdb"),
 		InstanceId: types.StringP(masterInstanceID),
 	})
@@ -128,12 +128,12 @@ func (cm *clusterManager) restartMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	instance.Role = api.RoleKubernetesMaster
+	instance.Spec.Role = api.RoleKubernetesMaster
 	// cm.ins.Instances = nil
 	// cm.ins.Instances = append(cm.ins.Instances, instance)
 	for i := range cm.ins.Instances {
-		if cm.ins.Instances[i].Role == api.RoleKubernetesMaster {
-			cm.ins.Instances[i].Status = api.KubernetesInstanceStatus_Deleted
+		if cm.ins.Instances[i].Spec.Role == api.RoleKubernetesMaster {
+			cm.ins.Instances[i].Status.Phase = api.InstancePhaseDeleted
 		}
 	}
 	cm.ins.Instances = append(cm.ins.Instances, instance)
@@ -172,7 +172,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 		}
 		instances := []string{}
 		for _, instance := range oldinstances {
-			instances = append(instances, instance.ExternalID)
+			instances = append(instances, instance.Status.ExternalID)
 		}
 		err = cm.rollingUpdate(instances, newLaunchConfig, sku)
 		if err != nil {
@@ -184,7 +184,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
-		// cluster.ctx.Instances = append(cluster.ctx.Instances, instances...)
+		// cluster.Spec.ctx.Instances = append(cluster.Spec.ctx.Instances, instances...)
 		err = cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()

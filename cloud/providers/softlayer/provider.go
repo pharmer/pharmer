@@ -50,7 +50,7 @@ func (p *provider) UploadStartupConfig(ctx go_ctx.Context) error {
 	return cm.UploadStartupConfig(nil)
 }
 
-func (p *provider) GetInstance(ctx go_ctx.Context, md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (p *provider) GetInstance(ctx go_ctx.Context, md *api.InstanceMetadata) (*api.Instance, error) {
 	conn, err := NewConnector(nil)
 	if err != nil {
 		return nil, err
@@ -59,6 +59,6 @@ func (p *provider) GetInstance(ctx go_ctx.Context, md *api.InstanceMetadata) (*a
 	return im.GetInstance(md)
 }
 
-func (p *provider) MatchInstance(i *api.KubernetesInstance, md *api.InstanceMetadata) bool {
-	return i.InternalIP == md.InternalIP
+func (p *provider) MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool {
+	return i.Status.InternalIP == md.InternalIP
 }

@@ -84,7 +84,7 @@ func (n namer) BootDiskName(instanceName string) string {
 
 // https://k1g09f7j8mf0htzaq7mq4k8s.blob.core.windows.net/strgkubernetes/kubernetes-master-osdisk.vhd
 func (n namer) BootDiskURI(sa storage.Account, instanceName string) string {
-	return types.String(sa.PrimaryEndpoints.Blob) + n.cluster.AzureCloudConfig.StorageAccountName + "/" + instanceName + "-osdisk.vhd"
+	return types.String(sa.PrimaryEndpoints.Blob) + n.cluster.Spec.AzureCloudConfig.StorageAccountName + "/" + instanceName + "-osdisk.vhd"
 }
 
 func (n namer) BlobName(instanceName string) string {

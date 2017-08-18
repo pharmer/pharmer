@@ -25,10 +25,10 @@ type instanceManager struct {
 
 const DROPLET_IMAGE_SLUG = "ubuntu-16-04-x64"
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *api.KubernetesInstance
+	var instance *api.Instance
 	backoff.Retry(func() (err error) {
 		const pageSize = 50
 		curPage := 0
@@ -50,9 +50,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 				if internalIP == md.InternalIP {
 					instance, err = im.newKubeInstanceFromDroplet(&droplet)
 					if master {
-						instance.Role = api.RoleKubernetesMaster
+						instance.Spec.Role = api.RoleKubernetesMaster
 					} else {
-						instance.Role = api.RoleKubernetesPool
+						instance.Spec.Role = api.RoleKubernetesPool
 					}
 					return
 				}
@@ -73,18 +73,18 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 
 func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet, error) {
 	startupScript := im.RenderStartupScript(sku, role)
-	//imgID, err := strconv.Atoi(im.cluster.InstanceImage)
+	//imgID, err := strconv.Atoi(im.cluster.Spec.InstanceImage)
 	//if err != nil {
 	//	return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	//}
 	req := &godo.DropletCreateRequest{
 		Name:   name,
-		Region: im.cluster.Zone,
+		Region: im.cluster.Spec.Zone,
 		Size:   sku,
 		//Image:  godo.DropletCreateImage{ID: imgID},
 		Image: godo.DropletCreateImage{Slug: DROPLET_IMAGE_SLUG},
 		SSHKeys: []godo.DropletCreateSSHKey{
-			{Fingerprint: im.cluster.SSHKey.OpensshFingerprint},
+			{Fingerprint: im.cluster.Spec.SSHKey.OpensshFingerprint},
 			{Fingerprint: "0d:ff:0d:86:0c:f1:47:1d:85:67:1e:73:c6:0e:46:17"}, // tamal@beast
 			{Fingerprint: "c0:19:c1:81:c5:2e:6d:d9:a6:db:3c:f5:c5:fd:c8:1d"}, // tamal@mbp
 			{Fingerprint: "f6:66:c5:ad:e6:60:30:d9:ab:2c:7c:75:56:e2:d7:f3"}, // tamal@asus
@@ -97,7 +97,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 	}
 	if _env.FromHost().IsPublic() {
 		req.SSHKeys = []godo.DropletCreateSSHKey{
-			{Fingerprint: im.cluster.SSHKey.OpensshFingerprint},
+			{Fingerprint: im.cluster.Spec.SSHKey.OpensshFingerprint},
 		}
 	}
 	droplet, resp, err := im.conn.client.Droplets.Create(go_ctx.TODO(), req)
@@ -148,7 +148,7 @@ func (im *instanceManager) assignReservedIP(ip string, dropletID int) error {
 	return nil
 }
 
-func (im *instanceManager) newKubeInstance(id int) (*api.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {
 	droplet, _, err := im.conn.client.Droplets.Get(go_ctx.TODO(), id)
 	if err != nil {
 		return nil, cloud.InstanceNotFound
@@ -171,7 +171,7 @@ func (im *instanceManager) getInstanceId(name string) (int, error) {
 	return -1, errors.New("Instance not found").Err()
 }
 
-func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*api.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*api.Instance, error) {
 	var externalIP, internalIP string
 	externalIP, err := droplet.PublicIPv4()
 	if err != nil {
@@ -182,15 +182,21 @@ func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*a
 		return nil, err
 	}
 
-	return &api.KubernetesInstance{
-		PHID:           phid.NewKubeInstance(),
-		ExternalID:     strconv.Itoa(droplet.ID),
-		ExternalStatus: droplet.Status,
-		Name:           droplet.Name,
-		ExternalIP:     externalIP,
-		InternalIP:     internalIP,
-		SKU:            droplet.SizeSlug,                   // 512mb // convert to SKU
-		Status:         api.KubernetesInstanceStatus_Ready, // droplet.Status == active
+	return &api.Instance{
+		ObjectMeta: api.ObjectMeta{
+			UID:  phid.NewKubeInstance(),
+			Name: droplet.Name,
+		},
+		Spec: api.InstanceSpec{
+			SKU: droplet.SizeSlug, // 512mb // convert to SKU
+		},
+		Status: api.InstanceStatus{
+			ExternalID:    strconv.Itoa(droplet.ID),
+			ExternalPhase: droplet.Status,
+			ExternalIP:    externalIP,
+			InternalIP:    internalIP,
+			Phase:         api.InstancePhaseReady, // droplet.Status == active
+		},
 	}, nil
 }
 

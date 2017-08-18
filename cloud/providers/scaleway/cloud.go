@@ -19,16 +19,16 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	organization, ok := cluster.CloudCredential[credential.ScalewayOrganization]
+	organization, ok := cluster.Spec.CloudCredential[credential.ScalewayOrganization]
 	if !ok {
 		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.ScalewayOrganization)
 	}
-	token, ok := cluster.CloudCredential[credential.ScalewayToken]
+	token, ok := cluster.Spec.CloudCredential[credential.ScalewayToken]
 	if !ok {
 		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.ScalewayToken)
 	}
 
-	client, err := sapi.NewScalewayAPI(organization, token, "appscode", cluster.Zone)
+	client, err := sapi.NewScalewayAPI(organization, token, "appscode", cluster.Spec.Zone)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
 	}
@@ -47,7 +47,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 		if img.Name == "Debian Jessie" {
 			for _, v := range img.Versions {
 				for _, li := range v.LocalImages {
-					if li.Arch == "x86_64" && li.Zone == conn.cluster.Zone {
+					if li.Arch == "x86_64" && li.Zone == conn.cluster.Spec.Zone {
 						return li.ID, nil
 					}
 				}

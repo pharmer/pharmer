@@ -19,7 +19,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	token, ok := cluster.CloudCredential[credential.LinodeApiToken]
+	token, ok := cluster.Spec.CloudCredential[credential.LinodeApiToken]
 	if !ok {
 		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.LinodeApiToken)
 	}
@@ -38,8 +38,8 @@ func (conn *cloudConnector) detectInstanceImage() error {
 	conn.ctx.Logger().Infof("Checking for instance image")
 	for _, d := range resp.Distributions {
 		if d.Is64Bit == 1 && d.Label.String() == "Debian 8" {
-			conn.cluster.InstanceImage = strconv.Itoa(d.DistributionId)
-			conn.ctx.Logger().Infof("Instance image %v with id %v found", d.Label.String(), conn.cluster.InstanceImage)
+			conn.cluster.Spec.InstanceImage = strconv.Itoa(d.DistributionId)
+			conn.ctx.Logger().Infof("Instance image %v with id %v found", d.Label.String(), conn.cluster.Spec.InstanceImage)
 			return nil
 		}
 	}
@@ -57,7 +57,7 @@ func (conn *cloudConnector) detectKernel() error {
 	for _, d := range resp.Kernels {
 		if d.IsPVOPS == 1 {
 			if strings.HasPrefix(d.Label.String(), "Latest 64 bit") {
-				conn.cluster.Kernel = strconv.Itoa(d.KernelId)
+				conn.cluster.Spec.Kernel = strconv.Itoa(d.KernelId)
 				return nil
 			}
 			if strings.Contains(d.Label.String(), "x86_64") && d.KernelId > kernelId {
@@ -66,7 +66,7 @@ func (conn *cloudConnector) detectKernel() error {
 		}
 	}
 	if kernelId >= 0 {
-		conn.cluster.Kernel = strconv.Itoa(kernelId)
+		conn.cluster.Spec.Kernel = strconv.Itoa(kernelId)
 		return nil
 	}
 	return errors.New("Can't find Kernel").WithContext(conn.ctx).Err()

@@ -24,23 +24,23 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	}
 	cm.namer = namer{cluster: cm.cluster}
 
-	//cluster.ctx.Name = req.Name
-	//cluster.ctx.PHID = phid.NewKubeCluster()
-	//cluster.ctx.Provider = req.Provider
-	//cluster.ctx.Zone = req.Zone
+	//cluster.Spec.ctx.Name = req.Name
+	//cluster.Spec.ctx.PHID = phid.NewKubeCluster()
+	//cluster.Spec.ctx.Provider = req.Provider
+	//cluster.Spec.ctx.Zone = req.Zone
 
-	cm.cluster.Region = cm.cluster.Zone
-	cm.cluster.DoNotDelete = req.DoNotDelete
+	cm.cluster.Spec.Region = cm.cluster.Spec.Zone
+	cm.cluster.Spec.DoNotDelete = req.DoNotDelete
 
 	cm.cluster.SetNodeGroups(req.NodeGroups)
 
-	cm.cluster.KubernetesMasterName = cm.namer.MasterName()
-	cm.cluster.SSHKey, err = api.NewSSHKeyPair()
+	cm.cluster.Spec.KubernetesMasterName = cm.namer.MasterName()
+	cm.cluster.Spec.SSHKey, err = api.NewSSHKeyPair()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.cluster.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
-	cm.cluster.SSHKeyPHID = phid.NewSSHKey()
+	cm.cluster.Spec.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
+	cm.cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
 
 	cloud.GenClusterTokens(cm.cluster)
 
@@ -52,14 +52,14 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	if err != nil {
 		return err
 	}
-	cm.cluster.OS = "debian"
-	cm.cluster.MasterSKU = "94" // 2 cpu
+	cm.cluster.Spec.OS = "debian"
+	cm.cluster.Spec.MasterSKU = "94" // 2 cpu
 	// Using custom image with memory controller enabled
-	cm.cluster.InstanceImage = "16604964" // "container-os-20160402" // Debian 8.4 x64
+	cm.cluster.Spec.InstanceImage = "16604964" // "container-os-20160402" // Debian 8.4 x64
 
 	// https://discuss.vultr.com/discussion/197/what-is-the-meaning-of-enable-private-network
-	cm.cluster.EnableClusterVPN = ""
-	cm.cluster.VpnPsk = ""
+	cm.cluster.Spec.EnableClusterVPN = ""
+	cm.cluster.Spec.VpnPsk = ""
 	return nil
 }
 

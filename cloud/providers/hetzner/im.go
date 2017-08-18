@@ -23,7 +23,7 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 	servers, _, err := im.conn.client.Server.ListServers()
 	if err != nil {
@@ -36,9 +36,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 				return nil, err
 			}
 			if master {
-				instance.Role = api.RoleKubernetesMaster
+				instance.Spec.Role = api.RoleKubernetesMaster
 			} else {
-				instance.Role = api.RoleKubernetesPool
+				instance.Spec.Role = api.RoleKubernetesPool
 			}
 			return instance, nil
 
@@ -50,8 +50,8 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 func (im *instanceManager) createInstance(role, sku string) (*hc.Transaction, error) {
 	tx, _, err := im.conn.client.Ordering.CreateTransaction(&hc.CreateTransactionRequest{
 		ProductID:     sku,
-		AuthorizedKey: []string{im.cluster.SSHKey.OpensshFingerprint},
-		Dist:          im.cluster.InstanceImage,
+		AuthorizedKey: []string{im.cluster.Spec.SSHKey.OpensshFingerprint},
+		Dist:          im.cluster.Spec.InstanceImage,
 		Arch:          64,
 		Lang:          "en",
 		// Test:          true,
@@ -68,7 +68,7 @@ func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Sig
 	}
 	fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>", cfg)
 
-	file := fmt.Sprintf("/var/cache/kubernetes_context_%v_%v.yaml", im.cluster.ResourceVersion, role)
+	file := fmt.Sprintf("/var/cache/kubernetes_context_%v_%v.yaml", im.cluster.Spec.ResourceVersion, role)
 	stdOut, stdErr, code, err := _ssh.SCP(file, []byte(cfg), "root", serverIP+":22", signer)
 	im.ctx.Logger().Debugf(stdOut, stdErr, code)
 	return err
@@ -87,7 +87,7 @@ func (im *instanceManager) storeStartupScript(serverIP, sku, role string, signer
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
 func (im *instanceManager) RenderStartupScript(sku, role string) string {
-	cmd := fmt.Sprintf(`CONFIG=$(cat /var/cache/kubernetes_context_%v_%v.yaml)`, im.cluster.ResourceVersion, role)
+	cmd := fmt.Sprintf(`CONFIG=$(cat /var/cache/kubernetes_context_%v_%v.yaml)`, im.cluster.Spec.ResourceVersion, role)
 	firebaseUid := ""
 	if api.UseFirebase() {
 		firebaseUid, _ = api.FirebaseUid()
@@ -148,7 +148,7 @@ func (im *instanceManager) executeStartupScript(serverIP string, signer ssh.Sign
 	return nil
 }
 
-func (im *instanceManager) newKubeInstance(serverIP string) (*api.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(serverIP string) (*api.Instance, error) {
 	s, _, err := im.conn.client.Server.GetServer(serverIP)
 	if err != nil {
 		return nil, cloud.InstanceNotFound
@@ -156,15 +156,21 @@ func (im *instanceManager) newKubeInstance(serverIP string) (*api.KubernetesInst
 	return im.newKubeInstanceFromSummary(&s.ServerSummary)
 }
 
-func (im *instanceManager) newKubeInstanceFromSummary(droplet *hc.ServerSummary) (*api.KubernetesInstance, error) {
-	return &api.KubernetesInstance{
-		PHID:           phid.NewKubeInstance(),
-		ExternalID:     strconv.Itoa(droplet.ServerNumber),
-		ExternalStatus: droplet.Status,
-		Name:           droplet.ServerName,
-		ExternalIP:     droplet.ServerIP,
-		InternalIP:     "",
-		SKU:            droplet.Product,
-		Status:         api.KubernetesInstanceStatus_Ready, // droplet.Status == active
+func (im *instanceManager) newKubeInstanceFromSummary(droplet *hc.ServerSummary) (*api.Instance, error) {
+	return &api.Instance{
+		ObjectMeta: api.ObjectMeta{
+			UID:  phid.NewKubeInstance(),
+			Name: droplet.ServerName,
+		},
+		Spec: api.InstanceSpec{
+			SKU: droplet.Product,
+		},
+		Status: api.InstanceStatus{
+			ExternalID:    strconv.Itoa(droplet.ServerNumber),
+			ExternalPhase: droplet.Status,
+			ExternalIP:    droplet.ServerIP,
+			InternalIP:    "",
+			Phase:         api.InstancePhaseReady, // droplet.Status == active
+		},
 	}, nil
 }

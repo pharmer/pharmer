@@ -14,7 +14,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 	if cm.conn == nil {
 		cm.conn, err = NewConnector(cm.cluster)
 		if err != nil {
-			cm.cluster.StatusCause = err.Error()
+			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
@@ -22,14 +22,14 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 	cm.namer = namer{cluster: cm.cluster}
 	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
 	if err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins.Instances, _ = cm.ctx.Store().Instances().LoadInstances(cm.cluster.Name)
 
 	inst := cloud.Instance{
 		Type: cloud.InstanceType{
-			ContextVersion: cm.cluster.ResourceVersion,
+			ContextVersion: cm.cluster.Spec.ResourceVersion,
 			Sku:            req.Sku,
 
 			Master:       false,
@@ -50,9 +50,9 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 	igm.AdjustInstanceGroup()
 
 	flag := false
-	for x := range cm.cluster.NodeGroups {
-		if cm.cluster.NodeGroups[x].Sku == req.Sku {
-			cm.cluster.NodeGroups[x].Count += nodeAdjust
+	for x := range cm.cluster.Spec.NodeGroups {
+		if cm.cluster.Spec.NodeGroups[x].Sku == req.Sku {
+			cm.cluster.Spec.NodeGroups[x].Count += nodeAdjust
 			flag = true
 			//fmt.Println(ctx.NodeGroups[k].Count, "*********************************>>")
 		}
@@ -65,16 +65,16 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 			Count:            req.Count,
 			UseSpotInstances: false,
 		}
-		cm.cluster.NodeGroups = append(cm.cluster.NodeGroups, ig)
+		cm.cluster.Spec.NodeGroups = append(cm.cluster.Spec.NodeGroups, ig)
 	}
 
 	if err := cloud.WaitForReadyNodes(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.StatusCause = err.Error()
+		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	instances, err := igm.listInstances(cm.namer.AutoScalingGroupName(req.Sku))
 	if err != nil {
-		igm.cm.cluster.StatusCause = err.Error()
+		igm.cm.cluster.Status.Reason = err.Error()
 		//return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	cloud.AdjustDbInstance(igm.cm.ctx, igm.cm.ins, instances, req.Sku)

@@ -53,19 +53,19 @@ func (s *FakeStore) SaveCluster(*api.Cluster) error {
 }
 
 // InstanceStore ______________________________________________________________
-func (s *FakeStore) LoadInstance(name string) (*api.KubernetesInstance, error) {
+func (s *FakeStore) LoadInstance(name string) (*api.Instance, error) {
 	return nil, errors.New("NotImplemented")
 }
 
-func (s *FakeStore) LoadInstances(cluster string) ([]*api.KubernetesInstance, error) {
+func (s *FakeStore) LoadInstances(cluster string) ([]*api.Instance, error) {
 	return nil, errors.New("NotImplemented")
 }
 
-func (s *FakeStore) SaveInstance(instance *api.KubernetesInstance) error {
+func (s *FakeStore) SaveInstance(instance *api.Instance) error {
 	return errors.New("NotImplemented")
 }
 
-func (s *FakeStore) SaveInstances(instances []*api.KubernetesInstance) error {
+func (s *FakeStore) SaveInstances(instances []*api.Instance) error {
 	return errors.New("NotImplemented")
 }
 

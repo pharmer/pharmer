@@ -163,7 +163,7 @@ type CommonKubeEnv struct {
 
 	//ClusterName
 	//  NodeInstancePrefix
-	Name       string `json:"INSTANCE_PREFIX"`
+	// Name       string `json:"INSTANCE_PREFIX"`
 	BucketName string `json:"BUCKET_NAME, omitempty"`
 
 	// NEW
@@ -190,7 +190,7 @@ type CommonKubeEnv struct {
 	Kernel   string `json:"Kernel"`
 
 	// Kube 1.3
-	PHID                      string `json:"KUBE_UID"`
+	// PHID                      string `json:"KUBE_UID"`
 	NodeLabels                string `json:"NODE_LABELS"`
 	EnableNodeProblemDetector bool   `json:"ENABLE_NODE_PROBLEM_DETECTOR"`
 	EvictionHard              string `json:"EVICTION_HARD"`
@@ -322,8 +322,14 @@ type InstanceGroup struct {
 	UseSpotInstances bool   `json:"USE_SPOT_INSTANCES"`
 }
 
-// Embed this context in actual providers.
 type Cluster struct {
+	TypeMeta   `json:",inline,omitempty"`
+	ObjectMeta `json:"metadata,omitempty"`
+	Spec       ClusterSpec   `json:"spec,omitempty"`
+	Status     ClusterStatus `json:"status,omitempty"`
+}
+
+type ClusterSpec struct {
 	KubeEnv
 
 	// request data. This is needed to give consistent access to these values for all commands.
@@ -333,8 +339,6 @@ type Cluster struct {
 	NodeGroups          []*InstanceGroup  `json:"NODE_GROUPS"`
 	CloudCredentialPHID string            `json:"CLOUD_CREDENTIAL_PHID"`
 	CloudCredential     map[string]string `json:"-"`
-	Status              string            `json:"-"`
-	StatusCause         string            `json:"-"`
 	DoNotDelete         bool              `json:"-"`
 	DefaultAccessLevel  string            `json:"-"`
 
@@ -442,10 +446,15 @@ type Cluster struct {
 	InstanceRootPassword string `json:"INSTANCE_ROOT_PASSWORD"`
 }
 
-func (ctx *Cluster) SetNodeGroups(ng []*proto.InstanceGroup) {
-	ctx.NodeGroups = make([]*InstanceGroup, len(ng))
+type ClusterStatus struct {
+	Phase  string `json:"phase,omitempty"`
+	Reason string `json:"reason,omitempty"`
+}
+
+func (cluster *Cluster) SetNodeGroups(ng []*proto.InstanceGroup) {
+	cluster.Spec.NodeGroups = make([]*InstanceGroup, len(ng))
 	for i, g := range ng {
-		ctx.NodeGroups[i] = &InstanceGroup{
+		cluster.Spec.NodeGroups[i] = &InstanceGroup{
 			Sku:              g.Sku,
 			Count:            g.Count,
 			UseSpotInstances: g.UseSpotInstances,
@@ -488,39 +497,39 @@ func (ctx *ClusterContext) UpdateNodeCount() error {
 }
 */
 
-func (ctx *Cluster) Delete() error {
-	if ctx.Status == KubernetesStatus_Pending || ctx.Status == KubernetesStatus_Failing || ctx.Status == KubernetesStatus_Failed {
-		ctx.Status = KubernetesStatus_Failed
+func (cluster *Cluster) Delete() error {
+	if cluster.Status.Phase == ClusterPhasePending || cluster.Status.Phase == ClusterPhaseFailing || cluster.Status.Phase == ClusterPhaseFailed {
+		cluster.Status.Phase = ClusterPhaseFailed
 	} else {
-		ctx.Status = KubernetesStatus_Deleted
+		cluster.Status.Phase = ClusterPhaseDeleted
 	}
 	fmt.Println("FixIt!")
 	//if err := ctx.Save(); err != nil {
 	//	return err
 	//}
 
-	n := rand.WithUniqSuffix(ctx.Name)
+	n := rand.WithUniqSuffix(cluster.Name)
 	//if _, err := ctx.Store().Engine.Update(&Kubernetes{Name: n}, &Kubernetes{PHID: ctx.PHID}); err != nil {
 	//	return err
 	//}
-	ctx.Name = n
+	cluster.Name = n
 	return nil
 }
 
-func (ctx *Cluster) clusterIP(seq int64) string {
-	octets := strings.Split(ctx.ServiceClusterIPRange, ".")
+func (cluster *Cluster) clusterIP(seq int64) string {
+	octets := strings.Split(cluster.Spec.ServiceClusterIPRange, ".")
 	p, _ := strconv.ParseInt(octets[3], 10, 64)
 	p = p + seq
 	octets[3] = strconv.FormatInt(p, 10)
 	return strings.Join(octets, ".")
 }
 
-func (ctx *Cluster) KubernetesClusterIP() string {
-	return ctx.clusterIP(1)
+func (cluster *Cluster) KubernetesClusterIP() string {
+	return cluster.clusterIP(1)
 }
 
 // This is a onetime initializer method.
-func (ctx *Cluster) DetectApiServerURL() {
+func (cluster *Cluster) DetectApiServerURL() {
 	panic("TODO: Remove this call")
 	//if ctx.ApiServerUrl == "" {
 	//	host := ctx.Extra().ExternalDomain(ctx.Name)
@@ -532,37 +541,37 @@ func (ctx *Cluster) DetectApiServerURL() {
 	//}
 }
 
-func (ctx *Cluster) NodeCount() int64 {
+func (cluster *Cluster) NodeCount() int64 {
 	n := int64(0)
-	if ctx.RegisterMasterKubelet {
+	if cluster.Spec.RegisterMasterKubelet {
 		n = 1
 	}
-	for _, ng := range ctx.NodeGroups {
+	for _, ng := range cluster.Spec.NodeGroups {
 		n += ng.Count
 	}
 	return n
 }
 
-func (ctx *Cluster) StartupConfig(role string) *ClusterStartupConfig {
+func (cluster *Cluster) StartupConfig(role string) *ClusterStartupConfig {
 	var config ClusterStartupConfig
-	config.KubeEnv = ctx.KubeEnv
+	config.KubeEnv = cluster.Spec.KubeEnv
 	config.Role = role
 	config.KubernetesMaster = role == RoleKubernetesMaster
-	config.InitialEtcdCluster = ctx.KubernetesMasterName
-	config.NumNodes = ctx.NodeCount()
+	config.InitialEtcdCluster = cluster.Spec.KubernetesMasterName
+	config.NumNodes = cluster.NodeCount()
 	return &config
 }
 
-func (ctx *Cluster) StartupConfigJson(role string) (string, error) {
-	confJson, err := json.Marshal(ctx.StartupConfig(role))
+func (cluster *Cluster) StartupConfigJson(role string) (string, error) {
+	confJson, err := json.Marshal(cluster.StartupConfig(role))
 	if err != nil {
 		return "", err
 	}
 	return string(confJson), nil
 }
 
-func (ctx *Cluster) StartupConfigResponse(role string) (string, error) {
-	confJson, err := ctx.StartupConfigJson(role)
+func (cluster *Cluster) StartupConfigResponse(role string) (string, error) {
+	confJson, err := cluster.StartupConfigJson(role)
 	if err != nil {
 		return "", err
 	}
@@ -574,13 +583,13 @@ func (ctx *Cluster) StartupConfigResponse(role string) (string, error) {
 	return m.MarshalToString(resp)
 }
 
-func (ctx *Cluster) NewInstances(matches func(i *KubernetesInstance, md *InstanceMetadata) bool) (*ClusterInstances, error) {
+func (cluster *Cluster) NewInstances(matches func(i *Instance, md *InstanceMetadata) bool) (*ClusterInstances, error) {
 	if matches == nil {
 		return nil, errors.New(`Use "github.com/appscode/pharmer/cloud/lib".NewInstances`).Err()
 	}
 	return &ClusterInstances{
 		matches:        matches,
-		KubernetesPHID: ctx.PHID,
-		Instances:      make([]*KubernetesInstance, 0),
+		KubernetesPHID: cluster.UID,
+		Instances:      make([]*Instance, 0),
 	}, nil
 }
