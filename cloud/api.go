@@ -19,8 +19,8 @@ type Provider interface {
 	SetVersion(ctx context.Context, req *proto.ClusterReconfigureRequest) error
 	UploadStartupConfig(ctx context.Context) error
 
-	GetInstance(ctx context.Context, md *api.InstanceMetadata) (*api.KubernetesInstance, error)
-	MatchInstance(i *api.KubernetesInstance, md *api.InstanceMetadata) bool
+	GetInstance(ctx context.Context, md *api.InstanceMetadata) (*api.Instance, error)
+	MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool
 }
 
 type CloudCredential interface {

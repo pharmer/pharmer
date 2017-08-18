@@ -13,10 +13,10 @@ import (
 func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
-	if cm.cluster.Status.Phase == api.KubernetesStatus_Pending {
-		cm.cluster.Status.Phase = api.KubernetesStatus_Failing
-	} else if cm.cluster.Status.Phase == api.KubernetesStatus_Ready {
-		cm.cluster.Status.Phase = api.KubernetesStatus_Deleting
+	if cm.cluster.Status.Phase == api.ClusterPhasePending {
+		cm.cluster.Status.Phase = api.ClusterPhaseFailing
+	} else if cm.cluster.Status.Phase == api.ClusterPhaseReady {
+		cm.cluster.Status.Phase = api.ClusterPhaseDeleting
 	}
 	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
@@ -47,7 +47,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 
 	cm.deleteResourceGroup(req.Name)
 	for i := range cm.ins.Instances {
-		cm.ins.Instances[i].Status = api.KubernetesStatus_Deleted
+		cm.ins.Instances[i].Status.Phase = api.ClusterPhaseDeleted
 	}
 	if err := cloud.DeleteARecords(cm.ctx, cm.cluster); err != nil {
 		errs = append(errs, err.Error())
@@ -55,7 +55,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 
 	if len(errs) > 0 {
 		// Preserve statusCause for failed cluster
-		if cm.cluster.Status.Phase == api.KubernetesStatus_Deleting {
+		if cm.cluster.Status.Phase == api.ClusterPhaseDeleting {
 			cm.cluster.Status.Reason = strings.Join(errs, "\n")
 		}
 		return fmt.Errorf(strings.Join(errs, "\n"))

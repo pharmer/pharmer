@@ -17,7 +17,7 @@ func LoadDefaultGenericContext(ctx context.Context, cluster *api.Cluster) error 
 	cluster.Spec.ClusterExternalDomain = ctx.Extra().ExternalDomain(cluster.Name)
 	cluster.Spec.ClusterInternalDomain = ctx.Extra().InternalDomain(cluster.Name)
 
-	cluster.Status.Phase = api.KubernetesStatus_Pending
+	cluster.Status.Phase = api.ClusterPhasePending
 	cluster.Spec.OS = "debian"
 
 	//-------------------------- ctx.MasterSKU = "94" // 2 cpu

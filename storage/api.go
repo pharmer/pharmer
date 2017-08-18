@@ -20,10 +20,10 @@ type ClusterStore interface {
 }
 
 type InstanceStore interface {
-	LoadInstance(name string) (*api.KubernetesInstance, error)
-	LoadInstances(cluster string) ([]*api.KubernetesInstance, error)
-	SaveInstance(instance *api.KubernetesInstance) error
-	SaveInstances([]*api.KubernetesInstance) error
+	LoadInstance(name string) (*api.Instance, error)
+	LoadInstances(cluster string) ([]*api.Instance, error)
+	SaveInstance(instance *api.Instance) error
+	SaveInstances([]*api.Instance) error
 }
 
 type CertificateStore interface {

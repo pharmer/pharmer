@@ -16,10 +16,10 @@ import (
 func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
-	if cm.cluster.Status.Phase == api.KubernetesStatus_Pending {
-		cm.cluster.Status.Phase = api.KubernetesStatus_Failing
-	} else if cm.cluster.Status.Phase == api.KubernetesStatus_Ready {
-		cm.cluster.Status.Phase = api.KubernetesStatus_Deleting
+	if cm.cluster.Status.Phase == api.ClusterPhasePending {
+		cm.cluster.Status.Phase = api.ClusterPhaseFailing
+	} else if cm.cluster.Status.Phase == api.ClusterPhaseReady {
+		cm.cluster.Status.Phase = api.ClusterPhaseDeleting
 	}
 	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
@@ -50,7 +50,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 
 	for _, i := range cm.ins.Instances {
 		backoff.Retry(func() error {
-			dropletID, err := strconv.Atoi(i.ExternalID)
+			dropletID, err := strconv.Atoi(i.Status.ExternalID)
 			if err != nil {
 				return err
 			}
@@ -60,7 +60,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 			}
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger().Infof("Droplet %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.cluster.Name)
+		cm.ctx.Logger().Infof("Droplet %v with id %v for clutser is deleted", i.Name, i.Status.ExternalID, cm.cluster.Name)
 	}
 
 	// delete by tag
@@ -87,7 +87,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 
 	if len(errs) > 0 {
 		// Preserve statusCause for failed cluster
-		if cm.cluster.Status.Phase == api.KubernetesStatus_Deleting {
+		if cm.cluster.Status.Phase == api.ClusterPhaseDeleting {
 			cm.cluster.Status.Reason = strings.Join(errs, "\n")
 		}
 		return fmt.Errorf(strings.Join(errs, "\n"))
@@ -143,9 +143,9 @@ func (cm *clusterManager) deleteMaster(dropletID int) error {
 		return err
 	}
 	for i, v := range cm.ins.Instances {
-		droplet, _ := strconv.Atoi(v.ExternalID)
+		droplet, _ := strconv.Atoi(v.Status.ExternalID)
 		if droplet == dropletID {
-			cm.ins.Instances[i].Status = api.KubernetesInstanceStatus_Deleted
+			cm.ins.Instances[i].Status.Phase = api.InstancePhaseDeleted
 		}
 	}
 	return err

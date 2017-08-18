@@ -189,9 +189,9 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroup string, size 
 	return nil
 }
 
-func (igm *InstanceGroupManager) listInstances(instanceGroup string) ([]*api.KubernetesInstance, error) {
+func (igm *InstanceGroupManager) listInstances(instanceGroup string) ([]*api.Instance, error) {
 	igm.cm.ctx.Logger().Infof("Retrieving instances in node group %v", instanceGroup)
-	instances := make([]*api.KubernetesInstance, 0)
+	instances := make([]*api.Instance, 0)
 	group, err := igm.describeGroupInfo(instanceGroup)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -199,7 +199,7 @@ func (igm *InstanceGroupManager) listInstances(instanceGroup string) ([]*api.Kub
 
 	for _, item := range group.AutoScalingGroups[0].Instances {
 		instance, err := igm.cm.newKubeInstance(*item.InstanceId)
-		instance.Role = api.RoleKubernetesPool
+		instance.Spec.Role = api.RoleKubernetesPool
 		instances = append(instances, instance)
 		if err != nil {
 			return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()

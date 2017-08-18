@@ -24,9 +24,9 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
-	var instance *api.KubernetesInstance
+	var instance *api.Instance
 	backoff.Retry(func() (err error) {
 		for {
 			servers, err := im.conn.accountServiceClient.GetVirtualGuests()
@@ -38,14 +38,14 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 				if interIp == md.InternalIP {
 					instance, err = im.newKubeInstance(*s.Id)
 					sku := strconv.Itoa(*s.MaxCpu) + "c" + strconv.Itoa(*s.MaxMemory) + "m"
-					instance.SKU = sku
+					instance.Spec.SKU = sku
 					if err != nil {
 						return err
 					}
 					if master {
-						instance.Role = api.RoleKubernetesMaster
+						instance.Spec.Role = api.RoleKubernetesMaster
 					} else {
-						instance.Role = api.RoleKubernetesPool
+						instance.Spec.Role = api.RoleKubernetesPool
 					}
 					return nil
 				}
@@ -172,7 +172,7 @@ systemctl enable kube-installer.service
 `, strings.Replace(cloud.RenderKubeStarter(im.cluster, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid, reboot)
 }
 
-func (im *instanceManager) newKubeInstance(id int) (*api.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {
 	bluemix := im.conn.virtualServiceClient.Id(id)
 	status, err := bluemix.GetStatus()
 	if err != nil {
@@ -182,24 +182,28 @@ func (im *instanceManager) newKubeInstance(id int) (*api.KubernetesInstance, err
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	ki := &api.KubernetesInstance{
-		PHID:           phid.NewKubeInstance(),
-		ExternalID:     strconv.Itoa(id),
-		ExternalStatus: *status.Name,
-		Name:           *d.FullyQualifiedDomainName,
-		Status:         api.KubernetesInstanceStatus_Ready, // droplet.Status == active
+	ki := &api.Instance{
+		ObjectMeta: api.ObjectMeta{
+			UID:  phid.NewKubeInstance(),
+			Name: *d.FullyQualifiedDomainName,
+		},
+		Status: api.InstanceStatus{
+			ExternalID:    strconv.Itoa(id),
+			ExternalPhase: *status.Name,
+			Phase:         api.InstancePhaseReady, // droplet.Status == active
+		},
 	}
 
-	ki.ExternalIP, err = bluemix.GetPrimaryIpAddress()
+	ki.Status.ExternalIP, err = bluemix.GetPrimaryIpAddress()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	ki.ExternalIP = strings.Trim(ki.ExternalIP, `"`)
-	ki.InternalIP, err = bluemix.GetPrimaryBackendIpAddress()
+	ki.Status.ExternalIP = strings.Trim(ki.Status.ExternalIP, `"`)
+	ki.Status.InternalIP, err = bluemix.GetPrimaryBackendIpAddress()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	ki.InternalIP = strings.Trim(ki.InternalIP, `"`)
+	ki.Status.InternalIP = strings.Trim(ki.Status.InternalIP, `"`)
 
 	return ki, nil
 }

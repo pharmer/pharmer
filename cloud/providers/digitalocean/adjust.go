@@ -63,10 +63,10 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	return nil
 }
 
-func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, map[string]*api.KubernetesInstance, error) {
+func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, map[string]*api.Instance, error) {
 	var flag bool = false
 	igm.im.conn.client.Droplets.List(go_ctx.TODO(), &godo.ListOptions{})
-	existingNGs := make(map[string]*api.KubernetesInstance)
+	existingNGs := make(map[string]*api.Instance)
 	droplets, _, err := igm.cm.conn.client.Droplets.List(go_ctx.TODO(), &godo.ListOptions{})
 	if err != nil {
 		return flag, existingNGs, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -79,7 +79,7 @@ func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, m
 			if err != nil {
 				return flag, existingNGs, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
-			instance.Role = api.RoleKubernetesPool
+			instance.Spec.Role = api.RoleKubernetesPool
 			internalIP, err := item.PrivateIPv4()
 			existingNGs[internalIP] = instance
 		}
@@ -106,11 +106,11 @@ func (igm *InstanceGroupManager) deleteInstanceGroup(sku string, count int64) er
 	}
 	for _, instance := range instances {
 		count--
-		dropletID, err := strconv.Atoi(instance.ExternalID)
+		dropletID, err := strconv.Atoi(instance.Status.ExternalID)
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
-		err = igm.cm.deleteDroplet(dropletID, instance.InternalIP)
+		err = igm.cm.deleteDroplet(dropletID, instance.Status.InternalIP)
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
@@ -121,8 +121,8 @@ func (igm *InstanceGroupManager) deleteInstanceGroup(sku string, count int64) er
 	return nil
 }
 
-func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.KubernetesInstance, error) {
-	instances := make([]*api.KubernetesInstance, 0)
+func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.Instance, error) {
+	instances := make([]*api.Instance, 0)
 	kc, err := cloud.NewAdminClient(igm.cm.cluster)
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
@@ -148,7 +148,7 @@ func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.KubernetesIns
 	return instances, nil
 }
 
-func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
+func (igm *InstanceGroupManager) StartNode() (*api.Instance, error) {
 	droplet, err := igm.im.createInstance(igm.cm.namer.GenNodeName(igm.instance.Type.Sku), api.RoleKubernetesPool, igm.instance.Type.Sku)
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
@@ -162,7 +162,7 @@ func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
 		return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	igm.im.applyTag(droplet.ID)
-	node.Role = api.RoleKubernetesPool
+	node.Spec.Role = api.RoleKubernetesPool
 	igm.cm.ins.Instances = append(igm.cm.ins.Instances, node)
 	return node, nil
 }

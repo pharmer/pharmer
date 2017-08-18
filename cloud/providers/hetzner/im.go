@@ -23,7 +23,7 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 	servers, _, err := im.conn.client.Server.ListServers()
 	if err != nil {
@@ -36,9 +36,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 				return nil, err
 			}
 			if master {
-				instance.Role = api.RoleKubernetesMaster
+				instance.Spec.Role = api.RoleKubernetesMaster
 			} else {
-				instance.Role = api.RoleKubernetesPool
+				instance.Spec.Role = api.RoleKubernetesPool
 			}
 			return instance, nil
 
@@ -148,7 +148,7 @@ func (im *instanceManager) executeStartupScript(serverIP string, signer ssh.Sign
 	return nil
 }
 
-func (im *instanceManager) newKubeInstance(serverIP string) (*api.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(serverIP string) (*api.Instance, error) {
 	s, _, err := im.conn.client.Server.GetServer(serverIP)
 	if err != nil {
 		return nil, cloud.InstanceNotFound
@@ -156,15 +156,21 @@ func (im *instanceManager) newKubeInstance(serverIP string) (*api.KubernetesInst
 	return im.newKubeInstanceFromSummary(&s.ServerSummary)
 }
 
-func (im *instanceManager) newKubeInstanceFromSummary(droplet *hc.ServerSummary) (*api.KubernetesInstance, error) {
-	return &api.KubernetesInstance{
-		PHID:           phid.NewKubeInstance(),
-		ExternalID:     strconv.Itoa(droplet.ServerNumber),
-		ExternalStatus: droplet.Status,
-		Name:           droplet.ServerName,
-		ExternalIP:     droplet.ServerIP,
-		InternalIP:     "",
-		SKU:            droplet.Product,
-		Status:         api.KubernetesInstanceStatus_Ready, // droplet.Status == active
+func (im *instanceManager) newKubeInstanceFromSummary(droplet *hc.ServerSummary) (*api.Instance, error) {
+	return &api.Instance{
+		ObjectMeta: api.ObjectMeta{
+			UID:  phid.NewKubeInstance(),
+			Name: droplet.ServerName,
+		},
+		Spec: api.InstanceSpec{
+			SKU: droplet.Product,
+		},
+		Status: api.InstanceStatus{
+			ExternalID:    strconv.Itoa(droplet.ServerNumber),
+			ExternalPhase: droplet.Status,
+			ExternalIP:    droplet.ServerIP,
+			InternalIP:    "",
+			Phase:         api.InstancePhaseReady, // droplet.Status == active
+		},
 	}, nil
 }

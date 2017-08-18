@@ -42,13 +42,13 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 
 	defer func(releaseReservedIp bool) {
-		if cm.cluster.Status.Phase == api.KubernetesStatus_Pending {
-			cm.cluster.Status.Phase = api.KubernetesStatus_Failing
+		if cm.cluster.Status.Phase == api.ClusterPhasePending {
+			cm.cluster.Status.Phase = api.ClusterPhaseFailing
 		}
 		cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 		cm.ctx.Store().Instances().SaveInstances(cm.ins.Instances)
 		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
-		if cm.cluster.Status.Phase != api.KubernetesStatus_Ready {
+		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
@@ -172,7 +172,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	for _, group := range r2.AutoScalingGroups {
 		for _, instance := range group.Instances {
 			ki, err := cm.newKubeInstance(*instance.InstanceId)
-			ki.Role = api.RoleKubernetesPool
+			ki.Spec.Role = api.RoleKubernetesPool
 			cm.ins.Instances = append(cm.ins.Instances, ki)
 			if err != nil {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -199,7 +199,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	//    build-config
 	//  fi
 	// check-cluster
-	cm.cluster.Status.Phase = api.KubernetesStatus_Ready
+	cm.cluster.Status.Phase = api.ClusterPhaseReady
 	return nil
 }
 
@@ -803,7 +803,7 @@ func (cm *clusterManager) autohrizeIngressByPort(groupID string, port int64) err
 //
 // -------------------------------------
 //
-func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
+func (cm *clusterManager) startMaster() (*api.Instance, error) {
 	var err error
 	// TODO: FixIt!
 	//cm.cluster.Spec.MasterDiskId, err = cm.ensurePd(cm.namer.MasterPDName(), cm.cluster.Spec.MasterDiskType, cm.cluster.Spec.MasterDiskSize)
@@ -841,8 +841,8 @@ func (cm *clusterManager) startMaster() (*api.KubernetesInstance, error) {
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Role = api.RoleKubernetesMaster
-	cm.cluster.Spec.MasterExternalIP = masterInstance.ExternalIP
+	masterInstance.Spec.Role = api.RoleKubernetesMaster
+	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.ExternalIP
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 
 	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
@@ -1073,7 +1073,7 @@ func (cm *clusterManager) getInstancePublicIP(instanceID string) (string, bool, 
 	return "", false, nil
 }
 
-func (cm *clusterManager) listInstances(groupName string) ([]*api.KubernetesInstance, error) {
+func (cm *clusterManager) listInstances(groupName string) ([]*api.Instance, error) {
 	r2, err := cm.conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: []*string{
 			types.StringP(groupName),
@@ -1083,20 +1083,20 @@ func (cm *clusterManager) listInstances(groupName string) ([]*api.KubernetesInst
 		cm.cluster.Status.Reason = err.Error()
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	instances := make([]*api.KubernetesInstance, 0)
+	instances := make([]*api.Instance, 0)
 	for _, group := range r2.AutoScalingGroups {
 		for _, instance := range group.Instances {
 			ki, err := cm.newKubeInstance(*instance.InstanceId)
 			if err != nil {
 				return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
-			ki.Role = api.RoleKubernetesPool
+			ki.Spec.Role = api.RoleKubernetesPool
 			instances = append(instances, ki)
 		}
 	}
 	return instances, nil
 }
-func (cm *clusterManager) newKubeInstance(instanceID string) (*api.KubernetesInstance, error) {
+func (cm *clusterManager) newKubeInstance(instanceID string) (*api.Instance, error) {
 	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 		InstanceIds: []*string{types.StringP(instanceID)},
 	})
@@ -1106,14 +1106,20 @@ func (cm *clusterManager) newKubeInstance(instanceID string) (*api.KubernetesIns
 	}
 
 	// Don't reassign internal_ip for AWS to keep the fixed 172.20.0.9 for master_internal_ip
-	i := api.KubernetesInstance{
-		PHID:           phid.NewKubeInstance(),
-		ExternalID:     instanceID,
-		ExternalStatus: *r1.Reservations[0].Instances[0].State.Name,
-		Name:           *r1.Reservations[0].Instances[0].PrivateDnsName,
-		ExternalIP:     *r1.Reservations[0].Instances[0].PublicIpAddress,
-		InternalIP:     *r1.Reservations[0].Instances[0].PrivateIpAddress,
-		SKU:            *r1.Reservations[0].Instances[0].InstanceType,
+	i := api.Instance{
+		ObjectMeta: api.ObjectMeta{
+			UID:  phid.NewKubeInstance(),
+			Name: *r1.Reservations[0].Instances[0].PrivateDnsName,
+		},
+		Spec: api.InstanceSpec{
+			SKU: *r1.Reservations[0].Instances[0].InstanceType,
+		},
+		Status: api.InstanceStatus{
+			ExternalID:    instanceID,
+			ExternalPhase: *r1.Reservations[0].Instances[0].State.Name,
+			ExternalIP:    *r1.Reservations[0].Instances[0].PublicIpAddress,
+			InternalIP:    *r1.Reservations[0].Instances[0].PrivateIpAddress,
+		},
 	}
 	/*
 		// The low byte represents the state. The high byte is an opaque internal value
@@ -1126,10 +1132,10 @@ func (cm *clusterManager) newKubeInstance(instanceID string) (*api.KubernetesIns
 		//    64 : stopping
 		//    80 : stopped
 	*/
-	if i.ExternalStatus == "terminated" {
-		i.Status = api.KubernetesInstanceStatus_Deleted
+	if i.Status.ExternalPhase == "terminated" {
+		i.Status.Phase = api.InstancePhaseDeleted
 	} else {
-		i.Status = api.KubernetesInstanceStatus_Ready
+		i.Status.Phase = api.InstancePhaseReady
 	}
 	return &i, nil
 }

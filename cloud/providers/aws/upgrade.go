@@ -128,12 +128,12 @@ func (cm *clusterManager) restartMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	instance.Role = api.RoleKubernetesMaster
+	instance.Spec.Role = api.RoleKubernetesMaster
 	// cm.ins.Instances = nil
 	// cm.ins.Instances = append(cm.ins.Instances, instance)
 	for i := range cm.ins.Instances {
-		if cm.ins.Instances[i].Role == api.RoleKubernetesMaster {
-			cm.ins.Instances[i].Status = api.KubernetesInstanceStatus_Deleted
+		if cm.ins.Instances[i].Spec.Role == api.RoleKubernetesMaster {
+			cm.ins.Instances[i].Status.Phase = api.InstancePhaseDeleted
 		}
 	}
 	cm.ins.Instances = append(cm.ins.Instances, instance)
@@ -172,7 +172,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 		}
 		instances := []string{}
 		for _, instance := range oldinstances {
-			instances = append(instances, instance.ExternalID)
+			instances = append(instances, instance.Status.ExternalID)
 		}
 		err = cm.rollingUpdate(instances, newLaunchConfig, sku)
 		if err != nil {

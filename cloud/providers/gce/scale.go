@@ -30,13 +30,13 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 
 	if req.ApplyToMaster {
 		for _, instance := range cm.ins.Instances {
-			if instance.Role == api.RoleKubernetesMaster {
-				cm.masterUpdate(instance.ExternalIP, instance.Name, req.Version)
+			if instance.Spec.Role == api.RoleKubernetesMaster {
+				cm.masterUpdate(instance.Status.ExternalIP, instance.Name, req.Version)
 			}
 		}
 	}
 	for _, instance := range cm.ins.Instances {
-		if instance.Role == api.RoleKubernetesPool {
+		if instance.Spec.Role == api.RoleKubernetesPool {
 			cm.nodeUpdate(instance.Name)
 		}
 	}

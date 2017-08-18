@@ -14,10 +14,10 @@ import (
 func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
-	if cm.cluster.Status.Phase == api.KubernetesStatus_Pending {
-		cm.cluster.Status.Phase = api.KubernetesStatus_Failing
-	} else if cm.cluster.Status.Phase == api.KubernetesStatus_Ready {
-		cm.cluster.Status.Phase = api.KubernetesStatus_Deleting
+	if cm.cluster.Status.Phase == api.ClusterPhasePending {
+		cm.cluster.Status.Phase = api.ClusterPhaseFailing
+	} else if cm.cluster.Status.Phase == api.ClusterPhaseReady {
+		cm.cluster.Status.Phase = api.ClusterPhaseDeleting
 	}
 	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
@@ -48,14 +48,14 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 
 	for _, i := range cm.ins.Instances {
 		backoff.Retry(func() error {
-			err := cm.conn.client.DeleteServer(i.ExternalID)
+			err := cm.conn.client.DeleteServer(i.Status.ExternalID)
 			if err != nil {
 				return err
 			}
 
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger().Infof("Instance %v with id %v for clutser is deleted", i.Name, i.ExternalID, cm.cluster.Name)
+		cm.ctx.Logger().Infof("Instance %v with id %v for clutser is deleted", i.Name, i.Status.ExternalID, cm.cluster.Name)
 	}
 
 	if req.ReleaseReservedIp && cm.cluster.Spec.MasterReservedIP != "" {
@@ -79,7 +79,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 
 	if len(errs) > 0 {
 		// Preserve statusCause for failed cluster
-		if cm.cluster.Status.Phase == api.KubernetesStatus_Deleting {
+		if cm.cluster.Status.Phase == api.ClusterPhaseDeleting {
 			cm.cluster.Status.Reason = strings.Join(errs, "\n")
 		}
 		return fmt.Errorf(strings.Join(errs, "\n"))

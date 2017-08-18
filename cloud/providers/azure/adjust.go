@@ -77,8 +77,8 @@ func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, e
 	//im.ctx.Logger().Infof("Found virtual machine %v", vm)
 }
 
-func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.KubernetesInstance, error) {
-	instances := make([]*api.KubernetesInstance, 0)
+func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.Instance, error) {
+	instances := make([]*api.Instance, 0)
 	kc, err := cloud.NewAdminClient(igm.cm.cluster)
 	if err != nil {
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -104,7 +104,7 @@ func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.KubernetesIns
 			if err != nil {
 				return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
-			instance.Role = api.RoleKubernetesPool
+			instance.Spec.Role = api.RoleKubernetesPool
 
 			instances = append(instances, instance)
 		}
@@ -153,8 +153,8 @@ func (igm *InstanceGroupManager) deleteInstanceGroup(instanceGroup string, count
 	return nil
 }
 
-func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
-	ki := &api.KubernetesInstance{}
+func (igm *InstanceGroupManager) StartNode() (*api.Instance, error) {
+	ki := &api.Instance{}
 
 	nodeName := igm.cm.namer.GenNodeName(igm.instance.Type.Sku)
 	nodePIP, err := igm.im.createPublicIP(igm.cm.namer.PublicIPName(nodeName), network.Dynamic)
@@ -210,9 +210,9 @@ func (igm *InstanceGroupManager) StartNode() (*api.KubernetesInstance, error) {
 	ki, err = igm.im.newKubeInstance(nodeVM, nodeNIC, nodePIP)
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
-		return &api.KubernetesInstance{}, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		return &api.Instance{}, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	ki.Role = api.RoleKubernetesPool
+	ki.Spec.Role = api.RoleKubernetesPool
 	igm.cm.ins.Instances = append(igm.cm.ins.Instances, ki)
 	return ki, nil
 }

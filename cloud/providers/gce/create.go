@@ -34,13 +34,13 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 
 	defer func(releaseReservedIp bool) {
-		if cm.cluster.Status.Phase == api.KubernetesStatus_Pending {
-			cm.cluster.Status.Phase = api.KubernetesStatus_Failing
+		if cm.cluster.Status.Phase == api.ClusterPhasePending {
+			cm.cluster.Status.Phase = api.ClusterPhaseFailing
 		}
 		cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 		cm.ctx.Store().Instances().SaveInstances(cm.ins.Instances)
 		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
-		if cm.cluster.Status.Phase != api.KubernetesStatus_Ready {
+		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
@@ -106,9 +106,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Role = api.RoleKubernetesMaster
-	cm.cluster.Spec.MasterExternalIP = masterInstance.ExternalIP
-	cm.cluster.Spec.MasterInternalIP = masterInstance.InternalIP
+	masterInstance.Spec.Role = api.RoleKubernetesMaster
+	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.ExternalIP
+	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.InternalIP
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP)
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 
@@ -188,7 +188,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ins.Instances = append(cm.ins.Instances, instances...)
 	}
 
-	cm.cluster.Status.Phase = api.KubernetesStatus_Ready
+	cm.cluster.Status.Phase = api.ClusterPhaseReady
 	return nil
 }
 
@@ -506,7 +506,7 @@ func (cm *clusterManager) RenderStartupScript(sku, role string) string {
 }
 
 // Instance
-func (cm *clusterManager) getInstance(instance string) (*api.KubernetesInstance, error) {
+func (cm *clusterManager) getInstance(instance string) (*api.Instance, error) {
 	cm.ctx.Logger().Infof("Retrieving instance %v in zone %v", instance, cm.cluster.Spec.Zone)
 	r1, err := cm.conn.computeService.Instances.Get(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instance).Do()
 	cm.ctx.Logger().Debug("Retrieved instance", r1, err)
@@ -516,9 +516,9 @@ func (cm *clusterManager) getInstance(instance string) (*api.KubernetesInstance,
 	return cm.newKubeInstance(r1)
 }
 
-func (cm *clusterManager) listInstances(instanceGroup string) ([]*api.KubernetesInstance, error) {
+func (cm *clusterManager) listInstances(instanceGroup string) ([]*api.Instance, error) {
 	cm.ctx.Logger().Infof("Retrieving instances in node group %v", instanceGroup)
-	instances := make([]*api.KubernetesInstance, 0)
+	instances := make([]*api.Instance, 0)
 	r1, err := cm.conn.computeService.InstanceGroups.ListInstances(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceGroup, &compute.InstanceGroupsListInstancesRequest{
 		InstanceState: "ALL",
 	}).Do()
@@ -537,23 +537,29 @@ func (cm *clusterManager) listInstances(instanceGroup string) ([]*api.Kubernetes
 		if err != nil {
 			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		instance.Role = api.RoleKubernetesPool
+		instance.Spec.Role = api.RoleKubernetesPool
 		instances = append(instances, instance)
 	}
 	return instances, nil
 }
 
-func (cm *clusterManager) newKubeInstance(r1 *compute.Instance) (*api.KubernetesInstance, error) {
+func (cm *clusterManager) newKubeInstance(r1 *compute.Instance) (*api.Instance, error) {
 	for _, accessConfig := range r1.NetworkInterfaces[0].AccessConfigs {
 		if accessConfig.Type == "ONE_TO_ONE_NAT" {
-			i := api.KubernetesInstance{
-				PHID:           phid.NewKubeInstance(),
-				ExternalID:     strconv.FormatUint(r1.Id, 10),
-				ExternalStatus: r1.Status,
-				Name:           r1.Name,
-				ExternalIP:     accessConfig.NatIP,
-				InternalIP:     r1.NetworkInterfaces[0].NetworkIP,
-				SKU:            r1.MachineType[strings.LastIndex(r1.MachineType, "/")+1:],
+			i := api.Instance{
+				ObjectMeta: api.ObjectMeta{
+					UID:  phid.NewKubeInstance(),
+					Name: r1.Name,
+				},
+				Spec: api.InstanceSpec{
+					SKU: r1.MachineType[strings.LastIndex(r1.MachineType, "/")+1:],
+				},
+				Status: api.InstanceStatus{
+					ExternalID:    strconv.FormatUint(r1.Id, 10),
+					ExternalPhase: r1.Status,
+					ExternalIP:    accessConfig.NatIP,
+					InternalIP:    r1.NetworkInterfaces[0].NetworkIP,
+				},
 			}
 
 			/*
@@ -572,9 +578,9 @@ func (cm *clusterManager) newKubeInstance(r1 *compute.Instance) (*api.Kubernetes
 				//   "TERMINATED"
 			*/
 			if r1.Status == "TERMINATED" {
-				i.Status = api.KubernetesInstanceStatus_Deleted
+				i.Status.Phase = api.InstancePhaseDeleted
 			} else {
-				i.Status = api.KubernetesInstanceStatus_Ready
+				i.Status.Phase = api.InstancePhaseReady
 			}
 			return &i, nil
 		}
@@ -757,7 +763,7 @@ func (cm *clusterManager) createAutoscaler(sku string, count int64) (string, err
 	return r1.Name, nil
 }
 
-func (cm *clusterManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (cm *clusterManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	r2, err := cm.conn.computeService.Instances.Get(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, md.Name).Do()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()

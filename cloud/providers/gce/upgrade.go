@@ -53,8 +53,8 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	cm.ins.Instances, _ = cm.ctx.Store().Instances().LoadInstances(cm.cluster.Name)
 	if req.ApplyToMaster {
 		for _, instance := range cm.ins.Instances {
-			if instance.Role == api.RoleKubernetesMaster {
-				cm.masterUpdate(instance.ExternalIP, instance.Name, req.Version)
+			if instance.Spec.Role == api.RoleKubernetesMaster {
+				cm.masterUpdate(instance.Status.ExternalIP, instance.Name, req.Version)
 			}
 		}
 		//err = cm.updateMaster()

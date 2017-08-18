@@ -80,7 +80,7 @@ func NewInstances(ctx *contexts.ClusterContext) (*contexts.ClusterInstances, err
 }
 */
 
-func SyncAddedInstances(ctx *api.Cluster, instances []*api.KubernetesInstance, purchasePHIDs []string) (int, error) {
+func SyncAddedInstances(ctx *api.Cluster, instances []*api.Instance, purchasePHIDs []string) (int, error) {
 	return 0, nil
 	/*
 		m := make(map[string]*contexts.KubernetesInstance)
@@ -130,7 +130,7 @@ func SyncAddedInstances(ctx *api.Cluster, instances []*api.KubernetesInstance, p
 	*/
 }
 
-func SyncDeletedInstances(ctx *api.Cluster, sku string, instances []*api.KubernetesInstance) error {
+func SyncDeletedInstances(ctx *api.Cluster, sku string, instances []*api.Instance) error {
 	return nil
 	/*
 		m := make(map[string]*contexts.KubernetesInstance)
@@ -149,12 +149,12 @@ func SyncDeletedInstances(ctx *api.Cluster, sku string, instances []*api.Kuberne
 		deletedNode := 0
 		for _, i := range ctx.Instances {
 			if _, found := m[i.ExternalID]; !found && i.SKU == sku && i.Role == api.RoleKubernetesPool {
-				updates := &storage.KubernetesInstance{Status: api.KubernetesInstanceStatus_Deleted}
+				updates := &storage.KubernetesInstance{Status: api.InstancePhaseDeleted}
 				cond := &storage.KubernetesInstance{PHID: i.PHID}
 				if _, err := ctx.Store().Engine.Update(updates, cond); err != nil {
 					return errors.FromErr(err).WithContext(ctx).Err()
 				}
-				i.Status = api.KubernetesInstanceStatus_Deleted
+				i.Status = api.InstancePhaseDeleted
 				ki := &storage.Purchase{
 					ObjectPHID: i.PHID,
 					Status:     storage.ChargeStatus_Close,

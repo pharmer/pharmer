@@ -20,7 +20,7 @@ import (
 	apiv1 "k8s.io/client-go/pkg/api/v1"
 )
 
-func EnsureARecord(ctx context.Context, cluster *api.Cluster, master *api.KubernetesInstance) error {
+func EnsureARecord(ctx context.Context, cluster *api.Cluster, master *api.Instance) error {
 	clusterDomain := ctx.Extra().Domain(cluster.Name)
 	// TODO: FixIT!
 	//for _, ip := range system.Config.Compass.IPs {
@@ -30,12 +30,12 @@ func EnsureARecord(ctx context.Context, cluster *api.Cluster, master *api.Kubern
 	//}
 	ctx.Logger().Infof("Cluster apps A record %v added", clusterDomain)
 	externalDomain := ctx.Extra().ExternalDomain(cluster.Name)
-	if err := ctx.DNSProvider().EnsureARecord(externalDomain, master.ExternalIP); err != nil {
+	if err := ctx.DNSProvider().EnsureARecord(externalDomain, master.Status.ExternalIP); err != nil {
 		return err
 	}
 	ctx.Logger().Infof("External A record %v added", externalDomain)
 	internalDomain := ctx.Extra().InternalDomain(cluster.Name)
-	if err := ctx.DNSProvider().EnsureARecord(internalDomain, master.InternalIP); err != nil {
+	if err := ctx.DNSProvider().EnsureARecord(internalDomain, master.Status.InternalIP); err != nil {
 		return err
 	}
 	ctx.Logger().Infof("Internal A record %v added", internalDomain)

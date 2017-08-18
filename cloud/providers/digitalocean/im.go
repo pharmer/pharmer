@@ -25,10 +25,10 @@ type instanceManager struct {
 
 const DROPLET_IMAGE_SLUG = "ubuntu-16-04-x64"
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *api.KubernetesInstance
+	var instance *api.Instance
 	backoff.Retry(func() (err error) {
 		const pageSize = 50
 		curPage := 0
@@ -50,9 +50,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 				if internalIP == md.InternalIP {
 					instance, err = im.newKubeInstanceFromDroplet(&droplet)
 					if master {
-						instance.Role = api.RoleKubernetesMaster
+						instance.Spec.Role = api.RoleKubernetesMaster
 					} else {
-						instance.Role = api.RoleKubernetesPool
+						instance.Spec.Role = api.RoleKubernetesPool
 					}
 					return
 				}
@@ -148,7 +148,7 @@ func (im *instanceManager) assignReservedIP(ip string, dropletID int) error {
 	return nil
 }
 
-func (im *instanceManager) newKubeInstance(id int) (*api.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {
 	droplet, _, err := im.conn.client.Droplets.Get(go_ctx.TODO(), id)
 	if err != nil {
 		return nil, cloud.InstanceNotFound
@@ -171,7 +171,7 @@ func (im *instanceManager) getInstanceId(name string) (int, error) {
 	return -1, errors.New("Instance not found").Err()
 }
 
-func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*api.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*api.Instance, error) {
 	var externalIP, internalIP string
 	externalIP, err := droplet.PublicIPv4()
 	if err != nil {
@@ -182,15 +182,21 @@ func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*a
 		return nil, err
 	}
 
-	return &api.KubernetesInstance{
-		PHID:           phid.NewKubeInstance(),
-		ExternalID:     strconv.Itoa(droplet.ID),
-		ExternalStatus: droplet.Status,
-		Name:           droplet.Name,
-		ExternalIP:     externalIP,
-		InternalIP:     internalIP,
-		SKU:            droplet.SizeSlug,                   // 512mb // convert to SKU
-		Status:         api.KubernetesInstanceStatus_Ready, // droplet.Status == active
+	return &api.Instance{
+		ObjectMeta: api.ObjectMeta{
+			UID:  phid.NewKubeInstance(),
+			Name: droplet.Name,
+		},
+		Spec: api.InstanceSpec{
+			SKU: droplet.SizeSlug, // 512mb // convert to SKU
+		},
+		Status: api.InstanceStatus{
+			ExternalID:    strconv.Itoa(droplet.ID),
+			ExternalPhase: droplet.Status,
+			ExternalIP:    externalIP,
+			InternalIP:    internalIP,
+			Phase:         api.InstancePhaseReady, // droplet.Status == active
+		},
 	}, nil
 }
 

@@ -29,7 +29,7 @@ type instanceManager struct {
 	namer   namer
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	pip, err := im.conn.publicIPAddressesClient.Get(im.namer.ResourceGroupName(), im.namer.PublicIPName(md.Name), "")
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
@@ -313,18 +313,24 @@ func (im *instanceManager) RenderStartupScript(sku, role string) string {
 	return cloud.RenderDoKubeNode(im.cluster)
 }
 
-func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic network.Interface, pip network.PublicIPAddress) (*api.KubernetesInstance, error) {
-	i := api.KubernetesInstance{
-		PHID:           phid.NewKubeInstance(),
-		ExternalID:     fmt.Sprintf(machineIDTemplate, im.cluster.Spec.CloudCredential[credential.AzureSubscriptionID], im.namer.ResourceGroupName(), *vm.Name),
-		ExternalStatus: *vm.ProvisioningState,
-		Name:           *vm.Name,
-		InternalIP:     *(*nic.IPConfigurations)[0].PrivateIPAddress,
-		SKU:            string(vm.HardwareProfile.VMSize),
-		Status:         api.KubernetesInstanceStatus_Ready,
+func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic network.Interface, pip network.PublicIPAddress) (*api.Instance, error) {
+	i := api.Instance{
+		ObjectMeta: api.ObjectMeta{
+			UID:  phid.NewKubeInstance(),
+			Name: *vm.Name,
+		},
+		Spec: api.InstanceSpec{
+			SKU: string(vm.HardwareProfile.VMSize),
+		},
+		Status: api.InstanceStatus{
+			ExternalID:    fmt.Sprintf(machineIDTemplate, im.cluster.Spec.CloudCredential[credential.AzureSubscriptionID], im.namer.ResourceGroupName(), *vm.Name),
+			ExternalPhase: *vm.ProvisioningState,
+			InternalIP:    *(*nic.IPConfigurations)[0].PrivateIPAddress,
+			Phase:         api.InstancePhaseReady,
+		},
 	}
 	if pip.IPAddress != nil {
-		i.ExternalIP = *pip.IPAddress
+		i.Status.ExternalIP = *pip.IPAddress
 	}
 	return &i, nil
 }

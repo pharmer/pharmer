@@ -322,7 +322,6 @@ type InstanceGroup struct {
 	UseSpotInstances bool   `json:"USE_SPOT_INSTANCES"`
 }
 
-// Postgres defines a Postgres database.
 type Cluster struct {
 	TypeMeta   `json:",inline,omitempty"`
 	ObjectMeta `json:"metadata,omitempty"`
@@ -499,10 +498,10 @@ func (ctx *ClusterContext) UpdateNodeCount() error {
 */
 
 func (cluster *Cluster) Delete() error {
-	if cluster.Status.Phase == KubernetesStatus_Pending || cluster.Status.Phase == KubernetesStatus_Failing || cluster.Status.Phase == KubernetesStatus_Failed {
-		cluster.Status.Phase = KubernetesStatus_Failed
+	if cluster.Status.Phase == ClusterPhasePending || cluster.Status.Phase == ClusterPhaseFailing || cluster.Status.Phase == ClusterPhaseFailed {
+		cluster.Status.Phase = ClusterPhaseFailed
 	} else {
-		cluster.Status.Phase = KubernetesStatus_Deleted
+		cluster.Status.Phase = ClusterPhaseDeleted
 	}
 	fmt.Println("FixIt!")
 	//if err := ctx.Save(); err != nil {
@@ -584,13 +583,13 @@ func (cluster *Cluster) StartupConfigResponse(role string) (string, error) {
 	return m.MarshalToString(resp)
 }
 
-func (cluster *Cluster) NewInstances(matches func(i *KubernetesInstance, md *InstanceMetadata) bool) (*ClusterInstances, error) {
+func (cluster *Cluster) NewInstances(matches func(i *Instance, md *InstanceMetadata) bool) (*ClusterInstances, error) {
 	if matches == nil {
 		return nil, errors.New(`Use "github.com/appscode/pharmer/cloud/lib".NewInstances`).Err()
 	}
 	return &ClusterInstances{
 		matches:        matches,
 		KubernetesPHID: cluster.UID,
-		Instances:      make([]*KubernetesInstance, 0),
+		Instances:      make([]*Instance, 0),
 	}, nil
 }

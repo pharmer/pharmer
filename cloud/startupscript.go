@@ -354,8 +354,8 @@ func SaveInstancesInFirebase(opt *api.Cluster, ins *api.ClusterInstances) error 
 	// ins.Logger().Infof("Server is configured to skip startup config api")
 	// store instances
 	for _, v := range ins.Instances {
-		if v.ExternalIP != "" {
-			fbPath, err := firebaseInstancePath(opt, v.ExternalIP)
+		if v.Status.ExternalIP != "" {
+			fbPath, err := firebaseInstancePath(opt, v.Status.ExternalIP)
 			if err != nil {
 				return err // ors.FromErr(err).WithContext(ins).Err()
 			}
@@ -363,12 +363,12 @@ func SaveInstancesInFirebase(opt *api.Cluster, ins *api.ClusterInstances) error 
 
 			r2 := &proto.ClusterInstanceByIPResponse{
 				Instance: &proto.ClusterInstance{
-					Phid:       v.PHID,
-					ExternalId: v.ExternalID,
+					Phid:       v.UID,
+					ExternalId: v.Status.ExternalID,
 					Name:       v.Name,
-					ExternalIp: v.ExternalIP,
-					InternalIp: v.InternalIP,
-					Sku:        v.SKU,
+					ExternalIp: v.Status.ExternalIP,
+					InternalIp: v.Status.InternalIP,
+					Sku:        v.Spec.SKU,
 				},
 			}
 

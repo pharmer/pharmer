@@ -93,7 +93,7 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	cm.cluster.Spec.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.cluster.Name)
 	cm.cluster.Spec.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.cluster.Name)
 
-	cm.cluster.Status.Phase = api.KubernetesStatus_Pending
+	cm.cluster.Status.Phase = api.ClusterPhasePending
 	cm.cluster.Spec.OS = "ubuntu"
 
 	cm.cluster.Spec.DockerStorage = "aufs"

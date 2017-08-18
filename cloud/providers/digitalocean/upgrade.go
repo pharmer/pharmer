@@ -100,9 +100,9 @@ func (cm *clusterManager) updateMaster() error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Role = api.RoleKubernetesMaster
-	cm.cluster.Spec.MasterExternalIP = masterInstance.ExternalIP
-	cm.cluster.Spec.MasterInternalIP = masterInstance.InternalIP
+	masterInstance.Spec.Role = api.RoleKubernetesMaster
+	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.ExternalIP
+	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.InternalIP
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP, "<><><>", cm.cluster.Spec.MasterReservedIP)
 	cm.ctx.Logger().Infof("Rebooting master instance")
 	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
@@ -140,8 +140,8 @@ func (cm *clusterManager) updateNodes(sku string) error {
 	cm.UploadStartupConfig(cm.cluster)
 
 	for _, instance := range oldinstances {
-		dropletID, err := strconv.Atoi(instance.ExternalID)
-		err = cm.deleteDroplet(dropletID, instance.InternalIP)
+		dropletID, err := strconv.Atoi(instance.Status.ExternalID)
+		err = cm.deleteDroplet(dropletID, instance.Status.InternalIP)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}

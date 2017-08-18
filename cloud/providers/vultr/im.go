@@ -23,10 +23,10 @@ type instanceManager struct {
 	namer   namer
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *api.KubernetesInstance
+	var instance *api.Instance
 	backoff.Retry(func() (err error) {
 		servers, err := im.conn.client.GetServers()
 		if err != nil {
@@ -36,9 +36,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 			if server.InternalIP == md.InternalIP {
 				instance, err = im.newKubeInstance(&server)
 				if master {
-					instance.Role = api.RoleKubernetesMaster
+					instance.Spec.Role = api.RoleKubernetesMaster
 				} else {
-					instance.Role = api.RoleKubernetesPool
+					instance.Spec.Role = api.RoleKubernetesPool
 				}
 				return
 			}
@@ -172,16 +172,22 @@ func (im *instanceManager) assignReservedIP(ip, serverId string) error {
 	return nil
 }
 
-func (im *instanceManager) newKubeInstance(server *gv.Server) (*api.KubernetesInstance, error) {
-	return &api.KubernetesInstance{
-		PHID:           phid.NewKubeInstance(),
-		ExternalID:     server.ID,
-		ExternalStatus: server.Status + "|" + server.PowerStatus,
-		Name:           server.Name,
-		ExternalIP:     server.MainIP,
-		InternalIP:     server.InternalIP,
-		SKU:            strconv.Itoa(server.PlanID),        // 512mb // convert to SKU
-		Status:         api.KubernetesInstanceStatus_Ready, // active
+func (im *instanceManager) newKubeInstance(server *gv.Server) (*api.Instance, error) {
+	return &api.Instance{
+		ObjectMeta: api.ObjectMeta{
+			UID:  phid.NewKubeInstance(),
+			Name: server.Name,
+		},
+		Spec: api.InstanceSpec{
+			SKU: strconv.Itoa(server.PlanID), // 512mb // convert to SKU
+		},
+		Status: api.InstanceStatus{
+			ExternalID:    server.ID,
+			ExternalPhase: server.Status + "|" + server.PowerStatus,
+			ExternalIP:    server.MainIP,
+			InternalIP:    server.InternalIP,
+			Phase:         api.InstancePhaseReady, // active
+		},
 	}, nil
 }
 

@@ -31,10 +31,10 @@ const (
 	LinodeStatus_PoweredOff   = 2
 )
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.KubernetesInstance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *api.KubernetesInstance
+	var instance *api.Instance
 	backoff.Retry(func() error {
 		resp, err := im.conn.client.Ip.List(0, 0)
 		if err != nil {
@@ -51,10 +51,10 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Kubernete
 					return err
 				}
 				if master {
-					instance.Role = api.RoleKubernetesMaster
+					instance.Spec.Role = api.RoleKubernetesMaster
 				} else {
 					instance.Name = im.cluster.Name + "-node-" + strconv.Itoa(fip.LinodeId)
-					instance.Role = api.RoleKubernetesPool
+					instance.Spec.Role = api.RoleKubernetesPool
 				}
 				return nil
 			}
@@ -248,7 +248,7 @@ func (im *instanceManager) bootToGrub2(linodeId, configId int, name string) erro
 	return err
 }
 
-func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.KubernetesInstance, error) {
+func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.Instance, error) {
 	var externalIP, internalIP string
 	ips, err := im.conn.client.Ip.List(linode.LinodeId, -1)
 	if err != nil {
@@ -261,15 +261,21 @@ func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.Kubern
 			internalIP = ip.IPAddress
 		}
 		if externalIP != "" && internalIP != "" {
-			i := api.KubernetesInstance{
-				PHID:           phid.NewKubeInstance(),
-				ExternalID:     strconv.Itoa(linode.LinodeId),
-				Name:           linode.Label.String(),
-				ExternalIP:     externalIP,
-				InternalIP:     internalIP,
-				SKU:            strconv.Itoa(linode.PlanId),
-				Status:         api.KubernetesInstanceStatus_Ready,
-				ExternalStatus: statusString(linode.Status),
+			i := api.Instance{
+				ObjectMeta: api.ObjectMeta{
+					UID:  phid.NewKubeInstance(),
+					Name: linode.Label.String(),
+				},
+				Spec: api.InstanceSpec{
+					SKU: strconv.Itoa(linode.PlanId),
+				},
+				Status: api.InstanceStatus{
+					ExternalID:    strconv.Itoa(linode.LinodeId),
+					ExternalIP:    externalIP,
+					InternalIP:    internalIP,
+					Phase:         api.InstancePhaseReady,
+					ExternalPhase: statusString(linode.Status),
+				},
 			}
 			return &i, nil
 		}

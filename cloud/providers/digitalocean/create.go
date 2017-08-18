@@ -30,13 +30,13 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 
 	defer func(releaseReservedIp bool) {
-		if cm.cluster.Status.Phase == api.KubernetesStatus_Pending {
-			cm.cluster.Status.Phase = api.KubernetesStatus_Failing
+		if cm.cluster.Status.Phase == api.ClusterPhasePending {
+			cm.cluster.Status.Phase = api.ClusterPhaseFailing
 		}
 		cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 		cm.ctx.Store().Instances().SaveInstances(cm.ins.Instances)
 		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
-		if cm.cluster.Status.Phase != api.KubernetesStatus_Ready {
+		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
@@ -104,9 +104,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Role = api.RoleKubernetesMaster
-	cm.cluster.Spec.MasterExternalIP = masterInstance.ExternalIP
-	cm.cluster.Spec.MasterInternalIP = masterInstance.InternalIP
+	masterInstance.Spec.Role = api.RoleKubernetesMaster
+	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.ExternalIP
+	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.InternalIP
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP, "<><><><>", cm.cluster.Spec.MasterReservedIP)
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 
@@ -183,7 +183,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.cluster.Status.Phase = api.KubernetesStatus_Ready
+	cm.cluster.Status.Phase = api.ClusterPhaseReady
 	return nil
 }
 
