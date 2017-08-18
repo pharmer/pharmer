@@ -71,24 +71,24 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 }
 
 func (cm *clusterManager) deleteResourceGroup(groupName string) error {
-	_, err := cm.conn.groupsClient.Delete(groupName, make(chan struct{}))
+	_, errchan := cm.conn.groupsClient.Delete(groupName, make(chan struct{}))
 	cm.ctx.Logger().Infof("Resource group %v deleted", groupName)
-	return err
+	return <-errchan
 }
 
 func (cm *clusterManager) deleteNodeNetworkInterface(interfaceName string) error {
-	_, err := cm.conn.interfacesClient.Delete(cm.cluster.Name, interfaceName, make(chan struct{}))
+	_, errchan := cm.conn.interfacesClient.Delete(cm.cluster.Name, interfaceName, make(chan struct{}))
 	cm.ctx.Logger().Infof("Node network interface %v deleted", interfaceName)
-	return err
+	return <-errchan
 }
 
 func (cm *clusterManager) deletePublicIp(ipName string) error {
-	_, err := cm.conn.publicIPAddressesClient.Delete(cm.cluster.Name, ipName, nil)
+	_, errchan := cm.conn.publicIPAddressesClient.Delete(cm.cluster.Name, ipName, nil)
 	cm.ctx.Logger().Infof("Public ip %v deleted", ipName)
-	return err
+	return <-errchan
 }
 func (cm *clusterManager) deleteVirtualMachine(machineName string) error {
-	_, err := cm.conn.vmClient.Delete(cm.cluster.Name, machineName, make(chan struct{}))
+	_, errchan := cm.conn.vmClient.Delete(cm.cluster.Name, machineName, make(chan struct{}))
 	cm.ctx.Logger().Infof("Virtual machine %v deleted", machineName)
-	return err
+	return <-errchan
 }

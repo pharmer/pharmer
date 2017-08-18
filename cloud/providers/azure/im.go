@@ -65,7 +65,8 @@ func (im *instanceManager) createPublicIP(name string, alloc network.IPAllocatio
 		},
 	}
 
-	_, err := im.conn.publicIPAddressesClient.CreateOrUpdate(im.namer.ResourceGroupName(), name, req, nil)
+	_, errchan := im.conn.publicIPAddressesClient.CreateOrUpdate(im.namer.ResourceGroupName(), name, req, nil)
+	err := <-errchan
 	if err != nil {
 		return network.PublicIPAddress{}, err
 	}
@@ -122,7 +123,8 @@ func (im *instanceManager) createNetworkInterface(name string, sg network.Securi
 		}
 		(*req.IPConfigurations)[0].PrivateIPAddress = types.StringP(internalIP)
 	}
-	_, err := im.conn.interfacesClient.CreateOrUpdate(im.namer.ResourceGroupName(), name, req, nil)
+	_, errchan := im.conn.interfacesClient.CreateOrUpdate(im.namer.ResourceGroupName(), name, req, nil)
+	err := <-errchan
 	if err != nil {
 		return network.Interface{}, err
 	}
@@ -187,7 +189,8 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 		},
 	}
 
-	_, err := im.conn.vmClient.CreateOrUpdate(im.namer.ResourceGroupName(), vmName, req, nil)
+	_, errchan := im.conn.vmClient.CreateOrUpdate(im.namer.ResourceGroupName(), vmName, req, nil)
+	err := <-errchan
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
@@ -216,7 +219,8 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 			"KubernetesCluster": types.StringP(im.cluster.Name),
 		},
 	}
-	_, err = im.conn.vmExtensionsClient.CreateOrUpdate(im.namer.ResourceGroupName(), vmName, extName, extReq, nil)
+	_, errchan = im.conn.vmExtensionsClient.CreateOrUpdate(im.namer.ResourceGroupName(), vmName, extName, extReq, nil)
+	err = <-errchan
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
@@ -233,7 +237,11 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 }
 
 func (im *instanceManager) DeleteVirtualMachine(vmName string) error {
-	_, err := im.conn.vmClient.Delete(im.namer.ResourceGroupName(), vmName, nil)
+	_, errchan := im.conn.vmClient.Delete(im.namer.ResourceGroupName(), vmName, nil)
+	err := <-errchan
+	if err != nil {
+		return err
+	}
 	storageName := im.cluster.Spec.AzureCloudConfig.StorageAccountName
 	keys, err := im.conn.storageClient.ListKeys(im.namer.ResourceGroupName(), storageName)
 	if err != nil {
@@ -244,11 +252,9 @@ func (im *instanceManager) DeleteVirtualMachine(vmName string) error {
 	if err != nil {
 		return err
 	}
-	_, err = storageClient.GetBlobService().DeleteBlobIfExists(storageName, im.namer.BlobName(vmName), nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	bs := storageClient.GetBlobService()
+	_, err = bs.GetContainerReference(storageName).GetBlobReference(im.namer.BlobName(vmName)).DeleteIfExists(nil)
+	return err
 }
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup

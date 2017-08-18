@@ -1,5 +1,5 @@
 hash: 6cebf64366e1d164ffcb1208662c1510b70bb9da7ade6ba152711aee8bbeffc5
-updated: 2017-08-17T15:38:47.827366626-07:00
+updated: 2017-08-17T18:31:45.176965146-07:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -217,7 +217,6 @@ imports:
   version: 40085cf5fd629ccd88dc328895f1f137d09a1de4
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
-  repo: https://github.com/davecgh/go-spew
   subpackages:
   - spew
 - name: github.com/dgrijalva/jwt-go
@@ -559,7 +558,7 @@ imports:
   - internal/urlfetch
   - urlfetch
 - name: google.golang.org/genproto
-  version: 6b7d9516179cd47f4714cfeb0103ad1dede756c4
+  version: ee236bd376b077c7a89f260c026c4735b195e459
   subpackages:
   - googleapis/api/annotations
   - googleapis/rpc/status

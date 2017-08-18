@@ -209,8 +209,8 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 //	cluster.Spec.ctx.MasterReservedIP = *ip.IPAddress
 //	// cluster.Spec.ctx.ApiServerUrl = "https://" + *ip.IPAddress
 
-func (cm *clusterManager) ensureResourceGroup() (resources.ResourceGroup, error) {
-	req := resources.ResourceGroup{
+func (cm *clusterManager) ensureResourceGroup() (resources.Group, error) {
+	req := resources.Group{
 		Name:     types.StringP(cm.namer.ResourceGroupName()),
 		Location: types.StringP(cm.cluster.Spec.Zone),
 		Tags: &map[string]*string{
@@ -247,7 +247,8 @@ func (cm *clusterManager) ensureVirtualNetwork() (network.VirtualNetwork, error)
 		},
 	}
 
-	_, err := cm.conn.virtualNetworksClient.CreateOrUpdate(cm.namer.ResourceGroupName(), name, req, nil)
+	_, errchan := cm.conn.virtualNetworksClient.CreateOrUpdate(cm.namer.ResourceGroupName(), name, req, nil)
+	err := <-errchan
 	if err != nil {
 		return network.VirtualNetwork{}, err
 	}
@@ -268,7 +269,8 @@ func (cm *clusterManager) createNetworkSecurityGroup() (network.SecurityGroup, e
 			"KubernetesCluster": types.StringP(cm.cluster.Name),
 		},
 	}
-	_, err := cm.conn.securityGroupsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), securityGroupName, securityGroup, nil)
+	_, errchan := cm.conn.securityGroupsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), securityGroupName, securityGroup, nil)
+	err := <-errchan
 	if err != nil {
 		return network.SecurityGroup{}, err
 	}
@@ -300,7 +302,8 @@ func (cm *clusterManager) createSubnetID(vn *network.VirtualNetwork, sg *network
 		},
 	}
 
-	_, err = cm.conn.subnetsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), *vn.Name, name, req, nil)
+	_, errchan := cm.conn.subnetsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), *vn.Name, name, req, nil)
+	err = <-errchan
 	if err != nil {
 		return network.Subnet{}, err
 	}
@@ -321,7 +324,8 @@ func (cm *clusterManager) createRouteTable() (network.RouteTable, error) {
 			"KubernetesCluster": types.StringP(cm.cluster.Name),
 		},
 	}
-	_, err := cm.conn.routeTablesClient.CreateOrUpdate(cm.namer.ResourceGroupName(), name, req, nil)
+	_, errchan := cm.conn.routeTablesClient.CreateOrUpdate(cm.namer.ResourceGroupName(), name, req, nil)
+	err := <-errchan
 	if err != nil {
 		return network.RouteTable{}, err
 	}
@@ -334,17 +338,18 @@ func (cm *clusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 	sshRule := network.SecurityRule{
 		Name: types.StringP(sshRuleName),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Access: network.Allow,
+			Access: network.SecurityRuleAccessAllow,
 			DestinationAddressPrefix: types.StringP("*"),
 			DestinationPortRange:     types.StringP("22"),
-			Direction:                network.Inbound,
+			Direction:                network.SecurityRuleDirectionInbound,
 			Priority:                 types.Int32P(100),
-			Protocol:                 network.TCP,
+			Protocol:                 network.SecurityRuleProtocolTCP,
 			SourceAddressPrefix:      types.StringP("*"),
 			SourcePortRange:          types.StringP("*"),
 		},
 	}
-	_, err := cm.conn.securityRulesClient.CreateOrUpdate(cm.namer.ResourceGroupName(), *sg.Name, sshRuleName, sshRule, nil)
+	_, errchan := cm.conn.securityRulesClient.CreateOrUpdate(cm.namer.ResourceGroupName(), *sg.Name, sshRuleName, sshRule, nil)
+	err := <-errchan
 	if err != nil {
 		return err
 	}
@@ -353,17 +358,18 @@ func (cm *clusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 	sslRule := network.SecurityRule{
 		Name: types.StringP(sshRuleName),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Access: network.Allow,
+			Access: network.SecurityRuleAccessAllow,
 			DestinationAddressPrefix: types.StringP("*"),
 			DestinationPortRange:     types.StringP("443"),
-			Direction:                network.Inbound,
+			Direction:                network.SecurityRuleDirectionInbound,
 			Priority:                 types.Int32P(110),
-			Protocol:                 network.TCP,
+			Protocol:                 network.SecurityRuleProtocolTCP,
 			SourceAddressPrefix:      types.StringP("*"),
 			SourcePortRange:          types.StringP("*"),
 		},
 	}
-	_, err = cm.conn.securityRulesClient.CreateOrUpdate(cm.namer.ResourceGroupName(), *sg.Name, sslRuleName, sslRule, nil)
+	_, errchan = cm.conn.securityRulesClient.CreateOrUpdate(cm.namer.ResourceGroupName(), *sg.Name, sslRuleName, sslRule, nil)
+	err = <-errchan
 	if err != nil {
 		return err
 	}
@@ -373,17 +379,18 @@ func (cm *clusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 	mastersslRule := network.SecurityRule{
 		Name: types.StringP(mastersslRuleName),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Access: network.Allow,
+			Access: network.SecurityRuleAccessAllow,
 			DestinationAddressPrefix: types.StringP("*"),
 			DestinationPortRange:     types.StringP("6443"),
-			Direction:                network.Inbound,
+			Direction:                network.SecurityRuleDirectionInbound,
 			Priority:                 types.Int32P(120),
-			Protocol:                 network.TCP,
+			Protocol:                 network.SecurityRuleProtocolTCP,
 			SourceAddressPrefix:      types.StringP("*"),
 			SourcePortRange:          types.StringP("*"),
 		},
 	}
-	_, err = cm.conn.securityRulesClient.CreateOrUpdate(cm.namer.ResourceGroupName(), *sg.Name, mastersslRuleName, mastersslRule, nil)
+	_, errchan = cm.conn.securityRulesClient.CreateOrUpdate(cm.namer.ResourceGroupName(), *sg.Name, mastersslRuleName, mastersslRule, nil)
+	err = <-errchan
 	if err != nil {
 		return err
 	}
@@ -403,7 +410,8 @@ func (cm *clusterManager) createStorageAccount() (armstorage.Account, error) {
 			"KubernetesCluster": types.StringP(cm.cluster.Name),
 		},
 	}
-	_, err := cm.conn.storageClient.Create(cm.namer.ResourceGroupName(), storageName, req, nil)
+	_, errchan := cm.conn.storageClient.Create(cm.namer.ResourceGroupName(), storageName, req, nil)
+	err := <-errchan
 	if err != nil {
 		return armstorage.Account{}, err
 	}
@@ -417,7 +425,8 @@ func (cm *clusterManager) createStorageAccount() (armstorage.Account, error) {
 		return armstorage.Account{}, err
 	}
 
-	err = storageClient.GetBlobService().CreateContainer(cm.namer.StorageContainerName(), azstore.ContainerAccessTypeContainer)
+	bs := storageClient.GetBlobService()
+	_, err = bs.GetContainerReference(cm.namer.StorageContainerName()).CreateIfNotExists(&azstore.CreateContainerOptions{Access: azstore.ContainerAccessTypeContainer})
 	if err != nil {
 		return armstorage.Account{}, err
 	}
