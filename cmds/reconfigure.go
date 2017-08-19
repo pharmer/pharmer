@@ -29,16 +29,7 @@ func NewCmdReconfigure() *cobra.Command {
 	cmd.Flags().BoolVar(&req.ApplyToMaster, "apply-to-master", false, "Set true to change version of master. Default set to false.")
 	cmd.Flags().StringVar(&req.Sku, "sku", "", "Instance type")
 	cmd.Flags().Int64Var(&req.Count, "count", -1, "Number of instances of this type")
-	cmd.Flags().StringVar(&req.Version, "version", "", "Kubernetes version")
-	cmd.Flags().StringVar(&req.SaltbaseVersion, "saltbase-version", "", "Kubernetes saltbase version")
-	cmd.Flags().StringVar(&req.KubeStarterVersion, "kube-starter-version", "", "Kube starter version")
-	cmd.Flags().StringVar(&req.KubeletVersion, "kubelet-version", "", "Kubernetes server version")
-	cmd.Flags().StringVar(&req.HostfactsVersion, "hostfacts-version", "", "Hostfacts version")
-
-	cmd.Flags().MarkHidden("saltbase-version")
-	cmd.Flags().MarkHidden("kube-starter-version")
-	cmd.Flags().MarkHidden("kubelet-version")
-	cmd.Flags().MarkHidden("hostfacts-version")
+	cmd.Flags().StringVar(&req.KubernetesVersion, "kubernetes-version", "", "Kubernetes server version")
 
 	return cmd
 }

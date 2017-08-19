@@ -1,5 +1,5 @@
-hash: 6cebf64366e1d164ffcb1208662c1510b70bb9da7ade6ba152711aee8bbeffc5
-updated: 2017-08-17T18:31:45.176965146-07:00
+hash: 3986414ee8a1e762474a5034c01c9a0201df62d06b505934bd1e6d83b5773488
+updated: 2017-08-18T17:00:16.630809135-07:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -9,7 +9,7 @@ imports:
 - name: github.com/andrew-d/go-termutil
   version: 009166a695a2f516c749a26b4ac1f183d89aa336
 - name: github.com/appscode/api
-  version: d98df977c923189d5e4856bf8d428f5528b6bdd1
+  version: 40675bc7864ed9a3e6a15f2ae1b9123fcf6d4295
   subpackages:
   - attic/v1beta1
   - auth/v1beta1
@@ -433,7 +433,7 @@ imports:
   subpackages:
   - open
 - name: github.com/softlayer/softlayer-go
-  version: 5e1c8cccc730778a87ca5a0c5348fcfddc02cee2
+  version: ba0eaed1782df1b25af8af69df2950472b71135d
   subpackages:
   - config
   - datatypes

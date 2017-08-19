@@ -46,8 +46,8 @@ func RegisterConversions(scheme *runtime.Scheme) error {
 		Convert_batch_JobList_To_v1_JobList,
 		Convert_v1_JobSpec_To_batch_JobSpec,
 		Convert_batch_JobSpec_To_v1_JobSpec,
-		Convert_v1_JobPhaseTo_batch_JobStatus,
-		Convert_batch_JobPhaseTo_v1_JobStatus,
+		Convert_v1_JobStatus_To_batch_JobStatus,
+		Convert_batch_JobStatus_To_v1_JobStatus,
 	)
 }
 
@@ -56,7 +56,7 @@ func autoConvert_v1_Job_To_batch_Job(in *Job, out *batch.Job, s conversion.Scope
 	if err := Convert_v1_JobSpec_To_batch_JobSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
-	if err := Convert_v1_JobPhaseTo_batch_JobStatus(&in.Status, &out.Status, s); err != nil {
+	if err := Convert_v1_JobStatus_To_batch_JobStatus(&in.Status, &out.Status, s); err != nil {
 		return err
 	}
 	return nil
@@ -71,7 +71,7 @@ func autoConvert_batch_Job_To_v1_Job(in *batch.Job, out *Job, s conversion.Scope
 	if err := Convert_batch_JobSpec_To_v1_JobSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
-	if err := Convert_batch_JobPhaseTo_v1_JobStatus(&in.Status, &out.Status, s); err != nil {
+	if err := Convert_batch_JobStatus_To_v1_JobStatus(&in.Status, &out.Status, s); err != nil {
 		return err
 	}
 	return nil
@@ -173,7 +173,7 @@ func autoConvert_batch_JobSpec_To_v1_JobSpec(in *batch.JobSpec, out *JobSpec, s 
 	return nil
 }
 
-func autoConvert_v1_JobPhaseTo_batch_JobStatus(in *JobStatus, out *batch.JobStatus, s conversion.Scope) error {
+func autoConvert_v1_JobStatus_To_batch_JobStatus(in *JobStatus, out *batch.JobStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]batch.JobCondition)(unsafe.Pointer(&in.Conditions))
 	out.StartTime = (*meta_v1.Time)(unsafe.Pointer(in.StartTime))
 	out.CompletionTime = (*meta_v1.Time)(unsafe.Pointer(in.CompletionTime))
@@ -183,11 +183,11 @@ func autoConvert_v1_JobPhaseTo_batch_JobStatus(in *JobStatus, out *batch.JobStat
 	return nil
 }
 
-func Convert_v1_JobPhaseTo_batch_JobStatus(in *JobStatus, out *batch.JobStatus, s conversion.Scope) error {
-	return autoConvert_v1_JobPhaseTo_batch_JobStatus(in, out, s)
+func Convert_v1_JobStatus_To_batch_JobStatus(in *JobStatus, out *batch.JobStatus, s conversion.Scope) error {
+	return autoConvert_v1_JobStatus_To_batch_JobStatus(in, out, s)
 }
 
-func autoConvert_batch_JobPhaseTo_v1_JobStatus(in *batch.JobStatus, out *JobStatus, s conversion.Scope) error {
+func autoConvert_batch_JobStatus_To_v1_JobStatus(in *batch.JobStatus, out *JobStatus, s conversion.Scope) error {
 	out.Conditions = *(*[]JobCondition)(unsafe.Pointer(&in.Conditions))
 	out.StartTime = (*meta_v1.Time)(unsafe.Pointer(in.StartTime))
 	out.CompletionTime = (*meta_v1.Time)(unsafe.Pointer(in.CompletionTime))
@@ -197,6 +197,6 @@ func autoConvert_batch_JobPhaseTo_v1_JobStatus(in *batch.JobStatus, out *JobStat
 	return nil
 }
 
-func Convert_batch_JobPhaseTo_v1_JobStatus(in *batch.JobStatus, out *JobStatus, s conversion.Scope) error {
-	return autoConvert_batch_JobPhaseTo_v1_JobStatus(in, out, s)
+func Convert_batch_JobStatus_To_v1_JobStatus(in *batch.JobStatus, out *JobStatus, s conversion.Scope) error {
+	return autoConvert_batch_JobStatus_To_v1_JobStatus(in, out, s)
 }
