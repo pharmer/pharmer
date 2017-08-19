@@ -363,7 +363,7 @@ func SaveInstancesInFirebase(opt *api.Cluster, ins *api.ClusterInstances) error 
 
 			r2 := &proto.ClusterInstanceByIPResponse{
 				Instance: &proto.ClusterInstance{
-					Phid:       v.UID,
+					Uid:        v.UID,
 					ExternalId: v.Status.ExternalID,
 					Name:       v.Name,
 					ExternalIp: v.Status.ExternalIP,

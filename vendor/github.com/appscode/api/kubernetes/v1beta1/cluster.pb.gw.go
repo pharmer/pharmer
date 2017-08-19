@@ -243,12 +243,12 @@ func request_Clusters_StartupConfig_0(ctx context.Context, marshaler runtime.Mar
 		return nil, metadata, err
 	}
 
-	val, ok = pathParams["context_version"]
+	val, ok = pathParams["resource_version"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "context_version")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "resource_version")
 	}
 
-	protoReq.ContextVersion, err = runtime.Int64(val)
+	protoReq.ResourceVersion, err = runtime.Int64(val)
 
 	if err != nil {
 		return nil, metadata, err
@@ -292,12 +292,12 @@ func request_Clusters_StartupConfig_1(ctx context.Context, marshaler runtime.Mar
 		return nil, metadata, err
 	}
 
-	val, ok = pathParams["context_version"]
+	val, ok = pathParams["resource_version"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "context_version")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "resource_version")
 	}
 
-	protoReq.ContextVersion, err = runtime.Int64(val)
+	protoReq.ResourceVersion, err = runtime.Int64(val)
 
 	if err != nil {
 		return nil, metadata, err
@@ -319,12 +319,12 @@ func request_Clusters_InstanceByIP_0(ctx context.Context, marshaler runtime.Mars
 		_   = err
 	)
 
-	val, ok = pathParams["phid"]
+	val, ok = pathParams["uid"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "phid")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "uid")
 	}
 
-	protoReq.Phid, err = runtime.String(val)
+	protoReq.Uid, err = runtime.String(val)
 
 	if err != nil {
 		return nil, metadata, err
@@ -357,12 +357,12 @@ func request_Clusters_InstanceByIP_1(ctx context.Context, marshaler runtime.Mars
 		_   = err
 	)
 
-	val, ok = pathParams["phid"]
+	val, ok = pathParams["uid"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "phid")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "uid")
 	}
 
-	protoReq.Phid, err = runtime.String(val)
+	protoReq.Uid, err = runtime.String(val)
 
 	if err != nil {
 		return nil, metadata, err
@@ -751,13 +751,13 @@ var (
 
 	pattern_Clusters_ClientConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 2, 7}, []string{"_appscode", "api", "kubernetes", "v1beta1", "clusters", "name", "client-config", "json"}, ""))
 
-	pattern_Clusters_StartupConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 1, 0, 4, 1, 5, 7, 2, 8, 1, 0, 4, 1, 5, 9, 2, 10}, []string{"_appscode", "api", "kubernetes", "v1beta1", "clusters", "uid", "startup-config", "role", "context-versions", "context_version", "json"}, ""))
+	pattern_Clusters_StartupConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 1, 0, 4, 1, 5, 7, 2, 8, 1, 0, 4, 1, 5, 9, 2, 10}, []string{"_appscode", "api", "kubernetes", "v1beta1", "clusters", "uid", "startup-config", "role", "versions", "resource_version", "json"}, ""))
 
-	pattern_Clusters_StartupConfig_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 1, 0, 4, 1, 5, 7, 2, 8, 1, 0, 4, 1, 5, 9}, []string{"_appscode", "api", "kubernetes", "v1beta1", "clusters", "uid", "startup-config", "role", "context-versions", "context_version"}, ""))
+	pattern_Clusters_StartupConfig_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 1, 0, 4, 1, 5, 7, 2, 8, 1, 0, 4, 1, 5, 9}, []string{"_appscode", "api", "kubernetes", "v1beta1", "clusters", "uid", "startup-config", "role", "versions", "resource_version"}, ""))
 
-	pattern_Clusters_InstanceByIP_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 1, 0, 4, 1, 5, 7, 2, 8}, []string{"_appscode", "api", "kubernetes", "v1beta1", "clusters", "phid", "instance-by-ip", "external_ip", "json"}, ""))
+	pattern_Clusters_InstanceByIP_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 1, 0, 4, 1, 5, 7, 2, 8}, []string{"_appscode", "api", "kubernetes", "v1beta1", "clusters", "uid", "instance-by-ip", "external_ip", "json"}, ""))
 
-	pattern_Clusters_InstanceByIP_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 1, 0, 4, 1, 5, 7}, []string{"_appscode", "api", "kubernetes", "v1beta1", "clusters", "phid", "instance-by-ip", "external_ip"}, ""))
+	pattern_Clusters_InstanceByIP_1 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 1, 0, 4, 1, 5, 7}, []string{"_appscode", "api", "kubernetes", "v1beta1", "clusters", "uid", "instance-by-ip", "external_ip"}, ""))
 )
 
 var (

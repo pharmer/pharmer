@@ -45,7 +45,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cloud.GenClusterTokens(cm.cluster)
 
 	cm.cluster.Spec.KubeadmToken = cloud.GetKubeadmToken()
-	cm.cluster.Spec.KubernetesVersion = "v" + req.Version
+	cm.cluster.Spec.KubernetesVersion = "v" + req.KubernetesVersion
 
 	return nil
 }

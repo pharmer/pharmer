@@ -24,7 +24,7 @@ func init() {
     "external_ip": {
       "type": "string"
     },
-    "phid": {
+    "uid": {
       "type": "string"
     }
   },
@@ -120,16 +120,8 @@ func init() {
     }
   },
   "properties": {
-    "cloud_credential": {
-      "maxLength": 63,
-      "pattern": "^[a-z0-9](?:[a-z0-9\\-]{0,61}[a-z0-9])?$",
+    "credential_uid": {
       "type": "string"
-    },
-    "cloud_credential_data": {
-      "additionalProperties": {
-        "type": "string"
-      },
-      "type": "object"
     },
     "default_access_level": {
       "title": "Default access level is to allow permission to the cluster\nwhen no Role matched for that specif user or group. This can\nset as\n  - kubernetes:team-admin\n  - kubernetes:cluster-admin\n  - kubernetes:admin\n  - kubernetes:editor\n  - kubernetes:viewer\n  - deny-access\nIf not set this will set \"\"",
@@ -141,13 +133,7 @@ func init() {
     "gce_project": {
       "type": "string"
     },
-    "hostfacts_version": {
-      "type": "string"
-    },
-    "kube_starter_version": {
-      "type": "string"
-    },
-    "kubelet_version": {
+    "kubernetes_version": {
       "type": "string"
     },
     "name": {
@@ -161,19 +147,7 @@ func init() {
       },
       "type": "array"
     },
-    "node_set": {
-      "additionalProperties": {
-        "type": "integer"
-      },
-      "type": "object"
-    },
     "provider": {
-      "type": "string"
-    },
-    "saltbase_version": {
-      "type": "string"
-    },
-    "version": {
       "type": "string"
     },
     "zone": {
@@ -221,13 +195,7 @@ func init() {
     "count": {
       "type": "integer"
     },
-    "hostfacts_version": {
-      "type": "string"
-    },
-    "kube_starter_version": {
-      "type": "string"
-    },
-    "kubelet_version": {
+    "kubernetes_version": {
       "type": "string"
     },
     "name": {
@@ -235,13 +203,7 @@ func init() {
       "pattern": "^[a-z0-9](?:[a-z0-9\\-]{0,61}[a-z0-9])?$",
       "type": "string"
     },
-    "saltbase_version": {
-      "type": "string"
-    },
     "sku": {
-      "type": "string"
-    },
-    "version": {
       "type": "string"
     }
   },
@@ -253,7 +215,7 @@ func init() {
 	clusterStartupConfigRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "properties": {
-    "context_version": {
+    "resource_version": {
       "type": "integer"
     },
     "role": {

@@ -97,7 +97,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	}
 	cm.cluster.Spec.CloudConfigPath = "/etc/gce.conf"
 	cm.cluster.Spec.KubeadmToken = cloud.GetKubeadmToken()
-	cm.cluster.Spec.KubernetesVersion = "v" + req.Version
+	cm.cluster.Spec.KubernetesVersion = "v" + req.KubernetesVersion
 	return nil
 }
 

@@ -45,8 +45,8 @@ func RegisterConversions(scheme *runtime.Scheme) error {
 		Convert_batch_CronJobList_To_v2alpha1_CronJobList,
 		Convert_v2alpha1_CronJobSpec_To_batch_CronJobSpec,
 		Convert_batch_CronJobSpec_To_v2alpha1_CronJobSpec,
-		Convert_v2alpha1_CronJobPhaseTo_batch_CronJobStatus,
-		Convert_batch_CronJobPhaseTo_v2alpha1_CronJobStatus,
+		Convert_v2alpha1_CronJobStatus_To_batch_CronJobStatus,
+		Convert_batch_CronJobStatus_To_v2alpha1_CronJobStatus,
 		Convert_v2alpha1_JobTemplate_To_batch_JobTemplate,
 		Convert_batch_JobTemplate_To_v2alpha1_JobTemplate,
 		Convert_v2alpha1_JobTemplateSpec_To_batch_JobTemplateSpec,
@@ -59,7 +59,7 @@ func autoConvert_v2alpha1_CronJob_To_batch_CronJob(in *CronJob, out *batch.CronJ
 	if err := Convert_v2alpha1_CronJobSpec_To_batch_CronJobSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
-	if err := Convert_v2alpha1_CronJobPhaseTo_batch_CronJobStatus(&in.Status, &out.Status, s); err != nil {
+	if err := Convert_v2alpha1_CronJobStatus_To_batch_CronJobStatus(&in.Status, &out.Status, s); err != nil {
 		return err
 	}
 	return nil
@@ -74,7 +74,7 @@ func autoConvert_batch_CronJob_To_v2alpha1_CronJob(in *batch.CronJob, out *CronJ
 	if err := Convert_batch_CronJobSpec_To_v2alpha1_CronJobSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
-	if err := Convert_batch_CronJobPhaseTo_v2alpha1_CronJobStatus(&in.Status, &out.Status, s); err != nil {
+	if err := Convert_batch_CronJobStatus_To_v2alpha1_CronJobStatus(&in.Status, &out.Status, s); err != nil {
 		return err
 	}
 	return nil
@@ -158,24 +158,24 @@ func Convert_batch_CronJobSpec_To_v2alpha1_CronJobSpec(in *batch.CronJobSpec, ou
 	return autoConvert_batch_CronJobSpec_To_v2alpha1_CronJobSpec(in, out, s)
 }
 
-func autoConvert_v2alpha1_CronJobPhaseTo_batch_CronJobStatus(in *CronJobStatus, out *batch.CronJobStatus, s conversion.Scope) error {
+func autoConvert_v2alpha1_CronJobStatus_To_batch_CronJobStatus(in *CronJobStatus, out *batch.CronJobStatus, s conversion.Scope) error {
 	out.Active = *(*[]api.ObjectReference)(unsafe.Pointer(&in.Active))
 	out.LastScheduleTime = (*v1.Time)(unsafe.Pointer(in.LastScheduleTime))
 	return nil
 }
 
-func Convert_v2alpha1_CronJobPhaseTo_batch_CronJobStatus(in *CronJobStatus, out *batch.CronJobStatus, s conversion.Scope) error {
-	return autoConvert_v2alpha1_CronJobPhaseTo_batch_CronJobStatus(in, out, s)
+func Convert_v2alpha1_CronJobStatus_To_batch_CronJobStatus(in *CronJobStatus, out *batch.CronJobStatus, s conversion.Scope) error {
+	return autoConvert_v2alpha1_CronJobStatus_To_batch_CronJobStatus(in, out, s)
 }
 
-func autoConvert_batch_CronJobPhaseTo_v2alpha1_CronJobStatus(in *batch.CronJobStatus, out *CronJobStatus, s conversion.Scope) error {
+func autoConvert_batch_CronJobStatus_To_v2alpha1_CronJobStatus(in *batch.CronJobStatus, out *CronJobStatus, s conversion.Scope) error {
 	out.Active = *(*[]api_v1.ObjectReference)(unsafe.Pointer(&in.Active))
 	out.LastScheduleTime = (*v1.Time)(unsafe.Pointer(in.LastScheduleTime))
 	return nil
 }
 
-func Convert_batch_CronJobPhaseTo_v2alpha1_CronJobStatus(in *batch.CronJobStatus, out *CronJobStatus, s conversion.Scope) error {
-	return autoConvert_batch_CronJobPhaseTo_v2alpha1_CronJobStatus(in, out, s)
+func Convert_batch_CronJobStatus_To_v2alpha1_CronJobStatus(in *batch.CronJobStatus, out *CronJobStatus, s conversion.Scope) error {
+	return autoConvert_batch_CronJobStatus_To_v2alpha1_CronJobStatus(in, out, s)
 }
 
 func autoConvert_v2alpha1_JobTemplate_To_batch_JobTemplate(in *JobTemplate, out *batch.JobTemplate, s conversion.Scope) error {

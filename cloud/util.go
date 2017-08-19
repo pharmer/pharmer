@@ -67,7 +67,7 @@ func BuildRuntimeConfig(cluster *api.Cluster) {
 }
 
 func UpgradeRequired(cluster *api.Cluster, req *proto.ClusterReconfigureRequest) bool {
-	return cluster.Spec.KubernetesVersion != req.KubeletVersion
+	return cluster.Spec.KubernetesVersion != req.KubernetesVersion
 }
 
 /*

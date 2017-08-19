@@ -19,12 +19,8 @@ const initialNode = 2
 
 func (c *Cluster) ClusterCreate(version string) error {
 	req := c.ClusterCreateRequestBuild()
-	if c.CredentialPHID == "" {
-		req.CloudCredentialData = c.Credential
-	} else {
-		req.CloudCredential = c.CredentialPHID
-	}
-	req.Version = version
+	req.CredentialUid = c.CredentialPHID
+	req.KubernetesVersion = version
 	err := backoff.Retry(func() error {
 		client, err := cli.Client("")
 		if err != nil {
@@ -173,9 +169,9 @@ func (c *Cluster) ClusterScale() error {
 
 func (c *Cluster) ClusterUpgrade(version string) error {
 	req := proto.ClusterReconfigureRequest{
-		Name:          c.Name,
-		Version:       version,
-		ApplyToMaster: true,
+		Name:              c.Name,
+		KubernetesVersion: version,
+		ApplyToMaster:     true,
 	}
 	err := backoff.Retry(func() error {
 		client, err := cli.Client("")

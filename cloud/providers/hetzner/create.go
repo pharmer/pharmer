@@ -132,9 +132,9 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	//cluster.Spec.ctx.Logger().Info(">>>>>>>>>>>>>>>>>>>>>>> Rebooted master instance")
 
 	// start nodes
-	for sku, count := range req.NodeSet {
-		for i := int64(0); i < count; i++ {
-			tx, err := im.createInstance(api.RoleKubernetesPool, sku)
+	for _, ng := range req.NodeGroups {
+		for i := int64(0); i < ng.Count; i++ {
+			tx, err := im.createInstance(api.RoleKubernetesPool, ng.Sku)
 			if err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -155,7 +155,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 				cm.cluster.Status.Reason = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
-			err = im.storeStartupScript(*tx.ServerIP, sku, api.RoleKubernetesPool, signer)
+			err = im.storeStartupScript(*tx.ServerIP, ng.Sku, api.RoleKubernetesPool, signer)
 			if err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				return errors.FromErr(err).WithContext(cm.ctx).Err()

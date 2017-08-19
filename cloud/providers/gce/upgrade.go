@@ -37,7 +37,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	cm.updateContext()
 	// assign new timestamp and new launch_config version
 	cm.cluster.Spec.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
-	cm.cluster.Spec.KubernetesVersion = req.Version
+	cm.cluster.Spec.KubernetesVersion = req.KubernetesVersion
 	err := cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
 
 	if err != nil {
@@ -54,7 +54,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	if req.ApplyToMaster {
 		for _, instance := range cm.ins.Instances {
 			if instance.Spec.Role == api.RoleKubernetesMaster {
-				cm.masterUpdate(instance.Status.ExternalIP, instance.Name, req.Version)
+				cm.masterUpdate(instance.Status.ExternalIP, instance.Name, req.KubernetesVersion)
 			}
 		}
 		//err = cm.updateMaster()
