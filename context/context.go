@@ -58,16 +58,24 @@ type Factory interface {
 }
 
 type DefaultFactory struct {
-	Config config.PharmerConfig
+	cfg config.PharmerConfig
 }
 
 var _ Factory = &DefaultFactory{}
+
+func NewFactory(cfg config.PharmerConfig) Factory {
+	return &DefaultFactory{cfg:cfg}
+}
 
 func (f DefaultFactory) New(ctx go_ctx.Context) Context {
 	c := &defaultContext{Context: ctx}
 	c.Context = go_ctx.WithValue(c.Context, KeyExtra, &NullDomainManager{})
 	c.Context = go_ctx.WithValue(c.Context, KeyLogger, log.New(c))
-	c.Context = go_ctx.WithValue(c.Context, KeyStore, fake.FakeStore{Config: &f.Config})
+
+
+
+
+	c.Context = go_ctx.WithValue(c.Context, KeyStore, fake.FakeStore{Config: &f.cfg})
 	//if dp, err := newDNSProvider(cfg); err == nil {
 	//	c.Context = go_ctx.WithValue(c.Context, KeyDNS, dp)
 	//}
