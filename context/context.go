@@ -14,74 +14,69 @@ type Context interface {
 	go_ctx.Context
 
 	DNSProvider() dns.Provider
-	Store() storage.Store
+	Store() storage.Interface
 	Logger() Logger
 	Extra() DomainManager
 	String() string
 }
 
-type FakeContext struct {
+var (
+	KeyDNS    = struct{}{}
+	KeyExtra  = struct{}{}
+	KeyLogger = struct{}{}
+	KeyStore  = struct{}{}
+)
+
+type defaultContext struct {
 	go_ctx.Context
 }
 
-var (
-	keyDNS    = struct{}{}
-	keyExtra  = struct{}{}
-	keyLogger = struct{}{}
-	keyStore  = struct{}{}
-)
+var _ Context = &defaultContext{}
 
-var _ Context = &FakeContext{}
+func (ctx *defaultContext) DNSProvider() dns.Provider {
+	return ctx.Value(KeyDNS).(dns.Provider)
+}
 
-func NewContext(ctx go_ctx.Context, cfg *config.PharmerConfig) Context {
-	c := &FakeContext{Context: ctx}
-	c.Context = go_ctx.WithValue(c.Context, keyExtra, &NullDomainManager{})
-	c.Context = go_ctx.WithValue(c.Context, keyLogger, log.New(c))
-	c.Context = go_ctx.WithValue(c.Context, keyStore, fake.FakeStore{Config: cfg})
-	if dp, err := newDNSProvider(cfg); err == nil {
-		c.Context = go_ctx.WithValue(c.Context, keyDNS, dp)
+func (ctx *defaultContext) Store() storage.Interface {
+	return ctx.Value(KeyStore).(storage.Interface)
+}
+
+func (ctx *defaultContext) Logger() Logger {
+	return ctx.Value(KeyLogger).(Logger)
+}
+
+func (ctx *defaultContext) Extra() DomainManager {
+	return ctx.Value(KeyExtra).(DomainManager)
+}
+
+func (defaultContext) String() string {
+	return "[-]"
+}
+
+type Factory interface {
+	New(ctx go_ctx.Context) Context
+}
+
+type DefaultFactory struct {
+	cfg config.PharmerConfig
+}
+
+var _ Factory = &DefaultFactory{}
+
+func NewFactory(cfg config.PharmerConfig) Factory {
+	return &DefaultFactory{cfg: cfg}
+}
+
+func (f DefaultFactory) New(ctx go_ctx.Context) Context {
+	c := &defaultContext{Context: ctx}
+	c.Context = go_ctx.WithValue(c.Context, KeyExtra, &NullDomainManager{})
+	c.Context = go_ctx.WithValue(c.Context, KeyLogger, log.New(c))
+	if sp, err := storage.GetProvider("", ctx, f.cfg); err == nil {
+		c.Context = go_ctx.WithValue(c.Context, KeyStore, sp)
+	} else {
+		fp, _ := storage.GetProvider(fake.UID, ctx, f.cfg)
+		c.Context = go_ctx.WithValue(c.Context, KeyStore, fp)
 	}
+	c.Context = go_ctx.WithValue(c.Context, KeyDNS, &NullDNSProvider{})
 	return c
-}
-
-func newDNSProvider(cfg *config.PharmerConfig) (dns.Provider, error) {
-	//curCtx := cfg.Context("")
-	//switch curCtx.DNS.Provider {
-	//case "azure":
-	//	return azure.NewDNSProviderCredentials(curCtx.DNS.Azure)
-	//case "cloudflare":
-	//	return cloudflare.NewDNSProviderCredentials(curCtx.DNS.Cloudflare)
-	//case "digitalocean":
-	//	return digitalocean.NewDNSProviderCredentials(curCtx.DNS.Digitalocean)
-	//case "gcloud":
-	//	return googlecloud.NewDNSProviderCredentials(curCtx.DNS.Gcloud)
-	//case "linode":
-	//	return linode.NewDNSProviderCredentials(curCtx.DNS.Linode)
-	//case "aws":
-	//case "route53":
-	//	return aws.NewDNSProviderCredentials(curCtx.DNS.AWS)
-	//case "vultr":
-	//	return vultr.NewDNSProviderCredentials(curCtx.DNS.Vultr)
-	//}
-	return nil, nil // fmt.Errorf("Unrecognised DNS provider: %s", curCtx.DNS.Provider)
-}
-
-func (ctx *FakeContext) DNSProvider() dns.Provider {
-	return ctx.Value(keyDNS).(dns.Provider)
-}
-
-func (ctx *FakeContext) Store() storage.Store {
-	return ctx.Value(keyStore).(storage.Store)
-}
-
-func (ctx *FakeContext) Logger() Logger {
-	return ctx.Value(keyLogger).(Logger)
-}
-
-func (ctx *FakeContext) Extra() DomainManager {
-	return ctx.Value(keyExtra).(DomainManager)
-}
-
-func (FakeContext) String() string {
-	return "[maverick]"
 }

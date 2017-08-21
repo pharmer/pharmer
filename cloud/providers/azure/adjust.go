@@ -12,7 +12,7 @@ import (
 )
 
 type InstanceGroupManager struct {
-	cm       *clusterManager
+	cm       *ClusterManager
 	instance cloud.Instance
 	im       *instanceManager
 }

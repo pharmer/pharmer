@@ -11,7 +11,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 )
 
-func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
+func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	err := cm.initContext(req)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -38,7 +38,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
-			cm.delete(&proto.ClusterDeleteRequest{
+			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
 			})

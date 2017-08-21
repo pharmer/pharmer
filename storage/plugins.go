@@ -1,49 +1,49 @@
 package storage
 
 import (
-	"fmt"
+	"context"
 	"sync"
 
 	"github.com/appscode/pharmer/config"
 	"github.com/golang/glog"
 )
 
-// Factory is a function that returns a cloud.Store.
-// The config parameter provides an config.PharmerConfig handler to the factory in
+// Factory is a function that returns a storage.Interface.
+// The config parameter provides an io.Reader handler to the factory in
 // order to load specific configurations. If no configuration is provided
 // the parameter is nil.
-type Factory func(cfg *config.PharmerConfig) (Store, error)
+type Factory func(ctx context.Context, cfg config.PharmerConfig) (Interface, error)
 
-// All registered storage providers.
+// All registered cloud providers.
 var (
 	providersMutex sync.Mutex
 	providers      = make(map[string]Factory)
 )
 
-// RegisterStore registers a cloud.Factory by name.  This
+// RegisterProvider registers a storage.Factory by name.  This
 // is expected to happen during app startup.
-func RegisterStore(name string, cloud Factory) {
+func RegisterProvider(name string, cloud Factory) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	if _, found := providers[name]; found {
 		glog.Fatalf("Cloud provider %q was registered twice", name)
 	}
-	glog.V(1).Infof("Registered storage provider %q", name)
+	glog.V(1).Infof("Registered cloud provider %q", name)
 	providers[name] = cloud
 }
 
-// IsStore returns true if name corresponds to an already registered
-// storage provider.
-func IsStore(name string) bool {
+// IsProvider returns true if name corresponds to an already registered
+// cloud provider.
+func IsProvider(name string) bool {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	_, found := providers[name]
 	return found
 }
 
-// Stores returns the name of all registered storage providers in a
+// Providers returns the name of all registered cloud providers in a
 // string slice
-func Stores() []string {
+func Providers() []string {
 	names := []string{}
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
@@ -53,50 +53,17 @@ func Stores() []string {
 	return names
 }
 
-// GetStore creates an instance of the named storage provider, or nil if
+// GetProvider creates an instance of the named cloud provider, or nil if
 // the name is not known.  The error return is only used if the named provider
 // was known but failed to initialize. The config parameter specifies the
-// config.PharmerConfig handler of the configuration file for the storage provider, or nil
+// io.Reader handler of the configuration file for the cloud provider, or nil
 // for no configuation.
-func GetStore(name string, cfg *config.PharmerConfig) (Store, error) {
+func GetProvider(name string, ctx context.Context, cfg config.PharmerConfig) (Interface, error) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	f, found := providers[name]
 	if !found {
 		return nil, nil
 	}
-	return f(cfg)
-}
-
-// InitStore creates an instance of the named storage provider.
-func InitStore(name string, configFilePath string) (Store, error) {
-	var cloud Store
-	var err error
-
-	if name == "" {
-		glog.Info("No storage provider specified.")
-		return nil, nil
-	}
-
-	if configFilePath != "" {
-		cfg, err := config.LoadConfig(configFilePath)
-		if err != nil {
-			glog.Fatalf("Couldn't open storage provider configuration %s: %#v",
-				configFilePath, err)
-		}
-		cloud, err = GetStore(name, cfg)
-	} else {
-		// Pass explicit nil so plugins can actually check for nil. See
-		// "Why is my nil error value not equal to nil?" in golang.org/doc/faq.
-		cloud, err = GetStore(name, nil)
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("could not init storage provider %q: %v", name, err)
-	}
-	if cloud == nil {
-		return nil, fmt.Errorf("unknown storage provider %q", name)
-	}
-
-	return cloud, nil
+	return f(ctx, cfg)
 }

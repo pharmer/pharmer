@@ -9,7 +9,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 )
 
-func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
+func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	var err error
 	if cm.conn == nil {
 		cm.conn, err = NewConnector(cm.ctx, cm.cluster)
@@ -96,7 +96,7 @@ func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) checkInstanceGroup(instanceGroupName string) bool {
+func (cm *ClusterManager) checkInstanceGroup(instanceGroupName string) bool {
 	_, err := cm.conn.computeService.InstanceGroupManagers.Get(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceGroupName).Do()
 	if err != nil {
 		return false

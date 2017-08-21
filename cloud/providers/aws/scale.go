@@ -9,7 +9,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 )
 
-func (cm *clusterManager) scale(req *proto.ClusterReconfigureRequest) error {
+func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	var err error
 	if cm.conn == nil {
 		cm.conn, err = NewConnector(cm.cluster)

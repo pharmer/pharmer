@@ -10,7 +10,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 )
 
-func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
+func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
 	if cm.cluster.Status.Phase == api.ClusterPhasePending {
@@ -70,24 +70,24 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) deleteResourceGroup(groupName string) error {
+func (cm *ClusterManager) deleteResourceGroup(groupName string) error {
 	_, errchan := cm.conn.groupsClient.Delete(groupName, make(chan struct{}))
 	cm.ctx.Logger().Infof("Resource group %v deleted", groupName)
 	return <-errchan
 }
 
-func (cm *clusterManager) deleteNodeNetworkInterface(interfaceName string) error {
+func (cm *ClusterManager) deleteNodeNetworkInterface(interfaceName string) error {
 	_, errchan := cm.conn.interfacesClient.Delete(cm.cluster.Name, interfaceName, make(chan struct{}))
 	cm.ctx.Logger().Infof("Node network interface %v deleted", interfaceName)
 	return <-errchan
 }
 
-func (cm *clusterManager) deletePublicIp(ipName string) error {
+func (cm *ClusterManager) deletePublicIp(ipName string) error {
 	_, errchan := cm.conn.publicIPAddressesClient.Delete(cm.cluster.Name, ipName, nil)
 	cm.ctx.Logger().Infof("Public ip %v deleted", ipName)
 	return <-errchan
 }
-func (cm *clusterManager) deleteVirtualMachine(machineName string) error {
+func (cm *ClusterManager) deleteVirtualMachine(machineName string) error {
 	_, errchan := cm.conn.vmClient.Delete(cm.cluster.Name, machineName, make(chan struct{}))
 	cm.ctx.Logger().Infof("Virtual machine %v deleted", machineName)
 	return <-errchan

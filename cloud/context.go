@@ -70,12 +70,12 @@ func LoadDefaultGenericContext(ctx context.Context, cluster *api.Cluster) error 
 }
 
 func NewInstances(ctx context.Context, cluster *api.Cluster) (*api.ClusterInstances, error) {
-	p, err := GetProvider("", nil) // TODO: FixIt!
-	if err != nil {
-		return nil, err
-	}
-	if p == nil {
-		return nil, errors.New(cluster.Spec.Provider + " is an unknown Kubernetes cloud.").WithContext(ctx).Err()
-	}
-	return cluster.NewInstances(p.MatchInstance)
+	//p, err := GetProvider("", nil) // TODO: FixIt!
+	//if err != nil {
+	//	return nil, err
+	//}
+	//if p == nil {
+	//	return nil, errors.New(cluster.Spec.Provider + " is an unknown Kubernetes cloud.").WithContext(ctx).Err()
+	//}
+	return cluster.NewInstances(nil)
 }

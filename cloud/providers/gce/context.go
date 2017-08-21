@@ -22,7 +22,7 @@ const (
 	defaultNetwork     = "default"
 )
 
-type clusterManager struct {
+type ClusterManager struct {
 	ctx     context.Context
 	cluster *api.Cluster
 	ins     *api.ClusterInstances
@@ -30,7 +30,33 @@ type clusterManager struct {
 	namer   namer
 }
 
-func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
+var _ cloud.ClusterProvider = &ClusterManager{}
+
+const (
+	UID = "gce"
+)
+
+func init() {
+	cloud.RegisterCloudProvider(UID, func(ctx context.Context) (cloud.Interface, error) { return New(ctx), nil })
+}
+
+func New(ctx context.Context) cloud.Interface {
+	return &ClusterManager{ctx: ctx}
+}
+
+func (cm *ClusterManager) Clusters() cloud.ClusterProvider {
+	return cm
+}
+
+func (cm *ClusterManager) Credentials() cloud.CredentialProvider {
+	return cm
+}
+
+func (p *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool {
+	return i.Name == md.Name
+}
+
+func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	err := cm.LoadDefaultContext()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -101,7 +127,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) updateContext() error {
+func (cm *ClusterManager) updateContext() error {
 	cm.cluster.Spec.GCECloudConfig = &api.GCECloudConfig{
 		// TokenURL           :
 		// TokenBody          :
@@ -122,7 +148,7 @@ func (cm *clusterManager) updateContext() error {
 	return nil
 }
 
-func (cm *clusterManager) LoadDefaultContext() error {
+func (cm *ClusterManager) LoadDefaultContext() error {
 	err := cm.cluster.Spec.KubeEnv.SetDefaults()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -226,7 +252,7 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	return nil
 }
 
-func (cm *clusterManager) UploadStartupConfig() error {
+func (cm *ClusterManager) UploadStartupConfig() error {
 	if _, err := cm.conn.storageService.Buckets.Get(cm.cluster.Spec.BucketName).Do(); err != nil {
 		_, err := cm.conn.storageService.Buckets.Insert(cm.cluster.Spec.Project, &bstore.Bucket{
 			Name: cm.cluster.Spec.BucketName,

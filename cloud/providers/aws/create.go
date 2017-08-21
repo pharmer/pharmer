@@ -23,7 +23,7 @@ const (
 	preTagDelay = 5 * time.Second
 )
 
-func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
+func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	err := cm.initContext(req)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -50,7 +50,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
-			cm.delete(&proto.ClusterDeleteRequest{
+			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
 			})
@@ -203,7 +203,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) ensureIAMProfile() error {
+func (cm *ClusterManager) ensureIAMProfile() error {
 	r1, _ := cm.conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &cm.cluster.Spec.IAMProfileMaster})
 	if r1.InstanceProfile == nil {
 		err := cm.createIAMProfile(cm.cluster.Spec.IAMProfileMaster)
@@ -223,7 +223,7 @@ func (cm *clusterManager) ensureIAMProfile() error {
 	return nil
 }
 
-func (cm *clusterManager) createIAMProfile(key string) error {
+func (cm *ClusterManager) createIAMProfile(key string) error {
 	//rootDir := "kubernetes/aws/iam/"
 	role := "" // TODO(tamal); FixIt!  templates.AssetText(rootDir + key + "-role.json")
 	r1, err := cm.conn.iam.CreateRole(&_iam.CreateRoleInput{
@@ -272,7 +272,7 @@ func (cm *clusterManager) createIAMProfile(key string) error {
 	return nil
 }
 
-func (cm *clusterManager) importPublicKey() error {
+func (cm *ClusterManager) importPublicKey() error {
 	resp, err := cm.conn.ec2.ImportKeyPair(&_ec2.ImportKeyPairInput{
 		KeyName:           types.StringP(cm.cluster.Spec.SSHKeyExternalID),
 		PublicKeyMaterial: cm.cluster.Spec.SSHKey.PublicKey,
@@ -293,7 +293,7 @@ func (cm *clusterManager) importPublicKey() error {
 	return nil
 }
 
-func (cm *clusterManager) setupVpc() error {
+func (cm *ClusterManager) setupVpc() error {
 	cm.ctx.Logger().Infof("Checking VPC tagged with %v", cm.cluster.Name)
 	r1, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
 		Filters: []*_ec2.Filter{
@@ -359,7 +359,7 @@ func (cm *clusterManager) setupVpc() error {
 	return nil
 }
 
-func (cm *clusterManager) addTag(id string, key string, value string) error {
+func (cm *ClusterManager) addTag(id string, key string, value string) error {
 	resp, err := cm.conn.ec2.CreateTags(&_ec2.CreateTagsInput{
 		Resources: []*string{
 			types.StringP(id),
@@ -379,7 +379,7 @@ func (cm *clusterManager) addTag(id string, key string, value string) error {
 	return nil
 }
 
-func (cm *clusterManager) createDHCPOptionSet() error {
+func (cm *ClusterManager) createDHCPOptionSet() error {
 	optionSetDomain := fmt.Sprintf("%v.compute.internal", cm.cluster.Spec.Region)
 	if cm.cluster.Spec.Region == "us-east-1" {
 		optionSetDomain = "ec2.internal"
@@ -420,7 +420,7 @@ func (cm *clusterManager) createDHCPOptionSet() error {
 	return nil
 }
 
-func (cm *clusterManager) setupSubnet() error {
+func (cm *ClusterManager) setupSubnet() error {
 	cm.ctx.Logger().Info("Checking for existing subnet")
 	r1, err := cm.conn.ec2.DescribeSubnets(&_ec2.DescribeSubnetsInput{
 		Filters: []*_ec2.Filter{
@@ -488,7 +488,7 @@ func (cm *clusterManager) setupSubnet() error {
 	return nil
 }
 
-func (cm *clusterManager) setupInternetGateway() error {
+func (cm *ClusterManager) setupInternetGateway() error {
 	cm.ctx.Logger().Infof("Checking IGW with attached VPCID %v", cm.cluster.Spec.VpcId)
 	r1, err := cm.conn.ec2.DescribeInternetGateways(&_ec2.DescribeInternetGatewaysInput{
 		Filters: []*_ec2.Filter{
@@ -535,7 +535,7 @@ func (cm *clusterManager) setupInternetGateway() error {
 	return nil
 }
 
-func (cm *clusterManager) setupRouteTable() error {
+func (cm *ClusterManager) setupRouteTable() error {
 	cm.ctx.Logger().Infof("Checking route table for VPCID %v", cm.cluster.Spec.VpcId)
 	r1, err := cm.conn.ec2.DescribeRouteTables(&_ec2.DescribeRouteTablesInput{
 		Filters: []*_ec2.Filter{
@@ -600,7 +600,7 @@ func (cm *clusterManager) setupRouteTable() error {
 	return nil
 }
 
-func (cm *clusterManager) setupSecurityGroups() error {
+func (cm *ClusterManager) setupSecurityGroups() error {
 	var ok bool
 	var err error
 	if cm.cluster.Spec.MasterSGId, ok, err = cm.getSecurityGroupId(cm.cluster.Spec.MasterSGName); !ok {
@@ -675,7 +675,7 @@ func (cm *clusterManager) setupSecurityGroups() error {
 	return nil
 }
 
-func (cm *clusterManager) getSecurityGroupId(groupName string) (string, bool, error) {
+func (cm *ClusterManager) getSecurityGroupId(groupName string) (string, bool, error) {
 	cm.ctx.Logger().Infof("Checking security group %v", groupName)
 	r1, err := cm.conn.ec2.DescribeSecurityGroups(&_ec2.DescribeSecurityGroupsInput{
 		Filters: []*_ec2.Filter{
@@ -711,7 +711,7 @@ func (cm *clusterManager) getSecurityGroupId(groupName string) (string, bool, er
 	return *r1.SecurityGroups[0].GroupId, true, nil
 }
 
-func (cm *clusterManager) createSecurityGroup(groupName string, description string) error {
+func (cm *ClusterManager) createSecurityGroup(groupName string, description string) error {
 	cm.ctx.Logger().Infof("Creating security group %v", groupName)
 	r2, err := cm.conn.ec2.CreateSecurityGroup(&_ec2.CreateSecurityGroupInput{
 		GroupName:   types.StringP(groupName),
@@ -731,7 +731,7 @@ func (cm *clusterManager) createSecurityGroup(groupName string, description stri
 	return nil
 }
 
-func (cm *clusterManager) detectSecurityGroups() error {
+func (cm *ClusterManager) detectSecurityGroups() error {
 	var ok bool
 	var err error
 	if cm.cluster.Spec.MasterSGId == "" {
@@ -754,7 +754,7 @@ func (cm *clusterManager) detectSecurityGroups() error {
 	return nil
 }
 
-func (cm *clusterManager) autohrizeIngressBySGID(groupID string, srcGroup string) error {
+func (cm *ClusterManager) autohrizeIngressBySGID(groupID string, srcGroup string) error {
 	r1, err := cm.conn.ec2.AuthorizeSecurityGroupIngress(&_ec2.AuthorizeSecurityGroupIngressInput{
 		GroupId: types.StringP(groupID),
 		IpPermissions: []*_ec2.IpPermission{
@@ -776,7 +776,7 @@ func (cm *clusterManager) autohrizeIngressBySGID(groupID string, srcGroup string
 	return nil
 }
 
-func (cm *clusterManager) autohrizeIngressByPort(groupID string, port int64) error {
+func (cm *ClusterManager) autohrizeIngressByPort(groupID string, port int64) error {
 	r1, err := cm.conn.ec2.AuthorizeSecurityGroupIngress(&_ec2.AuthorizeSecurityGroupIngressInput{
 		GroupId: types.StringP(groupID),
 		IpPermissions: []*_ec2.IpPermission{
@@ -803,7 +803,7 @@ func (cm *clusterManager) autohrizeIngressByPort(groupID string, port int64) err
 //
 // -------------------------------------
 //
-func (cm *clusterManager) startMaster() (*api.Instance, error) {
+func (cm *ClusterManager) startMaster() (*api.Instance, error) {
 	var err error
 	// TODO: FixIt!
 	//cm.cluster.Spec.MasterDiskId, err = cm.ensurePd(cm.namer.MasterPDName(), cm.cluster.Spec.MasterDiskType, cm.cluster.Spec.MasterDiskSize)
@@ -884,7 +884,7 @@ func (cm *clusterManager) startMaster() (*api.Instance, error) {
 	return masterInstance, nil
 }
 
-func (cm *clusterManager) ensurePd(name, diskType string, sizeGb int64) (string, error) {
+func (cm *ClusterManager) ensurePd(name, diskType string, sizeGb int64) (string, error) {
 	volumeId, err := cm.findPD(name)
 	if err != nil {
 		return volumeId, errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -916,7 +916,7 @@ func (cm *clusterManager) ensurePd(name, diskType string, sizeGb int64) (string,
 	return volumeId, nil
 }
 
-func (cm *clusterManager) findPD(name string) (string, error) {
+func (cm *ClusterManager) findPD(name string) (string, error) {
 	// name := cluster.Spec.ctx.KubernetesMasterName + "-pd"
 	cm.ctx.Logger().Infof("Searching master pd %v", name)
 	r1, err := cm.conn.ec2.DescribeVolumes(&_ec2.DescribeVolumesInput{
@@ -953,7 +953,7 @@ func (cm *clusterManager) findPD(name string) (string, error) {
 	return "", nil
 }
 
-func (cm *clusterManager) reserveIP() error {
+func (cm *ClusterManager) reserveIP() error {
 	// Check that MASTER_RESERVED_IP looks like an IPv4 address
 	// if match, _ := regexp.MatchString("^[0-9]+.[0-9]+.[0-9]+.[0-9]+$", cluster.Spec.ctx.MasterReservedIP); !match {
 	if cm.cluster.Spec.MasterReservedIP == "auto" {
@@ -971,7 +971,7 @@ func (cm *clusterManager) reserveIP() error {
 	return nil
 }
 
-func (cm *clusterManager) createMasterInstance(instanceName string, role string) (string, error) {
+func (cm *ClusterManager) createMasterInstance(instanceName string, role string) (string, error) {
 	kubeStarter := cm.RenderStartupScript()
 	req := &_ec2.RunInstancesInput{
 		ImageId:  types.StringP(cm.cluster.Spec.InstanceImage),
@@ -1058,7 +1058,7 @@ func (cm *clusterManager) createMasterInstance(instanceName string, role string)
 	return instanceID, nil
 }
 
-func (cm *clusterManager) getInstancePublicIP(instanceID string) (string, bool, error) {
+func (cm *ClusterManager) getInstancePublicIP(instanceID string) (string, bool, error) {
 	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 		InstanceIds: []*string{types.StringP(instanceID)},
 	})
@@ -1073,7 +1073,7 @@ func (cm *clusterManager) getInstancePublicIP(instanceID string) (string, bool, 
 	return "", false, nil
 }
 
-func (cm *clusterManager) listInstances(groupName string) ([]*api.Instance, error) {
+func (cm *ClusterManager) listInstances(groupName string) ([]*api.Instance, error) {
 	r2, err := cm.conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: []*string{
 			types.StringP(groupName),
@@ -1096,7 +1096,7 @@ func (cm *clusterManager) listInstances(groupName string) ([]*api.Instance, erro
 	}
 	return instances, nil
 }
-func (cm *clusterManager) newKubeInstance(instanceID string) (*api.Instance, error) {
+func (cm *ClusterManager) newKubeInstance(instanceID string) (*api.Instance, error) {
 	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 		InstanceIds: []*string{types.StringP(instanceID)},
 	})
@@ -1140,7 +1140,7 @@ func (cm *clusterManager) newKubeInstance(instanceID string) (*api.Instance, err
 	return &i, nil
 }
 
-func (cm *clusterManager) allocateElasticIp() (string, error) {
+func (cm *ClusterManager) allocateElasticIp() (string, error) {
 	r1, err := cm.conn.ec2.AllocateAddress(&_ec2.AllocateAddressInput{
 		Domain: types.StringP("vpc"),
 	})
@@ -1153,7 +1153,7 @@ func (cm *clusterManager) allocateElasticIp() (string, error) {
 	return *r1.PublicIp, nil
 }
 
-func (cm *clusterManager) assignIPToInstance(instanceID string) error {
+func (cm *ClusterManager) assignIPToInstance(instanceID string) error {
 	r1, err := cm.conn.ec2.DescribeAddresses(&_ec2.DescribeAddressesInput{
 		PublicIps: []*string{types.StringP(cm.cluster.Spec.MasterReservedIP)},
 	})
@@ -1176,7 +1176,7 @@ func (cm *clusterManager) assignIPToInstance(instanceID string) error {
 	return nil
 }
 
-func (cm *clusterManager) RenderStartupScript() string {
+func (cm *ClusterManager) RenderStartupScript() string {
 	/*cmd := fmt.Sprintf(`/usr/local/bin/aws s3api get-object --bucket %v --key kubernetes/context/%v/startup-config/%v.yaml /tmp/role.yaml
 	CONFIG=$(cat /tmp/role.yaml)`, opt.BucketName, opt.ContextVersion, role)*/
 	Cert := fmt.Sprintf(`apt-get install -y  awscli \
@@ -1191,7 +1191,7 @@ func (cm *clusterManager) RenderStartupScript() string {
 	return cloud.RenderKubeadmMasterStarter(cm.cluster, Cert)
 }
 
-func (cm *clusterManager) createLaunchConfiguration(name, sku string) error {
+func (cm *ClusterManager) createLaunchConfiguration(name, sku string) error {
 	// script := cm.RenderStartupScript(cm.cluster, sku, api.RoleKubernetesPool)
 	script := cloud.RenderKubeadmNodeStarter(cm.cluster)
 	cm.UploadStartupConfig()
@@ -1246,7 +1246,7 @@ func (cm *clusterManager) createLaunchConfiguration(name, sku string) error {
 	return nil
 }
 
-func (cm *clusterManager) createAutoScalingGroup(name, launchConfig string, count int64) error {
+func (cm *ClusterManager) createAutoScalingGroup(name, launchConfig string, count int64) error {
 	r2, err := cm.conn.autoscale.CreateAutoScalingGroup(&autoscaling.CreateAutoScalingGroupInput{
 		AutoScalingGroupName: types.StringP(name),
 		MaxSize:              types.Int64P(count),
@@ -1286,7 +1286,7 @@ func (cm *clusterManager) createAutoScalingGroup(name, launchConfig string, coun
 	return nil
 }
 
-func (cm *clusterManager) detectMaster() error {
+func (cm *ClusterManager) detectMaster() error {
 	masterID, err := cm.getInstanceIDFromName(cm.cluster.Spec.KubernetesMasterName)
 	if masterID == "" {
 		cm.ctx.Logger().Info("Could not detect Kubernetes master node.  Make sure you've launched a cluster with appctl.")
@@ -1308,7 +1308,7 @@ func (cm *clusterManager) detectMaster() error {
 	return nil
 }
 
-func (cm *clusterManager) getInstanceIDFromName(tagName string) (string, error) {
+func (cm *ClusterManager) getInstanceIDFromName(tagName string) (string, error) {
 	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 		Filters: []*_ec2.Filter{
 			{

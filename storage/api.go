@@ -6,7 +6,7 @@ import (
 	"github.com/appscode/pharmer/api"
 )
 
-type Store interface {
+type Interface interface {
 	Clusters() ClusterStore
 	Instances() InstanceStore
 	Credentials() CredentialStore

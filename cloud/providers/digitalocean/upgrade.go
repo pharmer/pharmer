@@ -11,7 +11,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 )
 
-func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error {
+func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
 	if !cloud.UpgradeRequired(cm.cluster, req) {
 		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
 		return nil
@@ -66,7 +66,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	return nil
 }
 
-func (cm *clusterManager) updateMaster() error {
+func (cm *ClusterManager) updateMaster() error {
 	im := &instanceManager{cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 	masterInstanceID, err := im.getInstanceId(cm.namer.MasterName())
 	if err != nil {
@@ -111,7 +111,7 @@ func (cm *clusterManager) updateMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	err = cm.UploadStartupConfig(cm.cluster)
+	err = cm.UploadStartupConfig()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -127,7 +127,7 @@ func (cm *clusterManager) updateMaster() error {
 	return nil
 }
 
-func (cm *clusterManager) updateNodes(sku string) error {
+func (cm *ClusterManager) updateNodes(sku string) error {
 	fmt.Println("Updating Nodes...")
 
 	im := &instanceManager{cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
@@ -137,7 +137,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.UploadStartupConfig(cm.cluster)
+	cm.UploadStartupConfig()
 
 	for _, instance := range oldinstances {
 		dropletID, err := strconv.Atoi(instance.Status.ExternalID)

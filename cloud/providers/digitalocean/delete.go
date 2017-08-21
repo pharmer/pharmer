@@ -13,7 +13,7 @@ import (
 	"github.com/cenkalti/backoff"
 )
 
-func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
+func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
 	if cm.cluster.Status.Phase == api.ClusterPhasePending {
@@ -97,7 +97,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) releaseReservedIP(ip string) error {
+func (cm *ClusterManager) releaseReservedIP(ip string) error {
 	resp, err := cm.conn.client.FloatingIPs.Delete(go_ctx.TODO(), ip)
 	cm.ctx.Logger().Debugln("DO response", resp, " errors", err)
 	if err != nil {
@@ -107,7 +107,7 @@ func (cm *clusterManager) releaseReservedIP(ip string) error {
 	return nil
 }
 
-func (cm *clusterManager) deleteSSHKey() (err error) {
+func (cm *ClusterManager) deleteSSHKey() (err error) {
 	if cm.cluster.Spec.SSHKey != nil {
 		backoff.Retry(func() error {
 			_, err := cm.conn.client.Keys.DeleteByFingerprint(go_ctx.TODO(), cm.cluster.Spec.SSHKey.OpensshFingerprint)
@@ -124,7 +124,7 @@ func (cm *clusterManager) deleteSSHKey() (err error) {
 	return
 }
 
-func (cm *clusterManager) deleteDroplet(dropletID int, nodeName string) error {
+func (cm *ClusterManager) deleteDroplet(dropletID int, nodeName string) error {
 	_, err := cm.conn.client.Droplets.Delete(go_ctx.TODO(), dropletID)
 	if err != nil {
 		return err
@@ -137,7 +137,7 @@ func (cm *clusterManager) deleteDroplet(dropletID int, nodeName string) error {
 	return nil
 }
 
-func (cm *clusterManager) deleteMaster(dropletID int) error {
+func (cm *ClusterManager) deleteMaster(dropletID int) error {
 	_, err := cm.conn.client.Droplets.Delete(go_ctx.TODO(), dropletID)
 	if err != nil {
 		return err

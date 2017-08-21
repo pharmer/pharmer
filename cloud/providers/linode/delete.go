@@ -12,7 +12,7 @@ import (
 	"github.com/cenkalti/backoff"
 )
 
-func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
+func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
 	if cm.cluster.Status.Phase == api.ClusterPhasePending {
@@ -85,7 +85,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) deleteStackscripts() error {
+func (cm *ClusterManager) deleteStackscripts() error {
 	scripts, err := cm.conn.client.StackScript.List(0)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (cm *clusterManager) deleteStackscripts() error {
 	return nil
 }
 
-func (cm *clusterManager) deleteSSHKey() (err error) {
+func (cm *ClusterManager) deleteSSHKey() (err error) {
 	if cm.cluster.Spec.SSHKeyPHID != "" {
 		//updates := &storage.SSHKey{IsDeleted: 1}
 		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}

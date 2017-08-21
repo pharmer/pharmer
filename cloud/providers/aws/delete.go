@@ -18,7 +18,7 @@ import (
 	"github.com/cenkalti/backoff"
 )
 
-func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
+func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
 	if cm.cluster.Status.Phase == api.ClusterPhasePending {
@@ -131,7 +131,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) findVPC() (bool, error) {
+func (cm *ClusterManager) findVPC() (bool, error) {
 	r1, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
 		VpcIds: []*string{
 			types.StringP(cm.cluster.Spec.VpcId),
@@ -143,7 +143,7 @@ func (cm *clusterManager) findVPC() (bool, error) {
 	return len(r1.Vpcs) > 0, nil
 }
 
-func (cm *clusterManager) deleteAutoScalingGroup(name string) error {
+func (cm *ClusterManager) deleteAutoScalingGroup(name string) error {
 	_, err := cm.conn.autoscale.DeleteAutoScalingGroup(&autoscaling.DeleteAutoScalingGroupInput{
 		ForceDelete:          types.TrueP(),
 		AutoScalingGroupName: types.StringP(name),
@@ -152,7 +152,7 @@ func (cm *clusterManager) deleteAutoScalingGroup(name string) error {
 	return err
 }
 
-func (cm *clusterManager) deleteLaunchConfiguration(name string) error {
+func (cm *ClusterManager) deleteLaunchConfiguration(name string) error {
 	_, err := cm.conn.autoscale.DeleteLaunchConfiguration(&autoscaling.DeleteLaunchConfigurationInput{
 		LaunchConfigurationName: types.StringP(name),
 	})
@@ -160,7 +160,7 @@ func (cm *clusterManager) deleteLaunchConfiguration(name string) error {
 	return err
 }
 
-func (cm *clusterManager) deleteMaster() error {
+func (cm *ClusterManager) deleteMaster() error {
 	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -204,7 +204,7 @@ func (cm *clusterManager) deleteMaster() error {
 	return nil
 }
 
-func (cm *clusterManager) ensureInstancesDeleted() error {
+func (cm *ClusterManager) ensureInstancesDeleted() error {
 	const desiredState = "terminated"
 
 	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
@@ -262,7 +262,7 @@ func (cm *clusterManager) ensureInstancesDeleted() error {
 	return nil
 }
 
-func (cm *clusterManager) deleteSecurityGroup() error {
+func (cm *ClusterManager) deleteSecurityGroup() error {
 	r, err := cm.conn.ec2.DescribeSecurityGroups(&_ec2.DescribeSecurityGroupsInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -317,7 +317,7 @@ func (cm *clusterManager) deleteSecurityGroup() error {
 	return nil
 }
 
-func (cm *clusterManager) deleteSubnetId() error {
+func (cm *ClusterManager) deleteSubnetId() error {
 	r, err := cm.conn.ec2.DescribeSubnets(&_ec2.DescribeSubnetsInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -349,7 +349,7 @@ func (cm *clusterManager) deleteSubnetId() error {
 	return nil
 }
 
-func (cm *clusterManager) deleteInternetGateway() error {
+func (cm *ClusterManager) deleteInternetGateway() error {
 	r1, err := cm.conn.ec2.DescribeInternetGateways(&_ec2.DescribeInternetGatewaysInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -383,7 +383,7 @@ func (cm *clusterManager) deleteInternetGateway() error {
 	return nil
 }
 
-func (cm *clusterManager) deleteRouteTable() error {
+func (cm *ClusterManager) deleteRouteTable() error {
 	r1, err := cm.conn.ec2.DescribeRouteTables(&_ec2.DescribeRouteTablesInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -428,7 +428,7 @@ func (cm *clusterManager) deleteRouteTable() error {
 	return nil
 }
 
-func (cm *clusterManager) deleteDHCPOption() error {
+func (cm *ClusterManager) deleteDHCPOption() error {
 	_, err := cm.conn.ec2.AssociateDhcpOptions(&_ec2.AssociateDhcpOptionsInput{
 		VpcId:         types.StringP(cm.cluster.Spec.VpcId),
 		DhcpOptionsId: types.StringP("default"),
@@ -461,7 +461,7 @@ func (cm *clusterManager) deleteDHCPOption() error {
 	return err
 }
 
-func (cm *clusterManager) deleteVpc() error {
+func (cm *ClusterManager) deleteVpc() error {
 	_, err := cm.conn.ec2.DeleteVpc(&_ec2.DeleteVpcInput{
 		VpcId: types.StringP(cm.cluster.Spec.VpcId),
 	})
@@ -473,7 +473,7 @@ func (cm *clusterManager) deleteVpc() error {
 	return nil
 }
 
-func (cm *clusterManager) deleteVolume() error {
+func (cm *ClusterManager) deleteVolume() error {
 	_, err := cm.conn.ec2.DeleteVolume(&_ec2.DeleteVolumeInput{
 		VolumeId: types.StringP(cm.cluster.Spec.MasterDiskId),
 	})
@@ -484,7 +484,7 @@ func (cm *clusterManager) deleteVolume() error {
 	return nil
 }
 
-func (cm *clusterManager) deleteSSHKey() error {
+func (cm *ClusterManager) deleteSSHKey() error {
 	var err error
 	_, err = cm.conn.ec2.DeleteKeyPair(&_ec2.DeleteKeyPairInput{
 		KeyName: types.StringP(cm.cluster.Spec.SSHKeyExternalID),
@@ -500,7 +500,7 @@ func (cm *clusterManager) deleteSSHKey() error {
 	return err
 }
 
-func (cm *clusterManager) releaseReservedIP(publicIP string) error {
+func (cm *ClusterManager) releaseReservedIP(publicIP string) error {
 	r1, err := cm.conn.ec2.DescribeAddresses(&_ec2.DescribeAddressesInput{
 		PublicIps: []*string{
 			types.StringP(publicIP),
@@ -520,7 +520,7 @@ func (cm *clusterManager) releaseReservedIP(publicIP string) error {
 	return nil
 }
 
-func (cm *clusterManager) deleteNetworkInterface(vpcId string) error {
+func (cm *ClusterManager) deleteNetworkInterface(vpcId string) error {
 	r, err := cm.conn.ec2.DescribeNetworkInterfaces(&_ec2.DescribeNetworkInterfacesInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -555,7 +555,7 @@ func (cm *clusterManager) deleteNetworkInterface(vpcId string) error {
 	return nil
 }
 
-func (cm *clusterManager) deleteBucket() error {
+func (cm *ClusterManager) deleteBucket() error {
 	// http://docs.aws.amazon.com/AmazonS3/latest/dev/delete-or-empty-bucket.html#delete-bucket-awscli
 	cm.ctx.Logger().Infof("Deleting startupconfig bucket for cluster %v", cm.cluster.Name)
 	var timeout int64 = 30 * 60 // Give max 30 min to empty the bucket

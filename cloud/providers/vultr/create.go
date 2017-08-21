@@ -11,7 +11,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 )
 
-func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
+func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	err := cm.initContext(req)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -38,7 +38,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
-			cm.delete(&proto.ClusterDeleteRequest{
+			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
 			})
@@ -228,7 +228,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) importPublicKey() (string, error) {
+func (cm *ClusterManager) importPublicKey() (string, error) {
 	cm.ctx.Logger().Infof("Adding SSH public key")
 	resp, err := cm.conn.client.CreateSSHKey(cm.cluster.Spec.SSHKeyExternalID, string(cm.cluster.Spec.SSHKey.PublicKey))
 	if err != nil {
@@ -239,7 +239,7 @@ func (cm *clusterManager) importPublicKey() (string, error) {
 	return resp.ID, nil
 }
 
-func (cm *clusterManager) reserveIP() error {
+func (cm *ClusterManager) reserveIP() error {
 	if cm.cluster.Spec.MasterReservedIP == "auto" {
 		regionID, err := strconv.Atoi(cm.cluster.Spec.Zone)
 		if err != nil {

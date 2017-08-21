@@ -12,7 +12,7 @@ import (
 	sapi "github.com/scaleway/scaleway-cli/pkg/api"
 )
 
-func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
+func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
 	if cm.cluster.Status.Phase == api.ClusterPhasePending {
@@ -85,7 +85,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) releaseReservedIP(ip string) error {
+func (cm *ClusterManager) releaseReservedIP(ip string) error {
 	ips, err := cm.conn.client.GetIPS()
 	if err != nil {
 		return errors.FromErr(err).Err()
@@ -102,7 +102,7 @@ func (cm *clusterManager) releaseReservedIP(ip string) error {
 	return nil
 }
 
-func (cm *clusterManager) deleteSSHKey() (err error) {
+func (cm *ClusterManager) deleteSSHKey() (err error) {
 	if cm.cluster.Spec.SSHKey != nil {
 		backoff.Retry(func() error {
 			user, err := cm.conn.client.GetUser()

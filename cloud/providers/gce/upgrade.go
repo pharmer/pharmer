@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error {
+func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
 	if !cloud.UpgradeRequired(cm.cluster, req) {
 		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
 		return nil // TODO check error nil
@@ -74,7 +74,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	return nil
 }
 
-func (cm *clusterManager) masterUpdate(host, instanceName, version string) error {
+func (cm *ClusterManager) masterUpdate(host, instanceName, version string) error {
 	/*fmt.Println(string(cm.ctx.SSHKey.PrivateKey))
 	signer, err := ssh.MakePrivateKeySignerFromBytes(cm.ctx.SSHKey.PrivateKey)
 	if err != nil {
@@ -203,7 +203,7 @@ func (cm *clusterManager) updateMaster() error {
 }
 */
 
-func (cm *clusterManager) nodeUpdate(instanceName string) error {
+func (cm *ClusterManager) nodeUpdate(instanceName string) error {
 	command := fmt.Sprintf(`gcloud compute --project "%v" ssh --zone "%v" "%v"`, cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceName)
 	arg := str.ToArgv(command)
 	name, arg := arg[0], arg[1:]
@@ -231,7 +231,7 @@ func (cm *clusterManager) nodeUpdate(instanceName string) error {
 	return nil
 }
 
-func (cm *clusterManager) updateNodes(sku string) error {
+func (cm *ClusterManager) updateNodes(sku string) error {
 	fmt.Println("Updating Nodes...")
 
 	newInstanceTemplate := cm.namer.InstanceTemplateName(sku)
@@ -283,7 +283,7 @@ func (cm *clusterManager) updateNodes(sku string) error {
 	return nil
 }
 
-func (cm *clusterManager) getExistingContextVersion(sku string) (error, int64) {
+func (cm *ClusterManager) getExistingContextVersion(sku string) (error, int64) {
 	kc, err := cloud.NewAdminClient(cm.cluster)
 	if err != nil {
 		log.Fatal(err)
@@ -304,7 +304,7 @@ func (cm *clusterManager) getExistingContextVersion(sku string) (error, int64) {
 	return errors.New("Context version not found").Err(), int64(0)
 }
 
-func (cm *clusterManager) rollingUpdate(oldInstances []string, newInstanceTemplate, sku string) error {
+func (cm *ClusterManager) rollingUpdate(oldInstances []string, newInstanceTemplate, sku string) error {
 	groupName := cm.namer.InstanceGroupName(sku)
 	newTemplate := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", cm.cluster.Spec.Project, newInstanceTemplate)
 	template := &compute.InstanceGroupManagersSetInstanceTemplateRequest{

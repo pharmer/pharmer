@@ -11,7 +11,7 @@ import (
 	"github.com/digitalocean/godo"
 )
 
-func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
+func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	err := cm.initContext(req)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -38,7 +38,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
-			cm.delete(&proto.ClusterDeleteRequest{
+			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
 			})
@@ -74,7 +74,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	if err = cm.UploadStartupConfig(cm.cluster); err != nil {
+	if err = cm.UploadStartupConfig(); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -187,7 +187,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) importPublicKey() error {
+func (cm *ClusterManager) importPublicKey() error {
 	key, resp, err := cm.conn.client.Keys.Create(go_ctx.TODO(), &godo.KeyCreateRequest{
 		Name:      cm.cluster.Spec.SSHKeyExternalID,
 		PublicKey: string(cm.cluster.Spec.SSHKey.PublicKey),
@@ -201,7 +201,7 @@ func (cm *clusterManager) importPublicKey() error {
 	return nil
 }
 
-func (cm *clusterManager) createTags() error {
+func (cm *ClusterManager) createTags() error {
 	tag := "KubernetesCluster:" + cm.cluster.Name
 	_, _, err := cm.conn.client.Tags.Get(go_ctx.TODO(), tag)
 	if err != nil {
@@ -217,7 +217,7 @@ func (cm *clusterManager) createTags() error {
 	return nil
 }
 
-func (cm *clusterManager) reserveIP() error {
+func (cm *ClusterManager) reserveIP() error {
 	if cm.cluster.Spec.MasterReservedIP == "auto" {
 		fip, resp, err := cm.conn.client.FloatingIPs.Create(go_ctx.TODO(), &godo.FloatingIPCreateRequest{
 			Region: cm.cluster.Spec.Region,

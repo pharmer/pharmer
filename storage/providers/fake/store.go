@@ -1,6 +1,7 @@
 package fake
 
 import (
+	"context"
 	"crypto/x509"
 	"errors"
 
@@ -14,14 +15,16 @@ const (
 )
 
 func init() {
-	storage.RegisterStore(UID, func(cfg *config.PharmerConfig) (storage.Store, error) { return &FakeStore{Config: cfg}, nil })
+	storage.RegisterProvider(UID, func(ctx context.Context, cfg config.PharmerConfig) (storage.Interface, error) {
+		return &FakeStore{cfg: cfg}, nil
+	})
 }
 
 type FakeStore struct {
-	Config *config.PharmerConfig
+	cfg config.PharmerConfig
 }
 
-var _ storage.Store = &FakeStore{}
+var _ storage.Interface = &FakeStore{}
 
 func (s *FakeStore) Clusters() storage.ClusterStore {
 	return s

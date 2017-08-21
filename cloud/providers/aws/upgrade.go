@@ -14,7 +14,7 @@ import (
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 )
 
-func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error {
+func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
 	if !cloud.UpgradeRequired(cm.cluster, req) {
 		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
 		return nil
@@ -80,7 +80,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	return nil
 }
 
-func (cm *clusterManager) updateMaster() error {
+func (cm *ClusterManager) updateMaster() error {
 	if err := cm.deleteMaster(); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -92,7 +92,7 @@ func (cm *clusterManager) updateMaster() error {
 	}
 	return nil
 }
-func (cm *clusterManager) restartMaster() error {
+func (cm *ClusterManager) restartMaster() error {
 	fmt.Println("Updating Master...")
 	cm.UploadStartupConfig()
 
@@ -141,7 +141,7 @@ func (cm *clusterManager) restartMaster() error {
 	return nil
 }
 
-func (cm *clusterManager) updateNodes(sku string) error {
+func (cm *ClusterManager) updateNodes(sku string) error {
 	fmt.Println("Updating Nodes...")
 	/*gc, err := cm.getChanges()
 	if err != nil {
@@ -206,7 +206,7 @@ type change struct {
 	maxSize         int64
 }
 
-func (cm *clusterManager) getChanges() ([]*change, error) {
+func (cm *ClusterManager) getChanges() ([]*change, error) {
 	r1, err := cm.conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{})
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -229,7 +229,7 @@ func (cm *clusterManager) getChanges() ([]*change, error) {
 	return changes, nil
 }
 
-func (cm *clusterManager) rollingUpdate(oldInstances []string, newLaunchConfig, sku string) error {
+func (cm *ClusterManager) rollingUpdate(oldInstances []string, newLaunchConfig, sku string) error {
 	groupName := cm.namer.AutoScalingGroupName(sku)
 
 	fmt.Println("Updating autoscalling group")
@@ -263,7 +263,7 @@ func (cm *clusterManager) rollingUpdate(oldInstances []string, newLaunchConfig, 
 	return nil
 }
 
-func (cm *clusterManager) LaunchConfigurationExists(name string) (bool, error) {
+func (cm *ClusterManager) LaunchConfigurationExists(name string) (bool, error) {
 	r, err := cm.conn.autoscale.DescribeLaunchConfigurations(&autoscaling.DescribeLaunchConfigurationsInput{
 		LaunchConfigurationNames: []*string{
 			types.StringP(name),

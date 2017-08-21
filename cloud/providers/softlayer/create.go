@@ -13,7 +13,7 @@ import (
 	"github.com/softlayer/softlayer-go/datatypes"
 )
 
-func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
+func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	err := cm.initContext(req)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -39,7 +39,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
-			cm.delete(&proto.ClusterDeleteRequest{
+			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
 			})
@@ -88,7 +88,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.UploadStartupConfig(cm.cluster)
+	cm.UploadStartupConfig()
 
 	// --------------------------------------------------------------------
 
@@ -150,7 +150,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) importPublicKey() error {
+func (cm *ClusterManager) importPublicKey() error {
 	cm.ctx.Logger().Debugln("Adding SSH public key")
 
 	securitySSHTemplate := datatypes.Security_Ssh_Key{
