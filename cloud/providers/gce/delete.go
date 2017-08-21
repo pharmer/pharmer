@@ -12,7 +12,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 )
 
-func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
+func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
 	if cm.cluster.Status.Phase == api.ClusterPhasePending {
@@ -108,7 +108,7 @@ type groupInfo struct {
 	sku       string
 }
 
-func (cm *clusterManager) listInstanceGroups() ([]*groupInfo, error) {
+func (cm *ClusterManager) listInstanceGroups() ([]*groupInfo, error) {
 	groups := make([]*groupInfo, 0)
 
 	r1, err := cm.conn.computeService.InstanceGroups.List(cm.cluster.Spec.Project, cm.cluster.Spec.Zone).Do()
@@ -133,7 +133,7 @@ func (cm *clusterManager) listInstanceGroups() ([]*groupInfo, error) {
 	return groups, nil
 }
 
-func (cm *clusterManager) deleteMaster() error {
+func (cm *ClusterManager) deleteMaster() error {
 	r2, err := cm.conn.computeService.Instances.Delete(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, cm.cluster.Spec.KubernetesMasterName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -146,7 +146,7 @@ func (cm *clusterManager) deleteMaster() error {
 }
 
 //delete instance group
-func (cm *clusterManager) deleteInstanceGroup(instanceGroup string) error {
+func (cm *ClusterManager) deleteInstanceGroup(instanceGroup string) error {
 	r1, err := cm.conn.computeService.InstanceGroupManagers.Delete(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceGroup).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -158,7 +158,7 @@ func (cm *clusterManager) deleteInstanceGroup(instanceGroup string) error {
 }
 
 //delete template
-func (cm *clusterManager) deleteInstanceTemplate(template string) error {
+func (cm *ClusterManager) deleteInstanceTemplate(template string) error {
 	_, err := cm.conn.computeService.InstanceTemplates.Delete(cm.cluster.Spec.Project, template).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -169,7 +169,7 @@ func (cm *clusterManager) deleteInstanceTemplate(template string) error {
 }
 
 //delete autoscaler
-func (cm *clusterManager) deleteAutoscaler(instanceGroup string) error {
+func (cm *ClusterManager) deleteAutoscaler(instanceGroup string) error {
 	cm.ctx.Logger().Infof("Removing autoscaller %v", instanceGroup)
 
 	r, err := cm.conn.computeService.Autoscalers.Delete(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceGroup).Do()
@@ -185,7 +185,7 @@ func (cm *clusterManager) deleteAutoscaler(instanceGroup string) error {
 }
 
 //delete disk
-func (cm *clusterManager) deleteDisk() error {
+func (cm *ClusterManager) deleteDisk() error {
 	masterDisk := cm.namer.MasterPDName()
 	r6, err := cm.conn.computeService.Disks.Delete(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, masterDisk).Do()
 	if err != nil {
@@ -214,7 +214,7 @@ func (cm *clusterManager) deleteDisk() error {
 }
 
 //delete firewalls
-func (cm *clusterManager) deleteFirewalls() error {
+func (cm *ClusterManager) deleteFirewalls() error {
 	name := cm.cluster.Name + "-node-all"
 	r1, err := cm.conn.computeService.Firewalls.Delete(cm.cluster.Spec.Project, name).Do()
 	if err != nil {
@@ -235,7 +235,7 @@ func (cm *clusterManager) deleteFirewalls() error {
 }
 
 // delete reserve ip
-func (cm *clusterManager) releaseReservedIP() error {
+func (cm *ClusterManager) releaseReservedIP() error {
 	name := cm.namer.ReserveIPName()
 	r1, err := cm.conn.computeService.Addresses.Get(cm.cluster.Spec.Project, cm.cluster.Spec.Region, name).Do()
 	if err != nil {
@@ -254,7 +254,7 @@ func (cm *clusterManager) releaseReservedIP() error {
 	return nil
 }
 
-func (cm *clusterManager) deleteRoutes() error {
+func (cm *ClusterManager) deleteRoutes() error {
 	r1, err := cm.conn.computeService.Routes.List(cm.cluster.Spec.Project).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -273,7 +273,7 @@ func (cm *clusterManager) deleteRoutes() error {
 	return nil
 }
 
-func (cm *clusterManager) deleteBucket() error {
+func (cm *ClusterManager) deleteBucket() error {
 	var timeout int64 = 30 * 60 // Give max 30 min to empty the bucket
 	start := time.Now().Unix()
 
@@ -292,7 +292,7 @@ func (cm *clusterManager) deleteBucket() error {
 	return cm.conn.storageService.Buckets.Delete(cm.cluster.Spec.BucketName).Do()
 }
 
-func (cm *clusterManager) deleteSSHKey() (err error) {
+func (cm *ClusterManager) deleteSSHKey() (err error) {
 	if cm.cluster.Spec.SSHKeyPHID != "" {
 		//updates := &storage.SSHKey{IsDeleted: 1}
 		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}

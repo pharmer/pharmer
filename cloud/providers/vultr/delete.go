@@ -11,7 +11,7 @@ import (
 	"github.com/cenkalti/backoff"
 )
 
-func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
+func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
 	if cm.cluster.Status.Phase == api.ClusterPhasePending {
@@ -89,7 +89,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) releaseReservedIP(ip string) error {
+func (cm *ClusterManager) releaseReservedIP(ip string) error {
 	cm.ctx.Logger().Debugln("Deleting Floating IP", ip)
 	err := cm.conn.client.DestroyReservedIP(ip)
 	if err != nil {
@@ -98,7 +98,7 @@ func (cm *clusterManager) releaseReservedIP(ip string) error {
 	return nil
 }
 
-func (cm *clusterManager) deleteStartupScript() error {
+func (cm *ClusterManager) deleteStartupScript() error {
 	scripts, err := cm.conn.client.GetStartupScripts()
 	if err != nil {
 		return err
@@ -114,7 +114,7 @@ func (cm *clusterManager) deleteStartupScript() error {
 	return nil
 }
 
-func (cm *clusterManager) deleteSSHKey() (err error) {
+func (cm *ClusterManager) deleteSSHKey() (err error) {
 	cm.ctx.Logger().Infof("Deleting ssh key for cluster %v", cm.cluster.Spec.MasterDiskId)
 
 	if cm.cluster.Spec.SSHKey != nil {

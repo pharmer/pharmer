@@ -19,7 +19,7 @@ import (
 	semver "github.com/hashicorp/go-version"
 )
 
-type clusterManager struct {
+type ClusterManager struct {
 	ctx     context.Context
 	cluster *api.Cluster
 	ins     *api.ClusterInstances
@@ -27,7 +27,47 @@ type clusterManager struct {
 	namer   namer
 }
 
-func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
+var _ cloud.ClusterProvider = &ClusterManager{}
+
+const (
+	UID = "aws"
+)
+
+func init() {
+	cloud.RegisterCloudProvider(UID, func(ctx context.Context) (cloud.Interface, error) { return New(ctx), nil })
+}
+
+func New(ctx context.Context) cloud.Interface {
+	return &ClusterManager{ctx: ctx}
+}
+
+func (cm *ClusterManager) Clusters() cloud.ClusterProvider {
+	return cm
+}
+
+func (cm *ClusterManager) Credentials() cloud.CredentialProvider {
+	return cm
+}
+
+func (cm *ClusterManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+	conn, err := NewConnector(nil)
+	if err != nil {
+		return nil, err
+	}
+	cm.conn = conn
+	i, err := cm.newKubeInstance(md.ExternalID)
+	if err != nil {
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+	// TODO: Role not set
+	return i, nil
+}
+
+func (p *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool {
+	return i.Status.ExternalID == md.ExternalID
+}
+
+func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	err := cm.LoadDefaultContext()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -84,7 +124,7 @@ func (cm *clusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) LoadDefaultContext() error {
+func (cm *ClusterManager) LoadDefaultContext() error {
 	err := cm.cluster.Spec.KubeEnv.SetDefaults()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -176,7 +216,7 @@ func (cm *clusterManager) LoadDefaultContext() error {
 	return nil
 }
 
-func (cm *clusterManager) UploadStartupConfig() error {
+func (cm *ClusterManager) UploadStartupConfig() error {
 	_, err := cm.conn.s3.GetBucketLocation(&_s3.GetBucketLocationInput{Bucket: types.StringP(cm.cluster.Spec.BucketName)})
 	if err != nil {
 		_, err = cm.conn.s3.CreateBucket(&_s3.CreateBucketInput{Bucket: types.StringP(cm.cluster.Spec.BucketName)})
@@ -245,7 +285,7 @@ func (cm *clusterManager) UploadStartupConfig() error {
 	return nil
 }
 
-func (cm *clusterManager) bucketStore(path string, data []byte) error {
+func (cm *ClusterManager) bucketStore(path string, data []byte) error {
 	params := &_s3.PutObjectInput{
 		Bucket: types.StringP(cm.cluster.Spec.BucketName),
 		Key:    types.StringP(path),
@@ -259,7 +299,7 @@ func (cm *clusterManager) bucketStore(path string, data []byte) error {
 	return nil
 }
 
-func (cm *clusterManager) waitForInstanceState(instanceId string, state string) error {
+func (cm *ClusterManager) waitForInstanceState(instanceId string, state string) error {
 	for {
 		r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 			InstanceIds: []*string{types.StringP(instanceId)},

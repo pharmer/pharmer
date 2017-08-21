@@ -20,27 +20,57 @@ type Context interface {
 	String() string
 }
 
-type FakeContext struct {
+var (
+	KeyDNS    = struct{}{}
+	KeyExtra  = struct{}{}
+	KeyLogger = struct{}{}
+	KeyStore  = struct{}{}
+)
+
+type defaultContext struct {
 	go_ctx.Context
 }
 
-var (
-	keyDNS    = struct{}{}
-	keyExtra  = struct{}{}
-	keyLogger = struct{}{}
-	keyStore  = struct{}{}
-)
+var _ Context = &defaultContext{}
 
-var _ Context = &FakeContext{}
+func (ctx *defaultContext) DNSProvider() dns.Provider {
+	return ctx.Value(KeyDNS).(dns.Provider)
+}
 
-func NewContext(ctx go_ctx.Context, cfg *config.PharmerConfig) Context {
-	c := &FakeContext{Context: ctx}
-	c.Context = go_ctx.WithValue(c.Context, keyExtra, &NullDomainManager{})
-	c.Context = go_ctx.WithValue(c.Context, keyLogger, log.New(c))
-	c.Context = go_ctx.WithValue(c.Context, keyStore, fake.FakeStore{Config: cfg})
-	if dp, err := newDNSProvider(cfg); err == nil {
-		c.Context = go_ctx.WithValue(c.Context, keyDNS, dp)
-	}
+func (ctx *defaultContext) Store() storage.Store {
+	return ctx.Value(KeyStore).(storage.Store)
+}
+
+func (ctx *defaultContext) Logger() Logger {
+	return ctx.Value(KeyLogger).(Logger)
+}
+
+func (ctx *defaultContext) Extra() DomainManager {
+	return ctx.Value(KeyExtra).(DomainManager)
+}
+
+func (defaultContext) String() string {
+	return "[maverick]"
+}
+
+type Factory interface {
+	New(ctx go_ctx.Context) Context
+}
+
+type DefaultFactory struct {
+	Config config.PharmerConfig
+}
+
+var _ Factory = &DefaultFactory{}
+
+func (f DefaultFactory) New(ctx go_ctx.Context) Context {
+	c := &defaultContext{Context: ctx}
+	c.Context = go_ctx.WithValue(c.Context, KeyExtra, &NullDomainManager{})
+	c.Context = go_ctx.WithValue(c.Context, KeyLogger, log.New(c))
+	c.Context = go_ctx.WithValue(c.Context, KeyStore, fake.FakeStore{Config: &f.Config})
+	//if dp, err := newDNSProvider(cfg); err == nil {
+	//	c.Context = go_ctx.WithValue(c.Context, KeyDNS, dp)
+	//}
 	return c
 }
 
@@ -64,24 +94,4 @@ func newDNSProvider(cfg *config.PharmerConfig) (dns.Provider, error) {
 	//	return vultr.NewDNSProviderCredentials(curCtx.DNS.Vultr)
 	//}
 	return nil, nil // fmt.Errorf("Unrecognised DNS provider: %s", curCtx.DNS.Provider)
-}
-
-func (ctx *FakeContext) DNSProvider() dns.Provider {
-	return ctx.Value(keyDNS).(dns.Provider)
-}
-
-func (ctx *FakeContext) Store() storage.Store {
-	return ctx.Value(keyStore).(storage.Store)
-}
-
-func (ctx *FakeContext) Logger() Logger {
-	return ctx.Value(keyLogger).(Logger)
-}
-
-func (ctx *FakeContext) Extra() DomainManager {
-	return ctx.Value(keyExtra).(DomainManager)
-}
-
-func (FakeContext) String() string {
-	return "[maverick]"
 }

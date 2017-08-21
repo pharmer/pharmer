@@ -12,7 +12,7 @@ import (
 	"github.com/cenkalti/backoff"
 )
 
-func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
+func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
 	if cm.cluster.Status.Phase == api.ClusterPhasePending {
@@ -80,7 +80,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) deleteInstance(id int) error {
+func (cm *ClusterManager) deleteInstance(id int) error {
 	service := cm.conn.virtualServiceClient.Id(id)
 	success, err := service.DeleteObject()
 	if err != nil {
@@ -91,7 +91,7 @@ func (cm *clusterManager) deleteInstance(id int) error {
 	return nil
 }
 
-func (cm *clusterManager) deleteSSHKey() (err error) {
+func (cm *ClusterManager) deleteSSHKey() (err error) {
 	if cm.cluster.Spec.SSHKey != nil {
 		sshid, _ := strconv.Atoi(cm.cluster.Spec.SSHKeyExternalID)
 		backoff.Retry(func() error {

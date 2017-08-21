@@ -15,7 +15,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 )
 
-func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
+func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	err := cm.initContext(req)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -42,7 +42,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
-			cm.delete(&proto.ClusterDeleteRequest{
+			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
 			})
@@ -209,7 +209,7 @@ func (cm *clusterManager) create(req *proto.ClusterCreateRequest) error {
 //	cluster.Spec.ctx.MasterReservedIP = *ip.IPAddress
 //	// cluster.Spec.ctx.ApiServerUrl = "https://" + *ip.IPAddress
 
-func (cm *clusterManager) ensureResourceGroup() (resources.Group, error) {
+func (cm *ClusterManager) ensureResourceGroup() (resources.Group, error) {
 	req := resources.Group{
 		Name:     types.StringP(cm.namer.ResourceGroupName()),
 		Location: types.StringP(cm.cluster.Spec.Zone),
@@ -220,7 +220,7 @@ func (cm *clusterManager) ensureResourceGroup() (resources.Group, error) {
 	return cm.conn.groupsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), req)
 }
 
-func (cm *clusterManager) ensureAvailablitySet() (compute.AvailabilitySet, error) {
+func (cm *ClusterManager) ensureAvailablitySet() (compute.AvailabilitySet, error) {
 	name := cm.namer.AvailablitySetName()
 	req := compute.AvailabilitySet{
 		Name:     types.StringP(name),
@@ -232,7 +232,7 @@ func (cm *clusterManager) ensureAvailablitySet() (compute.AvailabilitySet, error
 	return cm.conn.availabilitySetsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), name, req)
 }
 
-func (cm *clusterManager) ensureVirtualNetwork() (network.VirtualNetwork, error) {
+func (cm *ClusterManager) ensureVirtualNetwork() (network.VirtualNetwork, error) {
 	name := cm.namer.VirtualNetworkName()
 	req := network.VirtualNetwork{
 		Name:     types.StringP(name),
@@ -256,11 +256,11 @@ func (cm *clusterManager) ensureVirtualNetwork() (network.VirtualNetwork, error)
 	return cm.conn.virtualNetworksClient.Get(cm.namer.ResourceGroupName(), name, "")
 }
 
-func (cm *clusterManager) getVirtualNetwork() (network.VirtualNetwork, error) {
+func (cm *ClusterManager) getVirtualNetwork() (network.VirtualNetwork, error) {
 	return cm.conn.virtualNetworksClient.Get(cm.namer.ResourceGroupName(), cm.namer.VirtualNetworkName(), "")
 }
 
-func (cm *clusterManager) createNetworkSecurityGroup() (network.SecurityGroup, error) {
+func (cm *ClusterManager) createNetworkSecurityGroup() (network.SecurityGroup, error) {
 	securityGroupName := cm.namer.NetworkSecurityGroupName()
 	securityGroup := network.SecurityGroup{
 		Name:     types.StringP(securityGroupName),
@@ -278,12 +278,12 @@ func (cm *clusterManager) createNetworkSecurityGroup() (network.SecurityGroup, e
 	return cm.conn.securityGroupsClient.Get(cm.namer.ResourceGroupName(), securityGroupName, "")
 }
 
-func (cm *clusterManager) getNetworkSecurityGroup() (network.SecurityGroup, error) {
+func (cm *ClusterManager) getNetworkSecurityGroup() (network.SecurityGroup, error) {
 	securityGroupName := cm.namer.NetworkSecurityGroupName()
 	return cm.conn.securityGroupsClient.Get(cm.namer.ResourceGroupName(), securityGroupName, "")
 }
 
-func (cm *clusterManager) createSubnetID(vn *network.VirtualNetwork, sg *network.SecurityGroup) (network.Subnet, error) {
+func (cm *ClusterManager) createSubnetID(vn *network.VirtualNetwork, sg *network.SecurityGroup) (network.Subnet, error) {
 	name := cm.namer.SubnetName()
 	routeTable, err := cm.createRouteTable()
 	if err != nil {
@@ -311,11 +311,11 @@ func (cm *clusterManager) createSubnetID(vn *network.VirtualNetwork, sg *network
 	return cm.conn.subnetsClient.Get(cm.namer.ResourceGroupName(), *vn.Name, name, "")
 }
 
-func (cm *clusterManager) getSubnetID(vn *network.VirtualNetwork) (network.Subnet, error) {
+func (cm *ClusterManager) getSubnetID(vn *network.VirtualNetwork) (network.Subnet, error) {
 	return cm.conn.subnetsClient.Get(cm.namer.ResourceGroupName(), *vn.Name, cm.namer.SubnetName(), "")
 }
 
-func (cm *clusterManager) createRouteTable() (network.RouteTable, error) {
+func (cm *ClusterManager) createRouteTable() (network.RouteTable, error) {
 	name := cm.namer.RouteTableName()
 	req := network.RouteTable{
 		Name:     types.StringP(name),
@@ -333,7 +333,7 @@ func (cm *clusterManager) createRouteTable() (network.RouteTable, error) {
 	return cm.conn.routeTablesClient.Get(cm.namer.ResourceGroupName(), name, "")
 }
 
-func (cm *clusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) error {
+func (cm *ClusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) error {
 	sshRuleName := cm.namer.NetworkSecurityRule("ssh")
 	sshRule := network.SecurityRule{
 		Name: types.StringP(sshRuleName),
@@ -399,7 +399,7 @@ func (cm *clusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 	return err
 }
 
-func (cm *clusterManager) createStorageAccount() (armstorage.Account, error) {
+func (cm *ClusterManager) createStorageAccount() (armstorage.Account, error) {
 	storageName := cm.cluster.Spec.AzureCloudConfig.StorageAccountName
 	req := armstorage.AccountCreateParameters{
 		Location: types.StringP(cm.cluster.Spec.Zone),

@@ -11,7 +11,7 @@ import (
 	"github.com/cenkalti/backoff"
 )
 
-func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
+func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
 	if cm.cluster.Status.Phase == api.ClusterPhasePending {
@@ -78,7 +78,7 @@ func (cm *clusterManager) delete(req *proto.ClusterDeleteRequest) error {
 	return nil
 }
 
-func (cm *clusterManager) deleteSSHKey() (err error) {
+func (cm *ClusterManager) deleteSSHKey() (err error) {
 	cm.ctx.Logger().Infof("Deleting SSH key for cluster", cm.cluster.Name)
 
 	if cm.cluster.Spec.SSHKey != nil {

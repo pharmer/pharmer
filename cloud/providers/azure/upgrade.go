@@ -10,7 +10,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 )
 
-func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error {
+func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
 	if !cloud.UpgradeRequired(cm.cluster, req) {
 		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
 		return nil
@@ -65,7 +65,7 @@ func (cm *clusterManager) setVersion(req *proto.ClusterReconfigureRequest) error
 	return nil
 }
 
-func (cm *clusterManager) updateMaster() error {
+func (cm *ClusterManager) updateMaster() error {
 	err := cm.deleteMaster()
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -105,7 +105,7 @@ func (cm *clusterManager) updateMaster() error {
 	return nil
 }
 
-func (cm *clusterManager) deleteMaster() error {
+func (cm *ClusterManager) deleteMaster() error {
 	im := &instanceManager{cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 	err := im.DeleteVirtualMachine(cm.namer.MasterName())
 	if err != nil {
@@ -116,7 +116,7 @@ func (cm *clusterManager) deleteMaster() error {
 	return nil
 }
 
-func (cm *clusterManager) updateNodes(sku string) error {
+func (cm *ClusterManager) updateNodes(sku string) error {
 	fmt.Println("Updating Nodes...")
 
 	im := &instanceManager{cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
