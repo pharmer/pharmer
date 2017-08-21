@@ -125,4 +125,3 @@ func (m *CredentialIsAuthorizedRequest) IsValid() (*gojsonschema.Result, error) 
 	return credentialIsAuthorizedRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *CredentialIsAuthorizedRequest) IsRequest() {}
-

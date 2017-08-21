@@ -1,11 +1,11 @@
 ## pharmer config view
 
-Print pharmer config
+Print Pharmer config
 
 ### Synopsis
 
 
-Print pharmer config
+Print Pharmer config
 
 ```
 pharmer config view [flags]
@@ -14,13 +14,14 @@ pharmer config view [flags]
 ### Examples
 
 ```
-pharmer config view
+Pharmer config view
 ```
 
 ### Options
 
 ```
-  -h, --help   help for view
+  -h, --help              help for view
+      --provider string   Path to Pharmer config file
 ```
 
 ### Options inherited from parent commands

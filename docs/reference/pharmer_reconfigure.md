@@ -20,11 +20,11 @@ appctl cluster reconfigure <name> --role=master|node --sku=n1-standard-1
 ### Options
 
 ```
-      --apply-to-master   Set true to change version of master. Default set to false.
-      --count int         Number of instances of this type (default -1)
-  -h, --help              help for reconfigure
-      --sku string        Instance type
-      --version string    Kubernetes version
+      --apply-to-master             Set true to change version of master. Default set to false.
+      --count int                   Number of instances of this type (default -1)
+  -h, --help                        help for reconfigure
+      --kubernetes-version string   Kubernetes server version
+      --sku string                  Instance type
 ```
 
 ### Options inherited from parent commands

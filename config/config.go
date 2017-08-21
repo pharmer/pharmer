@@ -2,66 +2,61 @@ package config
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	"github.com/appscode/go-dns/aws"
-	"github.com/appscode/go-dns/azure"
-	"github.com/appscode/go-dns/cloudflare"
-	"github.com/appscode/go-dns/digitalocean"
-	"github.com/appscode/go-dns/googlecloud"
-	"github.com/appscode/go-dns/linode"
-	"github.com/appscode/go-dns/vultr"
 	yc "github.com/appscode/go/encoding/yaml"
-	"github.com/appscode/log"
+	"github.com/appscode/pharmer/api"
 	"github.com/ghodss/yaml"
-	"github.com/graymeta/stow"
-	"github.com/spf13/cobra"
+	"k8s.io/client-go/util/homedir"
 )
 
-type Context struct {
-	Name     string         `json:"name"`
-	Provider string         `json:"provider"`
-	Config   stow.ConfigMap `json:"config"`
-	DNS      struct {
-		Provider     string               `json:"provider,omitempty"`
-		AWS          aws.Options          `json:"aws,omitempty"`
-		Azure        azure.Options        `json:"azure,omitempty"`
-		Cloudflare   cloudflare.Options   `json:"cloudflare,omitempty"`
-		Digitalocean digitalocean.Options `json:"digitalocean,omitempty"`
-		Gcloud       googlecloud.Options  `json:"gcloud,omitempty"`
-		Linode       linode.Options       `json:"linode,omitempty"`
-		Vultr        vultr.Options        `json:"vultr,omitempty"`
-	} `json:"dns"`
+type LocalSpec struct {
+	Path string `json:"path,omitempty"`
+}
+
+type S3Spec struct {
+	Endpoint string `json:"endpoint,omitempty"`
+	Bucket   string `json:"bucket,omiempty"`
+	Prefix   string `json:"prefix,omitempty"`
+}
+
+type GCSSpec struct {
+	Bucket string `json:"bucket,omiempty"`
+	Prefix string `json:"prefix,omitempty"`
+}
+
+type AzureSpec struct {
+	Container string `json:"container,omitempty"`
+	Prefix    string `json:"prefix,omitempty"`
+}
+
+type SwiftSpec struct {
+	Container string `json:"container,omitempty"`
+	Prefix    string `json:"prefix,omitempty"`
+}
+
+type StorageBackend struct {
+	CredentialName string `json:"credentialName,omitempty"`
+
+	Local *LocalSpec `json:"local,omitempty"`
+	S3    *S3Spec    `json:"s3,omitempty"`
+	GCS   *GCSSpec   `json:"gcs,omitempty"`
+	Azure *AzureSpec `json:"azure,omitempty"`
+	Swift *SwiftSpec `json:"swift,omitempty"`
+}
+
+type DNSProvider struct {
+	CredentialName string `json:"credentialName,omitempty"`
 }
 
 type PharmerConfig struct {
-	Contexts       []*Context `json:"contexts"`
-	CurrentContext string     `json:"current-context"`
-}
-
-func (pc PharmerConfig) Context(ctx string) *Context {
-	name := pc.CurrentContext
-	if ctx != "" {
-		name = ctx
-	}
-	for _, c := range pc.Contexts {
-		if c.Name == name {
-			return c
-		}
-	}
-	// TODO: FixIt! (set a Null Context)
-	return nil
-}
-
-func GetConfigPath(cmd *cobra.Command) string {
-	s, err := cmd.Flags().GetString("osmconfig")
-	if err != nil {
-		log.Fatalf("error accessing flag osmconfig for command %s: %v", cmd.Name(), err)
-	}
-	return s
+	api.TypeMeta `json:",inline,omitempty"`
+	Context      string           `json:context,omitempty`
+	Credentials  []api.Credential `json:"credentials,omitempty"`
+	Store        StorageBackend   `json:"store,omitempty"`
+	DNS          *DNSProvider     `json:"dns,omitempty"`
 }
 
 func LoadConfig(configPath string) (*PharmerConfig, error) {
@@ -83,27 +78,73 @@ func LoadConfig(configPath string) (*PharmerConfig, error) {
 	return config, err
 }
 
-func (pc *PharmerConfig) Save(configPath string) error {
+func (pc PharmerConfig) Save(configPath string) error {
 	data, err := yaml.Marshal(pc)
 	if err != nil {
 		return err
 	}
 	os.MkdirAll(filepath.Dir(configPath), 0755)
-	if err := ioutil.WriteFile(configPath, data, 0600); err != nil {
-		return err
+	return ioutil.WriteFile(configPath, data, 0600)
+}
+
+func (pc PharmerConfig) GetStoreType() string {
+	if pc.Store.Local != nil {
+		return "Local"
+	} else if pc.Store.S3 != nil {
+		return "S3"
+	} else if pc.Store.S3 != nil {
+		return "S3"
+	} else if pc.Store.GCS != nil {
+		return "GCS"
+	} else if pc.Store.Azure != nil {
+		return "Azure"
+	} else if pc.Store.Swift != nil {
+		return "OpenStack Swift"
+	}
+	return "<Unknown>"
+}
+
+func (pc PharmerConfig) GetDNSProviderType() string {
+	if pc.DNS == nil {
+		return "-"
+	}
+	if pc.DNS.CredentialName == "" {
+		return "-"
+	}
+	for _, c := range pc.Credentials {
+		if c.Name == pc.DNS.CredentialName {
+			return c.Spec.Provider
+		}
+	}
+	return "<Unknown>"
+}
+
+func NewLocalConfig() *PharmerConfig {
+	return &PharmerConfig{
+		TypeMeta: api.TypeMeta{
+			Kind: "PharmerConfig",
+		},
+		Context: "default",
+		Store: StorageBackend{
+			Local: &LocalSpec{
+				Path: filepath.Join(homedir.HomeDir(), ".pharmer", "storage"),
+			},
+		},
+	}
+}
+
+func CreateDefaultConfigIfAbsent() error {
+	configPath := DefaultConfigPath()
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return NewLocalConfig().Save(configPath)
 	}
 	return nil
 }
 
-func (pc *PharmerConfig) Dial(cliCtx string) (stow.Location, error) {
-	ctx := pc.CurrentContext
-	if cliCtx != "" {
-		ctx = cliCtx
-	}
-	for _, osmCtx := range pc.Contexts {
-		if osmCtx.Name == ctx {
-			return stow.Dial(osmCtx.Provider, osmCtx.Config)
-		}
-	}
-	return nil, errors.New("Failed to determine context.")
+func DefaultConfigPath() string {
+	return filepath.Join(homedir.HomeDir(), ".pharmer", "config", "default")
+}
+
+func ConfigDir() string {
+	return filepath.Join(homedir.HomeDir(), ".pharmer", "config")
 }

@@ -554,4 +554,3 @@ func (m *DeleteResourceRequest) IsValid() (*gojsonschema.Result, error) {
 	return deleteResourceRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *DeleteResourceRequest) IsRequest() {}
-

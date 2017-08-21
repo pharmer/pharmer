@@ -2,16 +2,8 @@ package context
 
 import (
 	go_ctx "context"
-	"fmt"
 
-	"github.com/appscode/go-dns/aws"
-	"github.com/appscode/go-dns/azure"
-	"github.com/appscode/go-dns/cloudflare"
-	"github.com/appscode/go-dns/digitalocean"
-	"github.com/appscode/go-dns/googlecloud"
-	"github.com/appscode/go-dns/linode"
 	dns "github.com/appscode/go-dns/provider"
-	"github.com/appscode/go-dns/vultr"
 	"github.com/appscode/log"
 	"github.com/appscode/pharmer/config"
 	"github.com/appscode/pharmer/storage"
@@ -53,25 +45,25 @@ func NewContext(ctx go_ctx.Context, cfg *config.PharmerConfig) Context {
 }
 
 func newDNSProvider(cfg *config.PharmerConfig) (dns.Provider, error) {
-	curCtx := cfg.Context("")
-	switch curCtx.DNS.Provider {
-	case "azure":
-		return azure.NewDNSProviderCredentials(curCtx.DNS.Azure)
-	case "cloudflare":
-		return cloudflare.NewDNSProviderCredentials(curCtx.DNS.Cloudflare)
-	case "digitalocean":
-		return digitalocean.NewDNSProviderCredentials(curCtx.DNS.Digitalocean)
-	case "gcloud":
-		return googlecloud.NewDNSProviderCredentials(curCtx.DNS.Gcloud)
-	case "linode":
-		return linode.NewDNSProviderCredentials(curCtx.DNS.Linode)
-	case "aws":
-	case "route53":
-		return aws.NewDNSProviderCredentials(curCtx.DNS.AWS)
-	case "vultr":
-		return vultr.NewDNSProviderCredentials(curCtx.DNS.Vultr)
-	}
-	return nil, fmt.Errorf("Unrecognised DNS provider: %s", curCtx.DNS.Provider)
+	//curCtx := cfg.Context("")
+	//switch curCtx.DNS.Provider {
+	//case "azure":
+	//	return azure.NewDNSProviderCredentials(curCtx.DNS.Azure)
+	//case "cloudflare":
+	//	return cloudflare.NewDNSProviderCredentials(curCtx.DNS.Cloudflare)
+	//case "digitalocean":
+	//	return digitalocean.NewDNSProviderCredentials(curCtx.DNS.Digitalocean)
+	//case "gcloud":
+	//	return googlecloud.NewDNSProviderCredentials(curCtx.DNS.Gcloud)
+	//case "linode":
+	//	return linode.NewDNSProviderCredentials(curCtx.DNS.Linode)
+	//case "aws":
+	//case "route53":
+	//	return aws.NewDNSProviderCredentials(curCtx.DNS.AWS)
+	//case "vultr":
+	//	return vultr.NewDNSProviderCredentials(curCtx.DNS.Vultr)
+	//}
+	return nil, nil // fmt.Errorf("Unrecognised DNS provider: %s", curCtx.DNS.Provider)
 }
 
 func (ctx *FakeContext) DNSProvider() dns.Provider {

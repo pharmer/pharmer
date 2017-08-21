@@ -14,7 +14,7 @@ pharmer config get-contexts [flags]
 ### Examples
 
 ```
-pharmer config get-contexts
+Pharmer config get-contexts
 ```
 
 ### Options

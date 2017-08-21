@@ -10,5 +10,5 @@ import "C"
 import "os"
 
 func Isatty(fd uintptr) bool {
-    return int(C.isatty(C.int(fd))) != 0
+	return int(C.isatty(C.int(fd))) != 0
 }

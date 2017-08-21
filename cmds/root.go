@@ -6,6 +6,7 @@ import (
 
 	v "github.com/appscode/go/version"
 	comCmd "github.com/appscode/pharmer/commissioner/cmd"
+	"github.com/appscode/pharmer/config"
 	cfgCmd "github.com/appscode/pharmer/config/cmds"
 	credCmd "github.com/appscode/pharmer/credential/cmds"
 	"github.com/spf13/cobra"
@@ -17,10 +18,12 @@ func NewRootCmd(version string) *cobra.Command {
 		Use:               "pharmer [command]",
 		Short:             `Pharmer by Appscode - Manages farms`,
 		DisableAutoGenTag: true,
-		PersistentPreRun: func(c *cobra.Command, args []string) {
+		PersistentPreRunE: func(c *cobra.Command, args []string) error {
 			c.Flags().VisitAll(func(flag *pflag.Flag) {
 				log.Printf("FLAG: --%s=%q", flag.Name, flag.Value)
 			})
+
+			return config.CreateDefaultConfigIfAbsent()
 		},
 	}
 	rootCmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)

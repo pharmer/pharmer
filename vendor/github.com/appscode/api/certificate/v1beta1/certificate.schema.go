@@ -118,4 +118,3 @@ func (m *CertificateDeployRequest) IsValid() (*gojsonschema.Result, error) {
 	return certificateDeployRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *CertificateDeployRequest) IsRequest() {}
-

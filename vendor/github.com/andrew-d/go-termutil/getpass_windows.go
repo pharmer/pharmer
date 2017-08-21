@@ -3,9 +3,9 @@
 package termutil
 
 import (
-	"syscall"
-	"io"
 	"errors"
+	"io"
+	"syscall"
 )
 
 var (
@@ -45,7 +45,7 @@ func GetPass(prompt string, prompt_fd, input_fd uintptr) ([]byte, error) {
 		} else if ret == 0x0003 {
 			return nil, errors.New("Input has been interrupted by user.")
 		} else if ret == 0x0008 {
-			chars = chars[0:len(chars)-2]
+			chars = chars[0 : len(chars)-2]
 		} else {
 			chars = append(chars, uint16(ret))
 		}
