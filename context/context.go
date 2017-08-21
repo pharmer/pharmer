@@ -14,7 +14,7 @@ type Context interface {
 	go_ctx.Context
 
 	DNSProvider() dns.Provider
-	Store() storage.Store
+	Store() storage.Interface
 	Logger() Logger
 	Extra() DomainManager
 	String() string
@@ -37,8 +37,8 @@ func (ctx *defaultContext) DNSProvider() dns.Provider {
 	return ctx.Value(KeyDNS).(dns.Provider)
 }
 
-func (ctx *defaultContext) Store() storage.Store {
-	return ctx.Value(KeyStore).(storage.Store)
+func (ctx *defaultContext) Store() storage.Interface {
+	return ctx.Value(KeyStore).(storage.Interface)
 }
 
 func (ctx *defaultContext) Logger() Logger {
@@ -50,7 +50,7 @@ func (ctx *defaultContext) Extra() DomainManager {
 }
 
 func (defaultContext) String() string {
-	return "[maverick]"
+	return "[-]"
 }
 
 type Factory interface {
@@ -64,42 +64,19 @@ type DefaultFactory struct {
 var _ Factory = &DefaultFactory{}
 
 func NewFactory(cfg config.PharmerConfig) Factory {
-	return &DefaultFactory{cfg:cfg}
+	return &DefaultFactory{cfg: cfg}
 }
 
 func (f DefaultFactory) New(ctx go_ctx.Context) Context {
 	c := &defaultContext{Context: ctx}
 	c.Context = go_ctx.WithValue(c.Context, KeyExtra, &NullDomainManager{})
 	c.Context = go_ctx.WithValue(c.Context, KeyLogger, log.New(c))
-
-
-
-
-	c.Context = go_ctx.WithValue(c.Context, KeyStore, fake.FakeStore{Config: &f.cfg})
-	//if dp, err := newDNSProvider(cfg); err == nil {
-	//	c.Context = go_ctx.WithValue(c.Context, KeyDNS, dp)
-	//}
+	if sp, err := storage.GetProvider("", ctx, f.cfg); err == nil {
+		c.Context = go_ctx.WithValue(c.Context, KeyStore, sp)
+	} else {
+		fp, _ := storage.GetProvider(fake.UID, ctx, f.cfg)
+		c.Context = go_ctx.WithValue(c.Context, KeyStore, fp)
+	}
+	c.Context = go_ctx.WithValue(c.Context, KeyDNS, &NullDNSProvider{})
 	return c
-}
-
-func newDNSProvider(cfg *config.PharmerConfig) (dns.Provider, error) {
-	//curCtx := cfg.Context("")
-	//switch curCtx.DNS.Provider {
-	//case "azure":
-	//	return azure.NewDNSProviderCredentials(curCtx.DNS.Azure)
-	//case "cloudflare":
-	//	return cloudflare.NewDNSProviderCredentials(curCtx.DNS.Cloudflare)
-	//case "digitalocean":
-	//	return digitalocean.NewDNSProviderCredentials(curCtx.DNS.Digitalocean)
-	//case "gcloud":
-	//	return googlecloud.NewDNSProviderCredentials(curCtx.DNS.Gcloud)
-	//case "linode":
-	//	return linode.NewDNSProviderCredentials(curCtx.DNS.Linode)
-	//case "aws":
-	//case "route53":
-	//	return aws.NewDNSProviderCredentials(curCtx.DNS.AWS)
-	//case "vultr":
-	//	return vultr.NewDNSProviderCredentials(curCtx.DNS.Vultr)
-	//}
-	return nil, nil // fmt.Errorf("Unrecognised DNS provider: %s", curCtx.DNS.Provider)
 }

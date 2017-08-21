@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"crypto/x509"
 	"errors"
 
@@ -14,14 +15,16 @@ const (
 )
 
 func init() {
-	storage.RegisterStore(UID, func(cfg *config.PharmerConfig) (storage.Store, error) { return &SqlStore{cfg: cfg}, nil })
+	storage.RegisterProvider(UID, func(ctx context.Context, cfg config.PharmerConfig) (storage.Interface, error) {
+		return &SqlStore{cfg: cfg}, nil
+	})
 }
 
 type SqlStore struct {
-	cfg *config.PharmerConfig
+	cfg config.PharmerConfig
 }
 
-var _ storage.Store = &SqlStore{}
+var _ storage.Interface = &SqlStore{}
 
 func (s *SqlStore) Clusters() storage.ClusterStore {
 	return s

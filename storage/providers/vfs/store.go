@@ -1,6 +1,7 @@
 package vfs
 
 import (
+	"context"
 	"crypto/x509"
 	"errors"
 
@@ -14,14 +15,16 @@ const (
 )
 
 func init() {
-	storage.RegisterStore(UID, func(cfg *config.PharmerConfig) (storage.Store, error) { return &FileStore{cfg: cfg}, nil })
+	storage.RegisterProvider(UID, func(ctx context.Context, cfg config.PharmerConfig) (storage.Interface, error) {
+		return &FileStore{cfg: cfg}, nil
+	})
 }
 
 type FileStore struct {
-	cfg *config.PharmerConfig
+	cfg config.PharmerConfig
 }
 
-var _ storage.Store = &FileStore{}
+var _ storage.Interface = &FileStore{}
 
 func (s *FileStore) Clusters() storage.ClusterStore {
 	return s
