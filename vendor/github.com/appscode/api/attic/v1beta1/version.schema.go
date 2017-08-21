@@ -55,4 +55,3 @@ func (m *VersionListRequest) IsValid() (*gojsonschema.Result, error) {
 	return versionListRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *VersionListRequest) IsRequest() {}
-

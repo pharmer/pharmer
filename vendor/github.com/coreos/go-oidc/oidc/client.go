@@ -26,8 +26,8 @@ var (
 	DefaultScope = []string{"openid", "email", "profile"}
 
 	supportedAuthMethods = map[string]struct{}{
-		oauth2.AuthMethodClientSecretBasic: struct{}{},
-		oauth2.AuthMethodClientSecretPost:  struct{}{},
+		oauth2.AuthMethodClientSecretBasic: {},
+		oauth2.AuthMethodClientSecretPost:  {},
 	}
 )
 

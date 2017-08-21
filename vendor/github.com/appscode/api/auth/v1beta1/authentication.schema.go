@@ -42,4 +42,3 @@ func (m *LoginRequest) IsValid() (*gojsonschema.Result, error) {
 	return loginRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *LoginRequest) IsRequest() {}
-
