@@ -5,7 +5,6 @@ import (
 	"log"
 
 	v "github.com/appscode/go/version"
-	comCmd "github.com/appscode/pharmer/commissioner/cmd"
 	"github.com/appscode/pharmer/config"
 	cfgCmd "github.com/appscode/pharmer/config/cmds"
 	credCmd "github.com/appscode/pharmer/credential/cmds"
@@ -31,7 +30,6 @@ func NewRootCmd(version string) *cobra.Command {
 	flag.CommandLine.Parse([]string{})
 
 	rootCmd.AddCommand(credCmd.NewCmdCredential())
-	rootCmd.AddCommand(comCmd.NewCmdCommisioner())
 	rootCmd.AddCommand(cfgCmd.NewCmdConfig())
 	rootCmd.AddCommand(NewCmdCreate())
 	rootCmd.AddCommand(NewCmdDelete())

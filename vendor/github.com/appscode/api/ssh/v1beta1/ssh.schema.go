@@ -39,3 +39,4 @@ func (m *SSHGetRequest) IsValid() (*gojsonschema.Result, error) {
 	return sSHGetRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *SSHGetRequest) IsRequest() {}
+

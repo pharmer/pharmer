@@ -91,3 +91,4 @@ func (m *AgentGetRequest) IsValid() (*gojsonschema.Result, error) {
 	return agentGetRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *AgentGetRequest) IsRequest() {}
+
