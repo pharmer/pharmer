@@ -22,7 +22,6 @@ Pharmer by Appscode - Manages farms
 
 ### SEE ALSO
 * [pharmer backup](pharmer_backup.md)	 - Takes backup of YAML files of cluster
-* [pharmer commissioner](pharmer_commissioner.md)	 - Various commissioning commands.
 * [pharmer config](pharmer_config.md)	 - Pharmer configuration
 * [pharmer create](pharmer_create.md)	 - Create a Kubernetes cluster for a given cloud provider
 * [pharmer credential](pharmer_credential.md)	 - Manage cloud provider credentials

@@ -90,3 +90,4 @@ func (m *RegionListRequest) IsValid() (*gojsonschema.Result, error) {
 	return regionListRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *RegionListRequest) IsRequest() {}
+

@@ -3,5 +3,5 @@
 package termutil
 
 func Isatty(fd uintptr) bool {
-	panic("Not implemented")
+    panic("Not implemented")
 }

@@ -455,3 +455,4 @@ func (m *UpdateRequest) IsValid() (*gojsonschema.Result, error) {
 	return updateRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *UpdateRequest) IsRequest() {}
+

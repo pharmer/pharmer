@@ -7,24 +7,13 @@ import (
 	"github.com/appscode/errors"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/pharmer/api"
-	_ "github.com/appscode/searchlight/api/install"
-	scs "github.com/appscode/searchlight/client/clientset"
-	_ "github.com/appscode/stash/api/install"
-	rc "github.com/appscode/stash/client/clientset"
-	_ "github.com/appscode/voyager/api/install"
-	vcs "github.com/appscode/voyager/client/clientset"
-	k8sdb "github.com/k8sdb/apimachinery/client/clientset"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 type kubeClient struct {
-	Client            clientset.Interface
-	VoyagerClient     vcs.ExtensionInterface
-	SearchlightClient scs.ExtensionInterface
-	KubeDBClient      k8sdb.ExtensionInterface
-	StashClient       rc.ExtensionInterface
-	config            *rest.Config
+	Client clientset.Interface
+	config *rest.Config
 }
 
 type fakeKubeClient struct {
@@ -65,29 +54,9 @@ func NewAdminClient(cluster *api.Cluster) (*kubeClient, error) {
 	if err != nil {
 		return nil, errors.FromErr(err).Err()
 	}
-	voyagerClient, err := vcs.NewForConfig(kubeconfig)
-	if err != nil {
-		return nil, errors.FromErr(err).Err()
-	}
-	searchlightClient, err := scs.NewForConfig(kubeconfig)
-	if err != nil {
-		return nil, errors.FromErr(err).Err()
-	}
-	kubedbClient, err := k8sdb.NewForConfig(kubeconfig)
-	if err != nil {
-		return nil, errors.FromErr(err).Err()
-	}
-	stashClient, err := rc.NewForConfig(kubeconfig)
-	if err != nil {
-		return nil, errors.FromErr(err).Err()
-	}
 	return &kubeClient{
-		Client:            client,
-		VoyagerClient:     voyagerClient,
-		SearchlightClient: searchlightClient,
-		KubeDBClient:      kubedbClient,
-		StashClient:       stashClient,
-		config:            kubeconfig,
+		Client: client,
+		config: kubeconfig,
 	}, nil
 }
 
