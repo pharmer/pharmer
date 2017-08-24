@@ -2,16 +2,14 @@ package vfs
 
 import (
 	"context"
-	"crypto/x509"
-	"errors"
 
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/config"
 	"github.com/appscode/pharmer/storage"
 )
 
 const (
-	UID = "vfs"
+	UID      = "vfs"
+	pageSize = 50
 )
 
 func init() {
@@ -26,59 +24,22 @@ type FileStore struct {
 
 var _ storage.Interface = &FileStore{}
 
-func (s *FileStore) Clusters() storage.ClusterStore {
-	return s
-}
-
-func (s *FileStore) Instances() storage.InstanceStore {
-	return s
-}
-
 func (s *FileStore) Credentials() storage.CredentialStore {
-	return s
+	return &CredentialFileStore{}
 }
 
-func (s *FileStore) Certificates() storage.CertificateStore {
-	return s
+func (s *FileStore) Clusters() storage.ClusterStore {
+	return &ClusterFileStore{}
 }
 
-// ClusterStore _______________________________________________________________
-func (s *FileStore) GetActiveCluster(name string) ([]*api.Cluster, error) {
-	return nil, errors.New("NotImplemented")
+func (s *FileStore) Instances(name string) storage.InstanceStore {
+	return &InstanceFileStore{cluster: name}
 }
 
-func (s *FileStore) LoadCluster(name string) (*api.Cluster, error) {
-	return nil, errors.New("NotImplemented")
+func (s *FileStore) Certificates(name string) storage.CertificateStore {
+	return &CertificateFileStore{cluster: name}
 }
 
-func (s *FileStore) SaveCluster(*api.Cluster) error {
-	return errors.New("NotImplemented")
+func (s *FileStore) SSHKeys(name string) storage.SSHKeyStore {
+	return &SSHKeyFileStore{cluster: name}
 }
-
-// InstanceStore ______________________________________________________________
-func (s *FileStore) LoadInstance(name string) (*api.Instance, error) {
-	return nil, errors.New("NotImplemented")
-}
-
-func (s *FileStore) LoadInstances(cluster string) ([]*api.Instance, error) {
-	return nil, errors.New("NotImplemented")
-}
-
-func (s *FileStore) SaveInstance(instance *api.Instance) error {
-	return errors.New("NotImplemented")
-}
-
-func (s *FileStore) SaveInstances(instances []*api.Instance) error {
-	return errors.New("NotImplemented")
-}
-
-// CertificateStore ___________________________________________________________
-func (s *FileStore) LoadCertificate(name string) (*x509.Certificate, error) {
-	return nil, errors.New("NotImplemented")
-}
-
-func (s *FileStore) SaveCertificate(*x509.Certificate) error {
-	return errors.New("NotImplemented")
-}
-
-// CredentialStore ____________________________________________________________

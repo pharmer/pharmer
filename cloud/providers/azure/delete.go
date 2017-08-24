@@ -34,7 +34,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins.Instances, err = cm.ctx.Store().Instances().LoadInstances(cm.cluster.Name)
+	cm.ins.Instances, err = cm.ctx.Store().Instances(cm.cluster.Name).List(api.ListOptions{})
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -60,7 +60,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		}
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
-	err = cm.ctx.Store().Instances().SaveInstances(cm.ins.Instances)
+	err = cm.ctx.Store().Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()

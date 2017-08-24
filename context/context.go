@@ -7,7 +7,6 @@ import (
 	"github.com/appscode/log"
 	"github.com/appscode/pharmer/config"
 	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/storage/providers/fake"
 )
 
 type Context interface {
@@ -74,8 +73,8 @@ func (f DefaultFactory) New(ctx go_ctx.Context) Context {
 	if sp, err := storage.GetProvider("", ctx, f.cfg); err == nil {
 		c.Context = go_ctx.WithValue(c.Context, KeyStore, sp)
 	} else {
-		fp, _ := storage.GetProvider(fake.UID, ctx, f.cfg)
-		c.Context = go_ctx.WithValue(c.Context, KeyStore, fp)
+		//fp, _ := storage.GetProvider(fake.UID, ctx, f.cfg)
+		//c.Context = go_ctx.WithValue(c.Context, KeyStore, fp)
 	}
 	c.Context = go_ctx.WithValue(c.Context, KeyDNS, &NullDNSProvider{})
 	return c

@@ -31,7 +31,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	cm.cluster.Spec.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
 	cm.cluster.Spec.KubernetesVersion = req.KubernetesVersion
 
-	err := cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
+	_, err := cm.ctx.Store().Clusters().Update(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -42,7 +42,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins.Instances, _ = cm.ctx.Store().Instances().LoadInstances(cm.cluster.Name)
+	cm.ins.Instances, _ = cm.ctx.Store().Instances(cm.cluster.Name).List(api.ListOptions{})
 	if req.ApplyToMaster {
 		err = cm.updateMaster()
 		if err != nil {
@@ -54,11 +54,11 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	err = cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
+	_, err = cm.ctx.Store().Clusters().Update(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = cm.ctx.Store().Instances().SaveInstances(cm.ins.Instances)
+	err = cm.ctx.Store().Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -171,7 +171,7 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 	}
 	err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
 	// cluster.Spec.ctx.Instances = append(cluster.Spec.ctx.Instances, instances...)
-	err = cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
+	_, err = cm.ctx.Store().Clusters().Update(cm.cluster)
 
 	return nil
 }

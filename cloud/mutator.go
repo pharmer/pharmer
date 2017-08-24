@@ -177,7 +177,7 @@ func AdjustDbInstance(ctx context.Context, cm *api.ClusterInstances, instances [
 		}
 	}
 
-	return ctx.Store().Instances().SaveInstances(cm.Instances)
+	return ctx.Store().Instances("cm.cluster").SaveInstances(cm.Instances)
 }
 
 func GetExistingContextVersion(cluster *api.Cluster, sku string) (int64, error) {
