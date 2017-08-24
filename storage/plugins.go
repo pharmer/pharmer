@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/appscode/pharmer/config"
+	"github.com/appscode/pharmer/api"
 	"github.com/golang/glog"
 )
 
@@ -12,7 +12,7 @@ import (
 // The config parameter provides an io.Reader handler to the factory in
 // order to load specific configurations. If no configuration is provided
 // the parameter is nil.
-type Factory func(ctx context.Context, cfg config.PharmerConfig) (Interface, error)
+type Factory func(ctx context.Context, cfg api.PharmerConfig) (Interface, error)
 
 // All registered cloud providers.
 var (
@@ -58,7 +58,7 @@ func Providers() []string {
 // was known but failed to initialize. The config parameter specifies the
 // io.Reader handler of the configuration file for the cloud provider, or nil
 // for no configuation.
-func GetProvider(name string, ctx context.Context, cfg config.PharmerConfig) (Interface, error) {
+func GetProvider(name string, ctx context.Context, cfg api.PharmerConfig) (Interface, error) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	f, found := providers[name]

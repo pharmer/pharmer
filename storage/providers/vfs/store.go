@@ -3,7 +3,7 @@ package vfs
 import (
 	"context"
 
-	"github.com/appscode/pharmer/config"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/storage"
 )
 
@@ -13,13 +13,13 @@ const (
 )
 
 func init() {
-	storage.RegisterProvider(UID, func(ctx context.Context, cfg config.PharmerConfig) (storage.Interface, error) {
+	storage.RegisterProvider(UID, func(ctx context.Context, cfg api.PharmerConfig) (storage.Interface, error) {
 		return &FileStore{cfg: cfg}, nil
 	})
 }
 
 type FileStore struct {
-	cfg config.PharmerConfig
+	cfg api.PharmerConfig
 }
 
 var _ storage.Interface = &FileStore{}

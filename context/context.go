@@ -5,7 +5,7 @@ import (
 
 	dns "github.com/appscode/go-dns/provider"
 	"github.com/appscode/log"
-	"github.com/appscode/pharmer/config"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/storage"
 )
 
@@ -57,12 +57,12 @@ type Factory interface {
 }
 
 type DefaultFactory struct {
-	cfg config.PharmerConfig
+	cfg api.PharmerConfig
 }
 
 var _ Factory = &DefaultFactory{}
 
-func NewFactory(cfg config.PharmerConfig) Factory {
+func NewFactory(cfg api.PharmerConfig) Factory {
 	return &DefaultFactory{cfg: cfg}
 }
 

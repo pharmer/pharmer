@@ -143,6 +143,12 @@ type ListOptions struct {
 
 func AssignTypeKind(v interface{}) error {
 	switch u := v.(type) {
+	case *PharmerConfig:
+		if u.APIVersion == "" {
+			u.APIVersion = "v1alpha1"
+		}
+		u.Kind = "PharmerConfig"
+		return nil
 	case *Cluster:
 		if u.APIVersion == "" {
 			u.APIVersion = "v1alpha1"
