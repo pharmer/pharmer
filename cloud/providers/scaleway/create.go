@@ -34,8 +34,8 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		if cm.cluster.Status.Phase == api.ClusterPhasePending {
 			cm.cluster.Status.Phase = api.ClusterPhaseFailing
 		}
-		cm.ctx.Store().Clusters().SaveCluster(cm.cluster)
-		cm.ctx.Store().Instances().SaveInstances(cm.ins.Instances)
+		cm.ctx.Store().Clusters().Update(cm.cluster)
+		cm.ctx.Store().Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
 		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
@@ -83,7 +83,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	if err = cm.ctx.Store().Clusters().SaveCluster(cm.cluster); err != nil {
+	if _, err = cm.ctx.Store().Clusters().Update(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -118,7 +118,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	if err = cm.ctx.Store().Clusters().SaveCluster(cm.cluster); err != nil {
+	if _, err = cm.ctx.Store().Clusters().Update(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

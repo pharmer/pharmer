@@ -25,7 +25,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	igm.cm.cluster.Spec.ResourceVersion = igm.instance.Type.ContextVersion
-	igm.cm.cluster, _ = igm.cm.ctx.Store().Clusters().LoadCluster(igm.cm.cluster.Name)
+	igm.cm.cluster, _ = igm.cm.ctx.Store().Clusters().Get(igm.cm.cluster.Name)
 	if err = igm.cm.conn.detectUbuntuImage(); err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -51,7 +51,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	}
-	igm.cm.ctx.Store().Clusters().SaveCluster(igm.cm.cluster)
+	igm.cm.ctx.Store().Clusters().Update(igm.cm.cluster)
 	return nil
 }
 

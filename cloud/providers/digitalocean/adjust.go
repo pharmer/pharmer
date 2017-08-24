@@ -29,7 +29,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	fmt.Println(found)
 
 	igm.cm.cluster.Spec.ResourceVersion = igm.instance.Type.ContextVersion
-	igm.cm.cluster, _ = igm.cm.ctx.Store().Clusters().LoadCluster(igm.cm.cluster.Name)
+	igm.cm.cluster, _ = igm.cm.ctx.Store().Clusters().Get(igm.cm.cluster.Name)
 	var nodeAdjust int64 = 0
 	if found {
 		nodeAdjust, _ = cloud.Mutator(igm.cm.cluster, igm.instance)

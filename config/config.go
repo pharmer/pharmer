@@ -127,7 +127,7 @@ func NewLocalConfig() *PharmerConfig {
 		Context: "default",
 		Store: StorageBackend{
 			Local: &LocalSpec{
-				Path: filepath.Join(homedir.HomeDir(), ".pharmer", "storage"),
+				Path: filepath.Join(homedir.HomeDir(), ".pharmer", "store.d"),
 			},
 		},
 	}
@@ -142,9 +142,9 @@ func CreateDefaultConfigIfAbsent() error {
 }
 
 func DefaultConfigPath() string {
-	return filepath.Join(homedir.HomeDir(), ".pharmer", "config", "default")
+	return filepath.Join(homedir.HomeDir(), ".pharmer", "config.d", "default")
 }
 
 func ConfigDir() string {
-	return filepath.Join(homedir.HomeDir(), ".pharmer", "config")
+	return filepath.Join(homedir.HomeDir(), ".pharmer", "config.d")
 }

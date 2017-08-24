@@ -3,7 +3,7 @@ package cmds
 import "github.com/spf13/cobra"
 
 func NewCmdConfig() *cobra.Command {
-	cmd := &cobra.Command{
+	rootCmd := &cobra.Command{
 		Use:               "config",
 		Short:             "Pharmer configuration",
 		Example:           "pharmer config view",
@@ -13,7 +13,7 @@ func NewCmdConfig() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newCmdView())
-	cmd.AddCommand(newCmdGet())
-	return cmd
+	rootCmd.AddCommand(newCmdView())
+	rootCmd.AddCommand(newCmdGet())
+	return rootCmd
 }
