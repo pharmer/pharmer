@@ -20,14 +20,15 @@ Pharmer config view
 ### Options
 
 ```
-  -h, --help              help for view
-      --provider string   Path to Pharmer config file
+  -h, --help   help for view
 ```
 
 ### Options inherited from parent commands
 
 ```
       --alsologtostderr                  log to standard error as well as files
+      --config-file string               Path to Pharmer config file
+      --env string                       Environment used to enable debugging (default "dev")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files (default true)

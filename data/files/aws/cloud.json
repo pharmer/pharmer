@@ -1,0 +1,421 @@
+{
+  "name": "aws",
+  "env": [
+    "dev",
+    "qa"
+  ],
+  "regions": [
+    {
+      "location": "Virginia",
+      "region": "us-east-1",
+      "zones": [
+        "us-east-1a",
+        "us-east-1b",
+        "us-east-1c",
+        "us-east-1d",
+        "us-east-1e"
+      ]
+    },
+    {
+      "location": "Ohio",
+      "region": "us-east-2",
+      "zones": [
+        "us-east-2a",
+        "us-east-2b",
+        "us-east-2c"
+      ]
+    },
+    {
+      "location": "California",
+      "region": "us-west-1",
+      "zones": [
+        "us-west-1a",
+        "us-west-1b",
+        "us-west-1c"
+      ]
+    },
+    {
+      "location": "Oregon",
+      "region": "us-west-2",
+      "zones": [
+        "us-west-2a",
+        "us-west-2b",
+        "us-west-2c"
+      ]
+    },
+    {
+      "location": "Ireland",
+      "region": "eu-west-1",
+      "zones": [
+        "eu-west-1a",
+        "eu-west-1b",
+        "eu-west-1c"
+      ]
+    },
+    {
+      "location": "London",
+      "region": "eu-west-2",
+      "zones": [
+        "eu-west-1a",
+        "eu-west-1b",
+        "eu-west-1c"
+      ]
+    },
+    {
+      "location": "Singapore",
+      "region": "ap-southeast-1",
+      "zones": [
+        "ap-southeast-1a",
+        "ap-southeast-1b",
+        "ap-southeast-1c"
+      ]
+    },
+    {
+      "location": "Tokyo",
+      "region": "ap-northeast-1",
+      "zones": [
+        "ap-northeast-1a",
+        "ap-northeast-1b",
+        "ap-northeast-1c"
+      ]
+    },
+    {
+      "region": "ap-southeast-2",
+      "location": "Sydney",
+      "zones": [
+        "ap-southeast-2a",
+        "ap-southeast-2b",
+        "ap-southeast-2c"
+      ]
+    },
+    {
+      "region": "sa-east-1",
+      "location": "São Paulo",
+      "zones": [
+        "sa-east-1a",
+        "sa-east-1b",
+        "sa-east-1c"
+      ]
+    },
+    {
+      "region": "ap-south-1",
+      "location": "Mumbai",
+      "zones": [
+        "ap-south-1a",
+        "ap-south-1b",
+        "ap-south-1c"
+      ]
+    },
+    {
+      "region": "eu-central-1",
+      "location": "Frankfurt",
+      "zones": [
+        "eu-central-1a",
+        "eu-central-1b",
+        "eu-central-1c"
+      ]
+    }
+  ],
+  "instanceTypes": [
+    {
+      "sku": "t2.micro",
+      "description": "t2.micro",
+      "category": "General Purpose",
+      "cpu": 1,
+      "ram": 1
+    },
+    {
+      "sku": "t2.small",
+      "description": "t2.small",
+      "category": "General Purpose",
+      "cpu": 1,
+      "ram": 2
+    },
+    {
+      "sku": "t2.medium",
+      "description": "t2.medium",
+      "category": "General Purpose",
+      "cpu": 2,
+      "ram": 4
+    },
+    {
+      "sku": "t2.large",
+      "description": "t2.large",
+      "category": "General Purpose",
+      "cpu": 2,
+      "ram": 8
+    },
+    {
+      "sku": "m4.large",
+      "description": "m4.large",
+      "category": "General Purpose",
+      "cpu": 2,
+      "ram": 8
+    },
+    {
+      "sku": "m4.xlarge",
+      "description": "m4.xlarge",
+      "category": "General Purpose",
+      "cpu": 4,
+      "ram": 16
+    },
+    {
+      "sku": "m4.2xlarge",
+      "description": "m4.2xlarge",
+      "category": "General Purpose",
+      "cpu": 8,
+      "ram": 32
+    },
+    {
+      "sku": "m4.4xlarge",
+      "description": "m4.4xlarge",
+      "category": "General Purpose",
+      "cpu": 16,
+      "ram": 64
+    },
+    {
+      "sku": "m4.10xlarge",
+      "description": "m4.10xlarge",
+      "category": "General Purpose",
+      "cpu": 40,
+      "ram": 160
+    },
+    {
+      "sku": "m3.medium",
+      "description": "m3.medium",
+      "category": "General Purpose",
+      "cpu": 1,
+      "ram": 3.75
+    },
+    {
+      "sku": "m3.large",
+      "description": "m3.large",
+      "category": "General Purpose",
+      "cpu": 2,
+      "ram": 7.5
+    },
+    {
+      "sku": "m3.xlarge",
+      "description": "m3.xlarge",
+      "category": "General Purpose",
+      "cpu": 4,
+      "ram": 15
+    },
+    {
+      "sku": "m3.2xlarge",
+      "description": "m3.2xlarge",
+      "category": "General Purpose",
+      "cpu": 8,
+      "ram": 30
+    },
+    {
+      "sku": "c4.large",
+      "description": "c4.large",
+      "category": "Compute Optimized",
+      "cpu": 2,
+      "ram": 3.75
+    },
+    {
+      "sku": "c4.xlarge",
+      "description": "c4.xlarge",
+      "category": "Compute Optimized",
+      "cpu": 4,
+      "ram": 7.5
+    },
+    {
+      "sku": "c4.2xlarge",
+      "description": "c4.2xlarge",
+      "category": "Compute Optimized",
+      "cpu": 8,
+      "ram": 15
+    },
+    {
+      "sku": "c4.4xlarge",
+      "description": "c4.4xlarge",
+      "category": "Compute Optimized",
+      "cpu": 16,
+      "ram": 30
+    },
+    {
+      "sku": "c4.8xlarge",
+      "description": "c4.8xlarge",
+      "category": "Compute Optimized",
+      "cpu": 36,
+      "ram": 60
+    },
+    {
+      "sku": "c3.large",
+      "description": "c3.large",
+      "category": "Compute Optimized",
+      "cpu": 2,
+      "ram": 3.75
+    },
+    {
+      "sku": "c3.xlarge",
+      "description": "c3.xlarge",
+      "category": "Compute Optimized",
+      "cpu": 4,
+      "ram": 7.5
+    },
+    {
+      "sku": "c3.2xlarge",
+      "description": "c3.2xlarge",
+      "category": "Compute Optimized",
+      "cpu": 8,
+      "ram": 15
+    },
+    {
+      "sku": "c3.4xlarge",
+      "description": "c3.4xlarge",
+      "category": "Compute Optimized",
+      "cpu": 16,
+      "ram": 30
+    },
+    {
+      "sku": "c3.8xlarge",
+      "description": "c3.8xlarge",
+      "category": "Compute Optimized",
+      "cpu": 32,
+      "ram": 60
+    },
+    {
+      "sku": "g2.2xlarge",
+      "description": "g2.2xlarge",
+      "category": "GPU Instances",
+      "cpu": 8,
+      "ram": 15
+    },
+    {
+      "sku": "g2.8xlarge",
+      "description": "g2.8xlarge",
+      "category": "GPU Instances",
+      "cpu": 32,
+      "ram": 60
+    },
+    {
+      "sku": "r3.large",
+      "description": "r3.large",
+      "category": "Memory optimized",
+      "cpu": 2,
+      "ram": 15
+    },
+    {
+      "sku": "r3.xlarge",
+      "description": "r3.xlarge",
+      "category": "Memory optimized",
+      "cpu": 4,
+      "ram": 30.5
+    },
+    {
+      "sku": "r3.2xlarge",
+      "description": "r3.2xlarge",
+      "category": "Memory optimized",
+      "cpu": 8,
+      "ram": 61
+    },
+    {
+      "sku": "r3.4xlarge",
+      "description": "r3.4xlarge",
+      "category": "Memory optimized",
+      "cpu": 16,
+      "ram": 122
+    },
+    {
+      "sku": "r3.8xlarge",
+      "description": "r3.8xlarge",
+      "category": "Memory optimized",
+      "cpu": 32,
+      "ram": 244
+    },
+    {
+      "sku": "i2.xlarge",
+      "description": "i2.xlarge",
+      "category": "Storage Optimized",
+      "cpu": 4,
+      "ram": 30.5
+    },
+    {
+      "sku": "i2.2xlarge",
+      "description": "i2.2xlarge",
+      "category": "Storage Optimized",
+      "cpu": 8,
+      "ram": 61
+    },
+    {
+      "sku": "i2.4xlarge",
+      "description": "i2.4xlarge",
+      "category": "Storage Optimized",
+      "cpu": 16,
+      "ram": 122
+    },
+    {
+      "sku": "i2.8xlarge",
+      "description": "i2.8xlarge",
+      "category": "Storage Optimized",
+      "cpu": 32,
+      "ram": 244
+    },
+    {
+      "sku": "d2.xlarge",
+      "description": "d2.xlarge",
+      "category": "Storage Optimized",
+      "cpu": 4,
+      "ram": 30.5
+    },
+    {
+      "sku": "d2.2xlarge",
+      "description": "d2.2xlarge",
+      "category": "Storage Optimized",
+      "cpu": 8,
+      "ram": 61
+    },
+    {
+      "sku": "d2.4xlarge",
+      "description": "d2.4xlarge",
+      "category": "Storage Optimized",
+      "cpu": 16,
+      "ram": 122
+    },
+    {
+      "sku": "d2.8xlarge",
+      "description": "d2.8xlarge",
+      "category": "Storage Optimized",
+      "cpu": 36,
+      "ram": 244
+    }
+  ],
+  "credentials": [
+    {
+      "type": "AWS",
+      "displayFormat": "field",
+      "fields": [
+        {
+          "json": "aws_access_key_id",
+          "name": "accessKey_id",
+          "label": "Access Key Id",
+          "input": "text"
+        },
+        {
+          "json": "aws_secret_access_key",
+          "name": "secret_access_key",
+          "label": "Secret Access Key",
+          "input": "text"
+        }
+      ]
+    }
+  ],
+  "kubernetes": {
+    "versions": [
+      {
+        "version": "1.7.4",
+        "description": "1.7.4",
+        "tools": {
+          "kubeadm": "1.7.4"
+        },
+        "env": {
+          "dev": true
+        }
+      }
+    ]
+  }
+}

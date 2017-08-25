@@ -34,6 +34,8 @@ create --provider=(aws|gce|cc) --nodes=t1=1,t2=2 --zone=us-central1-f demo-clust
 
 ```
       --alsologtostderr                  log to standard error as well as files
+      --config-file string               Path to Pharmer config file
+      --env string                       Environment used to enable debugging (default "dev")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files (default true)

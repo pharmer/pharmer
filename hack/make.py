@@ -107,7 +107,7 @@ def lint():
 
 def gen_assets():
     for c in CLOUDS:
-        die(call('go-bindata -ignore=\\.go -ignore=\\.DS_Store -mode=0644 -modtime=1453795200 -o bindata.go -pkg {} .'.format(c), cwd=libbuild.REPO_ROOT + '/data/'+c))
+        die(call('go-bindata -ignore=\\.go -ignore=\\.DS_Store -mode=0644 -modtime=1453795200 -o bindata.go -pkg {} .'.format(c), cwd=libbuild.REPO_ROOT + '/data/files/'+c))
 
 
 def gen():
