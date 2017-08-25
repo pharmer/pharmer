@@ -54,7 +54,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 
 	flag := false
 	for x := range cm.cluster.Spec.NodeGroups {
-		if cm.cluster.Spec.NodeGroups[x].Sku == req.Sku {
+		if cm.cluster.Spec.NodeGroups[x].SKU == req.Sku {
 			cm.cluster.Spec.NodeGroups[x].Count += nodeAdjust
 			flag = true
 			//fmt.Println(ctx.NodeGroups[k].Count, "*********************************>>")
@@ -64,7 +64,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	}
 	if !flag {
 		ig := &api.InstanceGroup{
-			Sku:              req.Sku,
+			SKU:              req.Sku,
 			Count:            req.Count,
 			UseSpotInstances: false,
 		}

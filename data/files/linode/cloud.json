@@ -1,0 +1,214 @@
+{
+  "name": "linode",
+  "env": [
+    "dev",
+    "qa"
+  ],
+  "regions": [
+    {
+      "location": "Dallas, TX, USA",
+      "region": "2",
+      "zones": [
+        "2"
+      ]
+    },
+    {
+      "location": "Fremont, CA, USA",
+      "region": "3",
+      "zones": [
+        "3"
+      ]
+    },
+    {
+      "location": "Atlanta, GA, USA",
+      "region": "4",
+      "zones": [
+        "4"
+      ]
+    },
+    {
+      "location": "Newark, NJ, USA",
+      "region": "6",
+      "zones": [
+        "6"
+      ]
+    },
+    {
+      "location": "London, England, UK",
+      "region": "7",
+      "zones": [
+        "7"
+      ]
+    },
+    {
+      "location": "Tokyo, JP",
+      "region": "8",
+      "zones": [
+        "8"
+      ]
+    },
+    {
+      "location": "Singapore, SG",
+      "region": "9",
+      "zones": [
+        "9"
+      ]
+    },
+    {
+      "location": "Frankfurt, DE",
+      "region": "10",
+      "zones": [
+        "10"
+      ]
+    },
+    {
+      "location": "Tokyo 2, JP",
+      "region": "11",
+      "zones": [
+        "11"
+      ]
+    }
+  ],
+  "instanceTypes": [
+    {
+      "sku": "1",
+      "description": "Linode 1024",
+      "category": "General Purpose",
+      "cpu": 1,
+      "ram": 1,
+      "disk": 20
+    },
+    {
+      "sku": "2",
+      "description": "Linode 2048",
+      "category": "General Purpose",
+      "cpu": 1,
+      "ram": 2,
+      "disk": 30
+    },
+    {
+      "sku": "3",
+      "description": "Linode 4096",
+      "category": "General Purpose",
+      "cpu": 2,
+      "ram": 4,
+      "disk": 48
+    },
+    {
+      "sku": "4",
+      "description": "Linode 8192",
+      "category": "General Purpose",
+      "cpu": 4,
+      "ram": 8,
+      "disk": 96
+    },
+    {
+      "sku": "5",
+      "description": "Linode 12288",
+      "category": "General Purpose",
+      "cpu": 6,
+      "ram": 12,
+      "disk": 192
+    },
+    {
+      "sku": "6",
+      "description": "Linode 24576",
+      "category": "General Purpose",
+      "cpu": 8,
+      "ram": 24,
+      "disk": 384
+    },
+    {
+      "sku": "7",
+      "description": "Linode 49152",
+      "category": "General Purpose",
+      "cpu": 12,
+      "ram": 48,
+      "disk": 768
+    },
+    {
+      "sku": "8",
+      "description": "Linode 65536",
+      "category": "General Purpose",
+      "cpu": 16,
+      "ram": 64,
+      "disk": 1152
+    },
+    {
+      "sku": "9",
+      "description": "Linode 81920",
+      "category": "General Purpose",
+      "cpu": 20,
+      "ram": 80,
+      "disk": 1536
+    },
+    {
+      "sku": "10",
+      "description": "Linode 16384",
+      "category": "High Memory",
+      "cpu": 1,
+      "ram": 16,
+      "disk": 20
+    },
+    {
+      "sku": "11",
+      "description": "Linode 32768",
+      "category": "High Memory",
+      "cpu": 2,
+      "ram": 32,
+      "disk": 40
+    },
+    {
+      "sku": "12",
+      "description": "Linode 61440",
+      "category": "High Memory",
+      "cpu": 4,
+      "ram": 60,
+      "disk": 90
+    },
+    {
+      "sku": "13",
+      "description": "Linode 102400",
+      "category": "High Memory",
+      "cpu": 8,
+      "ram": 100,
+      "disk": 200
+    },
+    {
+      "sku": "14",
+      "description": "Linode 204800",
+      "category": "High Memory",
+      "cpu": 16,
+      "ram": 200,
+      "disk": 340
+    }
+  ],
+  "credentials": [
+    {
+      "type": "Linode",
+      "displayFormat": "field",
+      "fields": [
+        {
+          "json": "token",
+          "name": "token",
+          "label": "Token",
+          "input": "text"
+        }
+      ]
+    }
+  ],
+  "kubernetes": {
+    "versions": [
+      {
+        "version": "1.7.4",
+        "description": "1.7.4",
+        "tools": {
+          "kubeadm": "1.7.4"
+        },
+        "env": {
+          "dev": true
+        }
+      }
+    ]
+  }
+}

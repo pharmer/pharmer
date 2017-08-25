@@ -317,8 +317,8 @@ func UseFirebase() bool {
 }
 
 type InstanceGroup struct {
-	Sku              string `json:"SKU"`
-	Count            int64  `json:"COUNT"`
+	SKU              string `json:"sku"`
+	Count            int64  `json:"count"`
 	UseSpotInstances bool   `json:"USE_SPOT_INSTANCES"`
 }
 
@@ -330,13 +330,13 @@ type Cluster struct {
 }
 
 type ClusterSpec struct {
-	KubeEnv
+	NodeGroups []*InstanceGroup `json:"nodeGroups"`
 
+	KubeEnv
 	// request data. This is needed to give consistent access to these values for all commands.
 	Region              string            `json:"REGION"`
 	MasterSKU           string            `json:"MASTER_SKU"`
 	NodeSet             map[string]int64  `json:"NODE_SET"` // deprecated, use NODES
-	NodeGroups          []*InstanceGroup  `json:"NODE_GROUPS"`
 	CloudCredentialPHID string            `json:"CLOUD_CREDENTIAL_PHID"`
 	CloudCredential     map[string]string `json:"-"`
 	DoNotDelete         bool              `json:"-"`
@@ -455,7 +455,7 @@ func (cluster *Cluster) SetNodeGroups(ng []*proto.InstanceGroup) {
 	cluster.Spec.NodeGroups = make([]*InstanceGroup, len(ng))
 	for i, g := range ng {
 		cluster.Spec.NodeGroups[i] = &InstanceGroup{
-			Sku:              g.Sku,
+			SKU:              g.Sku,
 			Count:            g.Count,
 			UseSpotInstances: g.UseSpotInstances,
 		}

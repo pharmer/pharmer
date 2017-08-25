@@ -7,8 +7,11 @@ import (
 	"path/filepath"
 
 	yc "github.com/appscode/go/encoding/yaml"
+	_env "github.com/appscode/go/env"
+	"github.com/appscode/log"
 	"github.com/appscode/pharmer/api"
 	"github.com/ghodss/yaml"
+	flag "github.com/spf13/pflag"
 	"k8s.io/client-go/util/homedir"
 )
 
@@ -40,7 +43,37 @@ func Save(pc *api.PharmerConfig, configPath string) error {
 	return ioutil.WriteFile(configPath, data, 0600)
 }
 
-func NewLocalConfig() *api.PharmerConfig {
+func AddFlags(fs *flag.FlagSet) {
+	fs.String("config-file", "", "Path to Pharmer config file")
+	// TODO: change env to Prod
+	fs.String("env", _env.Dev.String(), "Environment used to enable debugging")
+}
+
+func GetConfigFile(fs *flag.FlagSet) (string, bool) {
+	cfgFile, err := fs.GetString("config-file")
+	if err != nil {
+		log.Fatalf("can't accessing flag `config-file`. Reason: %v", err)
+	}
+	if cfgFile == "" {
+		return filepath.Join(homedir.HomeDir(), ".pharmer", "config.d", "default"), false
+	}
+	return cfgFile, true
+}
+
+func GetEnv(fs *flag.FlagSet) _env.Environment {
+	e, err := fs.GetString("env")
+	if err != nil {
+		log.Fatalf("can't accessing flag `config-file`. Reason: %v", err)
+	}
+	return _env.FromString(e)
+}
+
+func ConfigDir(fs *flag.FlagSet) string {
+	cfgFile, _ := GetConfigFile(fs)
+	return filepath.Dir(cfgFile)
+}
+
+func NewDefaultConfig() *api.PharmerConfig {
 	return &api.PharmerConfig{
 		TypeMeta: api.TypeMeta{
 			Kind: "PharmerConfig",
@@ -52,20 +85,4 @@ func NewLocalConfig() *api.PharmerConfig {
 			},
 		},
 	}
-}
-
-func CreateDefaultConfigIfAbsent() error {
-	configPath := DefaultConfigPath()
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return Save(NewLocalConfig(), configPath)
-	}
-	return nil
-}
-
-func DefaultConfigPath() string {
-	return filepath.Join(homedir.HomeDir(), ".pharmer", "config.d", "default")
-}
-
-func ConfigDir() string {
-	return filepath.Join(homedir.HomeDir(), ".pharmer", "config.d")
 }

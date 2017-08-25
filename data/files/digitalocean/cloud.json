@@ -1,0 +1,244 @@
+{
+  "name": "digitalocean",
+  "env": [
+    "dev",
+    "qa"
+  ],
+  "regions": [
+    {
+      "location": "Amsterdam",
+      "region": "ams2",
+      "zones": [
+        "ams2"
+      ]
+    },
+    {
+      "location": "Amsterdam",
+      "region": "ams3",
+      "zones": [
+        "ams3"
+      ]
+    },
+    {
+      "location": "Bangalore",
+      "region": "blr1",
+      "zones": [
+        "blr1"
+      ]
+    },
+    {
+      "location": "Frankfurt",
+      "region": "fra1",
+      "zones": [
+        "fra1"
+      ]
+    },
+    {
+      "location": "London",
+      "region": "lon1",
+      "zones": [
+        "lon1"
+      ]
+    },
+    {
+      "location": "New York",
+      "region": "nyc1",
+      "zones": [
+        "nyc1"
+      ]
+    },
+    {
+      "location": "New York",
+      "region": "nyc2",
+      "zones": [
+        "nyc2"
+      ]
+    },
+    {
+      "location": "New York",
+      "region": "nyc3",
+      "zones": [
+        "nyc3"
+      ]
+    },
+    {
+      "location": "San Francisco",
+      "region": "sfo1",
+      "zones": [
+        "sfo1"
+      ]
+    },
+    {
+      "location": "San Francisco",
+      "region": "sfo2",
+      "zones": [
+        "sfo2"
+      ]
+    },
+    {
+      "location": "Singapore",
+      "region": "sgp1",
+      "zones": [
+        "sgp1"
+      ]
+    },
+    {
+      "location": "Toronto",
+      "region": "tor1",
+      "zones": [
+        "tor1"
+      ]
+    }
+  ],
+  "instanceTypes": [
+    {
+      "sku": "1gb",
+      "description": "1gb",
+      "category": "General Purpose",
+      "cpu": 1,
+      "ram": 1,
+      "disk": 30
+    },
+    {
+      "sku": "2gb",
+      "description": "2gb",
+      "category": "General Purpose",
+      "cpu": 2,
+      "ram": 2,
+      "disk": 40
+    },
+    {
+      "sku": "4gb",
+      "description": "4gb",
+      "category": "General Purpose",
+      "cpu": 2,
+      "ram": 4,
+      "disk": 60
+    },
+    {
+      "sku": "8gb",
+      "description": "8gb",
+      "category": "General Purpose",
+      "cpu": 4,
+      "ram": 8,
+      "disk": 80
+    },
+    {
+      "sku": "16gb",
+      "description": "16gb",
+      "category": "General Purpose",
+      "cpu": 8,
+      "ram": 16,
+      "disk": 160
+    },
+    {
+      "sku": "m-16gb",
+      "description": "m-16gb",
+      "category": "High Memory",
+      "cpu": 2,
+      "ram": 16,
+      "disk": 30
+    },
+    {
+      "sku": "32gb",
+      "description": "32gb",
+      "category": "General Purpose",
+      "cpu": 12,
+      "ram": 32,
+      "disk": 320
+    },
+    {
+      "sku": "m-32gb",
+      "description": "m-32gb",
+      "category": "High Memory",
+      "cpu": 4,
+      "ram": 32,
+      "disk": 90
+    },
+    {
+      "sku": "48gb",
+      "description": "48gb",
+      "category": "General Purpose",
+      "cpu": 16,
+      "ram": 48,
+      "disk": 480
+    },
+    {
+      "sku": "64gb",
+      "description": "64gb",
+      "category": "General Purpose",
+      "cpu": 20,
+      "ram": 64,
+      "disk": 640
+    },
+    {
+      "sku": "m-64gb",
+      "description": "m-64gb",
+      "category": "High Memory",
+      "cpu": 8,
+      "ram": 64,
+      "disk": 200
+    },
+    {
+      "sku": "m-128gb",
+      "description": "m-128gb",
+      "category": "High Memory",
+      "cpu": 16,
+      "ram": 128,
+      "disk": 340,
+      "regions": [
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc3",
+        "sfo2",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "m-224gb",
+      "description": "m-224gb",
+      "category": "High Memory",
+      "cpu": 32,
+      "ram": 224,
+      "disk": 500,
+      "regions": [
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc3",
+        "sfo2",
+        "tor1"
+      ]
+    }
+  ],
+  "credentials": [
+    {
+      "displayFormat": "field",
+      "fields": [
+        {
+          "json": "token",
+          "name": "token",
+          "label": "Token",
+          "input": "text"
+        }
+      ]
+    }
+  ],
+  "kubernetes": {
+    "versions": [
+      {
+        "version": "1.7.4",
+        "description": "1.7.4",
+        "tools": {
+          "kubeadm": "1.7.4"
+        },
+        "env": {
+          "dev": true
+        }
+      }
+    ]
+  }
+}

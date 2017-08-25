@@ -1,0 +1,123 @@
+{
+  "name": "scaleway",
+  "env": [
+    "dev",
+    "qa"
+  ],
+  "regions": [
+    {
+      "location": "Paris, France",
+      "region": "par1",
+      "zones": [
+        "par1"
+      ]
+    },
+    {
+      "location": "Amsterdam, Netherlands",
+      "region": "ams1",
+      "zones": [
+        "ams1"
+      ]
+    }
+  ],
+  "instanceTypes": [
+    {
+      "sku": "VC1S",
+      "description": "2 x86 64bit Cores, 2GB memory",
+      "category": "Cloud Servers",
+      "cpu": 2,
+      "ram": 2,
+      "disk": 50
+    },
+    {
+      "sku": "VC1M",
+      "description": "4 x86 64bit Cores, 4GB memory",
+      "category": "Cloud Servers",
+      "cpu": 4,
+      "ram": 4,
+      "disk": 100
+    },
+    {
+      "sku": "VC1L",
+      "description": "6 x86 64bit Cores, 8GB memory",
+      "category": "Cloud Servers",
+      "cpu": 6,
+      "ram": 8,
+      "disk": 200
+    },
+    {
+      "sku": "X64-60GB",
+      "description": "10 x86 64bit Cores, 60GB memory",
+      "category": "Cloud Servers",
+      "cpu": 10,
+      "ram": 60,
+      "disk": 700
+    },
+    {
+      "sku": "X64-120GB",
+      "description": "12 x86 64bit Cores, 120GB memory",
+      "category": "Cloud Servers",
+      "cpu": 12,
+      "ram": 120,
+      "disk": 1000
+    },
+    {
+      "sku": "C2S",
+      "description": "4 Dedicated x86 64bit Cores, 8GB memory",
+      "category": "BareMetal",
+      "cpu": 4,
+      "ram": 8,
+      "disk": 50
+    },
+    {
+      "sku": "C2M",
+      "description": "8 Dedicated x86 64bit Cores, 16GB memory",
+      "category": "BareMetal",
+      "cpu": 8,
+      "ram": 16,
+      "disk": 50
+    },
+    {
+      "sku": "C2L",
+      "description": "8 Dedicated x86 64bit Cores, 32GB memory, 250GB Direct SSD",
+      "category": "BareMetal",
+      "cpu": 8,
+      "ram": 32,
+      "disk": 50
+    }
+  ],
+  "credentials": [
+    {
+      "type": "Scaleway",
+      "displayFormat": "field",
+      "fields": [
+        {
+          "json": "organization",
+          "name": "organization",
+          "label": "Organization",
+          "input": "text"
+        },
+        {
+          "json": "token",
+          "name": "token",
+          "label": "Token",
+          "input": "text"
+        }
+      ]
+    }   
+  ],
+  "kubernetes": {
+    "versions": [
+      {
+        "version": "1.7.4",
+        "description": "1.7.4",
+        "tools": {
+          "kubeadm": "1.7.4"
+        },
+        "env": {
+          "dev": true
+        }
+      }
+    ]
+  }
+}

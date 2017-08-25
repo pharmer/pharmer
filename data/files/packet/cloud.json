@@ -1,0 +1,104 @@
+{
+  "name": "packet",
+  "env": [
+    "dev"
+  ],
+  "regions": [
+    {
+      "location": "NYC Metro, NY, USA",
+      "region": "US East",
+      "zones": [
+        "ewr1"
+      ]
+    },
+    {
+      "location": "San Jose, CA, USA",
+      "region": "US West",
+      "zones": [
+        "sjc1"
+      ]
+    },
+    {
+      "location": "Amsterdam, NL",
+      "region": "EU WEST",
+      "zones": [
+        "ams1"
+      ]
+    },
+    {
+      "location": "Tokyo, JP",
+      "region": "ASIA EAST",
+      "zones": [
+        "nrt1"
+      ]
+    }
+  ],
+  "instanceTypes": [
+    {
+      "sku": "baremetal_0",
+      "description": "TYPE 0: 4 x86 64bit Cores, 8GB DDR3 RAM",
+      "category": "Bare Metal",
+      "cpu": 4,
+      "ram": 8,
+      "disk": 80
+    },
+    {
+      "sku": "baremetal_1",
+      "description": "TYPE 1: 4 x86 64bit Cores, 32GB DDR3 RAM",
+      "category": "Bare Metal",
+      "cpu": 4,
+      "ram": 32,
+      "disk": 120
+    },
+    {
+      "sku": "baremetal_2",
+      "description": "TYPE 2: 24 x86 64bit Cores, 256GB DDR4 ECC RAM",
+      "category": "Bare Metal",
+      "cpu": 24,
+      "ram": 256,
+      "disk": 2880
+    },
+    {
+      "sku": "baremetal_3",
+      "description": "TYPE 3: 16 x86 64bit Cores, 128GB DDR4 RAM",
+      "category": "Bare Metal",
+      "cpu": 16,
+      "ram": 128,
+      "disk": 120
+    }
+  ],
+  "credentials": [
+    {
+      "type": "Packet",
+      "displayFormat": "field",
+      "fields": [
+        {
+          "json": "api_key",
+          "name": "api_key",
+          "label": "API Key",
+          "input": "text"
+        },
+        {
+          "json": "project_id",
+          "name": "project_id",
+          "label": "Project Id",
+          "input": "text"
+        }
+      ]
+    }
+  ],
+  "kubernetes": {
+    "versions": [
+      {
+        "version": "1.7.4",
+        "description": "1.7.4",
+        "tools": {
+          "kubeadm": "1.7.4"
+        },
+        "env": {
+          "dev": true
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,211 @@
+{
+  "name": "gce",
+  "env": [
+    "dev",
+    "qa"
+  ],
+  "regions": [
+    {
+      "region": "Eastern US",
+      "location": "Berkeley County, South Carolina",
+      "zones": [
+        "us-east1-b",
+        "us-east1-c",
+        "us-east1-d"
+      ]
+    },
+    {
+      "region": "Western US",
+      "location": "The Dalles, OR",
+      "zones": [
+        "us-west1-a",
+        "us-west1-b"
+      ]
+    },
+    {
+      "region": "Central US",
+      "location": "Council Bluffs, Iowa",
+      "zones": [
+        "us-central1-a",
+        "us-central1-b",
+        "us-central1-c",
+        "us-central1-f"
+      ]
+    },
+    {
+      "region": "Western Europe",
+      "location": "St. Ghislain, Belgium",
+      "zones": [
+        "europe-west1-b",
+        "europe-west1-c",
+        "europe-west1-d"
+      ]
+    },
+    {
+      "region": "Asia (Taiwan)",
+      "location": "Changhua County, Taiwan",
+      "zones": [
+        "asia-east1-a",
+        "asia-east1-b",
+        "asia-east1-c"
+      ]
+    },
+    {
+      "region": "Asia (Japan)",
+      "location": "Tokyo, Japan",
+      "zones": [
+        "asia-northeast1-a",
+        "asia-northeast1-b",
+        "asia-northeast1-c"
+      ]
+    }
+  ],
+  "instanceTypes": [
+    {
+      "sku": "g1-small",
+      "description": "g1-small",
+      "category": "Small",
+      "cpu": 1,
+      "ram": 1.7
+    },
+    {
+      "sku": "n1-standard-1",
+      "description": "n1-standard-1",
+      "category": "Standard",
+      "cpu": 1,
+      "ram": 3.75
+    },
+    {
+      "sku": "n1-standard-2",
+      "description": "n1-standard-2",
+      "category": "Standard",
+      "cpu": 2,
+      "ram": 7.5
+    },
+    {
+      "sku": "n1-standard-4",
+      "description": "n1-standard-4",
+      "category": "Standard",
+      "cpu": 4,
+      "ram": 15
+    },
+    {
+      "sku": "n1-standard-8",
+      "description": "n1-standard-8",
+      "category": "Standard",
+      "cpu": 8,
+      "ram": 30
+    },
+    {
+      "sku": "n1-standard-16",
+      "description": "n1-standard-16",
+      "category": "Standard",
+      "cpu": 16,
+      "ram": 60
+    },
+    {
+      "sku": "n1-standard-326",
+      "description": "n1-standard-326",
+      "category": "Standard",
+      "cpu": 32,
+      "ram": 120
+    },
+    {
+      "sku": "n1-highmem-2",
+      "description": "n1-highmem-2",
+      "category": "High Memory",
+      "cpu": 2,
+      "ram": 13
+    },
+    {
+      "sku": "n1-highmem-4",
+      "description": "n1-highmem-4",
+      "category": "High Memory",
+      "cpu": 4,
+      "ram": 26
+    },
+    {
+      "sku": "n1-highmem-8",
+      "description": "n1-highmem-8",
+      "category": "High Memory",
+      "cpu": 8,
+      "ram": 52
+    },
+    {
+      "sku": "n1-highmem-16",
+      "description": "n1-highmem-16",
+      "category": "High Memory",
+      "cpu": 16,
+      "ram": 104
+    },
+    {
+      "sku": "n1-highmem-326",
+      "description": "n1-highmem-326",
+      "category": "High Memory",
+      "cpu": 32,
+      "ram": 208
+    },
+    {
+      "sku": "n1-highcpu-2",
+      "description": "n1-highcpu-2",
+      "category": "High CPU",
+      "cpu": 2,
+      "ram": 1.8
+    },
+    {
+      "sku": "n1-highcpu-4",
+      "description": "n1-highcpu-4",
+      "category": "High CPU",
+      "cpu": 4,
+      "ram": 3.6
+    },
+    {
+      "sku": "n1-highcpu-8",
+      "description": "n1-highcpu-8",
+      "category": "High CPU",
+      "cpu": 8,
+      "ram": 7.2
+    },
+    {
+      "sku": "n1-highcpu-16",
+      "description": "n1-highcpu-16",
+      "category": "High CPU",
+      "cpu": 16,
+      "ram": 14.4
+    },
+    {
+      "sku": "n1-highcpu-326",
+      "description": "n1-highcpu-326",
+      "category": "High CPU",
+      "cpu": 32,
+      "ram": 28.8
+    }
+  ],
+  "credentials": [
+    {
+      "type": "gce",
+      "displayFormat": "json",
+      "fields": [
+        {
+          "name": "service_account",
+          "label": "Service Account",
+          "input": "textarea"
+        }
+      ]
+    }
+  ],
+  "kubernetes": {
+    "versions": [
+      {
+        "version": "1.7.4",
+        "description": "1.7.4",
+        "tools": {
+          "kubeadm": "1.7.4"
+        },
+        "env": {
+          "dev": true
+        }
+      }
+    ]
+  }
+}

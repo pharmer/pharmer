@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	otx "github.com/appscode/pharmer/config"
+	"github.com/appscode/pharmer/config"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 )
 
 func newCmdView() *cobra.Command {
-	var configPath string
-	setCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:               "view",
 		Short:             "Print Pharmer config",
 		Example:           "Pharmer config view",
@@ -21,28 +20,19 @@ func newCmdView() *cobra.Command {
 				cmd.Help()
 				os.Exit(1)
 			}
-			if configPath == "" {
-				configPath = otx.DefaultConfigPath()
+
+			cfgFile, _ := config.GetConfigFile(cmd.Flags())
+			cfg, err := config.LoadConfig(cfgFile)
+			if err != nil {
+				return err
 			}
-			return viewContext(configPath)
+			data, err := yaml.Marshal(cfg)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(data))
+			return nil
 		},
 	}
-
-	setCmd.Flags().StringVar(&configPath, "provider", "", "Path to Pharmer config file")
-	return setCmd
-}
-
-func viewContext(configPath string) error {
-	config, err := otx.LoadConfig(configPath)
-	if err != nil {
-		return err
-	}
-
-	data, err := yaml.Marshal(config)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(string(data))
-	return nil
+	return cmd
 }
