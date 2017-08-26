@@ -1,4 +1,4 @@
-package credential
+package cloud
 
 import (
 	"fmt"
@@ -11,11 +11,10 @@ import (
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	azdate "github.com/Azure/go-autorest/autorest/date"
-	api "github.com/appscode/api/credential/v1beta1"
-	"github.com/appscode/appctl/pkg/config"
-	"github.com/appscode/appctl/pkg/util"
 	"github.com/appscode/go-term"
 	"github.com/appscode/go/types"
+	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/credential"
 	"github.com/cenkalti/backoff"
 	"github.com/pborman/uuid"
 )
@@ -49,15 +48,15 @@ func getSptFromDeviceFlow(oauthConfig adal.OAuthConfig, clientID, resource strin
 	return spt, nil
 }
 
-func CreateAzureCredential(req *api.CredentialCreateRequest) {
-	apiReq = req
-
+func IssueAzureCredential(name string) (*api.Credential, error) {
 	oauthConfig, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, azureTenantID)
-	term.ExitOnError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	spt, err := getSptFromDeviceFlow(*oauthConfig, azureNativeApplicationID, azure.PublicCloud.ServiceManagementEndpoint)
 	if err != nil {
-		term.Fatalln("Failed to retrieve token:", err)
+		return nil, err
 	}
 
 	client := autorest.NewClientWithUserAgent(subscriptions.UserAgent())
@@ -70,21 +69,29 @@ func CreateAzureCredential(req *api.CredentialCreateRequest) {
 		},
 	}
 	tenants, err := tenantsClient.List()
-	term.ExitOnError(err)
+	if err != nil {
+		return nil, err
+	}
 	tenantID := types.String((*tenants.Value)[0].TenantID)
 
 	userOauthConfig, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, tenantID)
-	term.ExitOnError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	userSpt, err := adal.NewServicePrincipalTokenFromManualToken(
 		*userOauthConfig,
 		azureNativeApplicationID,
 		azure.PublicCloud.ServiceManagementEndpoint,
 		spt.Token)
-	term.ExitOnError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	err = userSpt.RefreshExchange(azure.PublicCloud.ServiceManagementEndpoint)
-	term.ExitOnError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	userClient := autorest.NewClientWithUserAgent(subscriptions.UserAgent())
 	userClient.Authorizer = autorest.NewBearerAuthorizer(userSpt)
@@ -96,7 +103,9 @@ func CreateAzureCredential(req *api.CredentialCreateRequest) {
 		},
 	}
 	subs, err := userSubsClient.List()
-	term.ExitOnError(err)
+	if err != nil {
+		return nil, err
+	}
 	subscriptionID := types.String((*subs.Value)[0].SubscriptionID)
 
 	graphSpt, err := adal.NewServicePrincipalTokenFromManualToken(
@@ -104,10 +113,14 @@ func CreateAzureCredential(req *api.CredentialCreateRequest) {
 		azureNativeApplicationID,
 		azure.PublicCloud.GraphEndpoint,
 		userSpt.Token)
-	term.ExitOnError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	err = graphSpt.RefreshExchange(azure.PublicCloud.GraphEndpoint)
-	term.ExitOnError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	graphClient := autorest.NewClientWithUserAgent(graphrbac.UserAgent())
 	graphClient.Authorizer = autorest.NewBearerAuthorizer(graphSpt)
@@ -131,12 +144,14 @@ func CreateAzureCredential(req *api.CredentialCreateRequest) {
 
 	app, err := appClient.Create(graphrbac.ApplicationCreateParameters{
 		AvailableToOtherTenants: types.FalseP(),
-		DisplayName:             types.StringP(req.Name),
-		Homepage:                types.StringP("http://" + req.Name),
-		IdentifierUris:          &[]string{"http://" + req.Name},
+		DisplayName:             types.StringP(name),
+		Homepage:                types.StringP("http://" + name),
+		IdentifierUris:          &[]string{"http://" + name},
 		PasswordCredentials:     &[]graphrbac.PasswordCredential{cred},
 	})
-	term.ExitOnError(err)
+	if err != nil {
+		return nil, err
+	}
 	clientID := *app.AppID
 
 	spClient := graphrbac.ServicePrincipalsClient{
@@ -150,7 +165,9 @@ func CreateAzureCredential(req *api.CredentialCreateRequest) {
 		AppID:          types.StringP(clientID),
 		AccountEnabled: types.TrueP(),
 	})
-	term.ExitOnError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	roleDefClient := aauthz.RoleDefinitionsClient{
 		ManagementClient: aauthz.ManagementClient{
@@ -161,7 +178,9 @@ func CreateAzureCredential(req *api.CredentialCreateRequest) {
 	}
 
 	roles, err := roleDefClient.List("subscriptions/"+subscriptionID, `roleName eq 'Contributor'`)
-	term.ExitOnError(err)
+	if err != nil {
+		return nil, err
+	}
 	if len(*roles.Value) == 0 {
 		term.Fatalln("Can't find Contributor role.")
 	}
@@ -186,13 +205,18 @@ func CreateAzureCredential(req *api.CredentialCreateRequest) {
 		return err
 	}, backoff.NewExponentialBackOff())
 
-	apiReq.Data = map[string]string{
-		"subscription_id": subscriptionID,
-		"tenant_id":       tenantID,
-		"client_id":       clientID,
-		"client_secret":   clientSecret,
-	}
-	c := config.ClientOrDie()
-	_, err = c.CloudCredential().Create(c.Context(), apiReq)
-	util.PrintStatus(err)
+	return &api.Credential{
+		ObjectMeta: api.ObjectMeta{
+			Name: name,
+		},
+		Spec: api.CredentialSpec{
+			Provider: "Azure",
+			Data: map[string]string{
+				credential.AzureSubscriptionID: subscriptionID,
+				credential.AzureTenantID:       tenantID,
+				credential.AzureClientID:       clientID,
+				credential.AzureClientSecret:   clientSecret,
+			},
+		},
+	}, nil
 }

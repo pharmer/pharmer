@@ -19,9 +19,9 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	apiKey, ok := cluster.Spec.CloudCredential[credential.VultrApiToken]
+	apiKey, ok := cluster.Spec.CloudCredential[credential.VultrAPIToken]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.VultrApiToken)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.VultrAPIToken)
 	}
 	return &cloudConnector{
 		ctx:     ctx,

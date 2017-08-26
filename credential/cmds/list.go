@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewCmdCredentialList() *cobra.Command {
+func NewCmdList() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "list",
 		Short:             "List cloud credentials",

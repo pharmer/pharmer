@@ -1,16 +1,11 @@
 package cmds
 
 import (
-	"fmt"
-
-	term "github.com/appscode/go-term"
 	"github.com/appscode/go/flags"
-	"github.com/appscode/go/io"
-	"github.com/appscode/pharmer/credential"
 	"github.com/spf13/cobra"
 )
 
-func NewCmdCredentialUpdate() *cobra.Command {
+func NewCmdUpdate() *cobra.Command {
 	var name string
 	var provider string
 	var cred string
@@ -36,28 +31,28 @@ func NewCmdCredentialUpdate() *cobra.Command {
 }
 
 func updateCredential(name, provider, cred, file string) {
-	var credentialData string
-	var err error
-	if file == "" {
-		credentialData = cred
-	} else {
-		credentialData, err = io.ReadFile(file)
-		if err != nil {
-			term.ExitOnError(err)
-		}
-	}
-	parsedCredential, err := credential.ParseCloudCredential(credentialData, provider)
-	if err != nil {
-		term.Fatalln("Failed to parse credentilal")
-	}
-	fmt.Println(parsedCredential)
-
-	//c := config.ClientOrDie()
-	//_, err = c.CloudCredential().Update(c.Context(), &proto.CredentialUpdateRequest{
-	//	Name:     name,
-	//	Provider: provider,
-	//	Data:     parsedCredential,
-	//})
-	//util.PrintStatus(err)
-	//term.Successln("Credential updated successfully!")
+	//var credentialData string
+	//var err error
+	//if file == "" {
+	//	credentialData = cred
+	//} else {
+	//	credentialData, err = io.ReadFile(file)
+	//	if err != nil {
+	//		term.ExitOnError(err)
+	//	}
+	//}
+	//parsedCredential, err := credential.ParseCloudCredential(credentialData, provider)
+	//if err != nil {
+	//	term.Fatalln("Failed to parse credentilal")
+	//}
+	//fmt.Println(parsedCredential)
+	//
+	////c := config.ClientOrDie()
+	////_, err = c.CloudCredential().Update(c.Context(), &proto.CredentialUpdateRequest{
+	////	Name:     name,
+	////	Provider: provider,
+	////	Data:     parsedCredential,
+	////})
+	////util.PrintStatus(err)
+	////term.Successln("Credential updated successfully!")
 }

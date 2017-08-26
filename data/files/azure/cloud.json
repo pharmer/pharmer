@@ -701,32 +701,63 @@
   ],
   "credentials": [
     {
-      "type": "Azure",
+      "provider": "Azure",
       "displayFormat": "field",
+      "annotations": {
+        "pharmer.appscode.com/cluster-credential": "",
+        "pharmer.appscode.com/dns-credential": ""
+      },
       "fields": [
         {
-          "json": "tenant_id",
-          "name": "tenant_id",
+          "envconfig": "AZURE_TENANT_ID",
+          "form": "azure_tenant_id",
+          "json": "tenantID",
           "label": "Tenant Id",
           "input": "text"
         },
         {
-          "json": "subscription_id",
-          "name": "subscription_id",
+          "envconfig": "AZURE_SUBSCRIPTION_ID",
+          "form": "azure_subscription_id",
+          "json": "subscriptionID",
           "label": "Subscription Id",
           "input": "text"
         },
         {
-          "json": "client_id",
-          "name": "client_id",
+          "envconfig": "AZURE_CLIENT_ID",
+          "form": "azure_client_id",
+          "json": "clientID",
           "label": "Client Id",
           "input": "text"
         },
         {
-          "json": "client_secret",
-          "name": "client_secret",
+          "envconfig": "AZURE_CLIENT_SECRET",
+          "form": "azure_client_secret",
+          "json": "clientSecret",
           "label": "Client Secret",
+          "input": "password"
+        }
+      ]
+    },
+    {
+      "provider": "AzureStorage",
+      "displayFormat": "field",
+      "annotations": {
+        "pharmer.appscode.com/storage-credential": ""
+      },
+      "fields": [
+        {
+          "envconfig": "AZURE_STORAGE_ACCOUNT",
+          "form": "azure_storage_account",
+          "json": "account",
+          "label": "Account",
           "input": "text"
+        },
+        {
+          "envconfig": "AZURE_STORAGE_KEY",
+          "form": "azure_storage_key",
+          "json": "key",
+          "label": "Key",
+          "input": "password"
         }
       ]
     }

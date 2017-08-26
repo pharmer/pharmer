@@ -1,24 +1,26 @@
-## pharmer credential update
+## pharmer credential import
 
-Update an existing cloud credential
+Import cloud credentials into Pharmer
 
 ### Synopsis
 
 
-Update an existing cloud credential
+Import cloud credentials into Pharmer
 
 ```
-pharmer credential update [flags]
+pharmer credential import [flags]
+```
+
+### Examples
+
+```
+pharmer credential import -p aws mycred
 ```
 
 ### Options
 
 ```
-  -c, --credential string   Credential data
-  -f, --file-path string    Credential file path
-  -h, --help                help for update
-  -n, --name string         Credential name
-  -p, --provider string     Cloud provider name
+  -h, --help   help for import
 ```
 
 ### Options inherited from parent commands

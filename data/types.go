@@ -5,6 +5,12 @@ import (
 	"github.com/appscode/pharmer/api"
 )
 
+const (
+	KeyClusterCredential = "pharmer.appscode.com/cluster-credential"
+	KeyDNSCredential     = "pharmer.appscode.com/dns-credential"
+	KeyStorageCredential = "pharmer.appscode.com/storage-credential"
+)
+
 type CloudData struct {
 	Name          string             `json:"name"`
 	Env           []string           `json:"env"`
@@ -40,13 +46,15 @@ type InstanceType struct {
 }
 
 type CredentialFormat struct {
-	Type          string `json:"type"`
-	DisplayFormat string `json:"displayFormat"`
+	Provider      string            `json:"provider"`
+	DisplayFormat string            `json:"displayFormat"`
+	Annotations   map[string]string `json:"annotations"`
 	Fields        []struct {
-		JSON  string `json:"json"`
-		Name  string `json:"name"`
-		Label string `json:"label"`
-		Input string `json:"input"`
+		Envconfig string `json:"envconfig"`
+		Form      string `json:"form"`
+		JSON      string `json:"json"`
+		Label     string `json:"label"`
+		Input     string `json:"input"`
 	} `json:"fields"`
 }
 
@@ -62,7 +70,7 @@ type ClusterVersion struct {
 	Env         map[string]bool   `json:"env,omitempty"`
 }
 
-func (v ClusterVersion) Available(env _env.Environment) bool {
+func (v ClusterVersion) Released(env _env.Environment) bool {
 	_, found := v.Env[env.String()]
 	return found
 }

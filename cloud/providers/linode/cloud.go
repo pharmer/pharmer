@@ -19,9 +19,9 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	token, ok := cluster.Spec.CloudCredential[credential.LinodeApiToken]
+	token, ok := cluster.Spec.CloudCredential[credential.LinodeAPIToken]
 	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.LinodeApiToken)
+		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.LinodeAPIToken)
 	}
 
 	return &cloudConnector{

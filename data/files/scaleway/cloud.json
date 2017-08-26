@@ -88,20 +88,25 @@
   ],
   "credentials": [
     {
-      "type": "Scaleway",
+      "provider": "Scaleway",
       "displayFormat": "field",
+      "annotations": {
+        "pharmer.appscode.com/cluster-credential": ""
+      },
       "fields": [
         {
+          "envconfig": "SCALEWAY_ORGANIZATION",
+          "form": "scaleway_organization",
           "json": "organization",
-          "name": "organization",
           "label": "Organization",
           "input": "text"
         },
         {
+          "envconfig": "SCALEWAY_TOKEN",
+          "form": "scaleway_token",
           "json": "token",
-          "name": "token",
           "label": "Token",
-          "input": "text"
+          "input": "password"
         }
       ]
     }   

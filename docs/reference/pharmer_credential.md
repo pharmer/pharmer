@@ -35,6 +35,6 @@ pharmer credential [flags]
 * [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
 * [pharmer credential create](pharmer_credential_create.md)	 - Create credential for cloud providers (example, AWS, Google Cloud Platform)
 * [pharmer credential delete](pharmer_credential_delete.md)	 - Delete a cloud credential
+* [pharmer credential import](pharmer_credential_import.md)	 - Import cloud credentials into Pharmer
 * [pharmer credential list](pharmer_credential_list.md)	 - List cloud credentials
-* [pharmer credential update](pharmer_credential_update.md)	 - Update an existing cloud credential
 

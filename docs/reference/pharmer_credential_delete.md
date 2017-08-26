@@ -11,17 +11,10 @@ Delete a cloud credential
 pharmer credential delete [flags]
 ```
 
-### Examples
-
-```
-appctl credential delete --name="xyz"
-```
-
 ### Options
 
 ```
-  -h, --help          help for delete
-  -n, --name string   credential name
+  -h, --help   help for delete
 ```
 
 ### Options inherited from parent commands

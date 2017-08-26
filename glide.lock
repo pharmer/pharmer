@@ -1,13 +1,11 @@
 hash: 1be2d5f28bb519e952db33f6e4da555d9e3b87c68fe1cb5270604aac61b16a80
-updated: 2017-08-24T19:03:03.852309704-07:00
+updated: 2017-08-26T01:02:38.873545103-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
   subpackages:
   - compute/metadata
   - internal
-- name: github.com/andrew-d/go-termutil
-  version: 009166a695a2f516c749a26b4ac1f183d89aa336
 - name: github.com/appscode/api
   version: 40675bc7864ed9a3e6a15f2ae1b9123fcf6d4295
   subpackages:
@@ -68,7 +66,7 @@ imports:
 - name: github.com/appscode/go-notify
   version: c1f627b4151ce1f8b5b80eeab2eb94c2561af00c
 - name: github.com/appscode/go-term
-  version: be3033ef24ff3c8750f0296c02ef0146ff9b07f2
+  version: d0c677f2d84034b1357d3f69ffd29c5fb81f662f
 - name: github.com/appscode/go-tracer
   version: 01dab6fa8d48a96bf54d07ee082b60bad8b44449
 - name: github.com/appscode/linodego
@@ -329,7 +327,7 @@ imports:
 - name: github.com/olekukonko/tablewriter
   version: cca8bbc0798408af109aaaa239cbd2634846b340
 - name: github.com/packethost/packngo
-  version: 131798f2804a1b3e895ca98047d56f0d7e094e2a
+  version: aa435dbcb13c746f78fb50f146907cb7c8334720
 - name: github.com/pborman/uuid
   version: a97ce2ca70fa5a848076093f05e639a89ca34d06
 - name: github.com/PuerkitoBio/purell
@@ -494,6 +492,8 @@ imports:
   - transport
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
+- name: gopkg.in/ini.v1
+  version: 20b96f641a5ea98f2f8619ff4f3e061cff4833bd
 - name: gopkg.in/square/go-jose.v1
   version: aa2e30fdd1fe9dd3394119af66451ae790d50e0d
 - name: gopkg.in/yaml.v2

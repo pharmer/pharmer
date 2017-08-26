@@ -395,14 +395,19 @@
   ],
   "credentials": [
     {
-      "type": "Vultr",
+      "Provider": "Vultr",
       "displayFormat": "field",
+      "annotations": {
+        "pharmer.appscode.com/cluster-credential": "",
+        "pharmer.appscode.com/dns-credential": ""
+      },
       "fields": [
         {
+          "envconfig": "VULTR_TOKEN",
+          "form": "vultr_token",
           "json": "token",
-          "name": "token",
-          "label": "Token",
-          "input": "text"
+          "label": "Personal Access Token",
+          "input": "password"
         }
       ]
     }
