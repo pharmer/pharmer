@@ -17,6 +17,7 @@ import (
 	"github.com/appscode/pharmer/data/files/scaleway"
 	"github.com/appscode/pharmer/data/files/softlayer"
 	"github.com/appscode/pharmer/data/files/vultr"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 type cloudData struct {
@@ -57,7 +58,7 @@ func parseData(bytes []byte, env _env.Environment) error {
 		cloud.InstanceTypes[t.SKU] = t
 	}
 	for _, v := range cd.Kubernetes.Versions {
-		if v.Available(env) {
+		if v.Released(env) {
 			cloud.Versions[v.Version] = v
 		}
 	}
@@ -76,10 +77,10 @@ func parseData(bytes []byte, env _env.Environment) error {
 	}
 
 	for _, c := range cd.Credentials {
-		if _, exists := credentials[c.Type]; exists {
-			return fmt.Errorf("Redeclared credential type %s in cloud provider %s", c.Type, cloud.Name)
+		if _, exists := credentials[c.Provider]; exists {
+			return fmt.Errorf("Redeclared credential type %s in cloud provider %s", c.Provider, cloud.Name)
 		}
-		credentials[c.Type] = c
+		credentials[c.Provider] = c
 	}
 
 	return nil
@@ -150,21 +151,13 @@ func Load(env _env.Environment) error {
 	return nil
 }
 
-func CloudProviders() []string {
-	result := make([]string, 0, len(clouds))
-	for k := range clouds {
-		result = append(result, k)
-	}
-	return result
-}
-
 func GetClusterVersion(provider, version string, env _env.Environment) (*data.ClusterVersion, error) {
 	p, found := clouds[provider]
 	if !found {
 		return nil, fmt.Errorf("Can't find cluster provider %v", provider)
 	}
 	for _, v := range p.Versions {
-		if v.Version == version && v.Available(env) {
+		if v.Version == version && v.Released(env) {
 			return &v, nil
 		}
 	}
@@ -183,15 +176,45 @@ func GetInstanceType(provider, sku string) (*data.InstanceType, error) {
 	return &s, nil
 }
 
-func CredentialTypes() []string {
-	result := make([]string, 0, len(credentials))
+func CredentialProviders() sets.String {
+	result := sets.String{}
 	for k := range credentials {
-		result = append(result, k)
+		result.Insert(k)
 	}
 	return result
 }
 
-func GetCredetialFormat(ct string) (data.CredentialFormat, bool) {
-	cf, found := credentials[ct]
+func ClusterProviders() sets.String {
+	result := sets.String{}
+	for k, v := range credentials {
+		if _, ok := v.Annotations[data.KeyClusterCredential]; ok {
+			result.Insert(k)
+		}
+	}
+	return result
+}
+
+func DNSProviders() sets.String {
+	result := sets.String{}
+	for k, v := range credentials {
+		if _, ok := v.Annotations[data.KeyDNSCredential]; ok {
+			result.Insert(k)
+		}
+	}
+	return result
+}
+
+func StorageProviders() sets.String {
+	result := sets.String{}
+	for k, v := range credentials {
+		if _, ok := v.Annotations[data.KeyStorageCredential]; ok {
+			result.Insert(k)
+		}
+	}
+	return result
+}
+
+func GetCredentialFormat(provider string) (data.CredentialFormat, bool) {
+	cf, found := credentials[provider]
 	return cf, found
 }

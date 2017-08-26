@@ -386,20 +386,27 @@
   ],
   "credentials": [
     {
-      "type": "AWS",
+      "provider": "AWS",
       "displayFormat": "field",
+      "annotations": {
+        "pharmer.appscode.com/cluster-credential": "",
+        "pharmer.appscode.com/dns-credential": "",
+        "pharmer.appscode.com/storage-credential": ""
+      },
       "fields": [
         {
-          "json": "aws_access_key_id",
-          "name": "accessKey_id",
+          "envconfig": "AWS_ACCESS_KEY_ID",
+          "form": "aws_access_key_id",
+          "json": "accessKeyID",
           "label": "Access Key Id",
           "input": "text"
         },
         {
-          "json": "aws_secret_access_key",
-          "name": "secret_access_key",
+          "envconfig": "AWS_SECRET_ACCESS_KEY",
+          "form": "aws_secret_access_key",
+          "json": "secretAccessKey",
           "label": "Secret Access Key",
-          "input": "text"
+          "input": "password"
         }
       ]
     }

@@ -216,13 +216,19 @@
   ],
   "credentials": [
     {
+      "provider": "DigitalOcean",
       "displayFormat": "field",
+      "annotations": {
+        "pharmer.appscode.com/cluster-credential": "",
+        "pharmer.appscode.com/dns-credential": ""
+      },
       "fields": [
         {
+          "envconfig": "DIGITALOCEAN_TOKEN",
+          "form": "digitalocean_token",
           "json": "token",
-          "name": "token",
-          "label": "Token",
-          "input": "text"
+          "label": "Personal Access Token",
+          "input": "password"
         }
       ]
     }

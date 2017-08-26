@@ -69,20 +69,25 @@
   ],
   "credentials": [
     {
-      "type": "Packet",
+      "provider": "Packet",
       "displayFormat": "field",
+      "annotations": {
+        "pharmer.appscode.com/cluster-credential": ""
+      },
       "fields": [
         {
-          "json": "api_key",
-          "name": "api_key",
-          "label": "API Key",
+          "envconfig": "PACKET_PROJECT_ID",
+          "form": "packet_project_id",
+          "json": "projectID",
+          "label": "Project Id",
           "input": "text"
         },
         {
-          "json": "project_id",
-          "name": "project_id",
-          "label": "Project Id",
-          "input": "text"
+          "envconfig": "PACKET_API_KEY",
+          "form": "packet_api_key",
+          "json": "apiKey",
+          "label": "API Key",
+          "input": "password"
         }
       ]
     }

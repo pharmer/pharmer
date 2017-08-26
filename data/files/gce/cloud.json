@@ -183,13 +183,27 @@
   ],
   "credentials": [
     {
-      "type": "gce",
+      "provider": "gce",
       "displayFormat": "json",
+      "annotations": {
+        "pharmer.appscode.com/cluster-credential": "",
+        "pharmer.appscode.com/dns-credential": "",
+        "pharmer.appscode.com/storage-credential": ""
+      },
       "fields": [
         {
-          "name": "service_account",
-          "label": "Service Account",
+          "envconfig": "GCE_SERVICE_ACCOUNT",
+          "form": "gce_service_account",
+          "json": "serviceAccount",
+          "label": "Google Cloud Service Account",
           "input": "textarea"
+        },
+        {
+          "envconfig": "GCE_PROJECT_ID",
+          "form": "gce_project_id",
+          "json": "projectID",
+          "label": "Google Cloud Project ID",
+          "input": "text"
         }
       ]
     }

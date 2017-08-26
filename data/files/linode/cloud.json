@@ -185,14 +185,19 @@
   ],
   "credentials": [
     {
-      "type": "Linode",
+      "provider": "Linode",
       "displayFormat": "field",
+      "annotations": {
+        "pharmer.appscode.com/cluster-credential": "",
+        "pharmer.appscode.com/dns-credential": ""
+      },
       "fields": [
         {
+          "envconfig": "LINODE_TOKEN",
+          "form": "linode_token",
           "json": "token",
-          "name": "token",
           "label": "Token",
-          "input": "text"
+          "input": "password"
         }
       ]
     }

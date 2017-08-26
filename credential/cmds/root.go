@@ -5,7 +5,7 @@ import (
 )
 
 func NewCmdCredential() *cobra.Command {
-	rootCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:               "credential",
 		Short:             "Manage cloud provider credentials",
 		DisableAutoGenTag: true,
@@ -13,9 +13,9 @@ func NewCmdCredential() *cobra.Command {
 			cmd.Help()
 		},
 	}
-	rootCmd.AddCommand(NewCmdCredentialCreate())
-	rootCmd.AddCommand(NewCmdCredentialUpdate())
-	rootCmd.AddCommand(NewCmdCredentialDelete())
-	rootCmd.AddCommand(NewCmdCredentialList())
-	return rootCmd
+	cmd.AddCommand(NewCmdImport())
+	cmd.AddCommand(NewCmdIssue())
+	cmd.AddCommand(NewCmdDelete())
+	cmd.AddCommand(NewCmdList())
+	return cmd
 }

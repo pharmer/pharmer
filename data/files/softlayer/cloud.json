@@ -808,20 +808,25 @@
   ],
   "credentials": [
     {
-      "type": "Softlayer",
+      "provider": "Softlayer",
       "displayFormat": "field",
+      "annotations": {
+        "pharmer.appscode.com/cluster-credential": ""
+      },
       "fields": [
         {
+          "envconfig": "SOFTLAYER_USERNAME",
+          "form": "softlayer_username",
           "json": "username",
-          "name": "username",
           "label": "Username",
           "input": "text"
         },
         {
+          "envconfig": "SOFTLAYER_API_KEY",
+          "form": "softlayer_api_key",
           "json": "api_key",
-          "name": "api_key",
           "label": "API Key",
-          "input": "text"
+          "input": "password"
         }
       ]
     }
