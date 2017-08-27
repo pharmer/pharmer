@@ -1,7 +1,7 @@
 package credential
 
 type Softlayer struct {
-	generic
+	CommonSpec
 }
 
 func (c Softlayer) Username() string { return c.Data[SoftlayerUsername] }

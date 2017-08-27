@@ -16,6 +16,6 @@ func NewCmdCredential() *cobra.Command {
 	cmd.AddCommand(NewCmdImport())
 	cmd.AddCommand(NewCmdIssue())
 	cmd.AddCommand(NewCmdDelete())
-	cmd.AddCommand(NewCmdList())
+	cmd.AddCommand(NewCmdGet())
 	return cmd
 }

@@ -6,7 +6,7 @@ import (
 )
 
 type GCE struct {
-	generic
+	CommonSpec
 }
 
 func (c GCE) ProjectID() string      { return c.Data[GCEProjectID] }

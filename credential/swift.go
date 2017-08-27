@@ -1,7 +1,7 @@
 package credential
 
 type Swift struct {
-	generic
+	CommonSpec
 }
 
 func (c Swift) Username() string      { return c.Data[SwiftUsername] }

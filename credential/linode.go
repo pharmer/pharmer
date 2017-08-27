@@ -1,7 +1,7 @@
 package credential
 
 type Linode struct {
-	generic
+	CommonSpec
 }
 
 func (c Linode) APIToken() string { return c.Data[LinodeAPIToken] }

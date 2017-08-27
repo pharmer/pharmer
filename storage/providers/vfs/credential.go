@@ -98,12 +98,11 @@ func (s *CredentialFileStore) Create(obj *api.Credential) (*api.Credential, erro
 		return nil, fmt.Errorf("Credential `%s` already exists", obj.Name)
 	}
 
-	var buf bytes.Buffer
-	err = json.NewEncoder(&buf).Encode(obj)
+	data, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.container.Put(id, &buf, int64(buf.Len()), nil)
+	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
 	return obj, err
 }
 
@@ -125,12 +124,11 @@ func (s *CredentialFileStore) Update(obj *api.Credential) (*api.Credential, erro
 		return nil, fmt.Errorf("Credential `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
-	var buf bytes.Buffer
-	err = json.NewEncoder(&buf).Encode(obj)
+	data, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.container.Put(id, &buf, int64(buf.Len()), nil)
+	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
 	return obj, err
 }
 

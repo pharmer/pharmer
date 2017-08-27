@@ -1,5 +1,5 @@
 hash: 1be2d5f28bb519e952db33f6e4da555d9e3b87c68fe1cb5270604aac61b16a80
-updated: 2017-08-26T19:24:33.211572511-07:00
+updated: 2017-08-27T03:14:14.517066652-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -449,7 +449,7 @@ imports:
   - publicsuffix
   - trace
 - name: golang.org/x/oauth2
-  version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
+  version: 3c3a985cb79f52a3190fbc056984415ca6763d01
   subpackages:
   - google
   - internal
@@ -494,7 +494,7 @@ imports:
   - replicapoolupdater/v1beta1
   - storage/v1
 - name: google.golang.org/appengine
-  version: 12d5545dc1cfa6047a286d5e853841b6471f4c19
+  version: 4f7eeb5305a4ba1966344836ba4af9996b7b4e05
   subpackages:
   - internal
   - internal/app_identity

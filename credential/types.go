@@ -1,6 +1,7 @@
 package credential
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -44,9 +45,13 @@ const (
 	VultrAPIToken        = "token"
 )
 
-type generic api.CredentialSpec
+type CommonSpec api.CredentialSpec
 
-func (c generic) Load(filename string) error {
+func (c CommonSpec) Load(filename string) error {
+	return c.LoadFromJSON(filename)
+}
+
+func (c CommonSpec) LoadFromJSON(filename string) error {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
@@ -57,7 +62,18 @@ func (c generic) Load(filename string) error {
 	return json.Unmarshal(data, &c.Data)
 }
 
-func (c generic) IsValid() bool {
+func (c *CommonSpec) LoadFromEnv() {
+	if c.Data == nil {
+		c.Data = map[string]string{}
+	}
+	if cf, ok := files.GetCredentialFormat(c.Provider); ok {
+		for _, f := range cf.Fields {
+			c.Data[f.JSON] = os.Getenv(f.Envconfig)
+		}
+	}
+}
+
+func (c CommonSpec) IsValid() bool {
 	if cf, ok := files.GetCredentialFormat(c.Provider); ok {
 		for _, f := range cf.Fields {
 			if _, found := c.Data[f.JSON]; !found {
@@ -68,7 +84,7 @@ func (c generic) IsValid() bool {
 	return true
 }
 
-func (c generic) ToRawMap() map[string]string {
+func (c CommonSpec) ToRawMap() map[string]string {
 	result := map[string]string{}
 	for k, v := range c.Data {
 		result[k] = v
@@ -76,7 +92,7 @@ func (c generic) ToRawMap() map[string]string {
 	return result
 }
 
-func (c generic) ToMaskedMap() map[string]string {
+func (c CommonSpec) ToMaskedMap() map[string]string {
 	result := map[string]string{}
 	if cf, ok := files.GetCredentialFormat(c.Provider); ok {
 		for _, f := range cf.Fields {
@@ -91,13 +107,15 @@ func (c generic) ToMaskedMap() map[string]string {
 	return result
 }
 
-func (c *generic) LoadFromEnv() {
-	if c.Data == nil {
-		c.Data = map[string]string{}
-	}
-	if cf, ok := files.GetCredentialFormat(c.Provider); ok {
-		for _, f := range cf.Fields {
-			c.Data[f.JSON] = os.Getenv(f.Envconfig)
+func (c *CommonSpec) String() string {
+	var buf bytes.Buffer
+	for k, v := range c.ToMaskedMap() {
+		if buf.Len() > 0 {
+			buf.WriteString(", ")
 		}
+		buf.WriteString(k)
+		buf.WriteString("=")
+		buf.WriteString(v)
 	}
+	return buf.String()
 }

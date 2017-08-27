@@ -1,7 +1,7 @@
 package credential
 
 type Scaleway struct {
-	generic
+	CommonSpec
 }
 
 func (c Scaleway) Organization() string { return c.Data[ScalewayOrganization] }

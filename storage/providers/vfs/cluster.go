@@ -92,18 +92,16 @@ func (s *ClusterFileStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 	}
 
 	id := s.resourceID(obj.Name)
-
 	_, err = s.container.Item(id)
 	if err == nil {
 		return nil, fmt.Errorf("Cluster `%s` already exists", obj.Name)
 	}
 
-	var buf bytes.Buffer
-	err = json.NewEncoder(&buf).Encode(obj)
+	data, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.container.Put(id, &buf, int64(buf.Len()), nil)
+	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
 	return obj, err
 }
 
@@ -125,12 +123,11 @@ func (s *ClusterFileStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 		return nil, fmt.Errorf("Cluster `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
-	var buf bytes.Buffer
-	err = json.NewEncoder(&buf).Encode(obj)
+	data, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.container.Put(id, &buf, int64(buf.Len()), nil)
+	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
 	return obj, err
 }
 
@@ -172,11 +169,10 @@ func (s *ClusterFileStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 	}
 	existing.Status = obj.Status
 
-	var buf bytes.Buffer
-	err = json.NewEncoder(&buf).Encode(&existing)
+	data, err := json.MarshalIndent(existing, "", "  ")
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.container.Put(id, &buf, int64(buf.Len()), nil)
+	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
 	return &existing, err
 }
