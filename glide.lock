@@ -1,5 +1,5 @@
 hash: 1be2d5f28bb519e952db33f6e4da555d9e3b87c68fe1cb5270604aac61b16a80
-updated: 2017-08-26T17:06:21.628251399-07:00
+updated: 2017-08-26T19:24:33.211572511-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -60,7 +60,14 @@ imports:
 - name: github.com/appscode/go-dns
   version: 27b28e217d29e37b74dd7d5b7c4e3b4a8f07a814
   subpackages:
+  - aws
+  - azure
+  - cloudflare
+  - digitalocean
+  - googlecloud
+  - linode
   - provider
+  - vultr
 - name: github.com/appscode/go-hetzner
   version: 2862c36e840d98476edf9f1826717d354547be6f
 - name: github.com/appscode/go-notify
@@ -106,13 +113,17 @@ imports:
   - service/ec2
   - service/elb
   - service/iam
+  - service/route53
   - service/s3
+  - service/s3/s3iface
+  - service/s3/s3manager
   - service/sts
 - name: github.com/Azure/azure-sdk-for-go
   version: 2d49bb8f2cee530cc16f1f1a9f0aae763dee257d
   subpackages:
   - arm/authorization
   - arm/compute
+  - arm/dns
   - arm/graphrbac
   - arm/network
   - arm/resources/resources
@@ -158,6 +169,8 @@ imports:
   - signer/local
   - signer/remote
   - signer/universal
+- name: github.com/cloudflare/cloudflare-go
+  version: ba610b87e64f5e99e8ddd614e50669c66c2ec9b5
 - name: github.com/cpuguy83/go-md2man
   version: 71acacd42f85e5e82f70a55327789582a5200a90
   subpackages:
@@ -264,7 +277,11 @@ imports:
   repo: https://github.com/appscode/stow.git
   vcs: git
   subpackages:
+  - azure
+  - google
   - local
+  - s3
+  - swift
 - name: github.com/grpc-ecosystem/grpc-gateway
   version: 42a2d1c4991e79a4a8318984e5c81031b21f3c76
   repo: https://github.com/appscode/grpc-gateway.git
@@ -299,6 +316,8 @@ imports:
   version: 14b04e0594ef6a9fd943363b135656f0ec8c9d0e
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
+- name: github.com/kelseyhightower/envconfig
+  version: f611eb38b3875cc3bd991ca91c51d06446afa14c
 - name: github.com/kisielk/sqlstruct
   version: 648daed35d49dac24a4bff253b190a80da3ab6a5
   repo: https://github.com/kisielk/sqlstruct
@@ -316,6 +335,8 @@ imports:
   version: d6bea18f789704b5f83375793155289da36a3c7f
 - name: github.com/mgutz/str
   version: 968bf66e3da857419e4f6e71b2d5c9ae95682dc4
+- name: github.com/miekg/dns
+  version: 5d001d020961ae1c184f9f8152fdc73810481677
 - name: github.com/mitchellh/go-homedir
   version: b8bc1bf767474819792c23f32d8286a45736f1c6
 - name: github.com/moul/anonuuid
@@ -330,6 +351,8 @@ imports:
   version: aa435dbcb13c746f78fb50f146907cb7c8334720
 - name: github.com/pborman/uuid
   version: a97ce2ca70fa5a848076093f05e639a89ca34d06
+- name: github.com/pkg/errors
+  version: a22138067af1c4942683050411a841ade67fe1eb
 - name: github.com/PuerkitoBio/purell
   version: 8a290539e2e8629dbc4e6bad948158f790ec31f4
 - name: github.com/PuerkitoBio/urlesc
@@ -376,6 +399,10 @@ imports:
   vcs: git
 - name: github.com/tent/http-link-go
   version: ac974c61c2f990f4115b119354b5e0b47550e888
+- name: github.com/timewasted/linode
+  version: 37e84520dcf74488f67654f9c775b9752c232dc1
+  subpackages:
+  - dns
 - name: github.com/ugorji/go
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:
@@ -388,6 +415,12 @@ imports:
   version: e02fc20de94c78484cd5ffb007f8af96be030a45
 - name: github.com/xeipuuv/gojsonschema
   version: 93e72a773fade158921402d6a24c819b48aba29d
+- name: github.com/xenolf/lego
+  version: 8f574e6ca289b530cd3f266f4aa73c9a1161c48a
+  repo: https://github.com/appscode/lego.git
+  vcs: git
+  subpackages:
+  - acme
 - name: github.com/zabawaba99/fireauth
   version: a96e4680fe079c9d29db732873742573c1d5b2be
 - name: golang.org/x/crypto
@@ -396,6 +429,7 @@ imports:
   - curve25519
   - ed25519
   - ed25519/internal/edwards25519
+  - ocsp
   - pkcs12
   - pkcs12/internal/rc2
   - ssh
@@ -412,6 +446,7 @@ imports:
   - idna
   - internal/timeseries
   - lex/httplex
+  - publicsuffix
   - trace
 - name: golang.org/x/oauth2
   version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
@@ -451,6 +486,7 @@ imports:
   subpackages:
   - cloudresourcemanager/v1
   - compute/v1
+  - dns/v1
   - gensupport
   - googleapi
   - googleapi/internal/uritemplates
@@ -496,6 +532,9 @@ imports:
   version: 20b96f641a5ea98f2f8619ff4f3e061cff4833bd
 - name: gopkg.in/square/go-jose.v1
   version: aa2e30fdd1fe9dd3394119af66451ae790d50e0d
+  subpackages:
+  - cipher
+  - json
 - name: gopkg.in/yaml.v2
   version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
 - name: k8s.io/apimachinery
