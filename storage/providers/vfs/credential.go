@@ -31,11 +31,11 @@ func (s *CredentialFileStore) List(opts api.ListOptions) ([]*api.Credential, err
 	result := make([]*api.Credential, 0)
 	cursor := stow.CursorStart
 	for {
-		page, err := s.container.Browse(s.resourceHome(), "/", cursor, pageSize)
+		items, nc, err := s.container.Items(s.resourceHome(), cursor, pageSize)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to list credentials. Reason: %v", err)
 		}
-		for _, item := range page.Items {
+		for _, item := range items {
 			r, err := item.Open()
 			if err != nil {
 				return nil, fmt.Errorf("Failed to list credentials. Reason: %v", err)
@@ -48,7 +48,7 @@ func (s *CredentialFileStore) List(opts api.ListOptions) ([]*api.Credential, err
 			result = append(result, &obj)
 			r.Close()
 		}
-		cursor = page.Cursor
+		cursor = nc
 		if stow.IsCursorEnd(cursor) {
 			break
 		}
