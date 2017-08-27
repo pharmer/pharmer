@@ -105,12 +105,11 @@ func (s *InstanceFileStore) Create(obj *api.Instance) (*api.Instance, error) {
 		return nil, fmt.Errorf("Instance `%s` already exists", obj.Name)
 	}
 
-	var buf bytes.Buffer
-	err = json.NewEncoder(&buf).Encode(obj)
+	data, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.container.Put(id, &buf, int64(buf.Len()), nil)
+	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
 	return obj, err
 }
 
@@ -135,12 +134,11 @@ func (s *InstanceFileStore) Update(obj *api.Instance) (*api.Instance, error) {
 		return nil, fmt.Errorf("Instance `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
-	var buf bytes.Buffer
-	err = json.NewEncoder(&buf).Encode(obj)
+	data, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.container.Put(id, &buf, int64(buf.Len()), nil)
+	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
 	return obj, err
 }
 
@@ -188,12 +186,11 @@ func (s *InstanceFileStore) UpdateStatus(obj *api.Instance) (*api.Instance, erro
 	}
 	existing.Status = obj.Status
 
-	var buf bytes.Buffer
-	err = json.NewEncoder(&buf).Encode(&existing)
+	data, err := json.MarshalIndent(existing, "", "  ")
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.container.Put(id, &buf, int64(buf.Len()), nil)
+	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
 	return &existing, err
 }
 

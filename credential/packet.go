@@ -1,7 +1,7 @@
 package credential
 
 type Packet struct {
-	generic
+	CommonSpec
 }
 
 func (c Packet) APIKey() string    { return c.Data[PacketAPIKey] }

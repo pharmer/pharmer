@@ -5,7 +5,7 @@ import (
 )
 
 type AWS struct {
-	generic
+	CommonSpec
 }
 
 func (c AWS) AccessKeyID() string     { return c.Data[AWSAccessKeyID] }

@@ -1,7 +1,7 @@
 package credential
 
 type Vultr struct {
-	generic
+	CommonSpec
 }
 
 func (c Vultr) Token() string { return c.Data[VultrAPIToken] }

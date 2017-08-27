@@ -3,6 +3,7 @@ package vfs
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"path/filepath"
 	"strconv"
@@ -31,11 +32,15 @@ func init() {
 			}
 			loc, err := stow.Dial(local.Kind, stowCfg)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Failed to connect to local storage. Reason: %v.", err)
 			}
-			container, err := loc.Container(filepath.Base(cfg.Store.Local.Path))
+			name := filepath.Base(cfg.Store.Local.Path)
+			container, err := loc.Container(name)
 			if err != nil {
-				return nil, err
+				container, err = loc.CreateContainer(name)
+				if err != nil {
+					return nil, fmt.Errorf("Failed to open storage container `%s`. Reason: %v.", name, err)
+				}
 			}
 			return &FileStore{container: container, prefix: ""}, nil
 		} else if cfg.Store.S3 != nil {
@@ -54,11 +59,15 @@ func init() {
 			}
 			loc, err := stow.Dial(s3.Kind, stowCfg)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Failed to connect to S3 storage. Reason: %v.", err)
 			}
-			container, err := loc.Container(cfg.Store.S3.Bucket)
+			name := cfg.Store.S3.Bucket
+			container, err := loc.Container(name)
 			if err != nil {
-				return nil, err
+				container, err = loc.CreateContainer(name)
+				if err != nil {
+					return nil, fmt.Errorf("Failed to open storage container `%s`. Reason: %v.", name, err)
+				}
 			}
 			return &FileStore{container: container, prefix: cfg.Store.S3.Prefix}, nil
 		} else if cfg.Store.GCS != nil {
@@ -72,11 +81,11 @@ func init() {
 			}
 			loc, err := stow.Dial(google.Kind, stowCfg)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Failed to connect to GCS storage. Reason: %v.", err)
 			}
 			container, err := loc.Container(cfg.Store.GCS.Bucket)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Failed to open storage container `%s`. Reason: %v.", cfg.Store.GCS.Bucket, err)
 			}
 			return &FileStore{container: container, prefix: cfg.Store.GCS.Prefix}, nil
 		} else if cfg.Store.Azure != nil {
@@ -90,11 +99,15 @@ func init() {
 			}
 			loc, err := stow.Dial(azure.Kind, stowCfg)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Failed to connect to Azure storage. Reason: %v.", err)
 			}
-			container, err := loc.Container(cfg.Store.Azure.Container)
+			name := cfg.Store.Azure.Container
+			container, err := loc.Container(name)
 			if err != nil {
-				return nil, err
+				container, err = loc.CreateContainer(name)
+				if err != nil {
+					return nil, fmt.Errorf("Failed to open storage container `%s`. Reason: %v.", name, err)
+				}
 			}
 			return &FileStore{container: container, prefix: cfg.Store.Azure.Prefix}, nil
 		} else if cfg.Store.Swift != nil {
@@ -140,11 +153,15 @@ func init() {
 
 			loc, err := stow.Dial(swift.Kind, stowCfg)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("Failed to connect to Swift storage. Reason: %v.", err)
 			}
-			container, err := loc.Container(cfg.Store.Swift.Container)
+			name := cfg.Store.Swift.Container
+			container, err := loc.Container(name)
 			if err != nil {
-				return nil, err
+				container, err = loc.CreateContainer(name)
+				if err != nil {
+					return nil, fmt.Errorf("Failed to open storage container `%s`. Reason: %v.", name, err)
+				}
 			}
 			return &FileStore{container: container, prefix: cfg.Store.Swift.Prefix}, nil
 		}

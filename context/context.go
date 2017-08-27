@@ -60,12 +60,12 @@ type Factory interface {
 }
 
 type DefaultFactory struct {
-	cfg api.PharmerConfig
+	cfg *api.PharmerConfig
 }
 
 var _ Factory = &DefaultFactory{}
 
-func NewFactory(cfg api.PharmerConfig) Factory {
+func NewFactory(cfg *api.PharmerConfig) Factory {
 	return &DefaultFactory{cfg: cfg}
 }
 
@@ -73,20 +73,20 @@ func (f DefaultFactory) New(ctx go_ctx.Context) Context {
 	c := &defaultContext{Context: ctx}
 	c.Context = go_ctx.WithValue(c.Context, KeyExtra, &NullDomainManager{})
 	c.Context = go_ctx.WithValue(c.Context, KeyLogger, log.New(c))
-	c.Context = go_ctx.WithValue(c.Context, KeyStore, f.getStoreProvider(ctx))
-	c.Context = go_ctx.WithValue(c.Context, KeyDNS, f.getDNSProvider())
+	c.Context = go_ctx.WithValue(c.Context, KeyStore, NewStoreProvider(ctx, f.cfg))
+	c.Context = go_ctx.WithValue(c.Context, KeyDNS, NewDNSProvider(f.cfg))
 	return c
 }
 
-func (f DefaultFactory) getStoreProvider(ctx go_ctx.Context) storage.Interface {
-	if store, err := storage.GetProvider(vfs.UID, ctx, &f.cfg); err == nil {
+func NewStoreProvider(ctx go_ctx.Context, cfg *api.PharmerConfig) storage.Interface {
+	if store, err := storage.GetProvider(vfs.UID, ctx, cfg); err == nil {
 		return store
 	}
 	return &fake.FakeStore{}
 }
 
-func (f DefaultFactory) getDNSProvider() dns_provider.Provider {
-	if cred, err := f.cfg.GetCredential(f.cfg.DNS.CredentialName); err == nil {
+func NewDNSProvider(cfg *api.PharmerConfig) dns_provider.Provider {
+	if cred, err := cfg.GetCredential(cfg.DNS.CredentialName); err == nil {
 		if dp, err := dns.NewDNSProvider(cred.Spec.Provider); err == nil {
 			return dp
 		}

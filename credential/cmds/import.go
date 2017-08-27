@@ -1,8 +1,7 @@
 package cmds
 
 import (
-	"context"
-	"encoding/json"
+	go_ctx "context"
 	"fmt"
 	"os"
 	"time"
@@ -11,9 +10,8 @@ import (
 	"github.com/appscode/log"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/config"
+	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/data/files"
-	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/storage/providers/vfs"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -53,23 +51,15 @@ func NewCmdImport() *cobra.Command {
 				}
 			}
 
-			b, _ := json.MarshalIndent(&cred, "", "  ")
-			fmt.Println(string(b))
-
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
 			if err != nil {
-				log.Errorln(err)
+				log.Fatalln(err)
 			}
-			fmt.Println(cfg)
-
-			store, err := storage.GetProvider(vfs.UID, context.TODO(), cfg)
-			if err != nil {
-				log.Errorln(err)
-			}
+			store := context.NewStoreProvider(go_ctx.TODO(), cfg)
 			_, err = store.Credentials().Create(&cred)
 			if err != nil {
-				log.Errorln(err)
+				log.Fatalln(err)
 			}
 		},
 	}

@@ -1,7 +1,7 @@
 package credential
 
 type AzureStorage struct {
-	generic
+	CommonSpec
 }
 
 func (c AzureStorage) Account() string { return c.Data[AzureStorageAccount] }

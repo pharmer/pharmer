@@ -1,7 +1,7 @@
 package credential
 
 type Azure struct {
-	generic
+	CommonSpec
 }
 
 func (c Azure) ClientID() string       { return c.Data[AzureClientID] }

@@ -1,7 +1,7 @@
 package credential
 
 type DigitalOcean struct {
-	generic
+	CommonSpec
 }
 
 func (c DigitalOcean) Token() string { return c.Data[DigitalOceanToken] }
