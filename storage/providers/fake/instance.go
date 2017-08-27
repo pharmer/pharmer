@@ -1,19 +1,16 @@
-package vfs
+package fake
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
 
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/storage"
-	"github.com/graymeta/stow"
 )
 
 type InstanceFileStore struct {
-	container stow.Container
+	container map[string]*api.Instance
 	cluster   string
 }
 
@@ -29,29 +26,8 @@ func (s *InstanceFileStore) resourceID(name string) string {
 
 func (s *InstanceFileStore) List(opts api.ListOptions) ([]*api.Instance, error) {
 	result := make([]*api.Instance, 0)
-	cursor := stow.CursorStart
-	for {
-		page, err := s.container.Browse(s.resourceHome(), "/", cursor, pageSize)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to list instances. Reason: %v", err)
-		}
-		for _, item := range page.Items {
-			r, err := item.Open()
-			if err != nil {
-				return nil, fmt.Errorf("Failed to list instances. Reason: %v", err)
-			}
-			var obj api.Instance
-			err = json.NewDecoder(r).Decode(&obj)
-			if err != nil {
-				return nil, fmt.Errorf("Failed to list instances. Reason: %v", err)
-			}
-			result = append(result, &obj)
-			r.Close()
-		}
-		cursor = page.Cursor
-		if stow.IsCursorEnd(cursor) {
-			break
-		}
+	for k := range s.container {
+		result = append(result, s.container[k])
 	}
 	return result, nil
 }
@@ -64,23 +40,11 @@ func (s *InstanceFileStore) Get(name string) (*api.Instance, error) {
 		return nil, errors.New("Missing instance name")
 	}
 
-	item, err := s.container.Item(s.resourceID(name))
-	if err != nil {
-		return nil, fmt.Errorf("Instance `%s` does not exist. Reason: %v", name, err)
+	item, itemOK := s.container[s.resourceID(name)]
+	if !itemOK {
+		return nil, fmt.Errorf("Instance `%s` does not exist.", name)
 	}
-
-	r, err := item.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-
-	var existing api.Instance
-	err = json.NewDecoder(r).Decode(&existing)
-	if err != nil {
-		return nil, err
-	}
-	return &existing, nil
+	return item, nil
 }
 
 func (s *InstanceFileStore) Create(obj *api.Instance) (*api.Instance, error) {
@@ -99,17 +63,11 @@ func (s *InstanceFileStore) Create(obj *api.Instance) (*api.Instance, error) {
 
 	id := s.resourceID(obj.Name)
 
-	_, err = s.container.Item(id)
-	if err == nil {
+	if _, ok := s.container[id]; ok {
 		return nil, fmt.Errorf("Instance `%s` already exists", obj.Name)
 	}
 
-	var buf bytes.Buffer
-	err = json.NewEncoder(&buf).Encode(obj)
-	if err != nil {
-		return nil, err
-	}
-	_, err = s.container.Put(id, &buf, int64(buf.Len()), nil)
+	s.container[id] = obj
 	return obj, err
 }
 
@@ -128,18 +86,7 @@ func (s *InstanceFileStore) Update(obj *api.Instance) (*api.Instance, error) {
 	}
 
 	id := s.resourceID(obj.Name)
-
-	_, err = s.container.Item(id)
-	if err != nil {
-		return nil, fmt.Errorf("Instance `%s` does not exist. Reason: %v", obj.Name, err)
-	}
-
-	var buf bytes.Buffer
-	err = json.NewEncoder(&buf).Encode(obj)
-	if err != nil {
-		return nil, err
-	}
-	_, err = s.container.Put(id, &buf, int64(buf.Len()), nil)
+	s.container[id] = obj
 	return obj, err
 }
 
@@ -150,7 +97,8 @@ func (s *InstanceFileStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("Missing instance name")
 	}
-	return s.container.RemoveItem(s.resourceID(name))
+	delete(s.container, s.resourceID(name))
+	return nil
 }
 
 func (s *InstanceFileStore) UpdateStatus(obj *api.Instance) (*api.Instance, error) {
@@ -169,31 +117,13 @@ func (s *InstanceFileStore) UpdateStatus(obj *api.Instance) (*api.Instance, erro
 
 	id := s.resourceID(obj.Name)
 
-	item, err := s.container.Item(id)
-	if err != nil {
-		return nil, fmt.Errorf("Instance `%s` does not exist. Reason: %v", obj.Name, err)
-	}
-
-	r, err := item.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-
-	var existing api.Instance
-	err = json.NewDecoder(r).Decode(&existing)
-	if err != nil {
-		return nil, err
+	existing, itemOK := s.container[id]
+	if !itemOK {
+		return nil, fmt.Errorf("Instance `%s` does not exist.", obj.Name)
 	}
 	existing.Status = obj.Status
-
-	var buf bytes.Buffer
-	err = json.NewEncoder(&buf).Encode(&existing)
-	if err != nil {
-		return nil, err
-	}
-	_, err = s.container.Put(id, &buf, int64(buf.Len()), nil)
-	return &existing, err
+	s.container[id] = existing
+	return existing, err
 }
 
 // Deprecated

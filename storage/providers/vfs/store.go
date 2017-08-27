@@ -23,7 +23,7 @@ const (
 )
 
 func init() {
-	storage.RegisterProvider(local.Kind, func(ctx context.Context, cfg *api.PharmerConfig) (storage.Interface, error) {
+	storage.RegisterProvider(UID, func(ctx context.Context, cfg *api.PharmerConfig) (storage.Interface, error) {
 		if cfg.Store.Local != nil {
 			stowCfg := stow.ConfigMap{
 				local.ConfigKeyPath: cfg.Store.Local.Path,

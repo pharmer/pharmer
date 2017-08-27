@@ -177,5 +177,5 @@ func (s *ClusterFileStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 		return nil, err
 	}
 	_, err = s.container.Put(id, &buf, int64(buf.Len()), nil)
-	return obj, err
+	return &existing, err
 }
