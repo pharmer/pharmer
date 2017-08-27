@@ -1,26 +1,26 @@
-## pharmer config
+## pharmer credential get
 
-Pharmer configuration
+List cloud credentials
 
 ### Synopsis
 
 
-Pharmer configuration
+List cloud credentials
 
 ```
-pharmer config [flags]
+pharmer credential get [flags]
 ```
 
 ### Examples
 
 ```
-pharmer config view
+pharmer credential list
 ```
 
 ### Options
 
 ```
-  -h, --help   help for config
+  -h, --help   help for get
 ```
 
 ### Options inherited from parent commands
@@ -39,7 +39,5 @@ pharmer config view
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer config get-contexts](pharmer_config_get-contexts.md)	 - List available contexts
-* [pharmer config view](pharmer_config_view.md)	 - Print Pharmer config
+* [pharmer credential](pharmer_credential.md)	 - Manage cloud provider credentials
 

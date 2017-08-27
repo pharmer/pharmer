@@ -1,26 +1,26 @@
-## pharmer config
+## pharmer credential issue
 
-Pharmer configuration
+Issue credential for cloud providers Azure and Google Cloud
 
 ### Synopsis
 
 
-Pharmer configuration
+Issue credential for cloud providers Azure and Google Cloud
 
 ```
-pharmer config [flags]
+pharmer credential issue [flags]
 ```
 
 ### Examples
 
 ```
-pharmer config view
+pharmer credential issue mycred
 ```
 
 ### Options
 
 ```
-  -h, --help   help for config
+  -h, --help   help for issue
 ```
 
 ### Options inherited from parent commands
@@ -39,7 +39,5 @@ pharmer config view
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer config get-contexts](pharmer_config_get-contexts.md)	 - List available contexts
-* [pharmer config view](pharmer_config_view.md)	 - Print Pharmer config
+* [pharmer credential](pharmer_credential.md)	 - Manage cloud provider credentials
 
