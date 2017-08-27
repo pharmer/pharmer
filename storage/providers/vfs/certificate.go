@@ -52,7 +52,7 @@ func (s *CertificateFileStore) Get(name string) ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 
-	key, err := s.container.Item(s.certID(name))
+	key, err := s.container.Item(s.keyID(name))
 	if err != nil {
 		return nil, nil, fmt.Errorf("Certificate key `%s.key` does not exist. Reason: %v", name, err)
 	}

@@ -52,7 +52,7 @@ func (s *SSHKeyFileStore) Get(name string) ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 
-	priv, err := s.container.Item(s.pubKeyID(name))
+	priv, err := s.container.Item(s.privKeyID(name))
 	if err != nil {
 		return nil, nil, fmt.Errorf("SSH key `id_%s` does not exist. Reason: %v", name, err)
 	}
