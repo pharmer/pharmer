@@ -14,13 +14,14 @@ import (
 
 type InstanceFileStore struct {
 	container stow.Container
+	prefix    string
 	cluster   string
 }
 
 var _ storage.InstanceStore = &InstanceFileStore{}
 
 func (s *InstanceFileStore) resourceHome() string {
-	return filepath.Join("clusters", s.cluster, "instances")
+	return filepath.Join(s.prefix, "clusters", s.cluster, "instances")
 }
 
 func (s *InstanceFileStore) resourceID(name string) string {

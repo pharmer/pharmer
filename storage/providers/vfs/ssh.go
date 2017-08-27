@@ -13,13 +13,14 @@ import (
 
 type SSHKeyFileStore struct {
 	container stow.Container
+	prefix    string
 	cluster   string
 }
 
 var _ storage.SSHKeyStore = &SSHKeyFileStore{}
 
 func (s *SSHKeyFileStore) resourceHome() string {
-	return filepath.Join("clusters", s.cluster, "ssh")
+	return filepath.Join(s.prefix, "clusters", s.cluster, "ssh")
 }
 
 func (s *SSHKeyFileStore) pubKeyID(name string) string {
