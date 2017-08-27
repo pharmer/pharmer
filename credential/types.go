@@ -30,6 +30,17 @@ const (
 	ScalewayToken        = "token"
 	SoftlayerAPIKey      = "apiKey"
 	SoftlayerUsername    = "username"
+	SwiftUsername        = "username"
+	SwiftKey             = "key"
+	SwiftTenantName      = "tenantName"
+	SwiftTenantAuthURL   = "tenantAuthURL"
+	SwiftDomain          = "domain"
+	SwiftRegion          = "region"
+	SwiftTenantId        = "tenantID"
+	SwiftTenantDomain    = "tenantDomain"
+	SwiftTrustId         = "trustID"
+	SwiftStorageURL      = "storageURL"
+	SwiftAuthToken       = "authToken"
 	VultrAPIToken        = "token"
 )
 

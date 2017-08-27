@@ -749,14 +749,14 @@
           "envconfig": "AZURE_STORAGE_ACCOUNT",
           "form": "azure_storage_account",
           "json": "account",
-          "label": "Account",
+          "label": "Azure Storage Account",
           "input": "text"
         },
         {
           "envconfig": "AZURE_STORAGE_KEY",
           "form": "azure_storage_key",
           "json": "key",
-          "label": "Key",
+          "label": "Azure Storage Account Key",
           "input": "password"
         }
       ]

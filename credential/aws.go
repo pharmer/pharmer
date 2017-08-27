@@ -8,9 +8,12 @@ type AWS struct {
 	generic
 }
 
-func (s AWS) Load(filename string) error {
-	if s.Data != nil {
-		s.Data = map[string]string{}
+func (c AWS) AccessKeyID() string     { return c.Data[AWSAccessKeyID] }
+func (c AWS) SecretAccessKey() string { return c.Data[AWSSecretAccessKey] }
+
+func (c AWS) Load(filename string) error {
+	if c.Data != nil {
+		c.Data = map[string]string{}
 	}
 
 	cfg, err := ini.Load(filename)
@@ -26,21 +29,13 @@ func (s AWS) Load(filename string) error {
 	if err != nil {
 		return err
 	}
-	s.Data[AWSAccessKeyID] = id.Value()
+	c.Data[AWSAccessKeyID] = id.Value()
 
 	secret, err := sec.GetKey("aws_secret_access_key")
 	if err != nil {
 		return err
 	}
-	s.Data[AWSSecretAccessKey] = secret.Value()
+	c.Data[AWSSecretAccessKey] = secret.Value()
 
 	return nil
-}
-
-func (c AWS) AccessKeyID() string {
-	return c.Data[AWSAccessKeyID]
-}
-
-func (c AWS) SecretAccessKey() string {
-	return c.Data[AWSSecretAccessKey]
 }

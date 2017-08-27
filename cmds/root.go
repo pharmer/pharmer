@@ -6,10 +6,12 @@ import (
 	"os"
 
 	v "github.com/appscode/go/version"
+	_ "github.com/appscode/pharmer/cloud/providers"
 	"github.com/appscode/pharmer/config"
 	cfgCmd "github.com/appscode/pharmer/config/cmds"
 	credCmd "github.com/appscode/pharmer/credential/cmds"
 	"github.com/appscode/pharmer/data/files"
+	_ "github.com/appscode/pharmer/storage/providers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

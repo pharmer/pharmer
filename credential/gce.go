@@ -9,6 +9,9 @@ type GCE struct {
 	generic
 }
 
+func (c GCE) ProjectID() string      { return c.Data[GCEProjectID] }
+func (c GCE) ServiceAccount() string { return c.Data[GCEServiceAccount] }
+
 func (c GCE) Load(filename string) error {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -26,12 +29,4 @@ func (c GCE) Load(filename string) error {
 	c.Data[GCEServiceAccount] = string(data)
 	c.Data[GCEProjectID] = d["project_id"]
 	return nil
-}
-
-func (c GCE) ProjectID() string {
-	return c.Data[GCEProjectID]
-}
-
-func (c GCE) ServiceAccount() string {
-	return c.Data[GCEServiceAccount]
 }

@@ -1,5 +1,5 @@
 hash: 1be2d5f28bb519e952db33f6e4da555d9e3b87c68fe1cb5270604aac61b16a80
-updated: 2017-08-26T01:02:38.873545103-07:00
+updated: 2017-08-26T17:06:21.628251399-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -58,7 +58,7 @@ imports:
   - version
   - wait
 - name: github.com/appscode/go-dns
-  version: dba9b228226c3f7560cb541ed62cb5dde47ec464
+  version: 27b28e217d29e37b74dd7d5b7c4e3b4a8f07a814
   subpackages:
   - provider
 - name: github.com/appscode/go-hetzner
@@ -353,7 +353,7 @@ imports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 10ef21a441db47d8b13ebcc5fd2310f636973c77
 - name: github.com/Sirupsen/logrus
-  version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
+  version: 3ec0642a7fb6488f65b06f9040adc67e3990296a
 - name: github.com/skratchdot/open-golang
   version: 75fb7ed4208cf72d323d7d02fd1a5964a7a9073c
   subpackages:

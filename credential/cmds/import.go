@@ -1,14 +1,21 @@
 package cmds
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/appscode/go-term"
+	"github.com/appscode/log"
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/config"
 	"github.com/appscode/pharmer/data/files"
+	"github.com/appscode/pharmer/storage"
+	"github.com/appscode/pharmer/storage/providers/vfs"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func NewCmdImport() *cobra.Command {
@@ -25,27 +32,45 @@ func NewCmdImport() *cobra.Command {
 			}
 
 			_, provider := term.List(files.CredentialProviders().List())
-			c := api.Credential{
+			cred := api.Credential{
 				ObjectMeta: api.ObjectMeta{
-					Name: args[0],
+					Name:              args[0],
+					CreationTimestamp: metav1.Time{Time: time.Now()},
 				},
 				Spec: api.CredentialSpec{
 					Provider: provider,
 					Data:     map[string]string{},
 				},
 			}
-			api.AssignTypeKind(&c)
+			api.AssignTypeKind(&cred)
+
 			cf, _ := files.GetCredentialFormat(provider)
 			for _, f := range cf.Fields {
 				if f.Input == "password" {
-					c.Spec.Data[f.JSON] = term.ReadMasked(f.Label)
+					cred.Spec.Data[f.JSON] = term.ReadMasked(f.Label)
 				} else {
-					c.Spec.Data[f.JSON] = term.Read(f.Label)
+					cred.Spec.Data[f.JSON] = term.Read(f.Label)
 				}
 			}
 
-			b, _ := json.MarshalIndent(&c, "", "  ")
+			b, _ := json.MarshalIndent(&cred, "", "  ")
 			fmt.Println(string(b))
+
+			cfgFile, _ := config.GetConfigFile(cmd.Flags())
+			cfg, err := config.LoadConfig(cfgFile)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(cfg)
+
+			store, err := storage.GetProvider(vfs.UID, context.TODO(), cfg)
+			if err != nil {
+				log.Errorln(err)
+			}
+			_, err = store.Credentials().Create(&cred)
+			if err != nil {
+				log.Errorln(err)
+			}
 		},
 	}
 	return cmd

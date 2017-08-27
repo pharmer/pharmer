@@ -8,5 +8,5 @@ type Credential struct {
 
 type CredentialSpec struct {
 	Provider string            `json:"provider"`
-	Data     map[string]string `json:"config"`
+	Data     map[string]string `json:"data"`
 }
