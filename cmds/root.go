@@ -6,6 +6,7 @@ import (
 	"os"
 
 	v "github.com/appscode/go/version"
+	cpCmd "github.com/appscode/pharmer/cloud/cmds"
 	_ "github.com/appscode/pharmer/cloud/providers"
 	"github.com/appscode/pharmer/config"
 	cfgCmd "github.com/appscode/pharmer/config/cmds"
@@ -42,13 +43,13 @@ func NewRootCmd(version string) *cobra.Command {
 
 	rootCmd.AddCommand(credCmd.NewCmdCredential())
 	rootCmd.AddCommand(cfgCmd.NewCmdConfig())
-	rootCmd.AddCommand(NewCmdCreate())
-	rootCmd.AddCommand(NewCmdDelete())
-	rootCmd.AddCommand(NewCmdReconfigure())
-	rootCmd.AddCommand(NewCmdList())
-	rootCmd.AddCommand(NewCmdUse())
-	rootCmd.AddCommand(NewCmdSSH())
-	rootCmd.AddCommand(NewCmdBackup())
+	rootCmd.AddCommand(cpCmd.NewCmdCreate())
+	rootCmd.AddCommand(cpCmd.NewCmdDelete())
+	rootCmd.AddCommand(cpCmd.NewCmdReconfigure())
+	rootCmd.AddCommand(cpCmd.NewCmdList())
+	rootCmd.AddCommand(cpCmd.NewCmdUse())
+	rootCmd.AddCommand(cpCmd.NewCmdSSH())
+	rootCmd.AddCommand(cpCmd.NewCmdBackup())
 	rootCmd.AddCommand(v.NewCmdVersion())
 
 	return rootCmd
