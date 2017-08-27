@@ -14,12 +14,13 @@ import (
 
 type CredentialFileStore struct {
 	container stow.Container
+	prefix    string
 }
 
 var _ storage.CredentialStore = &CredentialFileStore{}
 
 func (s *CredentialFileStore) resourceHome() string {
-	return "credentials"
+	return filepath.Join(s.prefix, "credentials")
 }
 
 func (s *CredentialFileStore) resourceID(name string) string {

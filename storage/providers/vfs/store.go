@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"path/filepath"
 	"strconv"
 
 	"github.com/appscode/pharmer/api"
@@ -26,17 +27,17 @@ func init() {
 	storage.RegisterProvider(UID, func(ctx context.Context, cfg *api.PharmerConfig) (storage.Interface, error) {
 		if cfg.Store.Local != nil {
 			stowCfg := stow.ConfigMap{
-				local.ConfigKeyPath: cfg.Store.Local.Path,
+				local.ConfigKeyPath: filepath.Dir(cfg.Store.Local.Path),
 			}
 			loc, err := stow.Dial(local.Kind, stowCfg)
 			if err != nil {
 				return nil, err
 			}
-			container, err := loc.Container("xyz")
+			container, err := loc.Container(filepath.Base(cfg.Store.Local.Path))
 			if err != nil {
 				return nil, err
 			}
-			return &FileStore{container: container}, nil
+			return &FileStore{container: container, prefix: ""}, nil
 		} else if cfg.Store.S3 != nil {
 			cred, err := cfg.GetCredential(cfg.Store.CredentialName)
 			if err != nil {
@@ -59,7 +60,7 @@ func init() {
 			if err != nil {
 				return nil, err
 			}
-			return &FileStore{container: container}, nil
+			return &FileStore{container: container, prefix: cfg.Store.S3.Prefix}, nil
 		} else if cfg.Store.GCS != nil {
 			cred, err := cfg.GetCredential(cfg.Store.CredentialName)
 			if err != nil {
@@ -77,7 +78,7 @@ func init() {
 			if err != nil {
 				return nil, err
 			}
-			return &FileStore{container: container}, nil
+			return &FileStore{container: container, prefix: cfg.Store.GCS.Prefix}, nil
 		} else if cfg.Store.Azure != nil {
 			cred, err := cfg.GetCredential(cfg.Store.CredentialName)
 			if err != nil {
@@ -95,7 +96,7 @@ func init() {
 			if err != nil {
 				return nil, err
 			}
-			return &FileStore{container: container}, nil
+			return &FileStore{container: container, prefix: cfg.Store.Azure.Prefix}, nil
 		} else if cfg.Store.Swift != nil {
 			cred, err := cfg.GetCredential(cfg.Store.CredentialName)
 			if err != nil {
@@ -145,7 +146,7 @@ func init() {
 			if err != nil {
 				return nil, err
 			}
-			return &FileStore{container: container}, nil
+			return &FileStore{container: container, prefix: cfg.Store.Swift.Prefix}, nil
 		}
 		return nil, errors.New("Missing store configuration")
 	})
@@ -153,26 +154,27 @@ func init() {
 
 type FileStore struct {
 	container stow.Container
+	prefix    string
 }
 
 var _ storage.Interface = &FileStore{}
 
 func (s *FileStore) Credentials() storage.CredentialStore {
-	return &CredentialFileStore{container: s.container}
+	return &CredentialFileStore{container: s.container, prefix: s.prefix}
 }
 
 func (s *FileStore) Clusters() storage.ClusterStore {
-	return &ClusterFileStore{container: s.container}
+	return &ClusterFileStore{container: s.container, prefix: s.prefix}
 }
 
 func (s *FileStore) Instances(name string) storage.InstanceStore {
-	return &InstanceFileStore{container: s.container, cluster: name}
+	return &InstanceFileStore{container: s.container, prefix: s.prefix, cluster: name}
 }
 
 func (s *FileStore) Certificates(name string) storage.CertificateStore {
-	return &CertificateFileStore{container: s.container, cluster: name}
+	return &CertificateFileStore{container: s.container, prefix: s.prefix, cluster: name}
 }
 
 func (s *FileStore) SSHKeys(name string) storage.SSHKeyStore {
-	return &SSHKeyFileStore{container: s.container, cluster: name}
+	return &SSHKeyFileStore{container: s.container, prefix: s.prefix, cluster: name}
 }
