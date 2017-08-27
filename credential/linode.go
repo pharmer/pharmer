@@ -4,6 +4,4 @@ type Linode struct {
 	generic
 }
 
-func (c Linode) APIToken() string {
-	return c.Data[LinodeAPIToken]
-}
+func (c Linode) APIToken() string { return c.Data[LinodeAPIToken] }

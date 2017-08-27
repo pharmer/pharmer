@@ -1,5 +1,7 @@
 package api
 
+import "fmt"
+
 type LocalSpec struct {
 	Path string `json:"path,omitempty"`
 }
@@ -77,4 +79,13 @@ func (pc PharmerConfig) GetDNSProviderType() string {
 		}
 	}
 	return "<Unknown>"
+}
+
+func (pc PharmerConfig) GetCredential(name string) (*Credential, error) {
+	for _, c := range pc.Credentials {
+		if c.Name == name {
+			return &c, nil
+		}
+	}
+	return nil, fmt.Errorf("Missing credential %s", name)
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/appscode/log"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/storage"
+	"github.com/appscode/pharmer/storage/providers/vfs"
 )
 
 type Context interface {
@@ -70,8 +71,8 @@ func (f DefaultFactory) New(ctx go_ctx.Context) Context {
 	c := &defaultContext{Context: ctx}
 	c.Context = go_ctx.WithValue(c.Context, KeyExtra, &NullDomainManager{})
 	c.Context = go_ctx.WithValue(c.Context, KeyLogger, log.New(c))
-	if sp, err := storage.GetProvider("", ctx, f.cfg); err == nil {
-		c.Context = go_ctx.WithValue(c.Context, KeyStore, sp)
+	if store, err := storage.GetProvider(vfs.UID, ctx, &f.cfg); err == nil {
+		c.Context = go_ctx.WithValue(c.Context, KeyStore, store)
 	} else {
 		//fp, _ := storage.GetProvider(fake.UID, ctx, f.cfg)
 		//c.Context = go_ctx.WithValue(c.Context, KeyStore, fp)
