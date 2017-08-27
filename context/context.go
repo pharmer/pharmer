@@ -3,7 +3,8 @@ package context
 import (
 	go_ctx "context"
 
-	dns "github.com/appscode/go-dns/provider"
+	"github.com/appscode/go-dns"
+	dns_provider "github.com/appscode/go-dns/provider"
 	"github.com/appscode/log"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/storage"
@@ -13,7 +14,7 @@ import (
 type Context interface {
 	go_ctx.Context
 
-	DNSProvider() dns.Provider
+	DNSProvider() dns_provider.Provider
 	Store() storage.Interface
 	Logger() Logger
 	Extra() DomainManager
@@ -33,8 +34,8 @@ type defaultContext struct {
 
 var _ Context = &defaultContext{}
 
-func (ctx *defaultContext) DNSProvider() dns.Provider {
-	return ctx.Value(KeyDNS).(dns.Provider)
+func (ctx *defaultContext) DNSProvider() dns_provider.Provider {
+	return ctx.Value(KeyDNS).(dns_provider.Provider)
 }
 
 func (ctx *defaultContext) Store() storage.Interface {
@@ -77,6 +78,15 @@ func (f DefaultFactory) New(ctx go_ctx.Context) Context {
 		//fp, _ := storage.GetProvider(fake.UID, ctx, f.cfg)
 		//c.Context = go_ctx.WithValue(c.Context, KeyStore, fp)
 	}
-	c.Context = go_ctx.WithValue(c.Context, KeyDNS, &NullDNSProvider{})
+	c.Context = go_ctx.WithValue(c.Context, KeyDNS, f.getDNSProvider())
 	return c
+}
+
+func (f DefaultFactory) getDNSProvider() dns_provider.Provider {
+	if cred, err := f.cfg.GetCredential(f.cfg.DNS.CredentialName); err == nil {
+		if dp, err := dns.NewDNSProvider(cred.Spec.Provider); err == nil {
+			return dp
+		}
+	}
+	return &NullDNSProvider{}
 }
