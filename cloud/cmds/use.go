@@ -1,7 +1,6 @@
 package cmds
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -9,6 +8,7 @@ import (
 	"path/filepath"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
+	"github.com/appscode/pharmer/api"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 )
@@ -40,7 +40,7 @@ func NewCmdUse() *cobra.Command {
 				}
 
 				// change current context
-				konfig := &KubeConfig{}
+				konfig := &api.KubeConfig{}
 				data, _ := ioutil.ReadFile(KubeConfigPath())
 				yaml.Unmarshal([]byte(data), konfig)
 				// konfig.CurrentContext = getContextFromClusterName(req.Name) // TODO: FixIt!
@@ -61,7 +61,7 @@ func clientConfig(in *proto.ClusterClientConfigRequest) (*proto.ClusterClientCon
 }
 
 func writeConfig(name string, resp *proto.ClusterClientConfigResponse) {
-	konfig := &KubeConfig{
+	konfig := &api.KubeConfig{
 		APIVersion: "v1",
 		Kind:       "Config",
 		Preferences: map[string]interface{}{
@@ -87,7 +87,7 @@ func writeConfig(name string, resp *proto.ClusterClientConfigResponse) {
 		}
 	}
 	if !found {
-		konfig.Clusters = append(konfig.Clusters, setCluster(&ClustersInfo{}, resp))
+		konfig.Clusters = append(konfig.Clusters, setCluster(&api.ClustersInfo{}, resp))
 	}
 
 	// Upsert user
@@ -100,7 +100,7 @@ func writeConfig(name string, resp *proto.ClusterClientConfigResponse) {
 		}
 	}
 	if !found {
-		konfig.Users = append(konfig.Users, setUser(&UserInfo{}, resp))
+		konfig.Users = append(konfig.Users, setUser(&api.UserInfo{}, resp))
 	}
 
 	// Upsert context
@@ -113,7 +113,7 @@ func writeConfig(name string, resp *proto.ClusterClientConfigResponse) {
 		}
 	}
 	if !found {
-		konfig.Contexts = append(konfig.Contexts, setContext(&ContextInfo{}, resp))
+		konfig.Contexts = append(konfig.Contexts, setContext(&api.ContextInfo{}, resp))
 	}
 
 	// change current context
@@ -124,7 +124,7 @@ func writeConfig(name string, resp *proto.ClusterClientConfigResponse) {
 	fmt.Println("Added cluster configuration to kubectl config")
 }
 
-func setCluster(c *ClustersInfo, resp *proto.ClusterClientConfigResponse) *ClustersInfo {
+func setCluster(c *api.ClustersInfo, resp *proto.ClusterClientConfigResponse) *api.ClustersInfo {
 	c.Name = resp.ClusterDomain
 	c.Cluster = map[string]interface{}{
 		"certificate-authority-data": resp.CaCert,
@@ -133,7 +133,7 @@ func setCluster(c *ClustersInfo, resp *proto.ClusterClientConfigResponse) *Clust
 	return c
 }
 
-func setUser(u *UserInfo, resp *proto.ClusterClientConfigResponse) *UserInfo {
+func setUser(u *api.UserInfo, resp *proto.ClusterClientConfigResponse) *api.UserInfo {
 	u.Name = resp.ClusterUserName
 	if resp.UserToken != "" {
 		u.User = map[string]interface{}{
@@ -153,39 +153,11 @@ func setUser(u *UserInfo, resp *proto.ClusterClientConfigResponse) *UserInfo {
 	return u
 }
 
-func setContext(c *ContextInfo, resp *proto.ClusterClientConfigResponse) *ContextInfo {
+func setContext(c *api.ContextInfo, resp *proto.ClusterClientConfigResponse) *api.ContextInfo {
 	c.Name = resp.ContextName
 	c.Contextt = map[string]interface{}{
 		"cluster": resp.ClusterDomain,
 		"user":    resp.ClusterUserName,
 	}
 	return c
-}
-
-type ClustersInfo struct {
-	Name    string                 `json:"name"`
-	Cluster map[string]interface{} `json:"cluster"`
-}
-
-type UserInfo struct {
-	Name string                 `json:"name"`
-	User map[string]interface{} `json:"user"`
-}
-
-type ContextInfo struct {
-	Name     string                 `json:"name"`
-	Contextt map[string]interface{} `json:"context"`
-}
-
-// Adapted from https://github.com/kubernetes/client-go/blob/master/tools/clientcmd/api/v1/types.go#L27
-// Simplified to avoid dependency on client-go
-type KubeConfig struct {
-	Kind           string                 `json:"kind,omitempty"`
-	APIVersion     string                 `json:"apiVersion,omitempty"`
-	Clusters       []*ClustersInfo        `json:"clusters"`
-	Contexts       []*ContextInfo         `json:"contexts"`
-	CurrentContext string                 `json:"current-context"`
-	Preferences    map[string]interface{} `json:"preferences"`
-	Users          []*UserInfo            `json:"users"`
-	Extensions     json.RawMessage        `json:"extensions,omitempty"`
 }
