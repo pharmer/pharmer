@@ -92,7 +92,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 
 	cloud.AdjustDbInstance(igm.cm.ctx, igm.cm.ins, instances, req.Sku)
 
-	cm.ctx.Store().Clusters().Update(cm.cluster)
+	cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
 	return nil
 }
 

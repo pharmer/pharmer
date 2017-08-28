@@ -5,12 +5,7 @@ import (
 	"github.com/appscode/pharmer/api"
 )
 
-type Interface interface {
-	Clusters() ClusterProvider
-	Credentials() CredentialProvider
-}
-
-type ClusterProvider interface {
+type ClusterManager interface {
 	Create(req *proto.ClusterCreateRequest) error
 	Scale(req *proto.ClusterReconfigureRequest) error
 	Delete(req *proto.ClusterDeleteRequest) error
@@ -19,9 +14,4 @@ type ClusterProvider interface {
 
 	GetInstance(md *api.InstanceMetadata) (*api.Instance, error)
 	MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool
-}
-
-type CredentialProvider interface {
-	//IsValid() bool
-	//AsMap() map[string]string
 }

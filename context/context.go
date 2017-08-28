@@ -71,7 +71,7 @@ func NewFactory(cfg *api.PharmerConfig) Factory {
 
 func (f DefaultFactory) New(ctx go_ctx.Context) Context {
 	c := &defaultContext{Context: ctx}
-	c.Context = go_ctx.WithValue(c.Context, KeyExtra, &NullDomainManager{})
+	c.Context = go_ctx.WithValue(c.Context, KeyExtra, &FakeDomainManager{})
 	c.Context = go_ctx.WithValue(c.Context, KeyLogger, log.New(c))
 	c.Context = go_ctx.WithValue(c.Context, KeyStore, NewStoreProvider(ctx, f.cfg))
 	c.Context = go_ctx.WithValue(c.Context, KeyDNS, NewDNSProvider(f.cfg))
@@ -91,5 +91,5 @@ func NewDNSProvider(cfg *api.PharmerConfig) dns_provider.Provider {
 			return dp
 		}
 	}
-	return &NullDNSProvider{}
+	return &FakeDNSProvider{}
 }
