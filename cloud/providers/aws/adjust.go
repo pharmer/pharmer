@@ -51,7 +51,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	}
-	igm.cm.ctx.Store().Clusters().Update(igm.cm.cluster)
+	igm.cm.ctx.Store().Clusters().UpdateStatus(igm.cm.cluster)
 	return nil
 }
 

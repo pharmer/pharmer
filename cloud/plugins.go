@@ -7,11 +7,11 @@ import (
 	"github.com/golang/glog"
 )
 
-// Factory is a function that returns a cloudprovider.Interface.
+// Factory is a function that returns a cloud.ClusterManager.
 // The config parameter provides an io.Reader handler to the factory in
 // order to load specific configurations. If no configuration is provided
 // the parameter is nil.
-type Factory func(ctx context.Context) (Interface, error)
+type Factory func(ctx context.Context) (ClusterManager, error)
 
 // All registered cloud providers.
 var (
@@ -19,9 +19,9 @@ var (
 	providers      = make(map[string]Factory)
 )
 
-// RegisterCloudProvider registers a cloudprovider.Factory by name.  This
+// RegisterCloudManager registers a cloud.Factory by name.  This
 // is expected to happen during app startup.
-func RegisterCloudProvider(name string, cloud Factory) {
+func RegisterCloudManager(name string, cloud Factory) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	if _, found := providers[name]; found {
@@ -31,18 +31,18 @@ func RegisterCloudProvider(name string, cloud Factory) {
 	providers[name] = cloud
 }
 
-// IsCloudProvider returns true if name corresponds to an already registered
+// IsCloudManager returns true if name corresponds to an already registered
 // cloud provider.
-func IsCloudProvider(name string) bool {
+func IsCloudManager(name string) bool {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	_, found := providers[name]
 	return found
 }
 
-// CloudProviders returns the name of all registered cloud providers in a
+// CloudManagers returns the name of all registered cloud providers in a
 // string slice
-func CloudProviders() []string {
+func CloudManagers() []string {
 	names := []string{}
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
@@ -52,12 +52,12 @@ func CloudProviders() []string {
 	return names
 }
 
-// GetCloudProvider creates an instance of the named cloud provider, or nil if
+// GetCloudManager creates an instance of the named cloud provider, or nil if
 // the name is not known.  The error return is only used if the named provider
 // was known but failed to initialize. The config parameter specifies the
 // io.Reader handler of the configuration file for the cloud provider, or nil
 // for no configuation.
-func GetCloudProvider(name string, ctx context.Context) (Interface, error) {
+func GetCloudManager(name string, ctx context.Context) (ClusterManager, error) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	f, found := providers[name]

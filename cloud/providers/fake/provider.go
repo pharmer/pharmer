@@ -12,61 +12,53 @@ type ClusterManager struct {
 	cfg *api.PharmerConfig
 }
 
-var _ cloud.ClusterProvider = &ClusterManager{}
+var _ cloud.ClusterManager = &ClusterManager{}
 
 const (
 	UID = "fake"
 )
 
 func init() {
-	cloud.RegisterCloudProvider(UID, func(ctx context.Context) (cloud.Interface, error) { return New(ctx), nil })
+	cloud.RegisterCloudManager(UID, func(ctx context.Context) (cloud.ClusterManager, error) { return New(ctx), nil })
 }
 
-func New(ctx context.Context) cloud.Interface {
+func New(ctx context.Context) cloud.ClusterManager {
 	return &ClusterManager{}
 }
 
-func (cm *ClusterManager) Clusters() cloud.ClusterProvider {
-	return cm
-}
-
-func (cm *ClusterManager) Credentials() cloud.CredentialProvider {
-	return cm
-}
-
-func (p *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
-	p.runFakeJob("cluster create")
+func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
+	cm.runFakeJob("cluster create")
 	return nil
 }
 
-func (p *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
-	p.runFakeJob("cluster scale")
+func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
+	cm.runFakeJob("cluster scale")
 	return nil
 }
 
-func (p *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
-	p.runFakeJob("cluster delete")
+func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
+	cm.runFakeJob("cluster delete")
 	return nil
 }
 
-func (p *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
-	p.runFakeJob("cluster set version")
+func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
+	cm.runFakeJob("cluster set version")
 	return nil
 }
 
-func (p *ClusterManager) UploadStartupConfig() error {
+func (cm *ClusterManager) UploadStartupConfig() error {
 	return nil
 }
 
-func (p *ClusterManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+func (cm *ClusterManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	return &api.Instance{}, nil
 }
 
-func (p *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool {
+func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool {
 	return true
 }
 
-func (p *ClusterManager) runFakeJob(requestType string) {
+func (cm *ClusterManager) runFakeJob(requestType string) {
 	//c.Logger().Infof("starting %v job", requestType)
 	//for i := 1; i <= 10; i++ {
 	//	c.Logger().Info(fmt.Sprint("Job completed: ", i*10, "%"))

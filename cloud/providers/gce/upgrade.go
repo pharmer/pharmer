@@ -38,7 +38,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	// assign new timestamp and new launch_config version
 	cm.cluster.Spec.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
 	cm.cluster.Spec.KubernetesVersion = req.KubernetesVersion
-	_, err := cm.ctx.Store().Clusters().Update(cm.cluster)
+	_, err := cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
 
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -67,7 +67,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	_, err = cm.ctx.Store().Clusters().Update(cm.cluster)
+	_, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -111,7 +111,7 @@ func (cm *ClusterManager) masterUpdate(host, instanceName, version string) error
 	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	_, err = cm.ctx.Store().Clusters().Update(cm.cluster)
+	_, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -193,7 +193,7 @@ func (cm *clusterManager) updateMaster() error {
 	}
 	// cm.ins.Instances = nil
 	// cm.ins.Instances = append(cm.ins.Instances, masterInstance)
-	err = cm.ctx.Store().Clusters().Update(cm.cluster)
+	err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -224,7 +224,7 @@ func (cm *ClusterManager) nodeUpdate(instanceName string) error {
 	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	_, err = cm.ctx.Store().Clusters().Update(cm.cluster)
+	_, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -270,7 +270,7 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 	}
 	err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
 	// cluster.Spec.ctx.Instances = append(cluster.Spec.ctx.Instances, instances...)
-	_, err = cm.ctx.Store().Clusters().Update(cm.cluster)
+	_, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

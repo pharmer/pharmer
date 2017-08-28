@@ -12,9 +12,9 @@ type Interface interface {
 	Credentials() CredentialStore
 
 	Clusters() ClusterStore
-	Instances(name string) InstanceStore
-	Certificates(name string) CertificateStore
-	SSHKeys(name string) SSHKeyStore
+	Instances(cluster string) InstanceStore
+	Certificates(cluster string) CertificateStore
+	SSHKeys(cluster string) SSHKeyStore
 }
 
 type CredentialStore interface {

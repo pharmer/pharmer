@@ -2,11 +2,11 @@ package context
 
 import "github.com/appscode/go-dns/provider"
 
-type NullDNSProvider struct {
+type FakeDNSProvider struct {
 }
 
-var _ provider.Provider = &NullDNSProvider{}
+var _ provider.Provider = &FakeDNSProvider{}
 
-func (NullDNSProvider) EnsureARecord(domain string, ip string) error { return nil }
-func (NullDNSProvider) DeleteARecord(domain string, ip string) error { return nil }
-func (NullDNSProvider) DeleteARecords(domain string) error           { return nil }
+func (FakeDNSProvider) EnsureARecord(domain string, ip string) error { return nil }
+func (FakeDNSProvider) DeleteARecord(domain string, ip string) error { return nil }
+func (FakeDNSProvider) DeleteARecords(domain string) error           { return nil }

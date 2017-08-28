@@ -17,37 +17,29 @@ type ClusterManager struct {
 	namer   namer
 }
 
-var _ cloud.ClusterProvider = &ClusterManager{}
+var _ cloud.ClusterManager = &ClusterManager{}
 
 const (
 	UID = "softlayer"
 )
 
 func init() {
-	cloud.RegisterCloudProvider(UID, func(ctx context.Context) (cloud.Interface, error) { return New(ctx), nil })
+	cloud.RegisterCloudManager(UID, func(ctx context.Context) (cloud.ClusterManager, error) { return New(ctx), nil })
 }
 
-func New(ctx context.Context) cloud.Interface {
+func New(ctx context.Context) cloud.ClusterManager {
 	return &ClusterManager{ctx: ctx}
 }
 
-func (cm *ClusterManager) Clusters() cloud.ClusterProvider {
-	return cm
-}
-
-func (cm *ClusterManager) Credentials() cloud.CredentialProvider {
-	return cm
-}
-
-func (p *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
+func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	return cloud.UnsupportedOperation
 }
 
-func (p *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
+func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
 	return cloud.UnsupportedOperation
 }
 
-func (p *ClusterManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+func (cm *ClusterManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
 	conn, err := NewConnector(nil)
 	if err != nil {
 		return nil, err
@@ -56,7 +48,7 @@ func (p *ClusterManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, e
 	return im.GetInstance(md)
 }
 
-func (p *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool {
+func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool {
 	return i.Status.InternalIP == md.InternalIP
 }
 

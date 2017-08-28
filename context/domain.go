@@ -11,15 +11,15 @@ type DomainManager interface {
 	CompassIPs() []string
 }
 
-type NullDomainManager struct {
+type FakeDomainManager struct {
 }
 
-var _ DomainManager = &NullDomainManager{}
+var _ DomainManager = &FakeDomainManager{}
 
-func (NullDomainManager) Domain(cluster string) string                   { return "" }
-func (NullDomainManager) ExternalDomain(cluster string) string           { return "" }
-func (NullDomainManager) InternalDomain(cluster string) string           { return "" }
-func (NullDomainManager) WebhookAuthenticationURL(cluster string) string { return "" }
-func (NullDomainManager) WebhookAuthorizationURL(cluster string) string  { return "" }
-func (NullDomainManager) PublicAPIHttpEndpoint(cluster string) string    { return "" }
-func (NullDomainManager) CompassIPs() []string                           { return []string{} }
+func (FakeDomainManager) Domain(cluster string) string                   { return "" }
+func (FakeDomainManager) ExternalDomain(cluster string) string           { return "" }
+func (FakeDomainManager) InternalDomain(cluster string) string           { return "" }
+func (FakeDomainManager) WebhookAuthenticationURL(cluster string) string { return "" }
+func (FakeDomainManager) WebhookAuthorizationURL(cluster string) string  { return "" }
+func (FakeDomainManager) PublicAPIHttpEndpoint(cluster string) string    { return "" }
+func (FakeDomainManager) CompassIPs() []string                           { return []string{} }
