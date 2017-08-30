@@ -13,8 +13,8 @@ import (
 	"strings"
 
 	appscodeSSH "github.com/appscode/api/ssh/v1beta1"
-	"github.com/appscode/errors"
-	"github.com/appscode/log"
+	"github.com/appscode/go/errors"
+	"github.com/appscode/go/log"
 	"golang.org/x/crypto/ssh"
 )
 

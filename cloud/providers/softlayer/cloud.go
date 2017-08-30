@@ -1,37 +1,41 @@
 package softlayer
 
 import (
+	"context"
 	"fmt"
 	"time"
 
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	"github.com/softlayer/softlayer-go/services"
 	"github.com/softlayer/softlayer-go/session"
 )
 
 type cloudConnector struct {
-	ctx                   *api.Cluster
+	ctx                   context.Context
+	cluster               *api.Cluster
 	virtualServiceClient  services.Virtual_Guest
 	accountServiceClient  services.Account
 	securityServiceClient services.Security_Ssh_Key
 }
 
-func NewConnector(cluster *api.Cluster) (*cloudConnector, error) {
-	apiKey, ok := cluster.Spec.CloudCredential[credential.SoftlayerAPIKey]
-	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.SoftlayerAPIKey)
+func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
+	cred, err := cloud.Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	if err != nil {
+		return nil, err
 	}
-	userName, ok := cluster.Spec.CloudCredential[credential.SoftlayerUsername]
-	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.SoftlayerUsername)
+	typed := credential.Softlayer{CommonSpec: credential.CommonSpec(cred.Spec)}
+	if ok, err := typed.IsValid(); !ok {
+		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
-	sess := session.New(userName, apiKey)
+	sess := session.New(typed.Username(), typed.APIKey())
 	sess.Debug = true
 	return &cloudConnector{
-		ctx:                   cluster,
+		ctx:                   ctx,
+		cluster:               cluster,
 		virtualServiceClient:  services.GetVirtualGuestService(sess),
 		accountServiceClient:  services.GetAccountService(sess),
 		securityServiceClient: services.GetSecuritySshKeyService(sess),

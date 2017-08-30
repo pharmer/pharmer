@@ -33,6 +33,8 @@ import os
 import os.path
 import subprocess
 import sys
+import time
+import yaml
 from os.path import expandvars, join, dirname
 
 libbuild.REPO_ROOT = expandvars('$GOPATH') + '/src/github.com/appscode/pharmer'
@@ -41,12 +43,13 @@ libbuild.BIN_MATRIX = {
     'pharmer': {
         'type': 'go',
         'go_version': True,
-        'use_cgo': False,
+        'release': True,
         'distro': {
-            'alpine': ['amd64']
+            'linux': ['amd64']
         }
     }
 }
+
 libbuild.BUCKET_MATRIX = {
     'prod': 'gs://appscode-cdn',
     'dev': 'gs://appscode-dev'
@@ -90,19 +93,17 @@ def version():
 
 
 def fmt():
-    libbuild.ungroup_go_imports('*.go', 'api', 'cloud', 'cmds', 'config', 'context', 'credential', 'data', 'phid', 'storage')
-    die(call('goimports -w *.go api cloud cmds config context credential data phid storage'))
-    call('gofmt -s -w *.go api cloud cmds config context credential data phid storage')
+    libbuild.ungroup_go_imports('*.go', 'api', 'cloud', 'cmds', 'config', 'credential', 'data', 'phid', 'storage')
+    die(call('goimports -w *.go api cloud cmds config credential data phid storage'))
+    call('gofmt -s -w *.go api cloud cmds config credential data phid storage')
 
 
 def vet():
-    call('go vet *.go')
-    call('go vet $(go list ./... | grep -v /vendor/)')
+    call('go vet ./...')
 
 
 def lint():
-    call('golint *.go')
-    call('golint $(go list ./... | grep -v /vendor/)')
+    call('golint *.go ./...')
 
 
 def gen_assets():
@@ -141,24 +142,56 @@ def build(name=None):
         build_cmds()
 
 
+def push_bin(bindir):
+    call('rm -f *.md5', cwd=bindir)
+    call('rm -f *.sha1', cwd=bindir)
+    for f in os.listdir(bindir):
+        if os.path.isfile(bindir + '/' + f):
+            libbuild.upload_to_cloud(bindir, f, BUILD_METADATA['version'])
+
+
+def push(name=None):
+    if name:
+        bindir = libbuild.REPO_ROOT + '/dist/' + name
+        push_bin(bindir)
+    else:
+        dist = libbuild.REPO_ROOT + '/dist'
+        for name in os.listdir(dist):
+            d = dist + '/' + name
+            if os.path.isdir(d):
+                push_bin(d)
+
+
+def update_registry():
+    vf = libbuild.REPO_ROOT + '/dist/pharmer/versions.json'
+    bucket = libbuild.BUCKET_MATRIX.get(libbuild.ENV, libbuild.BUCKET_MATRIX['dev'])
+    call('gsutil cp {0}/binaries/pharmer/versions.json {1}'.format(bucket, vf))
+    vj = {}
+    if os.path.isfile(vf):
+        vj = libbuild.read_json(vf)
+    vj[BUILD_METADATA['version']] = {
+        'changesets': [],
+        'release_date': int(time.time())
+    }
+    libbuild.write_json(vj, vf)
+    call("gsutil cp {1} {0}/binaries/pharmer/versions.json".format(bucket, vf))
+    call('gsutil acl ch -u AllUsers:R -r {0}/binaries/pharmer/versions.json'.format(bucket))
+
+    lf = libbuild.REPO_ROOT + '/dist/pharmer/latest.txt'
+    libbuild.write_file(lf, BUILD_METADATA['version'])
+    call("gsutil cp {1} {0}/binaries/pharmer/latest.txt".format(bucket, lf))
+    call('gsutil acl ch -u AllUsers:R -r {0}/binaries/pharmer/latest.txt'.format(bucket))
+
+
 def install():
-    die(call('GOBIN={} {} install *.go'.format(libbuild.GOBIN, libbuild.GOC)))
+    die(call('GO15VENDOREXPERIMENT=1 ' + libbuild.GOC + ' install ./...'))
 
 
 def default():
     gen()
     fmt()
-    die(call('GOBIN={} {} install .'.format(libbuild.GOBIN, libbuild.GOC)))
-
-
-def test(type, *args):
-    pydotenv.load_dotenv(join(libbuild.REPO_ROOT, 'hack/config/.env'))
-    if type == 'unit':
-        die(call(libbuild.GOC + ' test -v ./pkg/...'))
-    elif type == 'e2e':
-        die(call('ginkgo -r --v --progress --trace -- --v=3'))
-    else:
-        print '{test unit|e2e}'
+    vet()
+    die(call('GO15VENDOREXPERIMENT=1 ' + libbuild.GOC + ' install .'))
 
 
 if __name__ == "__main__":

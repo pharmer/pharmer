@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	term "github.com/appscode/go-term"
-	"github.com/appscode/log"
+	"github.com/appscode/go/log"
 	"github.com/skratchdot/open-golang/open"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"

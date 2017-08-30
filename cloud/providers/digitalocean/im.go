@@ -1,19 +1,20 @@
 package digitalocean
 
 import (
-	go_ctx "context"
+	"context"
+	gtx "context"
 	"fmt"
 	"net"
 	"strconv"
 
-	"github.com/appscode/errors"
 	_env "github.com/appscode/go/env"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
 	"github.com/digitalocean/godo"
+	"github.com/tamalsaha/go-oneliners"
 )
 
 type instanceManager struct {
@@ -34,7 +35,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance,
 		curPage := 0
 		for {
 			var droplets []godo.Droplet
-			droplets, _, err = im.conn.client.Droplets.List(go_ctx.TODO(), &godo.ListOptions{
+			droplets, _, err = im.conn.client.Droplets.List(gtx.TODO(), &godo.ListOptions{
 				Page:    curPage,
 				PerPage: pageSize,
 			})
@@ -72,11 +73,17 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance,
 }
 
 func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet, error) {
-	startupScript := im.RenderStartupScript(sku, role)
+	oneliners.FILE()
+	startupScript, err := cloud.RenderStartupScript(im.ctx, im.cluster, role)
+	if err != nil {
+		return nil, err
+	}
+	oneliners.FILE(startupScript)
 	//imgID, err := strconv.Atoi(im.cluster.Spec.InstanceImage)
 	//if err != nil {
 	//	return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	//}
+	oneliners.FILE()
 	req := &godo.DropletCreateRequest{
 		Name:   name,
 		Region: im.cluster.Spec.Zone,
@@ -96,36 +103,21 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 		UserData:          startupScript,
 	}
 	if _env.FromHost().IsPublic() {
+		oneliners.FILE()
 		req.SSHKeys = []godo.DropletCreateSSHKey{
 			{Fingerprint: im.cluster.Spec.SSHKey.OpensshFingerprint},
 		}
 	}
-	droplet, resp, err := im.conn.client.Droplets.Create(go_ctx.TODO(), req)
-	im.ctx.Logger().Debugln("do response", resp, " errors", err)
-	im.ctx.Logger().Infof("Droplet %v created", droplet.Name)
+	oneliners.FILE()
+	droplet, resp, err := im.conn.client.Droplets.Create(gtx.TODO(), req)
+	oneliners.FILE(droplet, resp, err)
+	cloud.Logger(im.ctx).Debugln("do response", resp, " errors", err)
+	cloud.Logger(im.ctx).Infof("Droplet %v created", droplet.Name)
 	return droplet, err
 }
 
-func (im *instanceManager) RenderStartupScript(sku, role string) string {
-	if role == api.RoleKubernetesMaster {
-		cmd, _ := cloud.FireBaseCertDownloadCmd(im.ctx, im.cluster)
-		return cloud.RenderDoKubeMaster(im.ctx, im.cluster, cmd)
-	}
-	return cloud.RenderDoKubeNode(im.cluster)
-
-	//cmd := cloud.StartupConfigFromAPI(opt, role)
-	//if api.UseFirebase() {
-	//	cmd = cloud.StartupConfigFromFirebase(opt, role)
-	//}
-	//
-	//if role == api.RoleKubernetesMaster {
-	//	return cloud.RenderKubeInstaller(opt, sku, role, cmd)
-	//}
-	//return cloud.RenderKubeStarter(opt, sku, cmd)
-}
-
 func (im *instanceManager) applyTag(dropletID int) error {
-	_, err := im.conn.client.Tags.TagResources(go_ctx.TODO(), "KubernetesCluster:"+im.cluster.Name, &godo.TagResourcesRequest{
+	_, err := im.conn.client.Tags.TagResources(gtx.TODO(), "KubernetesCluster:"+im.cluster.Name, &godo.TagResourcesRequest{
 		Resources: []godo.Resource{
 			{
 				ID:   strconv.Itoa(dropletID),
@@ -133,23 +125,23 @@ func (im *instanceManager) applyTag(dropletID int) error {
 			},
 		},
 	})
-	im.ctx.Logger().Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+im.cluster.Name, dropletID)
+	cloud.Logger(im.ctx).Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+im.cluster.Name, dropletID)
 	return err
 }
 
 func (im *instanceManager) assignReservedIP(ip string, dropletID int) error {
-	action, resp, err := im.conn.client.FloatingIPActions.Assign(go_ctx.TODO(), ip, dropletID)
+	action, resp, err := im.conn.client.FloatingIPActions.Assign(gtx.TODO(), ip, dropletID)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger().Debugln("do response", resp, " errors", err)
-	im.ctx.Logger().Debug("Created droplet with name", action.String())
-	im.ctx.Logger().Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
+	cloud.Logger(im.ctx).Debugln("do response", resp, " errors", err)
+	cloud.Logger(im.ctx).Debug("Created droplet with name", action.String())
+	cloud.Logger(im.ctx).Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
 	return nil
 }
 
 func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {
-	droplet, _, err := im.conn.client.Droplets.Get(go_ctx.TODO(), id)
+	droplet, _, err := im.conn.client.Droplets.Get(gtx.TODO(), id)
 	if err != nil {
 		return nil, cloud.InstanceNotFound
 	}
@@ -157,7 +149,7 @@ func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {
 }
 
 func (im *instanceManager) getInstanceId(name string) (int, error) {
-	droplets, _, err := im.conn.client.Droplets.List(go_ctx.TODO(), &godo.ListOptions{})
+	droplets, _, err := im.conn.client.Droplets.List(gtx.TODO(), &godo.ListOptions{})
 	if err != nil {
 		return -1, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -202,12 +194,12 @@ func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*a
 
 // reboot does not seem to run /etc/rc.local
 func (im *instanceManager) reboot(id int) error {
-	im.ctx.Logger().Infof("Rebooting instance %v", id)
-	action, _, err := im.conn.client.DropletActions.Reboot(go_ctx.TODO(), id)
+	cloud.Logger(im.ctx).Infof("Rebooting instance %v", id)
+	action, _, err := im.conn.client.DropletActions.Reboot(gtx.TODO(), id)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger().Debugf("Instance status %v, %v", action, err)
-	im.ctx.Logger().Infof("Instance %v reboot status %v", action.ResourceID, action.Status)
+	cloud.Logger(im.ctx).Debugf("Instance status %v, %v", action, err)
+	cloud.Logger(im.ctx).Infof("Instance %v reboot status %v", action.ResourceID, action.Status)
 	return nil
 }

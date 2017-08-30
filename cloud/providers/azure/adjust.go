@@ -5,7 +5,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
 	"github.com/Azure/azure-sdk-for-go/arm/network"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,12 +26,12 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	}
 
 	igm.cm.cluster.Spec.ResourceVersion = igm.instance.Type.ContextVersion
-	igm.cm.cluster, _ = igm.cm.ctx.Store().Clusters().Get(igm.cm.cluster.Name)
+	igm.cm.cluster, _ = cloud.Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 
 	if !found {
 		err = igm.createInstanceGroup(igm.instance.Stats.Count)
 	} else if igm.instance.Stats.Count == 0 {
-		nodeAdjust, _ := cloud.Mutator(igm.cm.cluster, igm.instance)
+		nodeAdjust, _ := cloud.Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
 		if nodeAdjust < 0 {
 			nodeAdjust = -nodeAdjust
 		}
@@ -41,7 +41,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	} else {
-		nodeAdjust, _ := cloud.Mutator(igm.cm.cluster, igm.instance)
+		nodeAdjust, _ := cloud.Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
 		if nodeAdjust < 0 {
 			err := igm.deleteInstanceGroup(instanceGroupName, -nodeAdjust)
 			if err != nil {
@@ -74,17 +74,17 @@ func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, e
 
 	}
 	return false, nil
-	//im.ctx.Logger().Infof("Found virtual machine %v", vm)
+	//cloud.Logger(im.ctx).Infof("Found virtual machine %v", vm)
 }
 
 func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.Instance, error) {
 	instances := make([]*api.Instance, 0)
-	kc, err := cloud.NewAdminClient(igm.cm.cluster)
+	kc, err := cloud.NewAdminClient(igm.cm.ctx, igm.cm.cluster)
 	if err != nil {
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 
 	}
-	nodes, err := kc.Client.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{})
 	for _, n := range nodes.Items {
 		nl := api.FromMap(n.GetLabels())
 		if nl.GetString(api.NodeLabelKey_SKU) == sku && nl.GetString(api.NodeLabelKey_Role) == "node" {
@@ -194,7 +194,10 @@ func (igm *InstanceGroupManager) StartNode() (*api.Instance, error) {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
-	nodeScript := igm.im.RenderStartupScript(igm.instance.Type.Sku, api.RoleKubernetesPool)
+	nodeScript, err := cloud.RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleKubernetesPool)
+	if err != nil {
+		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	}
 	nodeVM, err := igm.im.createVirtualMachine(nodeNIC, as, sa, nodeName, nodeScript, igm.instance.Type.Sku)
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()

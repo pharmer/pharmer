@@ -7,7 +7,7 @@ import (
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 )
@@ -20,7 +20,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	} else if cm.cluster.Status.Phase == api.ClusterPhaseReady {
 		cm.cluster.Status.Phase = api.ClusterPhaseDeleting
 	}
-	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
+	// cloud.Store(cm.ctx).UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
 	if cm.conn == nil {
 		conn, err := NewConnector(cm.ctx, cm.cluster)
@@ -78,10 +78,6 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, err.Error())
 	}
 
-	if err := cm.deleteBucket(); err != nil {
-		errs = append(errs, err.Error())
-	}
-
 	if err := cloud.DeleteARecords(cm.ctx, cm.cluster); err != nil {
 		errs = append(errs, err.Error())
 	}
@@ -99,7 +95,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
-	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.cluster.Name)
+	cloud.Logger(cm.ctx).Infof("Cluster %v is deleted successfully", cm.cluster.Name)
 	return nil
 }
 
@@ -126,10 +122,10 @@ func (cm *ClusterManager) listInstanceGroups() ([]*groupInfo, error) {
 
 	}
 	if len(groups) == 0 {
-		cm.ctx.Logger().Info("Enter correct cluster name")
+		cloud.Logger(cm.ctx).Info("Enter correct cluster name")
 		//os.Exit(1)
 	}
-	cm.ctx.Logger().Debugf("Retrieved InstanceGroups result %v", groups)
+	cloud.Logger(cm.ctx).Debugf("Retrieved InstanceGroups result %v", groups)
 	return groups, nil
 }
 
@@ -140,7 +136,7 @@ func (cm *ClusterManager) deleteMaster() error {
 	}
 	operation := r2.Name
 	cm.conn.waitForZoneOperation(operation)
-	cm.ctx.Logger().Infof("Master instance %v deleted", cm.cluster.Spec.KubernetesMasterName)
+	cloud.Logger(cm.ctx).Infof("Master instance %v deleted", cm.cluster.Spec.KubernetesMasterName)
 	return nil
 
 }
@@ -153,7 +149,7 @@ func (cm *ClusterManager) deleteInstanceGroup(instanceGroup string) error {
 	}
 	operation := r1.Name
 	cm.conn.waitForZoneOperation(operation)
-	cm.ctx.Logger().Infof("Instance group %v deleted", instanceGroup)
+	cloud.Logger(cm.ctx).Infof("Instance group %v deleted", instanceGroup)
 	return nil
 }
 
@@ -163,14 +159,14 @@ func (cm *ClusterManager) deleteInstanceTemplate(template string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Instance templete %v deleted", template)
+	cloud.Logger(cm.ctx).Infof("Instance templete %v deleted", template)
 	//cluster.Spec.waitForGlobalOperation(r.Name)
 	return nil
 }
 
 //delete autoscaler
 func (cm *ClusterManager) deleteAutoscaler(instanceGroup string) error {
-	cm.ctx.Logger().Infof("Removing autoscaller %v", instanceGroup)
+	cloud.Logger(cm.ctx).Infof("Removing autoscaller %v", instanceGroup)
 
 	r, err := cm.conn.computeService.Autoscalers.Delete(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceGroup).Do()
 	if err != nil {
@@ -180,7 +176,7 @@ func (cm *ClusterManager) deleteAutoscaler(instanceGroup string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Autoscaller %v is deleted", instanceGroup)
+	cloud.Logger(cm.ctx).Infof("Autoscaller %v is deleted", instanceGroup)
 	return nil
 }
 
@@ -191,7 +187,7 @@ func (cm *ClusterManager) deleteDisk() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Debugf("Master Disk response %v", r6)
+	cloud.Logger(cm.ctx).Debugf("Master Disk response %v", r6)
 	time.Sleep(5 * time.Second)
 	r7, err := cm.conn.computeService.Disks.List(cm.cluster.Spec.Project, cm.cluster.Spec.Zone).Do()
 	if err != nil {
@@ -205,7 +201,7 @@ func (cm *ClusterManager) deleteDisk() error {
 			if err != nil {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
-			cm.ctx.Logger().Infof("Disk %v deleted, response %v", r7.Items[i].Name, r.Status)
+			cloud.Logger(cm.ctx).Infof("Disk %v deleted, response %v", r7.Items[i].Name, r.Status)
 			time.Sleep(5 * time.Second)
 		}
 
@@ -220,7 +216,7 @@ func (cm *ClusterManager) deleteFirewalls() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Firewalls %v deleted, response %v", name, r1.Status)
+	cloud.Logger(cm.ctx).Infof("Firewalls %v deleted, response %v", name, r1.Status)
 	//cluster.Spec.waitForGlobalOperation(name)
 	time.Sleep(5 * time.Second)
 	ruleHTTPS := cm.cluster.Spec.KubernetesMasterName + "-https"
@@ -228,7 +224,7 @@ func (cm *ClusterManager) deleteFirewalls() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Firewalls %v deleted, response %v", ruleHTTPS, r2.Status)
+	cloud.Logger(cm.ctx).Infof("Firewalls %v deleted, response %v", ruleHTTPS, r2.Status)
 	//cluster.Spec.waitForGlobalOperation(ruleHTTPS)
 	time.Sleep(5 * time.Second)
 	return nil
@@ -241,7 +237,7 @@ func (cm *ClusterManager) releaseReservedIP() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Releasing reserved master ip %v", r1.Address)
+	cloud.Logger(cm.ctx).Infof("Releasing reserved master ip %v", r1.Address)
 	r2, err := cm.conn.computeService.Addresses.Delete(cm.cluster.Spec.Project, cm.cluster.Spec.Region, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -250,7 +246,7 @@ func (cm *ClusterManager) releaseReservedIP() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Master ip %v released", r1.Address)
+	cloud.Logger(cm.ctx).Infof("Master ip %v released", r1.Address)
 	return nil
 }
 
@@ -267,36 +263,17 @@ func (cm *ClusterManager) deleteRoutes() error {
 			if err != nil {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
-			cm.ctx.Logger().Infof("Route %v deleted, response %v", routeName, r2.Status)
+			cloud.Logger(cm.ctx).Infof("Route %v deleted, response %v", routeName, r2.Status)
 		}
 	}
 	return nil
-}
-
-func (cm *ClusterManager) deleteBucket() error {
-	var timeout int64 = 30 * 60 // Give max 30 min to empty the bucket
-	start := time.Now().Unix()
-
-	for {
-		objs, err := cm.conn.storageService.Objects.List(cm.cluster.Spec.BucketName).Do()
-		if err == nil {
-			for _, obj := range objs.Items {
-				cm.conn.storageService.Objects.Delete(obj.Bucket, obj.Name).Do()
-			}
-			if len(objs.Items) == 0 || (time.Now().Unix() > start+timeout) {
-				break
-			}
-		}
-	}
-	cm.ctx.Logger().Infof("Bucket %v deleted", cm.cluster.Spec.BucketName)
-	return cm.conn.storageService.Buckets.Delete(cm.cluster.Spec.BucketName).Do()
 }
 
 func (cm *ClusterManager) deleteSSHKey() (err error) {
 	if cm.cluster.Spec.SSHKeyPHID != "" {
 		//updates := &storage.SSHKey{IsDeleted: 1}
 		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
-		//_, err = cm.ctx.Store().Engine.Update(updates, cond)
+		//_, err = cloud.Store(cm.ctx).Engine.Update(updates, cond)
 		//cm.ctx.Notifier.StoreAndNotify(api.JobPhaseRunning, fmt.Sprintf("SSH key for cluster %v deleted", cm.ctx.MasterDiskId))
 	}
 	return

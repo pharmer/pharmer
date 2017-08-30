@@ -1,13 +1,12 @@
 package cmds
 
 import (
-	go_ctx "context"
+	gtx "context"
 	"fmt"
 	"os"
 
-	"github.com/appscode/log"
+	"github.com/appscode/go/log"
 	"github.com/appscode/pharmer/config"
-	"github.com/appscode/pharmer/context"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +27,7 @@ func NewCmdDelete() *cobra.Command {
 			if err != nil {
 				log.Fatalln(err)
 			}
-			store := context.NewStoreProvider(go_ctx.TODO(), cfg)
+			store := config.NewStoreProvider(gtx.TODO(), cfg)
 			err = store.Credentials().Delete(args[0])
 			if err != nil {
 				log.Fatalln(err)

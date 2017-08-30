@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	_env "github.com/appscode/go/env"
-	"github.com/appscode/log"
+	"github.com/appscode/go/log"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/data"
 	"github.com/appscode/pharmer/data/files/aws"
@@ -25,7 +25,7 @@ type cloudData struct {
 	Regions       map[string]data.Region
 	InstanceTypes map[string]data.InstanceType
 	DefaultSpec   *api.ClusterSpec
-	Versions      map[string]data.ClusterVersion
+	Versions      map[string]data.KubernetesVersion
 }
 
 var (
@@ -46,10 +46,9 @@ func parseData(bytes []byte, env _env.Environment) error {
 
 	cloud := cloudData{
 		Name:          cd.Name,
-		DefaultSpec:   cd.Kubernetes.DefaultSpec,
 		Regions:       map[string]data.Region{},
 		InstanceTypes: map[string]data.InstanceType{},
-		Versions:      map[string]data.ClusterVersion{},
+		Versions:      map[string]data.KubernetesVersion{},
 	}
 	for _, r := range cd.Regions {
 		cloud.Regions[r.Region] = r
@@ -57,7 +56,7 @@ func parseData(bytes []byte, env _env.Environment) error {
 	for _, t := range cd.InstanceTypes {
 		cloud.InstanceTypes[t.SKU] = t
 	}
-	for _, v := range cd.Kubernetes.Versions {
+	for _, v := range cd.KubernetesVersions {
 		if v.Released(env) {
 			cloud.Versions[v.Version] = v
 		}
@@ -151,7 +150,7 @@ func Load(env _env.Environment) error {
 	return nil
 }
 
-func GetClusterVersion(provider, version string, env _env.Environment) (*data.ClusterVersion, error) {
+func GetClusterVersion(provider, version string, env _env.Environment) (*data.KubernetesVersion, error) {
 	p, found := clouds[provider]
 	if !found {
 		return nil, fmt.Errorf("Can't find cluster provider %v", provider)

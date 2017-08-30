@@ -1,16 +1,15 @@
 package cmds
 
 import (
-	go_ctx "context"
+	gtx "context"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/appscode/go-term"
-	"github.com/appscode/log"
+	"github.com/appscode/go/log"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/config"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/data/files"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,7 +55,7 @@ func NewCmdImport() *cobra.Command {
 			if err != nil {
 				log.Fatalln(err)
 			}
-			store := context.NewStoreProvider(go_ctx.TODO(), cfg)
+			store := config.NewStoreProvider(gtx.TODO(), cfg)
 			_, err = store.Credentials().Create(&cred)
 			if err != nil {
 				log.Fatalln(err)

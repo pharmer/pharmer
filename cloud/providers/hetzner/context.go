@@ -1,11 +1,12 @@
 package hetzner
 
 import (
+	"context"
+
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
 )
 
@@ -80,8 +81,6 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	}
 	cm.cluster.Spec.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
 	cm.cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
-
-	cloud.GenClusterTokens(cm.cluster)
 
 	return nil
 }

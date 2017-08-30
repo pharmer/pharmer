@@ -1,17 +1,15 @@
 package vultr
 
 import (
-	"fmt"
+	"context"
 	"net"
 	"strconv"
-	"strings"
 
 	gv "github.com/JamesClonk/vultr/lib"
-	"github.com/appscode/errors"
 	_env "github.com/appscode/go/env"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
 )
@@ -53,9 +51,11 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance,
 }
 
 func (im *instanceManager) createStartupScript(sku, role string) (int, error) {
-	im.ctx.Logger().Infof("creating StackScript for sku %v role %v", sku, role)
-	script := im.RenderStartupScript(sku, role)
-
+	cloud.Logger(im.ctx).Infof("creating StackScript for sku %v role %v", sku, role)
+	script, err := RenderStartupScript(im.ctx, im.cluster, role)
+	if err != nil {
+		return 0, err
+	}
 	resp, err := im.conn.client.CreateStartupScript(im.namer.StartupScriptName(sku, role), script, "boot")
 	if err != nil {
 		return 0, err
@@ -65,66 +65,6 @@ func (im *instanceManager) createStartupScript(sku, role string) (int, error) {
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	return scriptID, nil
-}
-
-// http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
-func (im *instanceManager) RenderStartupScript(sku, role string) string {
-	cmd := cloud.StartupConfigFromAPI(im.cluster, role)
-	if api.UseFirebase() {
-		cmd = cloud.StartupConfigFromFirebase(im.cluster, role)
-	}
-
-	return fmt.Sprintf(`#!/bin/bash
-cat >/etc/kube-installer.sh <<EOF
-%v
-rm /lib/systemd/system/kube-installer.service
-systemctl daemon-reload
-exit 0
-EOF
-chmod +x /etc/kube-installer.sh
-
-cat >/lib/systemd/system/kube-installer.service <<EOF
-[Unit]
-Description=Install Kubernetes Master
-
-[Service]
-Type=simple
-ExecStart=/bin/bash -e /etc/kube-installer.sh
-Restart=on-failure
-StartLimitInterval=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-systemctl daemon-reload
-systemctl enable kube-installer.service
-
-# https://www.vultr.com/docs/configuring-private-network
-PRIVATE_ADDRESS=$(/usr/bin/curl http://169.254.169.254/v1/interfaces/1/ipv4/address 2> /dev/null)
-PRIVATE_NETMASK=$(/usr/bin/curl http://169.254.169.254/v1/interfaces/1/ipv4/netmask 2> /dev/null)
-/bin/cat >>/etc/network/interfaces <<EOF
-
-auto eth1
-iface eth1 inet static
-    address $PRIVATE_ADDRESS
-    netmask $PRIVATE_NETMASK
-            mtu 1450
-EOF
-
-/bin/cat >/etc/default/grub <<EOF
-GRUB_DEFAULT=0
-GRUB_TIMEOUT=10
-GRUB_DISTRIBUTOR=\$(lsb_release -i -s 2> /dev/null || echo Debian)
-GRUB_CMDLINE_LINUX_DEFAULT="quiet"
-GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1 console=ttyS0,19200n8"
-GRUB_DISABLE_LINUX_UUID=true
-GRUB_SERIAL_COMMAND="serial --speed=19200 --unit=0 --word=8 --parity=no --stop=1"
-GRUB_TERMINAL=serial
-EOF
-
-/usr/sbin/update-grub
-
-`, strings.Replace(cloud.RenderKubeStarter(im.cluster, sku, cmd), "$", "\\$", -1))
 }
 
 func (im *instanceManager) createInstance(name, sku string, scriptID int) (string, error) {
@@ -157,9 +97,9 @@ func (im *instanceManager) createInstance(name, sku string, scriptID int) (strin
 		planID,
 		osID,
 		opts)
-	im.ctx.Logger().Debugln("do response", resp, " errors", err)
-	im.ctx.Logger().Debug("Created droplet with name", resp.ID)
-	im.ctx.Logger().Infof("DO droplet %v created", name)
+	cloud.Logger(im.ctx).Debugln("do response", resp, " errors", err)
+	cloud.Logger(im.ctx).Debug("Created droplet with name", resp.ID)
+	cloud.Logger(im.ctx).Infof("DO droplet %v created", name)
 	return resp.ID, err
 }
 
@@ -168,7 +108,7 @@ func (im *instanceManager) assignReservedIP(ip, serverId string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger().Infof("Reserved ip %v assigned to %v", ip, serverId)
+	cloud.Logger(im.ctx).Infof("Reserved ip %v assigned to %v", ip, serverId)
 	return nil
 }
 
@@ -193,7 +133,7 @@ func (im *instanceManager) newKubeInstance(server *gv.Server) (*api.Instance, er
 
 // reboot does not seem to run /etc/rc.local
 func (im *instanceManager) reboot(id string) error {
-	im.ctx.Logger().Infof("Rebooting instance %v", id)
+	cloud.Logger(im.ctx).Infof("Rebooting instance %v", id)
 	err := im.conn.client.RebootServer(id)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()

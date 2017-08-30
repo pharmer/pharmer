@@ -1,14 +1,14 @@
 package fake
 
 import (
+	"context"
+
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 )
 
 type ClusterManager struct {
-	cf  context.Factory
 	cfg *api.PharmerConfig
 }
 

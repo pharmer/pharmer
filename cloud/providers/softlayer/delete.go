@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/cenkalti/backoff"
@@ -20,11 +20,11 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	} else if cm.cluster.Status.Phase == api.ClusterPhaseReady {
 		cm.cluster.Status.Phase = api.ClusterPhaseDeleting
 	}
-	// cm.ctx.Store().UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
+	// cloud.Store(cm.ctx).UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
 	var err error
 	if cm.conn == nil {
-		cm.conn, err = NewConnector(cm.cluster)
+		cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 		if err != nil {
 			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -36,7 +36,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins.Instances, err = cm.ctx.Store().Instances(cm.cluster.Name).List(api.ListOptions{})
+	cm.ins.Instances, err = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -56,7 +56,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 			}
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger().Infof("Droplet %v with id %v for clutser is deleted", i.Name, i.Status.ExternalID, cm.cluster.Name)
+		cloud.Logger(cm.ctx).Infof("Droplet %v with id %v for clutser is deleted", i.Name, i.Status.ExternalID, cm.cluster.Name)
 	}
 
 	// Delete SSH key from DB
@@ -76,7 +76,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
-	cm.ctx.Logger().Infof("Cluster %v is deleted successfully", cm.cluster.Name)
+	cloud.Logger(cm.ctx).Infof("Cluster %v is deleted successfully", cm.cluster.Name)
 	return nil
 }
 
@@ -99,13 +99,13 @@ func (cm *ClusterManager) deleteSSHKey() (err error) {
 			_, err := service.DeleteObject()
 			return err
 		}, backoff.NewExponentialBackOff())
-		cm.ctx.Logger().Infof("SSH key for cluster %v deleted", cm.cluster.Name)
+		cloud.Logger(cm.ctx).Infof("SSH key for cluster %v deleted", cm.cluster.Name)
 	}
 
 	if cm.cluster.Spec.SSHKeyPHID != "" {
 		//updates := &storage.SSHKey{IsDeleted: 1}
 		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
-		//_, err = cm.ctx.Store().Engine.Update(updates, cond)
+		//_, err = cloud.Store(cm.ctx).Engine.Update(updates, cond)
 	}
 	return
 }

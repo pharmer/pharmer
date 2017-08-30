@@ -1,18 +1,16 @@
 package linode
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
-	"strings"
 
 	"github.com/appscode/data"
-	"github.com/appscode/errors"
-	_env "github.com/appscode/go/env"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/linodego"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
 )
@@ -69,87 +67,18 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance,
 }
 
 func (im *instanceManager) createStackScript(sku, role string) (int, error) {
-	startupScript := im.RenderStartupScript(sku, role)
+	startupScript, err := RenderStartupScript(im.ctx, im.cluster, role)
+	if err != nil {
+		return 0, err
+	}
 	script, err := im.conn.client.StackScript.Create(im.namer.StartupScriptName(sku, role), im.cluster.Spec.InstanceImage, startupScript, map[string]string{
 		"Description": im.cluster.Name,
 	})
 	if err != nil {
 		return 0, err
 	}
-	im.ctx.Logger().Infof("Stack script for role %v created", role)
+	cloud.Logger(im.ctx).Infof("Stack script for role %v created", role)
 	return script.StackScriptId.StackScriptId, nil
-}
-
-// http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
-func (im *instanceManager) RenderStartupScript(sku, role string) string {
-	cmd := cloud.StartupConfigFromAPI(im.cluster, role)
-	if api.UseFirebase() {
-		cmd = cloud.StartupConfigFromFirebase(im.cluster, role)
-	}
-
-	firebaseUid := ""
-	if api.UseFirebase() {
-		firebaseUid, _ = api.FirebaseUid()
-	}
-
-	return fmt.Sprintf(`#!/bin/bash
-cat >/etc/kube-installer.sh <<EOF
-%v
-rm /lib/systemd/system/kube-installer.service
-systemctl daemon-reload
-exit 0
-EOF
-chmod +x /etc/kube-installer.sh
-
-cat >/lib/systemd/system/kube-installer.service <<EOF
-[Unit]
-Description=Install Kubernetes Master
-
-[Service]
-Type=simple
-Environment="APPSCODE_ENV=%v"
-Environment="FIREBASE_UID=%v"
-ExecStart=/bin/bash -e /etc/kube-installer.sh
-Restart=on-failure
-StartLimitInterval=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-systemctl daemon-reload
-systemctl enable kube-installer.service
-
-# http://ask.xmodulo.com/disable-ipv6-linux.html
-/bin/cat >>/etc/sysctl.conf <<EOF
-# to disable IPv6 on all interfaces system wide
-net.ipv6.conf.all.disable_ipv6 = 1
-
-# to disable IPv6 on a specific interface (e.g., eth0, lo)
-net.ipv6.conf.lo.disable_ipv6 = 1
-net.ipv6.conf.eth0.disable_ipv6 = 1
-EOF
-/sbin/sysctl -p /etc/sysctl.conf
-/bin/sed -i 's/^#AddressFamily any/AddressFamily inet/' /etc/ssh/sshd_config
-
-export DEBIAN_FRONTEND=noninteractive
-export DEBCONF_NONINTERACTIVE_SEEN=true
-/usr/bin/apt-get update
-/usr/bin/apt-get install -y --no-install-recommends --force-yes linux-image-amd64 grub2
-
-/bin/cat >/etc/default/grub <<EOF
-GRUB_DEFAULT=0
-GRUB_TIMEOUT=10
-GRUB_DISTRIBUTOR=\$(lsb_release -i -s 2> /dev/null || echo Debian)
-GRUB_CMDLINE_LINUX_DEFAULT="quiet"
-GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1 console=ttyS0,19200n8"
-GRUB_DISABLE_LINUX_UUID=true
-GRUB_SERIAL_COMMAND="serial --speed=19200 --unit=0 --word=8 --parity=no --stop=1"
-GRUB_TERMINAL=serial
-EOF
-
-/usr/sbin/update-grub
-/sbin/poweroff
-`, strings.Replace(cloud.RenderKubeStarter(im.cluster, sku, cmd), "$", "\\$", -1), _env.FromHost(), firebaseUid)
 }
 
 func (im *instanceManager) createInstance(name string, scriptId int, sku string) (int, int, error) {
@@ -224,8 +153,8 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger().Info("Running linode boot job %v", jobResp.JobId.JobId)
-	im.ctx.Logger().Infof("Linode %v created", name)
+	cloud.Logger(im.ctx).Info("Running linode boot job %v", jobResp.JobId.JobId)
+	cloud.Logger(im.ctx).Infof("Linode %v created", name)
 
 	return id, config.LinodeConfigId.LinodeConfigId, err
 }
@@ -244,7 +173,7 @@ func (im *instanceManager) bootToGrub2(linodeId, configId int, name string) erro
 		return err
 	}
 	_, err = im.conn.client.Linode.Boot(linodeId, configId)
-	im.ctx.Logger().Infof("%v booted", name)
+	cloud.Logger(im.ctx).Infof("%v booted", name)
 	return err
 }
 

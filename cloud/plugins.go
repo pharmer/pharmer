@@ -1,9 +1,9 @@
 package cloud
 
 import (
+	"context"
 	"sync"
 
-	"github.com/appscode/pharmer/context"
 	"github.com/golang/glog"
 )
 

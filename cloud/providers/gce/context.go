@@ -1,20 +1,16 @@
 package gce
 
 import (
-	"encoding/base64"
-	"strconv"
+	"context"
 	"strings"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
-	"github.com/appscode/go/crypto/rand"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
 	semver "github.com/hashicorp/go-version"
-	bstore "google.golang.org/api/storage/v1"
 )
 
 const (
@@ -57,7 +53,6 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 
 	cm.cluster.Spec.Region = cm.cluster.Spec.Zone[0:strings.LastIndex(cm.cluster.Spec.Zone, "-")]
 	cm.cluster.Spec.DoNotDelete = req.DoNotDelete
-	cm.cluster.Spec.BucketName = "kubernetes-" + cm.cluster.Name + "-" + rand.Characters(8)
 
 	for _, ng := range req.NodeGroups {
 		if ng.Count < 0 {
@@ -68,10 +63,17 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 		}
 	}
 	cm.cluster.SetNodeGroups(req.NodeGroups)
-	cm.cluster.Spec.Project = req.GceProject
-	if cm.cluster.Spec.Project == "" {
-		cm.cluster.Spec.Project = cm.cluster.Spec.CloudCredential[credential.GCEProjectID]
+
+	// TODO: Load once
+	cred, err := cloud.Store(cm.ctx).Credentials().Get(cm.cluster.Spec.CredentialName)
+	if err != nil {
+		return err
 	}
+	typed := credential.GCE{CommonSpec: credential.CommonSpec(cred.Spec)}
+	if ok, err := typed.IsValid(); !ok {
+		return errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cm.cluster.Spec.CredentialName, err)
+	}
+	cm.cluster.Spec.Project = typed.ProjectID()
 
 	// check for instance count
 	cm.cluster.Spec.MasterSKU = "n1-standard-1"
@@ -102,8 +104,6 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.cluster.Spec.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
 	cm.cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
 
-	cloud.GenClusterTokens(cm.cluster)
-
 	cm.cluster.Spec.GCECloudConfig = &api.GCECloudConfig{
 		// TokenURL           :
 		// TokenBody          :
@@ -130,8 +130,8 @@ func (cm *ClusterManager) updateContext() error {
 		Multizone:          bool(cm.cluster.Spec.Multizone),
 	}
 	cm.cluster.Spec.CloudConfigPath = "/etc/gce.conf"
-	cm.cluster.Spec.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.cluster.Name)
-	cm.cluster.Spec.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.cluster.Name)
+	cm.cluster.Spec.ClusterExternalDomain = cloud.Extra(cm.ctx).ExternalDomain(cm.cluster.Name)
+	cm.cluster.Spec.ClusterInternalDomain = cloud.Extra(cm.ctx).InternalDomain(cm.cluster.Name)
 	//if cm.ctx.AppsCodeClusterCreator == "" {
 	//	cm.ctx.AppsCodeClusterCreator = cm.ctx.Auth.User.UserName
 	//}
@@ -146,8 +146,8 @@ func (cm *ClusterManager) LoadDefaultContext() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.cluster.Spec.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.cluster.Name)
-	cm.cluster.Spec.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.cluster.Name)
+	cm.cluster.Spec.ClusterExternalDomain = cloud.Extra(cm.ctx).ExternalDomain(cm.cluster.Name)
+	cm.cluster.Spec.ClusterInternalDomain = cloud.Extra(cm.ctx).InternalDomain(cm.cluster.Name)
 
 	cm.cluster.Status.Phase = api.ClusterPhasePending
 	cm.cluster.Spec.OS = "ubuntu"
@@ -241,80 +241,5 @@ func (cm *ClusterManager) LoadDefaultContext() error {
 	}
 
 	cloud.BuildRuntimeConfig(cm.cluster)
-	return nil
-}
-
-func (cm *ClusterManager) UploadStartupConfig() error {
-	if _, err := cm.conn.storageService.Buckets.Get(cm.cluster.Spec.BucketName).Do(); err != nil {
-		_, err := cm.conn.storageService.Buckets.Insert(cm.cluster.Spec.Project, &bstore.Bucket{
-			Name: cm.cluster.Spec.BucketName,
-		}).Do()
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		cm.ctx.Logger().Debug("Created bucket %s", cm.cluster.Spec.BucketName)
-	} else {
-		cm.ctx.Logger().Debug("Bucket %s already exists", cm.cluster.Spec.BucketName)
-	}
-
-	{
-		caData := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.Spec.ResourceVersion, 10) + "/pki/" + "ca.crt",
-		}
-		caCert, err := base64.StdEncoding.DecodeString(cm.cluster.Spec.CaCert)
-		if _, err = cm.conn.storageService.Objects.Insert(cm.cluster.Spec.BucketName, caData).Media(strings.NewReader(string(caCert))).Do(); err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-
-		caKeyData := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.Spec.ResourceVersion, 10) + "/pki/" + "ca.key",
-		}
-		caKey, err := base64.StdEncoding.DecodeString(cm.cluster.Spec.CaKey)
-
-		if _, err = cm.conn.storageService.Objects.Insert(cm.cluster.Spec.BucketName, caKeyData).Media(strings.NewReader(string(caKey))).Do(); err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		frontCAData := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.Spec.ResourceVersion, 10) + "/pki/" + "front-proxy-ca.crt",
-		}
-		frontCACert, err := base64.StdEncoding.DecodeString(cm.cluster.Spec.FrontProxyCaCert)
-		if _, err = cm.conn.storageService.Objects.Insert(cm.cluster.Spec.BucketName, frontCAData).Media(strings.NewReader(string(frontCACert))).Do(); err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		frontCAKeyData := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.Spec.ResourceVersion, 10) + "/pki/" + "front-proxy-ca.key",
-		}
-		frontCAKey, err := base64.StdEncoding.DecodeString(cm.cluster.Spec.FrontProxyCaKey)
-		if _, err = cm.conn.storageService.Objects.Insert(cm.cluster.Spec.BucketName, frontCAKeyData).Media(strings.NewReader(string(frontCAKey))).Do(); err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-
-	}
-	{
-		cfg, err := cm.cluster.StartupConfigResponse(api.RoleKubernetesMaster)
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		data := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.Spec.ResourceVersion, 10) + "/startup-config/" + api.RoleKubernetesMaster + ".yaml",
-		}
-		_, err = cm.conn.storageService.Objects.Insert(cm.cluster.Spec.BucketName, data).Media(strings.NewReader(cfg)).Do()
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-	}
-	{
-		cfg, err := cm.cluster.StartupConfigResponse(api.RoleKubernetesPool)
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		data := &bstore.Object{
-			Name: "kubernetes/context/" + strconv.FormatInt(cm.cluster.Spec.ResourceVersion, 10) + "/startup-config/" + api.RoleKubernetesPool + ".yaml",
-		}
-		_, err = cm.conn.storageService.Objects.Insert(cm.cluster.Spec.BucketName, data).Media(strings.NewReader(cfg)).Do()
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-	}
 	return nil
 }

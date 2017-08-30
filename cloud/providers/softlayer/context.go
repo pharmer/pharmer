@@ -1,11 +1,12 @@
 package softlayer
 
 import (
+	"context"
+
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
 )
 
@@ -40,7 +41,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 }
 
 func (cm *ClusterManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
-	conn, err := NewConnector(nil)
+	conn, err := NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +77,6 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	}
 	cm.cluster.Spec.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
 	cm.cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
-	cloud.GenClusterTokens(cm.cluster)
 
 	return nil
 }
@@ -92,12 +92,5 @@ func (cm *ClusterManager) LoadDefaultContext() error {
 
 	cm.cluster.Spec.EnableClusterVPN = ""
 	cm.cluster.Spec.VpnPsk = ""
-	return nil
-}
-
-func (cm *ClusterManager) UploadStartupConfig() error {
-	if api.UseFirebase() {
-		return cloud.UploadStartupConfigInFirebase(cm.ctx, cm.cluster)
-	}
 	return nil
 }

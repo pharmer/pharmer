@@ -1,12 +1,12 @@
 package digitalocean
 
 import (
-	go_ctx "context"
+	gtx "context"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/digitalocean/godo"
@@ -29,10 +29,10 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	fmt.Println(found)
 
 	igm.cm.cluster.Spec.ResourceVersion = igm.instance.Type.ContextVersion
-	igm.cm.cluster, _ = igm.cm.ctx.Store().Clusters().Get(igm.cm.cluster.Name)
+	igm.cm.cluster, _ = cloud.Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 	var nodeAdjust int64 = 0
 	if found {
-		nodeAdjust, _ = cloud.Mutator(igm.cm.cluster, igm.instance)
+		nodeAdjust, _ = cloud.Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
 	}
 	if !found {
 		err = igm.createInstanceGroup(igm.instance.Stats.Count)
@@ -65,9 +65,9 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 
 func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, map[string]*api.Instance, error) {
 	var flag bool = false
-	igm.im.conn.client.Droplets.List(go_ctx.TODO(), &godo.ListOptions{})
+	igm.im.conn.client.Droplets.List(gtx.TODO(), &godo.ListOptions{})
 	existingNGs := make(map[string]*api.Instance)
-	droplets, _, err := igm.cm.conn.client.Droplets.List(go_ctx.TODO(), &godo.ListOptions{})
+	droplets, _, err := igm.cm.conn.client.Droplets.List(gtx.TODO(), &godo.ListOptions{})
 	if err != nil {
 		return flag, existingNGs, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -123,7 +123,7 @@ func (igm *InstanceGroupManager) deleteInstanceGroup(sku string, count int64) er
 
 func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.Instance, error) {
 	instances := make([]*api.Instance, 0)
-	kc, err := cloud.NewAdminClient(igm.cm.cluster)
+	kc, err := cloud.NewAdminClient(igm.cm.ctx, igm.cm.cluster)
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -133,7 +133,7 @@ func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.Instance, err
 	if err != nil {
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	nodes, err := kc.Client.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -163,6 +163,6 @@ func (igm *InstanceGroupManager) StartNode() (*api.Instance, error) {
 	}
 	igm.im.applyTag(droplet.ID)
 	node.Spec.Role = api.RoleKubernetesPool
-	igm.cm.ins.Instances = append(igm.cm.ins.Instances, node)
+	igm.cm.ins = append(igm.cm.ins, node)
 	return node, nil
 }

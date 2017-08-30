@@ -6,7 +6,7 @@ import (
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 )
@@ -27,17 +27,17 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+	cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 
 	defer func(releaseReservedIp bool) {
 		if cm.cluster.Status.Phase == api.ClusterPhasePending {
 			cm.cluster.Status.Phase = api.ClusterPhaseFailing
 		}
-		cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
-		cm.ctx.Store().Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
+		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+		cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
+		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
-			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
+			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -49,13 +49,13 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Debugln("Linode instance image", cm.cluster.Spec.InstanceImage)
+	cloud.Logger(cm.ctx).Debugln("Linode instance image", cm.cluster.Spec.InstanceImage)
 
 	if err = cm.conn.detectKernel(); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Linode kernel %v found", cm.cluster.Spec.Kernel)
+	cloud.Logger(cm.ctx).Infof("Linode kernel %v found", cm.cluster.Spec.Kernel)
 
 	// -------------------------------------------------------------------ASSETS
 	im := &instanceManager{ctx: cm.ctx, cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
@@ -75,7 +75,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Debugln("Linode", masterLinodeId, "is powered off.")
+	cloud.Logger(cm.ctx).Debugln("Linode", masterLinodeId, "is powered off.")
 	masterInstance, err := im.newKubeInstance(masterLinode)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -88,7 +88,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 	fmt.Println("Master EXTERNAL_IP", cm.cluster.Spec.MasterExternalIP, " ----- Master INTERNAL_IP", cm.cluster.Spec.MasterInternalIP)
 
-	if err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
+	if cm.ctx, err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -97,13 +97,11 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.cluster.DetectApiServerURL()
 	// needed to get master_internal_ip
-	if _, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster); err != nil {
+	if _, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.UploadStartupConfig()
 	if api.UseFirebase() {
 		cloud.SaveInstancesInFirebase(cm.cluster, cm.ins)
 	}
@@ -161,7 +159,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 				// ignore error, and try again
 				if err == nil {
 					linode := resp.Linodes[0]
-					cm.ctx.Logger().Infof("Instance %v (%v) is %v", linode.Label, linode.LinodeId, statusString(linode.Status))
+					cloud.Logger(cm.ctx).Infof("Instance %v (%v) is %v", linode.Label, linode.LinodeId, statusString(linode.Status))
 					if linode.Status == LinodeStatus_PoweredOff {
 						info.state = 1
 						// create node
@@ -173,9 +171,8 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 						node.Name = cm.cluster.Name + "-node-" + strconv.Itoa(info.nodeId)
 						node.Spec.Role = api.RoleKubernetesPool
 						cm.ins.Instances = append(cm.ins.Instances, node)
-						cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+						cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 
-						cm.UploadStartupConfig()
 						if api.UseFirebase() {
 							cloud.SaveInstancesInFirebase(cm.cluster, cm.ins)
 						}
@@ -199,7 +196,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		}
 	}
 
-	cm.ctx.Logger().Info("Waiting for cluster initialization")
+	cloud.Logger(cm.ctx).Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
 	if err := cloud.EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {

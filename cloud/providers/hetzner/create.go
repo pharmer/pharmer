@@ -5,9 +5,9 @@ import (
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
 	hc "github.com/appscode/go-hetzner"
 	_ssh "github.com/appscode/go/crypto/ssh"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 )
@@ -33,11 +33,11 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		if cm.cluster.Status.Phase == api.ClusterPhasePending {
 			cm.cluster.Status.Phase = api.ClusterPhaseFailing
 		}
-		cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
-		cm.ctx.Store().Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
-		cm.ctx.Logger().Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
+		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+		cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
+		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
-			cm.ctx.Logger().Infof("Cluster %v is deleting", cm.cluster.Name)
+			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -62,7 +62,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	// -------------------------------------------------------------------ASSETS
 	im := &instanceManager{ctx: cm.ctx, cluster: cm.cluster, conn: cm.conn}
 
-	cm.ctx.Logger().Info("Creating master instance")
+	cloud.Logger(cm.ctx).Info("Creating master instance")
 	masterTx, err := im.createInstance(api.RoleKubernetesMaster, cm.cluster.Spec.MasterSKU)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -84,7 +84,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP)
 	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
 
-	if err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
+	if cm.ctx, err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -93,9 +93,8 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.cluster.DetectApiServerURL()
 	// needed to get master_internal_ip
-	if _, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster); err != nil {
+	if _, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -124,12 +123,12 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	//cluster.Spec.ctx.Logger().Info(">>>>>>>>>>>>>>>>>>>>>>> Rebooting master instance")
+	//cluster.Spec.cloud.Logger(ctx).Info(">>>>>>>>>>>>>>>>>>>>>>> Rebooting master instance")
 	//if err = cluster.Spec.reboot(masterDroplet.ID); err != nil {
 	//	cluster.Spec.ctx.StatusCause = err.Error()
 	//	return errors.FromErr(err).WithContext(cluster.Spec.ctx).Err()
 	//}
-	//cluster.Spec.ctx.Logger().Info(">>>>>>>>>>>>>>>>>>>>>>> Rebooted master instance")
+	//cluster.Spec.cloud.Logger(ctx).Info(">>>>>>>>>>>>>>>>>>>>>>> Rebooted master instance")
 
 	// start nodes
 	for _, ng := range req.NodeGroups {
@@ -177,7 +176,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		}
 	}
 
-	cm.ctx.Logger().Info("Waiting for cluster initialization")
+	cloud.Logger(cm.ctx).Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
 	if err := cloud.EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
@@ -210,7 +209,7 @@ func (cm *ClusterManager) importPublicKey() error {
 		Name: cm.cluster.Name,
 		Data: string(cm.cluster.Spec.SSHKey.PublicKey),
 	})
-	cm.ctx.Logger().Infof("New ssh key with fingerprint %v created", cm.cluster.Spec.SSHKey.OpensshFingerprint)
+	cloud.Logger(cm.ctx).Infof("New ssh key with fingerprint %v created", cm.cluster.Spec.SSHKey.OpensshFingerprint)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

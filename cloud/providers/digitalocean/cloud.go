@@ -1,16 +1,17 @@
 package digitalocean
 
 import (
-	go_ctx "context"
+	"context"
+	gtx "context"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/context"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	"github.com/digitalocean/godo"
 	"golang.org/x/oauth2"
@@ -25,45 +26,66 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	token, ok := cluster.Spec.CloudCredential[credential.DigitalOceanToken]
-	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.DigitalOceanToken)
+	cred, err := cloud.Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	if err != nil {
+		return nil, err
 	}
-
+	typed := credential.DigitalOcean{CommonSpec: credential.CommonSpec(cred.Spec)}
+	if ok, err := typed.IsValid(); !ok {
+		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+	}
 	oauthClient := oauth2.NewClient(oauth2.NoContext, oauth2.StaticTokenSource(&oauth2.Token{
-		AccessToken: token,
+		AccessToken: typed.Token(),
 	}))
-	return &cloudConnector{
+	conn := cloudConnector{
+		ctx:     ctx,
 		cluster: cluster,
 		client:  godo.NewClient(oauthClient),
-	}, nil
+	}
+	if ok, msg := conn.IsUnauthorized(); !ok {
+		return nil, fmt.Errorf("Credential %s does not have necessary autheorization. Reason: %s.", cluster.Spec.CredentialName, msg)
+	}
+	return &conn, nil
+}
+
+// Returns true if unauthorized
+func (conn *cloudConnector) IsUnauthorized() (bool, string) {
+	name := "check-write-access:" + strconv.FormatInt(time.Now().Unix(), 10)
+	_, _, err := conn.client.Tags.Create(gtx.TODO(), &godo.TagCreateRequest{
+		Name: name,
+	})
+	if err != nil {
+		return true, "Credential missing WRITE scope"
+	}
+	conn.client.Tags.Delete(gtx.TODO(), name)
+	return false, ""
 }
 
 func (conn *cloudConnector) getInstanceImage() (string, error) {
 	imgPage := 0
 	const imgPageSize = 20
 	for {
-		imgs, _, err := conn.client.Images.ListUser(go_ctx.TODO(), &godo.ListOptions{
+		imgs, _, err := conn.client.Images.ListUser(gtx.TODO(), &godo.ListOptions{
 			Page:    imgPage,
 			PerPage: imgPageSize,
 		})
 		if err != nil {
 			return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
-		conn.ctx.Logger().Debugln("List user images")
+		cloud.Logger(conn.ctx).Debugln("List user images")
 		for _, img := range imgs {
-			conn.ctx.Logger().Debugln(img.ID, "__", img.Name, "---", img.Distribution, "---", img.Type)
+			cloud.Logger(conn.ctx).Debugln(img.ID, "__", img.Name, "---", img.Distribution, "---", img.Type)
 			if img.Name == containerOsImage && img.Distribution == "Debian" {
 				found := false
 				for _, region := range img.Regions {
 					if region == conn.cluster.Spec.Region {
 						found = true
-						conn.ctx.Logger().Debugf("Image already exists in region %v.", conn.cluster.Spec.Region)
+						cloud.Logger(conn.ctx).Debugf("Image already exists in region %v.", conn.cluster.Spec.Region)
 						return strconv.Itoa(img.ID), nil
 					}
 				}
 				if !found {
-					_, _, err := conn.client.ImageActions.Transfer(go_ctx.TODO(), img.ID, &godo.ActionRequest{
+					_, _, err := conn.client.ImageActions.Transfer(gtx.TODO(), img.ID, &godo.ActionRequest{
 						"type":   "transfer",
 						"region": conn.cluster.Spec.Region,
 					})
@@ -71,7 +93,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 						return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 					}
 
-					conn.ctx.Logger().Infof("Started image transfer to region %v.", conn.cluster.Spec.Region)
+					cloud.Logger(conn.ctx).Infof("Started image transfer to region %v.", conn.cluster.Spec.Region)
 					// wait for the transfer to complete
 					conn.waitForTransfer(img.ID)
 					return strconv.Itoa(img.ID), nil
@@ -84,8 +106,8 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 		}
 	}
 
-	conn.ctx.Logger().Info("Creating droplet to build custom image")
-	droplet, _, err := conn.client.Droplets.Create(go_ctx.TODO(), &godo.DropletCreateRequest{
+	cloud.Logger(conn.ctx).Info("Creating droplet to build custom image")
+	droplet, _, err := conn.client.Droplets.Create(gtx.TODO(), &godo.DropletCreateRequest{
 		Name:              rand.WithUniqSuffix("kubernetes"),
 		Region:            conn.cluster.Spec.Region,
 		Size:              "512mb",
@@ -101,24 +123,24 @@ update-grub`,
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	conn.ctx.Logger().Info("Wait for custom image instance to become active")
+	cloud.Logger(conn.ctx).Info("Wait for custom image instance to become active")
 	conn.waitForInstance(droplet.ID, "active")
 	time.Sleep(30 * time.Second)
 
-	conn.ctx.Logger().Info("Power off custom image instance")
-	_, _, err = conn.client.DropletActions.PowerOff(go_ctx.TODO(), droplet.ID)
+	cloud.Logger(conn.ctx).Info("Power off custom image instance")
+	_, _, err = conn.client.DropletActions.PowerOff(gtx.TODO(), droplet.ID)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	conn.waitForInstance(droplet.ID, "off")
 
-	conn.ctx.Logger().Info("Start taking custom image snapshot")
-	_, _, err = conn.client.DropletActions.Snapshot(go_ctx.TODO(), droplet.ID, containerOsImage)
+	cloud.Logger(conn.ctx).Info("Start taking custom image snapshot")
+	_, _, err = conn.client.DropletActions.Snapshot(gtx.TODO(), droplet.ID, containerOsImage)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 
-	conn.ctx.Logger().Info("Wait for custom image snapshot to be completed")
+	cloud.Logger(conn.ctx).Info("Wait for custom image snapshot to be completed")
 	for {
 		action, err := conn.findSnapshotAction(droplet.ID)
 		if err != nil {
@@ -127,12 +149,12 @@ update-grub`,
 		if action.Status == "completed" {
 			break
 		}
-		conn.ctx.Logger().Debugln(".")
+		cloud.Logger(conn.ctx).Debugln(".")
 		time.Sleep(5 * time.Second)
 	}
 
 	var k8sImage *godo.Image
-	snaps, _, err := conn.client.Droplets.Snapshots(go_ctx.TODO(), droplet.ID, &godo.ListOptions{
+	snaps, _, err := conn.client.Droplets.Snapshots(gtx.TODO(), droplet.ID, &godo.ListOptions{
 		Page:    0,
 		PerPage: 1, // there can be only one snapshot for the new custom image droplet
 	})
@@ -144,29 +166,29 @@ update-grub`,
 			k8sImage = &snaps[0]
 		}
 	}
-	conn.ctx.Logger().Debugln("New K8s base image id", k8sImage.ID, ", name: ", k8sImage.Name)
+	cloud.Logger(conn.ctx).Debugln("New K8s base image id", k8sImage.ID, ", name: ", k8sImage.Name)
 
-	_, err = conn.client.Droplets.Delete(go_ctx.TODO(), droplet.ID)
+	_, err = conn.client.Droplets.Delete(gtx.TODO(), droplet.ID)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	conn.ctx.Logger().Info("Delete custom image instance")
+	cloud.Logger(conn.ctx).Info("Delete custom image instance")
 	return strconv.Itoa(k8sImage.ID), nil
 }
 
 func (conn *cloudConnector) waitForInstance(id int, status string) error {
 	attempt := 0
 	for true {
-		conn.ctx.Logger().Infof("Checking status of instance %v", id)
-		droplet, _, err := conn.client.Droplets.Get(go_ctx.TODO(), id)
+		cloud.Logger(conn.ctx).Infof("Checking status of instance %v", id)
+		droplet, _, err := conn.client.Droplets.Get(gtx.TODO(), id)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
-		conn.ctx.Logger().Debugf("Instance status %v, %v", droplet, err)
+		cloud.Logger(conn.ctx).Debugf("Instance status %v, %v", droplet, err)
 		if strings.ToLower(droplet.Status) == status {
 			break
 		}
-		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", droplet.Name, droplet.ID, droplet.Status)
+		cloud.Logger(conn.ctx).Infof("Instance %v (%v) is %v, waiting...", droplet.Name, droplet.ID, droplet.Status)
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}
@@ -174,7 +196,7 @@ func (conn *cloudConnector) waitForInstance(id int, status string) error {
 }
 
 func (conn *cloudConnector) findSnapshotAction(id int) (*godo.Action, error) {
-	actions, _, err := conn.client.Droplets.Actions(go_ctx.TODO(), id, &godo.ListOptions{
+	actions, _, err := conn.client.Droplets.Actions(gtx.TODO(), id, &godo.ListOptions{
 		Page:    0,
 		PerPage: 100,
 	})
@@ -190,10 +212,10 @@ func (conn *cloudConnector) findSnapshotAction(id int) (*godo.Action, error) {
 }
 
 func (conn *cloudConnector) waitForTransfer(id int) error {
-	conn.ctx.Logger().Infof("Wait for the transfer to complete")
+	cloud.Logger(conn.ctx).Infof("Wait for the transfer to complete")
 	attempt := 0
 	for {
-		img, _, err := conn.client.Images.GetByID(go_ctx.TODO(), id)
+		img, _, err := conn.client.Images.GetByID(gtx.TODO(), id)
 		if err != nil {
 			return err
 		}
@@ -202,7 +224,7 @@ func (conn *cloudConnector) waitForTransfer(id int) error {
 				return nil
 			}
 		}
-		conn.ctx.Logger().Debug(".")
+		cloud.Logger(conn.ctx).Debug(".")
 		attempt++
 		time.Sleep(10 * time.Second)
 		if attempt > 60 {

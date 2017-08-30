@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"strings"
 
 	v "github.com/appscode/go/version"
 	cpCmd "github.com/appscode/pharmer/cloud/cmds"
@@ -13,11 +14,19 @@ import (
 	credCmd "github.com/appscode/pharmer/credential/cmds"
 	"github.com/appscode/pharmer/data/files"
 	_ "github.com/appscode/pharmer/storage/providers"
+	"github.com/jpillora/go-ogle-analytics"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
+const (
+	gaTrackingCode = "UA-62096468-20"
+)
+
 func NewRootCmd(version string) *cobra.Command {
+	var (
+		enableAnalytics = true
+	)
 	rootCmd := &cobra.Command{
 		Use:               "pharmer [command]",
 		Short:             `Pharmer by Appscode - Manages farms`,
@@ -26,6 +35,12 @@ func NewRootCmd(version string) *cobra.Command {
 			c.Flags().VisitAll(func(flag *pflag.Flag) {
 				log.Printf("FLAG: --%s=%q", flag.Name, flag.Value)
 			})
+			if enableAnalytics && gaTrackingCode != "" {
+				if client, err := ga.NewClient(gaTrackingCode); err == nil {
+					parts := strings.Split(c.CommandPath(), " ")
+					client.Send(ga.NewEvent(parts[0], strings.Join(parts[1:], "/")).Label(version))
+				}
+			}
 			files.Load(config.GetEnv(c.Flags()))
 
 			if cfgFile, setByUser := config.GetConfigFile(c.Flags()); !setByUser {
@@ -37,6 +52,7 @@ func NewRootCmd(version string) *cobra.Command {
 		},
 	}
 	config.AddFlags(rootCmd.PersistentFlags())
+	rootCmd.PersistentFlags().BoolVar(&enableAnalytics, "analytics", enableAnalytics, "Send analytical events to Google Guard")
 	rootCmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
 	// ref: https://github.com/kubernetes/kubernetes/issues/17162#issuecomment-225596212
 	flag.CommandLine.Parse([]string{})

@@ -1,18 +1,17 @@
 package softlayer
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
 	"strings"
 
 	"github.com/appscode/data"
-	"github.com/appscode/errors"
-	_env "github.com/appscode/go/env"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
 	"github.com/softlayer/softlayer-go/datatypes"
@@ -62,7 +61,11 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance,
 }
 
 func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
-	startupScript := im.RenderStartupScript(sku, role)
+	startupScript, err := cloud.RenderStartupScript(im.ctx, im.cluster, role)
+	if err != nil {
+		im.cluster.Status.Reason = err.Error()
+		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
+	}
 	instance, err := data.ClusterMachineType(im.cluster.Spec.Provider, sku)
 	if err != nil {
 		im.cluster.Status.Reason = err.Error()
@@ -86,7 +89,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 	}
 	vGuestTemplate := datatypes.Virtual_Guest{
 		Hostname:                     types.StringP(name),
-		Domain:                       types.StringP(im.ctx.Extra().ExternalDomain(im.cluster.Name)),
+		Domain:                       types.StringP(cloud.Extra(im.ctx).ExternalDomain(im.cluster.Name)),
 		MaxMemory:                    types.IntP(ram),
 		StartCpus:                    types.IntP(cpu),
 		Datacenter:                   &datatypes.Location{Name: types.StringP(im.cluster.Spec.Zone)},
@@ -117,59 +120,8 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		im.cluster.Status.Reason = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	im.ctx.Logger().Infof("Softlayer instance %v created", name)
+	cloud.Logger(im.ctx).Infof("Softlayer instance %v created", name)
 	return *vGuest.Id, nil
-}
-
-func (im *instanceManager) RenderStartupScript(sku, role string) string {
-	cmd := cloud.StartupConfigFromAPI(im.cluster, role)
-	if api.UseFirebase() {
-		cmd = cloud.StartupConfigFromFirebase(im.cluster, role)
-	}
-
-	firebaseUid := ""
-	if api.UseFirebase() {
-		firebaseUid, _ = api.FirebaseUid()
-	}
-
-	reboot := ""
-	if role == api.RoleKubernetesPool {
-		reboot = "/sbin/reboot"
-	}
-
-	return fmt.Sprintf(`#!/bin/bash
-cat >/etc/kube-installer.sh <<EOF
-%v
-rm /lib/systemd/system/kube-installer.service
-systemctl daemon-reload
-exit 0
-EOF
-chmod +x /etc/kube-installer.sh
-
-cat >/lib/systemd/system/kube-installer.service <<EOF
-[Unit]
-Description=Install Kubernetes Master
-
-[Service]
-Type=simple
-Environment="APPSCODE_ENV=%v"
-Environment="FIREBASE_UID=%v"
-
-ExecStart=/bin/bash -e /etc/kube-installer.sh
-Restart=on-failure
-StartLimitInterval=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-systemctl daemon-reload
-systemctl enable kube-installer.service
-
-/bin/sed -i 's/GRUB_CMDLINE_LINUX="/GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1 /' /etc/default/grub
-/usr/sbin/update-grub
-
-%v
-`, strings.Replace(cloud.RenderKubeStarter(im.cluster, sku, cmd), "$", "\\$", -1), _env.FromHost().String(), firebaseUid, reboot)
 }
 
 func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {

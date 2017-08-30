@@ -217,9 +217,6 @@
       {
         "version": "1.7.4",
         "description": "1.7.4",
-        "tools": {
-          "kubeadm": "1.7.4"
-        },
         "env": {
           "dev": true
         }
