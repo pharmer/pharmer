@@ -2,25 +2,23 @@ package cloud
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"fmt"
-	"net/http"
-	"os"
 	"time"
 
-	"github.com/appscode/go/errors"
 	stringz "github.com/appscode/go/strings"
+	"github.com/appscode/go/wait"
 	"github.com/appscode/pharmer/api"
 	"github.com/cenkalti/backoff"
-	"github.com/olekukonko/tablewriter"
-	"github.com/tamalsaha/go-oneliners"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	clientset "k8s.io/client-go/kubernetes"
 	apiv1 "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/cert"
+)
+
+const (
+	RetryInterval = 5 * time.Second
+	RetryTimeout  = 5 * time.Minute
 )
 
 // WARNING:
@@ -37,132 +35,56 @@ func NewAdminClient(ctx context.Context, cluster *api.Cluster) (clientset.Interf
 	return clientset.NewForConfig(cfg)
 }
 
-func ProbeKubeAPI(ctx context.Context, cluster *api.Cluster) error {
-	/*
-		curl --cacert "${CERT_DIR}/pki/ca.crt" \
-		  -H "Authorization: Bearer ${KUBE_BEARER_TOKEN}" \
-		  ${secure} \
-		  --max-time 5 --fail --output /dev/null --silent \
-		  "https://${KUBE_MASTER_IP}/api/v1/pods"
-	*/
-	oneliners.FILE()
-	url := cluster.ApiServerURL() + "/api"
-	oneliners.FILE()
-	mTLSConfig := &tls.Config{}
-	certs := x509.NewCertPool()
-	oneliners.FILE()
-	certs.AppendCertsFromPEM(cert.EncodeCertPEM(CACert(ctx)))
-	oneliners.FILE()
-	mTLSConfig.RootCAs = certs
-	tr := &http.Transport{
-		TLSClientConfig: mTLSConfig,
-	}
-	oneliners.FILE()
-	client := &http.Client{Transport: tr}
-	req, _ := http.NewRequest("GET", url, nil)
-	oneliners.FILE()
-	// req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", cluster.Spec.KubeletToken))
+func waitForReadyAPIServer(ctx context.Context, client clientset.Interface) error {
 	attempt := 0
-	// try for 30 mins
-	oneliners.FILE()
-	Logger(ctx).Info("Checking Api")
-	for attempt < 40 {
-		Logger(ctx).Infof("Attempt %v: probing kubernetes api for cluster %v ...", attempt, cluster.Name)
-		_, err := client.Do(req)
-		fmt.Print("=")
-		if err == nil {
-			Logger(ctx).Infof("Successfully connected to kubernetes api for cluster %v", cluster.Name)
-			return nil
-		}
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		attempt++
-		time.Sleep(time.Duration(30) * time.Second)
-	}
-	return errors.Newf("Failed to connect to kubernetes api for cluster %v", cluster.Name).WithContext(ctx).Err()
+		Logger(ctx).Infof("Attempt %v: Probing Kubernetes api server ...", attempt)
+
+		_, err := client.CoreV1().Pods(apiv1.NamespaceAll).List(metav1.ListOptions{})
+		return err == nil, nil
+	})
 }
 
-func CheckComponentStatuses(ctx context.Context, cluster *api.Cluster) error {
-	kubeClient, err := NewAdminClient(ctx, cluster)
-	if err != nil {
-		return errors.FromErr(err).WithContext(ctx).Err()
-	}
+func waitForReadyComponents(ctx context.Context, client clientset.Interface) error {
+	attempt := 0
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+		Logger(ctx).Infof("Attempt %v: Probing components ...", attempt)
 
-	backoff.Retry(func() error {
-		resp, err := kubeClient.CoreV1().ComponentStatuses().List(metav1.ListOptions{
+		resp, err := client.CoreV1().ComponentStatuses().List(metav1.ListOptions{
 			LabelSelector: labels.Everything().String(),
 		})
 		if err != nil {
-			return err
+			return false, nil
 		}
 		for _, status := range resp.Items {
 			for _, cond := range status.Conditions {
 				if cond.Type == apiv1.ComponentHealthy && cond.Status != apiv1.ConditionTrue {
-					return errors.New().WithMessagef("Component %v is in condition %v with status %v", status.Name, cond.Type, cond.Status).Err()
+					Logger(ctx).Infof("Component %v is in condition %v with status %v", status.Name, cond.Type, cond.Status)
+					return false, nil
 				}
 			}
 		}
-		return nil
-	}, backoff.NewExponentialBackOff())
-	Logger(ctx).Info("Basic componenet status are ok")
-	return nil
+		return true, nil
+	})
 }
 
-func DeleteNodeApiCall(ctx context.Context, cluster *api.Cluster, name string) error {
-	kubeClient, err := NewAdminClient(ctx, cluster)
+func WaitForReadyMaster(ctx context.Context, cluster *api.Cluster) error {
+	client, err := NewAdminClient(ctx, cluster)
 	if err != nil {
-		return errors.FromErr(err).WithContext(ctx).Err()
+		return err
 	}
-
-	return kubeClient.CoreV1().Nodes().Delete(name, &metav1.DeleteOptions{})
-}
-
-func WaitForReadyNodes(ctx context.Context, cluster *api.Cluster, newNode ...int64) error {
-	kubeClient, err := NewAdminClient(ctx, cluster)
+	err = waitForReadyAPIServer(ctx, client)
 	if err != nil {
-		return errors.FromErr(err).WithContext(ctx).Err()
+		return err
 	}
-
-	var adjust int64 = 0
-	if len(newNode) > 0 {
-		adjust = newNode[0]
-	}
-	totalNode := cluster.NodeCount() + adjust
-	Logger(ctx).Debug("Number of Nodes = ", totalNode, "adjust = ", adjust)
-	attempt := 0
-	for attempt < 30 {
-		isReady := 0
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"NAME", "LABELS", "STATUS"})
-
-		nodes := &apiv1.NodeList{}
-		if kubeClient.CoreV1().RESTClient().Get().Resource("nodes").Do().Into(nodes); err != nil {
-			return errors.FromErr(err).WithContext(ctx).Err()
-		}
-		for _, node := range nodes.Items {
-			for _, cond := range node.Status.Conditions {
-				if cond.Type == "Ready" && cond.Status == "True" {
-					isReady++
-
-					row := []string{node.Name, "api.io/hostname=" + node.ObjectMeta.Labels["api.io/hostname"], "Ready"}
-					table.Append(row)
-				}
-			}
-		}
-		table.SetBorder(true)
-		if isReady == int(totalNode) {
-			Logger(ctx).Info("All nodes are ready")
-			table.Render()
-			return nil
-		}
-		Logger(ctx).Infof("%v nodes ready, waiting...", isReady)
-		attempt++
-		time.Sleep(time.Duration(60) * time.Second)
-	}
-	return errors.New("Nodes are not ready after allocated wait time.").WithContext(ctx).Err()
+	return waitForReadyComponents(ctx, client)
 }
 
 var restrictedNamespaces []string = []string{"appscode", "kube-system"}
 
-func hasNoUserApps(ctx context.Context, clusterName string, client clientset.Interface) (bool, error) {
+func hasNoUserApps(client clientset.Interface) (bool, error) {
 	pods, err := client.CoreV1().Pods(apiv1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		// If we can't connect to kube apiserver, then delete cluster.

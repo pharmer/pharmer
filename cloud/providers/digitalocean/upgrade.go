@@ -115,7 +115,7 @@ func (cm *ClusterManager) updateMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.ins = append(cm.ins, masterInstance)
-	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
+	if err := cloud.WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	return nil
@@ -153,10 +153,6 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 
 		fmt.Println("Waiting for 1 minute")
 		time.Sleep(1 * time.Minute)
-		err = cloud.WaitForReadyNodes(cm.ctx, cm.cluster)
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
 	}
 	//currentIns, err := igm.listInstances(sku)
 	//if err != nil {

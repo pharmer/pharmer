@@ -108,7 +108,7 @@ func (cm *ClusterManager) masterUpdate(host, instanceName, version string) error
 	err := cmd.Run()
 	output := DefaultWriter.Output()
 	fmt.Println(output, err)
-	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
+	if err := cloud.WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
@@ -221,7 +221,7 @@ func (cm *ClusterManager) nodeUpdate(instanceName string) error {
 	err := cmd.Run()
 	output := DefaultWriter.Output()
 	fmt.Println(output, err)
-	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
+	if err := cloud.WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
@@ -331,10 +331,6 @@ func (cm *ClusterManager) rollingUpdate(oldInstances []string, newInstanceTempla
 		cm.conn.waitForZoneOperation(r.Name)
 		fmt.Println("Waiting for 1 minute")
 		time.Sleep(1 * time.Minute)
-		err = cloud.WaitForReadyNodes(cm.ctx, cm.cluster)
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
 	}
 
 	return nil

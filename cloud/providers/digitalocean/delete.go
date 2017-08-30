@@ -125,10 +125,6 @@ func (cm *ClusterManager) deleteDroplet(dropletID int, nodeName string) error {
 		return err
 	}
 	cloud.Logger(cm.ctx).Infof("Droplet %v deleted", dropletID)
-	err = cloud.DeleteNodeApiCall(cm.ctx, cm.cluster, nodeName)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 

@@ -182,13 +182,7 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroup string, size 
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	}
-	sz := *group.AutoScalingGroups[0].DesiredCapacity
-	fmt.Println("Updating autoscaling group...")
 	time.Sleep(2 * time.Minute)
-	err = cloud.WaitForReadyNodes(igm.cm.ctx, igm.cm.cluster, size-sz)
-	if err != nil {
-		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-	}
 	return nil
 }
 

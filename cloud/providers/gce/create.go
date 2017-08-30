@@ -158,21 +158,10 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// wait for nodes to start
-	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
+	if err := cloud.WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	// check all components are ok
-	if err = cloud.CheckComponentStatuses(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	// Make sure nodes are connected to master and are ready
-	if err = cloud.WaitForReadyNodes(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-
 	// -------------------------------------------------------------------------------------------------------------
 
 	time.Sleep(time.Minute * 1)

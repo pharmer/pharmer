@@ -66,10 +66,6 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 		cm.cluster.Spec.NodeGroups = append(cm.cluster.Spec.NodeGroups, ig)
 	}
 
-	if err := cloud.WaitForReadyNodes(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
 	//instances, err := igm.listInstances(req.Sku)
 	//if err != nil {
 	//	igm.cm.cluster.Status.Reason = err.Error()
