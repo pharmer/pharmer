@@ -1,12 +1,13 @@
 package azure
 
 import (
+	"context"
+
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
 	semver "github.com/hashicorp/go-version"
@@ -74,16 +75,24 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	// cluster.Spec.ctx.MasterSGName = cluster.Spec.ctx.Name + "-master-" + rand.Characters(6)
 	// cluster.Spec.ctx.NodeSGName = cluster.Spec.ctx.Name + "-node-" + rand.Characters(6)
 
-	cloud.GenClusterTokens(cm.cluster)
-
 	cm.cluster.Spec.KubeadmToken = cloud.GetKubeadmToken()
 	cm.cluster.Spec.KubernetesVersion = "v" + req.KubernetesVersion
 
+	// TODO: Load once
+	cred, err := cloud.Store(cm.ctx).Credentials().Get(cm.cluster.Spec.CredentialName)
+	if err != nil {
+		return err
+	}
+	typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
+	if ok, err := typed.IsValid(); !ok {
+		return errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cm.cluster.Spec.CredentialName, err)
+	}
+
 	cm.cluster.Spec.AzureCloudConfig = &api.AzureCloudConfig{
-		TenantID:           cm.cluster.Spec.CloudCredential[credential.AzureTenantID],
-		SubscriptionID:     cm.cluster.Spec.CloudCredential[credential.AzureSubscriptionID],
-		AadClientID:        cm.cluster.Spec.CloudCredential[credential.AzureClientID],
-		AadClientSecret:    cm.cluster.Spec.CloudCredential[credential.AzureClientSecret],
+		TenantID:           typed.TenantID(),
+		SubscriptionID:     typed.SubscriptionID(),
+		AadClientID:        typed.ClientID(),
+		AadClientSecret:    typed.ClientSecret(),
 		ResourceGroup:      cm.namer.ResourceGroupName(),
 		Location:           cm.cluster.Spec.Zone,
 		SubnetName:         cm.namer.SubnetName(),
@@ -104,8 +113,8 @@ func (cm *ClusterManager) LoadDefaultContext() error {
 		return errors.FromErr(err).Err()
 	}
 
-	cm.cluster.Spec.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.cluster.Name)
-	cm.cluster.Spec.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.cluster.Name)
+	cm.cluster.Spec.ClusterExternalDomain = cloud.Extra(cm.ctx).ExternalDomain(cm.cluster.Name)
+	cm.cluster.Spec.ClusterInternalDomain = cloud.Extra(cm.ctx).InternalDomain(cm.cluster.Name)
 
 	cm.cluster.Status.Phase = api.ClusterPhasePending
 	// cm.cluster.Spec.OS = "Debian" // offer: "16.04.0-LTS"
@@ -204,12 +213,5 @@ func (cm *ClusterManager) LoadDefaultContext() error {
 	}
 
 	cloud.BuildRuntimeConfig(cm.cluster)
-	return nil
-}
-
-func (cm *ClusterManager) UploadStartupConfig() error {
-	if api.UseFirebase() {
-		return cloud.UploadAllCertsInFirebase(cm.ctx, cm.cluster)
-	}
 	return nil
 }

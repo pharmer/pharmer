@@ -43,7 +43,7 @@ type DNSProvider struct {
 
 type PharmerConfig struct {
 	TypeMeta    `json:",inline,omitempty"`
-	Context     string         `json:context,omitempty`
+	Context     string         `json:"context,omitempty"`
 	Credentials []Credential   `json:"credentials,omitempty"`
 	Store       StorageBackend `json:"store,omitempty"`
 	DNS         *DNSProvider   `json:"dns,omitempty"`

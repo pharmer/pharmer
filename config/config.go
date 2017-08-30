@@ -1,15 +1,21 @@
 package config
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	"github.com/appscode/go-dns"
+	dns_provider "github.com/appscode/go-dns/provider"
 	yc "github.com/appscode/go/encoding/yaml"
 	_env "github.com/appscode/go/env"
-	"github.com/appscode/log"
+	"github.com/appscode/go/log"
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/storage"
+	"github.com/appscode/pharmer/storage/providers/fake"
+	"github.com/appscode/pharmer/storage/providers/vfs"
 	"github.com/ghodss/yaml"
 	flag "github.com/spf13/pflag"
 	"k8s.io/client-go/util/homedir"
@@ -85,4 +91,22 @@ func NewDefaultConfig() *api.PharmerConfig {
 			},
 		},
 	}
+}
+
+func NewStoreProvider(ctx context.Context, cfg *api.PharmerConfig) storage.Interface {
+	if store, err := storage.GetProvider(vfs.UID, ctx, cfg); err == nil {
+		return store
+	}
+	return &fake.FakeStore{}
+}
+
+func NewDNSProvider(cfg *api.PharmerConfig) dns_provider.Provider {
+	if cfg.DNS != nil {
+		if cred, err := cfg.GetCredential(cfg.DNS.CredentialName); err == nil {
+			if dp, err := dns.NewDNSProvider(cred.Spec.Provider); err == nil {
+				return dp
+			}
+		}
+	}
+	return &api.FakeDNSProvider{}
 }

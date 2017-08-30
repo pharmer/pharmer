@@ -3,6 +3,7 @@ package credential
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -73,15 +74,15 @@ func (c *CommonSpec) LoadFromEnv() {
 	}
 }
 
-func (c CommonSpec) IsValid() bool {
+func (c CommonSpec) IsValid() (bool, error) {
 	if cf, ok := files.GetCredentialFormat(c.Provider); ok {
 		for _, f := range cf.Fields {
 			if _, found := c.Data[f.JSON]; !found {
-				return false
+				return false, fmt.Errorf("Missing key: %s", f.JSON)
 			}
 		}
 	}
-	return true
+	return true, nil
 }
 
 func (c CommonSpec) ToRawMap() map[string]string {

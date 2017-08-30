@@ -6,7 +6,7 @@ import (
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
@@ -15,13 +15,13 @@ import (
 )
 
 func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
-	if !cloud.UpgradeRequired(cm.cluster, req) {
-		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
-		return nil
-	}
+	//if !cloud.UpgradeRequired(cm.cluster, req) {
+	//	cloud.Logger(cm.ctx).Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
+	//	return nil
+	//}
 
 	if cm.conn == nil {
-		conn, err := NewConnector(cm.cluster)
+		conn, err := NewConnector(cm.ctx, cm.cluster)
 		if err != nil {
 			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -35,7 +35,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	cm.cluster.Spec.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
 	cm.cluster.Spec.KubernetesVersion = req.KubernetesVersion
 
-	_, err := cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+	_, err := cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -54,7 +54,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins.Instances, _ = cm.ctx.Store().Instances(cm.cluster.Name).List(api.ListOptions{})
+	cm.ins.Instances, _ = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
 	if err = cm.conn.detectJessieImage(); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -71,12 +71,12 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 		}
 	}
 
-	_, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
-	cm.ctx.Store().Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
+	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Update Completed")
+	cloud.Logger(cm.ctx).Infof("Update Completed")
 	return nil
 }
 
@@ -94,7 +94,6 @@ func (cm *ClusterManager) updateMaster() error {
 }
 func (cm *ClusterManager) restartMaster() error {
 	fmt.Println("Updating Master...")
-	cm.UploadStartupConfig()
 
 	masterInstanceID, err := cm.createMasterInstance(cm.cluster.Spec.KubernetesMasterName, api.RoleKubernetesMaster)
 	if err != nil {
@@ -109,13 +108,13 @@ func (cm *ClusterManager) restartMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.ctx.Logger().Infof("Attaching persistent data volume %v to master", cm.cluster.Spec.MasterDiskId)
+	cloud.Logger(cm.ctx).Infof("Attaching persistent data volume %v to master", cm.cluster.Spec.MasterDiskId)
 	r1, err := cm.conn.ec2.AttachVolume(&_ec2.AttachVolumeInput{
 		VolumeId:   types.StringP(cm.cluster.Spec.MasterDiskId),
 		Device:     types.StringP("/dev/sdb"),
 		InstanceId: types.StringP(masterInstanceID),
 	})
-	cm.ctx.Logger().Debugln("Attached persistent data volume to master", r1, err)
+	cloud.Logger(cm.ctx).Debugln("Attached persistent data volume to master", r1, err)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -148,12 +147,12 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	for _, c := range gc {*/
-	ctxV, err := cloud.GetExistingContextVersion(cm.cluster, sku)
+	ctxV, err := cloud.GetExistingContextVersion(cm.ctx, cm.cluster, sku)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	groupName := cm.namer.AutoScalingGroupName(sku)
-	cm.ctx.Logger().Infof(" Updating Node groups %v", groupName)
+	cloud.Logger(cm.ctx).Infof(" Updating Node groups %v", groupName)
 	// TODO: Namer needs fix
 	newLaunchConfig := cm.namer.LaunchConfigName(sku)
 	oldLaunchConfig := cm.namer.LaunchConfigNameWithContext(sku, ctxV)
@@ -185,7 +184,7 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 		}
 		err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
 		// cluster.Spec.ctx.Instances = append(cluster.Spec.ctx.Instances, instances...)
-		_, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+		_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}

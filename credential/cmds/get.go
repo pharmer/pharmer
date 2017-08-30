@@ -1,15 +1,14 @@
 package cmds
 
 import (
-	go_ctx "context"
+	gtx "context"
 	"fmt"
 	"os"
 	"text/tabwriter"
 
-	"github.com/appscode/log"
+	"github.com/appscode/go/log"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/config"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/spf13/cobra"
 )
@@ -32,7 +31,7 @@ func NewCmdGet() *cobra.Command {
 			if err != nil {
 				log.Fatalln(err)
 			}
-			store := context.NewStoreProvider(go_ctx.TODO(), cfg)
+			store := config.NewStoreProvider(gtx.TODO(), cfg)
 			creds, err := store.Credentials().List(api.ListOptions{})
 			if err != nil {
 				log.Fatalln(err)

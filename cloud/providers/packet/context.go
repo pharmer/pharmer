@@ -1,11 +1,12 @@
 package packet
 
 import (
+	"context"
+
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
 )
@@ -69,7 +70,17 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.cluster.Spec.DoNotDelete = req.DoNotDelete
 
 	cm.cluster.SetNodeGroups(req.NodeGroups)
-	cm.cluster.Spec.Project = cm.cluster.Spec.CloudCredential[credential.PacketProjectID]
+
+	// TODO: Load once
+	cred, err := cloud.Store(cm.ctx).Credentials().Get(cm.cluster.Spec.CredentialName)
+	if err != nil {
+		return err
+	}
+	typed := credential.Packet{CommonSpec: credential.CommonSpec(cred.Spec)}
+	if ok, err := typed.IsValid(); !ok {
+		return errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cm.cluster.Spec.CredentialName, err)
+	}
+	cm.cluster.Spec.Project = typed.ProjectID()
 
 	cm.cluster.Spec.KubernetesMasterName = cm.namer.MasterName()
 	cm.cluster.Spec.SSHKey, err = api.NewSSHKeyPair()
@@ -78,8 +89,6 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	}
 	cm.cluster.Spec.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
 	cm.cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
-
-	cloud.GenClusterTokens(cm.cluster)
 
 	return nil
 }
@@ -97,12 +106,5 @@ func (cm *ClusterManager) LoadDefaultContext() error {
 	cm.cluster.Spec.VpnPsk = ""
 
 	cloud.BuildRuntimeConfig(cm.cluster)
-	return nil
-}
-
-func (cm *ClusterManager) UploadStartupConfig() error {
-	if api.UseFirebase() {
-		return cloud.UploadStartupConfigInFirebase(cm.ctx, cm.cluster)
-	}
 	return nil
 }

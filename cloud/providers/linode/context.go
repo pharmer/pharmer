@@ -1,13 +1,14 @@
 package linode
 
 import (
+	"context"
+
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
 	_env "github.com/appscode/go/env"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
 )
 
@@ -79,8 +80,6 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.cluster.Spec.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
 	cm.cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
 
-	cloud.GenClusterTokens(cm.cluster)
-
 	return nil
 }
 
@@ -98,12 +97,5 @@ func (cm *ClusterManager) LoadDefaultContext() error {
 	cm.cluster.Spec.MasterSKU = "2" // plan_id 2 label {"Linode 4096"} cpu 2 ram 4096 disk 48
 
 	cloud.BuildRuntimeConfig(cm.cluster)
-	return nil
-}
-
-func (cm *ClusterManager) UploadStartupConfig() error {
-	if api.UseFirebase() {
-		return cloud.UploadStartupConfigInFirebase(cm.ctx, cm.cluster)
-	}
 	return nil
 }

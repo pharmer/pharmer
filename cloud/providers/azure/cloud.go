@@ -1,6 +1,7 @@
 package azure
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
@@ -10,9 +11,9 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/context"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 )
 
@@ -35,24 +36,13 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	subscriptionID, ok := cluster.Spec.CloudCredential[credential.AzureSubscriptionID]
-	if !ok {
-		return nil, errors.New("Missing", credential.AzureSubscriptionID).WithContext(ctx).Err()
+	cred, err := cloud.Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	if err != nil {
+		return nil, err
 	}
-
-	tenantID, ok := cluster.Spec.CloudCredential[credential.AzureTenantID]
-	if !ok {
-		return nil, errors.New("Missing", credential.AzureTenantID).WithContext(ctx).Err()
-	}
-
-	clientID, ok := cluster.Spec.CloudCredential[credential.AzureClientID]
-	if !ok {
-		return nil, errors.New("Missing", credential.AzureClientID).WithContext(ctx).Err()
-	}
-
-	clientSecret, ok := cluster.Spec.CloudCredential[credential.AzureClientSecret]
-	if !ok {
-		return nil, errors.New("Missing", credential.AzureClientSecret).WithContext(ctx).Err()
+	typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
+	if ok, err := typed.IsValid(); !ok {
+		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
 	/*
@@ -67,12 +57,12 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	*/
 	baseURI := azure.PublicCloud.ResourceManagerEndpoint
 
-	config, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, tenantID)
+	config, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, typed.TenantID())
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
 	}
 
-	spt, err := adal.NewServicePrincipalToken(*config, clientID, clientSecret, baseURI)
+	spt, err := adal.NewServicePrincipalToken(*config, typed.ClientID(), typed.ClientSecret(), baseURI)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
 	}
@@ -84,21 +74,21 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: compute.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			SubscriptionID: subscriptionID,
+			SubscriptionID: typed.SubscriptionID(),
 		},
 	}
 	vmClient := compute.VirtualMachinesClient{
 		ManagementClient: compute.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			SubscriptionID: subscriptionID,
+			SubscriptionID: typed.SubscriptionID(),
 		},
 	}
 	vmExtensionsClient := compute.VirtualMachineExtensionsClient{
 		ManagementClient: compute.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			SubscriptionID: subscriptionID,
+			SubscriptionID: typed.SubscriptionID(),
 		},
 	}
 
@@ -106,56 +96,56 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: resources.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			SubscriptionID: subscriptionID,
+			SubscriptionID: typed.SubscriptionID(),
 		},
 	}
 	virtualNetworksClient := network.VirtualNetworksClient{
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			SubscriptionID: subscriptionID,
+			SubscriptionID: typed.SubscriptionID(),
 		},
 	}
 	publicIPAddressesClient := network.PublicIPAddressesClient{
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			SubscriptionID: subscriptionID,
+			SubscriptionID: typed.SubscriptionID(),
 		},
 	}
 	securityGroupsClient := network.SecurityGroupsClient{
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			SubscriptionID: subscriptionID,
+			SubscriptionID: typed.SubscriptionID(),
 		},
 	}
 	securityRulesClient := network.SecurityRulesClient{
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			SubscriptionID: subscriptionID,
+			SubscriptionID: typed.SubscriptionID(),
 		},
 	}
 	subnetsClient := network.SubnetsClient{
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			SubscriptionID: subscriptionID,
+			SubscriptionID: typed.SubscriptionID(),
 		},
 	}
 	routeTablesClient := network.RouteTablesClient{
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			SubscriptionID: subscriptionID,
+			SubscriptionID: typed.SubscriptionID(),
 		},
 	}
 	interfacesClient := network.InterfacesClient{
 		ManagementClient: network.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			SubscriptionID: subscriptionID,
+			SubscriptionID: typed.SubscriptionID(),
 		},
 	}
 
@@ -163,7 +153,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ManagementClient: storage.ManagementClient{
 			Client:         client,
 			BaseURI:        baseURI,
-			SubscriptionID: subscriptionID,
+			SubscriptionID: typed.SubscriptionID(),
 		},
 	}
 

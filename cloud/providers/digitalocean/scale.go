@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 )
@@ -21,12 +21,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 
 	//purchasePHIDs := cm.ctx.Metadata["PurchasePhids"].([]string)
 	cm.namer = namer{cluster: cm.cluster}
-	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	cm.ins.Instances, _ = cm.ctx.Store().Instances(cm.cluster.Name).List(api.ListOptions{})
+	cm.ins, _ = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
 	im := &instanceManager{cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 
 	inst := cloud.Instance{
@@ -43,7 +38,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	}
 
 	fmt.Println(cm.cluster.NodeCount(), "<<<----------")
-	nodeAdjust, _ := cloud.Mutator(cm.cluster, inst)
+	nodeAdjust, _ := cloud.Mutator(cm.ctx, cm.cluster, inst)
 	fmt.Println(cm.cluster.NodeCount(), "------->>>>>>>>")
 	igm := &InstanceGroupManager{
 		cm:       cm,
@@ -75,13 +70,13 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	instances, err := igm.listInstances(req.Sku)
-	if err != nil {
-		igm.cm.cluster.Status.Reason = err.Error()
-		//return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-	}
-	cloud.AdjustDbInstance(cm.ctx, cm.ins, instances, req.Sku)
+	//instances, err := igm.listInstances(req.Sku)
+	//if err != nil {
+	//	igm.cm.cluster.Status.Reason = err.Error()
+	//	//return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	//}
+	//// cloud.AdjustDbInstance(cm.ctx, cm.ins, instances, req.Sku)
 
-	cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+	cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	return nil
 }

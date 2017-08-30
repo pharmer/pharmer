@@ -1,11 +1,12 @@
 package vultr
 
 import (
+	"context"
+
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
 )
 
@@ -77,8 +78,6 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.cluster.Spec.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
 	cm.cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
 
-	cloud.GenClusterTokens(cm.cluster)
-
 	return nil
 }
 
@@ -95,12 +94,5 @@ func (cm *ClusterManager) LoadDefaultContext() error {
 	// https://discuss.vultr.com/discussion/197/what-is-the-meaning-of-enable-private-network
 	cm.cluster.Spec.EnableClusterVPN = ""
 	cm.cluster.Spec.VpnPsk = ""
-	return nil
-}
-
-func (cm *ClusterManager) UploadStartupConfig() error {
-	if api.UseFirebase() {
-		return cloud.UploadStartupConfigInFirebase(cm.ctx, cm.cluster)
-	}
 	return nil
 }

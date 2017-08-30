@@ -1,18 +1,19 @@
 package digitalocean
 
 import (
+	"context"
+
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
 )
 
 type ClusterManager struct {
 	ctx     context.Context
 	cluster *api.Cluster
-	ins     *api.ClusterInstances
+	ins     []*api.Instance
 	conn    *cloudConnector
 	namer   namer
 }
@@ -69,8 +70,6 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.cluster.Spec.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
 	cm.cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
 
-	cloud.GenClusterTokens(cm.cluster)
-
 	cm.cluster.Spec.KubeadmToken = cloud.GetKubeadmToken()
 	cm.cluster.Spec.KubernetesVersion = "v" + req.KubernetesVersion
 
@@ -86,12 +85,5 @@ func (cm *ClusterManager) LoadDefaultContext() error {
 	cm.cluster.Spec.OS = "debian"
 	cm.cluster.Spec.MasterSKU = "2gb"
 
-	return nil
-}
-
-func (cm *ClusterManager) UploadStartupConfig() error {
-	if api.UseFirebase() {
-		return cloud.UploadStartupConfigInFirebase(cm.ctx, cm.cluster)
-	}
 	return nil
 }

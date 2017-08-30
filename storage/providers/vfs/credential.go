@@ -10,6 +10,7 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/storage"
 	"github.com/graymeta/stow"
+	"github.com/tamalsaha/go-oneliners"
 )
 
 type CredentialFileStore struct {
@@ -60,7 +61,7 @@ func (s *CredentialFileStore) Get(name string) (*api.Credential, error) {
 	if name == "" {
 		return nil, errors.New("Missing credential name")
 	}
-
+	oneliners.FILE(s.container.ID(), s.resourceID(name))
 	item, err := s.container.Item(s.resourceID(name))
 	if err != nil {
 		return nil, fmt.Errorf("Credential `%s` does not exist. Reason: %v", name, err)

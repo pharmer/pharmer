@@ -1,93 +1,40 @@
 package cloud
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
+	stringz "github.com/appscode/go/strings"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/context"
 	"github.com/cenkalti/backoff"
 	"github.com/olekukonko/tablewriter"
+	"github.com/tamalsaha/go-oneliners"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	clientset "k8s.io/client-go/kubernetes"
 	apiv1 "k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/cert"
 )
 
-func EnsureARecord(ctx context.Context, cluster *api.Cluster, master *api.Instance) error {
-	clusterDomain := ctx.Extra().Domain(cluster.Name)
-	// TODO: FixIT!
-	//for _, ip := range system.Config.Compass.IPs {
-	//	if err := ctx.DNSProvider().EnsureARecord(clusterDomain, ip); err != nil {
-	//		return err
-	//	}
-	//}
-	ctx.Logger().Infof("Cluster apps A record %v added", clusterDomain)
-	externalDomain := ctx.Extra().ExternalDomain(cluster.Name)
-	if err := ctx.DNSProvider().EnsureARecord(externalDomain, master.Status.ExternalIP); err != nil {
-		return err
+// WARNING:
+// Returned KubeClient uses admin bearer token. This should only be used for cluster provisioning operations.
+func NewAdminClient(ctx context.Context, cluster *api.Cluster) (clientset.Interface, error) {
+	cfg := &rest.Config{
+		Host: cluster.ApiServerURL(),
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData:   cert.EncodeCertPEM(CACert(ctx)),
+			CertData: cert.EncodeCertPEM(AdminUserCert(ctx)),
+			KeyData:  cert.EncodePrivateKeyPEM(AdminUserKey(ctx)),
+		},
 	}
-	ctx.Logger().Infof("External A record %v added", externalDomain)
-	internalDomain := ctx.Extra().InternalDomain(cluster.Name)
-	if err := ctx.DNSProvider().EnsureARecord(internalDomain, master.Status.InternalIP); err != nil {
-		return err
-	}
-	ctx.Logger().Infof("Internal A record %v added", internalDomain)
-	return nil
-}
-
-func DeleteARecords(ctx context.Context, cluster *api.Cluster) error {
-	clusterDomain := ctx.Extra().Domain(cluster.Name)
-	if err := ctx.DNSProvider().DeleteARecords(clusterDomain); err == nil {
-		ctx.Logger().Infof("Cluster apps A record %v deleted", clusterDomain)
-	}
-
-	externalDomain := ctx.Extra().ExternalDomain(cluster.Name)
-	if err := ctx.DNSProvider().DeleteARecords(externalDomain); err == nil {
-		ctx.Logger().Infof("External A record %v deleted", externalDomain)
-	}
-
-	internalDomain := ctx.Extra().InternalDomain(cluster.Name)
-	if err := ctx.DNSProvider().DeleteARecords(internalDomain); err == nil {
-		ctx.Logger().Infof("Internal A record %v deleted", internalDomain)
-	}
-
-	return nil
-}
-
-func EnsureDnsIPLookup(ctx context.Context, cluster *api.Cluster) error {
-	externalDomain := ctx.Extra().ExternalDomain(cluster.Name)
-	attempt := 0
-	for attempt < 120 {
-		ips, err := net.LookupIP(externalDomain)
-		if len(ips) > 0 && err == nil {
-			return nil
-		}
-
-		ctx.Logger().Infof("Verifying external DNS %v ... attempt no. %v", externalDomain, attempt)
-		time.Sleep(time.Duration(30) * time.Second)
-		attempt++
-	}
-
-	internalDomain := ctx.Extra().InternalDomain(cluster.Name)
-	attempt = 0
-	for attempt < 120 {
-		ips, err := net.LookupIP(internalDomain)
-		if len(ips) > 0 && err == nil {
-			return nil
-		}
-
-		ctx.Logger().Infof("Verifying internal DNS %v .. attempt no. %v", internalDomain, attempt)
-		time.Sleep(time.Duration(30) * time.Second)
-		attempt++
-	}
-	return errors.New("Master DNS failed to propagate in allocated time slot").WithContext(ctx).Err()
+	return clientset.NewForConfig(cfg)
 }
 
 func ProbeKubeAPI(ctx context.Context, cluster *api.Cluster) error {
@@ -98,33 +45,33 @@ func ProbeKubeAPI(ctx context.Context, cluster *api.Cluster) error {
 		  --max-time 5 --fail --output /dev/null --silent \
 		  "https://${KUBE_MASTER_IP}/api/v1/pods"
 	*/
-	caCert, err := base64.StdEncoding.DecodeString(cluster.Spec.CaCert)
-	if err != nil {
-		return errors.FromErr(err).WithContext(ctx).Err()
-	}
-
-	cluster.DetectApiServerURL()
-	url := cluster.Spec.ApiServerUrl + "/api"
+	oneliners.FILE()
+	url := cluster.ApiServerURL() + "/api"
+	oneliners.FILE()
 	mTLSConfig := &tls.Config{}
 	certs := x509.NewCertPool()
-	certs.AppendCertsFromPEM([]byte(caCert))
+	oneliners.FILE()
+	certs.AppendCertsFromPEM(cert.EncodeCertPEM(CACert(ctx)))
+	oneliners.FILE()
 	mTLSConfig.RootCAs = certs
 	tr := &http.Transport{
 		TLSClientConfig: mTLSConfig,
 	}
-
+	oneliners.FILE()
 	client := &http.Client{Transport: tr}
 	req, _ := http.NewRequest("GET", url, nil)
+	oneliners.FILE()
 	// req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", cluster.Spec.KubeletToken))
 	attempt := 0
 	// try for 30 mins
-	ctx.Logger().Info("Checking Api")
+	oneliners.FILE()
+	Logger(ctx).Info("Checking Api")
 	for attempt < 40 {
-		ctx.Logger().Infof("Attempt %v: probing kubernetes api for cluster %v ...", attempt, cluster.Name)
+		Logger(ctx).Infof("Attempt %v: probing kubernetes api for cluster %v ...", attempt, cluster.Name)
 		_, err := client.Do(req)
 		fmt.Print("=")
 		if err == nil {
-			ctx.Logger().Infof("Successfully connected to kubernetes api for cluster %v", cluster.Name)
+			Logger(ctx).Infof("Successfully connected to kubernetes api for cluster %v", cluster.Name)
 			return nil
 		}
 		attempt++
@@ -134,13 +81,13 @@ func ProbeKubeAPI(ctx context.Context, cluster *api.Cluster) error {
 }
 
 func CheckComponentStatuses(ctx context.Context, cluster *api.Cluster) error {
-	kubeClient, err := NewAdminClient(cluster)
+	kubeClient, err := NewAdminClient(ctx, cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
 
 	backoff.Retry(func() error {
-		resp, err := kubeClient.Client.CoreV1().ComponentStatuses().List(metav1.ListOptions{
+		resp, err := kubeClient.CoreV1().ComponentStatuses().List(metav1.ListOptions{
 			LabelSelector: labels.Everything().String(),
 		})
 		if err != nil {
@@ -155,21 +102,21 @@ func CheckComponentStatuses(ctx context.Context, cluster *api.Cluster) error {
 		}
 		return nil
 	}, backoff.NewExponentialBackOff())
-	ctx.Logger().Info("Basic componenet status are ok")
+	Logger(ctx).Info("Basic componenet status are ok")
 	return nil
 }
 
 func DeleteNodeApiCall(ctx context.Context, cluster *api.Cluster, name string) error {
-	kubeClient, err := NewAdminClient(cluster)
+	kubeClient, err := NewAdminClient(ctx, cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
 
-	return kubeClient.Client.CoreV1().Nodes().Delete(name, &metav1.DeleteOptions{})
+	return kubeClient.CoreV1().Nodes().Delete(name, &metav1.DeleteOptions{})
 }
 
 func WaitForReadyNodes(ctx context.Context, cluster *api.Cluster, newNode ...int64) error {
-	kubeClient, err := NewAdminClient(cluster)
+	kubeClient, err := NewAdminClient(ctx, cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
@@ -179,7 +126,7 @@ func WaitForReadyNodes(ctx context.Context, cluster *api.Cluster, newNode ...int
 		adjust = newNode[0]
 	}
 	totalNode := cluster.NodeCount() + adjust
-	ctx.Logger().Debug("Number of Nodes = ", totalNode, "adjust = ", adjust)
+	Logger(ctx).Debug("Number of Nodes = ", totalNode, "adjust = ", adjust)
 	attempt := 0
 	for attempt < 30 {
 		isReady := 0
@@ -187,7 +134,7 @@ func WaitForReadyNodes(ctx context.Context, cluster *api.Cluster, newNode ...int
 		table.SetHeader([]string{"NAME", "LABELS", "STATUS"})
 
 		nodes := &apiv1.NodeList{}
-		if kubeClient.Client.CoreV1().RESTClient().Get().Resource("nodes").Do().Into(nodes); err != nil {
+		if kubeClient.CoreV1().RESTClient().Get().Resource("nodes").Do().Into(nodes); err != nil {
 			return errors.FromErr(err).WithContext(ctx).Err()
 		}
 		for _, node := range nodes.Items {
@@ -202,13 +149,77 @@ func WaitForReadyNodes(ctx context.Context, cluster *api.Cluster, newNode ...int
 		}
 		table.SetBorder(true)
 		if isReady == int(totalNode) {
-			ctx.Logger().Info("All nodes are ready")
+			Logger(ctx).Info("All nodes are ready")
 			table.Render()
 			return nil
 		}
-		ctx.Logger().Infof("%v nodes ready, waiting...", isReady)
+		Logger(ctx).Infof("%v nodes ready, waiting...", isReady)
 		attempt++
 		time.Sleep(time.Duration(60) * time.Second)
 	}
 	return errors.New("Nodes are not ready after allocated wait time.").WithContext(ctx).Err()
+}
+
+var restrictedNamespaces []string = []string{"appscode", "kube-system"}
+
+func hasNoUserApps(ctx context.Context, clusterName string, client clientset.Interface) (bool, error) {
+	pods, err := client.CoreV1().Pods(apiv1.NamespaceAll).List(metav1.ListOptions{})
+	if err != nil {
+		// If we can't connect to kube apiserver, then delete cluster.
+		// Cluster probably failed to create.
+		return true, nil
+	}
+	for _, pod := range pods.Items {
+		if pod.Status.Phase == "Running" && !stringz.Contains(restrictedNamespaces, pod.Namespace) {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func deleteLoadBalancers(client clientset.Interface) error {
+	// Delete services with type = LoadBalancer
+	backoff.Retry(func() error {
+		svcs, err := client.CoreV1().Services("").List(metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		for _, svc := range svcs.Items {
+			if svc.Spec.Type == apiv1.ServiceTypeLoadBalancer {
+				trueValue := true
+				err = client.CoreV1().Services(svc.Namespace).Delete(svc.Name, &metav1.DeleteOptions{OrphanDependents: &trueValue})
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}, backoff.NewExponentialBackOff())
+
+	return nil
+}
+
+func deleteDyanamicVolumes(client clientset.Interface) error {
+	backoff.Retry(func() error {
+		pvcs, err := client.CoreV1().PersistentVolumeClaims("").List(metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		for _, pvc := range pvcs.Items {
+			if pvc.Status.Phase == apiv1.ClaimBound {
+				for k, v := range pvc.Annotations {
+					if (k == "volume.alpha.kubernetes.io/storage-class" ||
+						k == "volume.beta.kubernetes.io/storage-class") && v != "" {
+						trueValue := true
+						err = client.CoreV1().PersistentVolumeClaims(pvc.Namespace).Delete(pvc.Name, &metav1.DeleteOptions{OrphanDependents: &trueValue})
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+		return nil
+	}, backoff.NewExponentialBackOff())
+	return nil
 }

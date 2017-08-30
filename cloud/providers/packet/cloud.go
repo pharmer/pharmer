@@ -1,12 +1,13 @@
 package packet
 
 import (
+	"context"
 	"strings"
 	"time"
 
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/context"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	"github.com/packethost/packngo"
 )
@@ -18,20 +19,25 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	apiKey, ok := cluster.Spec.CloudCredential[credential.PacketAPIKey]
-	if !ok {
-		return nil, errors.New().WithMessagef("Cluster %v credential is missing %v", cluster.Name, credential.PacketAPIKey)
+	cred, err := cloud.Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: FixIt Project ID
+	typed := credential.Packet{CommonSpec: credential.CommonSpec(cred.Spec)}
+	if ok, err := typed.IsValid(); !ok {
+		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 	return &cloudConnector{
 		ctx:    ctx,
-		client: packngo.NewClient("", apiKey, nil),
+		client: packngo.NewClient("", typed.APIKey(), nil),
 	}, nil
 }
 
 func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 	attempt := 0
 	for true {
-		conn.ctx.Logger().Infof("Checking status of instance %v", deviceID)
+		cloud.Logger(conn.ctx).Infof("Checking status of instance %v", deviceID)
 		s, _, err := conn.client.Devices.Get(deviceID)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -39,7 +45,7 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 		if strings.ToLower(s.State) == status {
 			break
 		}
-		conn.ctx.Logger().Infof("Instance %v (%v) is %v, waiting...", s.Hostname, s.ID, s.State)
+		cloud.Logger(conn.ctx).Infof("Instance %v (%v) is %v, waiting...", s.Hostname, s.ID, s.State)
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

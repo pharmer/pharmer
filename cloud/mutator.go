@@ -1,12 +1,12 @@
 package cloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
 )
@@ -35,9 +35,9 @@ type InstanceController struct {
 	Client clientset.Interface
 }
 
-func Mutator(cluster *api.Cluster, expectedInstance Instance) (int64, error) {
-	kc, err := NewAdminClient(cluster)
-	nodes, err := kc.Client.CoreV1().Nodes().List(metav1.ListOptions{})
+func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instance) (int64, error) {
+	kc, err := NewAdminClient(ctx, cluster)
+	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -177,16 +177,16 @@ func AdjustDbInstance(ctx context.Context, cm *api.ClusterInstances, instances [
 		}
 	}
 
-	return ctx.Store().Instances("cm.cluster").SaveInstances(cm.Instances)
+	return Store(ctx).Instances("cm.cluster").SaveInstances(cm.Instances)
 }
 
-func GetExistingContextVersion(cluster *api.Cluster, sku string) (int64, error) {
-	kc, err := NewAdminClient(cluster)
+func GetExistingContextVersion(ctx context.Context, cluster *api.Cluster, sku string) (int64, error) {
+	kc, err := NewAdminClient(ctx, cluster)
 	if err != nil {
 		log.Fatal(err)
 	}
 	//re, _ := labels.NewRequirement(api.NodeLabelKey_SKU, selection.Equals, []string{sku})
-	nodes, err := kc.Client.CoreV1().Nodes().List(metav1.ListOptions{
+	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{
 	//LabelSelector: labels.Selector.Add(*re).Matches(labels.Labels(api.NodeLabelKey_SKU)),
 	})
 	if err != nil {

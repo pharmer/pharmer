@@ -1,21 +1,16 @@
 package aws
 
 import (
-	"bytes"
-	"encoding/base64"
-	"fmt"
+	"context"
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
-	"github.com/appscode/go/crypto/rand"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/context"
 	"github.com/appscode/pharmer/phid"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
-	_s3 "github.com/aws/aws-sdk-go/service/s3"
 	semver "github.com/hashicorp/go-version"
 )
 
@@ -42,7 +37,7 @@ func New(ctx context.Context) cloud.ClusterManager {
 }
 
 func (cm *ClusterManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
-	conn, err := NewConnector(nil)
+	conn, err := NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +68,6 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 
 	cm.cluster.Spec.Region = cm.cluster.Spec.Zone[0 : len(cm.cluster.Spec.Zone)-1]
 	cm.cluster.Spec.DoNotDelete = req.DoNotDelete
-	cm.cluster.Spec.BucketName = "kubernetes-" + cm.cluster.Name + "-" + rand.Characters(8)
 
 	cm.cluster.SetNodeGroups(req.NodeGroups)
 
@@ -108,8 +102,6 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.cluster.Spec.MasterSGName = cm.namer.GenMasterSGName()
 	cm.cluster.Spec.NodeSGName = cm.namer.GenNodeSGName()
 
-	cloud.GenClusterTokens(cm.cluster)
-
 	cm.cluster.Spec.KubeadmToken = cloud.GetKubeadmToken()
 	cm.cluster.Spec.KubernetesVersion = "v" + req.KubernetesVersion
 
@@ -122,8 +114,8 @@ func (cm *ClusterManager) LoadDefaultContext() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.cluster.Spec.ClusterExternalDomain = cm.ctx.Extra().ExternalDomain(cm.cluster.Name)
-	cm.cluster.Spec.ClusterInternalDomain = cm.ctx.Extra().InternalDomain(cm.cluster.Name)
+	cm.cluster.Spec.ClusterExternalDomain = cloud.Extra(cm.ctx).ExternalDomain(cm.cluster.Name)
+	cm.cluster.Spec.ClusterInternalDomain = cloud.Extra(cm.ctx).InternalDomain(cm.cluster.Name)
 
 	cm.cluster.Status.Phase = api.ClusterPhasePending
 	cm.cluster.Spec.OS = "ubuntu"
@@ -208,89 +200,6 @@ func (cm *ClusterManager) LoadDefaultContext() error {
 	return nil
 }
 
-func (cm *ClusterManager) UploadStartupConfig() error {
-	_, err := cm.conn.s3.GetBucketLocation(&_s3.GetBucketLocationInput{Bucket: types.StringP(cm.cluster.Spec.BucketName)})
-	if err != nil {
-		_, err = cm.conn.s3.CreateBucket(&_s3.CreateBucketInput{Bucket: types.StringP(cm.cluster.Spec.BucketName)})
-		if err != nil {
-			cm.ctx.Logger().Debugf("Bucket name is no unique")
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-	}
-
-	{
-		cfg, err := cm.cluster.StartupConfigResponse(api.RoleKubernetesMaster)
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.cluster.Spec.ResourceVersion, api.RoleKubernetesMaster)
-		params := &_s3.PutObjectInput{
-			Bucket: types.StringP(cm.cluster.Spec.BucketName),
-			Key:    types.StringP(path),
-			ACL:    types.StringP("authenticated-read"),
-			Body:   bytes.NewReader([]byte(cfg)),
-		}
-		_, err = cm.conn.s3.PutObject(params)
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-	}
-	{
-		caCert, err := base64.StdEncoding.DecodeString(cm.cluster.Spec.CaCert)
-		path := fmt.Sprintf("kubernetes/context/%v/pki/ca.crt", cm.cluster.Spec.ResourceVersion)
-		if err = cm.bucketStore(path, caCert); err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		caKey, err := base64.StdEncoding.DecodeString(cm.cluster.Spec.CaKey)
-		path = fmt.Sprintf("kubernetes/context/%v/pki/ca.key", cm.cluster.Spec.ResourceVersion)
-		if err = cm.bucketStore(path, caKey); err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		frontCACert, err := base64.StdEncoding.DecodeString(cm.cluster.Spec.FrontProxyCaCert)
-		path = fmt.Sprintf("kubernetes/context/%v/pki/front-proxy-ca.crt", cm.cluster.Spec.ResourceVersion)
-		if err = cm.bucketStore(path, frontCACert); err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		frontCAKey, err := base64.StdEncoding.DecodeString(cm.cluster.Spec.FrontProxyCaKey)
-		path = fmt.Sprintf("kubernetes/context/%v/pki/front-proxy-ca.key", cm.cluster.Spec.ResourceVersion)
-		if err = cm.bucketStore(path, frontCAKey); err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-	}
-	{
-		cfg, err := cm.cluster.StartupConfigResponse(api.RoleKubernetesPool)
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		path := fmt.Sprintf("kubernetes/context/%v/startup-config/%v.yaml", cm.cluster.Spec.ResourceVersion, api.RoleKubernetesPool)
-		params := &_s3.PutObjectInput{
-			Bucket: types.StringP(cm.cluster.Spec.BucketName),
-			Key:    types.StringP(path),
-			ACL:    types.StringP("authenticated-read"),
-			Body:   bytes.NewReader([]byte(cfg)),
-		}
-		_, err = cm.conn.s3.PutObject(params)
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-	}
-	return nil
-}
-
-func (cm *ClusterManager) bucketStore(path string, data []byte) error {
-	params := &_s3.PutObjectInput{
-		Bucket: types.StringP(cm.cluster.Spec.BucketName),
-		Key:    types.StringP(path),
-		ACL:    types.StringP("authenticated-read"),
-		Body:   bytes.NewReader(data),
-	}
-	_, err := cm.conn.s3.PutObject(params)
-	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	return nil
-}
-
 func (cm *ClusterManager) waitForInstanceState(instanceId string, state string) error {
 	for {
 		r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
@@ -303,8 +212,8 @@ func (cm *ClusterManager) waitForInstanceState(instanceId string, state string) 
 		if curState == state {
 			break
 		}
-		cm.ctx.Logger().Infof("Waiting for instance %v to be %v (currently %v)", instanceId, state, curState)
-		cm.ctx.Logger().Infof("Sleeping for 5 seconds...")
+		cloud.Logger(cm.ctx).Infof("Waiting for instance %v to be %v (currently %v)", instanceId, state, curState)
+		cloud.Logger(cm.ctx).Infof("Sleeping for 5 seconds...")
 		time.Sleep(5 * time.Second)
 	}
 	return nil

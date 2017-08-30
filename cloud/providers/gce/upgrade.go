@@ -9,7 +9,7 @@ import (
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/mgutz/str"
@@ -18,10 +18,10 @@ import (
 )
 
 func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
-	if !cloud.UpgradeRequired(cm.cluster, req) {
-		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
-		return nil // TODO check error nil
-	}
+	//if !cloud.UpgradeRequired(cm.cluster, req) {
+	//	cloud.Logger(cm.ctx).Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
+	//	return nil // TODO check error nil
+	//}
 
 	if cm.conn == nil {
 		conn, err := NewConnector(cm.ctx, cm.cluster)
@@ -38,7 +38,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	// assign new timestamp and new launch_config version
 	cm.cluster.Spec.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
 	cm.cluster.Spec.KubernetesVersion = req.KubernetesVersion
-	_, err := cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+	_, err := cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -50,7 +50,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins.Instances, _ = cm.ctx.Store().Instances(cm.cluster.Name).List(api.ListOptions{})
+	cm.ins.Instances, _ = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
 	if req.ApplyToMaster {
 		for _, instance := range cm.ins.Instances {
 			if instance.Spec.Role == api.RoleKubernetesMaster {
@@ -67,7 +67,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	_, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -111,7 +111,7 @@ func (cm *ClusterManager) masterUpdate(host, instanceName, version string) error
 	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	_, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -193,7 +193,7 @@ func (cm *clusterManager) updateMaster() error {
 	}
 	// cm.ins.Instances = nil
 	// cm.ins.Instances = append(cm.ins.Instances, masterInstance)
-	err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+	err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -224,7 +224,7 @@ func (cm *ClusterManager) nodeUpdate(instanceName string) error {
 	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	_, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -243,7 +243,7 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	ctxV, err := cloud.GetExistingContextVersion(cm.cluster, sku)
+	ctxV, err := cloud.GetExistingContextVersion(cm.ctx, cm.cluster, sku)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -270,7 +270,7 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 	}
 	err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
 	// cluster.Spec.ctx.Instances = append(cluster.Spec.ctx.Instances, instances...)
-	_, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -284,12 +284,12 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 }
 
 func (cm *ClusterManager) getExistingContextVersion(sku string) (error, int64) {
-	kc, err := cloud.NewAdminClient(cm.cluster)
+	kc, err := cloud.NewAdminClient(cm.ctx, cm.cluster)
 	if err != nil {
 		log.Fatal(err)
 	}
 	//re, _ := labels.NewRequirement(api.NodeLabelKey_SKU, selection.Equals, []string{sku})
-	nodes, err := kc.Client.CoreV1().Nodes().List(metav1.ListOptions{
+	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{
 	//LabelSelector: labels.Selector.Add(*re).Matches(labels.Labels(api.NodeLabelKey_SKU)),
 	})
 	if err != nil {

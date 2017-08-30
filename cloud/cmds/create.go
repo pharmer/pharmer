@@ -1,10 +1,16 @@
 package cmds
 
 import (
+	"context"
 	"errors"
+	"strings"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/flags"
+	"github.com/appscode/go/log"
+	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +40,28 @@ func NewCmdCreate() *cobra.Command {
 				}
 				ng++
 			}
-			return create(&req)
+
+			cfgFile, _ := config.GetConfigFile(cmd.Flags())
+			cfg, err := config.LoadConfig(cfgFile)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			ctx := cloud.NewContext(context.TODO(), cfg)
+
+			clusters, err := cloud.Store(ctx).Clusters().List(api.ListOptions{})
+			if err != nil {
+				log.Fatalln(err)
+			}
+			for _, cluster := range clusters {
+				if strings.EqualFold(cluster.Name, req.Name) {
+					log.Fatalf("Cluster exists with name %s.", req.Name)
+				}
+			}
+			cm, err := cloud.GetCloudManager(req.Provider, ctx)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			return cm.Create(&req)
 		},
 	}
 
@@ -47,8 +74,4 @@ func NewCmdCreate() *cobra.Command {
 	cmd.Flags().BoolVar(&req.DoNotDelete, "do-not-delete", false, "Set do not delete flag")
 
 	return cmd
-}
-
-func create(req *proto.ClusterCreateRequest) error {
-	return nil
 }

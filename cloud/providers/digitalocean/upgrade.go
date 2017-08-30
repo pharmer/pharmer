@@ -6,16 +6,16 @@ import (
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 )
 
 func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
-	if !cloud.UpgradeRequired(cm.cluster, req) {
-		cm.ctx.Logger().Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
-		return nil
-	}
+	//if !cloud.UpgradeRequired(cm.cluster, req) {
+	//	cloud.Logger(cm.ctx).Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
+	//	return nil
+	//}
 	if cm.conn == nil {
 		conn, err := NewConnector(cm.ctx, cm.cluster)
 		if err != nil {
@@ -31,18 +31,17 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	cm.cluster.Spec.EnvTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05-0700")
 	cm.cluster.Spec.KubernetesVersion = req.KubernetesVersion
 
-	_, err := cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+	_, err := cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	fmt.Println("Updating...")
-	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
+	cm.ins, err = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins.Instances, _ = cm.ctx.Store().Instances(cm.cluster.Name).List(api.ListOptions{})
 	if req.ApplyToMaster {
 		err = cm.updateMaster()
 		if err != nil {
@@ -54,15 +53,15 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	_, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = cm.ctx.Store().Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
+	err = cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx.Logger().Infof("Update Completed")
+	cloud.Logger(cm.ctx).Infof("Update Completed")
 	return nil
 }
 
@@ -104,15 +103,10 @@ func (cm *ClusterManager) updateMaster() error {
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.ExternalIP
 	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.InternalIP
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP, "<><><>", cm.cluster.Spec.MasterReservedIP)
-	cm.ctx.Logger().Infof("Rebooting master instance")
+	cloud.Logger(cm.ctx).Infof("Rebooting master instance")
 	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-
-	err = cm.UploadStartupConfig()
-	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
@@ -120,7 +114,7 @@ func (cm *ClusterManager) updateMaster() error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
+	cm.ins = append(cm.ins, masterInstance)
 	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -137,7 +131,6 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.UploadStartupConfig()
 
 	for _, instance := range oldinstances {
 		dropletID, err := strconv.Atoi(instance.Status.ExternalID)
@@ -165,13 +158,13 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	currentIns, err := igm.listInstances(sku)
-	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
+	//currentIns, err := igm.listInstances(sku)
+	//if err != nil {
+	//	return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//}
+	// err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
 	// cluster.Spec.ctx.Instances = append(cluster.Spec.ctx.Instances, instances...)
-	_, err = cm.ctx.Store().Clusters().UpdateStatus(cm.cluster)
+	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 
 	return nil
 }

@@ -1,11 +1,96 @@
 package cloud
 
 import (
-	"github.com/appscode/errors"
+	"context"
+	"crypto/rsa"
+	"crypto/x509"
+
+	"github.com/appscode/go-dns"
+	dns_provider "github.com/appscode/go-dns/provider"
 	"github.com/appscode/go/crypto/rand"
+	"github.com/appscode/go/errors"
+	"github.com/appscode/go/log"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/context"
+	"github.com/appscode/pharmer/storage"
+	"github.com/appscode/pharmer/storage/providers/fake"
+	"github.com/appscode/pharmer/storage/providers/vfs"
 )
+
+type keyDNS struct{}
+type keyExtra struct{}
+type keyLogger struct{}
+type keyStore struct{}
+
+type keyCACert struct{}
+type keyCAKey struct{}
+type keyFrontProxyCACert struct{}
+type keyFrontProxyCAKey struct{}
+type keyAdminUserCert struct{}
+type keyAdminUserKey struct{}
+
+func DNSProvider(ctx context.Context) dns_provider.Provider {
+	return ctx.Value(keyDNS{}).(dns_provider.Provider)
+}
+
+func Store(ctx context.Context) storage.Interface {
+	return ctx.Value(keyStore{}).(storage.Interface)
+}
+
+func Logger(ctx context.Context) api.Logger {
+	return ctx.Value(keyLogger{}).(api.Logger)
+}
+
+func Extra(ctx context.Context) api.DomainManager {
+	return ctx.Value(keyExtra{}).(api.DomainManager)
+}
+
+func CACert(ctx context.Context) *x509.Certificate {
+	return ctx.Value(keyCACert{}).(*x509.Certificate)
+}
+func CAKey(ctx context.Context) *rsa.PrivateKey {
+	return ctx.Value(keyCAKey{}).(*rsa.PrivateKey)
+}
+
+func FrontProxyCACert(ctx context.Context) *x509.Certificate {
+	return ctx.Value(keyFrontProxyCACert{}).(*x509.Certificate)
+}
+func FrontProxyCAKey(ctx context.Context) *rsa.PrivateKey {
+	return ctx.Value(keyFrontProxyCAKey{}).(*rsa.PrivateKey)
+}
+
+func AdminUserCert(ctx context.Context) *x509.Certificate {
+	return ctx.Value(keyAdminUserCert{}).(*x509.Certificate)
+}
+func AdminUserKey(ctx context.Context) *rsa.PrivateKey {
+	return ctx.Value(keyAdminUserKey{}).(*rsa.PrivateKey)
+}
+
+func NewContext(parent context.Context, cfg *api.PharmerConfig) context.Context {
+	c := parent
+	c = context.WithValue(c, keyExtra{}, &api.FakeDomainManager{})
+	c = context.WithValue(c, keyLogger{}, log.New(c))
+	c = context.WithValue(c, keyStore{}, NewStoreProvider(parent, cfg))
+	c = context.WithValue(c, keyDNS{}, NewDNSProvider(cfg))
+	return c
+}
+
+func NewStoreProvider(ctx context.Context, cfg *api.PharmerConfig) storage.Interface {
+	if store, err := storage.GetProvider(vfs.UID, ctx, cfg); err == nil {
+		return store
+	}
+	return &fake.FakeStore{}
+}
+
+func NewDNSProvider(cfg *api.PharmerConfig) dns_provider.Provider {
+	if cfg.DNS != nil {
+		if cred, err := cfg.GetCredential(cfg.DNS.CredentialName); err == nil {
+			if dp, err := dns.NewDNSProvider(cred.Spec.Provider); err == nil {
+				return dp
+			}
+		}
+	}
+	return &api.FakeDNSProvider{}
+}
 
 // This is any provider != aws, azure, gce
 func LoadDefaultGenericContext(ctx context.Context, cluster *api.Cluster) error {
@@ -14,8 +99,8 @@ func LoadDefaultGenericContext(ctx context.Context, cluster *api.Cluster) error 
 		return errors.FromErr(err).WithContext(ctx).Err()
 	}
 
-	cluster.Spec.ClusterExternalDomain = ctx.Extra().ExternalDomain(cluster.Name)
-	cluster.Spec.ClusterInternalDomain = ctx.Extra().InternalDomain(cluster.Name)
+	cluster.Spec.ClusterExternalDomain = Extra(ctx).ExternalDomain(cluster.Name)
+	cluster.Spec.ClusterInternalDomain = Extra(ctx).InternalDomain(cluster.Name)
 
 	cluster.Status.Phase = api.ClusterPhasePending
 	cluster.Spec.OS = "debian"

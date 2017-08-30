@@ -1,10 +1,14 @@
 package aws
 
 import (
-	"github.com/appscode/errors"
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/appscode/go/errors"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/context"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -27,22 +31,74 @@ type cloudConnector struct {
 	s3        *_s3.S3
 }
 
-func NewConnector(cluster *api.Cluster) (*cloudConnector, error) {
-	id := cluster.Spec.CloudCredential[credential.AWSAccessKeyID]
-	secret := cluster.Spec.CloudCredential[credential.AWSSecretAccessKey]
-	config := &_aws.Config{
-		Region:      &cluster.Spec.Region,
-		Credentials: credentials.NewStaticCredentials(id, secret, ""),
+func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
+	cred, err := cloud.Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	if err != nil {
+		return nil, err
+	}
+	typed := credential.AWS{CommonSpec: credential.CommonSpec(cred.Spec)}
+	if ok, err := typed.IsValid(); !ok {
+		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
-	return &cloudConnector{
+	config := &_aws.Config{
+		Region:      &cluster.Spec.Region,
+		Credentials: credentials.NewStaticCredentials(typed.AccessKeyID(), typed.SecretAccessKey(), ""),
+	}
+	conn := cloudConnector{
+		ctx:       ctx,
 		cluster:   cluster,
 		ec2:       _ec2.New(session.New(config)),
 		elb:       _elb.New(session.New(config)),
 		iam:       _iam.New(session.New(config)),
 		autoscale: autoscaling.New(session.New(config)),
 		s3:        _s3.New(session.New(config)),
-	}, nil
+	}
+	if ok, msg := conn.IsUnauthorized(); !ok {
+		return nil, fmt.Errorf("Credential %s does not have necessary authorization. Reason: %s.", cluster.Spec.CredentialName, msg)
+	}
+	return &conn, nil
+}
+
+// Returns true if unauthorized
+func (conn *cloudConnector) IsUnauthorized() (bool, string) {
+	policies := make(map[string]string)
+	var marker *string
+	for {
+		resp, err := conn.iam.ListPolicies(&_iam.ListPoliciesInput{
+			MaxItems: types.Int64P(1000),
+			Marker:   marker,
+		})
+		if err != nil {
+			break
+		}
+		for _, p := range resp.Policies {
+			policies[*p.PolicyName] = *p.Arn
+		}
+		if !_aws.BoolValue(resp.IsTruncated) {
+			break
+		}
+		marker = resp.Marker
+	}
+
+	required := []string{
+		"IAMFullAccess",
+		"AmazonEC2FullAccess",
+		"AmazonEC2ContainerRegistryFullAccess",
+		"AmazonS3FullAccess",
+		"AmazonRoute53FullAccess",
+	}
+	missing := make([]string, 0)
+	for _, name := range required {
+		if _, found := policies[name]; !found {
+			missing = append(missing, name)
+		}
+	}
+	if len(missing) > 0 {
+		return true, "Credential missing required authorization: " + strings.Join(missing, ", ")
+	} else {
+		return false, ""
+	}
 }
 
 // https://github.com/kubernetes/kubernetes/blob/master/cluster/aws/jessie/util.sh#L28
@@ -65,7 +121,7 @@ func (conn *cloudConnector) detectJessieImage() error {
 	}
 	conn.cluster.Spec.InstanceImage = *r1.Images[0].ImageId
 	conn.cluster.Spec.RootDeviceName = *r1.Images[0].RootDeviceName
-	conn.ctx.Logger().Infof("Debain image with %v for %v detected", conn.cluster.Spec.InstanceImage, conn.cluster.Spec.RootDeviceName)
+	cloud.Logger(conn.ctx).Infof("Debain image with %v for %v detected", conn.cluster.Spec.InstanceImage, conn.cluster.Spec.RootDeviceName)
 	return nil
 }
 
@@ -87,6 +143,6 @@ func (conn *cloudConnector) detectUbuntuImage() error {
 	}
 	conn.cluster.Spec.InstanceImage = *r1.Images[0].ImageId
 	conn.cluster.Spec.RootDeviceName = *r1.Images[0].RootDeviceName
-	conn.ctx.Logger().Infof("Ubuntu image with %v for %v detected", conn.cluster.Spec.InstanceImage, conn.cluster.Spec.RootDeviceName)
+	cloud.Logger(conn.ctx).Infof("Ubuntu image with %v for %v detected", conn.cluster.Spec.InstanceImage, conn.cluster.Spec.RootDeviceName)
 	return nil
 }

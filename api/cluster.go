@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/user"
 	"strconv"
 	"strings"
@@ -10,10 +11,10 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	ssh "github.com/appscode/api/ssh/v1beta1"
-	"github.com/appscode/errors"
 	"github.com/appscode/go/crypto/rand"
 	. "github.com/appscode/go/encoding/json/types"
 	_env "github.com/appscode/go/env"
+	"github.com/appscode/go/errors"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/zabawaba99/fireauth"
 )
@@ -43,47 +44,36 @@ type GCECloudConfig struct {
 }
 
 type MasterKubeEnv struct {
-	//KubeUser        string `json:"KUBE_USER"`
-	//KubePassword    string `json:"KUBE_PASSWORD"`
-	KubeBearerToken string `json:"KUBE_BEARER_TOKEN"`
-	MasterCert      string `json:"MASTER_CERT"`
-	MasterKey       string `json:"MASTER_KEY"`
-	DefaultLBCert   string `json:"DEFAULT_LB_CERT"`
-	DefaultLBKey    string `json:"DEFAULT_LB_KEY"`
+	MasterCert    string `json:"masterCert"`
+	MasterKey     string `json:"masterKey"`
+	DefaultLBCert string `json:"defaultLBCert"`
+	DefaultLBKey  string `json:"defaultLBKey"`
 
 	// PAIR
-	RegisterMasterKubelet     bool `json:"REGISTER_MASTER_KUBELET"`
-	RegisterMasterSchedulable bool `json:"REGISTER_MASTER_SCHEDULABLE"`
+	RegisterMasterKubelet     bool `json:"registerMasterKubelet"`
+	RegisterMasterSchedulable bool `json:"registerMasterSchedulable"`
 	// KubeletApiserver       string `json:"KUBELET_APISERVER"`
 
 	// NEW
-	EnableManifestUrl bool   `json:"ENABLE_MANIFEST_URL"`
-	ManifestUrl       string `json:"MANIFEST_URL"`
-	ManifestUrlHeader string `json:"MANIFEST_URL_HEADER"`
+	EnableManifestUrl bool   `json:"enableManifestURL"`
+	ManifestUrl       string `json:"manifestURL"`
+	ManifestUrlHeader string `json:"manifestURLHeader"`
 	// WARNING: NumNodes in deprecated. This is a hack used by Kubernetes to calculate amount of RAM
 	// needed for various processes, like, kube apiserver, heapster. But this is also impossible to
 	// change after cluster is provisioned. So, this field should not be used, instead use ClusterContext.NodeCount().
 	// This field is left here, since it is used by salt stack at this time.
 	NumNodes int64 `json:"NUM_NODES"`
-	// NEW
-	// APPSCODE ONLY
-	AppsCodeApiGrpcEndpoint   string `json:"APPSCODE_API_GRPC_ENDPOINT"` // used by icinga, daemon
-	AppsCodeApiHttpEndpoint   string `json:"APPSCODE_API_HTTP_ENDPOINT"` // used by icinga, daemon
-	AppsCodeClusterUser       string `json:"APPSCODE_CLUSTER_USER"`      // used by icinga, daemon
-	AppsCodeApiToken          string `json:"APPSCODE_API_TOKEN"`         // used by icinga, daemon
-	AppsCodeClusterRootDomain string `json:"APPSCODE_CLUSTER_ROOT_DOMAIN"`
-	AppsCodeClusterCreator    string `json:"APPSCODE_CLUSTER_CREATOR"` // Username used for Initial ClusterRoleBinding
 
 	// Kube 1.3
-	AppscodeAuthnUrl string `json:"APPSCODE_AUTHN_URL"`
-	AppscodeAuthzUrl string `json:"APPSCODE_AUTHZ_URL"`
+	AppscodeAuthnUrl string `json:"appscodeAuthnURL"`
+	AppscodeAuthzUrl string `json:"appscodeAuthzURL"`
 
 	// Kube 1.4
 	StorageBackend string `json:"STORAGE_BACKEND"`
 
 	// Kube 1.5.4
-	EnableApiserverBasicAudit bool `json:"ENABLE_APISERVER_BASIC_AUDIT"`
-	EnableAppscodeAttic       bool `json:"ENABLE_APPSCODE_ATTIC"`
+	EnableApiserverBasicAudit bool `json:"enableApiserverBasicAudit"`
+	EnableAppscodeAttic       bool `json:"enableAppscodeAttic"`
 }
 
 func (k *MasterKubeEnv) SetDefaults() {
@@ -99,8 +89,8 @@ func (k *MasterKubeEnv) SetDefaults() {
 }
 
 type NodeKubeEnv struct {
-	KubernetesContainerRuntime string `json:"CONTAINER_RUNTIME"`
-	KubernetesConfigureCbr0    bool   `json:"KUBERNETES_CONFIGURE_CBR0"`
+	KubernetesContainerRuntime string `json:"containerRuntime"`
+	KubernetesConfigureCbr0    bool   `json:"kubernetesConfigureCbr0"`
 }
 
 func (k *NodeKubeEnv) SetDefaults() {
@@ -111,106 +101,93 @@ func (k *NodeKubeEnv) SetDefaults() {
 type CommonKubeEnv struct {
 	Zone string `json:"ZONE"` // master needs it for ossec
 
-	ClusterIPRange        string `json:"CLUSTER_IP_RANGE"`
-	ServiceClusterIPRange string `json:"SERVICE_CLUSTER_IP_RANGE"`
+	ClusterIPRange        string `json:"clusterIpRange"`
+	ServiceClusterIPRange string `json:"serviceClusterIpRange"`
 	// Replacing API_SERVERS https://github.com/kubernetes/kubernetes/blob/62898319dff291843e53b7839c6cde14ee5d2aa4/cluster/aws/util.sh#L1004
-	KubernetesMasterName  string `json:"KUBERNETES_MASTER_NAME"`
-	MasterInternalIP      string `json:"MASTER_INTERNAL_IP"`
-	ClusterExternalDomain string `json:"CLUSTER_EXTERNAL_DOMAIN"`
-	ClusterInternalDomain string `json:"CLUSTER_INTERNAL_DOMAIN"`
+	KubernetesMasterName  string `json:"kubernetesMasterName"`
+	MasterInternalIP      string `json:"masterInternalIp"`
+	ClusterExternalDomain string `json:"clusterExternalDomain"`
+	ClusterInternalDomain string `json:"clusterInternalDomain"`
 
-	AllocateNodeCIDRs            bool   `json:"ALLOCATE_NODE_CIDRS"`
-	EnableClusterMonitoring      string `json:"ENABLE_CLUSTER_MONITORING"`
-	EnableClusterLogging         bool   `json:"ENABLE_CLUSTER_LOGGING"`
-	EnableNodeLogging            bool   `json:"ENABLE_NODE_LOGGING"`
-	LoggingDestination           string `json:"LOGGING_DESTINATION"`
-	ElasticsearchLoggingReplicas int    `json:"ELASTICSEARCH_LOGGING_REPLICAS"`
-	EnableClusterDNS             bool   `json:"ENABLE_CLUSTER_DNS"`
-	EnableClusterRegistry        bool   `json:"ENABLE_CLUSTER_REGISTRY"`
-	ClusterRegistryDisk          string `json:"CLUSTER_REGISTRY_DISK"`
-	ClusterRegistryDiskSize      string `json:"CLUSTER_REGISTRY_DISK_SIZE"`
-	DNSReplicas                  int    `json:"DNS_REPLICAS"`
-	DNSServerIP                  string `json:"DNS_SERVER_IP"`
-	DNSDomain                    string `json:"DNS_DOMAIN"`
-	KubeProxyToken               string `json:"KUBE_PROXY_TOKEN"`
-	KubeletToken                 string `json:"KUBELET_TOKEN"`
-	AdmissionControl             string `json:"ADMISSION_CONTROL"`
-	MasterIPRange                string `json:"MASTER_IP_RANGE"`
-	RuntimeConfig                string `json:"RUNTIME_CONFIG"`
-	CaCert                       string `json:"CA_CERT"`
-	KubeletCert                  string `json:"KUBELET_CERT"`
-	KubeletKey                   string `json:"KUBELET_KEY"`
-	StartupConfigToken           string `json:"STARTUP_CONFIG_TOKEN"`
+	AllocateNodeCIDRs            bool   `json:"allocateNodeCidrs"`
+	EnableClusterMonitoring      string `json:"enableClusterMonitoring"`
+	EnableClusterLogging         bool   `json:"enableClusterLogging"`
+	EnableNodeLogging            bool   `json:"enableNodeLogging"`
+	LoggingDestination           string `json:"loggingDestination"`
+	ElasticsearchLoggingReplicas int    `json:"elasticsearchLoggingReplicas"`
+	EnableClusterDNS             bool   `json:"enableClusterDns"`
+	EnableClusterRegistry        bool   `json:"enableClusterRegistry"`
+	ClusterRegistryDisk          string `json:"clusterRegistryDisk"`
+	ClusterRegistryDiskSize      string `json:"clusterRegistryDiskSize"`
+	DNSReplicas                  int    `json:"dnsReplicas"`
+	DNSServerIP                  string `json:"dnsServerIp"`
+	DNSDomain                    string `json:"dnsDomain"`
+	AdmissionControl             string `json:"admissionControl"`
+	MasterIPRange                string `json:"masterIpRange"`
+	RuntimeConfig                string `json:"runtimeConfig"`
+	StartupConfigToken           string `json:"startupConfigToken"`
 
-	//Kubeadm
-	FrontProxyCaCert string `json:"FRONT_PROXY_CA_CERT"`
-	CaKey            string `json:"CA_KEY"`
-	FrontProxyCaKey  string `json:"FRONT_PROXY_CA_KEY"`
-	UserCert         string `json:"USER_CERT"`
-	UserKey          string `json:"USER_KEY"`
+	EnableThirdPartyResource bool `json:"enableThirdPartyResource"`
 
-	EnableThirdPartyResource bool `json:"ENABLE_THIRD_PARTY_RESOURCE"`
-
-	EnableClusterVPN string `json:"ENABLE_CLUSTER_VPN"`
-	VpnPsk           string `json:"VPN_PSK"`
+	EnableClusterVPN string `json:"enableClusterVpn"`
+	VpnPsk           string `json:"vpnPsk"`
 
 	// ref: https://github.com/appscode/searchlight/blob/master/docs/user-guide/hostfacts/deployment.md
-	HostfactsAuthToken string `json:"HOSTFACTS_AUTH_TOKEN"`
-	HostfactsCert      string `json:"HOSTFACTS_CERT"`
-	HostfactsKey       string `json:"HOSTFACTS_KEY"`
+	HostfactsAuthToken string `json:"hostfactsAuthToken"`
+	HostfactsCert      string `json:"hostfactsCert"`
+	HostfactsKey       string `json:"hostfactsKey"`
 
-	DockerStorage string `json:"DOCKER_STORAGE"`
+	DockerStorage string `json:"dockerStorage"`
 
 	//ClusterName
 	//  NodeInstancePrefix
 	// Name       string `json:"INSTANCE_PREFIX"`
-	BucketName string `json:"BUCKET_NAME, omitempty"`
 
 	// NEW
-	NetworkProvider string `json:"NETWORK_PROVIDER"` // opencontrail, flannel, kubenet, calico, none
-	HairpinMode     string `json:"HAIRPIN_MODE"`     // promiscuous-bridge, hairpin-veth, none
+	NetworkProvider string `json:"networkProvider"` // opencontrail, flannel, kubenet, calico, none
+	HairpinMode     string `json:"hairpinMode"`     // promiscuous-bridge, hairpin-veth, none
 
-	EnvTimestamp string `json:"ENV_TIMESTAMP"`
+	EnvTimestamp string `json:"envTimestamp"`
 
 	// TODO: Needed if we build custom Kube image.
 	// KubeImageTag       string `json:"KUBE_IMAGE_TAG"`
-	KubeDockerRegistry string    `json:"KUBE_DOCKER_REGISTRY"`
-	Multizone          StrToBool `json:"MULTIZONE"`
-	NonMasqueradeCidr  string    `json:"NON_MASQUERADE_CIDR"`
+	KubeDockerRegistry string    `json:"kubeDockerRegistry"`
+	Multizone          StrToBool `json:"multizone"`
+	NonMasqueradeCidr  string    `json:"nonMasqueradeCidr"`
 
-	KubeletPort                 string `json:"KUBELET_PORT"`
-	KubeApiserverRequestTimeout string `json:"KUBE_APISERVER_REQUEST_TIMEOUT"`
-	TerminatedPodGcThreshold    string `json:"TERMINATED_POD_GC_THRESHOLD"`
-	EnableCustomMetrics         string `json:"ENABLE_CUSTOM_METRICS"`
+	KubeletPort                 string `json:"kubeletPort"`
+	KubeApiserverRequestTimeout string `json:"kubeApiserverRequestTimeout"`
+	TerminatedPodGcThreshold    string `json:"terminatedPodGCThreshold"`
+	EnableCustomMetrics         string `json:"enableCustomMetrics"`
 	// NEW
-	EnableClusterAlert string `json:"ENABLE_CLUSTER_ALERT"`
+	EnableClusterAlert string `json:"enableClusterAlert"`
 
-	Provider string `json:"PROVIDER"`
-	OS       string `json:"OS"`
-	Kernel   string `json:"Kernel"`
+	Provider string `json:"provider"`
+	OS       string `json:"os"`
+	Kernel   string `json:"kernel"`
 
 	// Kube 1.3
 	// PHID                      string `json:"KUBE_UID"`
-	NodeLabels                string `json:"NODE_LABELS"`
-	EnableNodeProblemDetector bool   `json:"ENABLE_NODE_PROBLEM_DETECTOR"`
-	EvictionHard              string `json:"EVICTION_HARD"`
+	NodeLabels                string `json:"nodeLabels"`
+	EnableNodeProblemDetector bool   `json:"enableNodeProblemDetector"`
+	EvictionHard              string `json:"evictionHard"`
 
-	ExtraDockerOpts       string `json:"EXTRA_DOCKER_OPTS"`
-	FeatureGates          string `json:"FEATURE_GATES"`
-	NetworkPolicyProvider string `json:"NETWORK_POLICY_PROVIDER"` // calico
+	ExtraDockerOpts       string `json:"extraDockerOpts"`
+	FeatureGates          string `json:"featureGates"`
+	NetworkPolicyProvider string `json:"networkPolicyProvider"` // calico
 
 	// Kub1 1.4
-	EnableRescheduler bool `json:"ENABLE_RESCHEDULER"`
+	EnableRescheduler bool `json:"enableRescheduler"`
 
-	EnableScheduledJobResource       bool `json:"ENABLE_SCHEDULED_JOB_RESOURCE"`
-	EnableWebhookTokenAuthentication bool `json:"ENABLE_WEBHOOK_TOKEN_AUTHN"`
-	EnableWebhookTokenAuthorization  bool `json:"ENABLE_WEBHOOK_TOKEN_AUTHZ"`
-	EnableRBACAuthorization          bool `json:"ENABLE_RBAC_AUTHZ"`
+	EnableScheduledJobResource       bool `json:"enableScheduledJobResource"`
+	EnableWebhookTokenAuthentication bool `json:"enableWebhookTokenAuthn"`
+	EnableWebhookTokenAuthorization  bool `json:"enableWebhookTokenAuthz"`
+	EnableRBACAuthorization          bool `json:"enableRbacAuthz"`
 
 	// Cloud Config
-	CloudConfigPath  string            `json:"CLOUD_CONFIG"`
-	AzureCloudConfig *AzureCloudConfig `json:"AZURE_CLOUD_CONFIG"`
-	GCECloudConfig   *GCECloudConfig   `json:"GCE_CLOUD_CONFIG"`
+	CloudConfigPath  string            `json:"cloudConfig"`
+	AzureCloudConfig *AzureCloudConfig `json:"azureCloudConfig"`
+	GCECloudConfig   *GCECloudConfig   `json:"gceCloudConfig"`
 
 	// Context Version is assigned on insert. If you want to force new version, set this value to 0 and call ctx.Save()
 	ResourceVersion int64 `json:"RESOURCE_VERSION"`
@@ -224,7 +201,7 @@ func (k *CommonKubeEnv) SetDefaults() error {
 		// Generate JWT token for Firebase Custom Auth
 		// https://www.firebase.com/docs/rest/guide/user-auth.html#section-token-generation
 		// https://github.com/zabawaba99/fireauth
-		gen := fireauth.New("MAKE_IT_A_FLAG")
+		gen := fireauth.New(os.Getenv("FIREBASE_TOKEN"))
 		fb, err := FirebaseUid()
 		if err != nil {
 			return errors.FromErr(err).Err()
@@ -294,9 +271,9 @@ func (k *KubeEnv) SetDefaults() error {
 }
 
 type KubeStartupConfig struct {
-	Role               string `json:"ROLE"`
-	KubernetesMaster   bool   `json:"KUBERNETES_MASTER"`
-	InitialEtcdCluster string `json:"INITIAL_ETCD_CLUSTER"`
+	Role               string `json:"role"`
+	KubernetesMaster   bool   `json:"kubernetesMaster"`
+	InitialEtcdCluster string `json:"initialEtcdCluster"`
 }
 
 type ClusterStartupConfig struct {
@@ -319,7 +296,7 @@ func UseFirebase() bool {
 type InstanceGroup struct {
 	SKU              string `json:"sku"`
 	Count            int64  `json:"count"`
-	UseSpotInstances bool   `json:"USE_SPOT_INSTANCES"`
+	UseSpotInstances bool   `json:"useSpotInstances"`
 }
 
 type Cluster struct {
@@ -330,19 +307,26 @@ type Cluster struct {
 }
 
 type ClusterSpec struct {
-	NodeGroups []*InstanceGroup `json:"nodeGroups"`
+	NodeGroups     []*InstanceGroup `json:"nodeGroups"`
+	CredentialName string           `json:"credentialName"`
+	KubeadmToken   string           `json:"kubeadmToken"`
+
+	KubernetesVersion string `json:"kubernetesVersion"`
+
+	SSHKeyPHID       string `json:"sshKeyPHID"`
+	SSHKeyExternalID string `json:"sshKeyExternalID"`
+
+	// https://github.com/kubernetes/kubernetes/blob/master/cluster/gce/util.sh#L538
+	CACertName           string `json:"caCertPHID"`
+	FrontProxyCACertName string `json:"frontProxyCaCertPHID"`
+	AdminUserCertName    string `json:"userCertPHID"`
 
 	KubeEnv
 	// request data. This is needed to give consistent access to these values for all commands.
-	Region              string            `json:"REGION"`
-	MasterSKU           string            `json:"MASTER_SKU"`
-	NodeSet             map[string]int64  `json:"NODE_SET"` // deprecated, use NODES
-	CloudCredentialPHID string            `json:"CLOUD_CREDENTIAL_PHID"`
-	CloudCredential     map[string]string `json:"-"`
-	DoNotDelete         bool              `json:"-"`
-	DefaultAccessLevel  string            `json:"-"`
-
-	KubernetesVersion string `json:"KUBERNETES_VERSION"`
+	Region             string `json:"region"`
+	MasterSKU          string `json:"masterSku"`
+	DoNotDelete        bool   `json:"-"`
+	DefaultAccessLevel string `json:"-"`
 
 	// config
 	// Some of these parameters might be useful to expose to users to configure as they please.
@@ -353,13 +337,13 @@ type ClusterSpec struct {
 	// common
 
 	// the master root ebs volume size (typically does not need to be very large)
-	MasterDiskType string `json:"MASTER_DISK_TYPE"`
-	MasterDiskSize int64  `json:"MASTER_DISK_SIZE"`
-	MasterDiskId   string `json:"MASTER_DISK_ID"`
+	MasterDiskType string `json:"masterDiskType"`
+	MasterDiskSize int64  `json:"masterDiskSize"`
+	MasterDiskId   string `json:"masterDiskID"`
 
 	// the node root ebs volume size (used to house docker images)
-	NodeDiskType string `json:"NODE_DISK_TYPE"`
-	NodeDiskSize int64  `json:"NODE_DISK_SIZE"`
+	NodeDiskType string `json:"nodeDiskType"`
+	NodeDiskSize int64  `json:"nodeDiskSize"`
 
 	// GCE: Use Root Field for this in GCE
 
@@ -371,79 +355,68 @@ type ClusterSpec struct {
 
 	// gce
 	// NODE_SCOPES="${NODE_SCOPES:-compute-rw,monitoring,logging-write,storage-ro}"
-	NodeScopes        []string `json:"NODE_SCOPES"`
-	PollSleepInterval int      `json:"POLL_SLEEP_INTERVAL"`
+	NodeScopes        []string `json:"nodeScopes"`
+	PollSleepInterval int      `json:"pollSleepInterval"`
 
 	// If set to Elasticsearch IP, master instance will be associated with this IP.
 	// If set to auto, a new Elasticsearch IP will be acquired
 	// Otherwise amazon-given public ip will be used (it'll change with reboot).
-	MasterReservedIP string `json:"MASTER_RESERVED_IP"`
-	MasterExternalIP string `json:"MASTER_EXTERNAL_IP"`
-	ApiServerUrl     string `json:"API_SERVER_URL"`
+	MasterReservedIP string `json:"masterReservedIp"`
+	MasterExternalIP string `json:"masterExternalIp"`
 
 	// NEW
 	// enable various v1beta1 features
 
-	EnableNodePublicIP bool `json:"ENABLE_NODE_PUBLIC_IP"`
+	EnableNodePublicIP bool `json:"enableNodePublicIp"`
 
-	EnableNodeAutoscaler  bool    `json:"ENABLE_NODE_AUTOSCALER"`
-	AutoscalerMinNodes    int     `json:"AUTOSCALER_MIN_NODES"`
-	AutoscalerMaxNodes    int     `json:"AUTOSCALER_MAX_NODES"`
-	TargetNodeUtilization float64 `json:"TARGET_NODE_UTILIZATION"`
+	EnableNodeAutoscaler  bool    `json:"enableNodeAutoscaler"`
+	AutoscalerMinNodes    int     `json:"autoscalerMinNodes"`
+	AutoscalerMaxNodes    int     `json:"autoscalerMaxNodes"`
+	TargetNodeUtilization float64 `json:"targetNodeUtilization"`
 
 	// instance means either master or node
-	InstanceImage        string `json:"INSTANCE_IMAGE"`
-	InstanceImageProject string `json:"INSTANCE_IMAGE_PROJECT"`
+	InstanceImage        string `json:"instanceImage"`
+	InstanceImageProject string `json:"instanceImageProject"`
 
 	// Generated data, always different or every cluster.
 
-	ContainerSubnet string `json:"CONTAINER_SUBNET"` // TODO:where used?
-
-	// https://github.com/kubernetes/kubernetes/blob/master/cluster/gce/util.sh#L538
-	CaCertPHID string `json:"CA_CERT_PHID"`
-
-	//Kubeadm
-	FrontProxyCaCertPHID string `json:"FRONT_PROXY_CA_CERT_PHID"`
-	UserCertPHID         string `json:"USER_CERT_PHID"`
-	KubeadmToken         string `json:"KUBEADM_TOKEN"`
+	ContainerSubnet string `json:"containerSubnet"` // TODO:where used?
 
 	// only aws
 
 	// Dynamically generated SSH key used for this cluster
-	SSHKeyPHID       string      `json:"SSH_KEY_PHID"`
-	SSHKey           *ssh.SSHKey `json:"-"`
-	SSHKeyExternalID string      `json:"SSH_KEY_EXTERNAL_ID"`
+	SSHKey *ssh.SSHKey `json:"-"`
 
 	// aws:TAG KubernetesCluster => clusterid
-	IAMProfileMaster string `json:"IAM_PROFILE_MASTER"`
-	IAMProfileNode   string `json:"IAM_PROFILE_NODE"`
-	MasterSGId       string `json:"MASTER_SG_ID"`
-	MasterSGName     string `json:"MASTER_SG_NAME"`
-	NodeSGId         string `json:"NODE_SG_ID"`
-	NodeSGName       string `json:"NODE_SG_NAME"`
+	IAMProfileMaster string `json:"iamProfileMaster"`
+	IAMProfileNode   string `json:"iamProfileNode"`
+	MasterSGId       string `json:"masterSGID"`
+	MasterSGName     string `json:"masterSGName"`
+	NodeSGId         string `json:"nodeSGID"`
+	NodeSGName       string `json:"nodeSGName"`
 
-	VpcId          string `json:"VPC_ID"`
-	VpcCidr        string `json:"VPC_CIDR"`
-	VpcCidrBase    string `json:"VPC_CIDR_BASE"`
-	MasterIPSuffix string `json:"MASTER_IP_SUFFIX"`
-	SubnetId       string `json:"SUBNET_ID"`
-	SubnetCidr     string `json:"SUBNET_CIDR"`
-	RouteTableId   string `json:"ROUTE_TABLE_ID"`
-	IGWId          string `json:"IGW_ID"`
-	DHCPOptionsId  string `json:"DHCP_OPTIONS_ID"`
+	VpcId          string `json:"vpcID"`
+	VpcCidr        string `json:"vpcCIDR"`
+	VpcCidrBase    string `json:"vpcCIDRBase"`
+	MasterIPSuffix string `json:"masterIPSuffix"`
+	SubnetId       string `json:"subnetID"`
+	SubnetCidr     string `json:"subnetCidr"`
+	RouteTableId   string `json:"routeTableID"`
+	IGWId          string `json:"igwID"`
+	DHCPOptionsId  string `json:"dhcpOptionsID"`
 
 	// only GCE
-	Project string `json:"GCE_PROJECT"`
+	Project string `json:"gceProject"`
 
 	// only aws
 	RootDeviceName string `json:"-"`
 
 	//only Azure
-	InstanceImageVersion    string `json:"INSTANCE_IMAGE_VERSION"`
-	AzureStorageAccountName string `json:"AZURE_STORAGE_ACCOUNT_NAME"`
+	InstanceImageVersion    string `json:"instanceImageVersion"`
+	AzureStorageAccountName string `json:"azureStorageAccountName"`
 
 	// only Linode
-	InstanceRootPassword string `json:"INSTANCE_ROOT_PASSWORD"`
+	InstanceRootPassword string `json:"instanceRootPassword"`
 }
 
 type ClusterStatus struct {
@@ -529,15 +502,14 @@ func (cluster *Cluster) KubernetesClusterIP() string {
 }
 
 // This is a onetime initializer method.
-func (cluster *Cluster) DetectApiServerURL() {
-	panic("TODO: Remove this call")
+func (cluster *Cluster) ApiServerURL() string {
 	//if ctx.ApiServerUrl == "" {
 	//	host := ctx.Extra().ExternalDomain(ctx.Name)
 	//	if ctx.MasterReservedIP != "" {
 	//		host = ctx.MasterReservedIP
 	//	}
-	//	ctx.ApiServerUrl = fmt.Sprintf("https://%v:6443", host)
-	//	ctx.Logger().Infoln(fmt.Sprintf("Cluster %v 's api server url: %v\n", ctx.Name, ctx.ApiServerUrl))
+	return fmt.Sprintf("https://%v:6443", cluster.Spec.MasterReservedIP)
+	// ctx.Logger().Infoln(fmt.Sprintf("Cluster %v 's api server url: %v\n", ctx.Name, ctx.ApiServerUrl))
 	//}
 }
 

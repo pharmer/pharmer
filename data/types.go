@@ -12,12 +12,12 @@ const (
 )
 
 type CloudData struct {
-	Name          string             `json:"name"`
-	Env           []string           `json:"env"`
-	Regions       []Region           `json:"regions"`
-	InstanceTypes []InstanceType     `json:"instanceTypes"`
-	Credentials   []CredentialFormat `json:"credentials"`
-	Kubernetes    ClusterProvider    `json:"kubernetes"`
+	Name               string              `json:"name"`
+	Env                []string            `json:"env"`
+	Regions            []Region            `json:"regions"`
+	InstanceTypes      []InstanceType      `json:"instanceTypes"`
+	Credentials        []CredentialFormat  `json:"credentials"`
+	KubernetesVersions []KubernetesVersion `json:"kubernetesVersions"`
 }
 
 func (cd CloudData) Available(env _env.Environment) bool {
@@ -58,24 +58,19 @@ type CredentialFormat struct {
 	} `json:"fields"`
 }
 
-type ClusterProvider struct {
+type KubernetesVersion struct {
+	Version     string           `json:"version"`
+	Description string           `json:"description"`
 	DefaultSpec *api.ClusterSpec `json:"defaultSpec"`
-	Versions    []ClusterVersion `json:"versions"`
+	Env         map[string]bool  `json:"env,omitempty"`
 }
 
-type ClusterVersion struct {
-	Version     string            `json:"version"`
-	Description string            `json:"description"`
-	Tools       map[string]string `json:"tools"`
-	Env         map[string]bool   `json:"env,omitempty"`
-}
-
-func (v ClusterVersion) Released(env _env.Environment) bool {
+func (v KubernetesVersion) Released(env _env.Environment) bool {
 	_, found := v.Env[env.String()]
 	return found
 }
 
-func (v ClusterVersion) Deprecated(env _env.Environment) bool {
+func (v KubernetesVersion) Deprecated(env _env.Environment) bool {
 	deprecated, found := v.Env[env.String()]
 	return found && deprecated
 }

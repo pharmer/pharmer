@@ -1,13 +1,14 @@
 package gce
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"time"
 
-	"github.com/appscode/errors"
+	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/context"
+	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/credential"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
@@ -27,12 +28,18 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	var err error
-	credGCP, err := json.Marshal(cluster.Spec.CloudCredential)
+	cred, err := cloud.Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(ctx).Err()
+		return nil, err
 	}
-	conf, err := google.JWTConfigFromJSON(credGCP,
+	typed := credential.GCE{CommonSpec: credential.CommonSpec(cred.Spec)}
+	if ok, err := typed.IsValid(); !ok {
+		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+	}
+
+	// TODO: FixIt cluster.Spec.Project
+
+	conf, err := google.JWTConfigFromJSON([]byte(typed.ServiceAccount()),
 		compute.ComputeScope,
 		compute.DevstorageReadWriteScope,
 		rupdate.ReplicapoolScope)
@@ -53,13 +60,26 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
 	}
 
-	return &cloudConnector{
+	conn := cloudConnector{
 		ctx:            ctx,
 		cluster:        cluster,
 		computeService: computeService,
 		storageService: storageService,
 		updateService:  updateService,
-	}, nil
+	}
+	if ok, msg := conn.IsUnauthorized(typed.ProjectID()); !ok {
+		return nil, fmt.Errorf("Credential %s does not have necessary authorization. Reason: %s.", cluster.Spec.CredentialName, msg)
+	}
+	return &conn, nil
+}
+
+// Returns true if unauthorized
+func (conn *cloudConnector) IsUnauthorized(project string) (bool, string) {
+	_, err := conn.computeService.InstanceGroups.List(project, "us-central1-b").Do()
+	if err != nil {
+		return true, "Credential missing required authorization"
+	}
+	return false, ""
 }
 
 func (conn *cloudConnector) getInstanceImage() (string, error) {
@@ -73,7 +93,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 			}
 		}
 
-		conn.ctx.Logger().Infof("Creating %v image on %v project", containerOsImage, conn.cluster.Spec.Project)
+		cloud.Logger(conn.ctx).Infof("Creating %v image on %v project", containerOsImage, conn.cluster.Spec.Project)
 		r, err := conn.computeService.Images.Insert(conn.cluster.Spec.Project, &compute.Image{
 			Name:       containerOsImage,
 			SourceDisk: fmt.Sprintf("projects/%v/zones/%v/disks/%v", conn.cluster.Spec.Project, conn.cluster.Spec.Zone, containerOsImage),
@@ -85,7 +105,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 		if err != nil {
 			return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
-		conn.ctx.Logger().Infof("Image %v created", containerOsImage)
+		cloud.Logger(conn.ctx).Infof("Image %v created", containerOsImage)
 		for {
 			fmt.Print("Pending image creation: ")
 			if r, err := conn.computeService.Images.Get(conn.cluster.Spec.Project, containerOsImage).Do(); err != nil || r.Status != "READY" {
@@ -101,7 +121,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 			return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
 	}
-	conn.ctx.Logger().Infof("Image %v found on project %v", containerOsImage, conn.cluster.Spec.Project)
+	cloud.Logger(conn.ctx).Infof("Image %v found on project %v", containerOsImage, conn.cluster.Spec.Project)
 	return containerOsImage, nil
 }
 
@@ -179,14 +199,14 @@ update-grub`
 			},
 		},
 	}
-	conn.ctx.Logger().Info("Creating instance for disk...")
+	cloud.Logger(conn.ctx).Info("Creating instance for disk...")
 	r, err := conn.computeService.Instances.Insert(conn.cluster.Spec.Project, conn.cluster.Spec.Zone, tempInstance).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	conn.waitForZoneOperation(r.Name)
 	time.Sleep(1 * time.Minute)
-	conn.ctx.Logger().Info("Restarting instance ...")
+	cloud.Logger(conn.ctx).Info("Restarting instance ...")
 	r, err = conn.computeService.Instances.Reset(conn.cluster.Spec.Project, conn.cluster.Spec.Zone, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -201,7 +221,7 @@ update-grub`
 }
 
 func (conn *cloudConnector) deleteInstance(name string) error {
-	conn.ctx.Logger().Info("Deleting instance...")
+	cloud.Logger(conn.ctx).Info("Deleting instance...")
 	r, err := conn.computeService.Instances.Delete(conn.cluster.Spec.Project, conn.cluster.Spec.Zone, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -213,16 +233,16 @@ func (conn *cloudConnector) deleteInstance(name string) error {
 func (conn *cloudConnector) waitForGlobalOperation(operation string) error {
 	attempt := 0
 	for {
-		conn.ctx.Logger().Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
+		cloud.Logger(conn.ctx).Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
 		r1, err := conn.computeService.GlobalOperations.Get(conn.cluster.Spec.Project, operation).Do()
-		conn.ctx.Logger().Debug("Retrieved operation", r1, err)
+		cloud.Logger(conn.ctx).Debug("Retrieved operation", r1, err)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
 		if r1.Status == "DONE" {
 			return nil
 		}
-		conn.ctx.Logger().Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
+		cloud.Logger(conn.ctx).Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
 		attempt++
 		time.Sleep(5 * time.Second)
 		if attempt > 120 {
@@ -235,9 +255,9 @@ func (conn *cloudConnector) waitForGlobalOperation(operation string) error {
 func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 	attempt := 0
 	for {
-		conn.ctx.Logger().Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
+		cloud.Logger(conn.ctx).Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
 		r1, err := conn.computeService.RegionOperations.Get(conn.cluster.Spec.Project, conn.cluster.Spec.Region, operation).Do()
-		conn.ctx.Logger().Debug("Retrieved operation", r1, err)
+		cloud.Logger(conn.ctx).Debug("Retrieved operation", r1, err)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
@@ -245,7 +265,7 @@ func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 		if r1.Status == "DONE" {
 			return nil
 		}
-		conn.ctx.Logger().Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
+		cloud.Logger(conn.ctx).Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
 		attempt++
 		time.Sleep(5 * time.Second)
 		if attempt > 120 {
@@ -258,9 +278,9 @@ func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 	attempt := 0
 	for {
-		conn.ctx.Logger().Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
+		cloud.Logger(conn.ctx).Infof("Attempt %v: waiting for operation %v to complete", attempt, operation)
 		r1, err := conn.computeService.ZoneOperations.Get(conn.cluster.Spec.Project, conn.cluster.Spec.Zone, operation).Do()
-		conn.ctx.Logger().Debug("Retrieved operation", r1, err)
+		cloud.Logger(conn.ctx).Debug("Retrieved operation", r1, err)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
 		}
@@ -268,7 +288,7 @@ func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 		if r1.Status == "DONE" {
 			return nil //TODO check return value
 		}
-		conn.ctx.Logger().Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
+		cloud.Logger(conn.ctx).Infof("Attempt %v: operation %v is %v, waiting...", attempt, operation, r1.Status)
 		attempt++
 		time.Sleep(5 * time.Second)
 		if attempt > 120 {
