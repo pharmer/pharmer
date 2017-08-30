@@ -119,7 +119,7 @@ func (cm *ClusterManager) restartMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
+	if err := cloud.WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	instance, err := cm.newKubeInstance(masterInstanceID) // sets external IP
@@ -253,10 +253,6 @@ func (cm *ClusterManager) rollingUpdate(oldInstances []string, newLaunchConfig, 
 
 		fmt.Println("Waiting for 1 minute")
 		time.Sleep(1 * time.Minute)
-		err = cloud.WaitForReadyNodes(cm.ctx, cm.cluster)
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
 	}
 
 	return nil
