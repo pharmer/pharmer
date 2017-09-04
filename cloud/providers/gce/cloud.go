@@ -38,6 +38,18 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 
 	// TODO: FixIt cluster.Spec.Project
+	namer := namer{cluster: cluster}
+	cluster.Spec.GCECloudConfig = &api.GCECloudConfig{
+		// TokenURL           :
+		// TokenBody          :
+		ProjectID:          cluster.Spec.Project,
+		NetworkName:        "default",
+		NodeTags:           []string{namer.NodePrefix()},
+		NodeInstancePrefix: namer.NodePrefix(),
+		Multizone:          bool(cluster.Spec.Multizone),
+	}
+	cluster.Spec.Project = typed.ProjectID()
+	cluster.Spec.CloudConfigPath = "/etc/gce.conf"
 
 	conf, err := google.JWTConfigFromJSON([]byte(typed.ServiceAccount()),
 		compute.ComputeScope,

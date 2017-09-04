@@ -70,8 +70,9 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 
 	cluster.Spec.Zone = req.Zone
 	cluster.Spec.CredentialName = req.CredentialUid
-	cluster.Spec.DoNotDelete = req.DoNotDelete
+
 	cluster.Spec.Region = cluster.Spec.Zone
+	cluster.Spec.DoNotDelete = req.DoNotDelete
 	cluster.Spec.OS = "debian"
 	cluster.Spec.MasterSKU = "2gb"
 	cluster.SetNodeGroups(req.NodeGroups)
