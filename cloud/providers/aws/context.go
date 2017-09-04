@@ -10,9 +10,11 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/data/files"
 	"github.com/appscode/pharmer/phid"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 	semver "github.com/hashicorp/go-version"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ClusterManager struct {
@@ -54,71 +56,89 @@ func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceStatus)
 	return i.Status.ExternalID == md.ExternalID
 }
 
-func (cm *ClusterManager) NewCluster(req *proto.ClusterCreateRequest) error {
-	var err error
-	cm.namer = namer{cluster: cm.cluster}
+func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
+	kv, err := semver.NewVersion(req.KubernetesVersion)
+	if err != nil {
+		return nil, err
+	}
+	defaultSpec, err := files.GetDefaultClusterSpec(req.Provider, kv)
+	if err != nil {
+		return nil, err
+	}
+	cluster := &api.Cluster{
+		ObjectMeta: api.ObjectMeta{
+			Name:              req.Name,
+			UID:               phid.NewKubeCluster(),
+			CreationTimestamp: metav1.Time{Time: time.Now()},
+		},
+		Spec: *defaultSpec,
+	}
+	api.AssignTypeKind(cluster)
+	namer := namer{cluster: cluster}
 
 	//cluster.Spec.ctx.Name = req.Name
 	//cluster.Spec.ctx.PHID = phid.NewKubeCluster()
 	//cluster.Spec.ctx.Provider = req.Provider
 	//cluster.Spec.ctx.Zone = req.Zone
 
-	cm.cluster.Spec.Region = cm.cluster.Spec.Zone[0 : len(cm.cluster.Spec.Zone)-1]
-	cm.cluster.Spec.DoNotDelete = req.DoNotDelete
+	cluster.Spec.Zone = req.Zone
+	cluster.Spec.CredentialName = req.CredentialUid
 
-	cm.cluster.SetNodeGroups(req.NodeGroups)
+	cluster.Spec.Region = cluster.Spec.Zone[0 : len(cluster.Spec.Zone)-1]
+	cluster.Spec.DoNotDelete = req.DoNotDelete
+	cluster.SetNodeGroups(req.NodeGroups)
 
 	// https://github.com/kubernetes/kubernetes/blob/master/cluster/aws/config-default.sh#L33
-	if cm.cluster.Spec.MasterSKU == "" {
-		cm.cluster.Spec.MasterSKU = "m3.medium"
-		if cm.cluster.NodeCount() > 5 {
-			cm.cluster.Spec.MasterSKU = "m3.large"
+	if cluster.Spec.MasterSKU == "" {
+		cluster.Spec.MasterSKU = "m3.medium"
+		if cluster.NodeCount() > 5 {
+			cluster.Spec.MasterSKU = "m3.large"
 		}
-		if cm.cluster.NodeCount() > 10 {
-			cm.cluster.Spec.MasterSKU = "m3.xlarge"
+		if cluster.NodeCount() > 10 {
+			cluster.Spec.MasterSKU = "m3.xlarge"
 		}
-		if cm.cluster.NodeCount() > 100 {
-			cm.cluster.Spec.MasterSKU = "m3.2xlarge"
+		if cluster.NodeCount() > 100 {
+			cluster.Spec.MasterSKU = "m3.2xlarge"
 		}
-		if cm.cluster.NodeCount() > 250 {
-			cm.cluster.Spec.MasterSKU = "c4.4xlarge"
+		if cluster.NodeCount() > 250 {
+			cluster.Spec.MasterSKU = "c4.4xlarge"
 		}
-		if cm.cluster.NodeCount() > 500 {
-			cm.cluster.Spec.MasterSKU = "c4.8xlarge"
+		if cluster.NodeCount() > 500 {
+			cluster.Spec.MasterSKU = "c4.8xlarge"
 		}
 	}
 
-	cm.cluster.Spec.KubernetesMasterName = cm.namer.MasterName()
-	cm.cluster.Spec.SSHKey, err = api.NewSSHKeyPair()
+	cluster.Spec.KubernetesMasterName = namer.MasterName()
+	cluster.Spec.SSHKey, err = api.NewSSHKeyPair()
 	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, err
 	}
-	cm.cluster.Spec.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
-	cm.cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
+	cluster.Spec.SSHKeyExternalID = namer.GenSSHKeyExternalID()
+	cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
 
-	cm.cluster.Spec.MasterSGName = cm.namer.GenMasterSGName()
-	cm.cluster.Spec.NodeSGName = cm.namer.GenNodeSGName()
+	cluster.Spec.MasterSGName = namer.GenMasterSGName()
+	cluster.Spec.NodeSGName = namer.GenNodeSGName()
 
-	cm.cluster.Spec.KubeadmToken = cloud.GetKubeadmToken()
-	cm.cluster.Spec.KubernetesVersion = "v" + req.KubernetesVersion
+	cluster.Spec.KubeadmToken = cloud.GetKubeadmToken()
+	cluster.Spec.KubernetesVersion = "v" + req.KubernetesVersion
 
-	cm.cluster.Spec.StartupConfigToken = rand.Characters(128)
+	cluster.Spec.StartupConfigToken = rand.Characters(128)
 
 	// TODO: FixIt!
-	//cm.cluster.Spec.AppsCodeApiGrpcEndpoint = system.PublicAPIGrpcEndpoint()
-	//cm.cluster.Spec.AppsCodeApiHttpEndpoint = system.PublicAPIHttpEndpoint()
-	//cm.cluster.Spec.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
+	//cluster.Spec.AppsCodeApiGrpcEndpoint = system.PublicAPIGrpcEndpoint()
+	//cluster.Spec.AppsCodeApiHttpEndpoint = system.PublicAPIHttpEndpoint()
+	//cluster.Spec.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
 
-	if cm.cluster.Spec.EnableWebhookTokenAuthentication {
-		cm.cluster.Spec.AppscodeAuthnUrl = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
+	if cluster.Spec.EnableWebhookTokenAuthentication {
+		cluster.Spec.AppscodeAuthnUrl = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
 	}
-	if cm.cluster.Spec.EnableWebhookTokenAuthorization {
-		cm.cluster.Spec.AppscodeAuthzUrl = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
+	if cluster.Spec.EnableWebhookTokenAuthorization {
+		cluster.Spec.AppscodeAuthzUrl = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
 	}
 
 	// TODO: FixIT!
-	//cm.cluster.Spec.ClusterExternalDomain = Extra(ctx).ExternalDomain(cluster.Name)
-	//cm.cluster.Spec.ClusterInternalDomain = Extra(ctx).InternalDomain(cluster.Name)
+	//cluster.Spec.ClusterExternalDomain = Extra(ctx).ExternalDomain(cluster.Name)
+	//cluster.Spec.ClusterInternalDomain = Extra(ctx).InternalDomain(cluster.Name)
 	//cluster.Status.Phase = api.ClusterPhasePending
 
 	//-------------------------- ctx.MasterSKU = "94" // 2 cpu
@@ -126,13 +146,13 @@ func (cm *ClusterManager) NewCluster(req *proto.ClusterCreateRequest) error {
 	// Using custom image with memory controller enabled
 	// -------------------------ctx.InstanceImage = "16604964" // "container-os-20160402" // Debian 8.4 x64
 
-	cm.cluster.Spec.NonMasqueradeCIDR = "10.0.0.0/8"
+	cluster.Spec.NonMasqueradeCIDR = "10.0.0.0/8"
 
-	version, err := semver.NewVersion(cm.cluster.Spec.KubernetesVersion)
+	version, err := semver.NewVersion(cluster.Spec.KubernetesVersion)
 	if err != nil {
-		version, err = semver.NewVersion(cm.cluster.Spec.KubernetesVersion)
+		version, err = semver.NewVersion(cluster.Spec.KubernetesVersion)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	version = version.ToMutator().ResetPrerelease().ResetMetadata().Done()
@@ -140,40 +160,40 @@ func (cm *ClusterManager) NewCluster(req *proto.ClusterCreateRequest) error {
 	v_1_4, _ := semver.NewConstraint(">= 1.4")
 	if v_1_4.Check(version) {
 		// Enable ScheduledJobs: http://kubernetes.io/docs/user-guide/scheduled-jobs/#prerequisites
-		/*if cm.cluster.Spec.EnableScheduledJobResource {
-			if cm.cluster.Spec.RuntimeConfig == "" {
-				cm.cluster.Spec.RuntimeConfig = "batch/v2alpha1"
+		/*if cluster.Spec.EnableScheduledJobResource {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "batch/v2alpha1"
 			} else {
-				cm.cluster.Spec.RuntimeConfig += ",batch/v2alpha1"
+				cluster.Spec.RuntimeConfig += ",batch/v2alpha1"
 			}
 		}*/
 
 		// http://kubernetes.io/docs/admin/authentication/
-		if cm.cluster.Spec.EnableWebhookTokenAuthentication {
-			if cm.cluster.Spec.RuntimeConfig == "" {
-				cm.cluster.Spec.RuntimeConfig = "authentication.k8s.io/v1beta1=true"
+		if cluster.Spec.EnableWebhookTokenAuthentication {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "authentication.k8s.io/v1beta1=true"
 			} else {
-				cm.cluster.Spec.RuntimeConfig += ",authentication.k8s.io/v1beta1=true"
+				cluster.Spec.RuntimeConfig += ",authentication.k8s.io/v1beta1=true"
 			}
 		}
 
 		// http://kubernetes.io/docs/admin/authorization/
-		if cm.cluster.Spec.EnableWebhookTokenAuthorization {
-			if cm.cluster.Spec.RuntimeConfig == "" {
-				cm.cluster.Spec.RuntimeConfig = "authorization.k8s.io/v1beta1=true"
+		if cluster.Spec.EnableWebhookTokenAuthorization {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "authorization.k8s.io/v1beta1=true"
 			} else {
-				cm.cluster.Spec.RuntimeConfig += ",authorization.k8s.io/v1beta1=true"
+				cluster.Spec.RuntimeConfig += ",authorization.k8s.io/v1beta1=true"
 			}
 		}
-		if cm.cluster.Spec.EnableRBACAuthorization {
-			if cm.cluster.Spec.RuntimeConfig == "" {
-				cm.cluster.Spec.RuntimeConfig = "rbac.authorization.k8s.io/v1alpha1=true"
+		if cluster.Spec.EnableRBACAuthorization {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "rbac.authorization.k8s.io/v1alpha1=true"
 			} else {
-				cm.cluster.Spec.RuntimeConfig += ",rbac.authorization.k8s.io/v1alpha1=true"
+				cluster.Spec.RuntimeConfig += ",rbac.authorization.k8s.io/v1alpha1=true"
 			}
 		}
 	}
-	return nil
+	return cluster, nil
 }
 
 func (cm *ClusterManager) waitForInstanceState(instanceId string, state string) error {

@@ -2,15 +2,17 @@ package azure
 
 import (
 	"context"
+	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/credential"
+	"github.com/appscode/pharmer/data/files"
 	"github.com/appscode/pharmer/phid"
 	semver "github.com/hashicorp/go-version"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ClusterManager struct {
@@ -47,76 +49,66 @@ func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceStatus)
 	return i.Status.ExternalID == md.ExternalID
 }
 
-func (cm *ClusterManager) NewCluster(req *proto.ClusterCreateRequest) error {
-	var err error
-	cm.namer = namer{cluster: cm.cluster}
+func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
+	kv, err := semver.NewVersion(req.KubernetesVersion)
+	if err != nil {
+		return nil, err
+	}
+	defaultSpec, err := files.GetDefaultClusterSpec(req.Provider, kv)
+	if err != nil {
+		return nil, err
+	}
+	cluster := &api.Cluster{
+		ObjectMeta: api.ObjectMeta{
+			Name:              req.Name,
+			UID:               phid.NewKubeCluster(),
+			CreationTimestamp: metav1.Time{Time: time.Now()},
+		},
+		Spec: *defaultSpec,
+	}
+	api.AssignTypeKind(cluster)
+	namer := namer{cluster: cluster}
 
 	//cluster.Spec.ctx.Name = req.Name
 	//cluster.Spec.ctx.PHID = phid.NewKubeCluster()
 	//cluster.Spec.ctx.Provider = req.Provider
 	//cluster.Spec.ctx.Zone = req.Zone
-	cm.cluster.Spec.Region = cm.cluster.Spec.Zone
-	cm.cluster.Spec.DoNotDelete = req.DoNotDelete
+	cluster.Spec.Region = cluster.Spec.Zone
+	cluster.Spec.DoNotDelete = req.DoNotDelete
 
-	cm.cluster.SetNodeGroups(req.NodeGroups)
+	cluster.SetNodeGroups(req.NodeGroups)
 
-	cm.cluster.Spec.KubernetesMasterName = cm.namer.MasterName()
-	cm.cluster.Spec.SSHKey, err = api.NewSSHKeyPair()
+	cluster.Spec.KubernetesMasterName = namer.MasterName()
+	cluster.Spec.SSHKey, err = api.NewSSHKeyPair()
 	if err != nil {
-		return errors.FromErr(err).Err()
+		return nil, errors.FromErr(err).Err()
 	}
-	cm.cluster.Spec.SSHKeyExternalID = cm.namer.GenSSHKeyExternalID()
-	cm.cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
+	cluster.Spec.SSHKeyExternalID = namer.GenSSHKeyExternalID()
+	cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
 
 	// cluster.Spec.ctx.MasterSGName = cluster.Spec.ctx.Name + "-master-" + rand.Characters(6)
 	// cluster.Spec.ctx.NodeSGName = cluster.Spec.ctx.Name + "-node-" + rand.Characters(6)
 
-	cm.cluster.Spec.KubeadmToken = cloud.GetKubeadmToken()
-	cm.cluster.Spec.KubernetesVersion = "v" + req.KubernetesVersion
+	cluster.Spec.KubeadmToken = cloud.GetKubeadmToken()
+	cluster.Spec.KubernetesVersion = "v" + req.KubernetesVersion
 
-	// TODO: Load once
-	cred, err := cloud.Store(cm.ctx).Credentials().Get(cm.cluster.Spec.CredentialName)
-	if err != nil {
-		return err
-	}
-	typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
-	if ok, err := typed.IsValid(); !ok {
-		return errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cm.cluster.Spec.CredentialName, err)
-	}
-
-	cm.cluster.Spec.AzureCloudConfig = &api.AzureCloudConfig{
-		TenantID:           typed.TenantID(),
-		SubscriptionID:     typed.SubscriptionID(),
-		AadClientID:        typed.ClientID(),
-		AadClientSecret:    typed.ClientSecret(),
-		ResourceGroup:      cm.namer.ResourceGroupName(),
-		Location:           cm.cluster.Spec.Zone,
-		SubnetName:         cm.namer.SubnetName(),
-		SecurityGroupName:  cm.namer.NetworkSecurityGroupName(),
-		VnetName:           cm.namer.VirtualNetworkName(),
-		RouteTableName:     cm.namer.RouteTableName(),
-		StorageAccountName: cm.namer.GenStorageAccountName(),
-	}
-	cm.cluster.Spec.CloudConfigPath = "/etc/kubernetes/azure.json"
-	cm.cluster.Spec.AzureStorageAccountName = cm.cluster.Spec.AzureCloudConfig.StorageAccountName
-
-	cm.cluster.Spec.StartupConfigToken = rand.Characters(128)
+	cluster.Spec.StartupConfigToken = rand.Characters(128)
 
 	// TODO: FixIt!
-	//cm.cluster.Spec.AppsCodeApiGrpcEndpoint = system.PublicAPIGrpcEndpoint()
-	//cm.cluster.Spec.AppsCodeApiHttpEndpoint = system.PublicAPIHttpEndpoint()
-	//cm.cluster.Spec.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
+	//cluster.Spec.AppsCodeApiGrpcEndpoint = system.PublicAPIGrpcEndpoint()
+	//cluster.Spec.AppsCodeApiHttpEndpoint = system.PublicAPIHttpEndpoint()
+	//cluster.Spec.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
 
-	if cm.cluster.Spec.EnableWebhookTokenAuthentication {
-		cm.cluster.Spec.AppscodeAuthnUrl = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
+	if cluster.Spec.EnableWebhookTokenAuthentication {
+		cluster.Spec.AppscodeAuthnUrl = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
 	}
-	if cm.cluster.Spec.EnableWebhookTokenAuthorization {
-		cm.cluster.Spec.AppscodeAuthzUrl = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
+	if cluster.Spec.EnableWebhookTokenAuthorization {
+		cluster.Spec.AppscodeAuthzUrl = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
 	}
 
 	// TODO: FixIT!
-	//cm.cluster.Spec.ClusterExternalDomain = Extra(ctx).ExternalDomain(cluster.Name)
-	//cm.cluster.Spec.ClusterInternalDomain = Extra(ctx).InternalDomain(cluster.Name)
+	//cluster.Spec.ClusterExternalDomain = Extra(ctx).ExternalDomain(cluster.Name)
+	//cluster.Spec.ClusterInternalDomain = Extra(ctx).InternalDomain(cluster.Name)
 	//cluster.Status.Phase = api.ClusterPhasePending
 
 	//-------------------------- ctx.MasterSKU = "94" // 2 cpu
@@ -124,13 +116,13 @@ func (cm *ClusterManager) NewCluster(req *proto.ClusterCreateRequest) error {
 	// Using custom image with memory controller enabled
 	// -------------------------ctx.InstanceImage = "16604964" // "container-os-20160402" // Debian 8.4 x64
 
-	cm.cluster.Spec.NonMasqueradeCIDR = "10.0.0.0/8"
+	cluster.Spec.NonMasqueradeCIDR = "10.0.0.0/8"
 
-	version, err := semver.NewVersion(cm.cluster.Spec.KubernetesVersion)
+	version, err := semver.NewVersion(cluster.Spec.KubernetesVersion)
 	if err != nil {
-		version, err = semver.NewVersion(cm.cluster.Spec.KubernetesVersion)
+		version, err = semver.NewVersion(cluster.Spec.KubernetesVersion)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	version = version.ToMutator().ResetPrerelease().ResetMetadata().Done()
@@ -138,38 +130,38 @@ func (cm *ClusterManager) NewCluster(req *proto.ClusterCreateRequest) error {
 	v_1_4, _ := semver.NewConstraint(">= 1.4")
 	if v_1_4.Check(version) {
 		// Enable ScheduledJobs: http://kubernetes.io/docs/user-guide/scheduled-jobs/#prerequisites
-		/*if cm.cluster.Spec.EnableScheduledJobResource {
-			if cm.cluster.Spec.RuntimeConfig == "" {
-				cm.cluster.Spec.RuntimeConfig = "batch/v2alpha1"
+		/*if cluster.Spec.EnableScheduledJobResource {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "batch/v2alpha1"
 			} else {
-				cm.cluster.Spec.RuntimeConfig += ",batch/v2alpha1"
+				cluster.Spec.RuntimeConfig += ",batch/v2alpha1"
 			}
 		}*/
 
 		// http://kubernetes.io/docs/admin/authentication/
-		if cm.cluster.Spec.EnableWebhookTokenAuthentication {
-			if cm.cluster.Spec.RuntimeConfig == "" {
-				cm.cluster.Spec.RuntimeConfig = "authentication.k8s.io/v1beta1=true"
+		if cluster.Spec.EnableWebhookTokenAuthentication {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "authentication.k8s.io/v1beta1=true"
 			} else {
-				cm.cluster.Spec.RuntimeConfig += ",authentication.k8s.io/v1beta1=true"
+				cluster.Spec.RuntimeConfig += ",authentication.k8s.io/v1beta1=true"
 			}
 		}
 
 		// http://kubernetes.io/docs/admin/authorization/
-		if cm.cluster.Spec.EnableWebhookTokenAuthorization {
-			if cm.cluster.Spec.RuntimeConfig == "" {
-				cm.cluster.Spec.RuntimeConfig = "authorization.k8s.io/v1beta1=true"
+		if cluster.Spec.EnableWebhookTokenAuthorization {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "authorization.k8s.io/v1beta1=true"
 			} else {
-				cm.cluster.Spec.RuntimeConfig += ",authorization.k8s.io/v1beta1=true"
+				cluster.Spec.RuntimeConfig += ",authorization.k8s.io/v1beta1=true"
 			}
 		}
-		if cm.cluster.Spec.EnableRBACAuthorization {
-			if cm.cluster.Spec.RuntimeConfig == "" {
-				cm.cluster.Spec.RuntimeConfig = "rbac.authorization.k8s.io/v1alpha1=true"
+		if cluster.Spec.EnableRBACAuthorization {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "rbac.authorization.k8s.io/v1alpha1=true"
 			} else {
-				cm.cluster.Spec.RuntimeConfig += ",rbac.authorization.k8s.io/v1alpha1=true"
+				cluster.Spec.RuntimeConfig += ",rbac.authorization.k8s.io/v1alpha1=true"
 			}
 		}
 	}
-	return nil
+	return cluster, nil
 }

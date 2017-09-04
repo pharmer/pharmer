@@ -45,6 +45,23 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
+	namer := namer{cluster: cluster}
+	cluster.Spec.AzureCloudConfig = &api.AzureCloudConfig{
+		TenantID:           typed.TenantID(),
+		SubscriptionID:     typed.SubscriptionID(),
+		AadClientID:        typed.ClientID(),
+		AadClientSecret:    typed.ClientSecret(),
+		ResourceGroup:      namer.ResourceGroupName(),
+		Location:           cluster.Spec.Zone,
+		SubnetName:         namer.SubnetName(),
+		SecurityGroupName:  namer.NetworkSecurityGroupName(),
+		VnetName:           namer.VirtualNetworkName(),
+		RouteTableName:     namer.RouteTableName(),
+		StorageAccountName: namer.GenStorageAccountName(),
+	}
+	cluster.Spec.CloudConfigPath = "/etc/kubernetes/azure.json"
+	cluster.Spec.AzureStorageAccountName = cluster.Spec.AzureCloudConfig.StorageAccountName
+
 	/*
 		if az.Cloud == "" {
 			az.Environment = azure.PublicCloud
