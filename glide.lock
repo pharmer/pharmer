@@ -1,5 +1,5 @@
 hash: 2443fcd89bf5a522888d9699b565dd11ac50d93691f1c4a3c60ea86021f6d432
-updated: 2017-09-03T22:50:20.025805152-07:00
+updated: 2017-09-03T23:16:38.134785806-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -265,7 +265,7 @@ imports:
   - third_party/appscodeapis/appscode/api
   - utilities
 - name: github.com/hashicorp/go-version
-  version: ec6bc3cc5b539f47f789f7a44b6076b913de3149
+  version: ac737305c16432f4c660c6fc68cdcda4b5a0b5ae
   repo: https://github.com/appscode/go-version.git
   vcs: git
 - name: github.com/howeyc/gopass

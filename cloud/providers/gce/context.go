@@ -149,7 +149,7 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 			return err
 		}
 	}
-	version = version.ToBuilder().ResetPrerelease().ResetMetadata().Done()
+	version = version.ToMutator().ResetPrerelease().ResetMetadata().Done()
 
 	v_1_4, _ := semver.NewConstraint(">= 1.4")
 	if v_1_4.Check(version) {
