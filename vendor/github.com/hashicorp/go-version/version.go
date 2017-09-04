@@ -321,6 +321,15 @@ func (v *Version) String() string {
 	return buf.String()
 }
 
-func (v *Version) ToBuilder() *Builder {
-	return &Builder{Version: *v}
+func (v *Version) Clone() *Version {
+	return &Version{
+		metadata: v.metadata,
+		pre:      v.pre,
+		segments: append([]int64(nil), v.segments...),
+		si:       v.si,
+	}
+}
+
+func (v *Version) ToMutator() *Mutator {
+	return &Mutator{Version: v}
 }

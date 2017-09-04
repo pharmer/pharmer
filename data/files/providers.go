@@ -157,7 +157,7 @@ func GetDefaultClusterSpec(provider string, x *version.Version) (*api.ClusterSpe
 	// ref: https://golang.org/pkg/sort/#Search
 	pos := sort.Search(len(p.Versions), func(i int) bool { return !p.Versions[i].Version.LessThan(x) })
 	if pos < len(p.Versions) && p.Versions[pos].Version.Equal(x) {
-		c, err := version.NewConstraint(fmt.Sprintf(">= %s, <= %s", x.ToBuilder().ResetMetadata().ResetPatch().Done().String(), x))
+		c, err := version.NewConstraint(fmt.Sprintf(">= %s, <= %s", x.Clone().ToMutator().ResetMetadata().ResetPatch().Done().String(), x.Clone().ToMutator().ResetMetadata().Done().String()))
 		if err != nil {
 			return nil, err
 		}
