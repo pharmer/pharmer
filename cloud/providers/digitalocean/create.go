@@ -17,17 +17,14 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 
 	cm.cluster, err = NewCluster(req)
 	if err != nil {
-		oneliners.FILE(err)
 		return err
 	}
 	cm.namer = namer{cluster: cm.cluster}
 
 	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
-		oneliners.FILE(err)
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	oneliners.FILE()
 
 	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
