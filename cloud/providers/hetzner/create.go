@@ -13,11 +13,19 @@ import (
 )
 
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
-	err := cm.NewCluster(req)
+	var err error
+
+	cm.cluster, err = NewCluster(req)
 	if err != nil {
+		return err
+	}
+	cm.namer = namer{cluster: cm.cluster}
+
+	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
+
 	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
