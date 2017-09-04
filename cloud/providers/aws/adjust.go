@@ -85,7 +85,7 @@ func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) err
 		return err
 	}
 
-	cloud.Logger(igm.cm.ctx).Info("Creating node configuration assuming EnableNodePublicIP = true")
+	cloud.Logger(igm.cm.ctx).Info("Creating node configuration assuming enableNodePublicIP = true")
 	fmt.Println(igm.cm.cluster.Spec.RootDeviceName, "<<<<<<<<--------------->>>>>>>>>>>>>>>>>>.")
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
 		LaunchConfigurationName:  types.StringP(name),

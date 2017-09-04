@@ -25,7 +25,7 @@ const (
 // Returned KubeClient uses admin bearer token. This should only be used for cluster provisioning operations.
 func NewAdminClient(ctx context.Context, cluster *api.Cluster) (clientset.Interface, error) {
 	cfg := &rest.Config{
-		Host: cluster.ApiServerURL(),
+		Host: cluster.APIServerURL(),
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData:   cert.EncodeCertPEM(CACert(ctx)),
 			CertData: cert.EncodeCertPEM(AdminUserCert(ctx)),

@@ -3,6 +3,7 @@ package files
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
@@ -17,6 +18,7 @@ import (
 	"github.com/appscode/pharmer/data/files/scaleway"
 	"github.com/appscode/pharmer/data/files/softlayer"
 	"github.com/appscode/pharmer/data/files/vultr"
+	"github.com/hashicorp/go-version"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -24,8 +26,7 @@ type cloudData struct {
 	Name          string
 	Regions       map[string]data.Region
 	InstanceTypes map[string]data.InstanceType
-	DefaultSpec   *api.ClusterSpec
-	Versions      map[string]data.KubernetesVersion
+	Versions      []data.KubernetesVersion
 }
 
 var (
@@ -48,7 +49,7 @@ func parseData(bytes []byte, env _env.Environment) error {
 		Name:          cd.Name,
 		Regions:       map[string]data.Region{},
 		InstanceTypes: map[string]data.InstanceType{},
-		Versions:      map[string]data.KubernetesVersion{},
+		Versions:      make([]data.KubernetesVersion, 0),
 	}
 	for _, r := range cd.Regions {
 		cloud.Regions[r.Region] = r
@@ -56,18 +57,16 @@ func parseData(bytes []byte, env _env.Environment) error {
 	for _, t := range cd.InstanceTypes {
 		cloud.InstanceTypes[t.SKU] = t
 	}
+
+	kubes := make([]data.KubernetesVersion, 0, len(cd.KubernetesVersions))
 	for _, v := range cd.KubernetesVersions {
 		if v.Released(env) {
-			cloud.Versions[v.Version] = v
+			kubes = append(kubes, v)
 		}
 	}
-	if cloud.DefaultSpec != nil {
-		for _, ng := range cloud.DefaultSpec.NodeGroups {
-			if _, found := cloud.InstanceTypes[ng.SKU]; !found {
-				return fmt.Errorf("Invalid instance type %s for cloud provider %s", ng.SKU, cloud.Name)
-			}
-		}
-	}
+	sort.Slice(kubes, func(i, j int) bool { return kubes[i].Version.LessThan(kubes[j].Version) })
+	cloud.Versions = kubes
+
 	if len(cloud.Versions) > 0 {
 		if _, exists := clouds[cloud.Name]; exists {
 			return fmt.Errorf("Redeclared cloud provider %s", cloud.Name)
@@ -150,17 +149,42 @@ func Load(env _env.Environment) error {
 	return nil
 }
 
-func GetClusterVersion(provider, version string, env _env.Environment) (*data.KubernetesVersion, error) {
+func GetDefaultClusterSpec(provider string, x *version.Version) (*api.ClusterSpec, error) {
 	p, found := clouds[provider]
 	if !found {
 		return nil, fmt.Errorf("Can't find cluster provider %v", provider)
 	}
-	for _, v := range p.Versions {
-		if v.Version == version && v.Released(env) {
-			return &v, nil
+	// ref: https://golang.org/pkg/sort/#Search
+	pos := sort.Search(len(p.Versions), func(i int) bool { return !p.Versions[i].Version.LessThan(x) })
+	if pos < len(p.Versions) && p.Versions[pos].Version.Equal(x) {
+		c, err := version.NewConstraint(fmt.Sprintf(">= %s, <= %s", x.ToBuilder().ResetMetadata().ResetPatch().Done().String(), x))
+		if err != nil {
+			return nil, err
 		}
+		i := pos
+		for i >= 0 {
+			if i != pos && !c.Check(p.Versions[i].Version) { // ensures that pre versions don't fail constraint
+				break
+			}
+			if p.Versions[i].DefaultSpec != nil {
+				// perform deep copy so that cache is not modified
+				var result api.ClusterSpec
+				b, err := json.Marshal(p.Versions[i].DefaultSpec)
+				if err != nil {
+					return nil, err
+				}
+				err = json.Unmarshal(b, &result)
+				if err != nil {
+					return nil, err
+				}
+				return &result, nil
+			}
+			i--
+		}
+		return nil, fmt.Errorf("Can't find default spec for Kubernetes version %v for provider %v", x, provider)
+	} else {
+		return nil, fmt.Errorf("Can't find Kubernetes version %v for provider %v", x, provider)
 	}
-	return nil, fmt.Errorf("Can't find Kubernetes version %v for %v in %v", version, provider, env)
 }
 
 func GetInstanceType(provider, sku string) (*data.InstanceType, error) {

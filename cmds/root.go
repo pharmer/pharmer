@@ -13,7 +13,7 @@ import (
 	cfgCmd "github.com/appscode/pharmer/config/cmds"
 	credCmd "github.com/appscode/pharmer/credential/cmds"
 	"github.com/appscode/pharmer/data/files"
-	_ "github.com/appscode/pharmer/storage/providers"
+	_ "github.com/appscode/pharmer/store/providers"
 	"github.com/jpillora/go-ogle-analytics"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

@@ -43,7 +43,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		client:  godo.NewClient(oauthClient),
 	}
 	if ok, msg := conn.IsUnauthorized(); !ok {
-		return nil, fmt.Errorf("Credential %s does not have necessary autheorization. Reason: %s.", cluster.Spec.CredentialName, msg)
+		return nil, fmt.Errorf("Credential `%s` does not have necessary autheorization. Reason: %s.", cluster.Spec.CredentialName, msg)
 	}
 	return &conn, nil
 }
@@ -55,10 +55,10 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 		Name: name,
 	})
 	if err != nil {
-		return true, "Credential missing WRITE scope"
+		return false, "Credential missing WRITE scope"
 	}
 	conn.client.Tags.Delete(gtx.TODO(), name)
-	return false, ""
+	return true, ""
 }
 
 func (conn *cloudConnector) waitForInstance(id int, status string) error {
@@ -70,7 +70,7 @@ func (conn *cloudConnector) waitForInstance(id int, status string) error {
 		if err != nil {
 			return false, nil
 		}
-		cloud.Logger(conn.ctx).Infof("Attempt %v: Instance %v is in status", attempt, id, droplet.Status)
+		cloud.Logger(conn.ctx).Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, id, droplet.Status)
 		if strings.ToLower(droplet.Status) == status {
 			return true, nil
 		}

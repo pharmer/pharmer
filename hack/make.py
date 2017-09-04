@@ -93,9 +93,9 @@ def version():
 
 
 def fmt():
-    libbuild.ungroup_go_imports('*.go', 'api', 'cloud', 'cmds', 'config', 'credential', 'data', 'phid', 'storage')
-    die(call('goimports -w *.go api cloud cmds config credential data phid storage'))
-    call('gofmt -s -w *.go api cloud cmds config credential data phid storage')
+    libbuild.ungroup_go_imports('*.go', 'api', 'cloud', 'cmds', 'config', 'credential', 'data', 'phid', 'store')
+    die(call('goimports -w *.go api cloud cmds config credential data phid store'))
+    call('gofmt -s -w *.go api cloud cmds config credential data phid store')
 
 
 def vet():
@@ -184,14 +184,13 @@ def update_registry():
 
 
 def install():
-    die(call('GO15VENDOREXPERIMENT=1 ' + libbuild.GOC + ' install ./...'))
+    die(call(libbuild.GOC + ' install ./...'))
 
 
 def default():
     gen()
     fmt()
-    vet()
-    die(call('GO15VENDOREXPERIMENT=1 ' + libbuild.GOC + ' install .'))
+    die(call(libbuild.GOC + ' install .'))
 
 
 if __name__ == "__main__":

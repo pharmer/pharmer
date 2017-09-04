@@ -12,8 +12,38 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
+	oneliners "github.com/tamalsaha/go-oneliners"
 	compute "google.golang.org/api/compute/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//"encoding/json"
+	"encoding/json"
 )
+
+func (cm *ClusterManager) Check(req *proto.ClusterCreateRequest) {
+	cm.cluster = &api.Cluster{
+		ObjectMeta: api.ObjectMeta{
+			Name:              req.Name,
+			UID:               phid.NewKubeCluster(),
+			CreationTimestamp: metav1.Time{Time: time.Now()},
+		},
+		Spec: api.ClusterSpec{
+			CredentialName: req.CredentialUid,
+		},
+	}
+	cm.cluster.Spec.Zone = req.Zone
+	api.AssignTypeKind(cm.cluster)
+	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
+		oneliners.FILE(err)
+		cm.cluster.Status.Reason = err.Error()
+		fmt.Println(err)
+		//	return errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+	cm.initContext(req)
+	c, _ := json.Marshal(cm.cluster.Spec)
+	fmt.Println(string(c))
+	//_, err := cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	//fmt.Println(err) /fmt.Println( string(data))
+}
 
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	err := cm.initContext(req)

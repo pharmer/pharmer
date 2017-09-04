@@ -29,7 +29,7 @@ func GenClusterCerts(ctx context.Context, cluster *api.Cluster) (context.Context
 
 	ctx = context.WithValue(ctx, keyCACert{}, caCert)
 	ctx = context.WithValue(ctx, keyCAKey{}, caKey)
-	certStore.Create(cluster.Spec.CACertName, cert.EncodeCertPEM(caCert), cert.EncodePrivateKeyPEM(caKey))
+	certStore.Create(cluster.Spec.CACertName, caCert, caKey)
 
 	// -----------------------------------------------
 
@@ -45,7 +45,7 @@ func GenClusterCerts(ctx context.Context, cluster *api.Cluster) (context.Context
 
 	ctx = context.WithValue(ctx, keyFrontProxyCACert{}, frontProxyCACert)
 	ctx = context.WithValue(ctx, keyFrontProxyCAKey{}, frontProxyCAKey)
-	certStore.Create(cluster.Spec.FrontProxyCACertName, cert.EncodeCertPEM(frontProxyCACert), cert.EncodePrivateKeyPEM(frontProxyCAKey))
+	certStore.Create(cluster.Spec.FrontProxyCACertName, frontProxyCACert, frontProxyCAKey)
 
 	// -----------------------------------------------
 

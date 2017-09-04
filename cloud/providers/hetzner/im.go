@@ -60,11 +60,12 @@ func (im *instanceManager) createInstance(role, sku string) (*hc.Transaction, er
 
 func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Signer) error {
 	cloud.Logger(im.ctx).Infof("Storing config file for server %v", serverIP)
-	cfg, err := im.cluster.StartupConfigResponse(role)
-	if err != nil {
-		return errors.FromErr(err).WithContext(im.ctx).Err()
-	}
-	fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>", cfg)
+	//cfg, err := im.cluster.StartupConfigResponse(role)
+	//if err != nil {
+	//	return errors.FromErr(err).WithContext(im.ctx).Err()
+	//}
+	//fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>", cfg)
+	cfg := ""
 
 	file := fmt.Sprintf("/var/cache/kubernetes_context_%v_%v.yaml", im.cluster.Spec.ResourceVersion, role)
 	stdOut, stdErr, code, err := _ssh.SCP(file, []byte(cfg), "root", serverIP+":22", signer)

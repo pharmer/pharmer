@@ -98,10 +98,11 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 
 func (im *instanceManager) storeConfigFile(serverID, role string) error {
 	cloud.Logger(im.ctx).Infof("Storing config file for server %v", serverID)
-	cfg, err := im.cluster.StartupConfigResponse(role)
-	if err != nil {
-		return errors.FromErr(err).WithContext(im.ctx).Err()
-	}
+	cfg := ""
+	//cfg, err := im.cluster.StartupConfigResponse(role)
+	//if err != nil {
+	//	return errors.FromErr(err).WithContext(im.ctx).Err()
+	//}
 	dataKey := fmt.Sprintf("kubernetes_context_%v_%v.yaml", im.cluster.Spec.ResourceVersion, role)
 	return im.conn.client.PatchUserdata(serverID, dataKey, []byte(cfg), false)
 }

@@ -9,17 +9,35 @@ import (
 	"text/template"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/go/errors"
 	"github.com/appscode/go/net/httpclient"
 	"github.com/appscode/pharmer/api"
 	"github.com/golang/protobuf/jsonpb"
+	"k8s.io/client-go/util/cert"
 )
 
 type TemplateData struct {
+	KubernetesVersion string
+	KubeadmVersion    string
+	KubeadmToken      string
+	CAKey             string
+	FrontProxyKey     string
+	KubeAPIServer     string
+	ExtraDomains      string
+
+	NetworkProvider string
 }
 
 func GetTemplateData(ctx context.Context, cluster *api.Cluster) TemplateData {
-	return TemplateData{}
+	return TemplateData{
+		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		KubeadmVersion:    cluster.Spec.KubeadmVersion,
+		KubeadmToken:      cluster.Spec.KubeadmToken,
+		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		KubeAPIServer:     "",
+		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
+		NetworkProvider:   cluster.Spec.NetworkProvider,
+	}
 }
 
 func RenderStartupScript(ctx context.Context, cluster *api.Cluster, role string) (string, error) {
@@ -31,14 +49,14 @@ func RenderStartupScript(ctx context.Context, cluster *api.Cluster, role string)
 }
 
 var (
-	StartupScriptTemplate = template.Must(template.New(api.RoleKubernetesMaster).Parse(`#!/usr/bin/env bash
-set -e
+	StartupScriptTemplate = template.Must(template.New(api.RoleKubernetesMaster).Parse(`#!/bin/bash
 set -x
-cd ~
+set -o errexit
+set -o nounset
+set -o pipefail
 
-# logging startup script
-LOGFILE=startup-script.log
-exec > >(tee -a $LOGFILE)
+# log to /var/log/startup-script.log
+exec > >(tee -a /var/log/startup-script.log)
 exec 2>&1
 
 # kill apt processes (E: Unable to lock directory /var/lib/apt/lists/)
@@ -46,93 +64,117 @@ kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 
 {{ template "prepare-host" . }}
 
-# E: The method driver /usr/lib/apt/methods/https could not be found.
 apt-get update -y
-apt-get install -y apt-transport-https
+apt-get install -y apt-transport-https curl ca-certificates
 
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-touch /etc/apt/sources.list.d/kubernetes.list
-sh -c 'echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list'
+curl -fSsL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
 
-apt-get update -y
-apt-get install -y \
-    socat \
-    ebtables \
-    apt-transport-https \
-    kubelet \
-    kubeadm=1.7.3-01 \
-    cloud-utils \
-    jq
-
-# ignore docker error (No sockets found via socket activation: make sure the service was started by systemd)
-apt-get install -y docker.io || true
-
-systemctl enable docker
-systemctl start docker
-
-kubeadm reset
-
-mkdir -p /etc/kubernetes/pki
-{{ template "setup-certs" . }}
-chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
-
-# get public and private ip addresses (comma separated)
-PUBLIC_IP=$(curl ipinfo.io/ip)
-PRIVATE_IP=$(hostname -I | tr ' ' '\n' | grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)' | xargs | tr ' ' ',')
-# use public-ip if no private-ip found
-if [ -z $PRIVATE_IP ]; then
-	PRIVATE_IP=$PUBLIC_IP
-fi
-
-kubeadm init --apiserver-bind-port 6443 --token %v --apiserver-advertise-address ${PUBLIC_IP} --apiserver-cert-extra-sans=${PUBLIC_IP},${PRIVATE_IP},%v
-
-
-mkdir -p ~/.kube
-cp /etc/kubernetes/admin.conf ~/.kube/config`))
-
-	_ = template.Must(StartupScriptTemplate.New(api.RoleKubernetesPool).Parse(`#!/usr/bin/env bash
-set -e
-set -x
-cd ~
-
-# logging startup script
-LOGFILE=startup-script.log
-exec > >(tee -a $LOGFILE)
-exec 2>&1
-
-# kill apt processes (E: Unable to lock directory /var/lib/apt/lists/)
-kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
-
-{{ template "prepare-host" . }}
-
-# E: The method driver /usr/lib/apt/methods/https could not be found.
-apt-get update -y
-apt-get install -y apt-transport-https
-
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-touch /etc/apt/sources.list.d/kubernetes.list
-sh -c 'echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list'
+add-apt-repository -y ppa:gluster/glusterfs-3.10
 
 apt-get update -y
 apt-get install -y \
 	socat \
 	ebtables \
+	git \
+	haveged \
+	nfs-common \
+	cron \
+	glusterfs-client \
 	kubelet \
-	kubeadm=1.7.3-01
+	kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
+	cloud-utils \
+	docker.io || true
 
-# ignore docker error (No sockets found via socket activation: make sure the service was started by systemd)
-apt-get install -y docker.io || true
+curl -Lo cloudid https://cdn.appscode.com/binaries/cloudid/0.1.0-alpha.0/cloudid-linux-amd64 \
+	&& chmod +x cloudid \
+	&& mv cloudid /usr/bin/
 
 systemctl enable docker
 systemctl start docker
 
 kubeadm reset
-kubeadm join --token %v %v:6443
+
+{{ template "setup-certs" . }}
+
+kubeadm init \
+	--apiserver-bind-port=6443 \
+	--token={{ .KubeadmToken }} \
+	--apiserver-advertise-address=$(cloudid get public-ips --all=false) \
+	--apiserver-cert-extra-sans=$(cloudid get public-ips) \
+	--apiserver-cert-extra-sans=$(cloudid get private-ips) \
+	--apiserver-cert-extra-sans={{ .ExtraDomains }}
+
+{{ if eq .NetworkProvider "flannel" }}
+{{ template "flannel" . }}
+{{ else if eq .NetworkProvider "calico" }}
+{{ template "calico" . }}
+{{ end }}
+
+mkdir -p ~/.kube
+cp /etc/kubernetes/admin.conf ~/.kube/config
+`))
+
+	_ = template.Must(StartupScriptTemplate.New(api.RoleKubernetesPool).Parse(`#!/bin/bash
+set -x
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# log to /var/log/startup-script.log
+exec > >(tee -a /var/log/startup-script.log)
+exec 2>&1
+
+# kill apt processes (E: Unable to lock directory /var/lib/apt/lists/)
+kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
+
+{{ template "prepare-host" . }}
+
+apt-get update -y
+apt-get install -y apt-transport-https curl ca-certificates
+
+curl -fSsL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
+
+add-apt-repository -y ppa:gluster/glusterfs-3.10
+
+apt-get update -y
+apt-get install -y \
+	socat \
+	ebtables \
+	git \
+	haveged \
+	nfs-common \
+	cron \
+	glusterfs-client \
+	kubelet \
+	kubeadmkubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
+	docker.io || true
+
+systemctl enable docker
+systemctl start docker
+
+kubeadm reset
+kubeadm join --token={{ .KubeadmToken }} {{ .KubeAPIServer }}:6443
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("prepare-host").Parse(``))
 
-	_ = template.Must(StartupScriptTemplate.New("setup-certs").Parse(``))
+	_ = template.Must(StartupScriptTemplate.New("setup-certs").Parse(`
+mkdir -p /etc/kubernetes/pki
+
+cat > /etc/kubernetes/pki/ca.key <<EOF
+{{ .CAKey }}
+EOF
+cloudid get cacert < /etc/kubernetes/pki/ca.key > /etc/kubernetes/pki/ca.crt
+
+cat > /etc/kubernetes/pki/front-proxy-ca.key <<EOF
+{{ .FrontProxyKey }}
+EOF
+cloudid get cacert < /etc/kubernetes/pki/front-proxy-ca.key > /etc/kubernetes/pki/front-proxy-ca.crt
+
+chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
+`))
 
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 kubectl apply \
@@ -195,13 +237,13 @@ func SaveInstancesInFirebase(opt *api.Cluster, ins *api.ClusterInstances) error 
 const firebaseEndpoint = "https://tigerworks-kube.firebaseio.com"
 
 func firebaseInstancePath(cluster *api.Cluster, externalIP string) (string, error) {
-	l, err := api.FirebaseUid()
-	if err != nil {
-		return "", errors.FromErr(err).Err()
-	}
+	//l, err := api.FirebaseUid()
+	//if err != nil {
+	//	return "", errors.FromErr(err).Err()
+	//}
 	// https://www.firebase.com/docs/rest/guide/retrieving-data.html#section-rest-uri-params
 	return fmt.Sprintf(`/k8s/%v/%v/%v/instance-by-ip/%v.json?auth=%v`,
-		l,
+		"l",
 		"",           /* cluster.Namespace */
 		cluster.Name, // phid is grpc api
 		strings.Replace(externalIP, ".", "_", -1),

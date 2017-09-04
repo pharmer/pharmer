@@ -50,5 +50,5 @@ func (conn *cloudConnector) waitForInstance(id, status string) (*hc.Transaction,
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}
-	return nil, errors.New().WithMessagef("Failed Hertzner transaction %v", id).Err()
+	//return nil, errors.New().WithMessagef("Failed Hertzner transaction %v", id).Err()
 }

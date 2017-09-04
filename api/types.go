@@ -11,26 +11,6 @@ import (
 // intent and helps make sure that UIDs and names do not get conflated.
 // type UID string
 
-// TypeMeta describes an individual object in an API response or request
-// with strings representing the type of the object and its API schema version.
-// Structures that are versioned or persisted should inline TypeMeta.
-type TypeMeta struct {
-	// Kind is a string value representing the REST resource this object represents.
-	// Servers may infer this from the endpoint the client submits requests to.
-	// Cannot be updated.
-	// In CamelCase.
-	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#types-kinds
-	// +optional
-	Kind string `json:"kind,omitempty" protobuf:"bytes,1,opt,name=kind"`
-
-	// APIVersion defines the versioned schema of this representation of an object.
-	// Servers should convert recognized schemas to the latest internal value, and
-	// may reject unrecognized values.
-	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#resources
-	// +optional
-	APIVersion string `json:"apiVersion,omitempty" protobuf:"bytes,2,opt,name=apiVersion"`
-}
-
 // ObjectMeta is metadata that all persisted resources must have, which includes all objects
 // users must create.
 type ObjectMeta struct {
@@ -125,7 +105,7 @@ type ObjectMeta struct {
 
 // ListOptions is the query options to a standard REST list call.
 type ListOptions struct {
-	TypeMeta `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
 
 	//// A selector to restrict the list of returned objects by their labels.
 	//// Defaults to everything.

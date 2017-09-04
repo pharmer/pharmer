@@ -14,14 +14,43 @@ import (
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	// "github.com/appscode/pharmer/templates"
+	"encoding/json"
+
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	preTagDelay = 5 * time.Second
 )
+
+func (cm *ClusterManager) Check(req *proto.ClusterCreateRequest) {
+	cm.cluster = &api.Cluster{
+		ObjectMeta: api.ObjectMeta{
+			Name:              req.Name,
+			UID:               phid.NewKubeCluster(),
+			CreationTimestamp: metav1.Time{Time: time.Now()},
+		},
+		Spec: api.ClusterSpec{
+			CredentialName: req.CredentialUid,
+		},
+	}
+	cm.cluster.Spec.Zone = req.Zone
+	api.AssignTypeKind(cm.cluster)
+	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
+		//oneliners.FILE(err)
+		cm.cluster.Status.Reason = err.Error()
+		fmt.Println(err)
+		//	return errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+	cm.initContext(req)
+	c, _ := json.Marshal(cm.cluster.Spec)
+	fmt.Println(string(c))
+	//_, err := cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	//fmt.Println(err) /fmt.Println( string(data))
+}
 
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	err := cm.initContext(req)
@@ -315,7 +344,7 @@ func (cm *ClusterManager) setupVpc() error {
 
 	cloud.Logger(cm.ctx).Info("No VPC found, creating new VPC")
 	r2, err := cm.conn.ec2.CreateVpc(&_ec2.CreateVpcInput{
-		CidrBlock: types.StringP(cm.cluster.Spec.VpcCidr),
+		CidrBlock: types.StringP(cm.cluster.Spec.VpcCIDR),
 	})
 	cloud.Logger(cm.ctx).Debug("VPC created", r2, err)
 	//errorutil.EOE(err)
@@ -448,7 +477,7 @@ func (cm *ClusterManager) setupSubnet() error {
 	if len(r1.Subnets) == 0 {
 		cloud.Logger(cm.ctx).Info("No subnet found, creating new subnet")
 		r2, err := cm.conn.ec2.CreateSubnet(&_ec2.CreateSubnetInput{
-			CidrBlock:        types.StringP(cm.cluster.Spec.SubnetCidr),
+			CidrBlock:        types.StringP(cm.cluster.Spec.SubnetCIDR),
 			VpcId:            types.StringP(cm.cluster.Spec.VpcId),
 			AvailabilityZone: types.StringP(cm.cluster.Spec.Zone),
 		})
@@ -477,8 +506,8 @@ func (cm *ClusterManager) setupSubnet() error {
 		}
 
 		octets := strings.Split(*r3.Vpcs[0].CidrBlock, ".")
-		cm.cluster.Spec.VpcCidrBase = octets[0] + "." + octets[1]
-		cm.cluster.Spec.MasterInternalIP = cm.cluster.Spec.VpcCidrBase + ".0" + cm.cluster.Spec.MasterIPSuffix
+		cm.cluster.Spec.VpcCIDRBase = octets[0] + "." + octets[1]
+		cm.cluster.Spec.MasterInternalIP = cm.cluster.Spec.VpcCIDRBase + ".0" + cm.cluster.Spec.MasterIPSuffix
 		cloud.Logger(cm.ctx).Infof("Assuming MASTER_INTERNAL_IP=%v", cm.cluster.Spec.MasterInternalIP)
 	}
 	return nil

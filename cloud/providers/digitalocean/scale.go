@@ -58,7 +58,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 		//fmt.Println(k.String(), " = ", v.Count)
 	}
 	if !flag {
-		ig := &api.InstanceGroup{
+		ig := &api.IG{
 			SKU:              req.Sku,
 			Count:            req.Count,
 			UseSpotInstances: false,

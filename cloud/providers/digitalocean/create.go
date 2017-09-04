@@ -2,6 +2,7 @@ package digitalocean
 
 import (
 	gtx "context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -9,13 +10,15 @@ import (
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/data/files"
 	"github.com/appscode/pharmer/phid"
 	"github.com/digitalocean/godo"
+	semver "github.com/hashicorp/go-version"
 	"github.com/tamalsaha/go-oneliners"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
+/*func (cm *ClusterManager) Check(req *proto.ClusterCreateRequest) {
 	cm.cluster = &api.Cluster{
 		ObjectMeta: api.ObjectMeta{
 			Name:              req.Name,
@@ -31,14 +34,59 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
 		oneliners.FILE(err)
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		fmt.Println(err)
+		//	return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
+	cm.initContext(req)
+	c, _ := json.Marshal(cm.cluster.Spec)
+	fmt.Println(string(c))
+	//_, err := cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	//fmt.Println(err) /fmt.Println( string(data))
+}*/
 
-	err := cm.initContext(req)
+func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
+	kv, err := semver.NewVersion(req.KubernetesVersion)
 	if err != nil {
+		oneliners.FILE(err)
+		return err
+	}
+	oneliners.FILE()
+	defaultSpec, err := files.GetDefaultClusterSpec(req.Provider, kv)
+	if err != nil {
+		oneliners.FILE(err)
+		return err
+	}
+	oneliners.FILE()
+	cm.cluster = &api.Cluster{
+		ObjectMeta: api.ObjectMeta{
+			Name:              req.Name,
+			UID:               phid.NewKubeCluster(),
+			CreationTimestamp: metav1.Time{Time: time.Now()},
+		},
+		Spec: *defaultSpec,
+	}
+	api.AssignTypeKind(cm.cluster)
+	cm.cluster.Spec.CredentialName = req.CredentialUid
+	cm.cluster.Spec.Zone = req.Zone
+	cm.cluster.Spec.OS = "debian"
+	cm.cluster.Spec.MasterSKU = "2gb"
+
+	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
+		oneliners.FILE(err)
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
+	oneliners.FILE()
+	err = cm.initContext(req)
+	if err != nil {
+		oneliners.FILE(err)
+		cm.cluster.Status.Reason = err.Error()
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+
+	cb, _ := json.MarshalIndent(cm.cluster, "", "  ")
+	oneliners.FILE(string(cb))
+
 	cm.ins = make([]*api.Instance, 0)
 	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 	if err != nil {

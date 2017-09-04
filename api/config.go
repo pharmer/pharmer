@@ -1,6 +1,10 @@
 package api
 
-import "fmt"
+import (
+	"fmt"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 type LocalSpec struct {
 	Path string `json:"path,omitempty"`
@@ -42,11 +46,11 @@ type DNSProvider struct {
 }
 
 type PharmerConfig struct {
-	TypeMeta    `json:",inline,omitempty"`
-	Context     string         `json:"context,omitempty"`
-	Credentials []Credential   `json:"credentials,omitempty"`
-	Store       StorageBackend `json:"store,omitempty"`
-	DNS         *DNSProvider   `json:"dns,omitempty"`
+	metav1.TypeMeta `json:",inline,omitempty,omitempty"`
+	Context         string         `json:"context,omitempty"`
+	Credentials     []Credential   `json:"credentials,omitempty"`
+	Store           StorageBackend `json:"store,omitempty"`
+	DNS             *DNSProvider   `json:"dns,omitempty"`
 }
 
 func (pc PharmerConfig) GetStoreType() string {
