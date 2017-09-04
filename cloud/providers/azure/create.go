@@ -231,7 +231,7 @@ func (cm *ClusterManager) ensureVirtualNetwork() (network.VirtualNetwork, error)
 		Location: types.StringP(cm.cluster.Spec.Zone),
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
-				AddressPrefixes: &[]string{cm.cluster.Spec.NonMasqueradeCidr},
+				AddressPrefixes: &[]string{cm.cluster.Spec.NonMasqueradeCIDR},
 			},
 		},
 		Tags: &map[string]*string{
@@ -287,7 +287,7 @@ func (cm *ClusterManager) createSubnetID(vn *network.VirtualNetwork, sg *network
 			NetworkSecurityGroup: &network.SecurityGroup{
 				ID: sg.ID,
 			},
-			AddressPrefix: types.StringP(cm.cluster.Spec.SubnetCidr),
+			AddressPrefix: types.StringP(cm.cluster.Spec.SubnetCIDR),
 			RouteTable: &network.RouteTable{
 				ID: routeTable.ID,
 			},

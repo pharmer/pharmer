@@ -5,6 +5,7 @@ import (
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
+	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
@@ -55,10 +56,7 @@ func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceMetadat
 }
 
 func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
-	err := cm.LoadDefaultContext()
-	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
+	var err error
 	cm.namer = namer{cluster: cm.cluster}
 
 	//cluster.Spec.ctx.Name = req.Name
@@ -105,76 +103,31 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.cluster.Spec.KubeadmToken = cloud.GetKubeadmToken()
 	cm.cluster.Spec.KubernetesVersion = "v" + req.KubernetesVersion
 
-	return nil
-}
+	cm.cluster.Spec.StartupConfigToken = rand.Characters(128)
 
-func (cm *ClusterManager) LoadDefaultContext() error {
-	err := cm.cluster.Spec.KubeEnv.SetDefaults()
-	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	// TODO: FixIt!
+	//cm.cluster.Spec.AppsCodeApiGrpcEndpoint = system.PublicAPIGrpcEndpoint()
+	//cm.cluster.Spec.AppsCodeApiHttpEndpoint = system.PublicAPIHttpEndpoint()
+	//cm.cluster.Spec.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
+
+	if cm.cluster.Spec.EnableWebhookTokenAuthentication {
+		cm.cluster.Spec.AppscodeAuthnUrl = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
+	}
+	if cm.cluster.Spec.EnableWebhookTokenAuthorization {
+		cm.cluster.Spec.AppscodeAuthzUrl = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
 	}
 
-	cm.cluster.Spec.ClusterExternalDomain = cloud.Extra(cm.ctx).ExternalDomain(cm.cluster.Name)
-	cm.cluster.Spec.ClusterInternalDomain = cloud.Extra(cm.ctx).InternalDomain(cm.cluster.Name)
+	// TODO: FixIT!
+	//cm.cluster.Spec.ClusterExternalDomain = Extra(ctx).ExternalDomain(cluster.Name)
+	//cm.cluster.Spec.ClusterInternalDomain = Extra(ctx).InternalDomain(cluster.Name)
+	//cluster.Status.Phase = api.ClusterPhasePending
 
-	cm.cluster.Status.Phase = api.ClusterPhasePending
-	cm.cluster.Spec.OS = "ubuntu"
+	//-------------------------- ctx.MasterSKU = "94" // 2 cpu
 
-	cm.cluster.Spec.DockerStorage = "aufs"
+	// Using custom image with memory controller enabled
+	// -------------------------ctx.InstanceImage = "16604964" // "container-os-20160402" // Debian 8.4 x64
 
-	cm.cluster.Spec.IAMProfileMaster = "kubernetes-master"
-	cm.cluster.Spec.IAMProfileNode = "kubernetes-node"
-
-	cm.cluster.Spec.MasterDiskType = "gp2"
-	cm.cluster.Spec.MasterDiskSize = 100
-	// cm.ctx.MasterDiskType = "gp2"
-	// cm.ctx.MasterDiskSize = 8
-	cm.cluster.Spec.NodeDiskType = "gp2"
-	cm.cluster.Spec.NodeDiskSize = 100
-	cm.cluster.Spec.NodeScopes = []string{}
-	cm.cluster.Spec.PollSleepInterval = 3
-
-	cm.cluster.Spec.ServiceClusterIPRange = "10.0.0.0/16"
-	cm.cluster.Spec.ClusterIPRange = "10.244.0.0/16"
-	cm.cluster.Spec.MasterIPRange = "10.246.0.0/24"
-	cm.cluster.Spec.MasterReservedIP = "auto"
-
-	cm.cluster.Spec.EnableClusterMonitoring = "appscode"
-	cm.cluster.Spec.EnableNodeLogging = true
-	cm.cluster.Spec.LoggingDestination = "appscode-elasticsearch"
-	cm.cluster.Spec.EnableClusterLogging = true
-	cm.cluster.Spec.ElasticsearchLoggingReplicas = 1
-
-	cm.cluster.Spec.ExtraDockerOpts = ""
-
-	cm.cluster.Spec.EnableClusterDNS = true
-	cm.cluster.Spec.DNSServerIP = "10.0.0.10"
-	cm.cluster.Spec.DNSDomain = "cluster.Spec.local"
-	cm.cluster.Spec.DNSReplicas = 1
-
-	// TODO: Needs multiple auto scaler
-	cm.cluster.Spec.EnableNodeAutoscaler = false
-	// cm.ctx.AutoscalerMinNodes = 1
-	// cm.ctx.AutoscalerMaxNodes = 100
-	cm.cluster.Spec.TargetNodeUtilization = 0.7
-
-	cm.cluster.Spec.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota,PersistentVolumeLabel"
-	// aws
-	cm.cluster.Spec.RegisterMasterKubelet = true
-	cm.cluster.Spec.EnableNodePublicIP = true
-
-	cm.cluster.Spec.AllocateNodeCIDRs = true
-
-	cm.cluster.Spec.VpcCidrBase = "172.20"
-	cm.cluster.Spec.MasterIPSuffix = ".9"
-	cm.cluster.Spec.MasterInternalIP = cm.cluster.Spec.VpcCidrBase + ".0" + cm.cluster.Spec.MasterIPSuffix
-
-	cm.cluster.Spec.VpcCidr = cm.cluster.Spec.VpcCidrBase + ".0.0/16"
-	cm.cluster.Spec.SubnetCidr = cm.cluster.Spec.VpcCidrBase + ".0.0/24"
-
-	cm.cluster.Spec.NetworkProvider = "none"
-	cm.cluster.Spec.HairpinMode = "promiscuous-bridge"
-	cm.cluster.Spec.NonMasqueradeCidr = "10.0.0.0/8"
+	cm.cluster.Spec.NonMasqueradeCIDR = "10.0.0.0/8"
 
 	version, err := semver.NewVersion(cm.cluster.Spec.KubernetesVersion)
 	if err != nil {
@@ -185,18 +138,42 @@ func (cm *ClusterManager) LoadDefaultContext() error {
 	}
 	version = version.ToBuilder().ResetPrerelease().ResetMetadata().Done()
 
-	v_1_3, _ := semver.NewConstraint(">= 1.3, < 1.4")
-	if v_1_3.Check(version) {
-		cm.cluster.Spec.NetworkProvider = "kubenet"
-	}
-
 	v_1_4, _ := semver.NewConstraint(">= 1.4")
 	if v_1_4.Check(version) {
-		cm.cluster.Spec.NetworkProvider = "kubenet"
-		cm.cluster.Spec.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota"
-	}
+		// Enable ScheduledJobs: http://kubernetes.io/docs/user-guide/scheduled-jobs/#prerequisites
+		/*if cm.cluster.Spec.EnableScheduledJobResource {
+			if cm.cluster.Spec.RuntimeConfig == "" {
+				cm.cluster.Spec.RuntimeConfig = "batch/v2alpha1"
+			} else {
+				cm.cluster.Spec.RuntimeConfig += ",batch/v2alpha1"
+			}
+		}*/
 
-	cloud.BuildRuntimeConfig(cm.cluster)
+		// http://kubernetes.io/docs/admin/authentication/
+		if cm.cluster.Spec.EnableWebhookTokenAuthentication {
+			if cm.cluster.Spec.RuntimeConfig == "" {
+				cm.cluster.Spec.RuntimeConfig = "authentication.k8s.io/v1beta1=true"
+			} else {
+				cm.cluster.Spec.RuntimeConfig += ",authentication.k8s.io/v1beta1=true"
+			}
+		}
+
+		// http://kubernetes.io/docs/admin/authorization/
+		if cm.cluster.Spec.EnableWebhookTokenAuthorization {
+			if cm.cluster.Spec.RuntimeConfig == "" {
+				cm.cluster.Spec.RuntimeConfig = "authorization.k8s.io/v1beta1=true"
+			} else {
+				cm.cluster.Spec.RuntimeConfig += ",authorization.k8s.io/v1beta1=true"
+			}
+		}
+		if cm.cluster.Spec.EnableRBACAuthorization {
+			if cm.cluster.Spec.RuntimeConfig == "" {
+				cm.cluster.Spec.RuntimeConfig = "rbac.authorization.k8s.io/v1alpha1=true"
+			} else {
+				cm.cluster.Spec.RuntimeConfig += ",rbac.authorization.k8s.io/v1alpha1=true"
+			}
+		}
+	}
 	return nil
 }
 

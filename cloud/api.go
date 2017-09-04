@@ -6,6 +6,7 @@ import (
 )
 
 type ClusterManager interface {
+	//Check(req *proto.ClusterCreateRequest)
 	Create(req *proto.ClusterCreateRequest) error
 	Scale(req *proto.ClusterReconfigureRequest) error
 	Delete(req *proto.ClusterDeleteRequest) error

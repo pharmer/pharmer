@@ -4,10 +4,12 @@ import (
 	"context"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
+	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
+	semver "github.com/hashicorp/go-version"
 )
 
 type ClusterManager struct {
@@ -46,17 +48,10 @@ func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceMetadat
 }
 
 func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
-	err := cm.LoadDefaultContext()
-	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
+	var err error
 	cm.namer = namer{cluster: cm.cluster}
 
-	//cluster.Spec.ctx.Name = req.Name
-	//cluster.Spec.ctx.PHID = phid.NewKubeCluster()
-	//cluster.Spec.ctx.Provider = req.Provider
-	//cluster.Spec.ctx.Zone = req.Zone
-
+	cm.cluster.Spec.CredentialName = req.CredentialUid
 	cm.cluster.Spec.Region = cm.cluster.Spec.Zone
 	cm.cluster.Spec.DoNotDelete = req.DoNotDelete
 
@@ -73,17 +68,76 @@ func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
 	cm.cluster.Spec.KubeadmToken = cloud.GetKubeadmToken()
 	cm.cluster.Spec.KubernetesVersion = "v" + req.KubernetesVersion
 
-	return nil
-}
+	cm.cluster.Spec.StartupConfigToken = rand.Characters(128)
 
-func (cm *ClusterManager) LoadDefaultContext() error {
-	err := cloud.LoadDefaultGenericContext(cm.ctx, cm.cluster)
-	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	// TODO: FixIt!
+	//cm.cluster.Spec.AppsCodeApiGrpcEndpoint = system.PublicAPIGrpcEndpoint()
+	//cm.cluster.Spec.AppsCodeApiHttpEndpoint = system.PublicAPIHttpEndpoint()
+	//cm.cluster.Spec.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
+
+	if cm.cluster.Spec.EnableWebhookTokenAuthentication {
+		cm.cluster.Spec.AppscodeAuthnUrl = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
+	}
+	if cm.cluster.Spec.EnableWebhookTokenAuthorization {
+		cm.cluster.Spec.AppscodeAuthzUrl = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
 	}
 
-	cm.cluster.Spec.OS = "debian"
-	cm.cluster.Spec.MasterSKU = "2gb"
+	// TODO: FixIT!
+	//cm.cluster.Spec.ClusterExternalDomain = Extra(ctx).ExternalDomain(cluster.Name)
+	//cm.cluster.Spec.ClusterInternalDomain = Extra(ctx).InternalDomain(cluster.Name)
+	//cluster.Status.Phase = api.ClusterPhasePending
 
+	//-------------------------- ctx.MasterSKU = "94" // 2 cpu
+
+	// Using custom image with memory controller enabled
+	// -------------------------ctx.InstanceImage = "16604964" // "container-os-20160402" // Debian 8.4 x64
+
+	cm.cluster.Spec.NonMasqueradeCIDR = "10.0.0.0/8"
+
+	version, err := semver.NewVersion(cm.cluster.Spec.KubernetesVersion)
+	if err != nil {
+		version, err = semver.NewVersion(cm.cluster.Spec.KubernetesVersion)
+		if err != nil {
+			return err
+		}
+	}
+	version = version.ToBuilder().ResetPrerelease().ResetMetadata().Done()
+
+	v_1_4, _ := semver.NewConstraint(">= 1.4")
+	if v_1_4.Check(version) {
+		// Enable ScheduledJobs: http://kubernetes.io/docs/user-guide/scheduled-jobs/#prerequisites
+		/*if cm.cluster.Spec.EnableScheduledJobResource {
+			if cm.cluster.Spec.RuntimeConfig == "" {
+				cm.cluster.Spec.RuntimeConfig = "batch/v2alpha1"
+			} else {
+				cm.cluster.Spec.RuntimeConfig += ",batch/v2alpha1"
+			}
+		}*/
+
+		// http://kubernetes.io/docs/admin/authentication/
+		if cm.cluster.Spec.EnableWebhookTokenAuthentication {
+			if cm.cluster.Spec.RuntimeConfig == "" {
+				cm.cluster.Spec.RuntimeConfig = "authentication.k8s.io/v1beta1=true"
+			} else {
+				cm.cluster.Spec.RuntimeConfig += ",authentication.k8s.io/v1beta1=true"
+			}
+		}
+
+		// http://kubernetes.io/docs/admin/authorization/
+		if cm.cluster.Spec.EnableWebhookTokenAuthorization {
+			if cm.cluster.Spec.RuntimeConfig == "" {
+				cm.cluster.Spec.RuntimeConfig = "authorization.k8s.io/v1beta1=true"
+			} else {
+				cm.cluster.Spec.RuntimeConfig += ",authorization.k8s.io/v1beta1=true"
+			}
+		}
+		if cm.cluster.Spec.EnableRBACAuthorization {
+			if cm.cluster.Spec.RuntimeConfig == "" {
+				cm.cluster.Spec.RuntimeConfig = "rbac.authorization.k8s.io/v1alpha1=true"
+			} else {
+				cm.cluster.Spec.RuntimeConfig += ",rbac.authorization.k8s.io/v1alpha1=true"
+			}
+		}
+	}
 	return nil
 }

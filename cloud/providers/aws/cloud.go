@@ -95,10 +95,9 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 		}
 	}
 	if len(missing) > 0 {
-		return true, "Credential missing required authorization: " + strings.Join(missing, ", ")
-	} else {
-		return false, ""
+		return false, "Credential missing required authorization: " + strings.Join(missing, ", ")
 	}
+	return true, ""
 }
 
 // https://github.com/kubernetes/kubernetes/blob/master/cluster/aws/jessie/util.sh#L28

@@ -190,15 +190,38 @@
       "disk": 600
     }
   ],
-  "kubernetes": {
-    "versions": [
-      {
-        "version": "1.7.4",
-        "description": "1.7.4",
-        "env": {
-          "dev": true
-        }
+  "kubernetesVersions": [
+    {
+      "version": "1.7.4",
+      "description": "1.7.4",
+      "env": {
+        "dev": true
+      },
+      "defaultSpec": {
+        "clusterIpRange": "10.244.0.0/16",
+        "serviceClusterIpRange": "10.0.0.0/16",
+        "allocateNodeCidrs": true,
+        "enableClusterMonitoring": "appscode",
+        "enableClusterLogging": true,
+        "enableNodeLogging": true,
+        "loggingDestination": "appscode-elasticsearch",
+        "elasticsearchLoggingReplicas": 1,
+        "dnsServerIp": "10.0.0.10",
+        "dnsDomain": "k.local",
+        "admissionControl": "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota",
+        "masterIpRange": "10.246.0.0/24",
+        "networkProvider": "kube-flannel",
+        "enableClusterAlert": "appscode",
+        "os": "debian",
+        "networkPolicyProvider": "none",
+        "enableWebhookTokenAuthn": true,
+        "enableRbacAuthz": true,
+        "SOFTLOCKUP_PANIC": true,
+        "enableAPIserverBasicAudit": true,
+        "enableAppscodeAttic": true,
+        "pollSleepInterval": 3,
+        "enableNodePublicIP": true
       }
-    ]
-  }
+    }
+  ]
 }

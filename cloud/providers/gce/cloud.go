@@ -77,9 +77,9 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 func (conn *cloudConnector) IsUnauthorized(project string) (bool, string) {
 	_, err := conn.computeService.InstanceGroups.List(project, "us-central1-b").Do()
 	if err != nil {
-		return true, "Credential missing required authorization"
+		return false, "Credential missing required authorization"
 	}
-	return false, ""
+	return true, ""
 }
 
 func (conn *cloudConnector) deleteInstance(name string) error {

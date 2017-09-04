@@ -3,6 +3,7 @@ package data
 import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/pharmer/api"
+	"github.com/hashicorp/go-version"
 )
 
 const (
@@ -59,8 +60,7 @@ type CredentialFormat struct {
 }
 
 type KubernetesVersion struct {
-	Version     string           `json:"version"`
-	Description string           `json:"description"`
+	Version     *version.Version `json:"version"`
 	DefaultSpec *api.ClusterSpec `json:"defaultSpec"`
 	Env         map[string]bool  `json:"env,omitempty"`
 }

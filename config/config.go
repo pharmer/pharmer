@@ -13,11 +13,12 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/storage"
-	"github.com/appscode/pharmer/storage/providers/fake"
-	"github.com/appscode/pharmer/storage/providers/vfs"
+	"github.com/appscode/pharmer/store"
+	"github.com/appscode/pharmer/store/providers/fake"
+	"github.com/appscode/pharmer/store/providers/vfs"
 	"github.com/ghodss/yaml"
 	flag "github.com/spf13/pflag"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/homedir"
 )
 
@@ -81,7 +82,7 @@ func ConfigDir(fs *flag.FlagSet) string {
 
 func NewDefaultConfig() *api.PharmerConfig {
 	return &api.PharmerConfig{
-		TypeMeta: api.TypeMeta{
+		TypeMeta: metav1.TypeMeta{
 			Kind: "PharmerConfig",
 		},
 		Context: "default",
@@ -93,8 +94,8 @@ func NewDefaultConfig() *api.PharmerConfig {
 	}
 }
 
-func NewStoreProvider(ctx context.Context, cfg *api.PharmerConfig) storage.Interface {
-	if store, err := storage.GetProvider(vfs.UID, ctx, cfg); err == nil {
+func NewStoreProvider(ctx context.Context, cfg *api.PharmerConfig) store.Interface {
+	if store, err := store.GetProvider(vfs.UID, ctx, cfg); err == nil {
 		return store
 	}
 	return &fake.FakeStore{}

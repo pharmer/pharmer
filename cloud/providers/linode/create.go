@@ -102,9 +102,9 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	if api.UseFirebase() {
-		cloud.SaveInstancesInFirebase(cm.cluster, cm.ins)
-	}
+	//if api.UseFirebase() {
+	//	cloud.SaveInstancesInFirebase(cm.cluster, cm.ins)
+	//}
 
 	// reboot master to use cert with internal_ip as SANS
 	err = im.bootToGrub2(masterLinodeId, masterLinodeConfigId, masterInstance.Name)
@@ -173,9 +173,9 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 						cm.ins.Instances = append(cm.ins.Instances, node)
 						cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 
-						if api.UseFirebase() {
-							cloud.SaveInstancesInFirebase(cm.cluster, cm.ins)
-						}
+						//if api.UseFirebase() {
+						//	cloud.SaveInstancesInFirebase(cm.cluster, cm.ins)
+						//}
 					}
 				}
 			} else {

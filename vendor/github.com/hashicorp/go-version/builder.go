@@ -24,6 +24,12 @@ func (b *Builder) SetPrerelease(id string) *Builder {
 	return b
 }
 
+func (b *Builder) ResetPatch() *Builder {
+	b.pre = ""
+	b.segments[2] = 0
+	return b
+}
+
 func (b *Builder) NextPatch() *Builder {
 	if b.pre != "" {
 		b.pre = ""

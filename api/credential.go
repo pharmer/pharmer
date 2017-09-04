@@ -1,9 +1,13 @@
 package api
 
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
 type Credential struct {
-	TypeMeta   `json:",inline,omitempty"`
-	ObjectMeta `json:"metadata,omitempty"`
-	Spec       CredentialSpec `json:"spec,omitempty"`
+	metav1.TypeMeta `json:",inline,omitempty"`
+	ObjectMeta      `json:"metadata,omitempty"`
+	Spec            CredentialSpec `json:"spec,omitempty"`
 }
 
 type CredentialSpec struct {
