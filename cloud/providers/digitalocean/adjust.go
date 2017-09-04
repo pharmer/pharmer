@@ -163,6 +163,6 @@ func (igm *InstanceGroupManager) StartNode() (*api.Instance, error) {
 	}
 	igm.im.applyTag(droplet.ID)
 	node.Spec.Role = api.RoleKubernetesPool
-	igm.cm.ins = append(igm.cm.ins, node)
+	cloud.Store(igm.cm.ctx).Instances(igm.cm.cluster.Name).Create(node)
 	return node, nil
 }

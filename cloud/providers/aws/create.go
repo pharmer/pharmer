@@ -45,7 +45,7 @@ func (cm *ClusterManager) Check(req *proto.ClusterCreateRequest) {
 		fmt.Println(err)
 		//	return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.initCluster(req)
+	cm.NewCluster(req)
 	c, _ := json.Marshal(cm.cluster.Spec)
 	fmt.Println(string(c))
 	//_, err := cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
@@ -53,7 +53,7 @@ func (cm *ClusterManager) Check(req *proto.ClusterCreateRequest) {
 }
 
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
-	err := cm.initCluster(req)
+	err := cm.NewCluster(req)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()

@@ -36,7 +36,6 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	}
 
 	fmt.Println("Updating...")
-	cm.ins, err = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -109,7 +108,8 @@ func (cm *ClusterManager) updateMaster() error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins = append(cm.ins, masterInstance)
+	// TODO; FixIt!
+	// cm.ins = append(cm.ins, masterInstance)
 	if err := cloud.WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

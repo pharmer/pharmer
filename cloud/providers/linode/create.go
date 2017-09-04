@@ -12,7 +12,7 @@ import (
 )
 
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
-	err := cm.initCluster(req)
+	err := cm.NewCluster(req)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()

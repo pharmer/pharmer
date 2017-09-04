@@ -32,7 +32,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		}
 	}
 	cm.namer = namer{cluster: cm.cluster}
-	cm.ins, err = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
+	instances, err := cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -43,7 +43,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, cm.cluster.Status.Reason)
 	}
 
-	for _, i := range cm.ins {
+	for _, i := range instances {
 		backoff.Retry(func() error {
 			dropletID, err := strconv.Atoi(i.Status.ExternalID)
 			if err != nil {
@@ -133,11 +133,12 @@ func (cm *ClusterManager) deleteMaster(dropletID int) error {
 	if err != nil {
 		return err
 	}
-	for i, v := range cm.ins {
-		droplet, _ := strconv.Atoi(v.Status.ExternalID)
-		if droplet == dropletID {
-			cm.ins[i].Status.Phase = api.InstancePhaseDeleted
-		}
-	}
+	// TODO; FixIt!
+	//for i, v := range instances {
+	//	droplet, _ := strconv.Atoi(v.Status.ExternalID)
+	//	if droplet == dropletID {
+	//		cm.ins[i].Status.Phase = api.InstancePhaseDeleted
+	//	}
+	//}
 	return err
 }
