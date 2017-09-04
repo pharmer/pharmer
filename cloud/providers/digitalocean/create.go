@@ -37,7 +37,7 @@ import (
 		fmt.Println(err)
 		//	return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.initContext(req)
+	cm.initCluster(req)
 	c, _ := json.Marshal(cm.cluster.Spec)
 	fmt.Println(string(c))
 	//_, err := cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
@@ -77,7 +77,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	oneliners.FILE()
-	err = cm.initContext(req)
+	err = cm.initCluster(req)
 	if err != nil {
 		oneliners.FILE(err)
 		cm.cluster.Status.Reason = err.Error()

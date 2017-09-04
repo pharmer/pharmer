@@ -54,7 +54,7 @@ func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceStatus)
 	return i.Status.ExternalID == md.ExternalID
 }
 
-func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
+func (cm *ClusterManager) initCluster(req *proto.ClusterCreateRequest) error {
 	var err error
 	cm.namer = namer{cluster: cm.cluster}
 

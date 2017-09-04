@@ -45,7 +45,7 @@ func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceStatus)
 	return i.Name == md.Name
 }
 
-func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {
+func (cm *ClusterManager) initCluster(req *proto.ClusterCreateRequest) error {
 	oneliners.FILE()
 	cm.namer = namer{cluster: cm.cluster}
 
