@@ -193,21 +193,3 @@ func (s *InstanceFileStore) UpdateStatus(obj *api.Instance) (*api.Instance, erro
 	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
 	return &existing, err
 }
-
-// Deprecated
-func (s *InstanceFileStore) SaveInstances(instances []*api.Instance) error {
-	for _, instance := range instances {
-		if _, err := s.Get(instance.Name); err != nil {
-			_, err = s.Create(instance)
-			if err != nil {
-				return err
-			}
-		} else {
-			_, err = s.Update(instance)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}

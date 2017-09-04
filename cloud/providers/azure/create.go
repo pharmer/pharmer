@@ -21,11 +21,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
 	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -38,7 +33,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 			cm.cluster.Status.Phase = api.ClusterPhaseFailing
 		}
 		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
 		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
@@ -139,17 +133,17 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	ki, err := im.newKubeInstance(masterVM, masterNIC, masterPIP)
+	masterInstance, err := im.newKubeInstance(masterVM, masterNIC, masterPIP)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	ki.Spec.Role = api.RoleKubernetesMaster
+	masterInstance.Spec.Role = api.RoleKubernetesMaster
 
 	fmt.Println(cm.cluster.Spec.MasterExternalIP, "------------------------------->")
-	cm.ins.Instances = append(cm.ins.Instances, ki)
+	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 
-	err = cloud.EnsureARecord(cm.ctx, cm.cluster, ki) // works for reserved or non-reserved mode
+	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}

@@ -15,7 +15,6 @@ import (
 type ClusterManager struct {
 	ctx     context.Context
 	cluster *api.Cluster
-	ins     *api.ClusterInstances
 	conn    *cloudConnector
 	namer   namer
 }
@@ -46,7 +45,7 @@ func (cm *ClusterManager) UploadStartupConfig() error {
 	return cloud.UnsupportedOperation
 }
 
-func (cm *ClusterManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+func (cm *ClusterManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
 	conn, err := NewConnector(cm.ctx, nil)
 	if err != nil {
 		return nil, err
@@ -55,8 +54,8 @@ func (cm *ClusterManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, 
 	return im.GetInstance(md)
 }
 
-func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool {
-	return i.Status.InternalIP == md.ExternalIP
+func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceStatus) bool {
+	return i.Status.PrivateIP == md.PublicIP
 }
 
 func (cm *ClusterManager) initContext(req *proto.ClusterCreateRequest) error {

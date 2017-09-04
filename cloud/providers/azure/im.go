@@ -29,7 +29,7 @@ type instanceManager struct {
 	namer   namer
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
 	pip, err := im.conn.publicIPAddressesClient.Get(im.namer.ResourceGroupName(), im.namer.PublicIPName(md.Name), "")
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
@@ -279,12 +279,12 @@ func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic networ
 		Status: api.InstanceStatus{
 			ExternalID:    fmt.Sprintf(machineIDTemplate, typed.SubscriptionID(), im.namer.ResourceGroupName(), *vm.Name),
 			ExternalPhase: *vm.ProvisioningState,
-			InternalIP:    *(*nic.IPConfigurations)[0].PrivateIPAddress,
+			PrivateIP:     *(*nic.IPConfigurations)[0].PrivateIPAddress,
 			Phase:         api.InstancePhaseReady,
 		},
 	}
 	if pip.IPAddress != nil {
-		i.Status.ExternalIP = *pip.IPAddress
+		i.Status.PublicIP = *pip.IPAddress
 	}
 	return &i, nil
 }

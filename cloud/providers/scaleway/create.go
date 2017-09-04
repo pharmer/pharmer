@@ -19,11 +19,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
 	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -35,7 +30,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 			cm.cluster.Status.Phase = api.ClusterPhaseFailing
 		}
 		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
 		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
@@ -107,10 +101,10 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Spec.Role = api.RoleKubernetesMaster
-	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.ExternalIP
-	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.InternalIP
+	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
+	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP)
-	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
+	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 
 	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
@@ -149,7 +143,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
 			node.Spec.Role = api.RoleKubernetesPool
-			cm.ins.Instances = append(cm.ins.Instances, node)
+			cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
 
 			err = im.executeStartupScript(node, signer)
 			if err != nil {

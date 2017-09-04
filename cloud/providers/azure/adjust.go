@@ -216,6 +216,7 @@ func (igm *InstanceGroupManager) StartNode() (*api.Instance, error) {
 		return &api.Instance{}, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	ki.Spec.Role = api.RoleKubernetesPool
-	igm.cm.ins.Instances = append(igm.cm.ins.Instances, ki)
+
+	cloud.Store(igm.cm.ctx).Instances(igm.cm.cluster.Name).Create(ki)
 	return ki, nil
 }

@@ -23,7 +23,7 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 
 	var instance *api.Instance
@@ -35,7 +35,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance,
 				return
 			}
 			for _, s := range *servers {
-				if s.PrivateIP == md.InternalIP {
+				if s.PrivateIP == md.PrivateIP {
 					instance, err = im.newKubeInstanceFromServer(&s)
 					if err != nil {
 						return
@@ -124,9 +124,9 @@ func (im *instanceManager) RenderStartupScript(sku, role string) string {
 }
 
 func (im *instanceManager) executeStartupScript(instance *api.Instance, signer ssh.Signer) error {
-	cloud.Logger(im.ctx).Infof("SSH execing start command %v", instance.Status.ExternalIP+":22")
+	cloud.Logger(im.ctx).Infof("SSH execing start command %v", instance.Status.PublicIP+":22")
 
-	stdOut, stdErr, code, err := sshtools.Exec(`/usr/bin/curl 169.254.42.42/user_data/kubernetes_startupscript.sh --local-port 1-1024 2> /dev/null | bash`, "root", instance.Status.ExternalIP+":22", signer)
+	stdOut, stdErr, code, err := sshtools.Exec(`/usr/bin/curl 169.254.42.42/user_data/kubernetes_startupscript.sh --local-port 1-1024 2> /dev/null | bash`, "root", instance.Status.PublicIP+":22", signer)
 	cloud.Logger(im.ctx).Infoln(stdOut, stdErr, code)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
@@ -154,8 +154,8 @@ func (im *instanceManager) newKubeInstanceFromServer(droplet *sapi.ScalewayServe
 		Status: api.InstanceStatus{
 			ExternalID:    droplet.Identifier,
 			ExternalPhase: droplet.State,
-			ExternalIP:    droplet.PublicAddress.IP,
-			InternalIP:    droplet.PrivateIP,
+			PublicIP:      droplet.PublicAddress.IP,
+			PrivateIP:     droplet.PrivateIP,
 			Phase:         api.InstancePhaseReady, // droplet.Status == active
 		},
 	}, nil

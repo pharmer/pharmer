@@ -30,12 +30,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		}
 	}
 	cm.namer = namer{cluster: cm.cluster}
-	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	cm.ins.Instances, err = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
+	instances, err := cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -46,7 +41,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, cm.cluster.Status.Reason)
 	}
 
-	for _, i := range cm.ins.Instances {
+	for _, i := range instances {
 		backoff.Retry(func() error {
 			err := cm.conn.client.DeleteServer(i.Status.ExternalID)
 			if err != nil {

@@ -56,10 +56,6 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins)
-	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
 	cloud.Logger(cm.ctx).Infof("Update Completed")
 	return nil
 }
@@ -99,8 +95,8 @@ func (cm *ClusterManager) updateMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Spec.Role = api.RoleKubernetesMaster
-	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.ExternalIP
-	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.InternalIP
+	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
+	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP, "<><><>", cm.cluster.Spec.MasterReservedIP)
 	cloud.Logger(cm.ctx).Infof("Rebooting master instance")
 	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
@@ -133,7 +129,7 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 
 	for _, instance := range oldinstances {
 		dropletID, err := strconv.Atoi(instance.Status.ExternalID)
-		err = cm.deleteDroplet(dropletID, instance.Status.InternalIP)
+		err = cm.deleteDroplet(dropletID, instance.Status.PrivateIP)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}

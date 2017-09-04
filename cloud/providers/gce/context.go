@@ -23,7 +23,6 @@ const (
 type ClusterManager struct {
 	ctx     context.Context
 	cluster *api.Cluster
-	ins     *api.ClusterInstances
 	conn    *cloudConnector
 	namer   namer
 }
@@ -42,7 +41,7 @@ func New(ctx context.Context) cloud.ClusterManager {
 	return &ClusterManager{ctx: ctx}
 }
 
-func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool {
+func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceStatus) bool {
 	return i.Name == md.Name
 }
 

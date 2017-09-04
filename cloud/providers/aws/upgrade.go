@@ -48,12 +48,6 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	}
 
 	fmt.Println("Updating...")
-	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	cm.ins.Instances, _ = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
 	if err = cm.conn.detectJessieImage(); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -71,7 +65,6 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	}
 
 	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-	cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -127,14 +120,15 @@ func (cm *ClusterManager) restartMaster() error {
 	}
 
 	instance.Spec.Role = api.RoleKubernetesMaster
+	// FixIT!
 	// cm.ins.Instances = nil
 	// cm.ins.Instances = append(cm.ins.Instances, instance)
-	for i := range cm.ins.Instances {
-		if cm.ins.Instances[i].Spec.Role == api.RoleKubernetesMaster {
-			cm.ins.Instances[i].Status.Phase = api.InstancePhaseDeleted
-		}
-	}
-	cm.ins.Instances = append(cm.ins.Instances, instance)
+	//for i := range cm.ins.Instances {
+	//	if cm.ins.Instances[i].Spec.Role == api.RoleKubernetesMaster {
+	//		cm.ins.Instances[i].Status.Phase = api.InstancePhaseDeleted
+	//	}
+	//}
+	//cm.ins.Instances = append(cm.ins.Instances, instance)
 	fmt.Println("Master updated.")
 	return nil
 }
@@ -177,11 +171,12 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 
-		currentIns, err := cm.listInstances(groupName)
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
+		// FixIT!
+		//currentIns, err := cm.listInstances(groupName)
+		//if err != nil {
+		//	return errors.FromErr(err).WithContext(cm.ctx).Err()
+		//}
+		//err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
 		// cluster.Spec.ctx.Instances = append(cluster.Spec.ctx.Instances, instances...)
 		_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 		if err != nil {

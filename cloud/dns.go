@@ -20,12 +20,12 @@ func EnsureARecord(ctx context.Context, cluster *api.Cluster, master *api.Instan
 	//}
 	Logger(ctx).Infof("Cluster apps A record %v added", clusterDomain)
 	externalDomain := Extra(ctx).ExternalDomain(cluster.Name)
-	if err := DNSProvider(ctx).EnsureARecord(externalDomain, master.Status.ExternalIP); err != nil {
+	if err := DNSProvider(ctx).EnsureARecord(externalDomain, master.Status.PublicIP); err != nil {
 		return err
 	}
 	Logger(ctx).Infof("External A record %v added", externalDomain)
 	internalDomain := Extra(ctx).InternalDomain(cluster.Name)
-	if err := DNSProvider(ctx).EnsureARecord(internalDomain, master.Status.InternalIP); err != nil {
+	if err := DNSProvider(ctx).EnsureARecord(internalDomain, master.Status.PrivateIP); err != nil {
 		return err
 	}
 	Logger(ctx).Infof("Internal A record %v added", internalDomain)

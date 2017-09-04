@@ -110,7 +110,7 @@ func (igm *InstanceGroupManager) deleteInstanceGroup(sku string, count int64) er
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
-		err = igm.cm.deleteDroplet(dropletID, instance.Status.InternalIP)
+		err = igm.cm.deleteDroplet(dropletID, instance.Status.PrivateIP)
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}

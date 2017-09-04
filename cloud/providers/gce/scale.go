@@ -20,26 +20,19 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	}
 	fmt.Println(cm.cluster.Spec.ResourceVersion, "*****************")
 	cm.namer = namer{cluster: cm.cluster}
-	//purchasePHIDs := cm.ctx.Metadata["PurchasePhids"].([]string)
-	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	cm.ins.Instances, _ = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
-
-	if req.ApplyToMaster {
-		for _, instance := range cm.ins.Instances {
-			if instance.Spec.Role == api.RoleKubernetesMaster {
-				cm.masterUpdate(instance.Status.ExternalIP, instance.Name, req.KubernetesVersion)
-			}
-		}
-	}
-	for _, instance := range cm.ins.Instances {
-		if instance.Spec.Role == api.RoleKubernetesPool {
-			cm.nodeUpdate(instance.Name)
-		}
-	}
+	// TODO: FixIT!
+	//if req.ApplyToMaster {
+	//	for _, instance := range cm.ins.Instances {
+	//		if instance.Spec.Role == api.RoleKubernetesMaster {
+	//			cm.masterUpdate(instance.Status.PublicIP, instance.Name, req.KubernetesVersion)
+	//		}
+	//	}
+	//}
+	//for _, instance := range cm.ins.Instances {
+	//	if instance.Spec.Role == api.RoleKubernetesPool {
+	//		cm.nodeUpdate(instance.Name)
+	//	}
+	//}
 	inst := cloud.Instance{
 		Type: cloud.InstanceType{
 			ContextVersion: cm.cluster.Spec.ResourceVersion,
@@ -80,13 +73,12 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 		cm.cluster.Spec.NodeGroups = append(cm.cluster.Spec.NodeGroups, ig)
 	}
 
-	instances, err := igm.cm.listInstances(igm.cm.namer.InstanceGroupName(req.Sku))
-	if err != nil {
-		igm.cm.cluster.Status.Reason = err.Error()
-		//return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-	}
-
-	cloud.AdjustDbInstance(igm.cm.ctx, igm.cm.ins, instances, req.Sku)
+	//instances, err := igm.cm.listInstances(igm.cm.namer.InstanceGroupName(req.Sku))
+	//if err != nil {
+	//	igm.cm.cluster.Status.Reason = err.Error()
+	//	//return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	//}
+	//cloud.AdjustDbInstance(igm.cm.ctx, igm.cm.ins, instances, req.Sku)
 
 	cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	return nil

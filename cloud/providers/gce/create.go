@@ -51,11 +51,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
 	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -68,7 +63,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 			cm.cluster.Status.Phase = api.ClusterPhaseFailing
 		}
 		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
 		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
@@ -136,10 +130,10 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Spec.Role = api.RoleKubernetesMaster
-	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.ExternalIP
-	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.InternalIP
+	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
+	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP)
-	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
+	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 
 	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
@@ -195,14 +189,16 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	// -------------------------------------------------------------------------------------------------------------
 
 	time.Sleep(time.Minute * 1)
-	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
+	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 	for _, ng := range req.NodeGroups {
 		instances, err := cm.listInstances(cm.namer.InstanceGroupName(ng.Sku))
 		if err != nil {
 			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cm.ins.Instances = append(cm.ins.Instances, instances...)
+		for _, node := range instances {
+			cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
+		}
 	}
 
 	cm.cluster.Status.Phase = api.ClusterPhaseReady
@@ -559,8 +555,8 @@ func (cm *ClusterManager) newKubeInstance(r1 *compute.Instance) (*api.Instance, 
 				Status: api.InstanceStatus{
 					ExternalID:    strconv.FormatUint(r1.Id, 10),
 					ExternalPhase: r1.Status,
-					ExternalIP:    accessConfig.NatIP,
-					InternalIP:    r1.NetworkInterfaces[0].NetworkIP,
+					PublicIP:      accessConfig.NatIP,
+					PrivateIP:     r1.NetworkInterfaces[0].NetworkIP,
 				},
 			}
 
@@ -767,7 +763,7 @@ func (cm *ClusterManager) createAutoscaler(sku string, count int64) (string, err
 	return r1.Name, nil
 }
 
-func (cm *ClusterManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+func (cm *ClusterManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
 	r2, err := cm.conn.computeService.Instances.Get(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, md.Name).Do()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()

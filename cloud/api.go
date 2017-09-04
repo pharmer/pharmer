@@ -13,6 +13,6 @@ type ClusterManager interface {
 	SetVersion(req *proto.ClusterReconfigureRequest) error
 	// UploadStartupConfig() error
 
-	GetInstance(md *api.InstanceMetadata) (*api.Instance, error)
-	MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool
+	GetInstance(md *api.InstanceStatus) (*api.Instance, error)
+	MatchInstance(i *api.Instance, md *api.InstanceStatus) bool
 }

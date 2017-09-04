@@ -53,9 +53,6 @@ type InstanceStore interface {
 	Update(obj *api.Instance) (*api.Instance, error)
 	Delete(name string) error
 	UpdateStatus(obj *api.Instance) (*api.Instance, error)
-
-	// Deprecated, use Update in a loop
-	SaveInstances([]*api.Instance) error
 }
 
 type CertificateStore interface {

@@ -100,7 +100,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 			cm.cluster.Status.Phase = api.ClusterPhaseFailing
 		}
 		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins)
 		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
@@ -174,8 +173,8 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Spec.Role = api.RoleKubernetesMaster
-	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.ExternalIP
-	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.InternalIP
+	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
+	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP, "<><><><>", cm.cluster.Spec.MasterReservedIP)
 	cm.ins = append(cm.ins, masterInstance)
 

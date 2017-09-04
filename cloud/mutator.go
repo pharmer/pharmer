@@ -157,29 +157,6 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 
 }
 
-func AdjustDbInstance(ctx context.Context, cm *api.ClusterInstances, instances []*api.Instance, sku string) error {
-	dbNodes := make(map[string]*api.Instance)
-	clusterNodes := make(map[string]*api.Instance)
-	for _, i := range cm.Instances {
-		dbNodes[i.Status.ExternalID] = i
-	}
-	// add newely inserted node
-	for _, i := range instances {
-		if _, found := dbNodes[i.Status.ExternalID]; !found {
-			cm.Instances = append(cm.Instances, i)
-		}
-		clusterNodes[i.Status.ExternalID] = i
-	}
-	// remote delete node
-	for ix, i := range cm.Instances {
-		if _, found := clusterNodes[i.Status.ExternalID]; !found && i.Spec.SKU == sku && i.Spec.Role == api.RoleKubernetesPool {
-			cm.Instances[ix].Status.Phase = api.InstancePhaseDeleted
-		}
-	}
-
-	return Store(ctx).Instances("cm.cluster").SaveInstances(cm.Instances)
-}
-
 func GetExistingContextVersion(ctx context.Context, cluster *api.Cluster, sku string) (int64, error) {
 	kc, err := NewAdminClient(ctx, cluster)
 	if err != nil {
