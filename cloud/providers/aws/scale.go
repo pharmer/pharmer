@@ -20,12 +20,6 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	}
 
 	cm.namer = namer{cluster: cm.cluster}
-	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	cm.ins.Instances, _ = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
 
 	inst := cloud.Instance{
 		Type: cloud.InstanceType{
@@ -68,12 +62,12 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 		cm.cluster.Spec.NodeGroups = append(cm.cluster.Spec.NodeGroups, ig)
 	}
 
-	instances, err := igm.listInstances(cm.namer.AutoScalingGroupName(req.Sku))
-	if err != nil {
-		igm.cm.cluster.Status.Reason = err.Error()
-		//return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-	}
-	cloud.AdjustDbInstance(igm.cm.ctx, igm.cm.ins, instances, req.Sku)
+	//instances, err := igm.listInstances(cm.namer.AutoScalingGroupName(req.Sku))
+	//if err != nil {
+	//	igm.cm.cluster.Status.Reason = err.Error()
+	//	//return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	//}
+	//cloud.AdjustDbInstance(igm.cm.ctx, igm.cm.ins, instances, req.Sku)
 
 	cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	return nil

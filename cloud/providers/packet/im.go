@@ -18,7 +18,7 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 
 	var instance *api.Instance
@@ -31,7 +31,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance,
 			}
 			for _, s := range servers {
 				for _, ipAddr := range s.Network {
-					if ipAddr.AddressFamily == 4 && ipAddr.Public && ipAddr.Address == md.InternalIP {
+					if ipAddr.AddressFamily == 4 && ipAddr.Public && ipAddr.Address == md.PrivateIP {
 						instance, err = im.newKubeInstanceFromServer(&s)
 						if err != nil {
 							return
@@ -102,9 +102,9 @@ func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*
 	for _, addr := range droplet.Network {
 		if addr.AddressFamily == 4 {
 			if addr.Public {
-				ki.Status.ExternalIP = addr.Address
+				ki.Status.PublicIP = addr.Address
 			} else {
-				ki.Status.InternalIP = addr.Address
+				ki.Status.PrivateIP = addr.Address
 			}
 		}
 	}

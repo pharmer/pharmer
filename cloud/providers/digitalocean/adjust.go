@@ -110,7 +110,7 @@ func (igm *InstanceGroupManager) deleteInstanceGroup(sku string, count int64) er
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
-		err = igm.cm.deleteDroplet(dropletID, instance.Status.InternalIP)
+		err = igm.cm.deleteDroplet(dropletID, instance.Status.PrivateIP)
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
@@ -163,6 +163,6 @@ func (igm *InstanceGroupManager) StartNode() (*api.Instance, error) {
 	}
 	igm.im.applyTag(droplet.ID)
 	node.Spec.Role = api.RoleKubernetesPool
-	igm.cm.ins = append(igm.cm.ins, node)
+	cloud.Store(igm.cm.ctx).Instances(igm.cm.cluster.Name).Create(node)
 	return node, nil
 }

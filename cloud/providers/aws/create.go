@@ -14,55 +14,29 @@ import (
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	// "github.com/appscode/pharmer/templates"
-	"encoding/json"
-
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	preTagDelay = 5 * time.Second
 )
 
-func (cm *ClusterManager) Check(req *proto.ClusterCreateRequest) {
-	cm.cluster = &api.Cluster{
-		ObjectMeta: api.ObjectMeta{
-			Name:              req.Name,
-			UID:               phid.NewKubeCluster(),
-			CreationTimestamp: metav1.Time{Time: time.Now()},
-		},
-		Spec: api.ClusterSpec{
-			CredentialName: req.CredentialUid,
-		},
-	}
-	cm.cluster.Spec.Zone = req.Zone
-	api.AssignTypeKind(cm.cluster)
-	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
-		//oneliners.FILE(err)
-		cm.cluster.Status.Reason = err.Error()
-		fmt.Println(err)
-		//	return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	cm.initContext(req)
-	c, _ := json.Marshal(cm.cluster.Spec)
-	fmt.Println(string(c))
-	//_, err := cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-	//fmt.Println(err) /fmt.Println( string(data))
-}
-
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
-	err := cm.initContext(req)
+	var err error
+
+	cm.cluster, err = NewCluster(req)
 	if err != nil {
+		return err
+	}
+	cm.namer = namer{cluster: cm.cluster}
+
+	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
+
 	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -75,7 +49,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 			cm.cluster.Status.Phase = api.ClusterPhaseFailing
 		}
 		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
 		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
@@ -193,12 +166,12 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	fmt.Println(r2)
-	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
+	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 	for _, group := range r2.AutoScalingGroups {
 		for _, instance := range group.Instances {
 			ki, err := cm.newKubeInstance(*instance.InstanceId)
 			ki.Spec.Role = api.RoleKubernetesPool
-			cm.ins.Instances = append(cm.ins.Instances, ki)
+			cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(ki)
 			if err != nil {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
@@ -866,8 +839,8 @@ func (cm *ClusterManager) startMaster() (*api.Instance, error) {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Spec.Role = api.RoleKubernetesMaster
-	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.ExternalIP
-	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
+	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
+	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 
 	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
@@ -1143,8 +1116,8 @@ func (cm *ClusterManager) newKubeInstance(instanceID string) (*api.Instance, err
 		Status: api.InstanceStatus{
 			ExternalID:    instanceID,
 			ExternalPhase: *r1.Reservations[0].Instances[0].State.Name,
-			ExternalIP:    *r1.Reservations[0].Instances[0].PublicIpAddress,
-			InternalIP:    *r1.Reservations[0].Instances[0].PrivateIpAddress,
+			PublicIP:      *r1.Reservations[0].Instances[0].PublicIpAddress,
+			PrivateIP:     *r1.Reservations[0].Instances[0].PrivateIpAddress,
 		},
 	}
 	/*

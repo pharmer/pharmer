@@ -23,7 +23,7 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 	var instance *api.Instance
 	backoff.Retry(func() (err error) {
@@ -34,7 +34,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance,
 			}
 			for _, s := range servers {
 				interIp := strings.Trim(*s.PrimaryBackendIpAddress, `"`)
-				if interIp == md.InternalIP {
+				if interIp == md.PrivateIP {
 					instance, err = im.newKubeInstance(*s.Id)
 					sku := strconv.Itoa(*s.MaxCpu) + "c" + strconv.Itoa(*s.MaxMemory) + "m"
 					instance.Spec.SKU = sku
@@ -146,16 +146,16 @@ func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {
 		},
 	}
 
-	ki.Status.ExternalIP, err = bluemix.GetPrimaryIpAddress()
+	ki.Status.PublicIP, err = bluemix.GetPrimaryIpAddress()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	ki.Status.ExternalIP = strings.Trim(ki.Status.ExternalIP, `"`)
-	ki.Status.InternalIP, err = bluemix.GetPrimaryBackendIpAddress()
+	ki.Status.PublicIP = strings.Trim(ki.Status.PublicIP, `"`)
+	ki.Status.PrivateIP, err = bluemix.GetPrimaryBackendIpAddress()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	ki.Status.InternalIP = strings.Trim(ki.Status.InternalIP, `"`)
+	ki.Status.PrivateIP = strings.Trim(ki.Status.PrivateIP, `"`)
 
 	return ki, nil
 }

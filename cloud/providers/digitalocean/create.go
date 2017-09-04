@@ -2,92 +2,30 @@ package digitalocean
 
 import (
 	gtx "context"
-	"encoding/json"
 	"fmt"
-	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/data/files"
-	"github.com/appscode/pharmer/phid"
 	"github.com/digitalocean/godo"
-	semver "github.com/hashicorp/go-version"
 	"github.com/tamalsaha/go-oneliners"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-/*func (cm *ClusterManager) Check(req *proto.ClusterCreateRequest) {
-	cm.cluster = &api.Cluster{
-		ObjectMeta: api.ObjectMeta{
-			Name:              req.Name,
-			UID:               phid.NewKubeCluster(),
-			CreationTimestamp: metav1.Time{Time: time.Now()},
-		},
-		Spec: api.ClusterSpec{
-			CredentialName: req.CredentialUid,
-		},
-	}
-	cm.cluster.Spec.Zone = req.Zone
-	api.AssignTypeKind(cm.cluster)
-	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
-		oneliners.FILE(err)
-		cm.cluster.Status.Reason = err.Error()
-		fmt.Println(err)
-		//	return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	cm.initContext(req)
-	c, _ := json.Marshal(cm.cluster.Spec)
-	fmt.Println(string(c))
-	//_, err := cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-	//fmt.Println(err) /fmt.Println( string(data))
-}*/
-
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
-	kv, err := semver.NewVersion(req.KubernetesVersion)
+	var err error
+
+	cm.cluster, err = NewCluster(req)
 	if err != nil {
-		oneliners.FILE(err)
 		return err
 	}
-	oneliners.FILE()
-	defaultSpec, err := files.GetDefaultClusterSpec(req.Provider, kv)
-	if err != nil {
-		oneliners.FILE(err)
-		return err
-	}
-	oneliners.FILE()
-	cm.cluster = &api.Cluster{
-		ObjectMeta: api.ObjectMeta{
-			Name:              req.Name,
-			UID:               phid.NewKubeCluster(),
-			CreationTimestamp: metav1.Time{Time: time.Now()},
-		},
-		Spec: *defaultSpec,
-	}
-	api.AssignTypeKind(cm.cluster)
-	cm.cluster.Spec.CredentialName = req.CredentialUid
-	cm.cluster.Spec.Zone = req.Zone
-	cm.cluster.Spec.OS = "debian"
-	cm.cluster.Spec.MasterSKU = "2gb"
+	cm.namer = namer{cluster: cm.cluster}
 
 	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
-		oneliners.FILE(err)
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	oneliners.FILE()
-	err = cm.initContext(req)
-	if err != nil {
-		oneliners.FILE(err)
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cb, _ := json.MarshalIndent(cm.cluster, "", "  ")
-	oneliners.FILE(string(cb))
-
-	cm.ins = make([]*api.Instance, 0)
 	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -100,7 +38,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 			cm.cluster.Status.Phase = api.ClusterPhaseFailing
 		}
 		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins)
 		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
@@ -174,10 +111,10 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Spec.Role = api.RoleKubernetesMaster
-	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.ExternalIP
-	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.InternalIP
+	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
+	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP, "<><><><>", cm.cluster.Spec.MasterReservedIP)
-	cm.ins = append(cm.ins, masterInstance)
+	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 
 	//if err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
 	//	cm.cluster.Status.Reason = err.Error()
@@ -207,7 +144,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	//	return errors.FromErr(err).WithContext(cm.ctx).Err()
 	//}
 	//cloud.Logger(cm.ctx).Info("Rebooted master instance")
-	cm.ins = append(cm.ins, masterInstance)
+
 	// start nodes
 	for _, ng := range req.NodeGroups {
 		cloud.Logger(cm.ctx).Infof("Creating %v node with sku %v", ng.Count, ng.Sku)

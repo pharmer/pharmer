@@ -193,13 +193,13 @@ kubectl apply \
 `))
 )
 
-func SaveInstancesInFirebase(opt *api.Cluster, ins *api.ClusterInstances) error {
+func SaveInstancesInFirebase(opt *api.Cluster, instances []*api.Instance) error {
 	// TODO: FixIt
 	// ins.Logger().Infof("Server is configured to skip startup config api")
 	// store instances
-	for _, v := range ins.Instances {
-		if v.Status.ExternalIP != "" {
-			fbPath, err := firebaseInstancePath(opt, v.Status.ExternalIP)
+	for _, v := range instances {
+		if v.Status.PublicIP != "" {
+			fbPath, err := firebaseInstancePath(opt, v.Status.PublicIP)
 			if err != nil {
 				return err // ors.FromErr(err).WithContext(ins).Err()
 			}
@@ -210,8 +210,8 @@ func SaveInstancesInFirebase(opt *api.Cluster, ins *api.ClusterInstances) error 
 					Uid:        v.UID,
 					ExternalId: v.Status.ExternalID,
 					Name:       v.Name,
-					ExternalIp: v.Status.ExternalIP,
-					InternalIp: v.Status.InternalIP,
+					ExternalIp: v.Status.PublicIP,
+					InternalIp: v.Status.PrivateIP,
 					Sku:        v.Spec.SKU,
 				},
 			}

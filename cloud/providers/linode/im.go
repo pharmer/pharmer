@@ -29,7 +29,7 @@ const (
 	LinodeStatus_PoweredOff   = 2
 )
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 
 	var instance *api.Instance
@@ -39,7 +39,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance,
 			return err
 		}
 		for _, fip := range resp.FullIPAddresses {
-			if fip.IsPublic == 0 && fip.IPAddress == md.InternalIP {
+			if fip.IsPublic == 0 && fip.IPAddress == md.PrivateIP {
 				linodes, err := im.conn.client.Linode.List(fip.LinodeId)
 				if err != nil {
 					return err
@@ -200,8 +200,8 @@ func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.Instan
 				},
 				Status: api.InstanceStatus{
 					ExternalID:    strconv.Itoa(linode.LinodeId),
-					ExternalIP:    externalIP,
-					InternalIP:    internalIP,
+					PublicIP:      externalIP,
+					PrivateIP:     internalIP,
 					Phase:         api.InstancePhaseReady,
 					ExternalPhase: statusString(linode.Status),
 				},

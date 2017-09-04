@@ -21,7 +21,6 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 
 	//purchasePHIDs := cm.ctx.Metadata["PurchasePhids"].([]string)
 	cm.namer = namer{cluster: cm.cluster}
-	cm.ins, _ = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
 	im := &instanceManager{cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 
 	inst := cloud.Instance{

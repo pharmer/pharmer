@@ -23,11 +23,12 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	if err != nil {
 		return nil, err
 	}
-	// TODO: FixIt Project ID
 	typed := credential.Packet{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
+	// TODO: FixIt Project ID
+	cluster.Spec.Project = typed.ProjectID()
 	return &cloudConnector{
 		ctx:    ctx,
 		client: packngo.NewClient("", typed.APIKey(), nil),

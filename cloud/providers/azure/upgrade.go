@@ -35,12 +35,6 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	}
 
 	fmt.Println("Updating...")
-	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	cm.ins.Instances, _ = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
 	if req.ApplyToMaster {
 		err = cm.updateMaster()
 		if err != nil {
@@ -53,10 +47,6 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 		}
 	}
 	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	err = cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -152,12 +142,11 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 		fmt.Println("Waiting for 1 minute")
 		time.Sleep(1 * time.Minute)
 	}
-	currentIns, err := igm.listInstances(sku)
-	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
-	// cluster.Spec.ctx.Instances = append(cluster.Spec.ctx.Instances, instances...)
+	//currentIns, err := igm.listInstances(sku)
+	//if err != nil {
+	//	return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//}
+	//err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
 	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 
 	return nil

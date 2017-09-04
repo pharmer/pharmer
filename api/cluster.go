@@ -9,7 +9,6 @@ import (
 	ssh "github.com/appscode/api/ssh/v1beta1"
 	"github.com/appscode/go/crypto/rand"
 	. "github.com/appscode/go/encoding/json/types"
-	"github.com/appscode/go/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -335,15 +334,4 @@ func (cluster *Cluster) NodeCount() int64 {
 		n += ng.Count
 	}
 	return n
-}
-
-func (cluster *Cluster) NewInstances(matches func(i *Instance, md *InstanceMetadata) bool) (*ClusterInstances, error) {
-	if matches == nil {
-		return nil, errors.New(`Use "github.com/appscode/pharmer/cloud/lib".NewInstances`).Err()
-	}
-	return &ClusterInstances{
-		matches:        matches,
-		KubernetesPHID: cluster.UID,
-		Instances:      make([]*Instance, 0),
-	}, nil
 }

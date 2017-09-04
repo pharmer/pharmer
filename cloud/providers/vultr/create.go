@@ -12,16 +12,19 @@ import (
 )
 
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
-	err := cm.initContext(req)
+	var err error
+
+	cm.cluster, err = NewCluster(req)
 	if err != nil {
+		return err
+	}
+	cm.namer = namer{cluster: cm.cluster}
+
+	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
+
 	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -34,7 +37,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 			cm.cluster.Status.Phase = api.ClusterPhaseFailing
 		}
 		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
 		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
 			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
@@ -93,10 +95,10 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Spec.Role = api.RoleKubernetesMaster
-	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.ExternalIP
-	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.InternalIP
+	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
+	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	fmt.Println("Master EXTERNAL_IP", cm.cluster.Spec.MasterExternalIP, " --- Master INTERNAL_IP", cm.cluster.Spec.MasterInternalIP)
-	cm.ins.Instances = append(cm.ins.Instances, masterInstance)
+	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 
 	if cm.ctx, err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -178,7 +180,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 							return errors.FromErr(err).WithContext(cm.ctx).Err()
 						}
 						node.Spec.Role = api.RoleKubernetesPool
-						cm.ins.Instances = append(cm.ins.Instances, node)
+						cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
 					}
 				}
 			} else {

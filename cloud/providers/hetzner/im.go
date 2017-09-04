@@ -21,14 +21,14 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 	servers, _, err := im.conn.client.Server.ListServers()
 	if err != nil {
 		return nil, err
 	}
 	for _, s := range servers {
-		if !s.Cancelled && s.ServerIP == md.ExternalIP {
+		if !s.Cancelled && s.ServerIP == md.PublicIP {
 			instance, err := im.newKubeInstanceFromSummary(s)
 			if err != nil {
 				return nil, err
@@ -118,8 +118,8 @@ func (im *instanceManager) newKubeInstanceFromSummary(droplet *hc.ServerSummary)
 		Status: api.InstanceStatus{
 			ExternalID:    strconv.Itoa(droplet.ServerNumber),
 			ExternalPhase: droplet.Status,
-			ExternalIP:    droplet.ServerIP,
-			InternalIP:    "",
+			PublicIP:      droplet.ServerIP,
+			PrivateIP:     "",
 			Phase:         api.InstancePhaseReady, // droplet.Status == active
 		},
 	}, nil

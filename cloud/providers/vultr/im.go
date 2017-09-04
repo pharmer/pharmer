@@ -21,7 +21,7 @@ type instanceManager struct {
 	namer   namer
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 
 	var instance *api.Instance
@@ -31,7 +31,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance,
 			return
 		}
 		for _, server := range servers {
-			if server.InternalIP == md.InternalIP {
+			if server.InternalIP == md.PrivateIP {
 				instance, err = im.newKubeInstance(&server)
 				if master {
 					instance.Spec.Role = api.RoleKubernetesMaster
@@ -124,8 +124,8 @@ func (im *instanceManager) newKubeInstance(server *gv.Server) (*api.Instance, er
 		Status: api.InstanceStatus{
 			ExternalID:    server.ID,
 			ExternalPhase: server.Status + "|" + server.PowerStatus,
-			ExternalIP:    server.MainIP,
-			InternalIP:    server.InternalIP,
+			PublicIP:      server.MainIP,
+			PrivateIP:     server.InternalIP,
 			Phase:         api.InstancePhaseReady, // active
 		},
 	}, nil

@@ -26,7 +26,7 @@ type instanceManager struct {
 
 const DROPLET_IMAGE_SLUG = "ubuntu-16-04-x64"
 
-func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
 	master := net.ParseIP(md.Name) == nil
 
 	var instance *api.Instance
@@ -48,7 +48,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceMetadata) (*api.Instance,
 				if err != nil {
 					return
 				}
-				if internalIP == md.InternalIP {
+				if internalIP == md.PrivateIP {
 					instance, err = im.newKubeInstanceFromDroplet(&droplet)
 					if master {
 						instance.Spec.Role = api.RoleKubernetesMaster
@@ -185,8 +185,8 @@ func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*a
 		Status: api.InstanceStatus{
 			ExternalID:    strconv.Itoa(droplet.ID),
 			ExternalPhase: droplet.Status,
-			ExternalIP:    externalIP,
-			InternalIP:    internalIP,
+			PublicIP:      externalIP,
+			PrivateIP:     internalIP,
 			Phase:         api.InstancePhaseReady, // droplet.Status == active
 		},
 	}, nil

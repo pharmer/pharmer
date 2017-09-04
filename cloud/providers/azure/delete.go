@@ -29,12 +29,6 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		}
 	}
 	cm.namer = namer{cluster: cm.cluster}
-	cm.ins, err = cloud.NewInstances(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	cm.ins.Instances, err = cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(api.ListOptions{})
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -46,9 +40,9 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	}
 
 	cm.deleteResourceGroup(req.Name)
-	for i := range cm.ins.Instances {
-		cm.ins.Instances[i].Status.Phase = api.ClusterPhaseDeleted
-	}
+	//for i := range cm.ins.Instances {
+	//	cm.ins.Instances[i].Status.Phase = api.ClusterPhaseDeleted
+	//}
 	if err := cloud.DeleteARecords(cm.ctx, cm.cluster); err != nil {
 		errs = append(errs, err.Error())
 	}
@@ -60,12 +54,6 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		}
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
-	err = cloud.Store(cm.ctx).Instances(cm.cluster.Name).SaveInstances(cm.ins.Instances)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-
 	cloud.Logger(cm.ctx).Infof("Cluster %v is deleted successfully", cm.cluster.Name)
 	return nil
 }

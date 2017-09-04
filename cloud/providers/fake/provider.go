@@ -50,11 +50,11 @@ func (cm *ClusterManager) UploadStartupConfig() error {
 	return nil
 }
 
-func (cm *ClusterManager) GetInstance(md *api.InstanceMetadata) (*api.Instance, error) {
+func (cm *ClusterManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
 	return &api.Instance{}, nil
 }
 
-func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceMetadata) bool {
+func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceStatus) bool {
 	return true
 }
 
