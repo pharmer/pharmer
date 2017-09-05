@@ -65,7 +65,7 @@ type ClusterSpec struct {
 
 	// request data. This is needed to give consistent access to these values for all commands.
 	Region             string `json:"region,omitempty"`
-	MasterSKU          string `json:"masterSku,omitempty"`
+
 	DoNotDelete        bool   `json:"doNotDelete,omitempty"`
 	DefaultAccessLevel string `json:"defaultAccessLevel,omitempty"`
 
@@ -74,10 +74,30 @@ type ClusterSpec struct {
 	ClusterIPRange        string `json:"clusterIpRange,omitempty"`
 	ServiceClusterIPRange string `json:"serviceClusterIpRange,omitempty"`
 	// Replacing API_SERVERS https://github.com/kubernetes/kubernetes/blob/62898319dff291843e53b7839c6cde14ee5d2aa4/cluster/aws/util.sh#L1004
-	KubernetesMasterName  string `json:"kubernetesMasterName,omitempty"`
-	MasterInternalIP      string `json:"masterInternalIp,omitempty"`
 	ClusterExternalDomain string `json:"clusterExternalDomain,omitempty"`
 	ClusterInternalDomain string `json:"clusterInternalDomain,omitempty"`
+
+	MasterDiskType string `json:"masterDiskType,omitempty"`
+	MasterDiskSize int64  `json:"masterDiskSize,omitempty"`
+
+
+	MasterSKU          string `json:"masterSku,omitempty"`
+	KubernetesMasterName  string `json:"kubernetesMasterName,omitempty"`
+	MasterInternalIP      string `json:"masterInternalIp,omitempty"`
+	MasterIPRange                string `json:"masterIpRange,omitempty"`
+	// the master root ebs volume size (typically does not need to be very large)
+	MasterDiskId   string `json:"masterDiskID,omitempty"`
+
+	// If set to Elasticsearch IP, master instance will be associated with this IP.
+	// If set to auto, a new Elasticsearch IP will be acquired
+	// Otherwise amazon-given public ip will be used (it'll change with reboot).
+	MasterReservedIP string `json:"masterReservedIp,omitempty"`
+	MasterExternalIP string `json:"masterExternalIp,omitempty"`
+
+
+	// the node root ebs volume size (used to house docker images)
+	NodeDiskType string `json:"nodeDiskType,omitempty"`
+	NodeDiskSize int64  `json:"nodeDiskSize,omitempty"`
 
 	AllocateNodeCIDRs            bool   `json:"allocateNodeCidrs,omitempty"`
 	EnableClusterMonitoring      string `json:"enableClusterMonitoring,omitempty"`
@@ -88,7 +108,6 @@ type ClusterSpec struct {
 	DNSServerIP                  string `json:"dnsServerIP,omitempty"`
 	DNSDomain                    string `json:"dnsDomain,omitempty"`
 	AdmissionControl             string `json:"admissionControl,omitempty"`
-	MasterIPRange                string `json:"masterIpRange,omitempty"`
 	RuntimeConfig                string `json:"runtimeConfig,omitempty"`
 	StartupConfigToken           string `json:"startupConfigToken,omitempty"`
 
@@ -111,7 +130,7 @@ type ClusterSpec struct {
 
 	Provider string `json:"provider,omitempty"`
 	OS       string `json:"os,omitempty"`
-	Kernel   string `json:"kernel,omitempty"`
+	Kernel   string `json:"kernel,omitempty"` // needed ?
 
 	//NodeLabels                string `json:"nodeLabels,omitempty"`
 	EnableNodeProblemDetector bool   `json:"enableNodeProblemDetector,omitempty"`
@@ -143,14 +162,7 @@ type ClusterSpec struct {
 
 	// common
 
-	// the master root ebs volume size (typically does not need to be very large)
-	MasterDiskType string `json:"masterDiskType,omitempty"`
-	MasterDiskSize int64  `json:"masterDiskSize,omitempty"`
-	MasterDiskId   string `json:"masterDiskID,omitempty"`
 
-	// the node root ebs volume size (used to house docker images)
-	NodeDiskType string `json:"nodeDiskType,omitempty"`
-	NodeDiskSize int64  `json:"nodeDiskSize,omitempty"`
 
 	// GCE: Use Root Field for this in GCE
 
@@ -165,11 +177,6 @@ type ClusterSpec struct {
 	NodeScopes        []string `json:"nodeScopes,omitempty"`
 	PollSleepInterval int      `json:"pollSleepInterval,omitempty"`
 
-	// If set to Elasticsearch IP, master instance will be associated with this IP.
-	// If set to auto, a new Elasticsearch IP will be acquired
-	// Otherwise amazon-given public ip will be used (it'll change with reboot).
-	MasterReservedIP string `json:"masterReservedIp,omitempty"`
-	MasterExternalIP string `json:"masterExternalIp,omitempty"`
 
 	// NEW
 	// enable various v1beta1 features
