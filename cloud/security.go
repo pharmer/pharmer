@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"context"
+	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
 
@@ -9,8 +10,8 @@ import (
 	"k8s.io/client-go/util/cert"
 )
 
-func GenerateCertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
-	Logger(ctx).Infoln("Generating certificate for cluster")
+func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
+	Logger(ctx).Infoln("Generating CA certificate for cluster")
 
 	certStore := Store(ctx).Certificates(cluster.Name)
 
@@ -47,8 +48,31 @@ func GenerateCertificates(ctx context.Context, cluster *api.Cluster) (context.Co
 	ctx = context.WithValue(ctx, paramFrontProxyCAKey{}, frontProxyCAKey)
 	certStore.Create(cluster.Spec.FrontProxyCACertName, frontProxyCACert, frontProxyCAKey)
 
-	// -----------------------------------------------
+	Logger(ctx).Infoln("CA certificates generated successfully.")
+	return ctx, nil
+}
 
+func LoadCACertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
+	certStore := Store(ctx).Certificates(cluster.Name)
+
+	caCert, caKey, err := certStore.Get(cluster.Spec.CACertName)
+	if err != nil {
+		return ctx, fmt.Errorf("Failed to get CA certificates. Reason: %v.", err)
+	}
+	ctx = context.WithValue(ctx, paramCACert{}, caCert)
+	ctx = context.WithValue(ctx, paramCAKey{}, caKey)
+
+	frontProxyCACert, frontProxyCAKey, err := certStore.Get(cluster.Spec.FrontProxyCACertName)
+	if err != nil {
+		return ctx, fmt.Errorf("Failed to get front proxy CA certificates. Reason: %v.", err)
+	}
+	ctx = context.WithValue(ctx, paramFrontProxyCACert{}, frontProxyCACert)
+	ctx = context.WithValue(ctx, paramFrontProxyCAKey{}, frontProxyCAKey)
+
+	return ctx, nil
+}
+
+func CreateAdminCertificate(ctx context.Context, cluster *api.Cluster) (*x509.Certificate, *rsa.PrivateKey, error) {
 	cluster.Spec.AdminUserCertName = "cluster-admin"
 	cfg := cert.Config{
 		CommonName:   cluster.Spec.AdminUserCertName,
@@ -56,26 +80,26 @@ func GenerateCertificates(ctx context.Context, cluster *api.Cluster) (context.Co
 		Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	}
 
-	adminUserKey, err := cert.NewPrivateKey()
+	adminKey, err := cert.NewPrivateKey()
 	if err != nil {
-		return ctx, fmt.Errorf("Failed to generate private key. Reason: %v.", err)
+		return nil, nil, fmt.Errorf("Failed to generate private key. Reason: %v.", err)
 	}
-	adminUserCert, err := cert.NewSignedCert(cfg, adminUserKey, caCert, caKey)
+	adminCert, err := cert.NewSignedCert(cfg, adminKey, CACert(ctx), CAKey(ctx))
 	if err != nil {
-		return ctx, fmt.Errorf("Failed to generate server certificate. Reason: %v.", err)
+		return nil, nil, fmt.Errorf("Failed to generate server certificate. Reason: %v.", err)
 	}
-	ctx = context.WithValue(ctx, paramAdminUserCert{}, adminUserCert)
-	ctx = context.WithValue(ctx, paramAdminUserKey{}, adminUserKey)
-
-	Logger(ctx).Infoln("Certificates generated successfully")
-	return ctx, nil
+	return adminCert, adminKey, nil
 }
 
-func GenerateSSHKey(ctx context.Context) (context.Context, error) {
+func CreateSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
 	sshKey, err := api.NewSSHKeyPair()
 	if err != nil {
 		return ctx, err
 	}
 	ctx = context.WithValue(ctx, paramSSHKey{}, sshKey)
+	err = Store(ctx).SSHKeys(cluster.Name).Create(cluster.Spec.SSHKeyExternalID, sshKey.PublicKey, sshKey.PrivateKey)
+	if err != nil {
+		return ctx, err
+	}
 	return ctx, nil
 }
