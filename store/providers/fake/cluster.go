@@ -8,6 +8,7 @@ import (
 
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/store"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ClusterFileStore struct {
@@ -26,7 +27,7 @@ func (s *ClusterFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *ClusterFileStore) List(opts api.ListOptions) ([]*api.Cluster, error) {
+func (s *ClusterFileStore) List(opts metav1.ListOptions) ([]*api.Cluster, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 

@@ -13,6 +13,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	compute "google.golang.org/api/compute/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
@@ -518,7 +519,7 @@ func (cm *ClusterManager) newKubeInstance(r1 *compute.Instance) (*api.Instance, 
 	for _, accessConfig := range r1.NetworkInterfaces[0].AccessConfigs {
 		if accessConfig.Type == "ONE_TO_ONE_NAT" {
 			i := api.Instance{
-				ObjectMeta: api.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					UID:  phid.NewKubeInstance(),
 					Name: r1.Name,
 				},

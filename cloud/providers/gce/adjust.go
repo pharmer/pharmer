@@ -246,7 +246,8 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, s
 	min := r1.AutoscalingPolicy.MinNumReplicas
 	cloud.Logger(igm.cm.ctx).Infof("Updating autoscaller with Max %v and Min %v num of replicas", size, size)
 	if size > max {
-		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, instanceGroupName, &compute.Autoscaler{
+		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, &compute.Autoscaler{
+			Name: instanceGroupName,
 			AutoscalingPolicy: &compute.AutoscalingPolicy{
 				MaxNumReplicas: size,
 				MinNumReplicas: size,
@@ -260,7 +261,8 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, s
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	} else if size < min {
-		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, instanceGroupName, &compute.Autoscaler{
+		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, &compute.Autoscaler{
+			Name: instanceGroupName,
 			AutoscalingPolicy: &compute.AutoscalingPolicy{
 				MinNumReplicas: size,
 				MaxNumReplicas: size,
@@ -298,7 +300,7 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, s
 /*
 func DBInstanceManage(ctx *contexts.ClusterContext, instances []*contexts.KubernetesInstance)  {
 	kc, err := ctx.NewKubeClient()
-	nodes, err := kc.Client.CoreV1().Nodes().List(kapi.ListOptions{})
+	nodes, err := kc.Client.CoreV1().Nodes().List(kmetav1.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}

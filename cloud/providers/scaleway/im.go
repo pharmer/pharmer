@@ -15,6 +15,7 @@ import (
 	"github.com/cenkalti/backoff"
 	sapi "github.com/scaleway/scaleway-cli/pkg/api"
 	"golang.org/x/crypto/ssh"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type instanceManager struct {
@@ -144,7 +145,7 @@ func (im *instanceManager) newKubeInstance(id string) (*api.Instance, error) {
 
 func (im *instanceManager) newKubeInstanceFromServer(droplet *sapi.ScalewayServer) (*api.Instance, error) {
 	return &api.Instance{
-		ObjectMeta: api.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: droplet.Name,
 		},

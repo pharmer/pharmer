@@ -15,6 +15,7 @@ import (
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
 	"github.com/softlayer/softlayer-go/datatypes"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type instanceManager struct {
@@ -135,7 +136,7 @@ func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	ki := &api.Instance{
-		ObjectMeta: api.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: *d.FullyQualifiedDomainName,
 		},

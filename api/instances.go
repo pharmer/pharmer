@@ -5,10 +5,10 @@ import (
 )
 
 type InstanceGroup struct {
-	metav1.TypeMeta `json:",inline,omitempty"`
-	ObjectMeta      `json:"metadata,omitempty"`
-	Spec            InstanceGroupSpec   `json:"spec,omitempty"`
-	Status          InstanceGroupStatus `json:"status,omitempty"`
+	metav1.TypeMeta   `json:",inline,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              InstanceGroupSpec   `json:"spec,omitempty"`
+	Status            InstanceGroupStatus `json:"status,omitempty"`
 }
 
 type InstanceGroupSpec struct {
@@ -21,10 +21,10 @@ type InstanceGroupStatus struct {
 }
 
 type Instance struct {
-	metav1.TypeMeta `json:",inline,omitempty"`
-	ObjectMeta      `json:"metadata,omitempty"`
-	Spec            InstanceSpec   `json:"spec,omitempty"`
-	Status          InstanceStatus `json:"status,omitempty"`
+	metav1.TypeMeta   `json:",inline,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              InstanceSpec   `json:"spec,omitempty"`
+	Status            InstanceStatus `json:"status,omitempty"`
 }
 
 type InstanceSpec struct {

@@ -10,6 +10,7 @@ import (
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
 	"github.com/packethost/packngo"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type instanceManager struct {
@@ -84,7 +85,7 @@ func (im *instanceManager) newKubeInstance(id string) (*api.Instance, error) {
 
 func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*api.Instance, error) {
 	ki := &api.Instance{
-		ObjectMeta: api.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: droplet.Hostname,
 		},

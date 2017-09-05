@@ -70,7 +70,7 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 		return nil, err
 	}
 	cluster := &api.Cluster{
-		ObjectMeta: api.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:              req.Name,
 			UID:               phid.NewKubeCluster(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},

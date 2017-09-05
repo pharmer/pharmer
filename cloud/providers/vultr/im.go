@@ -12,6 +12,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type instanceManager struct {
@@ -114,7 +115,7 @@ func (im *instanceManager) assignReservedIP(ip, serverId string) error {
 
 func (im *instanceManager) newKubeInstance(server *gv.Server) (*api.Instance, error) {
 	return &api.Instance{
-		ObjectMeta: api.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: server.Name,
 		},

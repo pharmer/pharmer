@@ -13,6 +13,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type instanceManager struct {
@@ -191,7 +192,7 @@ func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.Instan
 		}
 		if externalIP != "" && internalIP != "" {
 			i := api.Instance{
-				ObjectMeta: api.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					UID:  phid.NewKubeInstance(),
 					Name: linode.Label.String(),
 				},

@@ -12,6 +12,7 @@ import (
 	"github.com/appscode/pharmer/store"
 	"github.com/graymeta/stow"
 	"github.com/tamalsaha/go-oneliners"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type CredentialFileStore struct {
@@ -29,7 +30,7 @@ func (s *CredentialFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *CredentialFileStore) List(opts api.ListOptions) ([]*api.Credential, error) {
+func (s *CredentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
 	result := make([]*api.Credential, 0)
 	cursor := stow.CursorStart
 	for {

@@ -30,7 +30,7 @@ func NewCmdImport() *cobra.Command {
 
 			_, provider := term.List(files.CredentialProviders().List())
 			cred := api.Credential{
-				ObjectMeta: api.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:              args[0],
 					CreationTimestamp: metav1.Time{Time: time.Now()},
 				},

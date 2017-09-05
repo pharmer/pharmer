@@ -17,6 +17,7 @@ import (
 	"github.com/appscode/pharmer/credential"
 	"github.com/cenkalti/backoff"
 	"github.com/pborman/uuid"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -206,7 +207,7 @@ func IssueAzureCredential(name string) (*api.Credential, error) {
 	}, backoff.NewExponentialBackOff())
 
 	return &api.Credential{
-		ObjectMeta: api.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: api.CredentialSpec{
