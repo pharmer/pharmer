@@ -18,10 +18,10 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return err
 	}
 	cm.namer = namer{cluster: cm.cluster}
-	if cm.ctx, err = cloud.GenerateCertificates(cm.ctx, cm.cluster); err != nil {
+	if cm.ctx, err = cloud.CreateCACertificates(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
-	if cm.ctx, err = cloud.GenerateSSHKey(cm.ctx); err != nil {
+	if cm.ctx, err = cloud.CreateSSHKey(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {

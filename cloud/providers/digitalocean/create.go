@@ -3,6 +3,7 @@ package digitalocean
 import (
 	gtx "context"
 	"fmt"
+	"os"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
@@ -19,10 +20,10 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return err
 	}
 	cm.namer = namer{cluster: cm.cluster}
-	if cm.ctx, err = cloud.GenerateCertificates(cm.ctx, cm.cluster); err != nil {
+	if cm.ctx, err = cloud.CreateCACertificates(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
-	if cm.ctx, err = cloud.GenerateSSHKey(cm.ctx); err != nil {
+	if cm.ctx, err = cloud.CreateSSHKey(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
@@ -166,6 +167,8 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
+
+	os.Exit(1)
 
 	// wait for nodes to start
 	if err := cloud.WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {

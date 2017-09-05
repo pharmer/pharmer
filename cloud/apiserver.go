@@ -24,12 +24,16 @@ const (
 // WARNING:
 // Returned KubeClient uses admin bearer token. This should only be used for cluster provisioning operations.
 func NewAdminClient(ctx context.Context, cluster *api.Cluster) (clientset.Interface, error) {
+	adminCert, adminKey, err := CreateAdminCertificate(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
 	cfg := &rest.Config{
 		Host: cluster.APIServerURL(),
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData:   cert.EncodeCertPEM(CACert(ctx)),
-			CertData: cert.EncodeCertPEM(AdminUserCert(ctx)),
-			KeyData:  cert.EncodePrivateKeyPEM(AdminUserKey(ctx)),
+			CertData: cert.EncodeCertPEM(adminCert),
+			KeyData:  cert.EncodePrivateKeyPEM(adminKey),
 		},
 	}
 	return clientset.NewForConfig(cfg)
@@ -84,7 +88,7 @@ func WaitForReadyMaster(ctx context.Context, cluster *api.Cluster) error {
 
 var restrictedNamespaces []string = []string{"appscode", "kube-system"}
 
-func hasNoUserApps(client clientset.Interface) (bool, error) {
+func HasNoUserApps(client clientset.Interface) (bool, error) {
 	pods, err := client.CoreV1().Pods(apiv1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		// If we can't connect to kube apiserver, then delete cluster.
@@ -99,7 +103,7 @@ func hasNoUserApps(client clientset.Interface) (bool, error) {
 	return true, nil
 }
 
-func deleteLoadBalancers(client clientset.Interface) error {
+func DeleteLoadBalancers(client clientset.Interface) error {
 	// Delete services with type = LoadBalancer
 	backoff.Retry(func() error {
 		svcs, err := client.CoreV1().Services("").List(metav1.ListOptions{})
@@ -121,7 +125,7 @@ func deleteLoadBalancers(client clientset.Interface) error {
 	return nil
 }
 
-func deleteDyanamicVolumes(client clientset.Interface) error {
+func DeleteDyanamicVolumes(client clientset.Interface) error {
 	backoff.Retry(func() error {
 		pvcs, err := client.CoreV1().PersistentVolumeClaims("").List(metav1.ListOptions{})
 		if err != nil {
