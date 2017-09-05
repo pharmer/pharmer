@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/util/cert"
 )
 
-func GenClusterCerts(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
+func GenerateCertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
 	Logger(ctx).Infoln("Generating certificate for cluster")
 
 	certStore := Store(ctx).Certificates(cluster.Name)
@@ -27,8 +27,8 @@ func GenClusterCerts(ctx context.Context, cluster *api.Cluster) (context.Context
 		return ctx, fmt.Errorf("Failed to generate self-signed certificate. Reason: %v.", err)
 	}
 
-	ctx = context.WithValue(ctx, keyCACert{}, caCert)
-	ctx = context.WithValue(ctx, keyCAKey{}, caKey)
+	ctx = context.WithValue(ctx, paramCACert{}, caCert)
+	ctx = context.WithValue(ctx, paramCAKey{}, caKey)
 	certStore.Create(cluster.Spec.CACertName, caCert, caKey)
 
 	// -----------------------------------------------
@@ -43,8 +43,8 @@ func GenClusterCerts(ctx context.Context, cluster *api.Cluster) (context.Context
 		return ctx, fmt.Errorf("Failed to generate self-signed certificate. Reason: %v.", err)
 	}
 
-	ctx = context.WithValue(ctx, keyFrontProxyCACert{}, frontProxyCACert)
-	ctx = context.WithValue(ctx, keyFrontProxyCAKey{}, frontProxyCAKey)
+	ctx = context.WithValue(ctx, paramFrontProxyCACert{}, frontProxyCACert)
+	ctx = context.WithValue(ctx, paramFrontProxyCAKey{}, frontProxyCAKey)
 	certStore.Create(cluster.Spec.FrontProxyCACertName, frontProxyCACert, frontProxyCAKey)
 
 	// -----------------------------------------------
@@ -64,9 +64,18 @@ func GenClusterCerts(ctx context.Context, cluster *api.Cluster) (context.Context
 	if err != nil {
 		return ctx, fmt.Errorf("Failed to generate server certificate. Reason: %v.", err)
 	}
-	ctx = context.WithValue(ctx, keyAdminUserCert{}, adminUserCert)
-	ctx = context.WithValue(ctx, keyAdminUserKey{}, adminUserKey)
+	ctx = context.WithValue(ctx, paramAdminUserCert{}, adminUserCert)
+	ctx = context.WithValue(ctx, paramAdminUserKey{}, adminUserKey)
 
 	Logger(ctx).Infoln("Certificates generated successfully")
+	return ctx, nil
+}
+
+func GenerateSSHKey(ctx context.Context) (context.Context, error) {
+	sshKey, err := api.NewSSHKeyPair()
+	if err != nil {
+		return ctx, err
+	}
+	ctx = context.WithValue(ctx, paramSSHKey{}, sshKey)
 	return ctx, nil
 }

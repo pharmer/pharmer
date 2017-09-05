@@ -7,7 +7,7 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/go/types"
+	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/data/files"
@@ -76,14 +76,9 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	api.AssignTypeKind(cluster)
 	namer := namer{cluster: cluster}
 
-	//cluster.Spec.ctx.Name = req.Name
-	//cluster.Spec.ctx.PHID = phid.NewKubeCluster()
-	//cluster.Spec.ctx.Provider = req.Provider
-	//cluster.Spec.ctx.Zone = req.Zone
-
+	cluster.Spec.Provider = req.Provider
 	cluster.Spec.Zone = req.Zone
 	cluster.Spec.CredentialName = req.CredentialUid
-
 	cluster.Spec.Region = cluster.Spec.Zone[0 : len(cluster.Spec.Zone)-1]
 	cluster.Spec.DoNotDelete = req.DoNotDelete
 	cluster.SetNodeGroups(req.NodeGroups)
@@ -109,12 +104,7 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	}
 
 	cluster.Spec.KubernetesMasterName = namer.MasterName()
-	cluster.Spec.SSHKey, err = api.NewSSHKeyPair()
-	if err != nil {
-		return nil, err
-	}
 	cluster.Spec.SSHKeyExternalID = namer.GenSSHKeyExternalID()
-	cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
 
 	cluster.Spec.MasterSGName = namer.GenMasterSGName()
 	cluster.Spec.NodeSGName = namer.GenNodeSGName()
@@ -130,10 +120,10 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	//cluster.Spec.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
 
 	if cluster.Spec.EnableWebhookTokenAuthentication {
-		cluster.Spec.AppscodeAuthnUrl = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
+		cluster.Spec.AppscodeAuthnURL = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
 	}
 	if cluster.Spec.EnableWebhookTokenAuthorization {
-		cluster.Spec.AppscodeAuthzUrl = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
+		cluster.Spec.AppscodeAuthzURL = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
 	}
 
 	// TODO: FixIT!
@@ -199,7 +189,7 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 func (cm *ClusterManager) waitForInstanceState(instanceId string, state string) error {
 	for {
 		r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
-			InstanceIds: []*string{types.StringP(instanceId)},
+			InstanceIds: []*string{StringP(instanceId)},
 		})
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()

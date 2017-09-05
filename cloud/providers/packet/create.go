@@ -15,21 +15,21 @@ import (
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	var err error
 
-	cm.cluster, err = NewCluster(req)
-	if err != nil {
+	if cm.cluster, err = NewCluster(req); err != nil {
 		return err
 	}
 	cm.namer = namer{cluster: cm.cluster}
-
-	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.ctx, err = cloud.GenerateCertificates(cm.ctx, cm.cluster); err != nil {
+		return err
 	}
-
-	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.ctx, err = cloud.GenerateSSHKey(cm.ctx); err != nil {
+		return err
+	}
+	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if _, err = cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
+		return err
 	}
 
 	defer func(releaseReservedIp bool) {
@@ -80,10 +80,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP)
 	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 
-	if cm.ctx, err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
 	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -149,13 +145,13 @@ func (cm *ClusterManager) importPublicKey() error {
 	cloud.Logger(cm.ctx).Debugln("Adding SSH public key")
 	backoff.Retry(func() error {
 		sk, _, err := cm.conn.client.SSHKeys.Create(&packngo.SSHKeyCreateRequest{
-			Key:       string(cm.cluster.Spec.SSHKey.PublicKey),
+			Key:       string(cloud.SSHKey(cm.ctx).PublicKey),
 			Label:     cm.cluster.Name,
 			ProjectID: cm.cluster.Spec.Project,
 		})
 		cm.cluster.Spec.SSHKeyExternalID = sk.ID
 		return err
 	}, backoff.NewExponentialBackOff())
-	cloud.Logger(cm.ctx).Debugf("Created new ssh key with fingerprint=%v", cm.cluster.Spec.SSHKey.OpensshFingerprint)
+	cloud.Logger(cm.ctx).Debugf("Created new ssh key with fingerprint=%v", cloud.SSHKey(cm.ctx).OpensshFingerprint)
 	return nil
 }

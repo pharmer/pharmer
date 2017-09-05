@@ -4,12 +4,7 @@ import (
 	"fmt"
 	mrnd "math/rand"
 	"time"
-
-	"github.com/appscode/go/errors"
 )
-
-var InstanceNotFound = errors.New("Instance not found")
-var UnsupportedOperation = errors.New("Unsupported operation")
 
 func GetKubeadmToken() string {
 	return fmt.Sprintf("%s.%s", RandStringRunes(6), RandStringRunes(16))

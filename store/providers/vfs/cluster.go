@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/store"
 	"github.com/graymeta/stow"
+	"github.com/tamalsaha/go-oneliners"
 )
 
 type ClusterFileStore struct {
@@ -31,11 +33,12 @@ func (s *ClusterFileStore) List(opts api.ListOptions) ([]*api.Cluster, error) {
 	result := make([]*api.Cluster, 0)
 	cursor := stow.CursorStart
 	for {
-		items, nc, err := s.container.Items(s.resourceHome(), cursor, pageSize)
+		page, err := s.container.Browse(s.resourceHome()+"/", string(os.PathSeparator), cursor, pageSize)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to list clusters. Reason: %v", err)
 		}
-		for _, item := range items {
+		for _, item := range page.Items {
+			oneliners.FILE(item.Name())
 			r, err := item.Open()
 			if err != nil {
 				return nil, fmt.Errorf("Failed to list clusters. Reason: %v", err)
@@ -48,7 +51,7 @@ func (s *ClusterFileStore) List(opts api.ListOptions) ([]*api.Cluster, error) {
 			result = append(result, &obj)
 			r.Close()
 		}
-		cursor = nc
+		cursor = page.Cursor
 		if stow.IsCursorEnd(cursor) {
 			break
 		}
@@ -117,7 +120,6 @@ func (s *ClusterFileStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 	}
 
 	id := s.resourceID(obj.Name)
-
 	_, err = s.container.Item(id)
 	if err != nil {
 		return nil, fmt.Errorf("Cluster `%s` does not exist. Reason: %v", obj.Name, err)

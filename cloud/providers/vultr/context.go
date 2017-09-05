@@ -76,26 +76,15 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	api.AssignTypeKind(cluster)
 	namer := namer{cluster: cluster}
 
+	cluster.Spec.Provider = req.Provider
 	cluster.Spec.Zone = req.Zone
 	cluster.Spec.CredentialName = req.CredentialUid
-
-	//cluster.Spec.ctx.Name = req.Name
-	//cluster.Spec.ctx.PHID = phid.NewKubeCluster()
-	//cluster.Spec.ctx.Provider = req.Provider
-	//cluster.Spec.ctx.Zone = req.Zone
-
 	cluster.Spec.Region = cluster.Spec.Zone
 	cluster.Spec.DoNotDelete = req.DoNotDelete
-
 	cluster.SetNodeGroups(req.NodeGroups)
 
 	cluster.Spec.KubernetesMasterName = namer.MasterName()
-	cluster.Spec.SSHKey, err = api.NewSSHKeyPair()
-	if err != nil {
-		return nil, err
-	}
 	cluster.Spec.SSHKeyExternalID = namer.GenSSHKeyExternalID()
-	cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
 
 	cluster.Spec.StartupConfigToken = rand.Characters(128)
 
@@ -105,10 +94,10 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	//cluster.Spec.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
 
 	if cluster.Spec.EnableWebhookTokenAuthentication {
-		cluster.Spec.AppscodeAuthnUrl = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
+		cluster.Spec.AppscodeAuthnURL = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
 	}
 	if cluster.Spec.EnableWebhookTokenAuthorization {
-		cluster.Spec.AppscodeAuthzUrl = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
+		cluster.Spec.AppscodeAuthzURL = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
 	}
 
 	// TODO: FixIT!

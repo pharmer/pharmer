@@ -18,7 +18,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	fmt.Println(cm.cluster.Spec.ResourceVersion, "*****************")
+	fmt.Println(cm.cluster.Generation, "*****************")
 	cm.namer = namer{cluster: cm.cluster}
 	// TODO: FixIT!
 	//if req.ApplyToMaster {
@@ -35,7 +35,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	//}
 	inst := cloud.Instance{
 		Type: cloud.InstanceType{
-			ContextVersion: cm.cluster.Spec.ResourceVersion,
+			ContextVersion: cm.cluster.Generation,
 			Sku:            req.Sku,
 
 			Master:       false,

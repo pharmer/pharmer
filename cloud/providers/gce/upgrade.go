@@ -32,7 +32,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 		cm.conn = conn
 	}
 
-	cm.cluster.Spec.ResourceVersion = int64(0)
+	cm.cluster.Generation = int64(0)
 	cm.namer = namer{cluster: cm.cluster}
 	cm.updateContext()
 	// assign new timestamp and new launch_config version

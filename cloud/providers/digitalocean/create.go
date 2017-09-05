@@ -15,23 +15,22 @@ import (
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	var err error
 
-	cm.cluster, err = NewCluster(req)
-	if err != nil {
+	if cm.cluster, err = NewCluster(req); err != nil {
 		return err
 	}
 	cm.namer = namer{cluster: cm.cluster}
-
-	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.ctx, err = cloud.GenerateCertificates(cm.ctx, cm.cluster); err != nil {
+		return err
 	}
-
-	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.ctx, err = cloud.GenerateSSHKey(cm.ctx); err != nil {
+		return err
 	}
-	cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if _, err = cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
+		return err
+	}
 
 	defer func(releaseReservedIp bool) {
 		if cm.cluster.Status.Phase == api.ClusterPhasePending {
@@ -66,13 +65,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 
 	err = cm.reserveIP()
 	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-
-	// ------------------------Generate Certs and upload in Firebase @dipta----------------------
-
-	if cm.ctx, err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -152,7 +144,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 			cm: cm,
 			instance: cloud.Instance{
 				Type: cloud.InstanceType{
-					ContextVersion: cm.cluster.Spec.ResourceVersion,
+					ContextVersion: cm.cluster.Generation,
 					Sku:            ng.Sku,
 
 					Master:       false,
@@ -187,7 +179,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 func (cm *ClusterManager) importPublicKey() error {
 	key, resp, err := cm.conn.client.Keys.Create(gtx.TODO(), &godo.KeyCreateRequest{
 		Name:      cm.cluster.Spec.SSHKeyExternalID,
-		PublicKey: string(cm.cluster.Spec.SSHKey.PublicKey),
+		PublicKey: string(cloud.SSHKey(cm.ctx).PublicKey),
 	})
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()

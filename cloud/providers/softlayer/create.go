@@ -6,7 +6,7 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/go/types"
+	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/cenkalti/backoff"
@@ -16,21 +16,21 @@ import (
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	var err error
 
-	cm.cluster, err = NewCluster(req)
-	if err != nil {
+	if cm.cluster, err = NewCluster(req); err != nil {
 		return err
 	}
 	cm.namer = namer{cluster: cm.cluster}
-
-	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.ctx, err = cloud.GenerateCertificates(cm.ctx, cm.cluster); err != nil {
+		return err
 	}
-
-	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.ctx, err = cloud.GenerateSSHKey(cm.ctx); err != nil {
+		return err
+	}
+	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if _, err = cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
+		return err
 	}
 
 	defer func(releaseReservedIp bool) {
@@ -72,11 +72,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
 	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
-
-	if cm.ctx, err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
 
 	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
@@ -143,8 +138,8 @@ func (cm *ClusterManager) importPublicKey() error {
 	cloud.Logger(cm.ctx).Debugln("Adding SSH public key")
 
 	securitySSHTemplate := datatypes.Security_Ssh_Key{
-		Label: types.StringP(cm.cluster.Name),
-		Key:   types.StringP(string(cm.cluster.Spec.SSHKey.PublicKey)),
+		Label: StringP(cm.cluster.Name),
+		Key:   StringP(string(cloud.SSHKey(cm.ctx).PublicKey)),
 	}
 
 	backoff.Retry(func() error {
@@ -153,6 +148,6 @@ func (cm *ClusterManager) importPublicKey() error {
 		cm.cluster.Spec.SSHKeyExternalID = strconv.Itoa(*sk.Id)
 		return err
 	}, backoff.NewExponentialBackOff())
-	cloud.Logger(cm.ctx).Debugf("Created new ssh key with fingerprint=%v", cm.cluster.Spec.SSHKey.OpensshFingerprint)
+	cloud.Logger(cm.ctx).Debugf("Created new ssh key with fingerprint=%v", cloud.SSHKey(cm.ctx).OpensshFingerprint)
 	return nil
 }

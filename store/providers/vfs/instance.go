@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/appscode/pharmer/api"
@@ -32,11 +33,11 @@ func (s *InstanceFileStore) List(opts api.ListOptions) ([]*api.Instance, error) 
 	result := make([]*api.Instance, 0)
 	cursor := stow.CursorStart
 	for {
-		items, nc, err := s.container.Items(s.resourceHome(), cursor, pageSize)
+		page, err := s.container.Browse(s.resourceHome()+"/", string(os.PathSeparator), cursor, pageSize)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to list instances. Reason: %v", err)
 		}
-		for _, item := range items {
+		for _, item := range page.Items {
 			r, err := item.Open()
 			if err != nil {
 				return nil, fmt.Errorf("Failed to list instances. Reason: %v", err)
@@ -49,7 +50,7 @@ func (s *InstanceFileStore) List(opts api.ListOptions) ([]*api.Instance, error) 
 			result = append(result, &obj)
 			r.Close()
 		}
-		cursor = nc
+		cursor = page.Cursor
 		if stow.IsCursorEnd(cursor) {
 			break
 		}
@@ -99,7 +100,6 @@ func (s *InstanceFileStore) Create(obj *api.Instance) (*api.Instance, error) {
 	}
 
 	id := s.resourceID(obj.Name)
-
 	_, err = s.container.Item(id)
 	if err == nil {
 		return nil, fmt.Errorf("Instance `%s` already exists", obj.Name)

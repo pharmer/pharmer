@@ -114,7 +114,7 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
   "stack_script_id": "%v"
 }`, im.cluster.Name, name, scriptId)
 	args := map[string]string{
-		"rootSSHKey": string(im.cluster.Spec.SSHKey.PublicKey),
+		"rootSSHKey": string(cloud.SSHKey(im.ctx).PublicKey),
 	}
 
 	mt, err := data.ClusterMachineType("linode", sku)

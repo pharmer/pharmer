@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 
+	proto "github.com/appscode/api/ssh/v1beta1"
 	"github.com/appscode/go-dns"
 	dns_provider "github.com/appscode/go-dns/provider"
 	"github.com/appscode/go/log"
@@ -14,61 +15,67 @@ import (
 	"github.com/appscode/pharmer/store/providers/vfs"
 )
 
-type keyDNS struct{}
-type keyExtra struct{}
-type keyLogger struct{}
-type keyStore struct{}
+type paramDNS struct{}
+type paramExtra struct{}
+type paramLogger struct{}
+type paramStore struct{}
 
-type keyCACert struct{}
-type keyCAKey struct{}
-type keyFrontProxyCACert struct{}
-type keyFrontProxyCAKey struct{}
-type keyAdminUserCert struct{}
-type keyAdminUserKey struct{}
+type paramCACert struct{}
+type paramCAKey struct{}
+type paramFrontProxyCACert struct{}
+type paramFrontProxyCAKey struct{}
+type paramAdminUserCert struct{}
+type paramAdminUserKey struct{}
+
+type paramSSHKey struct{}
 
 func DNSProvider(ctx context.Context) dns_provider.Provider {
-	return ctx.Value(keyDNS{}).(dns_provider.Provider)
+	return ctx.Value(paramDNS{}).(dns_provider.Provider)
 }
 
 func Store(ctx context.Context) store.Interface {
-	return ctx.Value(keyStore{}).(store.Interface)
+	return ctx.Value(paramStore{}).(store.Interface)
 }
 
 func Logger(ctx context.Context) api.Logger {
-	return ctx.Value(keyLogger{}).(api.Logger)
+	return ctx.Value(paramLogger{}).(api.Logger)
 }
 
 func Extra(ctx context.Context) api.DomainManager {
-	return ctx.Value(keyExtra{}).(api.DomainManager)
+	return ctx.Value(paramExtra{}).(api.DomainManager)
 }
 
 func CACert(ctx context.Context) *x509.Certificate {
-	return ctx.Value(keyCACert{}).(*x509.Certificate)
+	return ctx.Value(paramCACert{}).(*x509.Certificate)
 }
 func CAKey(ctx context.Context) *rsa.PrivateKey {
-	return ctx.Value(keyCAKey{}).(*rsa.PrivateKey)
+	return ctx.Value(paramCAKey{}).(*rsa.PrivateKey)
 }
 
 func FrontProxyCACert(ctx context.Context) *x509.Certificate {
-	return ctx.Value(keyFrontProxyCACert{}).(*x509.Certificate)
+	return ctx.Value(paramFrontProxyCACert{}).(*x509.Certificate)
 }
 func FrontProxyCAKey(ctx context.Context) *rsa.PrivateKey {
-	return ctx.Value(keyFrontProxyCAKey{}).(*rsa.PrivateKey)
+	return ctx.Value(paramFrontProxyCAKey{}).(*rsa.PrivateKey)
 }
 
 func AdminUserCert(ctx context.Context) *x509.Certificate {
-	return ctx.Value(keyAdminUserCert{}).(*x509.Certificate)
+	return ctx.Value(paramAdminUserCert{}).(*x509.Certificate)
 }
 func AdminUserKey(ctx context.Context) *rsa.PrivateKey {
-	return ctx.Value(keyAdminUserKey{}).(*rsa.PrivateKey)
+	return ctx.Value(paramAdminUserKey{}).(*rsa.PrivateKey)
+}
+
+func SSHKey(ctx context.Context) *proto.SSHKey {
+	return ctx.Value(paramSSHKey{}).(*proto.SSHKey)
 }
 
 func NewContext(parent context.Context, cfg *api.PharmerConfig) context.Context {
 	c := parent
-	c = context.WithValue(c, keyExtra{}, &api.FakeDomainManager{})
-	c = context.WithValue(c, keyLogger{}, log.New(c))
-	c = context.WithValue(c, keyStore{}, NewStoreProvider(parent, cfg))
-	c = context.WithValue(c, keyDNS{}, NewDNSProvider(cfg))
+	c = context.WithValue(c, paramExtra{}, &api.FakeDomainManager{})
+	c = context.WithValue(c, paramLogger{}, log.New(c))
+	c = context.WithValue(c, paramStore{}, NewStoreProvider(parent, cfg))
+	c = context.WithValue(c, paramDNS{}, NewDNSProvider(cfg))
 	return c
 }
 

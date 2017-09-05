@@ -37,7 +37,7 @@ func (n namer) MasterPDName() string {
 }
 
 func (n namer) InstanceTemplateName(sku string) string {
-	return stringutil.DomainForm(n.cluster.Name + "-" + sku + "-V" + strconv.FormatInt(n.cluster.Spec.ResourceVersion, 10))
+	return stringutil.DomainForm(n.cluster.Name + "-" + sku + "-V" + strconv.FormatInt(n.cluster.Generation, 10))
 }
 
 func (n namer) InstanceTemplateNameWithContext(sku string, ctxVersion int64) string {

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/appscode/go/errors"
-	"github.com/appscode/go/types"
+	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
@@ -24,7 +24,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 		igm.cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	igm.cm.cluster.Spec.ResourceVersion = igm.instance.Type.ContextVersion
+	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
 	igm.cm.cluster, _ = cloud.Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 	if err = igm.cm.conn.detectUbuntuImage(); err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
@@ -88,48 +88,48 @@ func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) err
 	cloud.Logger(igm.cm.ctx).Info("Creating node configuration assuming enableNodePublicIP = true")
 	fmt.Println(igm.cm.cluster.Spec.RootDeviceName, "<<<<<<<<--------------->>>>>>>>>>>>>>>>>>.")
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
-		LaunchConfigurationName:  types.StringP(name),
-		AssociatePublicIpAddress: types.BoolP(igm.cm.cluster.Spec.EnableNodePublicIP),
+		LaunchConfigurationName:  StringP(name),
+		AssociatePublicIpAddress: BoolP(igm.cm.cluster.Spec.EnableNodePublicIP),
 		/*
 			// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html
 			BlockDeviceMappings: []*autoscaling.BlockDeviceMapping{
 				// NODE_BLOCK_DEVICE_MAPPINGS
 				{
 					// https://github.com/appscode/kubernetes/blob/55d9dec8eb5eb02e1301045b7b81bbac689c86a1/cluster/aws/util.sh#L397
-					DeviceName: types.StringP(igm.cm.cluster.Spec.RootDeviceName),
+					DeviceName: StringP(igm.cm.cluster.Spec.RootDeviceName),
 					Ebs: &autoscaling.Ebs{
-						DeleteOnTermination: types.TrueP(),
-						VolumeSize:          types.Int64P(igm.cm.conn.cluster.Spec.NodeDiskSize),
-						VolumeType:          types.StringP(igm.cm.cluster.Spec.NodeDiskType),
+						DeleteOnTermination: TrueP(),
+						VolumeSize:          Int64P(igm.cm.conn.cluster.Spec.NodeDiskSize),
+						VolumeType:          StringP(igm.cm.cluster.Spec.NodeDiskType),
 					},
 				},
 				// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
 				{
-					DeviceName:  types.StringP("/dev/sdc"),
-					VirtualName: types.StringP("ephemeral0"),
+					DeviceName:  StringP("/dev/sdc"),
+					VirtualName: StringP("ephemeral0"),
 				},
 				{
-					DeviceName:  types.StringP("/dev/sdd"),
-					VirtualName: types.StringP("ephemeral1"),
+					DeviceName:  StringP("/dev/sdd"),
+					VirtualName: StringP("ephemeral1"),
 				},
 				{
-					DeviceName:  types.StringP("/dev/sde"),
-					VirtualName: types.StringP("ephemeral2"),
+					DeviceName:  StringP("/dev/sde"),
+					VirtualName: StringP("ephemeral2"),
 				},
 				{
-					DeviceName:  types.StringP("/dev/sdf"),
-					VirtualName: types.StringP("ephemeral3"),
+					DeviceName:  StringP("/dev/sdf"),
+					VirtualName: StringP("ephemeral3"),
 				},
 			},
 		*/
-		IamInstanceProfile: types.StringP(igm.cm.cluster.Spec.IAMProfileNode),
-		ImageId:            types.StringP(igm.cm.cluster.Spec.InstanceImage),
-		InstanceType:       types.StringP(sku),
-		KeyName:            types.StringP(igm.cm.cluster.Spec.SSHKeyExternalID),
+		IamInstanceProfile: StringP(igm.cm.cluster.Spec.IAMProfileNode),
+		ImageId:            StringP(igm.cm.cluster.Spec.InstanceImage),
+		InstanceType:       StringP(sku),
+		KeyName:            StringP(igm.cm.cluster.Spec.SSHKeyExternalID),
 		SecurityGroups: []*string{
-			types.StringP(igm.cm.cluster.Spec.NodeSGId),
+			StringP(igm.cm.cluster.Spec.NodeSGId),
 		},
-		UserData: types.StringP(base64.StdEncoding.EncodeToString([]byte(script))),
+		UserData: StringP(base64.StdEncoding.EncodeToString([]byte(script))),
 	}
 	r1, err := igm.cm.conn.autoscale.CreateLaunchConfiguration(configuration)
 	cloud.Logger(igm.cm.ctx).Debug("Created node configuration", r1, err)
@@ -155,10 +155,10 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroup string, size 
 	}
 	if size > *group.AutoScalingGroups[0].MaxSize {
 		_, err := igm.cm.conn.autoscale.UpdateAutoScalingGroup(&autoscaling.UpdateAutoScalingGroupInput{
-			AutoScalingGroupName: types.StringP(instanceGroup),
-			DefaultCooldown:      types.Int64P(1),
-			MaxSize:              types.Int64P(size),
-			DesiredCapacity:      types.Int64P(size),
+			AutoScalingGroupName: StringP(instanceGroup),
+			DefaultCooldown:      Int64P(1),
+			MaxSize:              Int64P(size),
+			DesiredCapacity:      Int64P(size),
 		})
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -166,17 +166,17 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroup string, size 
 
 	} else if size < *group.AutoScalingGroups[0].MinSize {
 		_, err := igm.cm.conn.autoscale.UpdateAutoScalingGroup(&autoscaling.UpdateAutoScalingGroupInput{
-			AutoScalingGroupName: types.StringP(instanceGroup),
-			MinSize:              types.Int64P(size),
-			DesiredCapacity:      types.Int64P(size),
+			AutoScalingGroupName: StringP(instanceGroup),
+			MinSize:              Int64P(size),
+			DesiredCapacity:      Int64P(size),
 		})
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	} else {
 		_, err := igm.cm.conn.autoscale.UpdateAutoScalingGroup(&autoscaling.UpdateAutoScalingGroupInput{
-			AutoScalingGroupName: types.StringP(instanceGroup),
-			DesiredCapacity:      types.Int64P(size),
+			AutoScalingGroupName: StringP(instanceGroup),
+			DesiredCapacity:      Int64P(size),
 		})
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -207,7 +207,7 @@ func (igm *InstanceGroupManager) listInstances(instanceGroup string) ([]*api.Ins
 
 func (igm *InstanceGroupManager) describeGroupInfo(instanceGroup string) (*autoscaling.DescribeAutoScalingGroupsOutput, error) {
 	groups := make([]*string, 0)
-	groups = append(groups, types.StringP(instanceGroup))
+	groups = append(groups, StringP(instanceGroup))
 	r1, err := igm.cm.conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: groups,
 	})

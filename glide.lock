@@ -1,5 +1,5 @@
 hash: 2443fcd89bf5a522888d9699b565dd11ac50d93691f1c4a3c60ea86021f6d432
-updated: 2017-09-03T23:16:38.134785806-07:00
+updated: 2017-09-04T11:44:50.470782353-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -246,7 +246,7 @@ imports:
 - name: github.com/gorilla/websocket
   version: 1f512fc3f05332ba7117626cdfb4e07474e58e60
 - name: github.com/graymeta/stow
-  version: a23290c0fdbc04d082e46cd1d159c73f6c0431d6
+  version: 6f2b8867a3fb15cca5507da1d552b55cfe5d07a7
   repo: https://github.com/appscode/stow.git
   vcs: git
   subpackages:

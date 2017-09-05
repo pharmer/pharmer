@@ -85,7 +85,7 @@ func (s *SSHKeyFileStore) Create(name string, pubKey, privKey []byte) error {
 		return fmt.Errorf("SSH `id_%s.pub` already exists. Reason: %v.", name, err)
 	}
 	_, err = s.container.Put(id, bytes.NewBuffer(pubKey), int64(len(pubKey)), nil)
-	if err == nil {
+	if err != nil {
 		return fmt.Errorf("Failed to store ssh public key `id_%s.pub`. Reason: %v.", name, err)
 	}
 
@@ -95,7 +95,7 @@ func (s *SSHKeyFileStore) Create(name string, pubKey, privKey []byte) error {
 		return fmt.Errorf("SSH `id_%s` already exists. Reason: %v.", name, err)
 	}
 	_, err = s.container.Put(id, bytes.NewBuffer(privKey), int64(len(privKey)), nil)
-	if err == nil {
+	if err != nil {
 		return fmt.Errorf("Failed to store ssh private key `id_%s`. Reason: %v.", name, err)
 	}
 

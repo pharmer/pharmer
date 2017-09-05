@@ -16,21 +16,21 @@ import (
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	var err error
 
-	cm.cluster, err = NewCluster(req)
-	if err != nil {
+	if cm.cluster, err = NewCluster(req); err != nil {
 		return err
 	}
 	cm.namer = namer{cluster: cm.cluster}
-
-	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.ctx, err = cloud.GenerateCertificates(cm.ctx, cm.cluster); err != nil {
+		return err
 	}
-
-	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.ctx, err = cloud.GenerateSSHKey(cm.ctx); err != nil {
+		return err
+	}
+	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if _, err = cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
+		return err
 	}
 
 	defer func(releaseReservedIP bool) {
@@ -68,7 +68,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	signer, err := ssh.MakePrivateKeySignerFromBytes(cm.cluster.Spec.SSHKey.PrivateKey)
+	signer, err := ssh.MakePrivateKeySignerFromBytes(cloud.SSHKey(cm.ctx).PrivateKey)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -80,10 +80,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	if cm.ctx, err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
 	if _, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -191,14 +187,14 @@ func (cm *ClusterManager) importPublicKey() error {
 			sshPubKeys[i] = sapi.ScalewayKeyDefinition{Key: kk.Key}
 		}
 		sshPubKeys[len(user.SSHPublicKeys)] = sapi.ScalewayKeyDefinition{
-			Key: string(cm.cluster.Spec.SSHKey.PublicKey),
+			Key: string(cloud.SSHKey(cm.ctx).PublicKey),
 		}
 
 		return cm.conn.client.PatchUserSSHKey(user.ID, sapi.ScalewayUserPatchSSHKeyDefinition{
 			SSHPublicKeys: sshPubKeys,
 		})
 	}, backoff.NewExponentialBackOff())
-	cloud.Logger(cm.ctx).Infof("New ssh key with fingerprint %v created", cm.cluster.Spec.SSHKey.OpensshFingerprint)
+	cloud.Logger(cm.ctx).Infof("New ssh key with fingerprint %v created", cloud.SSHKey(cm.ctx).OpensshFingerprint)
 	return nil
 }
 

@@ -97,11 +97,11 @@ func (cm *ClusterManager) deleteStackscripts() error {
 }
 
 func (cm *ClusterManager) deleteSSHKey() (err error) {
-	if cm.cluster.Spec.SSHKeyPHID != "" {
-		//updates := &storage.SSHKey{IsDeleted: 1}
-		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
-		//_, err = cloud.Store(cm.ctx).Engine.Update(updates, cond)
-		//cm.ctx.Notifier.StoreAndNotify(api.JobPhaseRunning, fmt.Sprintf("SSH key for cluster %v deleted", cm.ctx.MasterDiskId))
-	}
+	//if cm.cluster.Spec.SSHKeyPHID != "" {
+	//	//updates := &storage.SSHKey{IsDeleted: 1}
+	//	//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
+	//	//_, err = cloud.Store(cm.ctx).Engine.Update(updates, cond)
+	//	//cm.ctx.Notifier.StoreAndNotify(api.JobPhaseRunning, fmt.Sprintf("SSH key for cluster %v deleted", cm.ctx.MasterDiskId))
+	//}
 	return
 }
