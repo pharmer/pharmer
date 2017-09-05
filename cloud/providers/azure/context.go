@@ -6,7 +6,6 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/crypto/rand"
-	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/data/files"
@@ -69,22 +68,15 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	api.AssignTypeKind(cluster)
 	namer := namer{cluster: cluster}
 
-	//cluster.Spec.ctx.Name = req.Name
-	//cluster.Spec.ctx.PHID = phid.NewKubeCluster()
-	//cluster.Spec.ctx.Provider = req.Provider
-	//cluster.Spec.ctx.Zone = req.Zone
+	cluster.Spec.Provider = req.Provider
+	cluster.Spec.Zone = req.Zone
+	cluster.Spec.CredentialName = req.CredentialUid
 	cluster.Spec.Region = cluster.Spec.Zone
 	cluster.Spec.DoNotDelete = req.DoNotDelete
-
 	cluster.SetNodeGroups(req.NodeGroups)
 
 	cluster.Spec.KubernetesMasterName = namer.MasterName()
-	cluster.Spec.SSHKey, err = api.NewSSHKeyPair()
-	if err != nil {
-		return nil, errors.FromErr(err).Err()
-	}
 	cluster.Spec.SSHKeyExternalID = namer.GenSSHKeyExternalID()
-	cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
 
 	// cluster.Spec.ctx.MasterSGName = cluster.Spec.ctx.Name + "-master-" + rand.Characters(6)
 	// cluster.Spec.ctx.NodeSGName = cluster.Spec.ctx.Name + "-node-" + rand.Characters(6)
@@ -100,10 +92,10 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	//cluster.Spec.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
 
 	if cluster.Spec.EnableWebhookTokenAuthentication {
-		cluster.Spec.AppscodeAuthnUrl = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
+		cluster.Spec.AppscodeAuthnURL = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
 	}
 	if cluster.Spec.EnableWebhookTokenAuthorization {
-		cluster.Spec.AppscodeAuthzUrl = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
+		cluster.Spec.AppscodeAuthzURL = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
 	}
 
 	// TODO: FixIT!

@@ -9,7 +9,7 @@ import (
 
 	"github.com/appscode/data"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/go/types"
+	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
@@ -88,31 +88,31 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	vGuestTemplate := datatypes.Virtual_Guest{
-		Hostname:                     types.StringP(name),
-		Domain:                       types.StringP(cloud.Extra(im.ctx).ExternalDomain(im.cluster.Name)),
-		MaxMemory:                    types.IntP(ram),
-		StartCpus:                    types.IntP(cpu),
-		Datacenter:                   &datatypes.Location{Name: types.StringP(im.cluster.Spec.Zone)},
-		OperatingSystemReferenceCode: types.StringP(im.cluster.Spec.OS),
-		LocalDiskFlag:                types.TrueP(),
-		HourlyBillingFlag:            types.TrueP(),
+		Hostname:                     StringP(name),
+		Domain:                       StringP(cloud.Extra(im.ctx).ExternalDomain(im.cluster.Name)),
+		MaxMemory:                    IntP(ram),
+		StartCpus:                    IntP(cpu),
+		Datacenter:                   &datatypes.Location{Name: StringP(im.cluster.Spec.Zone)},
+		OperatingSystemReferenceCode: StringP(im.cluster.Spec.OS),
+		LocalDiskFlag:                TrueP(),
+		HourlyBillingFlag:            TrueP(),
 		SshKeys: []datatypes.Security_Ssh_Key{
 			{
-				Id:          types.IntP(sshid),
-				Fingerprint: types.StringP(im.cluster.Spec.SSHKey.OpensshFingerprint),
+				Id:          IntP(sshid),
+				Fingerprint: StringP(cloud.SSHKey(im.ctx).OpensshFingerprint),
 			},
 		},
 		UserData: []datatypes.Virtual_Guest_Attribute{
 			{
 				//https://sldn.softlayer.com/blog/jarteche/getting-started-user-data-and-post-provisioning-scripts
 				Type: &datatypes.Virtual_Guest_Attribute_Type{
-					Keyname: types.StringP("USER_DATA"),
-					Name:    types.StringP("User Data"),
+					Keyname: StringP("USER_DATA"),
+					Name:    StringP("User Data"),
 				},
-				Value: types.StringP(startupScript),
+				Value: StringP(startupScript),
 			},
 		},
-		PostInstallScriptUri: types.StringP("https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/softlayer/startupscript.sh"),
+		PostInstallScriptUri: StringP("https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/softlayer/startupscript.sh"),
 	}
 
 	vGuest, err := im.conn.virtualServiceClient.Mask("id;domain").CreateObject(&vGuestTemplate)

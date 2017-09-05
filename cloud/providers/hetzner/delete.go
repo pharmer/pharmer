@@ -10,6 +10,7 @@ import (
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
@@ -74,17 +75,21 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	return nil
 }
 
-func (cm *ClusterManager) deleteSSHKey() (err error) {
+func (cm *ClusterManager) deleteSSHKey() error {
 	cloud.Logger(cm.ctx).Infof("Deleting SSH key for cluster", cm.cluster.Name)
-
-	if cm.cluster.Spec.SSHKey != nil {
-		_, err = cm.conn.client.SSHKey.Delete(cm.cluster.Spec.SSHKey.OpensshFingerprint)
+	err := wait.PollImmediate(cloud.RetryInterval, cloud.RetryTimeout, func() (bool, error) {
+		_, err := cm.conn.client.SSHKey.Delete(cloud.SSHKey(cm.ctx).OpensshFingerprint)
+		return err == nil, nil
+	})
+	if err != nil {
+		return err
 	}
+	cloud.Logger(cm.ctx).Infof("SSH key for cluster %v deleted", cm.cluster.Name)
 
-	if cm.cluster.Spec.SSHKeyPHID != "" {
-		//updates := &storage.SSHKey{IsDeleted: 1}
-		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
-		//_, err = cloud.Store(cm.ctx).Engine.Update(updates, cond)
-	}
-	return
+	//if cm.cluster.Spec.SSHKeyPHID != "" {
+	//	//updates := &storage.SSHKey{IsDeleted: 1}
+	//	//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
+	//	//_, err = cloud.Store(cm.ctx).Engine.Update(updates, cond)
+	//}
+	return nil
 }

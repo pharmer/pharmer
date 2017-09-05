@@ -8,7 +8,7 @@ import (
 
 	sshtools "github.com/appscode/go/crypto/ssh"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/go/types"
+	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
@@ -65,10 +65,10 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 	}
 	serverID, err := im.conn.client.PostServer(sapi.ScalewayServerDefinition{
 		Name:  name,
-		Image: types.StringP(im.cluster.Spec.InstanceImage),
+		Image: StringP(im.cluster.Spec.InstanceImage),
 		//Volumes map[string]string `json:"volumes,omitempty"`
-		DynamicIPRequired: types.TrueP(),
-		Bootscript:        types.StringP(im.conn.bootscriptID),
+		DynamicIPRequired: TrueP(),
+		Bootscript:        StringP(im.conn.bootscriptID),
 		Tags:              []string{"KubernetesCluster:" + im.cluster.Name},
 		// Organization:   organization,
 		CommercialType: sku,
@@ -103,7 +103,7 @@ func (im *instanceManager) storeConfigFile(serverID, role string) error {
 	//if err != nil {
 	//	return errors.FromErr(err).WithContext(im.ctx).Err()
 	//}
-	dataKey := fmt.Sprintf("kubernetes_context_%v_%v.yaml", im.cluster.Spec.ResourceVersion, role)
+	dataKey := fmt.Sprintf("kubernetes_context_%v_%v.yaml", im.cluster.Generation, role)
 	return im.conn.client.PatchUserdata(serverID, dataKey, []byte(cfg), false)
 }
 
@@ -117,7 +117,7 @@ func (im *instanceManager) storeStartupScript(serverID, sku, role string) error 
 func (im *instanceManager) RenderStartupScript(sku, role string) string {
 	return "FixIT!"
 
-	//	cmd := fmt.Sprintf(`CONFIG=$(/usr/bin/curl 169.254.42.42/user_data/kubernetes_context_%v_%v.yaml --local-port 1-1024)`, im.cluster.Spec.ResourceVersion, role)
+	//	cmd := fmt.Sprintf(`CONFIG=$(/usr/bin/curl 169.254.42.42/user_data/kubernetes_context_%v_%v.yaml --local-port 1-1024)`, im.cluster.Generation, role)
 	//	return fmt.Sprintf(`%v
 	//systemctl start kube-installer.service
 	//`, cloud.RenderKubeInstaller(im.cluster, sku, role, cmd))

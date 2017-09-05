@@ -9,7 +9,7 @@ import (
 	// "github.com/appscode/pharmer/templates"
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/go/types"
+	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
@@ -26,23 +26,22 @@ const (
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	var err error
 
-	cm.cluster, err = NewCluster(req)
-	if err != nil {
+	if cm.cluster, err = NewCluster(req); err != nil {
 		return err
 	}
 	cm.namer = namer{cluster: cm.cluster}
-
-	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.ctx, err = cloud.GenerateCertificates(cm.ctx, cm.cluster); err != nil {
+		return err
 	}
-
-	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.ctx, err = cloud.GenerateSSHKey(cm.ctx); err != nil {
+		return err
 	}
-	cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if _, err = cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
+		return err
+	}
 
 	defer func(releaseReservedIp bool) {
 		if cm.cluster.Status.Phase == api.ClusterPhasePending {
@@ -119,7 +118,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 			cm: cm,
 			instance: cloud.Instance{
 				Type: cloud.InstanceType{
-					ContextVersion: cm.cluster.Spec.ResourceVersion,
+					ContextVersion: cm.cluster.Generation,
 					Sku:            ng.Sku,
 
 					Master:       false,
@@ -156,7 +155,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	cloud.Logger(cm.ctx).Info("Listing autoscaling groups")
 	groups := make([]*string, 0)
 	for _, ng := range req.NodeGroups {
-		groups = append(groups, types.StringP(cm.namer.AutoScalingGroupName(ng.Sku)))
+		groups = append(groups, StringP(cm.namer.AutoScalingGroupName(ng.Sku)))
 	}
 	r2, err := cm.conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: groups,
@@ -272,8 +271,8 @@ func (cm *ClusterManager) createIAMProfile(key string) error {
 
 func (cm *ClusterManager) importPublicKey() error {
 	resp, err := cm.conn.ec2.ImportKeyPair(&_ec2.ImportKeyPairInput{
-		KeyName:           types.StringP(cm.cluster.Spec.SSHKeyExternalID),
-		PublicKeyMaterial: cm.cluster.Spec.SSHKey.PublicKey,
+		KeyName:           StringP(cm.cluster.Spec.SSHKeyExternalID),
+		PublicKeyMaterial: cloud.SSHKey(cm.ctx).PublicKey,
 	})
 	cloud.Logger(cm.ctx).Debug("Imported SSH key", resp, err)
 	if err != nil {
@@ -286,7 +285,7 @@ func (cm *ClusterManager) importPublicKey() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 
 	}
-	cloud.Logger(cm.ctx).Infof("SSH key with (AWS) fingerprint %v imported", cm.cluster.Spec.SSHKey.AwsFingerprint)
+	cloud.Logger(cm.ctx).Infof("SSH key with (AWS) fingerprint %v imported", cloud.SSHKey(cm.ctx).AwsFingerprint)
 
 	return nil
 }
@@ -296,15 +295,15 @@ func (cm *ClusterManager) setupVpc() error {
 	r1, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("tag:Name"),
+				Name: StringP("tag:Name"),
 				Values: []*string{
-					types.StringP(cm.namer.VPCName()),
+					StringP(cm.namer.VPCName()),
 				},
 			},
 			{
-				Name: types.StringP("tag:KubernetesCluster"),
+				Name: StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.cluster.Name), // Tag by Name or PHID?
+					StringP(cm.cluster.Name), // Tag by Name or PHID?
 				},
 			},
 		},
@@ -317,7 +316,7 @@ func (cm *ClusterManager) setupVpc() error {
 
 	cloud.Logger(cm.ctx).Info("No VPC found, creating new VPC")
 	r2, err := cm.conn.ec2.CreateVpc(&_ec2.CreateVpcInput{
-		CidrBlock: types.StringP(cm.cluster.Spec.VpcCIDR),
+		CidrBlock: StringP(cm.cluster.Spec.VpcCIDR),
 	})
 	cloud.Logger(cm.ctx).Debug("VPC created", r2, err)
 	//errorutil.EOE(err)
@@ -328,9 +327,9 @@ func (cm *ClusterManager) setupVpc() error {
 	cm.cluster.Spec.VpcId = *r2.Vpc.VpcId
 
 	r3, err := cm.conn.ec2.ModifyVpcAttribute(&_ec2.ModifyVpcAttributeInput{
-		VpcId: types.StringP(cm.cluster.Spec.VpcId),
+		VpcId: StringP(cm.cluster.Spec.VpcId),
 		EnableDnsSupport: &_ec2.AttributeBooleanValue{
-			Value: types.TrueP(),
+			Value: TrueP(),
 		},
 	})
 	cloud.Logger(cm.ctx).Debug("DNS support enabled", r3, err)
@@ -340,9 +339,9 @@ func (cm *ClusterManager) setupVpc() error {
 	}
 
 	r4, err := cm.conn.ec2.ModifyVpcAttribute(&_ec2.ModifyVpcAttributeInput{
-		VpcId: types.StringP(cm.cluster.Spec.VpcId),
+		VpcId: StringP(cm.cluster.Spec.VpcId),
 		EnableDnsHostnames: &_ec2.AttributeBooleanValue{
-			Value: types.TrueP(),
+			Value: TrueP(),
 		},
 	})
 	cloud.Logger(cm.ctx).Debug("DNS hostnames enabled", r4, err)
@@ -360,12 +359,12 @@ func (cm *ClusterManager) setupVpc() error {
 func (cm *ClusterManager) addTag(id string, key string, value string) error {
 	resp, err := cm.conn.ec2.CreateTags(&_ec2.CreateTagsInput{
 		Resources: []*string{
-			types.StringP(id),
+			StringP(id),
 		},
 		Tags: []*_ec2.Tag{
 			{
-				Key:   types.StringP(key),
-				Value: types.StringP(value),
+				Key:   StringP(key),
+				Value: StringP(value),
 			},
 		},
 	})
@@ -385,12 +384,12 @@ func (cm *ClusterManager) createDHCPOptionSet() error {
 	r1, err := cm.conn.ec2.CreateDhcpOptions(&_ec2.CreateDhcpOptionsInput{
 		DhcpConfigurations: []*_ec2.NewDhcpConfiguration{
 			{
-				Key:    types.StringP("domain-name"),
-				Values: []*string{types.StringP(optionSetDomain)},
+				Key:    StringP("domain-name"),
+				Values: []*string{StringP(optionSetDomain)},
 			},
 			{
-				Key:    types.StringP("domain-name-servers"),
-				Values: []*string{types.StringP("AmazonProvidedDNS")},
+				Key:    StringP("domain-name-servers"),
+				Values: []*string{StringP("AmazonProvidedDNS")},
 			},
 		},
 	})
@@ -406,8 +405,8 @@ func (cm *ClusterManager) createDHCPOptionSet() error {
 	cm.addTag(cm.cluster.Spec.DHCPOptionsId, "KubernetesCluster", cm.cluster.Name)
 
 	r2, err := cm.conn.ec2.AssociateDhcpOptions(&_ec2.AssociateDhcpOptionsInput{
-		DhcpOptionsId: types.StringP(cm.cluster.Spec.DHCPOptionsId),
-		VpcId:         types.StringP(cm.cluster.Spec.VpcId),
+		DhcpOptionsId: StringP(cm.cluster.Spec.DHCPOptionsId),
+		VpcId:         StringP(cm.cluster.Spec.VpcId),
 	})
 	cloud.Logger(cm.ctx).Debug("Associated DHCP options ", r2, err)
 	if err != nil {
@@ -423,21 +422,21 @@ func (cm *ClusterManager) setupSubnet() error {
 	r1, err := cm.conn.ec2.DescribeSubnets(&_ec2.DescribeSubnetsInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("tag:KubernetesCluster"),
+				Name: StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.cluster.Name),
+					StringP(cm.cluster.Name),
 				},
 			},
 			{
-				Name: types.StringP("availabilityZone"),
+				Name: StringP("availabilityZone"),
 				Values: []*string{
-					types.StringP(cm.cluster.Spec.Zone),
+					StringP(cm.cluster.Spec.Zone),
 				},
 			},
 			{
-				Name: types.StringP("vpc-id"),
+				Name: StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cm.cluster.Spec.VpcId),
+					StringP(cm.cluster.Spec.VpcId),
 				},
 			},
 		},
@@ -450,9 +449,9 @@ func (cm *ClusterManager) setupSubnet() error {
 	if len(r1.Subnets) == 0 {
 		cloud.Logger(cm.ctx).Info("No subnet found, creating new subnet")
 		r2, err := cm.conn.ec2.CreateSubnet(&_ec2.CreateSubnetInput{
-			CidrBlock:        types.StringP(cm.cluster.Spec.SubnetCIDR),
-			VpcId:            types.StringP(cm.cluster.Spec.VpcId),
-			AvailabilityZone: types.StringP(cm.cluster.Spec.Zone),
+			CidrBlock:        StringP(cm.cluster.Spec.SubnetCIDR),
+			VpcId:            StringP(cm.cluster.Spec.VpcId),
+			AvailabilityZone: StringP(cm.cluster.Spec.Zone),
 		})
 		cloud.Logger(cm.ctx).Debug("Created subnet", r2, err)
 		if err != nil {
@@ -471,7 +470,7 @@ func (cm *ClusterManager) setupSubnet() error {
 
 		cloud.Logger(cm.ctx).Infof("Retrieving VPC %v", cm.cluster.Spec.VpcId)
 		r3, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
-			VpcIds: []*string{types.StringP(cm.cluster.Spec.VpcId)},
+			VpcIds: []*string{StringP(cm.cluster.Spec.VpcId)},
 		})
 		cloud.Logger(cm.ctx).Debug("Retrieved VPC", r3, err)
 		if err != nil {
@@ -491,9 +490,9 @@ func (cm *ClusterManager) setupInternetGateway() error {
 	r1, err := cm.conn.ec2.DescribeInternetGateways(&_ec2.DescribeInternetGatewaysInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("attachment.vpc-id"),
+				Name: StringP("attachment.vpc-id"),
 				Values: []*string{
-					types.StringP(cm.cluster.Spec.VpcId),
+					StringP(cm.cluster.Spec.VpcId),
 				},
 			},
 		},
@@ -515,8 +514,8 @@ func (cm *ClusterManager) setupInternetGateway() error {
 		cloud.Logger(cm.ctx).Infof("IGW %v created", cm.cluster.Spec.IGWId)
 
 		r3, err := cm.conn.ec2.AttachInternetGateway(&_ec2.AttachInternetGatewayInput{
-			InternetGatewayId: types.StringP(cm.cluster.Spec.IGWId),
-			VpcId:             types.StringP(cm.cluster.Spec.VpcId),
+			InternetGatewayId: StringP(cm.cluster.Spec.IGWId),
+			VpcId:             StringP(cm.cluster.Spec.VpcId),
 		})
 		cloud.Logger(cm.ctx).Debug("Attached IGW to VPC", r3, err)
 		if err != nil {
@@ -538,15 +537,15 @@ func (cm *ClusterManager) setupRouteTable() error {
 	r1, err := cm.conn.ec2.DescribeRouteTables(&_ec2.DescribeRouteTablesInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("vpc-id"),
+				Name: StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cm.cluster.Spec.VpcId),
+					StringP(cm.cluster.Spec.VpcId),
 				},
 			},
 			{
-				Name: types.StringP("tag:KubernetesCluster"),
+				Name: StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.cluster.Name),
+					StringP(cm.cluster.Name),
 				},
 			},
 		},
@@ -558,7 +557,7 @@ func (cm *ClusterManager) setupRouteTable() error {
 	if len(r1.RouteTables) == 0 {
 		cloud.Logger(cm.ctx).Infof("No route table found for VPCID %v, creating new route table", cm.cluster.Spec.VpcId)
 		r2, err := cm.conn.ec2.CreateRouteTable(&_ec2.CreateRouteTableInput{
-			VpcId: types.StringP(cm.cluster.Spec.VpcId),
+			VpcId: StringP(cm.cluster.Spec.VpcId),
 		})
 		cloud.Logger(cm.ctx).Debug("Created route table", r2, err)
 		if err != nil {
@@ -576,8 +575,8 @@ func (cm *ClusterManager) setupRouteTable() error {
 	}
 
 	r3, err := cm.conn.ec2.AssociateRouteTable(&_ec2.AssociateRouteTableInput{
-		RouteTableId: types.StringP(cm.cluster.Spec.RouteTableId),
-		SubnetId:     types.StringP(cm.cluster.Spec.SubnetId),
+		RouteTableId: StringP(cm.cluster.Spec.RouteTableId),
+		SubnetId:     StringP(cm.cluster.Spec.SubnetId),
 	})
 	cloud.Logger(cm.ctx).Debug("Associating route table to subnet", r3, err)
 	if err != nil {
@@ -586,9 +585,9 @@ func (cm *ClusterManager) setupRouteTable() error {
 	cloud.Logger(cm.ctx).Infof("Route table %v associated to subnet %v", cm.cluster.Spec.RouteTableId, cm.cluster.Spec.SubnetId)
 
 	r4, err := cm.conn.ec2.CreateRoute(&_ec2.CreateRouteInput{
-		RouteTableId:         types.StringP(cm.cluster.Spec.RouteTableId),
-		DestinationCidrBlock: types.StringP("0.0.0.0/0"),
-		GatewayId:            types.StringP(cm.cluster.Spec.IGWId),
+		RouteTableId:         StringP(cm.cluster.Spec.RouteTableId),
+		DestinationCidrBlock: StringP("0.0.0.0/0"),
+		GatewayId:            StringP(cm.cluster.Spec.IGWId),
 	})
 	cloud.Logger(cm.ctx).Debug("Added route to route table", r4, err)
 	if err != nil {
@@ -678,21 +677,21 @@ func (cm *ClusterManager) getSecurityGroupId(groupName string) (string, bool, er
 	r1, err := cm.conn.ec2.DescribeSecurityGroups(&_ec2.DescribeSecurityGroupsInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("vpc-id"),
+				Name: StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cm.cluster.Spec.VpcId),
+					StringP(cm.cluster.Spec.VpcId),
 				},
 			},
 			{
-				Name: types.StringP("group-name"),
+				Name: StringP("group-name"),
 				Values: []*string{
-					types.StringP(groupName),
+					StringP(groupName),
 				},
 			},
 			{
-				Name: types.StringP("tag:KubernetesCluster"),
+				Name: StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.cluster.Name),
+					StringP(cm.cluster.Name),
 				},
 			},
 		},
@@ -712,9 +711,9 @@ func (cm *ClusterManager) getSecurityGroupId(groupName string) (string, bool, er
 func (cm *ClusterManager) createSecurityGroup(groupName string, description string) error {
 	cloud.Logger(cm.ctx).Infof("Creating security group %v", groupName)
 	r2, err := cm.conn.ec2.CreateSecurityGroup(&_ec2.CreateSecurityGroupInput{
-		GroupName:   types.StringP(groupName),
-		Description: types.StringP(description),
-		VpcId:       types.StringP(cm.cluster.Spec.VpcId),
+		GroupName:   StringP(groupName),
+		Description: StringP(description),
+		VpcId:       StringP(cm.cluster.Spec.VpcId),
 	})
 	cloud.Logger(cm.ctx).Debug("Created security group", r2, err)
 	if err != nil {
@@ -754,13 +753,13 @@ func (cm *ClusterManager) detectSecurityGroups() error {
 
 func (cm *ClusterManager) autohrizeIngressBySGID(groupID string, srcGroup string) error {
 	r1, err := cm.conn.ec2.AuthorizeSecurityGroupIngress(&_ec2.AuthorizeSecurityGroupIngressInput{
-		GroupId: types.StringP(groupID),
+		GroupId: StringP(groupID),
 		IpPermissions: []*_ec2.IpPermission{
 			{
-				IpProtocol: types.StringP("-1"),
+				IpProtocol: StringP("-1"),
 				UserIdGroupPairs: []*_ec2.UserIdGroupPair{
 					{
-						GroupId: types.StringP(srcGroup),
+						GroupId: StringP(srcGroup),
 					},
 				},
 			},
@@ -776,17 +775,17 @@ func (cm *ClusterManager) autohrizeIngressBySGID(groupID string, srcGroup string
 
 func (cm *ClusterManager) autohrizeIngressByPort(groupID string, port int64) error {
 	r1, err := cm.conn.ec2.AuthorizeSecurityGroupIngress(&_ec2.AuthorizeSecurityGroupIngressInput{
-		GroupId: types.StringP(groupID),
+		GroupId: StringP(groupID),
 		IpPermissions: []*_ec2.IpPermission{
 			{
-				IpProtocol: types.StringP("tcp"),
-				FromPort:   types.Int64P(port),
+				IpProtocol: StringP("tcp"),
+				FromPort:   Int64P(port),
 				IpRanges: []*_ec2.IpRange{
 					{
-						CidrIp: types.StringP("0.0.0.0/0"),
+						CidrIp: StringP("0.0.0.0/0"),
 					},
 				},
-				ToPort: types.Int64P(port),
+				ToPort: Int64P(port),
 			},
 		},
 	})
@@ -812,7 +811,6 @@ func (cm *ClusterManager) startMaster() (*api.Instance, error) {
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.ctx, _ = cloud.GenClusterCerts(cm.ctx, cm.cluster)
 	cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster) // needed for master start-up config
 
 	masterInstanceID, err := cm.createMasterInstance(cm.cluster.Spec.KubernetesMasterName, api.RoleKubernetesMaster)
@@ -855,9 +853,9 @@ func (cm *ClusterManager) startMaster() (*api.Instance, error) {
 	}
 	/*
 		r1, err := cm.conn.ec2.AttachVolume(&_ec2.AttachVolumeInput{
-			VolumeId:   types.StringP(cm.cluster.Spec.MasterDiskId),
-			Device:     types.StringP("/dev/sdb"),
-			InstanceId: types.StringP(masterInstanceID),
+			VolumeId:   StringP(cm.cluster.Spec.MasterDiskId),
+			Device:     StringP("/dev/sdb"),
+			InstanceId: StringP(masterInstanceID),
 		})
 		cloud.Logger(cm.ctx).Debug("Attached persistent data volume to master", r1, err)
 		if err != nil {
@@ -868,9 +866,9 @@ func (cm *ClusterManager) startMaster() (*api.Instance, error) {
 
 	time.Sleep(15 * time.Second)
 	r2, err := cm.conn.ec2.CreateRoute(&_ec2.CreateRouteInput{
-		RouteTableId:         types.StringP(cm.cluster.Spec.RouteTableId),
-		DestinationCidrBlock: types.StringP(cm.cluster.Spec.MasterIPRange),
-		InstanceId:           types.StringP(masterInstanceID),
+		RouteTableId:         StringP(cm.cluster.Spec.RouteTableId),
+		DestinationCidrBlock: StringP(cm.cluster.Spec.MasterIPRange),
+		InstanceId:           StringP(masterInstanceID),
 	})
 	cloud.Logger(cm.ctx).Debug("Created route to master", r2, err)
 	if err != nil {
@@ -890,7 +888,7 @@ func (cm *ClusterManager) ensurePd(name, diskType string, sizeGb int64) (string,
 		r1, err := cm.conn.ec2.CreateVolume(&_ec2.CreateVolumeInput{
 			AvailabilityZone: &cm.cluster.Spec.Zone,
 			VolumeType:       &diskType,
-			Size:             types.Int64P(sizeGb),
+			Size:             Int64P(sizeGb),
 		})
 		cloud.Logger(cm.ctx).Debug("Created master pd", r1, err)
 		if err != nil {
@@ -918,21 +916,21 @@ func (cm *ClusterManager) findPD(name string) (string, error) {
 	r1, err := cm.conn.ec2.DescribeVolumes(&_ec2.DescribeVolumesInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("availability-zone"),
+				Name: StringP("availability-zone"),
 				Values: []*string{
-					types.StringP(cm.cluster.Spec.Zone),
+					StringP(cm.cluster.Spec.Zone),
 				},
 			},
 			{
-				Name: types.StringP("tag:Name"),
+				Name: StringP("tag:Name"),
 				Values: []*string{
-					types.StringP(name),
+					StringP(name),
 				},
 			},
 			{
-				Name: types.StringP("tag:KubernetesCluster"),
+				Name: StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.cluster.Name),
+					StringP(cm.cluster.Name),
 				},
 			},
 		},
@@ -954,7 +952,7 @@ func (cm *ClusterManager) reserveIP() error {
 	// if match, _ := regexp.MatchString("^[0-9]+.[0-9]+.[0-9]+.[0-9]+$", cluster.Spec.ctx.MasterReservedIP); !match {
 	if cm.cluster.Spec.MasterReservedIP == "auto" {
 		r1, err := cm.conn.ec2.AllocateAddress(&_ec2.AllocateAddressInput{
-			Domain: types.StringP("vpc"),
+			Domain: StringP("vpc"),
 		})
 		cloud.Logger(cm.ctx).Debug("Allocated elastic IP", r1, err)
 		if err != nil {
@@ -973,65 +971,65 @@ func (cm *ClusterManager) createMasterInstance(instanceName string, role string)
 		return "", err
 	}
 	req := &_ec2.RunInstancesInput{
-		ImageId:  types.StringP(cm.cluster.Spec.InstanceImage),
-		MaxCount: types.Int64P(1),
-		MinCount: types.Int64P(1),
+		ImageId:  StringP(cm.cluster.Spec.InstanceImage),
+		MaxCount: Int64P(1),
+		MinCount: Int64P(1),
 		//// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html
 		//BlockDeviceMappings: []*_ec2.BlockDeviceMapping{
 		//	// MASTER_BLOCK_DEVICE_MAPPINGS
 		//	{
 		//		// https://github.com/appscode/kubernetes/blob/55d9dec8eb5eb02e1301045b7b81bbac689c86a1/cluster/aws/util.sh#L397
-		//		DeviceName: types.StringP(cm.cluster.Spec.RootDeviceName),
+		//		DeviceName: StringP(cm.cluster.Spec.RootDeviceName),
 		//		Ebs: &_ec2.EbsBlockDevice{
-		//			DeleteOnTermination: types.TrueP(),
-		//			VolumeSize:          types.Int64P(cm.cluster.Spec.MasterDiskSize),
-		//			VolumeType:          types.StringP(cm.cluster.Spec.MasterDiskType),
+		//			DeleteOnTermination: TrueP(),
+		//			VolumeSize:          Int64P(cm.cluster.Spec.MasterDiskSize),
+		//			VolumeType:          StringP(cm.cluster.Spec.MasterDiskType),
 		//		},
 		//	},
 		//	// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
 		//	{
-		//		DeviceName:  types.StringP("/dev/sdc"),
-		//		VirtualName: types.StringP("ephemeral0"),
+		//		DeviceName:  StringP("/dev/sdc"),
+		//		VirtualName: StringP("ephemeral0"),
 		//	},
 		//	{
-		//		DeviceName:  types.StringP("/dev/sdd"),
-		//		VirtualName: types.StringP("ephemeral1"),
+		//		DeviceName:  StringP("/dev/sdd"),
+		//		VirtualName: StringP("ephemeral1"),
 		//	},
 		//	{
-		//		DeviceName:  types.StringP("/dev/sde"),
-		//		VirtualName: types.StringP("ephemeral2"),
+		//		DeviceName:  StringP("/dev/sde"),
+		//		VirtualName: StringP("ephemeral2"),
 		//	},
 		//	{
-		//		DeviceName:  types.StringP("/dev/sdf"),
-		//		VirtualName: types.StringP("ephemeral3"),
+		//		DeviceName:  StringP("/dev/sdf"),
+		//		VirtualName: StringP("ephemeral3"),
 		//	},
 		//},
 		IamInstanceProfile: &_ec2.IamInstanceProfileSpecification{
-			Name: types.StringP(cm.cluster.Spec.IAMProfileMaster),
+			Name: StringP(cm.cluster.Spec.IAMProfileMaster),
 		},
-		InstanceType: types.StringP(cm.cluster.Spec.MasterSKU),
-		KeyName:      types.StringP(cm.cluster.Spec.SSHKeyExternalID),
+		InstanceType: StringP(cm.cluster.Spec.MasterSKU),
+		KeyName:      StringP(cm.cluster.Spec.SSHKeyExternalID),
 		Monitoring: &_ec2.RunInstancesMonitoringEnabled{
-			Enabled: types.TrueP(),
+			Enabled: TrueP(),
 		},
 		NetworkInterfaces: []*_ec2.InstanceNetworkInterfaceSpecification{
 			{
-				AssociatePublicIpAddress: types.TrueP(),
-				DeleteOnTermination:      types.TrueP(),
-				DeviceIndex:              types.Int64P(0),
+				AssociatePublicIpAddress: TrueP(),
+				DeleteOnTermination:      TrueP(),
+				DeviceIndex:              Int64P(0),
 				Groups: []*string{
-					types.StringP(cm.cluster.Spec.MasterSGId),
+					StringP(cm.cluster.Spec.MasterSGId),
 				},
 				PrivateIpAddresses: []*_ec2.PrivateIpAddressSpecification{
 					{
-						PrivateIpAddress: types.StringP(cm.cluster.Spec.MasterInternalIP),
-						Primary:          types.TrueP(),
+						PrivateIpAddress: StringP(cm.cluster.Spec.MasterInternalIP),
+						Primary:          TrueP(),
 					},
 				},
-				SubnetId: types.StringP(cm.cluster.Spec.SubnetId),
+				SubnetId: StringP(cm.cluster.Spec.SubnetId),
 			},
 		},
-		UserData: types.StringP(base64.StdEncoding.EncodeToString([]byte(kubeStarter))),
+		UserData: StringP(base64.StdEncoding.EncodeToString([]byte(kubeStarter))),
 	}
 	r1, err := cm.conn.ec2.RunInstances(req)
 	cloud.Logger(cm.ctx).Debug("Created instance", r1, err)
@@ -1059,7 +1057,7 @@ func (cm *ClusterManager) createMasterInstance(instanceName string, role string)
 
 func (cm *ClusterManager) getInstancePublicIP(instanceID string) (string, bool, error) {
 	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
-		InstanceIds: []*string{types.StringP(instanceID)},
+		InstanceIds: []*string{StringP(instanceID)},
 	})
 	cloud.Logger(cm.ctx).Debug("Retrieved Public IP for Instance", r1, err)
 	if err != nil {
@@ -1075,7 +1073,7 @@ func (cm *ClusterManager) getInstancePublicIP(instanceID string) (string, bool, 
 func (cm *ClusterManager) listInstances(groupName string) ([]*api.Instance, error) {
 	r2, err := cm.conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: []*string{
-			types.StringP(groupName),
+			StringP(groupName),
 		},
 	})
 	if err != nil {
@@ -1097,7 +1095,7 @@ func (cm *ClusterManager) listInstances(groupName string) ([]*api.Instance, erro
 }
 func (cm *ClusterManager) newKubeInstance(instanceID string) (*api.Instance, error) {
 	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
-		InstanceIds: []*string{types.StringP(instanceID)},
+		InstanceIds: []*string{StringP(instanceID)},
 	})
 	cloud.Logger(cm.ctx).Debug("Retrieved instance ", r1, err)
 	if err != nil {
@@ -1141,7 +1139,7 @@ func (cm *ClusterManager) newKubeInstance(instanceID string) (*api.Instance, err
 
 func (cm *ClusterManager) allocateElasticIp() (string, error) {
 	r1, err := cm.conn.ec2.AllocateAddress(&_ec2.AllocateAddressInput{
-		Domain: types.StringP("vpc"),
+		Domain: StringP("vpc"),
 	})
 	cloud.Logger(cm.ctx).Debug("Allocated elastic IP", r1, err)
 	if err != nil {
@@ -1154,7 +1152,7 @@ func (cm *ClusterManager) allocateElasticIp() (string, error) {
 
 func (cm *ClusterManager) assignIPToInstance(instanceID string) error {
 	r1, err := cm.conn.ec2.DescribeAddresses(&_ec2.DescribeAddressesInput{
-		PublicIps: []*string{types.StringP(cm.cluster.Spec.MasterReservedIP)},
+		PublicIps: []*string{StringP(cm.cluster.Spec.MasterReservedIP)},
 	})
 	cloud.Logger(cm.ctx).Debug("Retrieved allocation ID for elastic IP", r1, err)
 	if err != nil {
@@ -1164,7 +1162,7 @@ func (cm *ClusterManager) assignIPToInstance(instanceID string) error {
 	time.Sleep(1 * time.Minute)
 
 	r2, err := cm.conn.ec2.AssociateAddress(&_ec2.AssociateAddressInput{
-		InstanceId:   types.StringP(instanceID),
+		InstanceId:   StringP(instanceID),
 		AllocationId: r1.Addresses[0].AllocationId,
 	})
 	cloud.Logger(cm.ctx).Debug("Attached IP to instance", r2, err)
@@ -1182,46 +1180,46 @@ func (cm *ClusterManager) createLaunchConfiguration(name, sku string) error {
 		return err
 	}
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
-		LaunchConfigurationName:  types.StringP(name),
-		AssociatePublicIpAddress: types.BoolP(cm.cluster.Spec.EnableNodePublicIP),
+		LaunchConfigurationName:  StringP(name),
+		AssociatePublicIpAddress: BoolP(cm.cluster.Spec.EnableNodePublicIP),
 		// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html
 		BlockDeviceMappings: []*autoscaling.BlockDeviceMapping{
 			// NODE_BLOCK_DEVICE_MAPPINGS
 			{
 				// https://github.com/appscode/kubernetes/blob/55d9dec8eb5eb02e1301045b7b81bbac689c86a1/cluster/aws/util.sh#L397
-				DeviceName: types.StringP(cm.cluster.Spec.RootDeviceName),
+				DeviceName: StringP(cm.cluster.Spec.RootDeviceName),
 				Ebs: &autoscaling.Ebs{
-					DeleteOnTermination: types.TrueP(),
-					VolumeSize:          types.Int64P(cm.cluster.Spec.NodeDiskSize),
-					VolumeType:          types.StringP(cm.cluster.Spec.NodeDiskType),
+					DeleteOnTermination: TrueP(),
+					VolumeSize:          Int64P(cm.cluster.Spec.NodeDiskSize),
+					VolumeType:          StringP(cm.cluster.Spec.NodeDiskType),
 				},
 			},
 			// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
 			{
-				DeviceName:  types.StringP("/dev/sdc"),
-				VirtualName: types.StringP("ephemeral0"),
+				DeviceName:  StringP("/dev/sdc"),
+				VirtualName: StringP("ephemeral0"),
 			},
 			{
-				DeviceName:  types.StringP("/dev/sdd"),
-				VirtualName: types.StringP("ephemeral1"),
+				DeviceName:  StringP("/dev/sdd"),
+				VirtualName: StringP("ephemeral1"),
 			},
 			{
-				DeviceName:  types.StringP("/dev/sde"),
-				VirtualName: types.StringP("ephemeral2"),
+				DeviceName:  StringP("/dev/sde"),
+				VirtualName: StringP("ephemeral2"),
 			},
 			{
-				DeviceName:  types.StringP("/dev/sdf"),
-				VirtualName: types.StringP("ephemeral3"),
+				DeviceName:  StringP("/dev/sdf"),
+				VirtualName: StringP("ephemeral3"),
 			},
 		},
-		IamInstanceProfile: types.StringP(cm.cluster.Spec.IAMProfileNode),
-		ImageId:            types.StringP(cm.cluster.Spec.InstanceImage),
-		InstanceType:       types.StringP(sku),
-		KeyName:            types.StringP(cm.cluster.Spec.SSHKeyExternalID),
+		IamInstanceProfile: StringP(cm.cluster.Spec.IAMProfileNode),
+		ImageId:            StringP(cm.cluster.Spec.InstanceImage),
+		InstanceType:       StringP(sku),
+		KeyName:            StringP(cm.cluster.Spec.SSHKeyExternalID),
 		SecurityGroups: []*string{
-			types.StringP(cm.cluster.Spec.NodeSGId),
+			StringP(cm.cluster.Spec.NodeSGId),
 		},
-		UserData: types.StringP(base64.StdEncoding.EncodeToString([]byte(script))),
+		UserData: StringP(base64.StdEncoding.EncodeToString([]byte(script))),
 	}
 	r1, err := cm.conn.autoscale.CreateLaunchConfiguration(configuration)
 	cloud.Logger(cm.ctx).Debug("Created node configuration", r1, err)
@@ -1234,35 +1232,35 @@ func (cm *ClusterManager) createLaunchConfiguration(name, sku string) error {
 
 func (cm *ClusterManager) createAutoScalingGroup(name, launchConfig string, count int64) error {
 	r2, err := cm.conn.autoscale.CreateAutoScalingGroup(&autoscaling.CreateAutoScalingGroupInput{
-		AutoScalingGroupName: types.StringP(name),
-		MaxSize:              types.Int64P(count),
-		MinSize:              types.Int64P(count),
-		DesiredCapacity:      types.Int64P(count),
+		AutoScalingGroupName: StringP(name),
+		MaxSize:              Int64P(count),
+		MinSize:              Int64P(count),
+		DesiredCapacity:      Int64P(count),
 		AvailabilityZones: []*string{
-			types.StringP(cm.cluster.Spec.Zone),
+			StringP(cm.cluster.Spec.Zone),
 		},
-		LaunchConfigurationName: types.StringP(launchConfig),
+		LaunchConfigurationName: StringP(launchConfig),
 		Tags: []*autoscaling.Tag{
 			{
-				Key:          types.StringP("Name"),
-				ResourceId:   types.StringP(name),
-				ResourceType: types.StringP("auto-scaling-group"),
-				Value:        types.StringP(name), // node instance prefix LN_1042
+				Key:          StringP("Name"),
+				ResourceId:   StringP(name),
+				ResourceType: StringP("auto-scaling-group"),
+				Value:        StringP(name), // node instance prefix LN_1042
 			},
 			{
-				Key:          types.StringP("Role"),
-				ResourceId:   types.StringP(name),
-				ResourceType: types.StringP("auto-scaling-group"),
-				Value:        types.StringP(cm.cluster.Name + "-node"),
+				Key:          StringP("Role"),
+				ResourceId:   StringP(name),
+				ResourceType: StringP("auto-scaling-group"),
+				Value:        StringP(cm.cluster.Name + "-node"),
 			},
 			{
-				Key:          types.StringP("KubernetesCluster"),
-				ResourceId:   types.StringP(name),
-				ResourceType: types.StringP("auto-scaling-group"),
-				Value:        types.StringP(cm.cluster.Name),
+				Key:          StringP("KubernetesCluster"),
+				ResourceId:   StringP(name),
+				ResourceType: StringP("auto-scaling-group"),
+				Value:        StringP(cm.cluster.Name),
 			},
 		},
-		VPCZoneIdentifier: types.StringP(cm.cluster.Spec.SubnetId),
+		VPCZoneIdentifier: StringP(cm.cluster.Spec.SubnetId),
 	})
 	cloud.Logger(cm.ctx).Debug("Created autoscaling group", r2, err)
 	if err != nil {
@@ -1298,21 +1296,21 @@ func (cm *ClusterManager) getInstanceIDFromName(tagName string) (string, error) 
 	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("tag:Name"),
+				Name: StringP("tag:Name"),
 				Values: []*string{
-					types.StringP(tagName),
+					StringP(tagName),
 				},
 			},
 			{
-				Name: types.StringP("instance-state-name"),
+				Name: StringP("instance-state-name"),
 				Values: []*string{
-					types.StringP("running"),
+					StringP("running"),
 				},
 			},
 			{
-				Name: types.StringP("tag:KubernetesCluster"),
+				Name: StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.cluster.Name),
+					StringP(cm.cluster.Name),
 				},
 			},
 		},

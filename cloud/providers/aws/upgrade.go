@@ -7,7 +7,7 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/go/types"
+	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
@@ -29,7 +29,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 		cm.conn = conn
 	}
 
-	cm.cluster.Spec.ResourceVersion = int64(0)
+	cm.cluster.Generation = int64(0)
 	cm.namer = namer{cluster: cm.cluster}
 	// assign new timestamp and new launch_config version
 	cm.cluster.Spec.KubernetesVersion = req.KubernetesVersion
@@ -102,9 +102,9 @@ func (cm *ClusterManager) restartMaster() error {
 
 	cloud.Logger(cm.ctx).Infof("Attaching persistent data volume %v to master", cm.cluster.Spec.MasterDiskId)
 	r1, err := cm.conn.ec2.AttachVolume(&_ec2.AttachVolumeInput{
-		VolumeId:   types.StringP(cm.cluster.Spec.MasterDiskId),
-		Device:     types.StringP("/dev/sdb"),
-		InstanceId: types.StringP(masterInstanceID),
+		VolumeId:   StringP(cm.cluster.Spec.MasterDiskId),
+		Device:     StringP("/dev/sdb"),
+		InstanceId: StringP(masterInstanceID),
 	})
 	cloud.Logger(cm.ctx).Debugln("Attached persistent data volume to master", r1, err)
 	if err != nil {
@@ -227,8 +227,8 @@ func (cm *ClusterManager) rollingUpdate(oldInstances []string, newLaunchConfig, 
 
 	fmt.Println("Updating autoscalling group")
 	_, err := cm.conn.autoscale.UpdateAutoScalingGroup(&autoscaling.UpdateAutoScalingGroupInput{
-		AutoScalingGroupName:    types.StringP(groupName),
-		LaunchConfigurationName: types.StringP(newLaunchConfig),
+		AutoScalingGroupName:    StringP(groupName),
+		LaunchConfigurationName: StringP(newLaunchConfig),
 	})
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -239,7 +239,7 @@ func (cm *ClusterManager) rollingUpdate(oldInstances []string, newLaunchConfig, 
 	for _, instance := range oldInstances {
 		fmt.Println("updating ", instance)
 		_, err = cm.conn.ec2.TerminateInstances(&_ec2.TerminateInstancesInput{
-			InstanceIds: []*string{types.StringP(instance)},
+			InstanceIds: []*string{StringP(instance)},
 		})
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -255,7 +255,7 @@ func (cm *ClusterManager) rollingUpdate(oldInstances []string, newLaunchConfig, 
 func (cm *ClusterManager) LaunchConfigurationExists(name string) (bool, error) {
 	r, err := cm.conn.autoscale.DescribeLaunchConfigurations(&autoscaling.DescribeLaunchConfigurationsInput{
 		LaunchConfigurationNames: []*string{
-			types.StringP(name),
+			StringP(name),
 		},
 	})
 	if err != nil {

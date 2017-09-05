@@ -11,6 +11,7 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/cenkalti/backoff"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
@@ -102,21 +103,22 @@ func (cm *ClusterManager) releaseReservedIP(ip string) error {
 	return nil
 }
 
-func (cm *ClusterManager) deleteSSHKey() (err error) {
-	if cm.cluster.Spec.SSHKey != nil {
-		backoff.Retry(func() error {
-			_, err := cm.conn.client.Keys.DeleteByFingerprint(gtx.TODO(), cm.cluster.Spec.SSHKey.OpensshFingerprint)
-			return err
-		}, backoff.NewExponentialBackOff())
-		cloud.Logger(cm.ctx).Infof("SSH key for cluster %v deleted", cm.cluster.Name)
+func (cm *ClusterManager) deleteSSHKey() error {
+	err := wait.PollImmediate(cloud.RetryInterval, cloud.RetryTimeout, func() (bool, error) {
+		_, err := cm.conn.client.Keys.DeleteByFingerprint(gtx.TODO(), cloud.SSHKey(cm.ctx).OpensshFingerprint)
+		return err == nil, nil
+	})
+	if err != nil {
+		return err
 	}
+	cloud.Logger(cm.ctx).Infof("SSH key for cluster %v deleted", cm.cluster.Name)
 
 	//if cm.ctx.SSHKeyPHID != "" {
 	//	//updates := &storage.SSHKey{IsDeleted: 1}
 	//	//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
 	//	// _, err = cloud.Store(cm.ctx).Engine.Update(updates, cond)
 	//}
-	return
+	return nil
 }
 
 func (cm *ClusterManager) deleteDroplet(dropletID int, nodeName string) error {

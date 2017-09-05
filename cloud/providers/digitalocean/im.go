@@ -91,7 +91,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 		//Image:  godo.DropletCreateImage{ID: imgID},
 		Image: godo.DropletCreateImage{Slug: DROPLET_IMAGE_SLUG},
 		SSHKeys: []godo.DropletCreateSSHKey{
-			{Fingerprint: im.cluster.Spec.SSHKey.OpensshFingerprint},
+			{Fingerprint: cloud.SSHKey(im.ctx).OpensshFingerprint},
 			{Fingerprint: "0d:ff:0d:86:0c:f1:47:1d:85:67:1e:73:c6:0e:46:17"}, // tamal@beast
 			{Fingerprint: "c0:19:c1:81:c5:2e:6d:d9:a6:db:3c:f5:c5:fd:c8:1d"}, // tamal@mbp
 			{Fingerprint: "f6:66:c5:ad:e6:60:30:d9:ab:2c:7c:75:56:e2:d7:f3"}, // tamal@asus
@@ -105,7 +105,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 	if _env.FromHost().IsPublic() {
 		oneliners.FILE()
 		req.SSHKeys = []godo.DropletCreateSSHKey{
-			{Fingerprint: im.cluster.Spec.SSHKey.OpensshFingerprint},
+			{Fingerprint: cloud.SSHKey(im.ctx).OpensshFingerprint},
 		}
 	}
 	oneliners.FILE()

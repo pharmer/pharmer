@@ -18,23 +18,22 @@ import (
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	var err error
 
-	cm.cluster, err = NewCluster(req)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.cluster, err = NewCluster(req); err != nil {
+		return err
 	}
 	cm.namer = namer{cluster: cm.cluster}
-	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.ctx, err = cloud.GenerateCertificates(cm.ctx, cm.cluster); err != nil {
+		return err
 	}
-
-	cm.conn, err = NewConnector(cm.ctx, cm.cluster)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.ctx, err = cloud.GenerateSSHKey(cm.ctx); err != nil {
+		return err
 	}
-	cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if _, err = cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
+		return err
+	}
 
 	defer func(releaseReservedIp bool) {
 		if cm.cluster.Status.Phase == api.ClusterPhasePending {
@@ -81,10 +80,6 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	if cm.ctx, err = cloud.GenClusterCerts(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
 	// needed for master start-up config
 	if _, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -139,7 +134,7 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 			cm: cm,
 			instance: cloud.Instance{
 				Type: cloud.InstanceType{
-					ContextVersion: cm.cluster.Spec.ResourceVersion,
+					ContextVersion: cm.cluster.Generation,
 					Sku:            ng.Sku,
 
 					Master:       false,
@@ -184,8 +179,8 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 }
 
 func (cm *ClusterManager) importPublicKey() error {
-	cloud.Logger(cm.ctx).Infof("Importing SSH key with fingerprint: %v", cm.cluster.Spec.SSHKey.OpensshFingerprint)
-	pubKey := string(cm.cluster.Spec.SSHKey.PublicKey)
+	cloud.Logger(cm.ctx).Infof("Importing SSH key with fingerprint: %v", cloud.SSHKey(cm.ctx).OpensshFingerprint)
+	pubKey := string(cloud.SSHKey(cm.ctx).PublicKey)
 	r1, err := cm.conn.computeService.Projects.SetCommonInstanceMetadata(cm.cluster.Spec.Project, &compute.Metadata{
 		Items: []*compute.MetadataItems{
 			{

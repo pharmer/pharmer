@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"strings"
 
-	appscodeSSH "github.com/appscode/api/ssh/v1beta1"
+	proto "github.com/appscode/api/ssh/v1beta1"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/go/log"
 	"golang.org/x/crypto/ssh"
@@ -29,7 +29,7 @@ const RSABitSize = 2048
 // From PUB key: ssh-keygen -f ~/.ssh/id_rsa.pub -e -m PKCS8 | openssl pkey -pubin -outform DER | openssl md5 -c
 // From PRIV key: openssl rsa -in ~/.ssh/id_rsa -pubout -outform DER | openssl md5 -c
 //
-func NewSSHKeyPair() (*appscodeSSH.SSHKey, error) {
+func NewSSHKeyPair() (*proto.SSHKey, error) {
 	log.Debugln("generating ssh key")
 	rsaKey, err := rsa.GenerateKey(rand.Reader, RSABitSize)
 	if err != nil {
@@ -41,7 +41,7 @@ func NewSSHKeyPair() (*appscodeSSH.SSHKey, error) {
 		return nil, errors.FromErr(err).Err()
 	}
 
-	k := &appscodeSSH.SSHKey{}
+	k := &proto.SSHKey{}
 	k.PublicKey = bytes.TrimSpace(ssh.MarshalAuthorizedKey(rsaPubKey))
 	k.PrivateKey = pem.EncodeToMemory(&pem.Block{
 		Type:  "RSA PRIVATE KEY",
@@ -75,10 +75,10 @@ func rfc4716hex(data []byte) string {
 	return fingerprint
 }
 
-func ParseSSHKeyPair(pub, priv string) (*appscodeSSH.SSHKey, error) {
+func ParseSSHKeyPair(pub, priv string) (*proto.SSHKey, error) {
 	pub = strings.TrimSpace(pub)
 
-	k := &appscodeSSH.SSHKey{}
+	k := &proto.SSHKey{}
 	k.PublicKey = bytes.TrimSpace([]byte(pub))
 	block, _ := pem.Decode([]byte(priv))
 	k.PrivateKey = pem.EncodeToMemory(block)

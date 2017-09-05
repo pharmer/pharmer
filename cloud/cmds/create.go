@@ -12,6 +12,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"
+	"github.com/tamalsaha/go-oneliners"
 )
 
 func NewCmdCreate() *cobra.Command {
@@ -53,6 +54,7 @@ func NewCmdCreate() *cobra.Command {
 				log.Fatalln(err)
 			}
 			for _, cluster := range clusters {
+				oneliners.FILE(cluster.Name)
 				if strings.EqualFold(cluster.Name, req.Name) {
 					log.Fatalf("Cluster exists with name %s.", req.Name)
 				}
@@ -61,6 +63,7 @@ func NewCmdCreate() *cobra.Command {
 			if err != nil {
 				log.Fatalln(err)
 			}
+			oneliners.FILE(cm, req)
 			return cm.Create(&req)
 		},
 	}

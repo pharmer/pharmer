@@ -8,7 +8,7 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
 	stringutil "github.com/appscode/go/strings"
-	"github.com/appscode/go/types"
+	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	_aws "github.com/aws/aws-sdk-go/aws"
@@ -129,7 +129,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 func (cm *ClusterManager) findVPC() (bool, error) {
 	r1, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
 		VpcIds: []*string{
-			types.StringP(cm.cluster.Spec.VpcId),
+			StringP(cm.cluster.Spec.VpcId),
 		},
 	})
 	if err != nil {
@@ -140,8 +140,8 @@ func (cm *ClusterManager) findVPC() (bool, error) {
 
 func (cm *ClusterManager) deleteAutoScalingGroup(name string) error {
 	_, err := cm.conn.autoscale.DeleteAutoScalingGroup(&autoscaling.DeleteAutoScalingGroupInput{
-		ForceDelete:          types.TrueP(),
-		AutoScalingGroupName: types.StringP(name),
+		ForceDelete:          TrueP(),
+		AutoScalingGroupName: StringP(name),
 	})
 	cloud.Logger(cm.ctx).Infof("Auto scaling group %v is deleted for cluster %v", name, cm.cluster.Name)
 	return err
@@ -149,7 +149,7 @@ func (cm *ClusterManager) deleteAutoScalingGroup(name string) error {
 
 func (cm *ClusterManager) deleteLaunchConfiguration(name string) error {
 	_, err := cm.conn.autoscale.DeleteLaunchConfiguration(&autoscaling.DeleteLaunchConfigurationInput{
-		LaunchConfigurationName: types.StringP(name),
+		LaunchConfigurationName: StringP(name),
 	})
 	cloud.Logger(cm.ctx).Infof("Launch configuration %v os de;eted for cluster %v", name, cm.cluster.Name)
 	return err
@@ -159,15 +159,15 @@ func (cm *ClusterManager) deleteMaster() error {
 	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("tag:Role"),
+				Name: StringP("tag:Role"),
 				Values: []*string{
-					types.StringP(api.RoleKubernetesMaster),
+					StringP(api.RoleKubernetesMaster),
 				},
 			},
 			{
-				Name: types.StringP("tag:KubernetesCluster"),
+				Name: StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.cluster.Name),
+					StringP(cm.cluster.Name),
 				},
 			},
 		},
@@ -205,9 +205,9 @@ func (cm *ClusterManager) ensureInstancesDeleted() error {
 	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("tag:KubernetesCluster"),
+				Name: StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.cluster.Name),
+					StringP(cm.cluster.Name),
 				},
 			},
 		},
@@ -228,7 +228,7 @@ func (cm *ClusterManager) ensureInstancesDeleted() error {
 		ris := make([]*string, 0)
 		for instance, running := range instances {
 			if running {
-				ris = append(ris, types.StringP(instance))
+				ris = append(ris, StringP(instance))
 			}
 		}
 		fmt.Println("Waiting for instances to terminate", stringutil.Join(ris, ","))
@@ -261,15 +261,15 @@ func (cm *ClusterManager) deleteSecurityGroup() error {
 	r, err := cm.conn.ec2.DescribeSecurityGroups(&_ec2.DescribeSecurityGroupsInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("vpc-id"),
+				Name: StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cm.cluster.Spec.VpcId),
+					StringP(cm.cluster.Spec.VpcId),
 				},
 			},
 			{
-				Name: types.StringP("tag:KubernetesCluster"),
+				Name: StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.cluster.Name),
+					StringP(cm.cluster.Name),
 				},
 			},
 		},
@@ -316,15 +316,15 @@ func (cm *ClusterManager) deleteSubnetId() error {
 	r, err := cm.conn.ec2.DescribeSubnets(&_ec2.DescribeSubnetsInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("vpc-id"),
+				Name: StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cm.cluster.Spec.VpcId),
+					StringP(cm.cluster.Spec.VpcId),
 				},
 			},
 			{
-				Name: types.StringP("tag:KubernetesCluster"),
+				Name: StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.cluster.Name),
+					StringP(cm.cluster.Name),
 				},
 			},
 		},
@@ -348,9 +348,9 @@ func (cm *ClusterManager) deleteInternetGateway() error {
 	r1, err := cm.conn.ec2.DescribeInternetGateways(&_ec2.DescribeInternetGatewaysInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("attachment.vpc-id"),
+				Name: StringP("attachment.vpc-id"),
 				Values: []*string{
-					types.StringP(cm.cluster.Spec.VpcId),
+					StringP(cm.cluster.Spec.VpcId),
 				},
 			},
 		},
@@ -361,7 +361,7 @@ func (cm *ClusterManager) deleteInternetGateway() error {
 	for _, igw := range r1.InternetGateways {
 		_, err := cm.conn.ec2.DetachInternetGateway(&_ec2.DetachInternetGatewayInput{
 			InternetGatewayId: igw.InternetGatewayId,
-			VpcId:             types.StringP(cm.cluster.Spec.VpcId),
+			VpcId:             StringP(cm.cluster.Spec.VpcId),
 		})
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -382,9 +382,9 @@ func (cm *ClusterManager) deleteRouteTable() error {
 	r1, err := cm.conn.ec2.DescribeRouteTables(&_ec2.DescribeRouteTablesInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("vpc-id"),
+				Name: StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(cm.cluster.Spec.VpcId),
+					StringP(cm.cluster.Spec.VpcId),
 				},
 			},
 		},
@@ -425,8 +425,8 @@ func (cm *ClusterManager) deleteRouteTable() error {
 
 func (cm *ClusterManager) deleteDHCPOption() error {
 	_, err := cm.conn.ec2.AssociateDhcpOptions(&_ec2.AssociateDhcpOptionsInput{
-		VpcId:         types.StringP(cm.cluster.Spec.VpcId),
-		DhcpOptionsId: types.StringP("default"),
+		VpcId:         StringP(cm.cluster.Spec.VpcId),
+		DhcpOptionsId: StringP("default"),
 	})
 	if err != nil {
 		fmt.Println(err)
@@ -436,9 +436,9 @@ func (cm *ClusterManager) deleteDHCPOption() error {
 	r, err := cm.conn.ec2.DescribeDhcpOptions(&_ec2.DescribeDhcpOptionsInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("tag:KubernetesCluster"),
+				Name: StringP("tag:KubernetesCluster"),
 				Values: []*string{
-					types.StringP(cm.cluster.Name),
+					StringP(cm.cluster.Name),
 				},
 			},
 		},
@@ -458,7 +458,7 @@ func (cm *ClusterManager) deleteDHCPOption() error {
 
 func (cm *ClusterManager) deleteVpc() error {
 	_, err := cm.conn.ec2.DeleteVpc(&_ec2.DeleteVpcInput{
-		VpcId: types.StringP(cm.cluster.Spec.VpcId),
+		VpcId: StringP(cm.cluster.Spec.VpcId),
 	})
 
 	if err != nil {
@@ -470,7 +470,7 @@ func (cm *ClusterManager) deleteVpc() error {
 
 func (cm *ClusterManager) deleteVolume() error {
 	_, err := cm.conn.ec2.DeleteVolume(&_ec2.DeleteVolumeInput{
-		VolumeId: types.StringP(cm.cluster.Spec.MasterDiskId),
+		VolumeId: StringP(cm.cluster.Spec.MasterDiskId),
 	})
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -482,7 +482,7 @@ func (cm *ClusterManager) deleteVolume() error {
 func (cm *ClusterManager) deleteSSHKey() error {
 	var err error
 	_, err = cm.conn.ec2.DeleteKeyPair(&_ec2.DeleteKeyPairInput{
-		KeyName: types.StringP(cm.cluster.Spec.SSHKeyExternalID),
+		KeyName: StringP(cm.cluster.Spec.SSHKeyExternalID),
 	})
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -498,7 +498,7 @@ func (cm *ClusterManager) deleteSSHKey() error {
 func (cm *ClusterManager) releaseReservedIP(publicIP string) error {
 	r1, err := cm.conn.ec2.DescribeAddresses(&_ec2.DescribeAddressesInput{
 		PublicIps: []*string{
-			types.StringP(publicIP),
+			StringP(publicIP),
 		},
 	})
 	if err != nil {
@@ -519,9 +519,9 @@ func (cm *ClusterManager) deleteNetworkInterface(vpcId string) error {
 	r, err := cm.conn.ec2.DescribeNetworkInterfaces(&_ec2.DescribeNetworkInterfacesInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("vpc-id"),
+				Name: StringP("vpc-id"),
 				Values: []*string{
-					types.StringP(vpcId),
+					StringP(vpcId),
 				},
 			},
 		},
@@ -532,7 +532,7 @@ func (cm *ClusterManager) deleteNetworkInterface(vpcId string) error {
 	for _, iface := range r.NetworkInterfaces {
 		_, err = cm.conn.ec2.DetachNetworkInterface(&_ec2.DetachNetworkInterfaceInput{
 			AttachmentId: iface.Attachment.AttachmentId,
-			Force:        types.TrueP(),
+			Force:        TrueP(),
 		})
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()

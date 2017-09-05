@@ -48,7 +48,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, e
 func (im *instanceManager) createInstance(role, sku string) (*hc.Transaction, error) {
 	tx, _, err := im.conn.client.Ordering.CreateTransaction(&hc.CreateTransactionRequest{
 		ProductID:     sku,
-		AuthorizedKey: []string{im.cluster.Spec.SSHKey.OpensshFingerprint},
+		AuthorizedKey: []string{cloud.SSHKey(im.ctx).OpensshFingerprint},
 		Dist:          im.cluster.Spec.InstanceImage,
 		Arch:          64,
 		Lang:          "en",
@@ -67,7 +67,7 @@ func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Sig
 	//fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>", cfg)
 	cfg := ""
 
-	file := fmt.Sprintf("/var/cache/kubernetes_context_%v_%v.yaml", im.cluster.Spec.ResourceVersion, role)
+	file := fmt.Sprintf("/var/cache/kubernetes_context_%v_%v.yaml", im.cluster.Generation, role)
 	stdOut, stdErr, code, err := _ssh.SCP(file, []byte(cfg), "root", serverIP+":22", signer)
 	cloud.Logger(im.ctx).Debugf(stdOut, stdErr, code)
 	return err

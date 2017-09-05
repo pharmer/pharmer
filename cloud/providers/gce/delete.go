@@ -116,7 +116,7 @@ func (cm *ClusterManager) listInstanceGroups() ([]*groupInfo, error) {
 		if strings.HasPrefix(name, cm.cluster.Name) {
 			groups = append(groups, &groupInfo{
 				groupName: name,
-				sku:       strings.TrimSuffix(strings.TrimPrefix(name, cm.cluster.Name+"-"), "-v"+strconv.FormatInt(cm.cluster.Spec.ResourceVersion, 10)),
+				sku:       strings.TrimSuffix(strings.TrimPrefix(name, cm.cluster.Name+"-"), "-v"+strconv.FormatInt(cm.cluster.Generation, 10)),
 			})
 		}
 
@@ -270,11 +270,11 @@ func (cm *ClusterManager) deleteRoutes() error {
 }
 
 func (cm *ClusterManager) deleteSSHKey() (err error) {
-	if cm.cluster.Spec.SSHKeyPHID != "" {
-		//updates := &storage.SSHKey{IsDeleted: 1}
-		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
-		//_, err = cloud.Store(cm.ctx).Engine.Update(updates, cond)
-		//cm.ctx.Notifier.StoreAndNotify(api.JobPhaseRunning, fmt.Sprintf("SSH key for cluster %v deleted", cm.ctx.MasterDiskId))
-	}
+	//if cm.cluster.Spec.SSHKeyPHID != "" {
+	//	//updates := &storage.SSHKey{IsDeleted: 1}
+	//	//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
+	//	//_, err = cloud.Store(cm.ctx).Engine.Update(updates, cond)
+	//	//cm.ctx.Notifier.StoreAndNotify(api.JobPhaseRunning, fmt.Sprintf("SSH key for cluster %v deleted", cm.ctx.MasterDiskId))
+	//}
 	return
 }

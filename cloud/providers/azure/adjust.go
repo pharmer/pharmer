@@ -25,7 +25,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
-	igm.cm.cluster.Spec.ResourceVersion = igm.instance.Type.ContextVersion
+	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
 	igm.cm.cluster, _ = cloud.Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 
 	if !found {

@@ -97,7 +97,7 @@ func (s *CertificateFileStore) Create(name string, crt *x509.Certificate, key *r
 	}
 	bufCert := bytes.NewBuffer(cert.EncodeCertPEM(crt))
 	_, err = s.container.Put(id, bufCert, int64(bufCert.Len()), nil)
-	if err == nil {
+	if err != nil {
 		return fmt.Errorf("Failed to store certificate `%s.crt`. Reason: %v.", name, err)
 	}
 
@@ -108,7 +108,7 @@ func (s *CertificateFileStore) Create(name string, crt *x509.Certificate, key *r
 	}
 	bufKey := bytes.NewBuffer(cert.EncodePrivateKeyPEM(key))
 	_, err = s.container.Put(id, bufKey, int64(bufKey.Len()), nil)
-	if err == nil {
+	if err != nil {
 		return fmt.Errorf("Failed to store certificate key `%s.key`. Reason: %v.", name, err)
 	}
 

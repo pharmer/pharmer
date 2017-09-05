@@ -65,11 +65,11 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	api.AssignTypeKind(cluster)
 	namer := namer{cluster: cluster}
 
+	cluster.Spec.Provider = req.Provider
 	cluster.Spec.Zone = req.Zone
 	cluster.Spec.CredentialName = req.CredentialUid
 	cluster.Spec.Region = cluster.Spec.Zone[0:strings.LastIndex(cluster.Spec.Zone, "-")]
 	cluster.Spec.DoNotDelete = req.DoNotDelete
-
 	for _, ng := range req.NodeGroups {
 		if ng.Count < 0 {
 			ng.Count = 0
@@ -102,12 +102,7 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	// PREEMPTIBLE_NODE = false // Removed Support
 
 	cluster.Spec.KubernetesMasterName = namer.MasterName()
-	cluster.Spec.SSHKey, err = api.NewSSHKeyPair()
-	if err != nil {
-		return nil, err
-	}
 	cluster.Spec.SSHKeyExternalID = namer.GenSSHKeyExternalID()
-	cluster.Spec.SSHKeyPHID = phid.NewSSHKey()
 
 	cluster.Spec.KubeadmToken = cloud.GetKubeadmToken()
 	cluster.Spec.KubernetesVersion = "v" + req.KubernetesVersion
@@ -120,10 +115,10 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	//cluster.Spec.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
 
 	if cluster.Spec.EnableWebhookTokenAuthentication {
-		cluster.Spec.AppscodeAuthnUrl = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
+		cluster.Spec.AppscodeAuthnURL = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
 	}
 	if cluster.Spec.EnableWebhookTokenAuthorization {
-		cluster.Spec.AppscodeAuthzUrl = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
+		cluster.Spec.AppscodeAuthzURL = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
 	}
 
 	// TODO: FixIT!

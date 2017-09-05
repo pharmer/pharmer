@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/appscode/go/errors"
-	"github.com/appscode/go/types"
+	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
@@ -66,7 +66,7 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 	var marker *string
 	for {
 		resp, err := conn.iam.ListPolicies(&_iam.ListPoliciesInput{
-			MaxItems: types.Int64P(1000),
+			MaxItems: Int64P(1000),
 			Marker:   marker,
 		})
 		if err != nil {
@@ -105,12 +105,12 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 func (conn *cloudConnector) detectJessieImage() error {
 	conn.cluster.Spec.OS = "debian"
 	r1, err := conn.ec2.DescribeImages(&_ec2.DescribeImagesInput{
-		Owners: []*string{types.StringP("282335181503")},
+		Owners: []*string{StringP("282335181503")},
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("name"),
+				Name: StringP("name"),
 				Values: []*string{
-					types.StringP("k8s-1.3-debian-jessie-amd64-hvm-ebs-2016-06-18"),
+					StringP("k8s-1.3-debian-jessie-amd64-hvm-ebs-2016-06-18"),
 				},
 			},
 		},
@@ -127,12 +127,12 @@ func (conn *cloudConnector) detectJessieImage() error {
 func (conn *cloudConnector) detectUbuntuImage() error {
 	conn.cluster.Spec.OS = "ubuntu"
 	r1, err := conn.ec2.DescribeImages(&_ec2.DescribeImagesInput{
-		Owners: []*string{types.StringP("099720109477")},
+		Owners: []*string{StringP("099720109477")},
 		Filters: []*_ec2.Filter{
 			{
-				Name: types.StringP("name"),
+				Name: StringP("name"),
 				Values: []*string{
-					types.StringP("ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20170619.1"),
+					StringP("ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20170619.1"),
 				},
 			},
 		},

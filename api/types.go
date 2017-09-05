@@ -55,7 +55,7 @@ type ObjectMeta struct {
 	// A sequence number representing a specific generation of the desired state.
 	// Populated by the system. Read-only.
 	// +optional
-	// Generation int64 `json:"generation,omitempty" protobuf:"varint,7,opt,name=generation"`
+	Generation int64 `json:"generation,omitempty" protobuf:"varint,7,opt,name=generation"`
 
 	// CreationTimestamp is a timestamp representing the server time when this object was
 	// created. It is not guaranteed to be set in happens-before order across separate operations.
@@ -118,7 +118,7 @@ type ListOptions struct {
 	//// - if it's 0, then we simply return what we currently have in cache, no guarantee;
 	//// - if set to non zero, then the result is at least as fresh as given rv.
 	//// +optional
-	//ResourceVersion string `json:"resourceVersion,omitempty" protobuf:"bytes,4,opt,name=resourceVersion"`
+	ResourceVersion string `json:"resourceVersion,omitempty" protobuf:"bytes,4,opt,name=resourceVersion"`
 }
 
 func AssignTypeKind(v interface{}) error {

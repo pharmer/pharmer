@@ -21,7 +21,7 @@ type TemplateData struct {
 	KubeadmToken      string
 	CAKey             string
 	FrontProxyKey     string
-	KubeAPIServer     string
+	APIServerHost     string
 	ExtraDomains      string
 
 	NetworkProvider string
@@ -34,7 +34,7 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster) TemplateData {
 		KubeadmToken:      cluster.Spec.KubeadmToken,
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		KubeAPIServer:     "",
+		APIServerHost:     "",
 		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
 		NetworkProvider:   cluster.Spec.NetworkProvider,
 	}
@@ -86,7 +86,7 @@ apt-get install -y \
 	cloud-utils \
 	docker.io || true
 
-curl -Lo cloudid https://cdn.appscode.com/binaries/cloudid/0.1.0-alpha.0/cloudid-linux-amd64 \
+curl -Lo cloudid https://cdn.appscode.com/binaries/cloudid/0.1.0-alpha.1/cloudid-linux-amd64 \
 	&& chmod +x cloudid \
 	&& mv cloudid /usr/bin/
 
@@ -110,9 +110,6 @@ kubeadm init \
 {{ else if eq .NetworkProvider "calico" }}
 {{ template "calico" . }}
 {{ end }}
-
-mkdir -p ~/.kube
-cp /etc/kubernetes/admin.conf ~/.kube/config
 `))
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleKubernetesPool).Parse(`#!/bin/bash
@@ -155,7 +152,7 @@ systemctl enable docker
 systemctl start docker
 
 kubeadm reset
-kubeadm join --token={{ .KubeadmToken }} {{ .KubeAPIServer }}:6443
+kubeadm join --token={{ .KubeadmToken }} {{ .APIServerHost }}:6443
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("prepare-host").Parse(``))
@@ -166,12 +163,12 @@ mkdir -p /etc/kubernetes/pki
 cat > /etc/kubernetes/pki/ca.key <<EOF
 {{ .CAKey }}
 EOF
-cloudid get cacert < /etc/kubernetes/pki/ca.key > /etc/kubernetes/pki/ca.crt
+cloudid get cacert --common-name=ca < /etc/kubernetes/pki/ca.key > /etc/kubernetes/pki/ca.crt
 
 cat > /etc/kubernetes/pki/front-proxy-ca.key <<EOF
 {{ .FrontProxyKey }}
 EOF
-cloudid get cacert < /etc/kubernetes/pki/front-proxy-ca.key > /etc/kubernetes/pki/front-proxy-ca.crt
+cloudid get cacert --common-name=front-proxy-ca < /etc/kubernetes/pki/front-proxy-ca.key > /etc/kubernetes/pki/front-proxy-ca.crt
 
 chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 `))

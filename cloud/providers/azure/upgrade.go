@@ -24,7 +24,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 		cm.conn = conn
 	}
 
-	cm.cluster.Spec.ResourceVersion = int64(0)
+	cm.cluster.Generation = int64(0)
 	cm.namer = namer{cluster: cm.cluster}
 	// assign new timestamp and new launch_config version
 	cm.cluster.Spec.KubernetesVersion = req.KubernetesVersion
@@ -128,7 +128,7 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 
 		igm.instance = cloud.Instance{
 			Type: cloud.InstanceType{
-				ContextVersion: cm.cluster.Spec.ResourceVersion,
+				ContextVersion: cm.cluster.Generation,
 				Sku:            sku,
 				Master:         false,
 				SpotInstance:   false,

@@ -10,6 +10,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 	"github.com/cenkalti/backoff"
 	sapi "github.com/scaleway/scaleway-cli/pkg/api"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
@@ -97,32 +98,33 @@ func (cm *ClusterManager) releaseReservedIP(ip string) error {
 	return nil
 }
 
-func (cm *ClusterManager) deleteSSHKey() (err error) {
-	if cm.cluster.Spec.SSHKey != nil {
-		backoff.Retry(func() error {
-			user, err := cm.conn.client.GetUser()
-			if err != nil {
-				return err
+func (cm *ClusterManager) deleteSSHKey() error {
+	cloud.Logger(cm.ctx).Infof("Deleting SSH key for cluster", cm.cluster.Name)
+	err := wait.PollImmediate(cloud.RetryInterval, cloud.RetryTimeout, func() (bool, error) {
+		user, err := cm.conn.client.GetUser()
+		if err != nil {
+			return err == nil, nil
+		}
+		sshPubKeys := make([]sapi.ScalewayKeyDefinition, 0)
+		for _, k := range user.SSHPublicKeys {
+			if k.Fingerprint != cloud.SSHKey(cm.ctx).OpensshFingerprint {
+				sshPubKeys = append(sshPubKeys, sapi.ScalewayKeyDefinition{Key: k.Key})
 			}
-
-			sshPubKeys := make([]sapi.ScalewayKeyDefinition, 0)
-			for _, k := range user.SSHPublicKeys {
-				if k.Fingerprint != cm.cluster.Spec.SSHKey.OpensshFingerprint {
-					sshPubKeys = append(sshPubKeys, sapi.ScalewayKeyDefinition{Key: k.Key})
-				}
-			}
-
-			return cm.conn.client.PatchUserSSHKey(user.ID, sapi.ScalewayUserPatchSSHKeyDefinition{
-				SSHPublicKeys: sshPubKeys,
-			})
-		}, backoff.NewExponentialBackOff())
-		cloud.Logger(cm.ctx).Infof("SSH key for cluster %v deleted", cm.cluster.Name)
+		}
+		err = cm.conn.client.PatchUserSSHKey(user.ID, sapi.ScalewayUserPatchSSHKeyDefinition{
+			SSHPublicKeys: sshPubKeys,
+		})
+		return err == nil, nil
+	})
+	if err != nil {
+		return err
 	}
+	cloud.Logger(cm.ctx).Infof("SSH key for cluster %v deleted", cm.cluster.Name)
 
-	if cm.cluster.Spec.SSHKeyPHID != "" {
-		//updates := &storage.SSHKey{IsDeleted: 1}
-		//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
-		//_, err = cloud.Store(cm.ctx).Engine.Update(updates, cond)
-	}
-	return
+	//if cm.cluster.Spec.SSHKeyPHID != "" {
+	//	//updates := &storage.SSHKey{IsDeleted: 1}
+	//	//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
+	//	//_, err = cloud.Store(cm.ctx).Engine.Update(updates, cond)
+	//}
+	return nil
 }

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	ssh "github.com/appscode/api/ssh/v1beta1"
 	"github.com/appscode/go/crypto/rand"
 	. "github.com/appscode/go/encoding/json/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,7 +56,6 @@ type ClusterSpec struct {
 	KubernetesVersion string `json:"kubernetesVersion,omitempty"`
 	KubeadmVersion    string `json:"kubeadmVersion,omitempty"`
 
-	SSHKeyPHID       string `json:"sshKeyPHID,omitempty"`
 	SSHKeyExternalID string `json:"sshKeyExternalID,omitempty"`
 
 	// https://github.com/kubernetes/kubernetes/blob/master/cluster/gce/util.sh#L538
@@ -87,7 +85,7 @@ type ClusterSpec struct {
 	EnableNodeLogging            bool   `json:"enableNodeLogging,omitempty"`
 	LoggingDestination           string `json:"loggingDestination,omitempty"`
 	ElasticsearchLoggingReplicas int    `json:"elasticsearchLoggingReplicas,omitempty"`
-	DNSServerIP                  string `json:"dnsServerIp,omitempty"`
+	DNSServerIP                  string `json:"dnsServerIP,omitempty"`
 	DNSDomain                    string `json:"dnsDomain,omitempty"`
 	AdmissionControl             string `json:"admissionControl,omitempty"`
 	MasterIPRange                string `json:"masterIpRange,omitempty"`
@@ -130,15 +128,9 @@ type ClusterSpec struct {
 	AzureCloudConfig *AzureCloudConfig `json:"azureCloudConfig,omitempty"`
 	GCECloudConfig   *GCECloudConfig   `json:"gceCloudConfig,omitempty"`
 
-	// Context Version is assigned on insert. If you want to force new version, set this value to 0 and call ctx.Save()
-	ResourceVersion int64 `json:"RESOURCE_VERSION,omitempty"`
-
-	// https://linux-tips.com/t/what-is-kernel-soft-lockup/78
-	SoftlockupPanic bool `json:"SOFTLOCKUP_PANIC,omitempty"`
-
 	// Kube 1.3
-	AppscodeAuthnUrl string `json:"appscodeAuthnURL,omitempty"`
-	AppscodeAuthzUrl string `json:"appscodeAuthzURL,omitempty"`
+	AppscodeAuthnURL string `json:"appscodeAuthnURL,omitempty"`
+	AppscodeAuthzURL string `json:"appscodeAuthzURL,omitempty"`
 
 	// Kube 1.5.4
 	EnableAPIserverBasicAudit bool `json:"enableAPIserverBasicAudit,omitempty"`
@@ -199,9 +191,6 @@ type ClusterSpec struct {
 
 	// only aws
 
-	// Dynamically generated SSH key used for this cluster
-	SSHKey *ssh.SSHKey `json:"-"`
-
 	// aws:TAG KubernetesCluster => clusterid
 	IAMProfileMaster string `json:"iamProfileMaster,omitempty"`
 	IAMProfileNode   string `json:"iamProfileNode,omitempty"`
@@ -239,6 +228,14 @@ type ClusterStatus struct {
 	Reason string `json:"reason,omitempty,omitempty"`
 }
 
+func (cluster *Cluster) NodeCount() int64 {
+	n := int64(1)
+	for _, ng := range cluster.Spec.NodeGroups {
+		n += ng.Count
+	}
+	return n
+}
+
 func (cluster *Cluster) SetNodeGroups(ng []*proto.InstanceGroup) {
 	cluster.Spec.NodeGroups = make([]*IG, len(ng))
 	for i, g := range ng {
@@ -249,41 +246,6 @@ func (cluster *Cluster) SetNodeGroups(ng []*proto.InstanceGroup) {
 		}
 	}
 }
-
-//func (ctx *Cluster) AddEdge(src, dst string, typ ClusterOP) error {
-//	return nil
-//}
-
-/*
-func (ctx *ClusterContext) UpdateNodeCount() error {
-	kv := &KubernetesVersion{ID: ctx.ContextVersion}
-	hasCtxVersion, err := ctx.Store().Engine.Get(kv)
-	if err != nil {
-		return err
-	}
-	if !hasCtxVersion {
-		return errors.New().WithCause(fmt.Errorf("Cluster %v is missing config version %v", ctx.Name, ctx.ContextVersion)).WithContext(ctx).Err()
-	}
-
-	jsonCtx, err := json.Marshal(ctx)
-	if err != nil {
-		return err
-	}
-	sc, err := ctx.Store().NewSecString(string(jsonCtx))
-	if err != nil {
-		return err
-	}
-	kv.Context, err = sc.Envelope()
-	if err != nil {
-		return err
-	}
-	_, err = ctx.Store().Engine.Id(kv.ID).Update(kv)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-*/
 
 func (cluster *Cluster) Delete() error {
 	if cluster.Status.Phase == ClusterPhasePending || cluster.Status.Phase == ClusterPhaseFailing || cluster.Status.Phase == ClusterPhaseFailed {
@@ -326,12 +288,4 @@ func (cluster *Cluster) APIServerURL() string {
 	return fmt.Sprintf("https://%v:6443", cluster.Spec.MasterReservedIP)
 	// ctx.Logger().Infoln(fmt.Sprintf("Cluster %v 's api server url: %v\n", ctx.Name, ctx.ApiServerUrl))
 	//}
-}
-
-func (cluster *Cluster) NodeCount() int64 {
-	n := int64(1)
-	for _, ng := range cluster.Spec.NodeGroups {
-		n += ng.Count
-	}
-	return n
 }
