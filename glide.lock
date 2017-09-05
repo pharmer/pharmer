@@ -1,5 +1,5 @@
-hash: 2443fcd89bf5a522888d9699b565dd11ac50d93691f1c4a3c60ea86021f6d432
-updated: 2017-09-04T11:44:50.470782353-07:00
+hash: e1196816d454ed866667dc831539f779cc7862aea7f9eea759db610bd351a084
+updated: 2017-09-05T13:55:05.903416586-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -7,7 +7,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/api
-  version: 40675bc7864ed9a3e6a15f2ae1b9123fcf6d4295
+  version: 1b19ae8105e4192499a4449f3df0cb5e6d2c449d
   subpackages:
   - attic/v1beta1
   - auth/v1beta1
@@ -54,7 +54,6 @@ imports:
   - flags
   - io
   - log
-  - net/httpclient
   - runtime
   - strings
   - types
@@ -73,8 +72,6 @@ imports:
   - vultr
 - name: github.com/appscode/go-hetzner
   version: 2862c36e840d98476edf9f1826717d354547be6f
-- name: github.com/appscode/go-notify
-  version: c1f627b4151ce1f8b5b80eeab2eb94c2561af00c
 - name: github.com/appscode/go-term
   version: d0c677f2d84034b1357d3f69ffd29c5fb81f662f
 - name: github.com/appscode/go-tracer
@@ -86,7 +83,7 @@ imports:
   subpackages:
   - golog
 - name: github.com/aws/aws-sdk-go
-  version: 1850f427c33c2558a2118dc55c1cf95a633d7432
+  version: 960dd6034cbdac0e9716bfa66d91de88b286889f
   subpackages:
   - aws
   - aws/awserr
@@ -146,8 +143,6 @@ imports:
   version: 10d416706df701ae959182e4ae94fde6984c7c22
 - name: github.com/cenkalti/backoff
   version: 61153c768f31ee5f130071d08fc82b85208528de
-- name: github.com/cloudflare/cfssl
-  version: b53da94cf51de120a50cbae533152fb3935375e0
 - name: github.com/cloudflare/cloudflare-go
   version: ba610b87e64f5e99e8ddd614e50669c66c2ec9b5
 - name: github.com/cpuguy83/go-md2man
@@ -172,20 +167,19 @@ imports:
   - digest
   - reference
 - name: github.com/docker/docker
-  version: 1e4068713bdc7ac57c5134ae0469dc7ecefb8445
+  version: b9f10c951893f9a00865890a5232e85d770c1087
   subpackages:
-  - pkg/archive
-  - pkg/fileutils
-  - pkg/homedir
-  - pkg/idtools
-  - pkg/ioutils
+  - pkg/jsonlog
+  - pkg/jsonmessage
   - pkg/longpath
-  - pkg/mflag
+  - pkg/mount
   - pkg/namesgenerator
-  - pkg/pools
-  - pkg/promise
   - pkg/random
+  - pkg/stdcopy
+  - pkg/symlink
   - pkg/system
+  - pkg/term
+  - pkg/term/windows
 - name: github.com/dustin/go-humanize
   version: f3565c9525600a911af3bd34f8b535ea81b2a9e0
 - name: github.com/emicklei/go-restful
@@ -214,12 +208,6 @@ imports:
   version: 6aced65f8501fe1217321abf0749d354824ba2ff
 - name: github.com/go-openapi/swag
   version: 1d0bd113de87027671077d3c71eb3ac5d7dbba72
-- name: github.com/go-xorm/builder
-  version: c8871c857d2555fbfbd8524f895be5386d3d8836
-- name: github.com/go-xorm/core
-  version: 5bf745d7d163f4380e6c2bba8c4afa60534dd087
-- name: github.com/go-xorm/xorm
-  version: 3c8314e91603f0bfa6a228c1a0fea8a9e298f6d9
 - name: github.com/gogo/protobuf
   version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
   subpackages:
@@ -235,8 +223,6 @@ imports:
   - protoc-gen-go/descriptor
   - ptypes/any
   - ptypes/struct
-- name: github.com/google/certificate-transparency
-  version: 05502e09183232d2345db9a3a008076eff9a530c
 - name: github.com/google/go-querystring
   version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
   subpackages:
@@ -244,7 +230,7 @@ imports:
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/gorilla/websocket
-  version: 1f512fc3f05332ba7117626cdfb4e07474e58e60
+  version: ea4d1f681babbce9545c9c5f3d5194a789c89f5b
 - name: github.com/graymeta/stow
   version: 6f2b8867a3fb15cca5507da1d552b55cfe5d07a7
   repo: https://github.com/appscode/stow.git
@@ -279,7 +265,7 @@ imports:
   subpackages:
   - lib
 - name: github.com/jmespath/go-jmespath
-  version: 0b12d6b521d83fc7f755e7cfc1b1fbdd35a01a74
+  version: 3433f3ea46d9f8019119e7dd41274e112a2359a9
 - name: github.com/jpillora/go-ogle-analytics
   version: 14b04e0594ef6a9fd943363b135656f0ec8c9d0e
 - name: github.com/juju/ratelimit
@@ -315,7 +301,7 @@ imports:
 - name: github.com/packethost/packngo
   version: 36f34102fc1464824b8069cbd65ad5a0185d2dc7
 - name: github.com/pborman/uuid
-  version: ca53cad383cad2479bbba7f7a1a05797ec1386e4
+  version: e790cca94e6cc75c7064b1332e63811d4aae1a53
 - name: github.com/pkg/errors
   version: a22138067af1c4942683050411a841ade67fe1eb
 - name: github.com/PuerkitoBio/purell
@@ -341,7 +327,7 @@ imports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 10ef21a441db47d8b13ebcc5fd2310f636973c77
 - name: github.com/Sirupsen/logrus
-  version: 3ec0642a7fb6488f65b06f9040adc67e3990296a
+  version: 51fe59aca108dc5680109e7b2051cbdcfa5a253c
 - name: github.com/skratchdot/open-golang
   version: 75fb7ed4208cf72d323d7d02fd1a5964a7a9073c
   subpackages:
@@ -355,7 +341,7 @@ imports:
   - session
   - sl
 - name: github.com/spf13/cobra
-  version: 3c0b56b677e04926dfa835a1b3f11cd4f62f076e
+  version: b78744579491c1ceeaaa3b40205e56b0591b93a3
   subpackages:
   - doc
 - name: github.com/spf13/pflag
@@ -388,8 +374,6 @@ imports:
   vcs: git
   subpackages:
   - acme
-- name: github.com/zabawaba99/fireauth
-  version: a96e4680fe079c9d29db732873742573c1d5b2be
 - name: golang.org/x/crypto
   version: 84e98f45760e87786b7f24603b8166a6fa09811d
   subpackages:
@@ -429,6 +413,7 @@ imports:
   version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
   subpackages:
   - unix
+  - windows
 - name: golang.org/x/text
   version: 470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4
   subpackages:
@@ -455,7 +440,7 @@ imports:
   - unicode/norm
   - width
 - name: google.golang.org/api
-  version: 55146ba61254fdb1c26d65ff3c04bc1611ad73fb
+  version: e3824ed33c72bf7e81da0286772c34b987520914
   subpackages:
   - cloudresourcemanager/v1
   - compute/v1
@@ -502,14 +487,14 @@ imports:
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/ini.v1
-  version: d3de07a94d22b4a0972deb4b96d790c2c0ce8333
+  version: 20b96f641a5ea98f2f8619ff4f3e061cff4833bd
 - name: gopkg.in/square/go-jose.v1
   version: aa2e30fdd1fe9dd3394119af66451ae790d50e0d
   subpackages:
   - cipher
   - json
 - name: gopkg.in/yaml.v2
-  version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
+  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: k8s.io/apimachinery
   version: 1fd2e63a9a370677308a42f24fd40c86438afddf
   subpackages:
@@ -640,6 +625,12 @@ imports:
   - util/homedir
   - util/integer
   - util/jsonpath
+- name: k8s.io/kubernetes
+  version: 17d7182a7ccbb167074be7a87f0a68bd00d58d97
+  subpackages:
+  - cmd/kubeadm/app/apis/kubeadm/v1alpha1
+  - cmd/kubeadm/app/constants
+  - pkg/util/version
 testImports:
 - name: github.com/onsi/ginkgo
   version: 9eda700730cba42af70d53180f9dcce9266bc2bc

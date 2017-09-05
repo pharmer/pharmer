@@ -3,15 +3,9 @@ package cloud
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"net/http"
-	"strings"
 	"text/template"
 
-	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/go/net/httpclient"
 	"github.com/appscode/pharmer/api"
-	"github.com/golang/protobuf/jsonpb"
 	"k8s.io/client-go/util/cert"
 )
 
@@ -189,60 +183,3 @@ kubectl apply \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 )
-
-func SaveInstancesInFirebase(opt *api.Cluster, instances []*api.Instance) error {
-	// TODO: FixIt
-	// ins.Logger().Infof("Server is configured to skip startup config api")
-	// store instances
-	for _, v := range instances {
-		if v.Status.PublicIP != "" {
-			fbPath, err := firebaseInstancePath(opt, v.Status.PublicIP)
-			if err != nil {
-				return err // ors.FromErr(err).WithContext(ins).Err()
-			}
-			fmt.Println(fbPath)
-
-			r2 := &proto.ClusterInstanceByIPResponse{
-				Instance: &proto.ClusterInstance{
-					Uid:        string(v.UID),
-					ExternalId: v.Status.ExternalID,
-					Name:       v.Name,
-					ExternalIp: v.Status.PublicIP,
-					InternalIp: v.Status.PrivateIP,
-					Sku:        v.Spec.SKU,
-				},
-			}
-
-			var buf bytes.Buffer
-			m := jsonpb.Marshaler{}
-			err = m.Marshal(&buf, r2)
-			if err != nil {
-				return err // ors.FromErr(err).WithContext(ins).Err()
-			}
-
-			_, err = httpclient.New(nil, nil, nil).
-				WithBaseURL(firebaseEndpoint).
-				Call(http.MethodPut, fbPath, &buf, nil, false)
-			if err != nil {
-				return err // ors.FromErr(err).WithContext(ins).Err()
-			}
-		}
-	}
-	return nil
-}
-
-const firebaseEndpoint = "https://tigerworks-kube.firebaseio.com"
-
-func firebaseInstancePath(cluster *api.Cluster, externalIP string) (string, error) {
-	//l, err := api.FirebaseUid()
-	//if err != nil {
-	//	return "", errors.FromErr(err).Err()
-	//}
-	// https://www.firebase.com/docs/rest/guide/retrieving-data.html#section-rest-uri-params
-	return fmt.Sprintf(`/k8s/%v/%v/%v/instance-by-ip/%v.json?auth=%v`,
-		"l",
-		"",           /* cluster.Namespace */
-		cluster.Name, // phid is grpc api
-		strings.Replace(externalIP, ".", "_", -1),
-		cluster.Spec.StartupConfigToken), nil
-}

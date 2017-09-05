@@ -8,6 +8,7 @@ import (
 
 	"github.com/appscode/pharmer/api"
 	"k8s.io/client-go/util/cert"
+	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
 func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
@@ -17,7 +18,7 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Co
 
 	// -----------------------------------------------
 
-	cluster.Spec.CACertName = "ca"
+	cluster.Spec.CACertName = kubeadmconst.CACertAndKeyBaseName
 
 	caKey, err := cert.NewPrivateKey()
 	if err != nil {
@@ -34,7 +35,7 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Co
 
 	// -----------------------------------------------
 
-	cluster.Spec.FrontProxyCACertName = "front-proxy-ca"
+	cluster.Spec.FrontProxyCACertName = kubeadmconst.FrontProxyCACertAndKeyBaseName
 	frontProxyCAKey, err := cert.NewPrivateKey()
 	if err != nil {
 		return ctx, fmt.Errorf("Failed to generate private key. Reason: %v.", err)
@@ -76,7 +77,7 @@ func CreateAdminCertificate(ctx context.Context, cluster *api.Cluster) (*x509.Ce
 	cluster.Spec.AdminUserCertName = "cluster-admin"
 	cfg := cert.Config{
 		CommonName:   cluster.Spec.AdminUserCertName,
-		Organization: []string{"system:masters"},
+		Organization: []string{kubeadmconst.MastersGroup},
 		Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	}
 

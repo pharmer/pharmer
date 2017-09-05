@@ -6,33 +6,17 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-var clusterInstanceByIPRequestSchema *gojsonschema.Schema
 var clusterUpdateRequestSchema *gojsonschema.Schema
 var clusterDeleteRequestSchema *gojsonschema.Schema
-var clusterCreateRequestSchema *gojsonschema.Schema
 var clusterDescribeRequestSchema *gojsonschema.Schema
 var clusterListRequestSchema *gojsonschema.Schema
+var clusterApplyRequestSchema *gojsonschema.Schema
 var clusterReconfigureRequestSchema *gojsonschema.Schema
-var clusterStartupConfigRequestSchema *gojsonschema.Schema
+var clusterCreateRequestSchema *gojsonschema.Schema
 var clusterClientConfigRequestSchema *gojsonschema.Schema
 
 func init() {
 	var err error
-	clusterInstanceByIPRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "properties": {
-    "external_ip": {
-      "type": "string"
-    },
-    "uid": {
-      "type": "string"
-    }
-  },
-  "type": "object"
-}`))
-	if err != nil {
-		glog.Fatal(err)
-	}
 	clusterUpdateRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "definitions": {
@@ -101,6 +85,73 @@ func init() {
 	if err != nil {
 		glog.Fatal(err)
 	}
+	clusterDescribeRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "properties": {
+    "uid": {
+      "type": "string"
+    }
+  },
+  "type": "object"
+}`))
+	if err != nil {
+		glog.Fatal(err)
+	}
+	clusterListRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "properties": {
+    "status": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "type": "object"
+}`))
+	if err != nil {
+		glog.Fatal(err)
+	}
+	clusterApplyRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "properties": {
+    "name": {
+      "maxLength": 63,
+      "pattern": "^[a-z0-9](?:[a-z0-9\\-]{0,61}[a-z0-9])?$",
+      "type": "string"
+    }
+  },
+  "type": "object"
+}`))
+	if err != nil {
+		glog.Fatal(err)
+	}
+	clusterReconfigureRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "properties": {
+    "apply_to_master": {
+      "type": "boolean"
+    },
+    "count": {
+      "type": "integer"
+    },
+    "kubernetes_version": {
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 63,
+      "pattern": "^[a-z0-9](?:[a-z0-9\\-]{0,61}[a-z0-9])?$",
+      "type": "string"
+    },
+    "sku": {
+      "type": "string"
+    }
+  },
+  "type": "object"
+}`))
+	if err != nil {
+		glog.Fatal(err)
+	}
 	clusterCreateRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "definitions": {
@@ -159,77 +210,6 @@ func init() {
 	if err != nil {
 		glog.Fatal(err)
 	}
-	clusterDescribeRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "properties": {
-    "uid": {
-      "type": "string"
-    }
-  },
-  "type": "object"
-}`))
-	if err != nil {
-		glog.Fatal(err)
-	}
-	clusterListRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "properties": {
-    "status": {
-      "items": {
-        "type": "string"
-      },
-      "type": "array"
-    }
-  },
-  "type": "object"
-}`))
-	if err != nil {
-		glog.Fatal(err)
-	}
-	clusterReconfigureRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "properties": {
-    "apply_to_master": {
-      "type": "boolean"
-    },
-    "count": {
-      "type": "integer"
-    },
-    "kubernetes_version": {
-      "type": "string"
-    },
-    "name": {
-      "maxLength": 63,
-      "pattern": "^[a-z0-9](?:[a-z0-9\\-]{0,61}[a-z0-9])?$",
-      "type": "string"
-    },
-    "sku": {
-      "type": "string"
-    }
-  },
-  "type": "object"
-}`))
-	if err != nil {
-		glog.Fatal(err)
-	}
-	clusterStartupConfigRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "properties": {
-    "resource_version": {
-      "type": "integer"
-    },
-    "role": {
-      "type": "string"
-    },
-    "uid": {
-      "type": "string"
-    }
-  },
-  "type": "object"
-}`))
-	if err != nil {
-		glog.Fatal(err)
-	}
 	clusterClientConfigRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "properties": {
@@ -244,11 +224,6 @@ func init() {
 	}
 }
 
-func (m *ClusterInstanceByIPRequest) IsValid() (*gojsonschema.Result, error) {
-	return clusterInstanceByIPRequestSchema.Validate(gojsonschema.NewGoLoader(m))
-}
-func (m *ClusterInstanceByIPRequest) IsRequest() {}
-
 func (m *ClusterUpdateRequest) IsValid() (*gojsonschema.Result, error) {
 	return clusterUpdateRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
@@ -258,11 +233,6 @@ func (m *ClusterDeleteRequest) IsValid() (*gojsonschema.Result, error) {
 	return clusterDeleteRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *ClusterDeleteRequest) IsRequest() {}
-
-func (m *ClusterCreateRequest) IsValid() (*gojsonschema.Result, error) {
-	return clusterCreateRequestSchema.Validate(gojsonschema.NewGoLoader(m))
-}
-func (m *ClusterCreateRequest) IsRequest() {}
 
 func (m *ClusterDescribeRequest) IsValid() (*gojsonschema.Result, error) {
 	return clusterDescribeRequestSchema.Validate(gojsonschema.NewGoLoader(m))
@@ -274,15 +244,20 @@ func (m *ClusterListRequest) IsValid() (*gojsonschema.Result, error) {
 }
 func (m *ClusterListRequest) IsRequest() {}
 
+func (m *ClusterApplyRequest) IsValid() (*gojsonschema.Result, error) {
+	return clusterApplyRequestSchema.Validate(gojsonschema.NewGoLoader(m))
+}
+func (m *ClusterApplyRequest) IsRequest() {}
+
 func (m *ClusterReconfigureRequest) IsValid() (*gojsonschema.Result, error) {
 	return clusterReconfigureRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *ClusterReconfigureRequest) IsRequest() {}
 
-func (m *ClusterStartupConfigRequest) IsValid() (*gojsonschema.Result, error) {
-	return clusterStartupConfigRequestSchema.Validate(gojsonschema.NewGoLoader(m))
+func (m *ClusterCreateRequest) IsValid() (*gojsonschema.Result, error) {
+	return clusterCreateRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
-func (m *ClusterStartupConfigRequest) IsRequest() {}
+func (m *ClusterCreateRequest) IsRequest() {}
 
 func (m *ClusterClientConfigRequest) IsValid() (*gojsonschema.Result, error) {
 	return clusterClientConfigRequestSchema.Validate(gojsonschema.NewGoLoader(m))

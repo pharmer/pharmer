@@ -9,80 +9,83 @@ import:
 - package: github.com/appscode/api
   version: pharmer
 - package: github.com/appscode/appctl
+  version: master
 - package: github.com/appscode/client
+  version: master
 - package: github.com/appscode/data
   version: master
 - package: github.com/appscode/go-dns
+  version: master
 - package: github.com/appscode/go-hetzner
-- package: github.com/appscode/go-notify
 - package: github.com/appscode/go-term
 - package: github.com/appscode/go
 - package: github.com/appscode/linodego
+- package: github.com/appscode/log
 - package: github.com/aws/aws-sdk-go
-  version: v1.10.27
+  version: v1.10.38
 - package: github.com/cenkalti/backoff
-  version: master
-- package: github.com/cloudflare/cfssl
-  version: b53da94cf51de120a50cbae533152fb3935375e0
-- package: github.com/google/certificate-transparency
-  version: 05502e09183232d2345db9a3a008076eff9a530c
+  version: v1.1.0
 - package: github.com/digitalocean/godo
   version: v1.1.0
 - package: github.com/ghodss/yaml
   version: v1.0.0
+- package: github.com/golang/glog
+- package: github.com/graymeta/stow
+  repo: https://github.com/appscode/stow.git
+  version: master
+  vcs: git
+- package: github.com/hashicorp/go-version
+  repo: https://github.com/appscode/go-version.git
+  vcs: git
+  version: master
+- package: github.com/jpillora/go-ogle-analytics
+- package: github.com/mgutz/str
+  version: v1.2.0
+- package: github.com/olekukonko/tablewriter
+- package: github.com/packethost/packngo
+  version: master
+- package: github.com/pborman/uuid
+  version: v1.1
+- package: github.com/scaleway/scaleway-cli
+  version: v1.14
+- package: github.com/skratchdot/open-golang
+- package: github.com/softlayer/softlayer-go
+- package: github.com/spf13/cobra
+- package: github.com/spf13/pflag
+  repo: https://github.com/appscode/pflag.git
+  vcs: git
+  version: master
+- package: golang.org/x/oauth2
+- package: google.golang.org/api
+  version: e3824ed33c72bf7e81da0286772c34b987520914
+- package: gopkg.in/ini.v1
+  version: v1.28.2
+- package: k8s.io/apimachinery
+  version: 1fd2e63a9a370677308a42f24fd40c86438afddf
+- package: k8s.io/client-go
+  version: v4.0.0
+- package: k8s.io/kubernetes
+  version: ~1.7
 - package: github.com/golang/protobuf
   version: 6e4cc92cc905d5f4a73041c1b8228ea08f4c6147
 - package: github.com/grpc-ecosystem/grpc-gateway
   repo: https://github.com/appscode/grpc-gateway.git
   vcs: git
   version: v1.2.2-ac
-- package: github.com/hashicorp/go-version
-  repo: https://github.com/appscode/go-version.git
-  vcs: git
-  version: master
-- package: github.com/mgutz/str
-  version: v1.2.0
-- package: github.com/olekukonko/tablewriter
-- package: github.com/packethost/packngo
-- package: github.com/scaleway/scaleway-cli
-  version: v1.14
-- package: github.com/softlayer/softlayer-go
-- package: github.com/spf13/cobra
-  version: master
-- package: github.com/spf13/pflag
-  repo: https://github.com/appscode/pflag.git
-  vcs: git
-  version: master
-- package: github.com/vaughan0/go-ini
-- package: github.com/zabawaba99/fireauth
+- package: google.golang.org/grpc
+  version: v1.3.0
 - package: golang.org/x/crypto
   version: 84e98f45760e87786b7f24603b8166a6fa09811d
 - package: golang.org/x/net
   version: da118f7b8e5954f39d0d2130ab35d4bf0e3cb344
 - package: golang.org/x/text
   version: 470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4
-- package: golang.org/x/oauth2
-- package: google.golang.org/api
-  version: 55146ba61254fdb1c26d65ff3c04bc1611ad73fb
-- package: k8s.io/apimachinery
-  version: 1fd2e63a9a370677308a42f24fd40c86438afddf
-- package: k8s.io/client-go
-  version: 4.0.0
-- package: github.com/mitchellh/go-homedir
-- package: gopkg.in/yaml.v2
-  version: v2
-- package: github.com/ghodss/yaml
-  version: v1.0.0
-- package: github.com/graymeta/stow
-  repo: https://github.com/appscode/stow.git
-  version: master
-  vcs: git
-- package: github.com/ncw/swift
-  version: master
-- package: github.com/go-xorm/builder
-- package: github.com/go-xorm/core
-  version: v0.5.6
-- package: github.com/go-xorm/xorm
-  version: v0.6.2
-- package: gopkg.in/square/go-jose.v1
-  version: 1.1.0
+- package: github.com/moul/gotty-client
+  version: 92f0c24d5b2985522174e3ff5ad882a1c4d7f1d9
+- package: github.com/gorilla/websocket
+  version: v1.2.0
+testImport:
+- package: github.com/onsi/ginkgo
+  version: v1.4.0
+- package: github.com/onsi/gomega
+  version: v1.2.0

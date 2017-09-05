@@ -9,6 +9,7 @@ import (
 	"github.com/appscode/go/crypto/rand"
 	. "github.com/appscode/go/encoding/json/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
 type AzureCloudConfig struct {
@@ -223,6 +224,8 @@ type ClusterSpec struct {
 
 	// only Linode
 	InstanceRootPassword string `json:"instanceRootPassword,omitempty"`
+
+	MasterConfiguration kubeadm.MasterConfiguration `json:"masterConfiguration,omitempty"`
 }
 
 type ClusterStatus struct {
