@@ -8,11 +8,11 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/flags"
 	"github.com/appscode/go/log"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"
 	"github.com/tamalsaha/go-oneliners"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func NewCmdCreate() *cobra.Command {
@@ -49,7 +49,7 @@ func NewCmdCreate() *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.TODO(), cfg)
 
-			clusters, err := cloud.Store(ctx).Clusters().List(api.ListOptions{})
+			clusters, err := cloud.Store(ctx).Clusters().List(metav1.ListOptions{})
 			if err != nil {
 				log.Fatalln(err)
 			}

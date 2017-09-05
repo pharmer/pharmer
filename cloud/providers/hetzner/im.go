@@ -13,6 +13,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"golang.org/x/crypto/ssh"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type instanceManager struct {
@@ -108,7 +109,7 @@ func (im *instanceManager) newKubeInstance(serverIP string) (*api.Instance, erro
 
 func (im *instanceManager) newKubeInstanceFromSummary(droplet *hc.ServerSummary) (*api.Instance, error) {
 	return &api.Instance{
-		ObjectMeta: api.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: droplet.ServerName,
 		},

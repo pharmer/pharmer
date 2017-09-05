@@ -7,10 +7,10 @@ import (
 	"text/tabwriter"
 
 	"github.com/appscode/go/log"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/config"
 	"github.com/appscode/pharmer/credential"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func NewCmdGet() *cobra.Command {
@@ -32,7 +32,7 @@ func NewCmdGet() *cobra.Command {
 				log.Fatalln(err)
 			}
 			store := config.NewStoreProvider(gtx.TODO(), cfg)
-			creds, err := store.Credentials().List(api.ListOptions{})
+			creds, err := store.Credentials().List(metav1.ListOptions{})
 			if err != nil {
 				log.Fatalln(err)
 			}

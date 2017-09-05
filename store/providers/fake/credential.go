@@ -8,6 +8,7 @@ import (
 
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/store"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type CredentialFileStore struct {
@@ -26,7 +27,7 @@ func (s *CredentialFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *CredentialFileStore) List(opts api.ListOptions) ([]*api.Credential, error) {
+func (s *CredentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 

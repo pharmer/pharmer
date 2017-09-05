@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/appscode/pharmer/api"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var NotImplemented = errors.New("Not implemented")
@@ -21,7 +22,7 @@ type Interface interface {
 }
 
 type CredentialStore interface {
-	List(opts api.ListOptions) ([]*api.Credential, error)
+	List(opts metav1.ListOptions) ([]*api.Credential, error)
 	Get(name string) (*api.Credential, error)
 	Create(obj *api.Credential) (*api.Credential, error)
 	Update(obj *api.Credential) (*api.Credential, error)
@@ -29,7 +30,7 @@ type CredentialStore interface {
 }
 
 type ClusterStore interface {
-	List(opts api.ListOptions) ([]*api.Cluster, error)
+	List(opts metav1.ListOptions) ([]*api.Cluster, error)
 	Get(name string) (*api.Cluster, error)
 	Create(obj *api.Cluster) (*api.Cluster, error)
 	Update(obj *api.Cluster) (*api.Cluster, error)
@@ -38,7 +39,7 @@ type ClusterStore interface {
 }
 
 type InstanceGroupStore interface {
-	List(opts api.ListOptions) ([]*api.InstanceGroup, error)
+	List(opts metav1.ListOptions) ([]*api.InstanceGroup, error)
 	Get(name string) (*api.InstanceGroup, error)
 	Create(obj *api.InstanceGroup) (*api.InstanceGroup, error)
 	Update(obj *api.InstanceGroup) (*api.InstanceGroup, error)
@@ -47,7 +48,7 @@ type InstanceGroupStore interface {
 }
 
 type InstanceStore interface {
-	List(opts api.ListOptions) ([]*api.Instance, error)
+	List(opts metav1.ListOptions) ([]*api.Instance, error)
 	Get(name string) (*api.Instance, error)
 	Create(obj *api.Instance) (*api.Instance, error)
 	Update(obj *api.Instance) (*api.Instance, error)

@@ -12,6 +12,7 @@ import (
 	"github.com/appscode/pharmer/store"
 	"github.com/graymeta/stow"
 	"github.com/tamalsaha/go-oneliners"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ClusterFileStore struct {
@@ -29,7 +30,7 @@ func (s *ClusterFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *ClusterFileStore) List(opts api.ListOptions) ([]*api.Cluster, error) {
+func (s *ClusterFileStore) List(opts metav1.ListOptions) ([]*api.Cluster, error) {
 	result := make([]*api.Cluster, 0)
 	cursor := stow.CursorStart
 	for {

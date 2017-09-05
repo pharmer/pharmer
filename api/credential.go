@@ -5,9 +5,9 @@ import (
 )
 
 type Credential struct {
-	metav1.TypeMeta `json:",inline,omitempty"`
-	ObjectMeta      `json:"metadata,omitempty"`
-	Spec            CredentialSpec `json:"spec,omitempty"`
+	metav1.TypeMeta   `json:",inline,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              CredentialSpec `json:"spec,omitempty"`
 }
 
 type CredentialSpec struct {

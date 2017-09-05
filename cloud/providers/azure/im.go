@@ -16,6 +16,7 @@ import (
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -269,7 +270,7 @@ func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic networ
 	}
 
 	i := api.Instance{
-		ObjectMeta: api.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: *vm.Name,
 		},

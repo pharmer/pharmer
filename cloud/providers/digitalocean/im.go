@@ -15,6 +15,7 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/digitalocean/godo"
 	"github.com/tamalsaha/go-oneliners"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type instanceManager struct {
@@ -175,7 +176,7 @@ func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*a
 	}
 
 	return &api.Instance{
-		ObjectMeta: api.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: droplet.Name,
 		},

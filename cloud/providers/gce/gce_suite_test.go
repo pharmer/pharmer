@@ -50,7 +50,7 @@ func TestContext(t *testing.T) {
 	fmt.Println(err, cm)
 
 	/*cm.cluster = &api.Cluster{
-		ObjectMeta: api.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:              req.Name,
 			UID:               phid.NewKubeCluster(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},

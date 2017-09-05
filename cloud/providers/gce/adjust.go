@@ -298,7 +298,7 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, s
 /*
 func DBInstanceManage(ctx *contexts.ClusterContext, instances []*contexts.KubernetesInstance)  {
 	kc, err := ctx.NewKubeClient()
-	nodes, err := kc.Client.CoreV1().Nodes().List(kapi.ListOptions{})
+	nodes, err := kc.Client.CoreV1().Nodes().List(kmetav1.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}

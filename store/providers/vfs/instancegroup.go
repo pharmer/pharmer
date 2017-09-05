@@ -11,6 +11,7 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/store"
 	"github.com/graymeta/stow"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type InstanceGroupFileStore struct {
@@ -29,7 +30,7 @@ func (s *InstanceGroupFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *InstanceGroupFileStore) List(opts api.ListOptions) ([]*api.InstanceGroup, error) {
+func (s *InstanceGroupFileStore) List(opts metav1.ListOptions) ([]*api.InstanceGroup, error) {
 	result := make([]*api.InstanceGroup, 0)
 	cursor := stow.CursorStart
 	for {

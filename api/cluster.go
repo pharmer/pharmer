@@ -42,10 +42,10 @@ type IG struct {
 }
 
 type Cluster struct {
-	metav1.TypeMeta `json:",inline,omitempty,omitempty"`
-	ObjectMeta      `json:"metadata,omitempty,omitempty"`
-	Spec            ClusterSpec   `json:"spec,omitempty,omitempty"`
-	Status          ClusterStatus `json:"status,omitempty,omitempty"`
+	metav1.TypeMeta   `json:",inline,omitempty,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitempty,omitempty"`
+	Spec              ClusterSpec   `json:"spec,omitempty,omitempty"`
+	Status            ClusterStatus `json:"status,omitempty,omitempty"`
 }
 
 type ClusterSpec struct {
@@ -64,7 +64,7 @@ type ClusterSpec struct {
 	AdminUserCertName    string `json:"userCertPHID,omitempty"`
 
 	// request data. This is needed to give consistent access to these values for all commands.
-	Region             string `json:"region,omitempty"`
+	Region string `json:"region,omitempty"`
 
 	DoNotDelete        bool   `json:"doNotDelete,omitempty"`
 	DefaultAccessLevel string `json:"defaultAccessLevel,omitempty"`
@@ -80,20 +80,18 @@ type ClusterSpec struct {
 	MasterDiskType string `json:"masterDiskType,omitempty"`
 	MasterDiskSize int64  `json:"masterDiskSize,omitempty"`
 
-
-	MasterSKU          string `json:"masterSku,omitempty"`
-	KubernetesMasterName  string `json:"kubernetesMasterName,omitempty"`
-	MasterInternalIP      string `json:"masterInternalIp,omitempty"`
-	MasterIPRange                string `json:"masterIpRange,omitempty"`
+	MasterSKU            string `json:"masterSku,omitempty"`
+	KubernetesMasterName string `json:"kubernetesMasterName,omitempty"`
+	MasterInternalIP     string `json:"masterInternalIp,omitempty"`
+	MasterIPRange        string `json:"masterIpRange,omitempty"`
 	// the master root ebs volume size (typically does not need to be very large)
-	MasterDiskId   string `json:"masterDiskID,omitempty"`
+	MasterDiskId string `json:"masterDiskID,omitempty"`
 
 	// If set to Elasticsearch IP, master instance will be associated with this IP.
 	// If set to auto, a new Elasticsearch IP will be acquired
 	// Otherwise amazon-given public ip will be used (it'll change with reboot).
 	MasterReservedIP string `json:"masterReservedIp,omitempty"`
 	MasterExternalIP string `json:"masterExternalIp,omitempty"`
-
 
 	// the node root ebs volume size (used to house docker images)
 	NodeDiskType string `json:"nodeDiskType,omitempty"`
@@ -162,8 +160,6 @@ type ClusterSpec struct {
 
 	// common
 
-
-
 	// GCE: Use Root Field for this in GCE
 
 	// MASTER_TAG="clusterName-master"
@@ -176,7 +172,6 @@ type ClusterSpec struct {
 	// NODE_SCOPES="${NODE_SCOPES:-compute-rw,monitoring,logging-write,storage-ro}"
 	NodeScopes        []string `json:"nodeScopes,omitempty"`
 	PollSleepInterval int      `json:"pollSleepInterval,omitempty"`
-
 
 	// NEW
 	// enable various v1beta1 features

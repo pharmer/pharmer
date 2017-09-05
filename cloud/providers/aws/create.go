@@ -13,6 +13,7 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	// "github.com/appscode/pharmer/templates"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
@@ -1104,7 +1105,7 @@ func (cm *ClusterManager) newKubeInstance(instanceID string) (*api.Instance, err
 
 	// Don't reassign internal_ip for AWS to keep the fixed 172.20.0.9 for master_internal_ip
 	i := api.Instance{
-		ObjectMeta: api.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: *r1.Reservations[0].Instances[0].PrivateDnsName,
 		},
