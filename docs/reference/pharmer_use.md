@@ -20,7 +20,8 @@ pharmer cluster use <name>
 ### Options
 
 ```
-  -h, --help   help for use
+  -h, --help        help for use
+      --overwrite   Overwrite context if found.
 ```
 
 ### Options inherited from parent commands

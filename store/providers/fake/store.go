@@ -11,8 +11,7 @@ import (
 )
 
 const (
-	UID      = "fake"
-	pageSize = 50
+	UID = "fake"
 )
 
 func init() {
