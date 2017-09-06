@@ -481,7 +481,7 @@ func (m *ClusterListResponse) GetClusters() []*Cluster {
 type InstanceGroup struct {
 	Sku              string `protobuf:"bytes,1,opt,name=sku" json:"sku,omitempty"`
 	Count            int64  `protobuf:"varint,2,opt,name=count" json:"count,omitempty"`
-	SpotInstances bool   `protobuf:"varint,3,opt,name=use_spot_instances,json=spotInstances" json:"use_spot_instances,omitempty"`
+	UseSpotInstances bool   `protobuf:"varint,3,opt,name=use_spot_instances,json=useSpotInstances" json:"use_spot_instances,omitempty"`
 }
 
 func (m *InstanceGroup) Reset()                    { *m = InstanceGroup{} }
@@ -503,9 +503,9 @@ func (m *InstanceGroup) GetCount() int64 {
 	return 0
 }
 
-func (m *InstanceGroup) GetSpotInstances() bool {
+func (m *InstanceGroup) GetUseSpotInstances() bool {
 	if m != nil {
-		return m.SpotInstances
+		return m.UseSpotInstances
 	}
 	return false
 }

@@ -84,6 +84,8 @@ import:
   version: 92f0c24d5b2985522174e3ff5ad882a1c4d7f1d9
 - package: github.com/gorilla/websocket
   version: v1.2.0
+- package: github.com/appscode/mergo
+  version: master
 testImport:
 - package: github.com/onsi/ginkgo
   version: v1.4.0

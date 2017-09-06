@@ -1,5 +1,5 @@
-hash: e1196816d454ed866667dc831539f779cc7862aea7f9eea759db610bd351a084
-updated: 2017-09-05T13:55:05.903416586-07:00
+hash: a3c596328c63105736cdf22f54f1d2587e91a329c8b1c6ef2f779b3f5d4a7a7a
+updated: 2017-09-06T10:24:40.838211769-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -82,6 +82,8 @@ imports:
   version: 68e0e42e42c01371f3950571fc87c2298a51dd8f
   subpackages:
   - golog
+- name: github.com/appscode/mergo
+  version: e3000cb3d28c72b837601cac94debd91032d19fe
 - name: github.com/aws/aws-sdk-go
   version: 960dd6034cbdac0e9716bfa66d91de88b286889f
   subpackages:
@@ -299,7 +301,7 @@ imports:
 - name: github.com/olekukonko/tablewriter
   version: cca8bbc0798408af109aaaa239cbd2634846b340
 - name: github.com/packethost/packngo
-  version: 36f34102fc1464824b8069cbd65ad5a0185d2dc7
+  version: b467bc62ab07434fb341df598ec2c7d9fe2e30d6
 - name: github.com/pborman/uuid
   version: e790cca94e6cc75c7064b1332e63811d4aae1a53
 - name: github.com/pkg/errors

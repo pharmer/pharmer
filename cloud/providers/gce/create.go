@@ -4,12 +4,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/appscode/mergo"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/data/files"
 	"github.com/appscode/pharmer/phid"
 	semver "github.com/hashicorp/go-version"
-	"github.com/jinzhu/copier"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -49,7 +49,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	}
 
 	// Copy default spec into return value
-	err = copier.Copy(cluster, in)
+	err = mergo.MergeWithOverwrite(cluster, in)
 	if err != nil {
 		return nil, err
 	}
