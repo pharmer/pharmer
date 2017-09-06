@@ -3,79 +3,144 @@ package scaleway
 import (
 	"time"
 
-	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/data/files"
 	"github.com/appscode/pharmer/phid"
+	semver "github.com/hashicorp/go-version"
+	"github.com/jinzhu/copier"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
-	var err error
+func (cm *ClusterManager) CreateMasterInstanceGroup(cluster *api.Cluster) (*api.InstanceGroup, error) {
+	ig := api.InstanceGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "master",
+			UID:               phid.NewInstanceGroup(),
+			CreationTimestamp: metav1.Time{Time: time.Now()},
+			Labels: map[string]string{
+				"node-role.kubernetes.io/master": "true",
+			},
+		},
+		Spec: api.InstanceGroupSpec{
+			SKU:           "", // assign at the time of apply
+			Count:         1,
+			SpotInstances: false,
+			DiskType:      "gp2",
+			DiskSize:      128,
+		},
+	}
+	return cloud.Store(cm.ctx).InstanceGroups(cluster.Name).Create(&ig)
+}
 
-	if cm.cluster, err = NewCluster(req); err != nil {
-		return err
+func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
+	// Load default spec from data files
+	kv, err := semver.NewVersion(in.Spec.KubernetesVersion)
+	if err != nil {
+		return nil, err
 	}
-	cm.namer = namer{cluster: cm.cluster}
-	if cm.ctx, err = cloud.CreateCACertificates(cm.ctx, cm.cluster); err != nil {
-		return err
+	defaultSpec, err := files.GetDefaultClusterSpec(in.Spec.Cloud.CloudProvider, kv)
+	if err != nil {
+		return nil, err
 	}
-	if cm.ctx, err = cloud.CreateSSHKey(cm.ctx, cm.cluster); err != nil {
-		return err
-	}
-	if _, err = cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
-		return err
-	}
-
-	totalNodes := int64(0)
-	for _, ng := range req.NodeGroups {
-		totalNodes += ng.Count
-		ig := api.InstanceGroup{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              ng.Sku + "-pool",
-				UID:               phid.NewInstanceGroup(),
-				CreationTimestamp: metav1.Time{Time: time.Now()},
-				Labels: map[string]string{
-					"node-role.kubernetes.io/node": "true",
-				},
-			},
-			Spec: api.InstanceGroupSpec{
-				SKU:           ng.Sku,
-				Count:         ng.Count,
-				SpotInstances: ng.SpotInstances,
-				//DiskType:      "gp2",
-				//DiskSize:      128,
-			},
-		}
-		if _, err = cloud.Store(cm.ctx).InstanceGroups(req.Name).Create(&ig); err != nil {
-			return err
-		}
-	}
-	{
-		ig := api.InstanceGroup{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              "master",
-				UID:               phid.NewInstanceGroup(),
-				CreationTimestamp: metav1.Time{Time: time.Now()},
-				Labels: map[string]string{
-					"node-role.kubernetes.io/master": "true",
-				},
-			},
-			Spec: api.InstanceGroupSpec{
-				SKU:           "Standard_D2_v2",
-				Count:         1,
-				SpotInstances: false,
-				//DiskType:      "gp2",
-				//DiskSize:      128,
-			},
-		}
-
-		if _, err = cloud.Store(cm.ctx).InstanceGroups(req.Name).Create(&ig); err != nil {
-			return err
-		}
+	cluster := &api.Cluster{
+		Spec: *defaultSpec,
 	}
 
-	return nil
+	// Copy default spec into return value
+	err = copier.Copy(cluster, in)
+	if err != nil {
+		return nil, err
+	}
+	n := namer{cluster: cluster}
+
+	// Init object meta
+	cluster.ObjectMeta.UID = phid.NewKubeCluster()
+	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
+	api.AssignTypeKind(cluster)
+
+	// Init spec
+	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
+	cluster.Spec.Token = cloud.GetKubeadmToken()
+	cluster.Spec.KubernetesMasterName = n.MasterName()
+
+	// Init status
+	cluster.Status = api.ClusterStatus{
+		SSHKeyExternalID: n.GenSSHKeyExternalID(),
+	}
+
+	// Fix the stuff below ----------------------------------------------------
+
+	// TODO: FixIt!
+	//cluster.Spec.AppsCodeApiGrpcEndpoint = system.PublicAPIGrpcEndpoint()
+	//cluster.Spec.AppsCodeApiHttpEndpoint = system.PublicAPIHttpEndpoint()
+	//cluster.Spec.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
+
+	if cluster.Spec.EnableWebhookTokenAuthentication {
+		cluster.Spec.AppscodeAuthnURL = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
+	}
+	if cluster.Spec.EnableWebhookTokenAuthorization {
+		cluster.Spec.AppscodeAuthzURL = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
+	}
+
+	// TODO: FixIT!
+	//cluster.Spec.ClusterExternalDomain = Extra(ctx).ExternalDomain(cluster.Name)
+	//cluster.Spec.ClusterInternalDomain = Extra(ctx).InternalDomain(cluster.Name)
+	//cluster.Status.Phase = api.ClusterPhasePending
+
+	//-------------------------- ctx.MasterSKU = "94" // 2 cpu
+
+	// Using custom image with memory controller enabled
+	// -------------------------ctx.InstanceImage = "16604964" // "container-os-20160402" // Debian 8.4 x64
+
+	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
+
+	version, err := semver.NewVersion(cluster.Spec.KubernetesVersion)
+	if err != nil {
+		version, err = semver.NewVersion(cluster.Spec.KubernetesVersion)
+		if err != nil {
+			return nil, err
+		}
+	}
+	version = version.ToMutator().ResetPrerelease().ResetMetadata().Done()
+
+	v_1_4, _ := semver.NewConstraint(">= 1.4")
+	if v_1_4.Check(version) {
+		// Enable ScheduledJobs: http://kubernetes.io/docs/user-guide/scheduled-jobs/#prerequisites
+		/*if cluster.Spec.EnableScheduledJobResource {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "batch/v2alpha1"
+			} else {
+				cluster.Spec.RuntimeConfig += ",batch/v2alpha1"
+			}
+		}*/
+
+		// http://kubernetes.io/docs/admin/authentication/
+		if cluster.Spec.EnableWebhookTokenAuthentication {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "authentication.k8s.io/v1beta1=true"
+			} else {
+				cluster.Spec.RuntimeConfig += ",authentication.k8s.io/v1beta1=true"
+			}
+		}
+
+		// http://kubernetes.io/docs/admin/authorization/
+		if cluster.Spec.EnableWebhookTokenAuthorization {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "authorization.k8s.io/v1beta1=true"
+			} else {
+				cluster.Spec.RuntimeConfig += ",authorization.k8s.io/v1beta1=true"
+			}
+		}
+		if cluster.Spec.EnableRBACAuthorization {
+			if cluster.Spec.RuntimeConfig == "" {
+				cluster.Spec.RuntimeConfig = "rbac.authorization.k8s.io/v1alpha1=true"
+			} else {
+				cluster.Spec.RuntimeConfig += ",rbac.authorization.k8s.io/v1alpha1=true"
+			}
+		}
+	}
+	return cluster, nil
 }
 
 func (cm *ClusterManager) IsValid(cluster string) (bool, error) {

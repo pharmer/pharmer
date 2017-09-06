@@ -1,11 +1,11 @@
 ## pharmer use
 
-Retrieve kubectl configuration for a Kubernetes cluster and change kubectl context
+Retrieve Kubeconfig for a Kubernetes cluster and change kubectl context
 
 ### Synopsis
 
 
-Retrieve kubectl configuration for a Kubernetes cluster and change kubectl context
+Retrieve Kubeconfig for a Kubernetes cluster and change kubectl context
 
 ```
 pharmer use [flags]
@@ -14,7 +14,7 @@ pharmer use [flags]
 ### Examples
 
 ```
-appctl cluster use <name>
+pharmer cluster use <name>
 ```
 
 ### Options

@@ -1,30 +1,21 @@
-## pharmer reconfigure
+## pharmer apply
 
-Create/Resize/Upgrade/Downgrade a Kubernetes cluster instance group
+Apply changes
 
 ### Synopsis
 
 
-Create/Resize/Upgrade/Downgrade a Kubernetes cluster instance group
+Apply changes
 
 ```
-pharmer reconfigure [flags]
-```
-
-### Examples
-
-```
-appctl cluster reconfigure <name> --role=master|node --sku=n1-standard-1
+pharmer apply [flags]
 ```
 
 ### Options
 
 ```
-      --apply-to-master             Set true to change version of master. Default set to false.
-      --count int                   Number of instances of this type (default -1)
-  -h, --help                        help for reconfigure
-      --kubernetes-version string   Kubernetes server version
-      --sku string                  Instance type
+      --dry-run   Dry run.
+  -h, --help      help for apply
 ```
 
 ### Options inherited from parent commands

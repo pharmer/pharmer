@@ -68,7 +68,7 @@ func TestContext(t *testing.T) {
 		fmt.Println(err)
 	}
 
-	err := cm.NewCluster(&req)
+	err := cm.DefaultSpec(&req)
 	fmt.Println(err)
 	fmt.Println(cm.ctx)
 	*/ /*cm.Check(&proto.ClusterCreateRequest{

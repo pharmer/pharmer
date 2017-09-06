@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewCmdList() *cobra.Command {
+func NewCmdGet() *cobra.Command {
 	var req proto.ClusterListRequest
 
 	cmd := &cobra.Command{

@@ -13,12 +13,10 @@ import (
 	"github.com/tamalsaha/go-oneliners"
 )
 
-func (cm *ClusterManager) Apply(cluster string, dryRun bool) error {
+func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	var err error
 
-	if cm.cluster, err = cloud.Store(cm.ctx).Clusters().Get(cluster); err != nil {
-		return err
-	}
+	cm.cluster = in
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
