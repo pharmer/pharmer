@@ -26,6 +26,22 @@ func New(ctx context.Context) cloud.ClusterManager {
 	return &ClusterManager{}
 }
 
+func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
+	return in, nil
+}
+
+func (cm *ClusterManager) CreateMasterInstanceGroup(cluster *api.Cluster) (*api.InstanceGroup, error) {
+	return nil, nil
+}
+
+func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
+	return cloud.UnsupportedOperation
+}
+
+func (cm *ClusterManager) IsValid(cluster string) (bool, error) {
+	return false, cloud.UnsupportedOperation
+}
+
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	cm.runFakeJob("cluster create")
 	return nil

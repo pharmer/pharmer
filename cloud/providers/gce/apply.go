@@ -16,12 +16,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cm *ClusterManager) Apply(cluster string, dryRun bool) error {
+func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	var err error
 
-	if cm.cluster, err = cloud.Store(cm.ctx).Clusters().Get(cluster); err != nil {
-		return err
-	}
+	cm.cluster = in
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
@@ -76,6 +74,24 @@ func (cm *ClusterManager) Apply(cluster string, dryRun bool) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
+
+	//// check for instance count
+	//ig.Spec.SKU = "n1-standard-1"
+	//if totalNodes > 5 {
+	//	ig.Spec.SKU = "n1-standard-2"
+	//}
+	//if totalNodes > 10 {
+	//	ig.Spec.SKU = "n1-standard-4"
+	//}
+	//if totalNodes > 100 {
+	//	ig.Spec.SKU = "n1-standard-8"
+	//}
+	//if totalNodes > 250 {
+	//	ig.Spec.SKU = "n1-standard-16"
+	//}
+	//if totalNodes > 500 {
+	//	ig.Spec.SKU = "n1-standard-32"
+	//}
 
 	op1, err := cm.createMasterIntance()
 	if err != nil {

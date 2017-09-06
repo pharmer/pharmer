@@ -2,21 +2,20 @@ package cmds
 
 import (
 	"context"
-	"errors"
-	"strings"
+	"time"
 
-	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/flags"
 	"github.com/appscode/go/log"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
+	"github.com/appscode/pharmer/phid"
 	"github.com/spf13/cobra"
-	"github.com/tamalsaha/go-oneliners"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func NewCmdCreate() *cobra.Command {
-	var req proto.ClusterCreateRequest
+	var cluster api.Cluster
 	nodes := map[string]int{}
 
 	cmd := &cobra.Command{
@@ -24,57 +23,57 @@ func NewCmdCreate() *cobra.Command {
 		Short:             "Create a Kubernetes cluster for a given cloud provider",
 		Example:           "create --provider=(aws|gce|cc) --nodes=t1=1,t2=2 --zone=us-central1-f demo-cluster",
 		DisableAutoGenTag: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			flags.EnsureRequiredFlags(cmd, "provider", "zone", "nodes")
 
-			if len(args) > 0 {
-				req.Name = args[0]
-			} else {
-				return errors.New("missing cluster name")
+			if len(args) == 0 {
+				log.Fatalln("Missing cluster name")
 			}
-			req.NodeGroups = make([]*proto.InstanceGroup, len(nodes))
-			ng := 0
-			for sku, count := range nodes {
-				req.NodeGroups[ng] = &proto.InstanceGroup{
-					Sku:   sku,
-					Count: int64(count),
-				}
-				ng++
+			if len(args) > 1 {
+				log.Fatalln("Multiple cluster name provided.")
 			}
-
+			cluster.Name = args[0]
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
 			if err != nil {
 				log.Fatalln(err)
 			}
 			ctx := cloud.NewContext(context.TODO(), cfg)
+			cloud.Create(ctx, &cluster)
 
-			clusters, err := cloud.Store(ctx).Clusters().List(metav1.ListOptions{})
-			if err != nil {
-				log.Fatalln(err)
-			}
-			for _, cluster := range clusters {
-				oneliners.FILE(cluster.Name)
-				if strings.EqualFold(cluster.Name, req.Name) {
-					log.Fatalf("Cluster exists with name %s.", req.Name)
+			for sku, count := range nodes {
+				ig := api.InstanceGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              sku + "-pool",
+						UID:               phid.NewInstanceGroup(),
+						CreationTimestamp: metav1.Time{Time: time.Now()},
+						Labels: map[string]string{
+							"node-role.kubernetes.io/node": "true",
+						},
+					},
+					Spec: api.InstanceGroupSpec{
+						SKU:           sku,
+						Count:         int64(count),
+						SpotInstances: false,
+						//DiskType:      "",
+						//DiskSize:      0,
+					},
+				}
+				_, err := cloud.Store(ctx).InstanceGroups(cluster.Name).Create(&ig)
+				if err != nil {
+					log.Fatalln(err)
 				}
 			}
-			cm, err := cloud.GetCloudManager(req.Provider, ctx)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			oneliners.FILE(cm, req)
-			return cm.Create(&req)
 		},
 	}
 
-	cmd.Flags().StringVar(&req.Provider, "provider", "", "Provider name")
-	cmd.Flags().StringVar(&req.Zone, "zone", "", "Cloud provider zone name")
-	cmd.Flags().StringVar(&req.GceProject, "gce-project", "", "GCE project name(only applicable to `gce` provider)")
+	cmd.Flags().StringVar(&cluster.Spec.Cloud.CloudProvider, "provider", "", "Provider name")
+	cmd.Flags().StringVar(&cluster.Spec.Cloud.Zone, "zone", "", "Cloud provider zone name")
+	cmd.Flags().StringVar(&cluster.Spec.Cloud.Project, "gce-project", "", "GCE project name(only applicable to `gce` provider)")
 	cmd.Flags().StringToIntVar(&nodes, "nodes", map[string]int{}, "Node set configuration")
-	cmd.Flags().StringVar(&req.CredentialUid, "credential-uid", "", "Use preconfigured cloud credential uid")
-	cmd.Flags().StringVar(&req.KubernetesVersion, "version", "", "Kubernetes version")
-	cmd.Flags().BoolVar(&req.DoNotDelete, "do-not-delete", false, "Set do not delete flag")
+	cmd.Flags().StringVar(&cluster.Spec.CredentialName, "credential-uid", "", "Use preconfigured cloud credential uid")
+	cmd.Flags().StringVar(&cluster.Spec.KubernetesVersion, "version", "", "Kubernetes version")
+	cmd.Flags().BoolVar(&cluster.Spec.DoNotDelete, "do-not-delete", false, "Set do not delete flag")
 
 	return cmd
 }

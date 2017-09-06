@@ -24,12 +24,10 @@ const (
 	preTagDelay = 5 * time.Second
 )
 
-func (cm *ClusterManager) Apply(cluster string, dryRun bool) error {
+func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	var err error
 
-	if cm.cluster, err = cloud.Store(cm.ctx).Clusters().Get(cluster); err != nil {
-		return err
-	}
+	cm.cluster = in
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
@@ -97,6 +95,24 @@ func (cm *ClusterManager) Apply(cluster string, dryRun bool) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
+
+	// https://github.com/kubernetes/kubernetes/blob/8eb75a5810cba92ccad845ca360cf924f2385881/cluster/aws/config-default.sh#L33
+	//ig.Spec.SKU = "m3.medium"
+	//if totalNodes > 5 {
+	//	ig.Spec.SKU = "m3.large"
+	//}
+	//if totalNodes > 10 {
+	//	ig.Spec.SKU = "m3.xlarge"
+	//}
+	//if totalNodes > 100 {
+	//	ig.Spec.SKU = "m3.2xlarge"
+	//}
+	//if totalNodes > 250 {
+	//	ig.Spec.SKU = "c4.4xlarge"
+	//}
+	//if totalNodes > 500 {
+	//	ig.Spec.SKU = "c4.8xlarge"
+	//}
 
 	masterInstance, err := cm.startMaster()
 	if err != nil {
