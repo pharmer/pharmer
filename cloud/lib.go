@@ -41,6 +41,9 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if cluster, err = cm.DefaultSpec(cluster); err != nil {
 		return nil, err
 	}
+	if cluster, err = Store(ctx).Clusters().Create(cluster); err != nil {
+		return nil, err
+	}
 
 	if ctx, err = CreateCACertificates(ctx, cluster); err != nil {
 		return nil, err
@@ -48,12 +51,10 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
 		return nil, err
 	}
-
-	if _, err = Store(ctx).Clusters().Create(cluster); err != nil {
+	if _, err = cm.CreateMasterInstanceGroup(cluster); err != nil {
 		return nil, err
 	}
-
-	if _, err = cm.CreateMasterInstanceGroup(cluster); err != nil {
+	if _, err = Store(ctx).Clusters().Update(cluster); err != nil {
 		return nil, err
 	}
 	return cluster, nil

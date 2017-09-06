@@ -3,35 +3,112 @@ package cloud
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"strings"
 	"text/template"
 
 	"github.com/appscode/pharmer/api"
+	"github.com/ghodss/yaml"
+	"gopkg.in/ini.v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
 type TemplateData struct {
-	KubernetesVersion string
-	KubeadmVersion    string
-	KubeadmToken      string
-	CAKey             string
-	FrontProxyKey     string
-	APIServerHost     string
-	ExtraDomains      string
-
-	NetworkProvider string
+	KubernetesVersion   string
+	KubeadmVersion      string
+	KubeadmToken        string
+	CAKey               string
+	FrontProxyKey       string
+	APIServerHost       string
+	ExtraDomains        string
+	NetworkProvider     string
+	MasterConfiguration string
+	CloudConfigPath     string
+	CloudConfig         string
 }
 
 func GetTemplateData(ctx context.Context, cluster *api.Cluster) TemplateData {
-	return TemplateData{
+	td := TemplateData{
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		KubeadmVersion:    cluster.Spec.KubeadmVersion,
 		KubeadmToken:      cluster.Spec.Token,
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		APIServerHost:     "",
+		APIServerHost:     cluster.APIServerURL(),
 		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
 		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
 	}
+	cfg := kubeadmapi.MasterConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1alpha1",
+			Kind:       "MasterConfiguration",
+		},
+		API:  cluster.Spec.API,
+		Etcd: cluster.Spec.Etcd,
+		Networking: kubeadmapi.Networking{
+			ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
+			PodSubnet:     cluster.Spec.Networking.PodSubnet,
+			DNSDomain:     cluster.Spec.Networking.DNSDomain,
+		},
+		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		CloudProvider:     cluster.Spec.Cloud.CloudProvider,
+		// AuthorizationModes:
+		Token:                      cluster.Spec.Token,
+		TokenTTL:                   cluster.Spec.TokenTTL,
+		SelfHosted:                 cluster.Spec.SelfHosted,
+		APIServerExtraArgs:         map[string]string{},
+		ControllerManagerExtraArgs: map[string]string{},
+		SchedulerExtraArgs:         map[string]string{},
+		APIServerCertSANs:          []string{},
+	}
+	{
+		if cluster.Spec.Cloud.GCE != nil {
+			cfg.APIServerExtraArgs["cloud-config"] = cluster.Spec.Cloud.CloudConfigPath
+			td.CloudConfigPath = cluster.Spec.Cloud.CloudConfigPath
+			// ref: https://github.com/kubernetes/kubernetes/blob/release-1.5/cluster/gce/configure-vm.sh#L846
+			cfg := ini.Empty()
+			err := cfg.Section("global").ReflectFrom(cluster.Spec.Cloud.GCE.CloudConfig)
+			if err != nil {
+				panic(err)
+			}
+			var buf bytes.Buffer
+			_, err = cfg.WriteTo(&buf)
+			if err != nil {
+				panic(err)
+			}
+			td.CloudConfig = buf.String()
+		}
+	}
+	{
+		if cluster.Spec.Cloud.Azure != nil {
+			cfg.APIServerExtraArgs["cloud-config"] = cluster.Spec.Cloud.CloudConfigPath
+			td.CloudConfigPath = cluster.Spec.Cloud.CloudConfigPath
+
+			data, err := json.MarshalIndent(cluster.Spec.Cloud.Azure.CloudConfig, "", "  ")
+			if err != nil {
+				panic(err)
+			}
+			td.CloudConfig = string(data)
+		}
+	}
+	{
+		extraDomains := []string{}
+		if domain := Extra(ctx).ExternalDomain(cluster.Name); domain != "" {
+			extraDomains = append(extraDomains, domain)
+		}
+		if domain := Extra(ctx).InternalDomain(cluster.Name); domain != "" {
+			extraDomains = append(extraDomains, domain)
+		}
+		td.ExtraDomains = strings.Join(extraDomains, ",")
+	}
+	cb, err := yaml.Marshal(&cfg)
+	if err != nil {
+		panic(err)
+	}
+	td.MasterConfiguration = string(cb)
+	return td
 }
 
 func RenderStartupScript(ctx context.Context, cluster *api.Cluster, role string) (string, error) {
@@ -91,7 +168,20 @@ kubeadm reset
 
 {{ template "setup-certs" . }}
 
+{{ if .CloudConfigPath }}
+cat > {{ .CloudConfigPath }} <<EOF
+{{ .CloudConfig }}
+EOF
+{{ end }}
+
 mkdir -p /etc/kubernetes/kubeadm
+
+{{ if .MasterConfiguration }}
+cat > /etc/kubernetes/kubeadm/config.yaml <<EOF
+{{ .MasterConfiguration }}
+EOF
+{{ end }}
+
 pre-k merge master-config \
     --config=/etc/kubernetes/kubeadm/config.yaml
 	--apiserver-bind-port=6443 \

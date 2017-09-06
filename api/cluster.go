@@ -105,7 +105,7 @@ type CloudSpec struct {
 	CloudProvider   string `json:"cloudProvider,omitempty"`
 	Project         string `json:"project,omitempty"`
 	Region          string `json:"region,omitempty"`
-	Zone            string `json:"ZONE,omitempty"` // master needs it for ossec
+	Zone            string `json:"zone,omitempty"` // master needs it for ossec
 	OS              string `json:"os,omitempty"`
 	Kernel          string `json:"kernel,omitempty"` // needed ?
 	CloudConfigPath string `json:"cloudConfig,omitempty"`
