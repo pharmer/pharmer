@@ -15,7 +15,7 @@ import (
 )
 
 func NewCmdCreate() *cobra.Command {
-	var cluster api.Cluster
+	cluster := &api.Cluster{}
 	nodes := map[string]int{}
 
 	cmd := &cobra.Command{
@@ -39,7 +39,10 @@ func NewCmdCreate() *cobra.Command {
 				log.Fatalln(err)
 			}
 			ctx := cloud.NewContext(context.TODO(), cfg)
-			cloud.Create(ctx, &cluster)
+			cluster, err = cloud.Create(ctx, cluster)
+			if err != nil {
+				log.Fatalln(err)
+			}
 
 			for sku, count := range nodes {
 				ig := api.InstanceGroup{
