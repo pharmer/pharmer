@@ -42,7 +42,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 
 	config := &_aws.Config{
-		Region:      &cluster.Spec.Region,
+		Region:      &cluster.Spec.Cloud.Region,
 		Credentials: credentials.NewStaticCredentials(typed.AccessKeyID(), typed.SecretAccessKey(), ""),
 	}
 	conn := cloudConnector{
@@ -103,7 +103,7 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 // https://github.com/kubernetes/kubernetes/blob/master/cluster/aws/jessie/util.sh#L28
 // Based on https://github.com/kubernetes/kube-deploy/tree/master/imagebuilder
 func (conn *cloudConnector) detectJessieImage() error {
-	conn.cluster.Spec.OS = "debian"
+	conn.cluster.Spec.Cloud.OS = "debian"
 	r1, err := conn.ec2.DescribeImages(&_ec2.DescribeImagesInput{
 		Owners: []*string{StringP("282335181503")},
 		Filters: []*_ec2.Filter{
@@ -118,14 +118,14 @@ func (conn *cloudConnector) detectJessieImage() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	conn.cluster.Spec.InstanceImage = *r1.Images[0].ImageId
-	conn.cluster.Spec.RootDeviceName = *r1.Images[0].RootDeviceName
-	cloud.Logger(conn.ctx).Infof("Debain image with %v for %v detected", conn.cluster.Spec.InstanceImage, conn.cluster.Spec.RootDeviceName)
+	conn.cluster.Spec.Cloud.InstanceImage = *r1.Images[0].ImageId
+	conn.cluster.Status.Cloud.AWS.RootDeviceName = *r1.Images[0].RootDeviceName
+	cloud.Logger(conn.ctx).Infof("Debain image with %v for %v detected", conn.cluster.Spec.Cloud.InstanceImage, conn.cluster.Status.Cloud.AWS.RootDeviceName)
 	return nil
 }
 
 func (conn *cloudConnector) detectUbuntuImage() error {
-	conn.cluster.Spec.OS = "ubuntu"
+	conn.cluster.Spec.Cloud.OS = "ubuntu"
 	r1, err := conn.ec2.DescribeImages(&_ec2.DescribeImagesInput{
 		Owners: []*string{StringP("099720109477")},
 		Filters: []*_ec2.Filter{
@@ -140,8 +140,8 @@ func (conn *cloudConnector) detectUbuntuImage() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	conn.cluster.Spec.InstanceImage = *r1.Images[0].ImageId
-	conn.cluster.Spec.RootDeviceName = *r1.Images[0].RootDeviceName
-	cloud.Logger(conn.ctx).Infof("Ubuntu image with %v for %v detected", conn.cluster.Spec.InstanceImage, conn.cluster.Spec.RootDeviceName)
+	conn.cluster.Spec.Cloud.InstanceImage = *r1.Images[0].ImageId
+	conn.cluster.Status.Cloud.AWS.RootDeviceName = *r1.Images[0].RootDeviceName
+	cloud.Logger(conn.ctx).Infof("Ubuntu image with %v for %v detected", conn.cluster.Spec.Cloud.InstanceImage, conn.cluster.Status.Cloud.AWS.RootDeviceName)
 	return nil
 }

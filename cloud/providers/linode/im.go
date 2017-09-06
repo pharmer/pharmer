@@ -72,7 +72,7 @@ func (im *instanceManager) createStackScript(sku, role string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	script, err := im.conn.client.StackScript.Create(im.namer.StartupScriptName(sku, role), im.cluster.Spec.InstanceImage, startupScript, map[string]string{
+	script, err := im.conn.client.StackScript.Create(im.namer.StartupScriptName(sku, role), im.cluster.Spec.Cloud.InstanceImage, startupScript, map[string]string{
 		"Description": im.cluster.Name,
 	})
 	if err != nil {
@@ -83,7 +83,7 @@ func (im *instanceManager) createStackScript(sku, role string) (int, error) {
 }
 
 func (im *instanceManager) createInstance(name string, scriptId int, sku string) (int, int, error) {
-	dcId, err := strconv.Atoi(im.cluster.Spec.Zone)
+	dcId, err := strconv.Atoi(im.cluster.Spec.Cloud.Zone)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -122,13 +122,13 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	distributionID, err := strconv.Atoi(im.cluster.Spec.InstanceImage)
+	distributionID, err := strconv.Atoi(im.cluster.Spec.Cloud.InstanceImage)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 	swapDiskSize := 512                // MB
 	rootDiskSize := mt.Disk*1024 - 512 // MB
-	rootDisk, err := im.conn.client.Disk.CreateFromStackscript(scriptId, id, name, stackScriptUDFResponses, distributionID, rootDiskSize, im.cluster.Spec.InstanceRootPassword, args)
+	rootDisk, err := im.conn.client.Disk.CreateFromStackscript(scriptId, id, name, stackScriptUDFResponses, distributionID, rootDiskSize, im.cluster.Spec.Cloud.Linode.InstanceRootPassword, args)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -137,7 +137,7 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
 
-	kernelId, err := strconv.Atoi(im.cluster.Spec.Kernel)
+	kernelId, err := strconv.Atoi(im.cluster.Spec.Cloud.Kernel)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}

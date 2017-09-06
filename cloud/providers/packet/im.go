@@ -26,7 +26,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, e
 	backoff.Retry(func() (err error) {
 		for {
 			var servers []packngo.Device
-			servers, _, err = im.conn.client.Devices.List(im.cluster.Spec.Project)
+			servers, _, err = im.conn.client.Devices.List(im.cluster.Spec.Cloud.Project)
 			if err != nil {
 				return
 			}
@@ -64,10 +64,10 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 	device, _, err := im.conn.client.Devices.Create(&packngo.DeviceCreateRequest{
 		Hostname:     name,
 		Plan:         sku,
-		Facility:     im.cluster.Spec.Zone,
-		OS:           im.cluster.Spec.InstanceImage,
+		Facility:     im.cluster.Spec.Cloud.Zone,
+		OS:           im.cluster.Spec.Cloud.InstanceImage,
 		BillingCycle: "hourly",
-		ProjectID:    im.cluster.Spec.Project,
+		ProjectID:    im.cluster.Spec.Cloud.Project,
 		UserData:     startupScript,
 		Tags:         []string{im.cluster.Name},
 	})

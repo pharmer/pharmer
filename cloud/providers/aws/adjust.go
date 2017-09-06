@@ -86,7 +86,7 @@ func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) err
 	}
 
 	cloud.Logger(igm.cm.ctx).Info("Creating node configuration assuming enableNodePublicIP = true")
-	fmt.Println(igm.cm.cluster.Spec.RootDeviceName, "<<<<<<<<--------------->>>>>>>>>>>>>>>>>>.")
+	fmt.Println(igm.cm.cluster.Status.Cloud.AWS.RootDeviceName, "<<<<<<<<--------------->>>>>>>>>>>>>>>>>>.")
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
 		LaunchConfigurationName:  StringP(name),
 		AssociatePublicIpAddress: BoolP(igm.cm.cluster.Spec.EnableNodePublicIP),
@@ -122,12 +122,12 @@ func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) err
 				},
 			},
 		*/
-		IamInstanceProfile: StringP(igm.cm.cluster.Spec.IAMProfileNode),
-		ImageId:            StringP(igm.cm.cluster.Spec.InstanceImage),
+		IamInstanceProfile: StringP(igm.cm.cluster.Spec.Cloud.AWS.IAMProfileNode),
+		ImageId:            StringP(igm.cm.cluster.Spec.Cloud.InstanceImage),
 		InstanceType:       StringP(sku),
-		KeyName:            StringP(igm.cm.cluster.Spec.SSHKeyExternalID),
+		KeyName:            StringP(igm.cm.cluster.Status.SSHKeyExternalID),
 		SecurityGroups: []*string{
-			StringP(igm.cm.cluster.Spec.NodeSGId),
+			StringP(igm.cm.cluster.Status.Cloud.AWS.NodeSGId),
 		},
 		UserData: StringP(base64.StdEncoding.EncodeToString([]byte(script))),
 	}

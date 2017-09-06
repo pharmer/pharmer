@@ -5,7 +5,6 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 )
 
@@ -45,33 +44,32 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 			Count: req.Count,
 		},
 	}
-	fmt.Println(cm.cluster.NodeCount(), "<<<----------")
-	nodeAdjust, _ := cloud.Mutator(cm.ctx, cm.cluster, inst)
-	fmt.Println(cm.cluster.NodeCount(), "------->>>>>>>>")
-	igm := &InstanceGroupManager{
-		cm:       cm,
-		instance: inst,
-	}
-	fmt.Println(igm)
-	igm.AdjustInstanceGroup()
-	flag := false
-	for x := range cm.cluster.Spec.NodeGroups {
-		if cm.cluster.Spec.NodeGroups[x].SKU == req.Sku {
-			cm.cluster.Spec.NodeGroups[x].Count += nodeAdjust
-			flag = true
-			//fmt.Println(ctx.NodeGroups[k].Count, "*********************************>>")
-		}
-		//ctx.NumNodes += v.Count
-		//fmt.Println(k.String(), " = ", v.Count)
-	}
-	if !flag {
-		ig := &api.IG{
-			SKU:              req.Sku,
-			Count:            req.Count,
-			UseSpotInstances: false,
-		}
-		cm.cluster.Spec.NodeGroups = append(cm.cluster.Spec.NodeGroups, ig)
-	}
+	fmt.Println(inst)
+	//nodeAdjust, _ := cloud.Mutator(cm.ctx, cm.cluster, inst)
+	//igm := &InstanceGroupManager{
+	//	cm:       cm,
+	//	instance: inst,
+	//}
+	//fmt.Println(igm)
+	//igm.AdjustInstanceGroup()
+	//flag := false
+	//for x := range cm.cluster.Spec.NodeGroups {
+	//	if cm.cluster.Spec.NodeGroups[x].SKU == req.Sku {
+	//		cm.cluster.Spec.NodeGroups[x].Count += nodeAdjust
+	//		flag = true
+	//		//fmt.Println(ctx.NodeGroups[k].Count, "*********************************>>")
+	//	}
+	//	//ctx.NumNodes += v.Count
+	//	//fmt.Println(k.String(), " = ", v.Count)
+	//}
+	//if !flag {
+	//	ig := &api.IG{
+	//		SKU:           req.Sku,
+	//		Count:         req.Count,
+	//		SpotInstances: false,
+	//	}
+	//	cm.cluster.Spec.NodeGroups = append(cm.cluster.Spec.NodeGroups, ig)
+	//}
 
 	//instances, err := igm.cm.listInstances(igm.cm.namer.InstanceGroupName(req.Sku))
 	//if err != nil {
@@ -85,7 +83,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 }
 
 func (cm *ClusterManager) checkInstanceGroup(instanceGroupName string) bool {
-	_, err := cm.conn.computeService.InstanceGroupManagers.Get(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceGroupName).Do()
+	_, err := cm.conn.computeService.InstanceGroupManagers.Get(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
 		return false
 	}

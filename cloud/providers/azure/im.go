@@ -57,7 +57,7 @@ func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, e
 func (im *instanceManager) createPublicIP(name string, alloc network.IPAllocationMethod) (network.PublicIPAddress, error) {
 	req := network.PublicIPAddress{
 		Name:     StringP(name),
-		Location: StringP(im.cluster.Spec.Zone),
+		Location: StringP(im.cluster.Spec.Cloud.Zone),
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAllocationMethod: alloc,
 		},
@@ -85,7 +85,7 @@ func (im *instanceManager) getAvailablitySet() (compute.AvailabilitySet, error) 
 }
 
 func (im *instanceManager) getStorageAccount() (armstorage.Account, error) {
-	storageName := im.cluster.Spec.AzureCloudConfig.StorageAccountName
+	storageName := im.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName
 	account, err := im.conn.storageClient.GetProperties(im.namer.ResourceGroupName(), storageName)
 	return account, err
 }
@@ -93,7 +93,7 @@ func (im *instanceManager) getStorageAccount() (armstorage.Account, error) {
 func (im *instanceManager) createNetworkInterface(name string, sg network.SecurityGroup, subnet network.Subnet, alloc network.IPAllocationMethod, internalIP string, pip network.PublicIPAddress) (network.Interface, error) {
 	req := network.Interface{
 		Name:     StringP(name),
-		Location: StringP(im.cluster.Spec.Zone),
+		Location: StringP(im.cluster.Spec.Cloud.Zone),
 		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
 			IPConfigurations: &[]network.InterfaceIPConfiguration{
 				{
@@ -136,7 +136,7 @@ func (im *instanceManager) createNetworkInterface(name string, sg network.Securi
 func (im *instanceManager) createVirtualMachine(nic network.Interface, as compute.AvailabilitySet, sa armstorage.Account, vmName, data, vmSize string) (compute.VirtualMachine, error) {
 	req := compute.VirtualMachine{
 		Name:     StringP(vmName),
-		Location: StringP(im.cluster.Spec.Zone),
+		Location: StringP(im.cluster.Spec.Cloud.Zone),
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
 			AvailabilitySet: &compute.SubResource{
 				ID: as.ID,
@@ -150,7 +150,7 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 			},
 			OsProfile: &compute.OSProfile{
 				ComputerName:  StringP(vmName),
-				AdminPassword: StringP(im.cluster.Spec.InstanceRootPassword),
+				AdminPassword: StringP(im.cluster.Spec.Cloud.Azure.InstanceRootPassword),
 				AdminUsername: StringP(im.namer.AdminUsername()),
 				CustomData:    StringP(base64.StdEncoding.EncodeToString([]byte(data))),
 				LinuxConfiguration: &compute.LinuxConfiguration{
@@ -167,10 +167,10 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 			},
 			StorageProfile: &compute.StorageProfile{
 				ImageReference: &compute.ImageReference{
-					Publisher: StringP(im.cluster.Spec.InstanceImageProject),
-					Offer:     StringP(im.cluster.Spec.OS),
-					Sku:       StringP(im.cluster.Spec.InstanceImage),
-					Version:   StringP(im.cluster.Spec.InstanceImageVersion),
+					Publisher: StringP(im.cluster.Spec.Cloud.InstanceImageProject),
+					Offer:     StringP(im.cluster.Spec.Cloud.OS),
+					Sku:       StringP(im.cluster.Spec.Cloud.InstanceImage),
+					Version:   StringP(im.cluster.Spec.Cloud.Azure.InstanceImageVersion),
 				},
 				OsDisk: &compute.OSDisk{
 					Caching:      compute.ReadWrite,
@@ -195,7 +195,7 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
-	cloud.Logger(im.ctx).Infof("Virtual machine with disk %v password %v created", im.namer.BootDiskURI(sa, vmName), im.cluster.Spec.InstanceRootPassword)
+	cloud.Logger(im.ctx).Infof("Virtual machine with disk %v password %v created", im.namer.BootDiskURI(sa, vmName), im.cluster.Spec.Cloud.Azure.InstanceRootPassword)
 	// https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-linux-extensions-customscript?toc=%2fazure%2fvirtual-machines%2flinux%2ftoc.json
 	// https://github.com/Azure/custom-script-extension-linux
 	// old: https://github.com/Azure/azure-linux-extensions/tree/master/CustomScript
@@ -205,7 +205,7 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 	extReq := compute.VirtualMachineExtension{
 		Name:     StringP(extName),
 		Type:     StringP("Microsoft.Compute/virtualMachines/extensions"),
-		Location: StringP(im.cluster.Spec.Zone),
+		Location: StringP(im.cluster.Spec.Cloud.Zone),
 		VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
 			Publisher:               StringP("Microsoft.Azure.Extensions"),
 			Type:                    StringP("CustomScript"),
@@ -243,7 +243,7 @@ func (im *instanceManager) DeleteVirtualMachine(vmName string) error {
 	if err != nil {
 		return err
 	}
-	storageName := im.cluster.Spec.AzureCloudConfig.StorageAccountName
+	storageName := im.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName
 	keys, err := im.conn.storageClient.ListKeys(im.namer.ResourceGroupName(), storageName)
 	if err != nil {
 		return err

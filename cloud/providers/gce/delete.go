@@ -107,7 +107,7 @@ type groupInfo struct {
 func (cm *ClusterManager) listInstanceGroups() ([]*groupInfo, error) {
 	groups := make([]*groupInfo, 0)
 
-	r1, err := cm.conn.computeService.InstanceGroups.List(cm.cluster.Spec.Project, cm.cluster.Spec.Zone).Do()
+	r1, err := cm.conn.computeService.InstanceGroups.List(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone).Do()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -130,7 +130,7 @@ func (cm *ClusterManager) listInstanceGroups() ([]*groupInfo, error) {
 }
 
 func (cm *ClusterManager) deleteMaster() error {
-	r2, err := cm.conn.computeService.Instances.Delete(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, cm.cluster.Spec.KubernetesMasterName).Do()
+	r2, err := cm.conn.computeService.Instances.Delete(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, cm.cluster.Spec.KubernetesMasterName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -143,7 +143,7 @@ func (cm *ClusterManager) deleteMaster() error {
 
 //delete instance group
 func (cm *ClusterManager) deleteInstanceGroup(instanceGroup string) error {
-	r1, err := cm.conn.computeService.InstanceGroupManagers.Delete(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceGroup).Do()
+	r1, err := cm.conn.computeService.InstanceGroupManagers.Delete(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, instanceGroup).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -155,7 +155,7 @@ func (cm *ClusterManager) deleteInstanceGroup(instanceGroup string) error {
 
 //delete template
 func (cm *ClusterManager) deleteInstanceTemplate(template string) error {
-	_, err := cm.conn.computeService.InstanceTemplates.Delete(cm.cluster.Spec.Project, template).Do()
+	_, err := cm.conn.computeService.InstanceTemplates.Delete(cm.cluster.Spec.Cloud.Project, template).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -168,7 +168,7 @@ func (cm *ClusterManager) deleteInstanceTemplate(template string) error {
 func (cm *ClusterManager) deleteAutoscaler(instanceGroup string) error {
 	cloud.Logger(cm.ctx).Infof("Removing autoscaller %v", instanceGroup)
 
-	r, err := cm.conn.computeService.Autoscalers.Delete(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceGroup).Do()
+	r, err := cm.conn.computeService.Autoscalers.Delete(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, instanceGroup).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -183,13 +183,13 @@ func (cm *ClusterManager) deleteAutoscaler(instanceGroup string) error {
 //delete disk
 func (cm *ClusterManager) deleteDisk() error {
 	masterDisk := cm.namer.MasterPDName()
-	r6, err := cm.conn.computeService.Disks.Delete(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, masterDisk).Do()
+	r6, err := cm.conn.computeService.Disks.Delete(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, masterDisk).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cloud.Logger(cm.ctx).Debugf("Master Disk response %v", r6)
 	time.Sleep(5 * time.Second)
-	r7, err := cm.conn.computeService.Disks.List(cm.cluster.Spec.Project, cm.cluster.Spec.Zone).Do()
+	r7, err := cm.conn.computeService.Disks.List(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -197,7 +197,7 @@ func (cm *ClusterManager) deleteDisk() error {
 		s := strings.Split(r7.Items[i].Name, "-")
 		if s[0] == cm.cluster.Name {
 
-			r, err := cm.conn.computeService.Disks.Delete(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, r7.Items[i].Name).Do()
+			r, err := cm.conn.computeService.Disks.Delete(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, r7.Items[i].Name).Do()
 			if err != nil {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
@@ -212,7 +212,7 @@ func (cm *ClusterManager) deleteDisk() error {
 //delete firewalls
 func (cm *ClusterManager) deleteFirewalls() error {
 	name := cm.cluster.Name + "-node-all"
-	r1, err := cm.conn.computeService.Firewalls.Delete(cm.cluster.Spec.Project, name).Do()
+	r1, err := cm.conn.computeService.Firewalls.Delete(cm.cluster.Spec.Cloud.Project, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -220,7 +220,7 @@ func (cm *ClusterManager) deleteFirewalls() error {
 	//cluster.Spec.waitForGlobalOperation(name)
 	time.Sleep(5 * time.Second)
 	ruleHTTPS := cm.cluster.Spec.KubernetesMasterName + "-https"
-	r2, err := cm.conn.computeService.Firewalls.Delete(cm.cluster.Spec.Project, ruleHTTPS).Do()
+	r2, err := cm.conn.computeService.Firewalls.Delete(cm.cluster.Spec.Cloud.Project, ruleHTTPS).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -233,12 +233,12 @@ func (cm *ClusterManager) deleteFirewalls() error {
 // delete reserve ip
 func (cm *ClusterManager) releaseReservedIP() error {
 	name := cm.namer.ReserveIPName()
-	r1, err := cm.conn.computeService.Addresses.Get(cm.cluster.Spec.Project, cm.cluster.Spec.Region, name).Do()
+	r1, err := cm.conn.computeService.Addresses.Get(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Region, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cloud.Logger(cm.ctx).Infof("Releasing reserved master ip %v", r1.Address)
-	r2, err := cm.conn.computeService.Addresses.Delete(cm.cluster.Spec.Project, cm.cluster.Spec.Region, name).Do()
+	r2, err := cm.conn.computeService.Addresses.Delete(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Region, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -251,7 +251,7 @@ func (cm *ClusterManager) releaseReservedIP() error {
 }
 
 func (cm *ClusterManager) deleteRoutes() error {
-	r1, err := cm.conn.computeService.Routes.List(cm.cluster.Spec.Project).Do()
+	r1, err := cm.conn.computeService.Routes.List(cm.cluster.Spec.Cloud.Project).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -259,7 +259,7 @@ func (cm *ClusterManager) deleteRoutes() error {
 		routeName := r1.Items[i].Name
 		if strings.HasPrefix(routeName, cm.cluster.Name) {
 			fmt.Println(routeName)
-			r2, err := cm.conn.computeService.Routes.Delete(cm.cluster.Spec.Project, routeName).Do()
+			r2, err := cm.conn.computeService.Routes.Delete(cm.cluster.Spec.Cloud.Project, routeName).Do()
 			if err != nil {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}

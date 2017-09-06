@@ -46,21 +46,21 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 
 	namer := namer{cluster: cluster}
-	cluster.Spec.AzureCloudConfig = &api.AzureCloudConfig{
+	cluster.Spec.Cloud.Azure.CloudConfig = &api.AzureCloudConfig{
 		TenantID:           typed.TenantID(),
 		SubscriptionID:     typed.SubscriptionID(),
 		AadClientID:        typed.ClientID(),
 		AadClientSecret:    typed.ClientSecret(),
 		ResourceGroup:      namer.ResourceGroupName(),
-		Location:           cluster.Spec.Zone,
+		Location:           cluster.Spec.Cloud.Zone,
 		SubnetName:         namer.SubnetName(),
 		SecurityGroupName:  namer.NetworkSecurityGroupName(),
 		VnetName:           namer.VirtualNetworkName(),
 		RouteTableName:     namer.RouteTableName(),
 		StorageAccountName: namer.GenStorageAccountName(),
 	}
-	cluster.Spec.CloudConfigPath = "/etc/kubernetes/azure.json"
-	cluster.Spec.AzureStorageAccountName = cluster.Spec.AzureCloudConfig.StorageAccountName
+	cluster.Spec.Cloud.CloudConfigPath = "/etc/kubernetes/azure.json"
+	cluster.Spec.Cloud.Azure.StorageAccountName = cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName
 
 	/*
 		if az.Cloud == "" {

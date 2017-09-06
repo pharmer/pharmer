@@ -44,7 +44,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if !exists {
-		return errors.Newf("VPC %v not found for Cluster %v", cm.cluster.Spec.VpcId, cm.cluster.Name).WithContext(cm.ctx).Err()
+		return errors.Newf("VPC %v not found for Cluster %v", cm.cluster.Status.Cloud.AWS.VpcId, cm.cluster.Name).WithContext(cm.ctx).Err()
 	}
 
 	fmt.Println("Updating...")

@@ -42,8 +42,8 @@ func (conn *cloudConnector) detectInstanceImage() error {
 	cloud.Logger(conn.ctx).Infof("Checking for instance image")
 	for _, d := range resp.Distributions {
 		if d.Is64Bit == 1 && d.Label.String() == "Debian 8" {
-			conn.cluster.Spec.InstanceImage = strconv.Itoa(d.DistributionId)
-			cloud.Logger(conn.ctx).Infof("Instance image %v with id %v found", d.Label.String(), conn.cluster.Spec.InstanceImage)
+			conn.cluster.Spec.Cloud.InstanceImage = strconv.Itoa(d.DistributionId)
+			cloud.Logger(conn.ctx).Infof("Instance image %v with id %v found", d.Label.String(), conn.cluster.Spec.Cloud.InstanceImage)
 			return nil
 		}
 	}
@@ -61,7 +61,7 @@ func (conn *cloudConnector) detectKernel() error {
 	for _, d := range resp.Kernels {
 		if d.IsPVOPS == 1 {
 			if strings.HasPrefix(d.Label.String(), "Latest 64 bit") {
-				conn.cluster.Spec.Kernel = strconv.Itoa(d.KernelId)
+				conn.cluster.Spec.Cloud.Kernel = strconv.Itoa(d.KernelId)
 				return nil
 			}
 			if strings.Contains(d.Label.String(), "x86_64") && d.KernelId > kernelId {
@@ -70,7 +70,7 @@ func (conn *cloudConnector) detectKernel() error {
 		}
 	}
 	if kernelId >= 0 {
-		conn.cluster.Spec.Kernel = strconv.Itoa(kernelId)
+		conn.cluster.Spec.Cloud.Kernel = strconv.Itoa(kernelId)
 		return nil
 	}
 	return errors.New("Can't find Kernel").WithContext(conn.ctx).Err()

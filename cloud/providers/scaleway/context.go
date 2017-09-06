@@ -5,7 +5,6 @@ import (
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/data/files"
@@ -76,17 +75,14 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	api.AssignTypeKind(cluster)
 	namer := namer{cluster: cluster}
 
-	cluster.Spec.Provider = req.Provider
-	cluster.Spec.Zone = req.Zone
+	cluster.Spec.Cloud.CloudProvider = req.Provider
+	cluster.Spec.Cloud.Zone = req.Zone
 	cluster.Spec.CredentialName = req.CredentialUid
-	cluster.Spec.Region = cluster.Spec.Zone
+	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
 	cluster.Spec.DoNotDelete = req.DoNotDelete
-	cluster.SetNodeGroups(req.NodeGroups)
 
 	cluster.Spec.KubernetesMasterName = namer.MasterName()
-	cluster.Spec.SSHKeyExternalID = namer.GenSSHKeyExternalID()
-
-	cluster.Spec.StartupConfigToken = rand.Characters(128)
+	cluster.Status.SSHKeyExternalID = namer.GenSSHKeyExternalID()
 
 	// TODO: FixIt!
 	//cluster.Spec.AppsCodeApiGrpcEndpoint = system.PublicAPIGrpcEndpoint()
@@ -110,7 +106,7 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	// Using custom image with memory controller enabled
 	// -------------------------ctx.InstanceImage = "16604964" // "container-os-20160402" // Debian 8.4 x64
 
-	cluster.Spec.NonMasqueradeCIDR = "10.0.0.0/8"
+	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
 
 	version, err := semver.NewVersion(cluster.Spec.KubernetesVersion)
 	if err != nil {

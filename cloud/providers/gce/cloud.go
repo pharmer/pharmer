@@ -37,19 +37,19 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
-	// TODO: FixIt cluster.Spec.Project
+	// TODO: FixIt cluster.Spec.Cloud.Project
 	namer := namer{cluster: cluster}
-	cluster.Spec.GCECloudConfig = &api.GCECloudConfig{
+	cluster.Spec.Cloud.GCE.CloudConfig = &api.GCECloudConfig{
 		// TokenURL           :
 		// TokenBody          :
-		ProjectID:          cluster.Spec.Project,
+		ProjectID:          cluster.Spec.Cloud.Project,
 		NetworkName:        "default",
 		NodeTags:           []string{namer.NodePrefix()},
 		NodeInstancePrefix: namer.NodePrefix(),
 		Multizone:          bool(cluster.Spec.Multizone),
 	}
-	cluster.Spec.Project = typed.ProjectID()
-	cluster.Spec.CloudConfigPath = "/etc/gce.conf"
+	cluster.Spec.Cloud.Project = typed.ProjectID()
+	cluster.Spec.Cloud.CloudConfigPath = "/etc/gce.conf"
 
 	conf, err := google.JWTConfigFromJSON([]byte(typed.ServiceAccount()),
 		compute.ComputeScope,
@@ -96,7 +96,7 @@ func (conn *cloudConnector) IsUnauthorized(project string) (bool, string) {
 
 func (conn *cloudConnector) deleteInstance(name string) error {
 	cloud.Logger(conn.ctx).Info("Deleting instance...")
-	r, err := conn.computeService.Instances.Delete(conn.cluster.Spec.Project, conn.cluster.Spec.Zone, name).Do()
+	r, err := conn.computeService.Instances.Delete(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
@@ -109,7 +109,7 @@ func (conn *cloudConnector) waitForGlobalOperation(operation string) error {
 	return wait.PollImmediate(cloud.RetryInterval, cloud.RetryTimeout, func() (bool, error) {
 		attempt++
 
-		r1, err := conn.computeService.GlobalOperations.Get(conn.cluster.Spec.Project, operation).Do()
+		r1, err := conn.computeService.GlobalOperations.Get(conn.cluster.Spec.Cloud.Project, operation).Do()
 		if err != nil {
 			return false, nil
 		}
@@ -126,7 +126,7 @@ func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 	return wait.PollImmediate(cloud.RetryInterval, cloud.RetryTimeout, func() (bool, error) {
 		attempt++
 
-		r1, err := conn.computeService.RegionOperations.Get(conn.cluster.Spec.Project, conn.cluster.Spec.Region, operation).Do()
+		r1, err := conn.computeService.RegionOperations.Get(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Region, operation).Do()
 		if err != nil {
 			return false, nil
 		}
@@ -143,7 +143,7 @@ func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 	return wait.PollImmediate(cloud.RetryInterval, cloud.RetryTimeout, func() (bool, error) {
 		attempt++
 
-		r1, err := conn.computeService.ZoneOperations.Get(conn.cluster.Spec.Project, conn.cluster.Spec.Zone, operation).Do()
+		r1, err := conn.computeService.ZoneOperations.Get(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, operation).Do()
 		if err != nil {
 			return false, nil
 		}

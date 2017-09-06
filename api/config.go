@@ -21,7 +21,7 @@ type GCSSpec struct {
 	Prefix string `json:"prefix,omitempty"`
 }
 
-type AzureSpec struct {
+type AzureStorageSpec struct {
 	Container string `json:"container,omitempty"`
 	Prefix    string `json:"prefix,omitempty"`
 }
@@ -34,11 +34,11 @@ type SwiftSpec struct {
 type StorageBackend struct {
 	CredentialName string `json:"credentialName,omitempty"`
 
-	Local *LocalSpec `json:"local,omitempty"`
-	S3    *S3Spec    `json:"s3,omitempty"`
-	GCS   *GCSSpec   `json:"gcs,omitempty"`
-	Azure *AzureSpec `json:"azure,omitempty"`
-	Swift *SwiftSpec `json:"swift,omitempty"`
+	Local *LocalSpec        `json:"local,omitempty"`
+	S3    *S3Spec           `json:"s3,omitempty"`
+	GCS   *GCSSpec          `json:"gcs,omitempty"`
+	Azure *AzureStorageSpec `json:"azure,omitempty"`
+	Swift *SwiftSpec        `json:"swift,omitempty"`
 }
 
 type DNSProvider struct {

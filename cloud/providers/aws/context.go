@@ -5,7 +5,6 @@ import (
 	"time"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
@@ -73,15 +72,16 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 		},
 		Spec: *defaultSpec,
 	}
+	cluster.Spec.Cloud.AWS = &api.AWSSpec{}
+	cluster.Status.Cloud.AWS = &api.AWSStatus{}
 	api.AssignTypeKind(cluster)
 	namer := namer{cluster: cluster}
 
-	cluster.Spec.Provider = req.Provider
-	cluster.Spec.Zone = req.Zone
+	cluster.Spec.Cloud.CloudProvider = req.Provider
+	cluster.Spec.Cloud.Zone = req.Zone
 	cluster.Spec.CredentialName = req.CredentialUid
-	cluster.Spec.Region = cluster.Spec.Zone[0 : len(cluster.Spec.Zone)-1]
+	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone[0 : len(cluster.Spec.Cloud.Zone)-1]
 	cluster.Spec.DoNotDelete = req.DoNotDelete
-	cluster.SetNodeGroups(req.NodeGroups)
 
 	// https://github.com/kubernetes/kubernetes/blob/master/cluster/aws/config-default.sh#L33
 	if cluster.Spec.MasterSKU == "" {
@@ -104,15 +104,13 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	}
 
 	cluster.Spec.KubernetesMasterName = namer.MasterName()
-	cluster.Spec.SSHKeyExternalID = namer.GenSSHKeyExternalID()
+	cluster.Status.SSHKeyExternalID = namer.GenSSHKeyExternalID()
 
-	cluster.Spec.MasterSGName = namer.GenMasterSGName()
-	cluster.Spec.NodeSGName = namer.GenNodeSGName()
+	cluster.Spec.Cloud.AWS.MasterSGName = namer.GenMasterSGName()
+	cluster.Spec.Cloud.AWS.NodeSGName = namer.GenNodeSGName()
 
-	cluster.Spec.KubeadmToken = cloud.GetKubeadmToken()
-	cluster.Spec.KubernetesVersion = "v" + req.KubernetesVersion
-
-	cluster.Spec.StartupConfigToken = rand.Characters(128)
+	cluster.Spec.Token = cloud.GetKubeadmToken()
+	cluster.Spec.KubernetesVersion = req.KubernetesVersion
 
 	// TODO: FixIt!
 	//cluster.Spec.AppsCodeApiGrpcEndpoint = system.PublicAPIGrpcEndpoint()
@@ -136,7 +134,7 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	// Using custom image with memory controller enabled
 	// -------------------------ctx.InstanceImage = "16604964" // "container-os-20160402" // Debian 8.4 x64
 
-	cluster.Spec.NonMasqueradeCIDR = "10.0.0.0/8"
+	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
 
 	version, err := semver.NewVersion(cluster.Spec.KubernetesVersion)
 	if err != nil {

@@ -78,9 +78,9 @@ func (cm *ClusterManager) masterUpdate(host, instanceName, version string) error
 	fmt.Println("------------------------")
 	fmt.Println(sout, serr, code, err)
 	fmt.Println("------------------------")*/
-	command := fmt.Sprintf(`gcloud compute --project "%v" ssh --zone "%v" "%v"`, cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceName)
+	command := fmt.Sprintf(`gcloud compute --project "%v" ssh --zone "%v" "%v"`, cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, instanceName)
 	init := fmt.Sprintf(`sudo kubeadm init --apiserver-bind-port 6443 --token %v  --apiserver-advertise-address ${PUBLICIP} --apiserver-cert-extra-sans ${PUBLICIP} ${PRIVATEIP} --pod-network-cidr 10.244.0.0/16 --kubernetes-version %v --skip-preflight-checks`,
-		cm.cluster.Spec.KubeadmToken, "v"+version)
+		cm.cluster.Spec.Token, "v"+version)
 	fmt.Println(init)
 	arg := str.ToArgv(command)
 	name, arg := arg[0], arg[1:]
@@ -169,7 +169,7 @@ func (cm *clusterManager) updateMaster() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.cluster.Spec.InstanceImage = img
+	cm.cluster.Spec.Cloud.InstanceImage = img
 	cm.UploadStartupConfig()
 
 	op, err := cm.createMasterIntance()
@@ -198,7 +198,7 @@ func (cm *clusterManager) updateMaster() error {
 */
 
 func (cm *ClusterManager) nodeUpdate(instanceName string) error {
-	command := fmt.Sprintf(`gcloud compute --project "%v" ssh --zone "%v" "%v"`, cm.cluster.Spec.Project, cm.cluster.Spec.Zone, instanceName)
+	command := fmt.Sprintf(`gcloud compute --project "%v" ssh --zone "%v" "%v"`, cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, instanceName)
 	arg := str.ToArgv(command)
 	name, arg := arg[0], arg[1:]
 	//arg = append(arg, "--command", "ls -lah")
@@ -248,7 +248,7 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	instances := []string{}
-	prefix := "https://www.googleapis.com/compute/v1/projects/" + cm.cluster.Spec.Project + "/zones/" + cm.cluster.Spec.Zone + "/instances/"
+	prefix := "https://www.googleapis.com/compute/v1/projects/" + cm.cluster.Spec.Cloud.Project + "/zones/" + cm.cluster.Spec.Cloud.Zone + "/instances/"
 	for _, instance := range oldinstances {
 		instanceName := prefix + instance.Name
 		instances = append(instances, instanceName)
@@ -300,11 +300,11 @@ func (cm *ClusterManager) getExistingContextVersion(sku string) (error, int64) {
 
 func (cm *ClusterManager) rollingUpdate(oldInstances []string, newInstanceTemplate, sku string) error {
 	groupName := cm.namer.InstanceGroupName(sku)
-	newTemplate := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", cm.cluster.Spec.Project, newInstanceTemplate)
+	newTemplate := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", cm.cluster.Spec.Cloud.Project, newInstanceTemplate)
 	template := &compute.InstanceGroupManagersSetInstanceTemplateRequest{
 		InstanceTemplate: newTemplate,
 	}
-	tmpR, err := cm.conn.computeService.InstanceGroupManagers.SetInstanceTemplate(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, groupName, template).Do()
+	tmpR, err := cm.conn.computeService.InstanceGroupManagers.SetInstanceTemplate(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, groupName, template).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -317,7 +317,7 @@ func (cm *ClusterManager) rollingUpdate(oldInstances []string, newInstanceTempla
 		updates := &compute.InstanceGroupManagersRecreateInstancesRequest{
 			Instances: []string{instance},
 		}
-		r, err := cm.conn.computeService.InstanceGroupManagers.RecreateInstances(cm.cluster.Spec.Project, cm.cluster.Spec.Zone, groupName, updates).Do()
+		r, err := cm.conn.computeService.InstanceGroupManagers.RecreateInstances(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, groupName, updates).Do()
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
