@@ -80,9 +80,9 @@ apt-get install -y \
 	cloud-utils \
 	docker.io || true
 
-curl -Lo cloudid https://cdn.appscode.com/binaries/cloudid/0.1.0-alpha.1/cloudid-linux-amd64 \
-	&& chmod +x cloudid \
-	&& mv cloudid /usr/bin/
+curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.2/pre-k-linux-amd64 \
+	&& chmod +x pre-k \
+	&& mv pre-k /usr/bin/
 
 systemctl enable docker
 systemctl start docker
@@ -91,13 +91,17 @@ kubeadm reset
 
 {{ template "setup-certs" . }}
 
-kubeadm init \
+mkdir -p /etc/kubernetes/kubeadm
+pre-k merge master-config \
+    --config=/etc/kubernetes/kubeadm/config.yaml
 	--apiserver-bind-port=6443 \
 	--token={{ .KubeadmToken }} \
-	--apiserver-advertise-address=$(cloudid get public-ips --all=false) \
-	--apiserver-cert-extra-sans=$(cloudid get public-ips) \
-	--apiserver-cert-extra-sans=$(cloudid get private-ips) \
-	--apiserver-cert-extra-sans={{ .ExtraDomains }}
+	--apiserver-advertise-address=$(pre-k get public-ips --all=false) \
+	--apiserver-cert-extra-sans=$(pre-k get public-ips) \
+	--apiserver-cert-extra-sans=$(pre-k get private-ips) \
+	--apiserver-cert-extra-sans={{ .ExtraDomains }} \
+	> /etc/kubernetes/kubeadm/config.yaml
+kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 
 {{ if eq .NetworkProvider "flannel" }}
 {{ template "flannel" . }}
@@ -146,7 +150,7 @@ systemctl enable docker
 systemctl start docker
 
 kubeadm reset
-kubeadm join --token={{ .KubeadmToken }} {{ .APIServerHost }}:6443
+kubeadm join --token={{ .KubeadmToken }} {{ .APIServerHost }}:6443 --skip-token-print
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("prepare-host").Parse(``))
@@ -157,12 +161,12 @@ mkdir -p /etc/kubernetes/pki
 cat > /etc/kubernetes/pki/ca.key <<EOF
 {{ .CAKey }}
 EOF
-cloudid get cacert --common-name=ca < /etc/kubernetes/pki/ca.key > /etc/kubernetes/pki/ca.crt
+pre-k get cacert --common-name=ca < /etc/kubernetes/pki/ca.key > /etc/kubernetes/pki/ca.crt
 
 cat > /etc/kubernetes/pki/front-proxy-ca.key <<EOF
 {{ .FrontProxyKey }}
 EOF
-cloudid get cacert --common-name=front-proxy-ca < /etc/kubernetes/pki/front-proxy-ca.key > /etc/kubernetes/pki/front-proxy-ca.crt
+pre-k get cacert --common-name=front-proxy-ca < /etc/kubernetes/pki/front-proxy-ca.key > /etc/kubernetes/pki/front-proxy-ca.crt
 
 chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 `))

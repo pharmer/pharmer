@@ -20,14 +20,14 @@ create --provider=(aws|gce|cc) --nodes=t1=1,t2=2 --zone=us-central1-f demo-clust
 ### Options
 
 ```
-      --credential-uid string   Use preconfigured cloud credential uid
-      --do-not-delete           Set do not delete flag
-      --gce-project gce         GCE project name(only applicable to gce provider)
-  -h, --help                    help for create
-      --nodes stringToInt       Node set configuration (default [])
-      --provider string         Provider name
-      --version string          Kubernetes version
-      --zone string             Cloud provider zone name
+      --credential-uid string       Use preconfigured cloud credential uid
+      --do-not-delete               Set do not delete flag
+  -h, --help                        help for create
+      --kubeadm-version string      Kubeadm version
+      --kubernetes-version string   Kubernetes version
+      --nodes stringToInt           Node set configuration (default [])
+      --provider string             Provider name
+      --zone string                 Cloud provider zone name
 ```
 
 ### Options inherited from parent commands
