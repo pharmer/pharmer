@@ -70,32 +70,6 @@ func NewCluster(req *proto.ClusterCreateRequest) (*api.Cluster, error) {
 	cluster.Spec.CredentialName = req.CredentialUid
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone[0:strings.LastIndex(cluster.Spec.Cloud.Zone, "-")]
 	cluster.Spec.DoNotDelete = req.DoNotDelete
-	for _, ng := range req.NodeGroups {
-		if ng.Count < 0 {
-			ng.Count = 0
-		}
-		if ng.Count > maxInstancesPerMIG {
-			ng.Count = maxInstancesPerMIG
-		}
-	}
-
-	// check for instance count
-	cluster.Spec.MasterSKU = "n1-standard-1"
-	if cluster.NodeCount() > 5 {
-		cluster.Spec.MasterSKU = "n1-standard-2"
-	}
-	if cluster.NodeCount() > 10 {
-		cluster.Spec.MasterSKU = "n1-standard-4"
-	}
-	if cluster.NodeCount() > 100 {
-		cluster.Spec.MasterSKU = "n1-standard-8"
-	}
-	if cluster.NodeCount() > 250 {
-		cluster.Spec.MasterSKU = "n1-standard-16"
-	}
-	if cluster.NodeCount() > 500 {
-		cluster.Spec.MasterSKU = "n1-standard-32"
-	}
 
 	// REGISTER_MASTER_KUBELET = false // always false, keep master lightweight
 	// PREEMPTIBLE_NODE = false // Removed Support

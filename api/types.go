@@ -24,6 +24,12 @@ func AssignTypeKind(v interface{}) error {
 		}
 		u.Kind = "Credential"
 		return nil
+	case *InstanceGroup:
+		if u.APIVersion == "" {
+			u.APIVersion = "v1alpha1"
+		}
+		u.Kind = "InstanceGroup"
+		return nil
 	case *Instance:
 		if u.APIVersion == "" {
 			u.APIVersion = "v1alpha1"

@@ -32,8 +32,8 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 		totalNodes += ng.Count
 		ig := api.InstanceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:              req.Name,
-				UID:               phid.NewKubeCluster(),
+				Name:              ng.Sku + "-pool",
+				UID:               phid.NewInstanceGroup(),
 				CreationTimestamp: metav1.Time{Time: time.Now()},
 				Labels: map[string]string{
 					"node-role.kubernetes.io/node": "true",
@@ -54,15 +54,15 @@ func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
 	{
 		ig := api.InstanceGroup{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:              req.Name,
-				UID:               phid.NewKubeCluster(),
+				Name:              "master",
+				UID:               phid.NewInstanceGroup(),
 				CreationTimestamp: metav1.Time{Time: time.Now()},
 				Labels: map[string]string{
 					"node-role.kubernetes.io/master": "true",
 				},
 			},
 			Spec: api.InstanceGroupSpec{
-				SKU:           "Standard_D2_v2",
+				SKU:           "2gb",
 				Count:         1,
 				SpotInstances: false,
 				//DiskType:      "gp2",

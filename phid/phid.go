@@ -34,86 +34,6 @@ func SystemSecret() types.UID {
 	return "SYS-SCRT-PHID" // never conflicts with other *IDs
 }
 
-// --- Phabricator Defined PHIDs ---
-func NewUser() types.UID {
-	return newPHID("USER", "")
-}
-
-func NewUserPref() types.UID {
-	return newPHID("USER", "PREF")
-}
-
-func NewUserExternal() types.UID {
-	return newPHID("XUSR", "")
-}
-
-func NewConfig() types.UID {
-	return newPHID("CONF", "")
-}
-
-func NewAuthProvider() types.UID {
-	return newPHID("AUTH", "")
-}
-
-func NewDashboard() types.UID {
-	return newPHID("DSHB", "")
-}
-
-func NewDashboardTransaction() types.UID {
-	return newPHID("XACT", "DSHB")
-}
-
-func NewDashboardPanel() types.UID {
-	return newPHID("DSHP", "")
-}
-func NewDashboardPanelTransaction() types.UID {
-	return newPHID("XACT", "DSHP")
-}
-
-func NewHomeApplication() types.UID {
-	return newPHID("APPS", "")
-}
-
-func NewProfileMenuItem() types.UID {
-	return newPHID("PANL", "")
-}
-
-func NewRUri() types.UID {
-	return newPHID("RURI", "")
-}
-
-func NewCalanderEvent() types.UID {
-	return newPHID("CEVT", "")
-}
-
-func NewConpherenceThread() types.UID {
-	return newPHID("CONP", "")
-}
-
-func NewDocumentField() types.UID {
-	return newPHID("DOCF", "")
-}
-
-func NewSearchProfilePanel() types.UID {
-	return newPHID("PANL", "")
-}
-
-func NewProject() types.UID {
-	return newPHID("PROJ", "")
-}
-
-func NewManiphestTransaction() types.UID {
-	return newPHID("XACT", "TASK")
-}
-
-func NewManiphestTask() types.UID {
-	return newPHID("TASK", "")
-}
-
-func NewManiphestComment() types.UID {
-	return newPHID("XCMT", "")
-}
-
 /*
 New PHIDs defined by appscode MUST use prefix = ACID to avoid collision with potential future pHabricator applications.
 */
@@ -126,20 +46,8 @@ func NewSSHKey() types.UID {
 	return newACID("SSH", "")
 }
 
-func NewAuthSSHKey() types.UID {
-	return newPHID("AKEY", "")
-}
-
-func NewJenkinsAgent() types.UID {
-	return newACID("JENT", "")
-}
-
 func NewNamespace() types.UID {
 	return newACID("NS", "")
-}
-
-func NewSecret() types.UID {
-	return newACID("SCRT", "")
 }
 
 func NewCA() types.UID {
@@ -151,6 +59,10 @@ func NewCert() types.UID {
 }
 
 func NewKubeCluster() types.UID {
+	return newACID("K8S", "C")
+}
+
+func NewInstanceGroup() types.UID {
 	return newACID("K8S", "C")
 }
 
