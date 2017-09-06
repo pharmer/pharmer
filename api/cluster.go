@@ -113,10 +113,10 @@ type CloudSpec struct {
 	InstanceImage        string `json:"instanceImage,omitempty"`
 	InstanceImageProject string `json:"instanceImageProject,omitempty"`
 
-	AWS    *AWSSpec
-	GCE    *GoogleSpec
-	Azure  *AzureSpec
-	Linode *LinodeSpec
+	AWS    *AWSSpec    `json:"aws,omitempty"`
+	GCE    *GoogleSpec `json:"gce,omitempty"`
+	Azure  *AzureSpec  `json:"azure,omitempty"`
+	Linode *LinodeSpec `json:"linode,omitempty"`
 }
 
 type ClusterSpec struct {
@@ -137,7 +137,7 @@ type ClusterSpec struct {
 
 	// request data. This is needed to give consistent access to these values for all commands.
 	DoNotDelete        bool     `json:"doNotDelete,omitempty"`
-	AuthorizationModes []string `json:"authorizationModes"`
+	AuthorizationModes []string `json:"authorizationModes,omitempty"`
 
 	Token    string        `json:"token"`
 	TokenTTL time.Duration `json:"tokenTTL"`
@@ -148,7 +148,7 @@ type ClusterSpec struct {
 	SelfHosted bool `json:"selfHosted"`
 
 	// APIServerCertSANs sets extra Subject Alternative Names for the API Server signing cert
-	APIServerCertSANs     []string `json:"apiServerCertSANs"`
+	APIServerCertSANs     []string `json:"apiServerCertSANs,omitempty"`
 	ClusterExternalDomain string   `json:"clusterExternalDomain,omitempty"`
 	ClusterInternalDomain string   `json:"clusterInternalDomain,omitempty"`
 
@@ -259,7 +259,7 @@ type AWSStatus struct {
 }
 
 type CloudStatus struct {
-	AWS *AWSStatus
+	AWS *AWSStatus `json:"aws,omitempty"`
 }
 
 type ClusterStatus struct {
