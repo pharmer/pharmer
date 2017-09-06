@@ -5,7 +5,6 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 )
 
@@ -45,25 +44,26 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 		im:       im,
 	}
 	igm.AdjustInstanceGroup()
+	fmt.Println(nodeAdjust)
 
-	flag := false
-	for x := range cm.cluster.Spec.NodeGroups {
-		if cm.cluster.Spec.NodeGroups[x].SKU == req.Sku {
-			cm.cluster.Spec.NodeGroups[x].Count += nodeAdjust
-			flag = true
-			//fmt.Println(ctx.NodeGroups[k].Count, "*********************************>>")
-		}
-		//ctx.NumNodes += v.Count
-		//fmt.Println(k.String(), " = ", v.Count)
-	}
-	if !flag {
-		ig := &api.IG{
-			SKU:              req.Sku,
-			Count:            req.Count,
-			UseSpotInstances: false,
-		}
-		cm.cluster.Spec.NodeGroups = append(cm.cluster.Spec.NodeGroups, ig)
-	}
+	//flag := false
+	//for x := range cm.cluster.Spec.NodeGroups {
+	//	if cm.cluster.Spec.NodeGroups[x].SKU == req.Sku {
+	//		cm.cluster.Spec.NodeGroups[x].Count += nodeAdjust
+	//		flag = true
+	//		//fmt.Println(ctx.NodeGroups[k].Count, "*********************************>>")
+	//	}
+	//	//ctx.NumNodes += v.Count
+	//	//fmt.Println(k.String(), " = ", v.Count)
+	//}
+	//if !flag {
+	//	ig := &api.IG{
+	//		SKU:           req.Sku,
+	//		Count:         req.Count,
+	//		SpotInstances: false,
+	//	}
+	//	cm.cluster.Spec.NodeGroups = append(cm.cluster.Spec.NodeGroups, ig)
+	//}
 
 	//instances, err := igm.listInstances(req.Sku)
 	//if err != nil {

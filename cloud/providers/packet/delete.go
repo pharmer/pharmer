@@ -78,7 +78,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 func (cm *ClusterManager) deleteSSHKey() (err error) {
 	cloud.Logger(cm.ctx).Infof("Deleting SSH key for cluster", cm.cluster.Name)
 	err = wait.PollImmediate(cloud.RetryInterval, cloud.RetryInterval, func() (bool, error) {
-		_, err := cm.conn.client.SSHKeys.Delete(cm.cluster.Spec.SSHKeyExternalID)
+		_, err := cm.conn.client.SSHKeys.Delete(cm.cluster.Status.SSHKeyExternalID)
 		return err == nil, nil
 	})
 

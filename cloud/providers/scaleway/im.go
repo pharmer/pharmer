@@ -66,7 +66,7 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 	}
 	serverID, err := im.conn.client.PostServer(sapi.ScalewayServerDefinition{
 		Name:  name,
-		Image: StringP(im.cluster.Spec.InstanceImage),
+		Image: StringP(im.cluster.Spec.Cloud.InstanceImage),
 		//Volumes map[string]string `json:"volumes,omitempty"`
 		DynamicIPRequired: TrueP(),
 		Bootscript:        StringP(im.conn.bootscriptID),

@@ -50,7 +50,7 @@ func (im *instanceManager) createInstance(role, sku string) (*hc.Transaction, er
 	tx, _, err := im.conn.client.Ordering.CreateTransaction(&hc.CreateTransactionRequest{
 		ProductID:     sku,
 		AuthorizedKey: []string{cloud.SSHKey(im.ctx).OpensshFingerprint},
-		Dist:          im.cluster.Spec.InstanceImage,
+		Dist:          im.cluster.Spec.Cloud.InstanceImage,
 		Arch:          64,
 		Lang:          "en",
 		// Test:          true,

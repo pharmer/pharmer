@@ -59,7 +59,7 @@ func TestContext(t *testing.T) {
 			CredentialName: req.CredentialUid,
 		},
 	}
-	cm.cluster.Spec.Zone = req.Zone
+	cm.cluster.Spec.Cloud.Zone = req.Zone
 
 	api.AssignTypeKind(cm.cluster)
 	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {

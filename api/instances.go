@@ -12,12 +12,19 @@ type InstanceGroup struct {
 }
 
 type InstanceGroupSpec struct {
-	SKU              string `json:"sku,omitempty"`
-	Count            int64  `json:"count,omitempty"`
-	UseSpotInstances bool   `json:"useSpotInstances,omitempty"`
+	SKU           string `json:"sku,omitempty"`
+	Count         int64  `json:"count,omitempty"`
+	SpotInstances bool   `json:"spotInstances,omitempty"`
+	DiskType      string `json:"nodeDiskType,omitempty"`
+	DiskSize      int64  `json:"nodeDiskSize,omitempty"`
 }
 
 type InstanceGroupStatus struct {
+}
+
+func (ig InstanceGroup) IsMaster() bool {
+	_, found := ig.Labels["node-role.kubernetes.io/node"]
+	return found
 }
 
 type Instance struct {
@@ -33,10 +40,17 @@ type InstanceSpec struct {
 }
 
 type InstanceStatus struct {
+	Phase string
+
 	Name          string
 	ExternalID    string
 	PublicIP      string
 	PrivateIP     string
 	ExternalPhase string
-	Phase         string
+	DiskId        string `json:"diskID,omitempty"`
+}
+
+func (i Instance) IsMaster() bool {
+	_, found := i.Labels["node-role.kubernetes.io/node"]
+	return found
 }

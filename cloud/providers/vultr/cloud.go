@@ -42,7 +42,7 @@ func (conn *cloudConnector) detectInstanceImage() error {
 	}
 	for _, os := range oses {
 		if os.Arch == "x64" && os.Family == "debian" && strings.HasPrefix(os.Name, "Debian 8") {
-			conn.cluster.Spec.InstanceImage = strconv.Itoa(os.ID)
+			conn.cluster.Spec.Cloud.InstanceImage = strconv.Itoa(os.ID)
 			return nil
 		}
 	}

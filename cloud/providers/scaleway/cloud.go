@@ -29,7 +29,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
-	client, err := sapi.NewScalewayAPI(typed.Organization(), typed.Token(), "pharmer", cluster.Spec.Zone)
+	client, err := sapi.NewScalewayAPI(typed.Organization(), typed.Token(), "pharmer", cluster.Spec.Cloud.Zone)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
 	}
@@ -48,7 +48,7 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 		if img.Name == "Debian Jessie" {
 			for _, v := range img.Versions {
 				for _, li := range v.LocalImages {
-					if li.Arch == "x86_64" && li.Zone == conn.cluster.Spec.Zone {
+					if li.Arch == "x86_64" && li.Zone == conn.cluster.Spec.Cloud.Zone {
 						return li.ID, nil
 					}
 				}

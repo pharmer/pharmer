@@ -69,10 +69,10 @@ func (igm *InstanceGroupManager) createNodeInstanceTemplate(sku string) (string,
 	templateName := igm.cm.namer.InstanceTemplateName(sku)
 
 	cloud.Logger(igm.cm.ctx).Infof("Retrieving node template %v", templateName)
-	if r1, err := igm.cm.conn.computeService.InstanceTemplates.Get(igm.cm.cluster.Spec.Project, templateName).Do(); err == nil {
+	if r1, err := igm.cm.conn.computeService.InstanceTemplates.Get(igm.cm.cluster.Spec.Cloud.Project, templateName).Do(); err == nil {
 		cloud.Logger(igm.cm.ctx).Debug("Retrieved node template", r1, err)
 
-		if r2, err := igm.cm.conn.computeService.InstanceTemplates.Delete(igm.cm.cluster.Spec.Project, templateName).Do(); err != nil {
+		if r2, err := igm.cm.conn.computeService.InstanceTemplates.Delete(igm.cm.cluster.Spec.Cloud.Project, templateName).Do(); err != nil {
 			cloud.Logger(igm.cm.ctx).Debug("Delete node template called", r2, err)
 			cloud.Logger(igm.cm.ctx).Infoln("Failed to delete existing instance template")
 			os.Exit(1)
@@ -87,8 +87,8 @@ func (igm *InstanceGroupManager) createNodeInstanceTemplate(sku string) (string,
 	if err != nil {
 		return "", err
 	}
-	image := fmt.Sprintf("projects/%v/global/images/%v", igm.cm.cluster.Spec.InstanceImageProject, igm.cm.cluster.Spec.InstanceImage)
-	network := fmt.Sprintf("projects/%v/global/networks/%v", igm.cm.cluster.Spec.Project, defaultNetwork)
+	image := fmt.Sprintf("projects/%v/global/images/%v", igm.cm.cluster.Spec.Cloud.InstanceImageProject, igm.cm.cluster.Spec.Cloud.InstanceImage)
+	network := fmt.Sprintf("projects/%v/global/networks/%v", igm.cm.cluster.Spec.Cloud.Project, defaultNetwork)
 
 	tpl := &compute.InstanceTemplate{
 		Name: templateName,
@@ -152,7 +152,7 @@ func (igm *InstanceGroupManager) createNodeInstanceTemplate(sku string) (string,
 			},
 		}
 	}
-	r1, err := igm.cm.conn.computeService.InstanceTemplates.Insert(igm.cm.cluster.Spec.Project, tpl).Do()
+	r1, err := igm.cm.conn.computeService.InstanceTemplates.Insert(igm.cm.cluster.Spec.Cloud.Project, tpl).Do()
 	cloud.Logger(igm.cm.ctx).Debug("Create instance template called", r1, err)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -163,9 +163,9 @@ func (igm *InstanceGroupManager) createNodeInstanceTemplate(sku string) (string,
 
 func (igm *InstanceGroupManager) createInstanceGroup(sku string, count int64) (string, error) {
 	name := igm.cm.namer.InstanceGroupName(sku)
-	template := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", igm.cm.cluster.Spec.Project, igm.cm.namer.InstanceTemplateName(sku))
+	template := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", igm.cm.cluster.Spec.Cloud.Project, igm.cm.namer.InstanceTemplateName(sku))
 
-	r1, err := igm.cm.conn.computeService.InstanceGroupManagers.Insert(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, &compute.InstanceGroupManager{
+	r1, err := igm.cm.conn.computeService.InstanceGroupManagers.Insert(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, &compute.InstanceGroupManager{
 		Name:             name,
 		BaseInstanceName: igm.cm.cluster.Name + "-node-" + sku,
 		TargetSize:       count,
@@ -182,9 +182,9 @@ func (igm *InstanceGroupManager) createInstanceGroup(sku string, count int64) (s
 // Not used since Kube 1.3
 func (igm *InstanceGroupManager) createAutoscaler(sku string, count int64) (string, error) {
 	name := igm.cm.namer.InstanceGroupName(sku)
-	target := fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%v/zones/%v/instanceGroupManagers/%v", igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, name)
+	target := fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%v/zones/%v/instanceGroupManagers/%v", igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, name)
 
-	r1, err := igm.cm.conn.computeService.Autoscalers.Insert(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, &compute.Autoscaler{
+	r1, err := igm.cm.conn.computeService.Autoscalers.Insert(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, &compute.Autoscaler{
 		Name:   name,
 		Target: target,
 		AutoscalingPolicy: &compute.AutoscalingPolicy{
@@ -201,12 +201,12 @@ func (igm *InstanceGroupManager) createAutoscaler(sku string, count int64) (stri
 }
 
 func (igm *InstanceGroupManager) deleteOnlyInstanceGroup(instanceGroupName, template string) error {
-	_, err := igm.cm.conn.computeService.InstanceGroupManagers.ListManagedInstances(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, instanceGroupName).Do()
+	_, err := igm.cm.conn.computeService.InstanceGroupManagers.ListManagedInstances(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
-	r1, err := igm.cm.conn.computeService.InstanceGroupManagers.Delete(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, instanceGroupName).Do()
+	r1, err := igm.cm.conn.computeService.InstanceGroupManagers.Delete(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -214,7 +214,7 @@ func (igm *InstanceGroupManager) deleteOnlyInstanceGroup(instanceGroupName, temp
 	igm.cm.conn.waitForZoneOperation(operation)
 	cloud.Logger(igm.cm.ctx).Infof("Instance group %v is deleted", instanceGroupName)
 	cloud.Logger(igm.cm.ctx).Infof("Instance template %v is deleting", template)
-	r2, err := igm.cm.conn.computeService.InstanceTemplates.Delete(igm.cm.cluster.Spec.Project, template).Do()
+	r2, err := igm.cm.conn.computeService.InstanceTemplates.Delete(igm.cm.cluster.Spec.Cloud.Project, template).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -224,7 +224,7 @@ func (igm *InstanceGroupManager) deleteOnlyInstanceGroup(instanceGroupName, temp
 	}
 	cloud.Logger(igm.cm.ctx).Infof("Instance template %v is deleted", template)
 	cloud.Logger(igm.cm.ctx).Infof("Autoscaler is deleting for %v", instanceGroupName)
-	r3, err := igm.cm.conn.computeService.Autoscalers.Delete(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, instanceGroupName).Do()
+	r3, err := igm.cm.conn.computeService.Autoscalers.Delete(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -238,7 +238,7 @@ func (igm *InstanceGroupManager) deleteOnlyInstanceGroup(instanceGroupName, temp
 }
 
 func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, size int64) error {
-	r1, err := igm.cm.conn.computeService.Autoscalers.Get(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, instanceGroupName).Do()
+	r1, err := igm.cm.conn.computeService.Autoscalers.Get(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -246,7 +246,7 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, s
 	min := r1.AutoscalingPolicy.MinNumReplicas
 	cloud.Logger(igm.cm.ctx).Infof("Updating autoscaller with Max %v and Min %v num of replicas", size, size)
 	if size > max {
-		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, &compute.Autoscaler{
+		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, &compute.Autoscaler{
 			Name: instanceGroupName,
 			AutoscalingPolicy: &compute.AutoscalingPolicy{
 				MaxNumReplicas: size,
@@ -261,7 +261,7 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, s
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	} else if size < min {
-		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, &compute.Autoscaler{
+		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, &compute.Autoscaler{
 			Name: instanceGroupName,
 			AutoscalingPolicy: &compute.AutoscalingPolicy{
 				MinNumReplicas: size,
@@ -277,12 +277,12 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, s
 		}
 	}
 	cloud.Logger(igm.cm.ctx).Infof("Autoscalling group %v updated", instanceGroupName)
-	_, err = igm.cm.conn.computeService.InstanceGroupManagers.ListManagedInstances(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, instanceGroupName).Do()
+	_, err = igm.cm.conn.computeService.InstanceGroupManagers.ListManagedInstances(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	//sz := int64(len(r.ManagedInstances))
-	resp, err := igm.cm.conn.computeService.InstanceGroupManagers.Resize(igm.cm.cluster.Spec.Project, igm.cm.cluster.Spec.Zone, instanceGroupName, size).Do()
+	resp, err := igm.cm.conn.computeService.InstanceGroupManagers.Resize(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, instanceGroupName, size).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -293,7 +293,6 @@ func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, s
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}*/
-	// return cluster.Spec.ctx.UpdateNodeCount()
 	return nil
 }
 

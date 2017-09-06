@@ -25,12 +25,12 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster) TemplateData {
 	return TemplateData{
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		KubeadmVersion:    cluster.Spec.KubeadmVersion,
-		KubeadmToken:      cluster.Spec.KubeadmToken,
+		KubeadmToken:      cluster.Spec.Token,
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
 		APIServerHost:     "",
 		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
-		NetworkProvider:   cluster.Spec.NetworkProvider,
+		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
 	}
 }
 

@@ -24,7 +24,7 @@ const (
 // WARNING:
 // Returned KubeClient uses admin bearer token. This should only be used for cluster provisioning operations.
 func NewAdminClient(ctx context.Context, cluster *api.Cluster) (clientset.Interface, error) {
-	adminCert, adminKey, err := CreateAdminCertificate(ctx, cluster)
+	adminCert, adminKey, err := CreateAdminCertificate(ctx)
 	if err != nil {
 		return nil, err
 	}

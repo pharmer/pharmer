@@ -80,14 +80,14 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 		return nil, err
 	}
 	oneliners.FILE(startupScript)
-	//imgID, err := strconv.Atoi(im.cluster.Spec.InstanceImage)
+	//imgID, err := strconv.Atoi(im.cluster.Spec.Cloud.InstanceImage)
 	//if err != nil {
 	//	return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	//}
 	oneliners.FILE()
 	req := &godo.DropletCreateRequest{
 		Name:   name,
-		Region: im.cluster.Spec.Zone,
+		Region: im.cluster.Spec.Cloud.Zone,
 		Size:   sku,
 		//Image:  godo.DropletCreateImage{ID: imgID},
 		Image: godo.DropletCreateImage{Slug: DROPLET_IMAGE_SLUG},

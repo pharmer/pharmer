@@ -91,7 +91,7 @@ func (cm *ClusterManager) deleteInstance(id int) error {
 func (cm *ClusterManager) deleteSSHKey() error {
 	cloud.Logger(cm.ctx).Infof("Deleting SSH key for cluster", cm.cluster.Name)
 	err := wait.PollImmediate(cloud.RetryInterval, cloud.RetryTimeout, func() (bool, error) {
-		sshid, _ := strconv.Atoi(cm.cluster.Spec.SSHKeyExternalID)
+		sshid, _ := strconv.Atoi(cm.cluster.Status.SSHKeyExternalID)
 		_, err := cm.conn.securityServiceClient.Id(sshid).DeleteObject()
 		return err == nil, nil
 	})

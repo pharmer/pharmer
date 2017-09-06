@@ -42,7 +42,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if !exists {
-		return errors.Newf("VPC %v not found for Cluster %v", cm.cluster.Spec.VpcId, cm.cluster.Name).WithContext(cm.ctx).Err()
+		return errors.Newf("VPC %v not found for Cluster %v", cm.cluster.Status.Cloud.AWS.VpcId, cm.cluster.Name).WithContext(cm.ctx).Err()
 	}
 
 	var errs []string
@@ -50,22 +50,22 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, cm.cluster.Status.Reason)
 	}
 
-	for _, ng := range cm.cluster.Spec.NodeGroups {
-		if err = cm.deleteAutoScalingGroup(cm.namer.AutoScalingGroupName(ng.SKU)); err != nil {
-			errs = append(errs, err.Error())
-		}
-	}
+	//for _, ng := range cm.cluster.Spec.NodeGroups {
+	//	if err = cm.deleteAutoScalingGroup(cm.namer.AutoScalingGroupName(ng.SKU)); err != nil {
+	//		errs = append(errs, err.Error())
+	//	}
+	//}
 	if err = cm.deleteMaster(); err != nil {
 		errs = append(errs, err.Error())
 	}
 	if err = cm.ensureInstancesDeleted(); err != nil {
 		errs = append(errs, err.Error())
 	}
-	for _, ng := range cm.cluster.Spec.NodeGroups {
-		if err = cm.deleteLaunchConfiguration(cm.namer.AutoScalingGroupName(ng.SKU)); err != nil {
-			errs = append(errs, err.Error())
-		}
-	}
+	//for _, ng := range cm.cluster.Spec.NodeGroups {
+	//	if err = cm.deleteLaunchConfiguration(cm.namer.AutoScalingGroupName(ng.SKU)); err != nil {
+	//		errs = append(errs, err.Error())
+	//	}
+	//}
 
 	if err = cm.deleteVolume(); err != nil {
 		errs = append(errs, err.Error())
@@ -129,7 +129,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 func (cm *ClusterManager) findVPC() (bool, error) {
 	r1, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
 		VpcIds: []*string{
-			StringP(cm.cluster.Spec.VpcId),
+			StringP(cm.cluster.Status.Cloud.AWS.VpcId),
 		},
 	})
 	if err != nil {
@@ -263,7 +263,7 @@ func (cm *ClusterManager) deleteSecurityGroup() error {
 			{
 				Name: StringP("vpc-id"),
 				Values: []*string{
-					StringP(cm.cluster.Spec.VpcId),
+					StringP(cm.cluster.Status.Cloud.AWS.VpcId),
 				},
 			},
 			{
@@ -318,7 +318,7 @@ func (cm *ClusterManager) deleteSubnetId() error {
 			{
 				Name: StringP("vpc-id"),
 				Values: []*string{
-					StringP(cm.cluster.Spec.VpcId),
+					StringP(cm.cluster.Status.Cloud.AWS.VpcId),
 				},
 			},
 			{
@@ -350,7 +350,7 @@ func (cm *ClusterManager) deleteInternetGateway() error {
 			{
 				Name: StringP("attachment.vpc-id"),
 				Values: []*string{
-					StringP(cm.cluster.Spec.VpcId),
+					StringP(cm.cluster.Status.Cloud.AWS.VpcId),
 				},
 			},
 		},
@@ -361,7 +361,7 @@ func (cm *ClusterManager) deleteInternetGateway() error {
 	for _, igw := range r1.InternetGateways {
 		_, err := cm.conn.ec2.DetachInternetGateway(&_ec2.DetachInternetGatewayInput{
 			InternetGatewayId: igw.InternetGatewayId,
-			VpcId:             StringP(cm.cluster.Spec.VpcId),
+			VpcId:             StringP(cm.cluster.Status.Cloud.AWS.VpcId),
 		})
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -384,7 +384,7 @@ func (cm *ClusterManager) deleteRouteTable() error {
 			{
 				Name: StringP("vpc-id"),
 				Values: []*string{
-					StringP(cm.cluster.Spec.VpcId),
+					StringP(cm.cluster.Status.Cloud.AWS.VpcId),
 				},
 			},
 		},
@@ -425,7 +425,7 @@ func (cm *ClusterManager) deleteRouteTable() error {
 
 func (cm *ClusterManager) deleteDHCPOption() error {
 	_, err := cm.conn.ec2.AssociateDhcpOptions(&_ec2.AssociateDhcpOptionsInput{
-		VpcId:         StringP(cm.cluster.Spec.VpcId),
+		VpcId:         StringP(cm.cluster.Status.Cloud.AWS.VpcId),
 		DhcpOptionsId: StringP("default"),
 	})
 	if err != nil {
@@ -458,7 +458,7 @@ func (cm *ClusterManager) deleteDHCPOption() error {
 
 func (cm *ClusterManager) deleteVpc() error {
 	_, err := cm.conn.ec2.DeleteVpc(&_ec2.DeleteVpcInput{
-		VpcId: StringP(cm.cluster.Spec.VpcId),
+		VpcId: StringP(cm.cluster.Status.Cloud.AWS.VpcId),
 	})
 
 	if err != nil {
@@ -482,7 +482,7 @@ func (cm *ClusterManager) deleteVolume() error {
 func (cm *ClusterManager) deleteSSHKey() error {
 	var err error
 	_, err = cm.conn.ec2.DeleteKeyPair(&_ec2.DeleteKeyPairInput{
-		KeyName: StringP(cm.cluster.Spec.SSHKeyExternalID),
+		KeyName: StringP(cm.cluster.Status.SSHKeyExternalID),
 	})
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()

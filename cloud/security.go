@@ -17,37 +17,39 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Co
 	certStore := Store(ctx).Certificates(cluster.Name)
 
 	// -----------------------------------------------
+	if cluster.Spec.CACertName == "" {
+		cluster.Spec.CACertName = kubeadmconst.CACertAndKeyBaseName
 
-	cluster.Spec.CACertName = kubeadmconst.CACertAndKeyBaseName
+		caKey, err := cert.NewPrivateKey()
+		if err != nil {
+			return ctx, fmt.Errorf("Failed to generate private key. Reason: %v.", err)
+		}
+		caCert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: cluster.Spec.CACertName}, caKey)
+		if err != nil {
+			return ctx, fmt.Errorf("Failed to generate self-signed certificate. Reason: %v.", err)
+		}
 
-	caKey, err := cert.NewPrivateKey()
-	if err != nil {
-		return ctx, fmt.Errorf("Failed to generate private key. Reason: %v.", err)
+		ctx = context.WithValue(ctx, paramCACert{}, caCert)
+		ctx = context.WithValue(ctx, paramCAKey{}, caKey)
+		certStore.Create(cluster.Spec.CACertName, caCert, caKey)
 	}
-	caCert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: cluster.Spec.CACertName}, caKey)
-	if err != nil {
-		return ctx, fmt.Errorf("Failed to generate self-signed certificate. Reason: %v.", err)
-	}
-
-	ctx = context.WithValue(ctx, paramCACert{}, caCert)
-	ctx = context.WithValue(ctx, paramCAKey{}, caKey)
-	certStore.Create(cluster.Spec.CACertName, caCert, caKey)
 
 	// -----------------------------------------------
+	if cluster.Spec.FrontProxyCACertName == "" {
+		cluster.Spec.FrontProxyCACertName = kubeadmconst.FrontProxyCACertAndKeyBaseName
+		frontProxyCAKey, err := cert.NewPrivateKey()
+		if err != nil {
+			return ctx, fmt.Errorf("Failed to generate private key. Reason: %v.", err)
+		}
+		frontProxyCACert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: cluster.Spec.CACertName}, frontProxyCAKey)
+		if err != nil {
+			return ctx, fmt.Errorf("Failed to generate self-signed certificate. Reason: %v.", err)
+		}
 
-	cluster.Spec.FrontProxyCACertName = kubeadmconst.FrontProxyCACertAndKeyBaseName
-	frontProxyCAKey, err := cert.NewPrivateKey()
-	if err != nil {
-		return ctx, fmt.Errorf("Failed to generate private key. Reason: %v.", err)
+		ctx = context.WithValue(ctx, paramFrontProxyCACert{}, frontProxyCACert)
+		ctx = context.WithValue(ctx, paramFrontProxyCAKey{}, frontProxyCAKey)
+		certStore.Create(cluster.Spec.FrontProxyCACertName, frontProxyCACert, frontProxyCAKey)
 	}
-	frontProxyCACert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: cluster.Spec.CACertName}, frontProxyCAKey)
-	if err != nil {
-		return ctx, fmt.Errorf("Failed to generate self-signed certificate. Reason: %v.", err)
-	}
-
-	ctx = context.WithValue(ctx, paramFrontProxyCACert{}, frontProxyCACert)
-	ctx = context.WithValue(ctx, paramFrontProxyCAKey{}, frontProxyCAKey)
-	certStore.Create(cluster.Spec.FrontProxyCACertName, frontProxyCACert, frontProxyCAKey)
 
 	Logger(ctx).Infoln("CA certificates generated successfully.")
 	return ctx, nil
@@ -73,10 +75,9 @@ func LoadCACertificates(ctx context.Context, cluster *api.Cluster) (context.Cont
 	return ctx, nil
 }
 
-func CreateAdminCertificate(ctx context.Context, cluster *api.Cluster) (*x509.Certificate, *rsa.PrivateKey, error) {
-	cluster.Spec.AdminUserCertName = "cluster-admin"
+func CreateAdminCertificate(ctx context.Context) (*x509.Certificate, *rsa.PrivateKey, error) {
 	cfg := cert.Config{
-		CommonName:   cluster.Spec.AdminUserCertName,
+		CommonName:   "cluster-admin",
 		Organization: []string{kubeadmconst.MastersGroup},
 		Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	}
@@ -98,7 +99,7 @@ func CreateSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, e
 		return ctx, err
 	}
 	ctx = context.WithValue(ctx, paramSSHKey{}, sshKey)
-	err = Store(ctx).SSHKeys(cluster.Name).Create(cluster.Spec.SSHKeyExternalID, sshKey.PublicKey, sshKey.PrivateKey)
+	err = Store(ctx).SSHKeys(cluster.Name).Create(cluster.Status.SSHKeyExternalID, sshKey.PublicKey, sshKey.PrivateKey)
 	if err != nil {
 		return ctx, err
 	}

@@ -96,7 +96,7 @@ func NewCmdUse() *cobra.Command {
 				if err != nil {
 					log.Fatalln(err)
 				}
-				adminCert, adminKey, err := cloud.CreateAdminCertificate(ctx, cluster)
+				adminCert, adminKey, err := cloud.CreateAdminCertificate(ctx)
 				if err != nil {
 					log.Fatalln(err)
 				}

@@ -67,7 +67,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		im.cluster.Status.Reason = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	instance, err := data.ClusterMachineType(im.cluster.Spec.Provider, sku)
+	instance, err := data.ClusterMachineType(im.cluster.Spec.Cloud.CloudProvider, sku)
 	if err != nil {
 		im.cluster.Status.Reason = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
@@ -83,7 +83,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		return 0, fmt.Errorf("Failed to parse memory metadata for sku %v", sku)
 	}
 
-	sshid, err := strconv.Atoi(im.cluster.Spec.SSHKeyExternalID)
+	sshid, err := strconv.Atoi(im.cluster.Status.SSHKeyExternalID)
 	if err != nil {
 		im.cluster.Status.Reason = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
@@ -93,8 +93,8 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		Domain:                       StringP(cloud.Extra(im.ctx).ExternalDomain(im.cluster.Name)),
 		MaxMemory:                    IntP(ram),
 		StartCpus:                    IntP(cpu),
-		Datacenter:                   &datatypes.Location{Name: StringP(im.cluster.Spec.Zone)},
-		OperatingSystemReferenceCode: StringP(im.cluster.Spec.OS),
+		Datacenter:                   &datatypes.Location{Name: StringP(im.cluster.Spec.Cloud.Zone)},
+		OperatingSystemReferenceCode: StringP(im.cluster.Spec.Cloud.OS),
 		LocalDiskFlag:                TrueP(),
 		HourlyBillingFlag:            TrueP(),
 		SshKeys: []datatypes.Security_Ssh_Key{
