@@ -19,10 +19,10 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *api.Instance
+	var instance *api.Node
 	backoff.Retry(func() (err error) {
 		for {
 			var servers []packngo.Device
@@ -75,7 +75,7 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 	return device, err
 }
 
-func (im *instanceManager) newKubeInstance(id string) (*api.Instance, error) {
+func (im *instanceManager) newKubeInstance(id string) (*api.Node, error) {
 	s, _, err := im.conn.client.Devices.Get(id)
 	if err != nil {
 		return nil, cloud.InstanceNotFound
@@ -83,21 +83,21 @@ func (im *instanceManager) newKubeInstance(id string) (*api.Instance, error) {
 	return im.newKubeInstanceFromServer(s)
 }
 
-func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*api.Instance, error) {
-	ki := &api.Instance{
+func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*api.Node, error) {
+	ki := &api.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: droplet.Hostname,
 		},
-		Spec: api.InstanceSpec{
+		Spec: api.NodeSpec{
 			SKU: droplet.Plan.ID,
 		},
-		Status: api.InstanceStatus{
+		Status: api.NodeStatus{
 			// ExternalIP:     droplet.PublicAddress.IP,
 			// InternalIP:     droplet.PrivateIP,
 			ExternalID:    droplet.ID,
 			ExternalPhase: droplet.State,
-			Phase:         api.InstanceReady, // droplet.Status == active
+			Phase:         api.NodeReady, // droplet.Status == active
 		},
 	}
 	for _, addr := range droplet.Network {

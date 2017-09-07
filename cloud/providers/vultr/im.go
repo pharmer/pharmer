@@ -22,10 +22,10 @@ type instanceManager struct {
 	namer   namer
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *api.Instance
+	var instance *api.Node
 	backoff.Retry(func() (err error) {
 		servers, err := im.conn.client.GetServers()
 		if err != nil {
@@ -113,21 +113,21 @@ func (im *instanceManager) assignReservedIP(ip, serverId string) error {
 	return nil
 }
 
-func (im *instanceManager) newKubeInstance(server *gv.Server) (*api.Instance, error) {
-	return &api.Instance{
+func (im *instanceManager) newKubeInstance(server *gv.Server) (*api.Node, error) {
+	return &api.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: server.Name,
 		},
-		Spec: api.InstanceSpec{
+		Spec: api.NodeSpec{
 			SKU: strconv.Itoa(server.PlanID), // 512mb // convert to SKU
 		},
-		Status: api.InstanceStatus{
+		Status: api.NodeStatus{
 			ExternalID:    server.ID,
 			ExternalPhase: server.Status + "|" + server.PowerStatus,
 			PublicIP:      server.MainIP,
 			PrivateIP:     server.InternalIP,
-			Phase:         api.InstanceReady, // active
+			Phase:         api.NodeReady, // active
 		},
 	}, nil
 }

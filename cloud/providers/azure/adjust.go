@@ -11,15 +11,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type InstanceGroupManager struct {
+type NodeSetManager struct {
 	cm       *ClusterManager
 	instance cloud.Instance
 	im       *instanceManager
 }
 
-func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
-	instanceGroupName := igm.cm.namer.GetInstanceGroupName(igm.instance.Type.Sku) //igm.cm.ctx.Name + "-" + strings.Replace(igm.instance.Type.Sku, "_", "-", -1) + "-node"
-	found, err := igm.GetInstanceGroup(instanceGroupName)
+func (igm *NodeSetManager) AdjustNodeSet() error {
+	instanceGroupName := igm.cm.namer.GetNodeSetName(igm.instance.Type.Sku) //igm.cm.ctx.Name + "-" + strings.Replace(igm.instance.Type.Sku, "_", "-", -1) + "-node"
+	found, err := igm.GetNodeSet(instanceGroupName)
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -29,13 +29,13 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	igm.cm.cluster, _ = cloud.Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 
 	if !found {
-		err = igm.createInstanceGroup(igm.instance.Stats.Count)
+		err = igm.createNodeSet(igm.instance.Stats.Count)
 	} else if igm.instance.Stats.Count == 0 {
 		nodeAdjust, _ := cloud.Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
 		if nodeAdjust < 0 {
 			nodeAdjust = -nodeAdjust
 		}
-		err := igm.deleteInstanceGroup(instanceGroupName, nodeAdjust)
+		err := igm.deleteNodeSet(instanceGroupName, nodeAdjust)
 		if err != nil {
 			igm.cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -43,13 +43,13 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	} else {
 		nodeAdjust, _ := cloud.Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
 		if nodeAdjust < 0 {
-			err := igm.deleteInstanceGroup(instanceGroupName, -nodeAdjust)
+			err := igm.deleteNodeSet(instanceGroupName, -nodeAdjust)
 			if err != nil {
 				igm.cm.cluster.Status.Reason = err.Error()
 				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
 		} else {
-			err := igm.createInstanceGroup(nodeAdjust)
+			err := igm.createNodeSet(nodeAdjust)
 			if err != nil {
 				igm.cm.cluster.Status.Reason = err.Error()
 				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -59,7 +59,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	return nil
 }
 
-func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, error) {
+func (igm *NodeSetManager) GetNodeSet(instanceGroup string) (bool, error) {
 	vm, err := igm.cm.conn.vmClient.List(igm.cm.namer.ResourceGroupName())
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
@@ -77,8 +77,8 @@ func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, e
 	//cloud.Logger(im.ctx).Infof("Found virtual machine %v", vm)
 }
 
-func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.Instance, error) {
-	instances := make([]*api.Instance, 0)
+func (igm *NodeSetManager) listInstances(sku string) ([]*api.Node, error) {
+	instances := make([]*api.Node, 0)
 	kc, err := cloud.NewAdminClient(igm.cm.ctx, igm.cm.cluster)
 	if err != nil {
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -112,7 +112,7 @@ func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.Instance, err
 	return instances, nil
 
 }
-func (igm *InstanceGroupManager) createInstanceGroup(count int64) error {
+func (igm *NodeSetManager) createNodeSet(count int64) error {
 	for i := int64(0); i < count; i++ {
 		_, err := igm.StartNode()
 		if err != nil {
@@ -124,7 +124,7 @@ func (igm *InstanceGroupManager) createInstanceGroup(count int64) error {
 	return nil
 }
 
-func (igm *InstanceGroupManager) deleteInstanceGroup(instanceGroup string, count int64) error {
+func (igm *NodeSetManager) deleteNodeSet(instanceGroup string, count int64) error {
 	vm, err := igm.cm.conn.vmClient.List(igm.cm.namer.ResourceGroupName())
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
@@ -153,8 +153,8 @@ func (igm *InstanceGroupManager) deleteInstanceGroup(instanceGroup string, count
 	return nil
 }
 
-func (igm *InstanceGroupManager) StartNode() (*api.Instance, error) {
-	ki := &api.Instance{}
+func (igm *NodeSetManager) StartNode() (*api.Node, error) {
+	ki := &api.Node{}
 
 	nodeName := igm.cm.namer.GenNodeName(igm.instance.Type.Sku)
 	nodePIP, err := igm.im.createPublicIP(igm.cm.namer.PublicIPName(nodeName), network.Dynamic)
@@ -213,7 +213,7 @@ func (igm *InstanceGroupManager) StartNode() (*api.Instance, error) {
 	ki, err = igm.im.newKubeInstance(nodeVM, nodeNIC, nodePIP)
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
-		return &api.Instance{}, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		return &api.Node{}, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	ki.Spec.Role = api.RoleNode
 

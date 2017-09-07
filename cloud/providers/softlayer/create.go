@@ -12,25 +12,29 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cm *ClusterManager) CreateMasterInstanceGroup(cluster *api.Cluster) (*api.InstanceGroup, error) {
-	ig := api.InstanceGroup{
+func (cm *ClusterManager) CreateMasterNodeSet(cluster *api.Cluster) (*api.NodeSet, error) {
+	ig := api.NodeSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              "master",
-			UID:               phid.NewInstanceGroup(),
+			UID:               phid.NewNodeSet(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 			Labels: map[string]string{
 				"node-role.kubernetes.io/master": "true",
 			},
 		},
-		Spec: api.InstanceGroupSpec{
-			SKU:           "", // assign at the time of apply
-			Count:         1,
-			SpotInstances: false,
-			DiskType:      "gp2",
-			DiskSize:      128,
+		Spec: api.NodeSetSpec{
+			Nodes: 1,
+			Template: api.NodeTemplateSpec{
+				Spec: api.NodeSpec{
+					SKU:           "", // assign at the time of apply
+					SpotInstances: false,
+					DiskType:      "gp2",
+					DiskSize:      128,
+				},
+			},
 		},
 	}
-	return cloud.Store(cm.ctx).InstanceGroups(cluster.Name).Create(&ig)
+	return cloud.Store(cm.ctx).NodeSets(cluster.Name).Create(&ig)
 }
 
 func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {

@@ -139,9 +139,9 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	}
 	fmt.Println(err, "<------------------------------->")
 
-	//for _, ng := range req.NodeGroups {
+	//for _, ng := range req.NodeSets {
 	//	cloud.Logger(cm.ctx).Infof("Creating %v node with sku %v", ng.Count, ng.Sku)
-	//	igm := &InstanceGroupManager{
+	//	igm := &NodeSetManager{
 	//		cm: cm,
 	//		instance: cloud.Instance{
 	//			Type: cloud.InstanceType{
@@ -157,7 +157,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//		},
 	//		im: im,
 	//	}
-	//	err = igm.AdjustInstanceGroup()
+	//	err = igm.AdjustNodeSet()
 	//}
 
 	cloud.Logger(cm.ctx).Info("Waiting for cluster initialization")

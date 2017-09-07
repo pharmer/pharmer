@@ -109,7 +109,7 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 
 	im := &instanceManager{cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 
-	igm := &InstanceGroupManager{cm: cm, im: im}
+	igm := &NodeSetManager{cm: cm, im: im}
 	oldinstances, err := igm.listInstances(sku)
 	//rolling update
 	for _, instance := range oldinstances {

@@ -15,7 +15,7 @@ type Interface interface {
 	Credentials() CredentialStore
 
 	Clusters() ClusterStore
-	InstanceGroups(cluster string) InstanceGroupStore
+	NodeSets(cluster string) NodeSetStore
 	Instances(cluster string) InstanceStore
 	Certificates(cluster string) CertificateStore
 	SSHKeys(cluster string) SSHKeyStore
@@ -38,22 +38,22 @@ type ClusterStore interface {
 	UpdateStatus(obj *api.Cluster) (*api.Cluster, error)
 }
 
-type InstanceGroupStore interface {
-	List(opts metav1.ListOptions) ([]*api.InstanceGroup, error)
-	Get(name string) (*api.InstanceGroup, error)
-	Create(obj *api.InstanceGroup) (*api.InstanceGroup, error)
-	Update(obj *api.InstanceGroup) (*api.InstanceGroup, error)
+type NodeSetStore interface {
+	List(opts metav1.ListOptions) ([]*api.NodeSet, error)
+	Get(name string) (*api.NodeSet, error)
+	Create(obj *api.NodeSet) (*api.NodeSet, error)
+	Update(obj *api.NodeSet) (*api.NodeSet, error)
 	Delete(name string) error
-	UpdateStatus(obj *api.InstanceGroup) (*api.InstanceGroup, error)
+	UpdateStatus(obj *api.NodeSet) (*api.NodeSet, error)
 }
 
 type InstanceStore interface {
-	List(opts metav1.ListOptions) ([]*api.Instance, error)
-	Get(name string) (*api.Instance, error)
-	Create(obj *api.Instance) (*api.Instance, error)
-	Update(obj *api.Instance) (*api.Instance, error)
+	List(opts metav1.ListOptions) ([]*api.Node, error)
+	Get(name string) (*api.Node, error)
+	Create(obj *api.Node) (*api.Node, error)
+	Update(obj *api.Node) (*api.Node, error)
 	Delete(name string) error
-	UpdateStatus(obj *api.Instance) (*api.Instance, error)
+	UpdateStatus(obj *api.Node) (*api.Node, error)
 }
 
 type CertificateStore interface {

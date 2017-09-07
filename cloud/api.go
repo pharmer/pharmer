@@ -11,7 +11,7 @@ var UnsupportedOperation = errors.New("Unsupported operation")
 
 type ClusterManager interface {
 	DefaultSpec(cluster *api.Cluster) (*api.Cluster, error)
-	CreateMasterInstanceGroup(cluster *api.Cluster) (*api.InstanceGroup, error)
+	CreateMasterNodeSet(cluster *api.Cluster) (*api.NodeSet, error)
 	Apply(cluster *api.Cluster, dryRun bool) error
 	IsValid(cluster *api.Cluster) (bool, error)
 

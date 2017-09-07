@@ -126,11 +126,11 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 		fmt.Println(k.String(), " = ", v.Count)
 	}
 
-	/*for k := range ctx.NodeGroups {
+	/*for k := range ctx.NodeSets {
 		for x, y := range diffNGs {
-			if ctx.NodeGroups[k].Sku == x.Sku {
-				ctx.NodeGroups[k].Count += y.Count
-				fmt.Println(ctx.NodeGroups[k].Count, "*********************************>>")
+			if ctx.NodeSets[k].Sku == x.Sku {
+				ctx.NodeSets[k].Count += y.Count
+				fmt.Println(ctx.NodeSets[k].Count, "*********************************>>")
 			}
 			//ctx.NumNodes += v.Count
 			//fmt.Println(k.String(), " = ", v.Count)
@@ -199,7 +199,7 @@ type Miner struct {
 }
 
 // IGM
-type InstanceGroupManager struct {
+type NodeSetManager struct {
 	ContextVersion int64
 	Sku            string
 	SpotInstance   bool
@@ -209,6 +209,6 @@ type InstanceGroupManager struct {
 	Extra interface{}
 }
 
-func (igm *InstanceGroupManager) Execute() {
+func (igm *NodeSetManager) Execute() {
 
 }

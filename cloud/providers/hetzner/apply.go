@@ -117,7 +117,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//cluster.Spec.cloud.Logger(ctx).Info(">>>>>>>>>>>>>>>>>>>>>>> Rebooted master instance")
 
 	// start nodes
-	//for _, ng := range req.NodeGroups {
+	//for _, ng := range req.NodeSets {
 	//	for i := int64(0); i < ng.Count; i++ {
 	//		tx, err := im.createInstance(api.RoleKubernetesPool, ng.Sku)
 	//		if err != nil {

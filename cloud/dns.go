@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-func EnsureARecord(ctx context.Context, cluster *api.Cluster, master *api.Instance) error {
+func EnsureARecord(ctx context.Context, cluster *api.Cluster, master *api.Node) error {
 	clusterDomain := Extra(ctx).Domain(cluster.Name)
 	// TODO: FixIT!
 	//for _, ip := range system.Config.Compass.IPs {

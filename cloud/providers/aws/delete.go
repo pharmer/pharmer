@@ -50,7 +50,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, cm.cluster.Status.Reason)
 	}
 
-	//for _, ng := range cm.cluster.Spec.NodeGroups {
+	//for _, ng := range cm.cluster.Spec.NodeSets {
 	//	if err = cm.deleteAutoScalingGroup(cm.namer.AutoScalingGroupName(ng.SKU)); err != nil {
 	//		errs = append(errs, err.Error())
 	//	}
@@ -61,7 +61,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	if err = cm.ensureInstancesDeleted(); err != nil {
 		errs = append(errs, err.Error())
 	}
-	//for _, ng := range cm.cluster.Spec.NodeGroups {
+	//for _, ng := range cm.cluster.Spec.NodeSets {
 	//	if err = cm.deleteLaunchConfiguration(cm.namer.AutoScalingGroupName(ng.SKU)); err != nil {
 	//		errs = append(errs, err.Error())
 	//	}

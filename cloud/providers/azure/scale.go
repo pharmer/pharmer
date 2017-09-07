@@ -38,20 +38,20 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	fmt.Println(cm.cluster.NodeCount(), "<<<----------")
 	nodeAdjust, _ := cloud.Mutator(cm.ctx, cm.cluster, inst)
 	fmt.Println(cm.cluster.NodeCount(), "------->>>>>>>>")
-	igm := &InstanceGroupManager{
+	igm := &NodeSetManager{
 		cm:       cm,
 		instance: inst,
 		im:       im,
 	}
-	igm.AdjustInstanceGroup()
+	igm.AdjustNodeSet()
 	fmt.Println(nodeAdjust)
 
 	//flag := false
-	//for x := range cm.cluster.Spec.NodeGroups {
-	//	if cm.cluster.Spec.NodeGroups[x].SKU == req.Sku {
-	//		cm.cluster.Spec.NodeGroups[x].Count += nodeAdjust
+	//for x := range cm.cluster.Spec.NodeSets {
+	//	if cm.cluster.Spec.NodeSets[x].SKU == req.Sku {
+	//		cm.cluster.Spec.NodeSets[x].Count += nodeAdjust
 	//		flag = true
-	//		//fmt.Println(ctx.NodeGroups[k].Count, "*********************************>>")
+	//		//fmt.Println(ctx.NodeSets[k].Count, "*********************************>>")
 	//	}
 	//	//ctx.NumNodes += v.Count
 	//	//fmt.Println(k.String(), " = ", v.Count)
@@ -62,7 +62,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	//		Count:         req.Count,
 	//		SpotInstances: false,
 	//	}
-	//	cm.cluster.Spec.NodeGroups = append(cm.cluster.Spec.NodeGroups, ig)
+	//	cm.cluster.Spec.NodeSets = append(cm.cluster.Spec.NodeSets, ig)
 	//}
 
 	//instances, err := igm.listInstances(req.Sku)

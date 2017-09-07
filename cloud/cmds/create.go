@@ -45,24 +45,28 @@ func NewCmdCreate() *cobra.Command {
 			}
 
 			for sku, count := range nodes {
-				ig := api.InstanceGroup{
+				ig := api.NodeSet{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:              sku + "-pool",
-						UID:               phid.NewInstanceGroup(),
+						UID:               phid.NewNodeSet(),
 						CreationTimestamp: metav1.Time{Time: time.Now()},
 						Labels: map[string]string{
 							"node-role.kubernetes.io/node": "true",
 						},
 					},
-					Spec: api.InstanceGroupSpec{
-						SKU:           sku,
-						Count:         int64(count),
-						SpotInstances: false,
-						//DiskType:      "",
-						//DiskSize:      0,
+					Spec: api.NodeSetSpec{
+						Nodes: int64(count),
+						Template: api.NodeTemplateSpec{
+							Spec: api.NodeSpec{
+								SKU:           sku,
+								SpotInstances: false,
+								//DiskType:      "",
+								//DiskSize:      0,
+							},
+						},
 					},
 				}
-				_, err := cloud.Store(ctx).InstanceGroups(cluster.Name).Create(&ig)
+				_, err := cloud.Store(ctx).NodeSets(cluster.Name).Create(&ig)
 				if err != nil {
 					log.Fatalln(err)
 				}

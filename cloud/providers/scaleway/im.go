@@ -24,10 +24,10 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *api.Instance
+	var instance *api.Node
 	backoff.Retry(func() (err error) {
 		for {
 			var servers *[]sapi.ScalewayServer
@@ -124,7 +124,7 @@ func (im *instanceManager) RenderStartupScript(sku, role string) string {
 	//`, cloud.RenderKubeInstaller(im.cluster, sku, role, cmd))
 }
 
-func (im *instanceManager) executeStartupScript(instance *api.Instance, signer ssh.Signer) error {
+func (im *instanceManager) executeStartupScript(instance *api.Node, signer ssh.Signer) error {
 	cloud.Logger(im.ctx).Infof("SSH execing start command %v", instance.Status.PublicIP+":22")
 
 	stdOut, stdErr, code, err := sshtools.Exec(`/usr/bin/curl 169.254.42.42/user_data/kubernetes_startupscript.sh --local-port 1-1024 2> /dev/null | bash`, "root", instance.Status.PublicIP+":22", signer)
@@ -135,7 +135,7 @@ func (im *instanceManager) executeStartupScript(instance *api.Instance, signer s
 	return nil
 }
 
-func (im *instanceManager) newKubeInstance(id string) (*api.Instance, error) {
+func (im *instanceManager) newKubeInstance(id string) (*api.Node, error) {
 	s, err := im.conn.client.GetServer(id)
 	if err != nil {
 		return nil, cloud.InstanceNotFound
@@ -143,21 +143,21 @@ func (im *instanceManager) newKubeInstance(id string) (*api.Instance, error) {
 	return im.newKubeInstanceFromServer(s)
 }
 
-func (im *instanceManager) newKubeInstanceFromServer(droplet *sapi.ScalewayServer) (*api.Instance, error) {
-	return &api.Instance{
+func (im *instanceManager) newKubeInstanceFromServer(droplet *sapi.ScalewayServer) (*api.Node, error) {
+	return &api.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: droplet.Name,
 		},
-		Spec: api.InstanceSpec{
+		Spec: api.NodeSpec{
 			SKU: droplet.CommercialType,
 		},
-		Status: api.InstanceStatus{
+		Status: api.NodeStatus{
 			ExternalID:    droplet.Identifier,
 			ExternalPhase: droplet.State,
 			PublicIP:      droplet.PublicAddress.IP,
 			PrivateIP:     droplet.PrivateIP,
-			Phase:         api.InstanceReady, // droplet.Status == active
+			Phase:         api.NodeReady, // droplet.Status == active
 		},
 	}, nil
 }

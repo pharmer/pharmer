@@ -51,7 +51,7 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
 		return nil, err
 	}
-	if _, err = cm.CreateMasterInstanceGroup(cluster); err != nil {
+	if _, err = cm.CreateMasterNodeSet(cluster); err != nil {
 		return nil, err
 	}
 	if _, err = Store(ctx).Clusters().Update(cluster); err != nil {

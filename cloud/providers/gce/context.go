@@ -33,6 +33,6 @@ func New(ctx context.Context) cloud.ClusterManager {
 	return &ClusterManager{ctx: ctx}
 }
 
-func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceStatus) bool {
+func (cm *ClusterManager) MatchInstance(i *api.Node, md *api.NodeStatus) bool {
 	return i.Name == md.Name
 }
