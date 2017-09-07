@@ -281,7 +281,7 @@ func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic networ
 			ExternalID:    fmt.Sprintf(machineIDTemplate, typed.SubscriptionID(), im.namer.ResourceGroupName(), *vm.Name),
 			ExternalPhase: *vm.ProvisioningState,
 			PrivateIP:     *(*nic.IPConfigurations)[0].PrivateIPAddress,
-			Phase:         api.InstancePhaseReady,
+			Phase:         api.InstanceReady,
 		},
 	}
 	if pip.IPAddress != nil {

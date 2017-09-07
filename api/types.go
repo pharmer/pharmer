@@ -4,6 +4,57 @@ import (
 	"errors"
 )
 
+const (
+	RoleKubernetesMaster = "kubernetes-master"
+	RoleKubernetesPool   = "kubernetes-pool"
+)
+
+/*
++---------------------------------+
+|                                 |
+|  +---------+     +---------+    |     +--------+
+|  | PENDING +-----> FAILING +----------> FAILED |
+|  +----+----+     +---------+    |     +--------+
+|       |                         |
+|       |                         |
+|  +----v----+                    |
+|  |  READY  |                    |
+|  +----+----+                    |
+|       |                         |
+|       |                         |
+|  +----v-----+                   |
+|  | DELETING |                   |
+|  +----+-----+                   |
+|       |                         |
++---------------------------------+
+        |
+        |
+   +----v----+
+   | DELETED |
+   +---------+
+*/
+
+// ClusterPhase is a label for the condition of a Cluster at the current time.
+type ClusterPhase string
+
+// These are the valid statuses of Cluster.
+const (
+	ClusterPending  ClusterPhase = "Pending"
+	ClusterFailing  ClusterPhase = "Failing"
+	ClusterFailed   ClusterPhase = "Failed"
+	ClusterReady    ClusterPhase = "Ready"
+	ClusterDeleting ClusterPhase = "Deleting"
+	ClusterDeleted  ClusterPhase = "Deleted"
+)
+
+// InstancePhase is a label for the condition of an Instance at the current time.
+type InstancePhase string
+
+const (
+	InstanceReady   InstancePhase = "Ready"
+	InstanceDeleted InstancePhase = "Deleted"
+)
+
 func AssignTypeKind(v interface{}) error {
 	switch u := v.(type) {
 	case *PharmerConfig:

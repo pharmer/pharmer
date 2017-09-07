@@ -188,7 +188,7 @@ func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*a
 			ExternalPhase: droplet.Status,
 			PublicIP:      externalIP,
 			PrivateIP:     internalIP,
-			Phase:         api.InstancePhaseReady, // droplet.Status == active
+			Phase:         api.InstanceReady, // droplet.Status == active
 		},
 	}, nil
 }

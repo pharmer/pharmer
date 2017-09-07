@@ -143,7 +143,7 @@ func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {
 		Status: api.InstanceStatus{
 			ExternalID:    strconv.Itoa(id),
 			ExternalPhase: *status.Name,
-			Phase:         api.InstancePhaseReady, // droplet.Status == active
+			Phase:         api.InstanceReady, // droplet.Status == active
 		},
 	}
 

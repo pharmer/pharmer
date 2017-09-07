@@ -127,7 +127,7 @@ func (im *instanceManager) newKubeInstance(server *gv.Server) (*api.Instance, er
 			ExternalPhase: server.Status + "|" + server.PowerStatus,
 			PublicIP:      server.MainIP,
 			PrivateIP:     server.InternalIP,
-			Phase:         api.InstancePhaseReady, // active
+			Phase:         api.InstanceReady, // active
 		},
 	}, nil
 }

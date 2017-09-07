@@ -280,10 +280,10 @@ func (cluster *Cluster) SetNodeGroups(ng []*proto.InstanceGroup) {
 }
 
 func (cluster *Cluster) Delete() error {
-	if cluster.Status.Phase == ClusterPhasePending || cluster.Status.Phase == ClusterPhaseFailing || cluster.Status.Phase == ClusterPhaseFailed {
-		cluster.Status.Phase = ClusterPhaseFailed
+	if cluster.Status.Phase == ClusterPending || cluster.Status.Phase == ClusterFailing || cluster.Status.Phase == ClusterFailed {
+		cluster.Status.Phase = ClusterFailed
 	} else {
-		cluster.Status.Phase = ClusterPhaseDeleted
+		cluster.Status.Phase = ClusterDeleted
 	}
 	fmt.Println("FixIt!")
 	//if err := ctx.Save(); err != nil {

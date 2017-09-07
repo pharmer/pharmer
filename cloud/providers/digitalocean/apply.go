@@ -22,12 +22,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	}
 
 	defer func(releaseReservedIp bool) {
-		if cm.cluster.Status.Phase == api.ClusterPhasePending {
-			cm.cluster.Status.Phase = api.ClusterPhaseFailing
+		if cm.cluster.Status.Phase == api.ClusterPending {
+			cm.cluster.Status.Phase = api.ClusterFailing
 		}
 		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
-		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
+		if cm.cluster.Status.Phase != api.ClusterReady {
 			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
@@ -163,7 +163,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.cluster.Status.Phase = api.ClusterPhaseReady
+	cm.cluster.Status.Phase = api.ClusterReady
 	return nil
 }
 

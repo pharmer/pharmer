@@ -203,7 +203,7 @@ func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.Instan
 					ExternalID:    strconv.Itoa(linode.LinodeId),
 					PublicIP:      externalIP,
 					PrivateIP:     internalIP,
-					Phase:         api.InstancePhaseReady,
+					Phase:         api.InstanceReady,
 					ExternalPhase: statusString(linode.Status),
 				},
 			}

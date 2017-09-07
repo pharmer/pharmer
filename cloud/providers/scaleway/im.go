@@ -157,7 +157,7 @@ func (im *instanceManager) newKubeInstanceFromServer(droplet *sapi.ScalewayServe
 			ExternalPhase: droplet.State,
 			PublicIP:      droplet.PublicAddress.IP,
 			PrivateIP:     droplet.PrivateIP,
-			Phase:         api.InstancePhaseReady, // droplet.Status == active
+			Phase:         api.InstanceReady, // droplet.Status == active
 		},
 	}, nil
 }

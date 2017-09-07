@@ -97,7 +97,7 @@ func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*
 			// InternalIP:     droplet.PrivateIP,
 			ExternalID:    droplet.ID,
 			ExternalPhase: droplet.State,
-			Phase:         api.InstancePhaseReady, // droplet.Status == active
+			Phase:         api.InstanceReady, // droplet.Status == active
 		},
 	}
 	for _, addr := range droplet.Network {
