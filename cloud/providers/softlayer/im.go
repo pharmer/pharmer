@@ -24,9 +24,9 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 	master := net.ParseIP(md.Name) == nil
-	var instance *api.Instance
+	var instance *api.Node
 	backoff.Retry(func() (err error) {
 		for {
 			servers, err := im.conn.accountServiceClient.GetVirtualGuests()
@@ -125,7 +125,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 	return *vGuest.Id, nil
 }
 
-func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {
+func (im *instanceManager) newKubeInstance(id int) (*api.Node, error) {
 	bluemix := im.conn.virtualServiceClient.Id(id)
 	status, err := bluemix.GetStatus()
 	if err != nil {
@@ -135,15 +135,15 @@ func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	ki := &api.Instance{
+	ki := &api.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: *d.FullyQualifiedDomainName,
 		},
-		Status: api.InstanceStatus{
+		Status: api.NodeStatus{
 			ExternalID:    strconv.Itoa(id),
 			ExternalPhase: *status.Name,
-			Phase:         api.InstanceReady, // droplet.Status == active
+			Phase:         api.NodeReady, // droplet.Status == active
 		},
 	}
 

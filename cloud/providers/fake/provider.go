@@ -30,7 +30,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	return in, nil
 }
 
-func (cm *ClusterManager) CreateMasterInstanceGroup(cluster *api.Cluster) (*api.InstanceGroup, error) {
+func (cm *ClusterManager) CreateMasterNodeSet(cluster *api.Cluster) (*api.NodeSet, error) {
 	return nil, nil
 }
 
@@ -66,11 +66,11 @@ func (cm *ClusterManager) UploadStartupConfig() error {
 	return nil
 }
 
-func (cm *ClusterManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
-	return &api.Instance{}, nil
+func (cm *ClusterManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
+	return &api.Node{}, nil
 }
 
-func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceStatus) bool {
+func (cm *ClusterManager) MatchInstance(i *api.Node, md *api.NodeStatus) bool {
 	return true
 }
 

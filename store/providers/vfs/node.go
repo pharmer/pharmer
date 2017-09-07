@@ -23,30 +23,30 @@ type InstanceFileStore struct {
 var _ store.InstanceStore = &InstanceFileStore{}
 
 func (s *InstanceFileStore) resourceHome() string {
-	return filepath.Join(s.prefix, "clusters", s.cluster, "instances")
+	return filepath.Join(s.prefix, "clusters", s.cluster, "nodes")
 }
 
 func (s *InstanceFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *InstanceFileStore) List(opts metav1.ListOptions) ([]*api.Instance, error) {
-	result := make([]*api.Instance, 0)
+func (s *InstanceFileStore) List(opts metav1.ListOptions) ([]*api.Node, error) {
+	result := make([]*api.Node, 0)
 	cursor := stow.CursorStart
 	for {
 		page, err := s.container.Browse(s.resourceHome()+"/", string(os.PathSeparator), cursor, pageSize)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to list instances. Reason: %v", err)
+			return nil, fmt.Errorf("Failed to list nodes. Reason: %v", err)
 		}
 		for _, item := range page.Items {
 			r, err := item.Open()
 			if err != nil {
-				return nil, fmt.Errorf("Failed to list instances. Reason: %v", err)
+				return nil, fmt.Errorf("Failed to list nodes. Reason: %v", err)
 			}
-			var obj api.Instance
+			var obj api.Node
 			err = json.NewDecoder(r).Decode(&obj)
 			if err != nil {
-				return nil, fmt.Errorf("Failed to list instances. Reason: %v", err)
+				return nil, fmt.Errorf("Failed to list nodes. Reason: %v", err)
 			}
 			result = append(result, &obj)
 			r.Close()
@@ -59,12 +59,12 @@ func (s *InstanceFileStore) List(opts metav1.ListOptions) ([]*api.Instance, erro
 	return result, nil
 }
 
-func (s *InstanceFileStore) Get(name string) (*api.Instance, error) {
+func (s *InstanceFileStore) Get(name string) (*api.Node, error) {
 	if s.cluster == "" {
 		return nil, errors.New("Missing cluster name")
 	}
 	if name == "" {
-		return nil, errors.New("Missing instance name")
+		return nil, errors.New("Missing node name")
 	}
 
 	item, err := s.container.Item(s.resourceID(name))
@@ -78,7 +78,7 @@ func (s *InstanceFileStore) Get(name string) (*api.Instance, error) {
 	}
 	defer r.Close()
 
-	var existing api.Instance
+	var existing api.Node
 	err = json.NewDecoder(r).Decode(&existing)
 	if err != nil {
 		return nil, err
@@ -86,14 +86,14 @@ func (s *InstanceFileStore) Get(name string) (*api.Instance, error) {
 	return &existing, nil
 }
 
-func (s *InstanceFileStore) Create(obj *api.Instance) (*api.Instance, error) {
+func (s *InstanceFileStore) Create(obj *api.Node) (*api.Node, error) {
 	if s.cluster == "" {
 		return nil, errors.New("Missing cluster name")
 	}
 	if obj == nil {
-		return nil, errors.New("Missing instance")
+		return nil, errors.New("Missing node")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing instance name")
+		return nil, errors.New("Missing node name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -114,14 +114,14 @@ func (s *InstanceFileStore) Create(obj *api.Instance) (*api.Instance, error) {
 	return obj, err
 }
 
-func (s *InstanceFileStore) Update(obj *api.Instance) (*api.Instance, error) {
+func (s *InstanceFileStore) Update(obj *api.Node) (*api.Node, error) {
 	if s.cluster == "" {
 		return nil, errors.New("Missing cluster name")
 	}
 	if obj == nil {
-		return nil, errors.New("Missing instance")
+		return nil, errors.New("Missing node")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing instance name")
+		return nil, errors.New("Missing node name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -148,19 +148,19 @@ func (s *InstanceFileStore) Delete(name string) error {
 		return errors.New("Missing cluster name")
 	}
 	if name == "" {
-		return errors.New("Missing instance name")
+		return errors.New("Missing node name")
 	}
 	return s.container.RemoveItem(s.resourceID(name))
 }
 
-func (s *InstanceFileStore) UpdateStatus(obj *api.Instance) (*api.Instance, error) {
+func (s *InstanceFileStore) UpdateStatus(obj *api.Node) (*api.Node, error) {
 	if s.cluster == "" {
 		return nil, errors.New("Missing cluster name")
 	}
 	if obj == nil {
-		return nil, errors.New("Missing instance")
+		return nil, errors.New("Missing node")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing instance name")
+		return nil, errors.New("Missing node name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -180,7 +180,7 @@ func (s *InstanceFileStore) UpdateStatus(obj *api.Instance) (*api.Instance, erro
 	}
 	defer r.Close()
 
-	var existing api.Instance
+	var existing api.Node
 	err = json.NewDecoder(r).Decode(&existing)
 	if err != nil {
 		return nil, err

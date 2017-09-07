@@ -27,10 +27,10 @@ type instanceManager struct {
 
 const DROPLET_IMAGE_SLUG = "ubuntu-16-04-x64"
 
-func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *api.Instance
+	var instance *api.Node
 	backoff.Retry(func() (err error) {
 		const pageSize = 50
 		curPage := 0
@@ -141,7 +141,7 @@ func (im *instanceManager) assignReservedIP(ip string, dropletID int) error {
 	return nil
 }
 
-func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {
+func (im *instanceManager) newKubeInstance(id int) (*api.Node, error) {
 	droplet, _, err := im.conn.client.Droplets.Get(gtx.TODO(), id)
 	if err != nil {
 		return nil, cloud.InstanceNotFound
@@ -164,7 +164,7 @@ func (im *instanceManager) getInstanceId(name string) (int, error) {
 	return -1, errors.New("Instance not found").Err()
 }
 
-func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*api.Instance, error) {
+func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*api.Node, error) {
 	var externalIP, internalIP string
 	externalIP, err := droplet.PublicIPv4()
 	if err != nil {
@@ -175,20 +175,20 @@ func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*a
 		return nil, err
 	}
 
-	return &api.Instance{
+	return &api.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: droplet.Name,
 		},
-		Spec: api.InstanceSpec{
+		Spec: api.NodeSpec{
 			SKU: droplet.SizeSlug, // 512mb // convert to SKU
 		},
-		Status: api.InstanceStatus{
+		Status: api.NodeStatus{
 			ExternalID:    strconv.Itoa(droplet.ID),
 			ExternalPhase: droplet.Status,
 			PublicIP:      externalIP,
 			PrivateIP:     internalIP,
-			Phase:         api.InstanceReady, // droplet.Status == active
+			Phase:         api.NodeReady, // droplet.Status == active
 		},
 	}, nil
 }

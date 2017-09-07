@@ -33,7 +33,7 @@ func New(ctx context.Context) cloud.ClusterManager {
 	return &ClusterManager{ctx: ctx}
 }
 
-func (cm *ClusterManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
+func (cm *ClusterManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 	conn, err := NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func (cm *ClusterManager) GetInstance(md *api.InstanceStatus) (*api.Instance, er
 	return i, nil
 }
 
-func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceStatus) bool {
+func (cm *ClusterManager) MatchInstance(i *api.Node, md *api.NodeStatus) bool {
 	return i.Status.ExternalID == md.ExternalID
 }
 

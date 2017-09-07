@@ -30,7 +30,7 @@ type instanceManager struct {
 	namer   namer
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 	pip, err := im.conn.publicIPAddressesClient.Get(im.namer.ResourceGroupName(), im.namer.PublicIPName(md.Name), "")
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(im.ctx).Err()
@@ -258,7 +258,7 @@ func (im *instanceManager) DeleteVirtualMachine(vmName string) error {
 	return err
 }
 
-func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic network.Interface, pip network.PublicIPAddress) (*api.Instance, error) {
+func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic network.Interface, pip network.PublicIPAddress) (*api.Node, error) {
 	// TODO: Load once
 	cred, err := cloud.Store(im.ctx).Credentials().Get(im.cluster.Spec.CredentialName)
 	if err != nil {
@@ -269,19 +269,19 @@ func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic networ
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", im.cluster.Spec.CredentialName, err)
 	}
 
-	i := api.Instance{
+	i := api.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: *vm.Name,
 		},
-		Spec: api.InstanceSpec{
+		Spec: api.NodeSpec{
 			SKU: string(vm.HardwareProfile.VMSize),
 		},
-		Status: api.InstanceStatus{
+		Status: api.NodeStatus{
 			ExternalID:    fmt.Sprintf(machineIDTemplate, typed.SubscriptionID(), im.namer.ResourceGroupName(), *vm.Name),
 			ExternalPhase: *vm.ProvisioningState,
 			PrivateIP:     *(*nic.IPConfigurations)[0].PrivateIPAddress,
-			Phase:         api.InstanceReady,
+			Phase:         api.NodeReady,
 		},
 	}
 	if pip.IPAddress != nil {

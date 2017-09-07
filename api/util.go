@@ -24,13 +24,13 @@ func AssignTypeKind(v interface{}) error {
 		}
 		u.Kind = "Credential"
 		return nil
-	case *InstanceGroup:
+	case *NodeSet:
 		if u.APIVersion == "" {
 			u.APIVersion = "v1alpha1"
 		}
-		u.Kind = "InstanceGroup"
+		u.Kind = "NodeSet"
 		return nil
-	case *Instance:
+	case *Node:
 		if u.APIVersion == "" {
 			u.APIVersion = "v1alpha1"
 		}

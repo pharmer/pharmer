@@ -37,7 +37,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	return cloud.UnsupportedOperation
 }
 
-func (cm *ClusterManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
+func (cm *ClusterManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 	conn, err := NewConnector(cm.ctx, cm.cluster)
 	if err != nil {
 		return nil, err
@@ -46,6 +46,6 @@ func (cm *ClusterManager) GetInstance(md *api.InstanceStatus) (*api.Instance, er
 	return im.GetInstance(md)
 }
 
-func (cm *ClusterManager) MatchInstance(i *api.Instance, md *api.InstanceStatus) bool {
+func (cm *ClusterManager) MatchInstance(i *api.Node, md *api.NodeStatus) bool {
 	return i.Status.PrivateIP == md.PrivateIP
 }

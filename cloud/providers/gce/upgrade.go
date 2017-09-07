@@ -242,7 +242,7 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	oldInstanceTemplate := cm.namer.InstanceTemplateNameWithContext(sku, ctxV)
-	groupName := cm.namer.InstanceGroupName(sku)
+	groupName := cm.namer.NodeSetName(sku)
 	oldinstances, err := cm.listInstances(groupName)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -299,7 +299,7 @@ func (cm *ClusterManager) getExistingContextVersion(sku string) (error, int64) {
 }
 
 func (cm *ClusterManager) rollingUpdate(oldInstances []string, newInstanceTemplate, sku string) error {
-	groupName := cm.namer.InstanceGroupName(sku)
+	groupName := cm.namer.NodeSetName(sku)
 	newTemplate := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", cm.cluster.Spec.Cloud.Project, newInstanceTemplate)
 	template := &compute.InstanceGroupManagersSetInstanceTemplateRequest{
 		InstanceTemplate: newTemplate,

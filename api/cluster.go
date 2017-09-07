@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/crypto/rand"
 	. "github.com/appscode/go/encoding/json/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,12 +36,6 @@ type GCECloudConfig struct {
 	NodeTags           []string `gcfg:"node-tags"            ini:"node-tags,omitempty,omitempty"`
 	NodeInstancePrefix string   `gcfg:"node-instance-prefix" ini:"node-instance-prefix,omitempty,omitempty"`
 	Multizone          bool     `gcfg:"multizone"            ini:"multizone,omitempty"`
-}
-
-type IG struct {
-	SKU           string `json:"sku,omitempty"`
-	Count         int64  `json:"count,omitempty"`
-	SpotInstances bool   `json:"spotInstances,omitempty"`
 }
 
 type Cluster struct {
@@ -222,7 +215,7 @@ type ClusterSpec struct {
 	// Deprecated
 	MasterDiskId string `json:"masterDiskID,omitempty"`
 
-	// Delete since moved to InstanceGroup / Instance
+	// Delete since moved to NodeSet / Instance
 	// Deprecated
 	MasterDiskType string `json:"masterDiskType,omitempty"`
 	// Deprecated
@@ -311,10 +304,6 @@ type ClusterStatus struct {
 func (cluster *Cluster) NodeCount() int64 {
 	panic("Fix it!")
 	return 0
-}
-
-func (cluster *Cluster) SetNodeGroups(ng []*proto.InstanceGroup) {
-	panic("Fix it!")
 }
 
 func (cluster *Cluster) Delete() error {

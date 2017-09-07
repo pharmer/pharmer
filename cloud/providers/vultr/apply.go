@@ -115,7 +115,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		state  int
 	}
 	nodes := make([]*NodeInfo, 0)
-	//for _, ng := range req.NodeGroups {
+	//for _, ng := range req.NodeSets {
 	//	nodeScriptId, err := im.createStartupScript(ng.Sku, api.RoleKubernetesPool)
 	//	if err != nil {
 	//		cm.cluster.Status.Reason = err.Error()

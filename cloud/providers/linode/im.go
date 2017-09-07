@@ -30,10 +30,10 @@ const (
 	LinodeStatus_PoweredOff   = 2
 )
 
-func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 	master := net.ParseIP(md.Name) == nil
 
-	var instance *api.Instance
+	var instance *api.Node
 	backoff.Retry(func() error {
 		resp, err := im.conn.client.Ip.List(0, 0)
 		if err != nil {
@@ -178,7 +178,7 @@ func (im *instanceManager) bootToGrub2(linodeId, configId int, name string) erro
 	return err
 }
 
-func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.Instance, error) {
+func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.Node, error) {
 	var externalIP, internalIP string
 	ips, err := im.conn.client.Ip.List(linode.LinodeId, -1)
 	if err != nil {
@@ -191,19 +191,19 @@ func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.Instan
 			internalIP = ip.IPAddress
 		}
 		if externalIP != "" && internalIP != "" {
-			i := api.Instance{
+			i := api.Node{
 				ObjectMeta: metav1.ObjectMeta{
 					UID:  phid.NewKubeInstance(),
 					Name: linode.Label.String(),
 				},
-				Spec: api.InstanceSpec{
+				Spec: api.NodeSpec{
 					SKU: strconv.Itoa(linode.PlanId),
 				},
-				Status: api.InstanceStatus{
+				Status: api.NodeStatus{
 					ExternalID:    strconv.Itoa(linode.LinodeId),
 					PublicIP:      externalIP,
 					PrivateIP:     internalIP,
-					Phase:         api.InstanceReady,
+					Phase:         api.NodeReady,
 					ExternalPhase: statusString(linode.Status),
 				},
 			}

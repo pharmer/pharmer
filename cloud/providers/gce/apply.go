@@ -136,8 +136,8 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	//for _, ng := range req.NodeGroups {
-	//	igm := &InstanceGroupManager{
+	//for _, ng := range req.NodeSets {
+	//	igm := &NodeSetManager{
 	//		cm: cm,
 	//		instance: cloud.Instance{
 	//			Type: cloud.InstanceType{
@@ -152,7 +152,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//			},
 	//		},
 	//	}
-	//	igm.AdjustInstanceGroup()
+	//	igm.AdjustNodeSet()
 	//}
 	cloud.Logger(cm.ctx).Info("Waiting for cluster initialization")
 
@@ -170,8 +170,8 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 
 	time.Sleep(time.Minute * 1)
 	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
-	//for _, ng := range req.NodeGroups {
-	//	instances, err := cm.listInstances(cm.namer.InstanceGroupName(ng.Sku))
+	//for _, ng := range req.NodeSets {
+	//	instances, err := cm.listInstances(cm.namer.NodeSetName(ng.Sku))
 	//	if err != nil {
 	//		cm.cluster.Status.Reason = err.Error()
 	//		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -484,7 +484,7 @@ func (cm *ClusterManager) createMasterIntance() (string, error) {
 }
 
 // Instance
-func (cm *ClusterManager) getInstance(instance string) (*api.Instance, error) {
+func (cm *ClusterManager) getInstance(instance string) (*api.Node, error) {
 	cloud.Logger(cm.ctx).Infof("Retrieving instance %v in zone %v", instance, cm.cluster.Spec.Cloud.Zone)
 	r1, err := cm.conn.computeService.Instances.Get(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, instance).Do()
 	cloud.Logger(cm.ctx).Debug("Retrieved instance", r1, err)
@@ -494,9 +494,9 @@ func (cm *ClusterManager) getInstance(instance string) (*api.Instance, error) {
 	return cm.newKubeInstance(r1)
 }
 
-func (cm *ClusterManager) listInstances(instanceGroup string) ([]*api.Instance, error) {
+func (cm *ClusterManager) listInstances(instanceGroup string) ([]*api.Node, error) {
 	cloud.Logger(cm.ctx).Infof("Retrieving instances in node group %v", instanceGroup)
-	instances := make([]*api.Instance, 0)
+	instances := make([]*api.Node, 0)
 	r1, err := cm.conn.computeService.InstanceGroups.ListInstances(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, instanceGroup, &compute.InstanceGroupsListInstancesRequest{
 		InstanceState: "ALL",
 	}).Do()
@@ -521,18 +521,18 @@ func (cm *ClusterManager) listInstances(instanceGroup string) ([]*api.Instance, 
 	return instances, nil
 }
 
-func (cm *ClusterManager) newKubeInstance(r1 *compute.Instance) (*api.Instance, error) {
+func (cm *ClusterManager) newKubeInstance(r1 *compute.Instance) (*api.Node, error) {
 	for _, accessConfig := range r1.NetworkInterfaces[0].AccessConfigs {
 		if accessConfig.Type == "ONE_TO_ONE_NAT" {
-			i := api.Instance{
+			i := api.Node{
 				ObjectMeta: metav1.ObjectMeta{
 					UID:  phid.NewKubeInstance(),
 					Name: r1.Name,
 				},
-				Spec: api.InstanceSpec{
+				Spec: api.NodeSpec{
 					SKU: r1.MachineType[strings.LastIndex(r1.MachineType, "/")+1:],
 				},
-				Status: api.InstanceStatus{
+				Status: api.NodeStatus{
 					ExternalID:    strconv.FormatUint(r1.Id, 10),
 					ExternalPhase: r1.Status,
 					PublicIP:      accessConfig.NatIP,
@@ -556,9 +556,9 @@ func (cm *ClusterManager) newKubeInstance(r1 *compute.Instance) (*api.Instance, 
 				//   "TERMINATED"
 			*/
 			if r1.Status == "TERMINATED" {
-				i.Status.Phase = api.InstanceDeleted
+				i.Status.Phase = api.NodeDeleted
 			} else {
-				i.Status.Phase = api.InstanceReady
+				i.Status.Phase = api.NodeReady
 			}
 			return &i, nil
 		}
@@ -702,8 +702,8 @@ func (cm *ClusterManager) createNodeInstanceTemplate(sku string) (string, error)
 	return r1.Name, nil
 }
 
-func (cm *ClusterManager) createInstanceGroup(sku string, count int64) (string, error) {
-	name := cm.namer.InstanceGroupName(sku)
+func (cm *ClusterManager) createNodeSet(sku string, count int64) (string, error) {
+	name := cm.namer.NodeSetName(sku)
 	template := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", cm.cluster.Spec.Cloud.Project, cm.namer.InstanceTemplateName(sku))
 
 	cloud.Logger(cm.ctx).Infof("Creating instance group %v from template %v", name, template)
@@ -723,7 +723,7 @@ func (cm *ClusterManager) createInstanceGroup(sku string, count int64) (string, 
 
 // Not used since Kube 1.3
 func (cm *ClusterManager) createAutoscaler(sku string, count int64) (string, error) {
-	name := cm.namer.InstanceGroupName(sku)
+	name := cm.namer.NodeSetName(sku)
 	target := fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%v/zones/%v/instanceGroupManagers/%v", cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, name)
 
 	cloud.Logger(cm.ctx).Infof("Creating auto scaler %v for instance group %v", name, target)
@@ -743,7 +743,7 @@ func (cm *ClusterManager) createAutoscaler(sku string, count int64) (string, err
 	return r1.Name, nil
 }
 
-func (cm *ClusterManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
+func (cm *ClusterManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 	r2, err := cm.conn.computeService.Instances.Get(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, md.Name).Do()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()

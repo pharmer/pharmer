@@ -22,7 +22,7 @@ type instanceManager struct {
 	conn    *cloudConnector
 }
 
-func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, error) {
+func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 	master := net.ParseIP(md.Name) == nil
 	servers, _, err := im.conn.client.Server.ListServers()
 	if err != nil {
@@ -99,7 +99,7 @@ func (im *instanceManager) executeStartupScript(serverIP string, signer ssh.Sign
 	return nil
 }
 
-func (im *instanceManager) newKubeInstance(serverIP string) (*api.Instance, error) {
+func (im *instanceManager) newKubeInstance(serverIP string) (*api.Node, error) {
 	s, _, err := im.conn.client.Server.GetServer(serverIP)
 	if err != nil {
 		return nil, cloud.InstanceNotFound
@@ -107,21 +107,21 @@ func (im *instanceManager) newKubeInstance(serverIP string) (*api.Instance, erro
 	return im.newKubeInstanceFromSummary(&s.ServerSummary)
 }
 
-func (im *instanceManager) newKubeInstanceFromSummary(droplet *hc.ServerSummary) (*api.Instance, error) {
-	return &api.Instance{
+func (im *instanceManager) newKubeInstanceFromSummary(droplet *hc.ServerSummary) (*api.Node, error) {
+	return &api.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: droplet.ServerName,
 		},
-		Spec: api.InstanceSpec{
+		Spec: api.NodeSpec{
 			SKU: droplet.Product,
 		},
-		Status: api.InstanceStatus{
+		Status: api.NodeStatus{
 			ExternalID:    strconv.Itoa(droplet.ServerNumber),
 			ExternalPhase: droplet.Status,
 			PublicIP:      droplet.ServerIP,
 			PrivateIP:     "",
-			Phase:         api.InstanceReady, // droplet.Status == active
+			Phase:         api.NodeReady, // droplet.Status == active
 		},
 	}, nil
 }

@@ -120,8 +120,8 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	//for _, ng := range req.NodeGroups {
-	//	igm := &InstanceGroupManager{
+	//for _, ng := range req.NodeSets {
+	//	igm := &NodeSetManager{
 	//		cm: cm,
 	//		instance: cloud.Instance{
 	//			Type: cloud.InstanceType{
@@ -136,7 +136,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//			},
 	//		},
 	//	}
-	//	igm.AdjustInstanceGroup()
+	//	igm.AdjustNodeSet()
 	//}
 
 	cloud.Logger(cm.ctx).Info("Waiting for cluster initialization")
@@ -161,7 +161,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	// -------------------------------------------------------------------------------------------------------------
 	cloud.Logger(cm.ctx).Info("Listing autoscaling groups")
 	groups := make([]*string, 0)
-	//for _, ng := range req.NodeGroups {
+	//for _, ng := range req.NodeSets {
 	//	groups = append(groups, StringP(cm.namer.AutoScalingGroupName(ng.Sku)))
 	//}
 	r2, err := cm.conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
@@ -807,7 +807,7 @@ func (cm *ClusterManager) autohrizeIngressByPort(groupID string, port int64) err
 //
 // -------------------------------------
 //
-func (cm *ClusterManager) startMaster() (*api.Instance, error) {
+func (cm *ClusterManager) startMaster() (*api.Node, error) {
 	var err error
 	// TODO: FixIt!
 	//cm.cluster.Spec.MasterDiskId, err = cm.ensurePd(cm.namer.MasterPDName(), cm.cluster.Spec.MasterDiskType, cm.cluster.Spec.MasterDiskSize)
@@ -1077,7 +1077,7 @@ func (cm *ClusterManager) getInstancePublicIP(instanceID string) (string, bool, 
 	return "", false, nil
 }
 
-func (cm *ClusterManager) listInstances(groupName string) ([]*api.Instance, error) {
+func (cm *ClusterManager) listInstances(groupName string) ([]*api.Node, error) {
 	r2, err := cm.conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: []*string{
 			StringP(groupName),
@@ -1087,7 +1087,7 @@ func (cm *ClusterManager) listInstances(groupName string) ([]*api.Instance, erro
 		cm.cluster.Status.Reason = err.Error()
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	instances := make([]*api.Instance, 0)
+	instances := make([]*api.Node, 0)
 	for _, group := range r2.AutoScalingGroups {
 		for _, instance := range group.Instances {
 			ki, err := cm.newKubeInstance(*instance.InstanceId)
@@ -1100,7 +1100,7 @@ func (cm *ClusterManager) listInstances(groupName string) ([]*api.Instance, erro
 	}
 	return instances, nil
 }
-func (cm *ClusterManager) newKubeInstance(instanceID string) (*api.Instance, error) {
+func (cm *ClusterManager) newKubeInstance(instanceID string) (*api.Node, error) {
 	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 		InstanceIds: []*string{StringP(instanceID)},
 	})
@@ -1110,15 +1110,15 @@ func (cm *ClusterManager) newKubeInstance(instanceID string) (*api.Instance, err
 	}
 
 	// Don't reassign internal_ip for AWS to keep the fixed 172.20.0.9 for master_internal_ip
-	i := api.Instance{
+	i := api.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
 			Name: *r1.Reservations[0].Instances[0].PrivateDnsName,
 		},
-		Spec: api.InstanceSpec{
+		Spec: api.NodeSpec{
 			SKU: *r1.Reservations[0].Instances[0].InstanceType,
 		},
-		Status: api.InstanceStatus{
+		Status: api.NodeStatus{
 			ExternalID:    instanceID,
 			ExternalPhase: *r1.Reservations[0].Instances[0].State.Name,
 			PublicIP:      *r1.Reservations[0].Instances[0].PublicIpAddress,
@@ -1137,9 +1137,9 @@ func (cm *ClusterManager) newKubeInstance(instanceID string) (*api.Instance, err
 		//    80 : stopped
 	*/
 	if i.Status.ExternalPhase == "terminated" {
-		i.Status.Phase = api.InstanceDeleted
+		i.Status.Phase = api.NodeDeleted
 	} else {
-		i.Status.Phase = api.InstanceReady
+		i.Status.Phase = api.NodeReady
 	}
 	return &i, nil
 }

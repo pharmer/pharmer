@@ -10,14 +10,14 @@ import (
 	compute "google.golang.org/api/compute/v1"
 )
 
-type InstanceGroupManager struct {
+type NodeSetManager struct {
 	cm       *ClusterManager
 	instance cloud.Instance
 }
 
-func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
-	instanceGroupName := igm.cm.namer.InstanceGroupName(igm.instance.Type.Sku)
-	found := igm.cm.checkInstanceGroup(instanceGroupName)
+func (igm *NodeSetManager) AdjustNodeSet() error {
+	instanceGroupName := igm.cm.namer.NodeSetName(igm.instance.Type.Sku)
+	found := igm.cm.checkNodeSet(instanceGroupName)
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
 	igm.cm.cluster, _ = cloud.Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 	if !found {
@@ -30,7 +30,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
 		}
-		if op3, err := igm.createInstanceGroup(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
+		if op3, err := igm.createNodeSet(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
 			igm.cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		} else {
@@ -51,12 +51,12 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 		}
 	} else if igm.instance.Stats.Count == 0 {
 		instanceTemplate := igm.cm.namer.InstanceTemplateName(igm.instance.Type.Sku)
-		err := igm.deleteOnlyInstanceGroup(instanceGroupName, instanceTemplate)
+		err := igm.deleteOnlyNodeSet(instanceGroupName, instanceTemplate)
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	} else {
-		err := igm.updateInstanceGroup(instanceGroupName, igm.instance.Stats.Count)
+		err := igm.updateNodeSet(instanceGroupName, igm.instance.Stats.Count)
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
@@ -65,7 +65,7 @@ func (igm *InstanceGroupManager) AdjustInstanceGroup() error {
 	return nil
 }
 
-func (igm *InstanceGroupManager) createNodeInstanceTemplate(sku string) (string, error) {
+func (igm *NodeSetManager) createNodeInstanceTemplate(sku string) (string, error) {
 	templateName := igm.cm.namer.InstanceTemplateName(sku)
 
 	cloud.Logger(igm.cm.ctx).Infof("Retrieving node template %v", templateName)
@@ -161,8 +161,8 @@ func (igm *InstanceGroupManager) createNodeInstanceTemplate(sku string) (string,
 	return r1.Name, nil
 }
 
-func (igm *InstanceGroupManager) createInstanceGroup(sku string, count int64) (string, error) {
-	name := igm.cm.namer.InstanceGroupName(sku)
+func (igm *NodeSetManager) createNodeSet(sku string, count int64) (string, error) {
+	name := igm.cm.namer.NodeSetName(sku)
 	template := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", igm.cm.cluster.Spec.Cloud.Project, igm.cm.namer.InstanceTemplateName(sku))
 
 	r1, err := igm.cm.conn.computeService.InstanceGroupManagers.Insert(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, &compute.InstanceGroupManager{
@@ -180,8 +180,8 @@ func (igm *InstanceGroupManager) createInstanceGroup(sku string, count int64) (s
 }
 
 // Not used since Kube 1.3
-func (igm *InstanceGroupManager) createAutoscaler(sku string, count int64) (string, error) {
-	name := igm.cm.namer.InstanceGroupName(sku)
+func (igm *NodeSetManager) createAutoscaler(sku string, count int64) (string, error) {
+	name := igm.cm.namer.NodeSetName(sku)
 	target := fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%v/zones/%v/instanceGroupManagers/%v", igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, name)
 
 	r1, err := igm.cm.conn.computeService.Autoscalers.Insert(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, &compute.Autoscaler{
@@ -200,7 +200,7 @@ func (igm *InstanceGroupManager) createAutoscaler(sku string, count int64) (stri
 	return r1.Name, nil
 }
 
-func (igm *InstanceGroupManager) deleteOnlyInstanceGroup(instanceGroupName, template string) error {
+func (igm *NodeSetManager) deleteOnlyNodeSet(instanceGroupName, template string) error {
 	_, err := igm.cm.conn.computeService.InstanceGroupManagers.ListManagedInstances(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -237,7 +237,7 @@ func (igm *InstanceGroupManager) deleteOnlyInstanceGroup(instanceGroupName, temp
 	return nil
 }
 
-func (igm *InstanceGroupManager) updateInstanceGroup(instanceGroupName string, size int64) error {
+func (igm *NodeSetManager) updateNodeSet(instanceGroupName string, size int64) error {
 	r1, err := igm.cm.conn.computeService.Autoscalers.Get(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
