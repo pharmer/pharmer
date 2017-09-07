@@ -262,7 +262,6 @@ type CloudStatus struct {
 	AWS *AWSStatus `json:"aws,omitempty"`
 }
 
-
 /*
 +---------------------------------+
 |                                 |
@@ -303,8 +302,8 @@ const (
 
 type ClusterStatus struct {
 	Phase            ClusterPhase `json:"phase,omitempty,omitempty"`
-	Reason           string `json:"reason,omitempty,omitempty"`
-	SSHKeyExternalID string `json:"sshKeyExternalID,omitempty"`
+	Reason           string       `json:"reason,omitempty,omitempty"`
+	SSHKeyExternalID string       `json:"sshKeyExternalID,omitempty"`
 
 	Cloud CloudStatus `json:"cloud"`
 }
