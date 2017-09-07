@@ -40,7 +40,7 @@ type InstanceSpec struct {
 }
 
 type InstanceStatus struct {
-	Phase string
+	Phase InstancePhase
 
 	Name          string
 	ExternalID    string
@@ -54,3 +54,11 @@ func (i Instance) IsMaster() bool {
 	_, found := i.Labels["node-role.kubernetes.io/node"]
 	return found
 }
+
+// InstancePhase is a label for the condition of an Instance at the current time.
+type InstancePhase string
+
+const (
+	InstanceReady   InstancePhase = "Ready"
+	InstanceDeleted InstancePhase = "Deleted"
+)

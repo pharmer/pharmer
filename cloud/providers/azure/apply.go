@@ -112,7 +112,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	masterScript, err := cloud.RenderStartupScript(cm.ctx, cm.cluster, api.RoleKubernetesMaster)
+	masterScript, err := cloud.RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -128,7 +128,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Spec.Role = api.RoleKubernetesMaster
+	masterInstance.Spec.Role = api.RoleMaster
 
 	fmt.Println(cm.cluster.Spec.MasterExternalIP, "------------------------------->")
 	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)

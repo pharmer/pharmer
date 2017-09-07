@@ -52,9 +52,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, e
 				if internalIP == md.PrivateIP {
 					instance, err = im.newKubeInstanceFromDroplet(&droplet)
 					if master {
-						instance.Spec.Role = api.RoleKubernetesMaster
+						instance.Spec.Role = api.RoleMaster
 					} else {
-						instance.Spec.Role = api.RoleKubernetesPool
+						instance.Spec.Role = api.RoleNode
 					}
 					return
 				}

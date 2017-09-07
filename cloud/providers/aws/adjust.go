@@ -80,7 +80,7 @@ func (igm *InstanceGroupManager) startNodes(sku string, count int64) error {
 
 func (igm *InstanceGroupManager) createLaunchConfiguration(name, sku string) error {
 	//script := igm.cm.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), sku, system.RoleKubernetesPool)
-	script, err := cloud.RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleKubernetesPool)
+	script, err := cloud.RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
 	if err != nil {
 		return err
 	}
@@ -196,7 +196,7 @@ func (igm *InstanceGroupManager) listInstances(instanceGroup string) ([]*api.Ins
 
 	for _, item := range group.AutoScalingGroups[0].Instances {
 		instance, err := igm.cm.newKubeInstance(*item.InstanceId)
-		instance.Spec.Role = api.RoleKubernetesPool
+		instance.Spec.Role = api.RoleNode
 		instances = append(instances, instance)
 		if err != nil {
 			return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()

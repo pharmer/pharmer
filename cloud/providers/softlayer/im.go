@@ -43,9 +43,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, e
 						return err
 					}
 					if master {
-						instance.Spec.Role = api.RoleKubernetesMaster
+						instance.Spec.Role = api.RoleMaster
 					} else {
-						instance.Spec.Role = api.RoleKubernetesPool
+						instance.Spec.Role = api.RoleNode
 					}
 					return nil
 				}

@@ -49,7 +49,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	// -------------------------------------------------------------------ASSETS
 	im := &instanceManager{ctx: cm.ctx, cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 
-	masterScriptId, err := im.createStackScript(cm.cluster.Spec.MasterSKU, api.RoleKubernetesMaster)
+	masterScriptId, err := im.createStackScript(cm.cluster.Spec.MasterSKU, api.RoleMaster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -71,7 +71,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Name = cm.namer.MasterName()
-	masterInstance.Spec.Role = api.RoleKubernetesMaster
+	masterInstance.Spec.Role = api.RoleMaster
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
 	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
@@ -154,7 +154,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 							return errors.FromErr(err).WithContext(cm.ctx).Err()
 						}
 						node.Name = cm.cluster.Name + "-node-" + strconv.Itoa(info.nodeId)
-						node.Spec.Role = api.RoleKubernetesPool
+						node.Spec.Role = api.RoleNode
 						cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
 
 						//if api.UseFirebase() {

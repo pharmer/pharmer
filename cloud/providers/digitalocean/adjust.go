@@ -79,7 +79,7 @@ func (igm *InstanceGroupManager) GetInstanceGroup(instanceGroup string) (bool, m
 			if err != nil {
 				return flag, existingNGs, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
-			instance.Spec.Role = api.RoleKubernetesPool
+			instance.Spec.Role = api.RoleNode
 			internalIP, err := item.PrivateIPv4()
 			existingNGs[internalIP] = instance
 		}
@@ -149,7 +149,7 @@ func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.Instance, err
 }
 
 func (igm *InstanceGroupManager) StartNode() (*api.Instance, error) {
-	droplet, err := igm.im.createInstance(igm.cm.namer.GenNodeName(igm.instance.Type.Sku), api.RoleKubernetesPool, igm.instance.Type.Sku)
+	droplet, err := igm.im.createInstance(igm.cm.namer.GenNodeName(igm.instance.Type.Sku), api.RoleNode, igm.instance.Type.Sku)
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
 		return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -162,7 +162,7 @@ func (igm *InstanceGroupManager) StartNode() (*api.Instance, error) {
 		return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	igm.im.applyTag(droplet.ID)
-	node.Spec.Role = api.RoleKubernetesPool
+	node.Spec.Role = api.RoleNode
 	cloud.Store(igm.cm.ctx).Instances(igm.cm.cluster.Name).Create(node)
 	return node, nil
 }

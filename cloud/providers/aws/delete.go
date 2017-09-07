@@ -161,7 +161,7 @@ func (cm *ClusterManager) deleteMaster() error {
 			{
 				Name: StringP("tag:Role"),
 				Values: []*string{
-					StringP(api.RoleKubernetesMaster),
+					StringP(api.RoleMaster),
 				},
 			},
 			{

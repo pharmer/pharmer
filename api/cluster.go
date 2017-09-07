@@ -262,8 +262,47 @@ type CloudStatus struct {
 	AWS *AWSStatus `json:"aws,omitempty"`
 }
 
+
+/*
++---------------------------------+
+|                                 |
+|  +---------+     +---------+    |     +--------+
+|  | PENDING +-----> FAILING +----------> FAILED |
+|  +----+----+     +---------+    |     +--------+
+|       |                         |
+|       |                         |
+|  +----v----+                    |
+|  |  READY  |                    |
+|  +----+----+                    |
+|       |                         |
+|       |                         |
+|  +----v-----+                   |
+|  | DELETING |                   |
+|  +----+-----+                   |
+|       |                         |
++---------------------------------+
+        |
+        |
+   +----v----+
+   | DELETED |
+   +---------+
+*/
+
+// ClusterPhase is a label for the condition of a Cluster at the current time.
+type ClusterPhase string
+
+// These are the valid statuses of Cluster.
+const (
+	ClusterPending  ClusterPhase = "Pending"
+	ClusterFailing  ClusterPhase = "Failing"
+	ClusterFailed   ClusterPhase = "Failed"
+	ClusterReady    ClusterPhase = "Ready"
+	ClusterDeleting ClusterPhase = "Deleting"
+	ClusterDeleted  ClusterPhase = "Deleted"
+)
+
 type ClusterStatus struct {
-	Phase            string `json:"phase,omitempty,omitempty"`
+	Phase            ClusterPhase `json:"phase,omitempty,omitempty"`
 	Reason           string `json:"reason,omitempty,omitempty"`
 	SSHKeyExternalID string `json:"sshKeyExternalID,omitempty"`
 

@@ -109,7 +109,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Spec.Role = api.RoleKubernetesMaster
+	masterInstance.Spec.Role = api.RoleMaster
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
 	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP)
@@ -373,7 +373,7 @@ func (cm *ClusterManager) createMasterIntance() (string, error) {
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
 	// startupScript := cm.RenderStartupScript(cm.cluster, cm.cluster.Spec.MasterSKU, api.RoleKubernetesMaster)
-	startupScript, err := cloud.RenderStartupScript(cm.ctx, cm.cluster, api.RoleKubernetesMaster)
+	startupScript, err := cloud.RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster)
 	if err != nil {
 		return "", err
 	}
@@ -515,7 +515,7 @@ func (cm *ClusterManager) listInstances(instanceGroup string) ([]*api.Instance, 
 		if err != nil {
 			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		instance.Spec.Role = api.RoleKubernetesPool
+		instance.Spec.Role = api.RoleNode
 		instances = append(instances, instance)
 	}
 	return instances, nil
@@ -622,7 +622,7 @@ func (cm *ClusterManager) createNodeInstanceTemplate(sku string) (string, error)
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
 	//  }
 
-	startupScript, err := cloud.RenderStartupScript(cm.ctx, cm.cluster, api.RoleKubernetesPool)
+	startupScript, err := cloud.RenderStartupScript(cm.ctx, cm.cluster, api.RoleNode)
 	if err != nil {
 		return "", err
 	}
