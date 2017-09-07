@@ -38,7 +38,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	return cloud.UnsupportedOperation
 }
 
-func (cm *ClusterManager) IsValid(cluster string) (bool, error) {
+func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, cloud.UnsupportedOperation
 }
 

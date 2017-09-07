@@ -167,6 +167,6 @@ func (cm *ClusterManager) updateContext() error {
 	return nil
 }
 
-func (cm *ClusterManager) IsValid(cluster string) (bool, error) {
+func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, cloud.UnsupportedOperation
 }

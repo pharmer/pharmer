@@ -29,7 +29,7 @@ func TestGce(t *testing.T) {
 func TestContext(t *testing.T) {
 	cfg, err := config.LoadConfig("/home/sanjid/go/src/appscode.com/ark/conf/tigerworks-kube.json")
 	fmt.Println(err)
-	ctx := cloud.NewContext(context.TODO(), cfg)
+	ctx := cloud.NewContext(context.Background(), cfg)
 	cm := New(ctx)
 
 	req := proto.ClusterCreateRequest{

@@ -35,8 +35,13 @@ type Instance struct {
 }
 
 type InstanceSpec struct {
-	SKU  string
+	// Deprecated
 	Role string
+
+	SKU           string `json:"sku,omitempty"`
+	SpotInstances bool   `json:"spotInstances,omitempty"`
+	DiskType      string `json:"nodeDiskType,omitempty"`
+	DiskSize      int64  `json:"nodeDiskSize,omitempty"`
 }
 
 type InstanceStatus struct {
