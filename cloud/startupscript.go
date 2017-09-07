@@ -183,7 +183,7 @@ EOF
 {{ end }}
 
 pre-k merge master-config \
-    --config=/etc/kubernetes/kubeadm/config.yaml
+	--config=/etc/kubernetes/kubeadm/config.yaml
 	--apiserver-bind-port=6443 \
 	--token={{ .KubeadmToken }} \
 	--apiserver-advertise-address=$(pre-k get public-ips --all=false) \
