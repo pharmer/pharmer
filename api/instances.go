@@ -23,7 +23,7 @@ type InstanceGroupStatus struct {
 }
 
 func (ig InstanceGroup) IsMaster() bool {
-	_, found := ig.Labels["node-role.kubernetes.io/node"]
+	_, found := ig.Labels["node-role.kubernetes.io/master"]
 	return found
 }
 
@@ -51,6 +51,6 @@ type InstanceStatus struct {
 }
 
 func (i Instance) IsMaster() bool {
-	_, found := i.Labels["node-role.kubernetes.io/node"]
+	_, found := i.Labels["node-role.kubernetes.io/master"]
 	return found
 }
