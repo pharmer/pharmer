@@ -13,8 +13,9 @@ type ClusterManager interface {
 	DefaultSpec(cluster *api.Cluster) (*api.Cluster, error)
 	CreateMasterInstanceGroup(cluster *api.Cluster) (*api.InstanceGroup, error)
 	Apply(cluster *api.Cluster, dryRun bool) error
+	IsValid(cluster *api.Cluster) (bool, error)
 
-	// IsValid(cluster string) (bool, error)
+	// IsValid(cluster *api.Cluster) (bool, error)
 	// Delete(req *proto.ClusterDeleteRequest) error
 	// SetVersion(req *proto.ClusterReconfigureRequest) error
 	// Scale(req *proto.ClusterReconfigureRequest) error

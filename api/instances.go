@@ -23,7 +23,7 @@ type InstanceGroupStatus struct {
 }
 
 func (ig InstanceGroup) IsMaster() bool {
-	_, found := ig.Labels["node-role.kubernetes.io/master"]
+	_, found := ig.Labels[RoleMasterKey]
 	return found
 }
 
@@ -35,12 +35,17 @@ type Instance struct {
 }
 
 type InstanceSpec struct {
-	SKU  string
+	// Deprecated
 	Role string
+
+	SKU           string `json:"sku,omitempty"`
+	SpotInstances bool   `json:"spotInstances,omitempty"`
+	DiskType      string `json:"nodeDiskType,omitempty"`
+	DiskSize      int64  `json:"nodeDiskSize,omitempty"`
 }
 
 type InstanceStatus struct {
-	Phase string
+	Phase InstancePhase
 
 	Name          string
 	ExternalID    string
@@ -51,6 +56,14 @@ type InstanceStatus struct {
 }
 
 func (i Instance) IsMaster() bool {
-	_, found := i.Labels["node-role.kubernetes.io/master"]
+	_, found := i.Labels[RoleMasterKey]
 	return found
 }
+
+// InstancePhase is a label for the condition of an Instance at the current time.
+type InstancePhase string
+
+const (
+	InstanceReady   InstancePhase = "Ready"
+	InstanceDeleted InstancePhase = "Deleted"
+)

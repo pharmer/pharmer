@@ -38,9 +38,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, e
 							return
 						}
 						if master {
-							instance.Spec.Role = api.RoleKubernetesMaster
+							instance.Spec.Role = api.RoleMaster
 						} else {
-							instance.Spec.Role = api.RoleKubernetesPool
+							instance.Spec.Role = api.RoleNode
 						}
 						return
 					}
@@ -97,7 +97,7 @@ func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*
 			// InternalIP:     droplet.PrivateIP,
 			ExternalID:    droplet.ID,
 			ExternalPhase: droplet.State,
-			Phase:         api.InstancePhaseReady, // droplet.Status == active
+			Phase:         api.InstanceReady, // droplet.Status == active
 		},
 	}
 	for _, addr := range droplet.Network {

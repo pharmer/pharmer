@@ -33,12 +33,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	}
 
 	defer func(releaseReservedIp bool) {
-		if cm.cluster.Status.Phase == api.ClusterPhasePending {
-			cm.cluster.Status.Phase = api.ClusterPhaseFailing
+		if cm.cluster.Status.Phase == api.ClusterPending {
+			cm.cluster.Status.Phase = api.ClusterFailing
 		}
 		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
-		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
+		if cm.cluster.Status.Phase != api.ClusterReady {
 			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
@@ -176,7 +176,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	for _, group := range r2.AutoScalingGroups {
 		for _, instance := range group.Instances {
 			ki, err := cm.newKubeInstance(*instance.InstanceId)
-			ki.Spec.Role = api.RoleKubernetesPool
+			ki.Spec.Role = api.RoleNode
 			cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(ki)
 			if err != nil {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -203,7 +203,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//    build-config
 	//  fi
 	// check-cluster
-	cm.cluster.Status.Phase = api.ClusterPhaseReady
+	cm.cluster.Status.Phase = api.ClusterReady
 	return nil
 }
 
@@ -820,7 +820,7 @@ func (cm *ClusterManager) startMaster() (*api.Instance, error) {
 	}
 	cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster) // needed for master start-up config
 
-	masterInstanceID, err := cm.createMasterInstance(cm.cluster.Spec.KubernetesMasterName, api.RoleKubernetesMaster)
+	masterInstanceID, err := cm.createMasterInstance(cm.cluster.Spec.KubernetesMasterName, api.RoleMaster)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -843,7 +843,7 @@ func (cm *ClusterManager) startMaster() (*api.Instance, error) {
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Spec.Role = api.RoleKubernetesMaster
+	masterInstance.Spec.Role = api.RoleMaster
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
 	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 
@@ -973,7 +973,7 @@ func (cm *ClusterManager) reserveIP() error {
 }
 
 func (cm *ClusterManager) createMasterInstance(instanceName string, role string) (string, error) {
-	kubeStarter, err := cloud.RenderStartupScript(cm.ctx, cm.cluster, api.RoleKubernetesMaster)
+	kubeStarter, err := cloud.RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster)
 	if err != nil {
 		return "", err
 	}
@@ -1094,7 +1094,7 @@ func (cm *ClusterManager) listInstances(groupName string) ([]*api.Instance, erro
 			if err != nil {
 				return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
-			ki.Spec.Role = api.RoleKubernetesPool
+			ki.Spec.Role = api.RoleNode
 			instances = append(instances, ki)
 		}
 	}
@@ -1137,9 +1137,9 @@ func (cm *ClusterManager) newKubeInstance(instanceID string) (*api.Instance, err
 		//    80 : stopped
 	*/
 	if i.Status.ExternalPhase == "terminated" {
-		i.Status.Phase = api.InstancePhaseDeleted
+		i.Status.Phase = api.InstanceDeleted
 	} else {
-		i.Status.Phase = api.InstancePhaseReady
+		i.Status.Phase = api.InstanceReady
 	}
 	return &i, nil
 }
@@ -1182,7 +1182,7 @@ func (cm *ClusterManager) assignIPToInstance(instanceID string) error {
 
 func (cm *ClusterManager) createLaunchConfiguration(name, sku string) error {
 	// script := cm.RenderStartupScript(cm.cluster, sku, api.RoleKubernetesPool)
-	script, err := cloud.RenderStartupScript(cm.ctx, cm.cluster, api.RoleKubernetesPool)
+	script, err := cloud.RenderStartupScript(cm.ctx, cm.cluster, api.RoleNode)
 	if err != nil {
 		return err
 	}

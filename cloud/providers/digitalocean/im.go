@@ -52,9 +52,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, e
 				if internalIP == md.PrivateIP {
 					instance, err = im.newKubeInstanceFromDroplet(&droplet)
 					if master {
-						instance.Spec.Role = api.RoleKubernetesMaster
+						instance.Spec.Role = api.RoleMaster
 					} else {
-						instance.Spec.Role = api.RoleKubernetesPool
+						instance.Spec.Role = api.RoleNode
 					}
 					return
 				}
@@ -188,7 +188,7 @@ func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*a
 			ExternalPhase: droplet.Status,
 			PublicIP:      externalIP,
 			PrivateIP:     internalIP,
-			Phase:         api.InstancePhaseReady, // droplet.Status == active
+			Phase:         api.InstanceReady, // droplet.Status == active
 		},
 	}, nil
 }

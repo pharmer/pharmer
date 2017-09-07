@@ -150,6 +150,6 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	return cluster, nil
 }
 
-func (cm *ClusterManager) IsValid(cluster string) (bool, error) {
+func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, cloud.UnsupportedOperation
 }

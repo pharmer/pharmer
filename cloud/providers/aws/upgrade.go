@@ -87,7 +87,7 @@ func (cm *ClusterManager) updateMaster() error {
 func (cm *ClusterManager) restartMaster() error {
 	fmt.Println("Updating Master...")
 
-	masterInstanceID, err := cm.createMasterInstance(cm.cluster.Spec.KubernetesMasterName, api.RoleKubernetesMaster)
+	masterInstanceID, err := cm.createMasterInstance(cm.cluster.Spec.KubernetesMasterName, api.RoleMaster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -119,7 +119,7 @@ func (cm *ClusterManager) restartMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	instance.Spec.Role = api.RoleKubernetesMaster
+	instance.Spec.Role = api.RoleMaster
 	// FixIT!
 	// cm.ins.Instances = nil
 	// cm.ins.Instances = append(cm.ins.Instances, instance)

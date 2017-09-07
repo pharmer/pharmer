@@ -83,7 +83,7 @@ func (igm *InstanceGroupManager) createNodeInstanceTemplate(sku string) (string,
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
 	//  }
 
-	startupScript, err := cloud.RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleKubernetesPool)
+	startupScript, err := cloud.RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
 	if err != nil {
 		return "", err
 	}

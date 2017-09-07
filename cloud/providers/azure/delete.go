@@ -13,10 +13,10 @@ import (
 func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	defer cm.cluster.Delete()
 
-	if cm.cluster.Status.Phase == api.ClusterPhasePending {
-		cm.cluster.Status.Phase = api.ClusterPhaseFailing
-	} else if cm.cluster.Status.Phase == api.ClusterPhaseReady {
-		cm.cluster.Status.Phase = api.ClusterPhaseDeleting
+	if cm.cluster.Status.Phase == api.ClusterPending {
+		cm.cluster.Status.Phase = api.ClusterFailing
+	} else if cm.cluster.Status.Phase == api.ClusterReady {
+		cm.cluster.Status.Phase = api.ClusterDeleting
 	}
 	// cloud.Store(cm.ctx).UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
@@ -49,7 +49,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 
 	if len(errs) > 0 {
 		// Preserve statusCause for failed cluster
-		if cm.cluster.Status.Phase == api.ClusterPhaseDeleting {
+		if cm.cluster.Status.Phase == api.ClusterDeleting {
 			cm.cluster.Status.Reason = strings.Join(errs, "\n")
 		}
 		return fmt.Errorf(strings.Join(errs, "\n"))

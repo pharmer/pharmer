@@ -35,9 +35,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, e
 			if server.InternalIP == md.PrivateIP {
 				instance, err = im.newKubeInstance(&server)
 				if master {
-					instance.Spec.Role = api.RoleKubernetesMaster
+					instance.Spec.Role = api.RoleMaster
 				} else {
-					instance.Spec.Role = api.RoleKubernetesPool
+					instance.Spec.Role = api.RoleNode
 				}
 				return
 			}
@@ -127,7 +127,7 @@ func (im *instanceManager) newKubeInstance(server *gv.Server) (*api.Instance, er
 			ExternalPhase: server.Status + "|" + server.PowerStatus,
 			PublicIP:      server.MainIP,
 			PrivateIP:     server.InternalIP,
-			Phase:         api.InstancePhaseReady, // active
+			Phase:         api.InstanceReady, // active
 		},
 	}, nil
 }

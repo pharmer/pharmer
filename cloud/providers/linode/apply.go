@@ -20,12 +20,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	}
 
 	defer func(releaseReservedIp bool) {
-		if cm.cluster.Status.Phase == api.ClusterPhasePending {
-			cm.cluster.Status.Phase = api.ClusterPhaseFailing
+		if cm.cluster.Status.Phase == api.ClusterPending {
+			cm.cluster.Status.Phase = api.ClusterFailing
 		}
 		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
-		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
+		if cm.cluster.Status.Phase != api.ClusterReady {
 			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
@@ -49,7 +49,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	// -------------------------------------------------------------------ASSETS
 	im := &instanceManager{ctx: cm.ctx, cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 
-	masterScriptId, err := im.createStackScript(cm.cluster.Spec.MasterSKU, api.RoleKubernetesMaster)
+	masterScriptId, err := im.createStackScript(cm.cluster.Spec.MasterSKU, api.RoleMaster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -71,7 +71,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Name = cm.namer.MasterName()
-	masterInstance.Spec.Role = api.RoleKubernetesMaster
+	masterInstance.Spec.Role = api.RoleMaster
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
 	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
@@ -154,7 +154,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 							return errors.FromErr(err).WithContext(cm.ctx).Err()
 						}
 						node.Name = cm.cluster.Name + "-node-" + strconv.Itoa(info.nodeId)
-						node.Spec.Role = api.RoleKubernetesPool
+						node.Spec.Role = api.RoleNode
 						cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
 
 						//if api.UseFirebase() {
@@ -194,6 +194,6 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cm.cluster.Status.Phase = api.ClusterPhaseReady
+	cm.cluster.Status.Phase = api.ClusterReady
 	return nil
 }

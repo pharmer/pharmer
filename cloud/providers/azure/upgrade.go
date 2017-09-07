@@ -76,7 +76,7 @@ func (cm *ClusterManager) updateMaster() error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterScript, err := cloud.RenderStartupScript(cm.ctx, cm.cluster, api.RoleKubernetesMaster)
+	masterScript, err := cloud.RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()

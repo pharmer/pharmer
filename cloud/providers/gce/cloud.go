@@ -8,7 +8,6 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
-	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 	rupdate "google.golang.org/api/replicapoolupdater/v1beta1"
@@ -58,7 +57,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
 	}
-	client := conf.Client(oauth2.NoContext)
+	client := conf.Client(context.Background())
 	computeService, err := compute.New(client)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(ctx).Err()

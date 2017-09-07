@@ -32,7 +32,7 @@ func NewCmdApply() *cobra.Command {
 			if err != nil {
 				log.Fatalln(err)
 			}
-			ctx := cloud.NewContext(context.TODO(), cfg)
+			ctx := cloud.NewContext(context.Background(), cfg)
 
 			err = cloud.Apply(ctx, name, dryRun)
 			if err != nil {

@@ -120,7 +120,7 @@ func RenderStartupScript(ctx context.Context, cluster *api.Cluster, role string)
 }
 
 var (
-	StartupScriptTemplate = template.Must(template.New(api.RoleKubernetesMaster).Parse(`#!/bin/bash
+	StartupScriptTemplate = template.Must(template.New(api.RoleMaster).Parse(`#!/bin/bash
 set -x
 set -o errexit
 set -o nounset
@@ -183,7 +183,7 @@ EOF
 {{ end }}
 
 pre-k merge master-config \
-    --config=/etc/kubernetes/kubeadm/config.yaml
+	--config=/etc/kubernetes/kubeadm/config.yaml
 	--apiserver-bind-port=6443 \
 	--token={{ .KubeadmToken }} \
 	--apiserver-advertise-address=$(pre-k get public-ips --all=false) \
@@ -200,7 +200,7 @@ kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 {{ end }}
 `))
 
-	_ = template.Must(StartupScriptTemplate.New(api.RoleKubernetesPool).Parse(`#!/bin/bash
+	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`#!/bin/bash
 set -x
 set -o errexit
 set -o nounset

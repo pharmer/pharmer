@@ -71,7 +71,7 @@ func (cm *ClusterManager) updateMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	masterDroplet, err := im.createInstance(cm.cluster.Spec.KubernetesMasterName, api.RoleKubernetesMaster, cm.cluster.Spec.MasterSKU)
+	masterDroplet, err := im.createInstance(cm.cluster.Spec.KubernetesMasterName, api.RoleMaster, cm.cluster.Spec.MasterSKU)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -93,7 +93,7 @@ func (cm *ClusterManager) updateMaster() error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Spec.Role = api.RoleKubernetesMaster
+	masterInstance.Spec.Role = api.RoleMaster
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
 	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP, "<><><>", cm.cluster.Spec.MasterReservedIP)

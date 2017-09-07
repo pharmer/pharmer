@@ -43,9 +43,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, e
 						return err
 					}
 					if master {
-						instance.Spec.Role = api.RoleKubernetesMaster
+						instance.Spec.Role = api.RoleMaster
 					} else {
-						instance.Spec.Role = api.RoleKubernetesPool
+						instance.Spec.Role = api.RoleNode
 					}
 					return nil
 				}
@@ -143,7 +143,7 @@ func (im *instanceManager) newKubeInstance(id int) (*api.Instance, error) {
 		Status: api.InstanceStatus{
 			ExternalID:    strconv.Itoa(id),
 			ExternalPhase: *status.Name,
-			Phase:         api.InstancePhaseReady, // droplet.Status == active
+			Phase:         api.InstanceReady, // droplet.Status == active
 		},
 	}
 

@@ -91,7 +91,7 @@ func NewCmdUse() *cobra.Command {
 				if err != nil {
 					log.Fatalln(err)
 				}
-				ctx := cloud.NewContext(context.TODO(), cfg)
+				ctx := cloud.NewContext(context.Background(), cfg)
 
 				c2, err := cloud.GetAdminConfig(ctx, name)
 				if err != nil {

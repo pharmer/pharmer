@@ -262,10 +262,48 @@ type CloudStatus struct {
 	AWS *AWSStatus `json:"aws,omitempty"`
 }
 
+/*
++---------------------------------+
+|                                 |
+|  +---------+     +---------+    |     +--------+
+|  | PENDING +-----> FAILING +----------> FAILED |
+|  +----+----+     +---------+    |     +--------+
+|       |                         |
+|       |                         |
+|  +----v----+                    |
+|  |  READY  |                    |
+|  +----+----+                    |
+|       |                         |
+|       |                         |
+|  +----v-----+                   |
+|  | DELETING |                   |
+|  +----+-----+                   |
+|       |                         |
++---------------------------------+
+        |
+        |
+   +----v----+
+   | DELETED |
+   +---------+
+*/
+
+// ClusterPhase is a label for the condition of a Cluster at the current time.
+type ClusterPhase string
+
+// These are the valid statuses of Cluster.
+const (
+	ClusterPending  ClusterPhase = "Pending"
+	ClusterFailing  ClusterPhase = "Failing"
+	ClusterFailed   ClusterPhase = "Failed"
+	ClusterReady    ClusterPhase = "Ready"
+	ClusterDeleting ClusterPhase = "Deleting"
+	ClusterDeleted  ClusterPhase = "Deleted"
+)
+
 type ClusterStatus struct {
-	Phase            string `json:"phase,omitempty,omitempty"`
-	Reason           string `json:"reason,omitempty,omitempty"`
-	SSHKeyExternalID string `json:"sshKeyExternalID,omitempty"`
+	Phase            ClusterPhase `json:"phase,omitempty,omitempty"`
+	Reason           string       `json:"reason,omitempty,omitempty"`
+	SSHKeyExternalID string       `json:"sshKeyExternalID,omitempty"`
 
 	Cloud CloudStatus `json:"cloud"`
 }
@@ -280,10 +318,10 @@ func (cluster *Cluster) SetNodeGroups(ng []*proto.InstanceGroup) {
 }
 
 func (cluster *Cluster) Delete() error {
-	if cluster.Status.Phase == ClusterPhasePending || cluster.Status.Phase == ClusterPhaseFailing || cluster.Status.Phase == ClusterPhaseFailed {
-		cluster.Status.Phase = ClusterPhaseFailed
+	if cluster.Status.Phase == ClusterPending || cluster.Status.Phase == ClusterFailing || cluster.Status.Phase == ClusterFailed {
+		cluster.Status.Phase = ClusterFailed
 	} else {
-		cluster.Status.Phase = ClusterPhaseDeleted
+		cluster.Status.Phase = ClusterDeleted
 	}
 	fmt.Println("FixIt!")
 	//if err := ctx.Save(); err != nil {

@@ -104,7 +104,7 @@ func (igm *InstanceGroupManager) listInstances(sku string) ([]*api.Instance, err
 			if err != nil {
 				return nil, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
-			instance.Spec.Role = api.RoleKubernetesPool
+			instance.Spec.Role = api.RoleNode
 
 			instances = append(instances, instance)
 		}
@@ -194,7 +194,7 @@ func (igm *InstanceGroupManager) StartNode() (*api.Instance, error) {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
-	nodeScript, err := cloud.RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleKubernetesPool)
+	nodeScript, err := cloud.RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
 	if err != nil {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -215,7 +215,7 @@ func (igm *InstanceGroupManager) StartNode() (*api.Instance, error) {
 		igm.cm.cluster.Status.Reason = err.Error()
 		return &api.Instance{}, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	ki.Spec.Role = api.RoleKubernetesPool
+	ki.Spec.Role = api.RoleNode
 
 	cloud.Store(igm.cm.ctx).Instances(igm.cm.cluster.Name).Create(ki)
 	return ki, nil

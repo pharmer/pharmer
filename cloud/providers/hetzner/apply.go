@@ -21,12 +21,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	}
 
 	defer func(releaseReservedIp bool) {
-		if cm.cluster.Status.Phase == api.ClusterPhasePending {
-			cm.cluster.Status.Phase = api.ClusterPhaseFailing
+		if cm.cluster.Status.Phase == api.ClusterPending {
+			cm.cluster.Status.Phase = api.ClusterFailing
 		}
 		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
-		if cm.cluster.Status.Phase != api.ClusterPhaseReady {
+		if cm.cluster.Status.Phase != api.ClusterReady {
 			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
@@ -53,7 +53,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	im := &instanceManager{ctx: cm.ctx, cluster: cm.cluster, conn: cm.conn}
 
 	cloud.Logger(cm.ctx).Info("Creating master instance")
-	masterTx, err := im.createInstance(api.RoleKubernetesMaster, cm.cluster.Spec.MasterSKU)
+	masterTx, err := im.createInstance(api.RoleMaster, cm.cluster.Spec.MasterSKU)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -68,7 +68,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	masterInstance.Spec.Role = api.RoleKubernetesMaster
+	masterInstance.Spec.Role = api.RoleMaster
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
 	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP)
@@ -93,12 +93,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		ServerIP:   *masterTx.ServerIP,
 		ServerName: cm.cluster.Spec.KubernetesMasterName,
 	})
-	err = im.storeConfigFile(*masterTx.ServerIP, api.RoleKubernetesMaster, signer)
+	err = im.storeConfigFile(*masterTx.ServerIP, api.RoleMaster, signer)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = im.storeStartupScript(*masterTx.ServerIP, cm.cluster.Spec.MasterSKU, api.RoleKubernetesMaster, signer)
+	err = im.storeStartupScript(*masterTx.ServerIP, cm.cluster.Spec.MasterSKU, api.RoleMaster, signer)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -175,7 +175,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.cluster.Status.Phase = api.ClusterPhaseReady
+	cm.cluster.Status.Phase = api.ClusterReady
 	return nil
 }
 

@@ -50,10 +50,10 @@ func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, e
 					return err
 				}
 				if master {
-					instance.Spec.Role = api.RoleKubernetesMaster
+					instance.Spec.Role = api.RoleMaster
 				} else {
 					instance.Name = im.cluster.Name + "-node-" + strconv.Itoa(fip.LinodeId)
-					instance.Spec.Role = api.RoleKubernetesPool
+					instance.Spec.Role = api.RoleNode
 				}
 				return nil
 			}
@@ -203,7 +203,7 @@ func (im *instanceManager) newKubeInstance(linode *linodego.Linode) (*api.Instan
 					ExternalID:    strconv.Itoa(linode.LinodeId),
 					PublicIP:      externalIP,
 					PrivateIP:     internalIP,
-					Phase:         api.InstancePhaseReady,
+					Phase:         api.InstanceReady,
 					ExternalPhase: statusString(linode.Status),
 				},
 			}

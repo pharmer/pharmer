@@ -35,9 +35,9 @@ func (im *instanceManager) GetInstance(md *api.InstanceStatus) (*api.Instance, e
 				return nil, err
 			}
 			if master {
-				instance.Spec.Role = api.RoleKubernetesMaster
+				instance.Spec.Role = api.RoleMaster
 			} else {
-				instance.Spec.Role = api.RoleKubernetesPool
+				instance.Spec.Role = api.RoleNode
 			}
 			return instance, nil
 
@@ -121,7 +121,7 @@ func (im *instanceManager) newKubeInstanceFromSummary(droplet *hc.ServerSummary)
 			ExternalPhase: droplet.Status,
 			PublicIP:      droplet.ServerIP,
 			PrivateIP:     "",
-			Phase:         api.InstancePhaseReady, // droplet.Status == active
+			Phase:         api.InstanceReady, // droplet.Status == active
 		},
 	}, nil
 }
