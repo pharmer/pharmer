@@ -18,8 +18,6 @@ import (
 )
 
 func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
-	defer cm.cluster.Delete()
-
 	if cm.cluster.Status.Phase == api.ClusterPending {
 		cm.cluster.Status.Phase = api.ClusterFailing
 	} else if cm.cluster.Status.Phase == api.ClusterReady {
