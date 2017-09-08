@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appscode/go/crypto/rand"
 	. "github.com/appscode/go/encoding/json/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
@@ -299,25 +298,6 @@ type ClusterStatus struct {
 	SSHKeyExternalID string       `json:"sshKeyExternalID,omitempty"`
 
 	Cloud CloudStatus `json:"cloud"`
-}
-
-func (cluster *Cluster) Delete() error {
-	if cluster.Status.Phase == ClusterPending || cluster.Status.Phase == ClusterFailing || cluster.Status.Phase == ClusterFailed {
-		cluster.Status.Phase = ClusterFailed
-	} else {
-		cluster.Status.Phase = ClusterDeleted
-	}
-	fmt.Println("FixIt!")
-	//if err := ctx.Save(); err != nil {
-	//	return err
-	//}
-
-	n := rand.WithUniqSuffix(cluster.Name)
-	//if _, err := ctx.Store().Engine.Update(&Kubernetes{Name: n}, &Kubernetes{PHID: ctx.PHID}); err != nil {
-	//	return err
-	//}
-	cluster.Name = n
-	return nil
 }
 
 func (cluster *Cluster) clusterIP(seq int64) string {
