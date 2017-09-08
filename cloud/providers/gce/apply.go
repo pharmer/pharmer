@@ -114,6 +114,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//}
 
 	op1, err := cm.createMasterIntance()
+
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -175,7 +176,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//	igm.AdjustNodeSet()
 	//}
 	cloud.Logger(cm.ctx).Info("Waiting for cluster initialization")
-os.Exit(1)
+
 	// Wait for master A record to propagate
 	if err := cloud.EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()

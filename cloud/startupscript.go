@@ -42,7 +42,7 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster) TemplateData {
 	}
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1alpha1",
+			APIVersion: "kubeadm.k8s.io/v1alpha1",
 			Kind:       "MasterConfiguration",
 		},
 		API:  cluster.Spec.API,
