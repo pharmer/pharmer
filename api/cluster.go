@@ -301,11 +301,6 @@ type ClusterStatus struct {
 	Cloud CloudStatus `json:"cloud"`
 }
 
-func (cluster *Cluster) NodeCount() int64 {
-	panic("Fix it!")
-	return 0
-}
-
 func (cluster *Cluster) Delete() error {
 	if cluster.Status.Phase == ClusterPending || cluster.Status.Phase == ClusterFailing || cluster.Status.Phase == ClusterFailed {
 		cluster.Status.Phase = ClusterFailed

@@ -33,9 +33,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 		},
 	}
 
-	fmt.Println(cm.cluster.NodeCount(), "<<<----------")
 	nodeAdjust, _ := cloud.Mutator(cm.ctx, cm.cluster, inst)
-	fmt.Println(cm.cluster.NodeCount(), "------->>>>>>>>")
 	igm := &NodeSetManager{
 		cm:       cm,
 		instance: inst,
