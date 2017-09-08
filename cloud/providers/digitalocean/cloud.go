@@ -17,8 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-const containerOsImage = "appscode-containeros"
-
 type cloudConnector struct {
 	ctx     context.Context
 	cluster *api.Cluster
