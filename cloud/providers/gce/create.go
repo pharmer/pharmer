@@ -27,7 +27,7 @@ func (cm *ClusterManager) CreateMasterNodeSet(cluster *api.Cluster) (*api.NodeSe
 			Nodes: 1,
 			Template: api.NodeTemplateSpec{
 				Spec: api.NodeSpec{
-					SKU:           "", // assign at the time of apply
+					SKU:           "n1-standard-2", // assign at the time of apply
 					SpotInstances: false,
 					DiskType:      "pd-standard",
 					DiskSize:      100,
@@ -100,6 +100,8 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	// Using custom image with memory controller enabled
 	// -------------------------ctx.InstanceImage = "16604964" // "container-os-20160402" // Debian 8.4 x64
 
+	cluster.Spec.Cloud.InstanceImageProject = "ubuntu-os-cloud"
+	cluster.Spec.Cloud.InstanceImage = "ubuntu-1604-xenial-v20170721"
 	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
 
 	version, err := semver.NewVersion(cluster.Spec.KubernetesVersion)

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/TamalSaha/go-oneliners"
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
@@ -31,8 +30,6 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	if cm.ctx, err = cloud.LoadCACertificates(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
-
-	oneliners.FILE()
 	cm.namer = namer{cluster: cm.cluster}
 
 	defer func(releaseReservedIp bool) {
@@ -69,10 +66,22 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cm.cluster.Spec.MasterDiskId, err = cm.createDisk(cm.namer.MasterPDName(), cm.cluster.Spec.MasterDiskType, cm.cluster.Spec.MasterDiskSize)
+
+	nodeSets, err := cloud.Store(cm.ctx).NodeSets(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+
+	for _, node := range nodeSets {
+		if node.IsMaster() {
+			cm.cluster.Spec.MasterDiskId, err = cm.createDisk(cm.namer.MasterPDName(), node.Spec.Template.Spec.DiskType, node.Spec.Template.Spec.DiskSize)
+			if err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				return errors.FromErr(err).WithContext(cm.ctx).Err()
+			}
+			cm.cluster.Spec.MasterSKU = node.Spec.Template.Spec.SKU
+			break
+		}
 	}
 
 	if err = cm.reserveIP(); err != nil {
@@ -166,7 +175,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//	igm.AdjustNodeSet()
 	//}
 	cloud.Logger(cm.ctx).Info("Waiting for cluster initialization")
-
+os.Exit(1)
 	// Wait for master A record to propagate
 	if err := cloud.EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -332,7 +341,12 @@ func (cm *ClusterManager) createDisk(name, diskType string, sizeGb int64) (strin
 		Type:   dType,
 		SizeGb: sizeGb,
 	}).Do()
+
 	cloud.Logger(cm.ctx).Debug("Created master disk", r1, err)
+	if err != nil {
+		return name, errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+	err = cm.conn.waitForZoneOperation(r1.Name)
 	if err != nil {
 		return name, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
