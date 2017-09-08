@@ -98,6 +98,7 @@ type NodeTemplateSpec struct {
 	Spec NodeSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 }
 
+// Deprecated, replace with Kubernetes Node
 type Node struct {
 	metav1.TypeMeta   `json:",inline,omitempty"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -105,6 +106,7 @@ type Node struct {
 	Status            NodeStatus `json:"status,omitempty"`
 }
 
+// Deprecated
 type NodeSpec struct {
 	// Deprecated
 	Role string
@@ -115,6 +117,7 @@ type NodeSpec struct {
 	DiskSize      int64  `json:"nodeDiskSize,omitempty"`
 }
 
+// Deprecated
 type NodeStatus struct {
 	Phase NodePhase
 
@@ -132,6 +135,7 @@ func (n Node) IsMaster() bool {
 }
 
 // InstancePhase is a label for the condition of an Instance at the current time.
+// Deprecated
 type NodePhase string
 
 const (
