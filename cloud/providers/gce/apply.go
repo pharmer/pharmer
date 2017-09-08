@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/TamalSaha/go-oneliners"
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
@@ -23,6 +24,16 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
+
+	if cm.ctx, err = cloud.LoadSSHKey(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if cm.ctx, err = cloud.LoadCACertificates(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+
+	oneliners.FILE()
+	cm.namer = namer{cluster: cm.cluster}
 
 	defer func(releaseReservedIp bool) {
 		if cm.cluster.Status.Phase == api.ClusterPending {

@@ -29,8 +29,8 @@ func (cm *ClusterManager) CreateMasterNodeSet(cluster *api.Cluster) (*api.NodeSe
 				Spec: api.NodeSpec{
 					SKU:           "", // assign at the time of apply
 					SpotInstances: false,
-					DiskType:      "gp2",
-					DiskSize:      128,
+					DiskType:      "pd-standard",
+					DiskSize:      100,
 				},
 			},
 		},
