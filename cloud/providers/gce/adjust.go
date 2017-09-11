@@ -17,10 +17,11 @@ type NodeSetManager struct {
 
 func (igm *NodeSetManager) AdjustNodeSet() error {
 	instanceGroupName := igm.cm.namer.NodeSetName(igm.instance.Type.Sku)
-	found := igm.cm.checkNodeSet(instanceGroupName)
+	adjust, err := cloud.Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
+	fmt.Println(err, igm.cm.cluster.Spec.Cloud.Project)
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
-	igm.cm.cluster, _ = cloud.Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
-	if !found {
+	//igm.cm.cluster, _ = cloud.Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
+	if adjust == igm.instance.Stats.Count {
 		if op2, err := igm.createNodeInstanceTemplate(igm.instance.Type.Sku); err != nil {
 			igm.cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -56,7 +57,7 @@ func (igm *NodeSetManager) AdjustNodeSet() error {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	} else {
-		err := igm.updateNodeSet(instanceGroupName, igm.instance.Stats.Count)
+		err := igm.updateNodeSet(instanceGroupName, adjust)
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
@@ -78,6 +79,8 @@ func (igm *NodeSetManager) createNodeInstanceTemplate(sku string) (string, error
 			os.Exit(1)
 		}
 		cloud.Logger(igm.cm.ctx).Infof("Existing node template %v deleted", templateName)
+	} else {
+		fmt.Println(err)
 	}
 	//  if cluster.Spec.ctx.Preemptiblenode == "true" {
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
@@ -88,8 +91,9 @@ func (igm *NodeSetManager) createNodeInstanceTemplate(sku string) (string, error
 		return "", err
 	}
 	image := fmt.Sprintf("projects/%v/global/images/%v", igm.cm.cluster.Spec.Cloud.InstanceImageProject, igm.cm.cluster.Spec.Cloud.InstanceImage)
+	fmt.Println(image, "<><>")
 	network := fmt.Sprintf("projects/%v/global/networks/%v", igm.cm.cluster.Spec.Cloud.Project, defaultNetwork)
-
+	fmt.Println("network = ", network)
 	tpl := &compute.InstanceTemplate{
 		Name: templateName,
 		Properties: &compute.InstanceProperties{
@@ -103,8 +107,8 @@ func (igm *NodeSetManager) createNodeInstanceTemplate(sku string) (string, error
 					AutoDelete: true,
 					Boot:       true,
 					InitializeParams: &compute.AttachedDiskInitializeParams{
-						DiskType:    igm.cm.cluster.Spec.NodeDiskType,
-						DiskSizeGb:  igm.cm.cluster.Spec.NodeDiskSize,
+						DiskType:    igm.instance.Type.DiskType,
+						DiskSizeGb:  igm.instance.Type.DiskSize,
 						SourceImage: image,
 					},
 				},
@@ -155,6 +159,7 @@ func (igm *NodeSetManager) createNodeInstanceTemplate(sku string) (string, error
 	r1, err := igm.cm.conn.computeService.InstanceTemplates.Insert(igm.cm.cluster.Spec.Cloud.Project, tpl).Do()
 	cloud.Logger(igm.cm.ctx).Debug("Create instance template called", r1, err)
 	if err != nil {
+		fmt.Println(err)
 		return "", errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	cloud.Logger(igm.cm.ctx).Infof("Instance template %v created", templateName)
@@ -245,27 +250,12 @@ func (igm *NodeSetManager) updateNodeSet(instanceGroupName string, size int64) e
 	max := r1.AutoscalingPolicy.MaxNumReplicas
 	min := r1.AutoscalingPolicy.MinNumReplicas
 	cloud.Logger(igm.cm.ctx).Infof("Updating autoscaller with Max %v and Min %v num of replicas", size, size)
-	if size > max {
+	if size > max || size < min {
 		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, &compute.Autoscaler{
 			Name: instanceGroupName,
 			AutoscalingPolicy: &compute.AutoscalingPolicy{
 				MaxNumReplicas: size,
 				MinNumReplicas: size,
-			},
-		}).Do()
-		if err != nil {
-			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-		}
-		err = igm.cm.conn.waitForZoneOperation(r2.Name)
-		if err != nil {
-			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-		}
-	} else if size < min {
-		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, &compute.Autoscaler{
-			Name: instanceGroupName,
-			AutoscalingPolicy: &compute.AutoscalingPolicy{
-				MinNumReplicas: size,
-				MaxNumReplicas: size,
 			},
 		}).Do()
 		if err != nil {

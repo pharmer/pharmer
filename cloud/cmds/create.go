@@ -60,8 +60,8 @@ func NewCmdCreate() *cobra.Command {
 							Spec: api.NodeSpec{
 								SKU:           sku,
 								SpotInstances: false,
-								//DiskType:      "",
-								//DiskSize:      0,
+								DiskType:      "pd-standard",
+								DiskSize:      100,
 							},
 						},
 					},

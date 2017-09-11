@@ -191,6 +191,28 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 
 	time.Sleep(time.Minute * 1)
 	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
+
+	for _, node := range nodeSets {
+		if node.IsMaster() {
+			continue
+		}
+		instance := cloud.Instance{
+			Type: cloud.InstanceType{
+				Sku:          node.Spec.Template.Spec.SKU,
+				Master:       false,
+				SpotInstance: false,
+			},
+			Stats: cloud.GroupStats{
+				Count: node.Spec.Nodes,
+			},
+		}
+
+		igm := &NodeSetManager{
+			cm:       cm,
+			instance: instance,
+		}
+		igm.AdjustNodeSet()
+	}
 	//for _, ng := range req.NodeSets {
 	//	instances, err := cm.listInstances(cm.namer.NodeSetName(ng.Sku))
 	//	if err != nil {

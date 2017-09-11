@@ -103,6 +103,8 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	cluster.Spec.Cloud.InstanceImageProject = "ubuntu-os-cloud"
 	cluster.Spec.Cloud.InstanceImage = "ubuntu-1604-xenial-v20170721"
 	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
+	cluster.Spec.Networking.NetworkProvider = "flannel"
+	cluster.Spec.Networking.PodSubnet = "10.244.0.0/16"
 
 	version, err := semver.NewVersion(cluster.Spec.KubernetesVersion)
 	if err != nil {

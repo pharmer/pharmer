@@ -319,7 +319,19 @@ func (cluster *Cluster) APIServerURL() string {
 	//	if ctx.MasterReservedIP != "" {
 	//		host = ctx.MasterReservedIP
 	//	}
-	return fmt.Sprintf("https://%v:6443", cluster.Spec.MasterReservedIP)
+	host := cluster.Spec.MasterReservedIP
+	if host == "" {
+		host = cluster.Spec.MasterExternalIP
+	}
+	return fmt.Sprintf("https://%v:6443", host)
 	// ctx.Logger().Infoln(fmt.Sprintf("Cluster %v 's api server url: %v\n", ctx.Name, ctx.ApiServerUrl))
 	//}
+}
+
+func (cluster *Cluster) APIServerHost() string {
+	host := cluster.Spec.MasterReservedIP
+	if host == "" {
+		host = cluster.Spec.MasterExternalIP
+	}
+	return host
 }

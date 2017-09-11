@@ -17,6 +17,7 @@ const (
 	NodeLabelKey_Role     = "kubernetes.io/role"
 	NodeLabelKey_SKU      = "kubernetes.appscode.com/sku"
 	NodeLabelKey_Checksum = "meta.appscode.com/checksum"
+	NodeLabelKey_NodeSet  = "cloud.appscode.com/pool"
 )
 
 // MissingChecksumError records an error and the operation and file path that caused it.
