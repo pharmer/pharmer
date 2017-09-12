@@ -49,7 +49,7 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 
 	for _, n := range nodes.Items {
 		nl := api.FromMap(n.GetLabels())
-		if nl.GetString(api.NodeLabelKey_NodeSet) != (expectedInstance.Type.Sku + "-pool") {
+		if nl.GetString(api.NodeLabelKey_NodeGroup) != (expectedInstance.Type.Sku + "-pool") {
 			continue
 		}
 		k := InstanceType{
@@ -118,11 +118,11 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 	var adjust int64
 	adjust = diffNGs[expectedInstance.Type].Count
 
-	/*for k := range ctx.NodeSets {
+	/*for k := range ctx.NodeGroups {
 		for x, y := range diffNGs {
-			if ctx.NodeSets[k].Sku == x.Sku {
-				ctx.NodeSets[k].Count += y.Count
-				fmt.Println(ctx.NodeSets[k].Count, "*********************************>>")
+			if ctx.NodeGroups[k].Sku == x.Sku {
+				ctx.NodeGroups[k].Count += y.Count
+				fmt.Println(ctx.NodeGroups[k].Count, "*********************************>>")
 			}
 			//ctx.NumNodes += v.Count
 			//fmt.Println(k.String(), " = ", v.Count)
@@ -191,7 +191,7 @@ type Miner struct {
 }
 
 // IGM
-type NodeSetManager struct {
+type NodeGroupManager struct {
 	ContextVersion int64
 	Sku            string
 	SpotInstance   bool
@@ -201,6 +201,6 @@ type NodeSetManager struct {
 	Extra interface{}
 }
 
-func (igm *NodeSetManager) Execute() {
+func (igm *NodeGroupManager) Execute() {
 
 }

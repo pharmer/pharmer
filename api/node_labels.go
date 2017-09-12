@@ -14,10 +14,10 @@ import (
 const (
 	NodeLabelKey_ContextVersion = "kubernetes.appscode.com/context"
 	// ref: https://github.com/kubernetes/apimachinery/blob/master/pkg/apis/meta/v1/well_known_labels.go#L70
-	NodeLabelKey_Role     = "kubernetes.io/role"
-	NodeLabelKey_SKU      = "kubernetes.appscode.com/sku"
-	NodeLabelKey_Checksum = "meta.appscode.com/checksum"
-	NodeLabelKey_NodeSet  = "cloud.appscode.com/pool"
+	NodeLabelKey_Role      = "kubernetes.io/role"
+	NodeLabelKey_SKU       = "kubernetes.appscode.com/sku"
+	NodeLabelKey_Checksum  = "meta.appscode.com/checksum"
+	NodeLabelKey_NodeGroup = "cloud.appscode.com/pool"
 )
 
 // MissingChecksumError records an error and the operation and file path that caused it.

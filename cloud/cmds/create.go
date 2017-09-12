@@ -45,16 +45,16 @@ func NewCmdCreate() *cobra.Command {
 			}
 
 			for sku, count := range nodes {
-				ig := api.NodeSet{
+				ig := api.NodeGroup{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:              sku + "-pool",
-						UID:               phid.NewNodeSet(),
+						UID:               phid.NewNodeGroup(),
 						CreationTimestamp: metav1.Time{Time: time.Now()},
 						Labels: map[string]string{
 							"node-role.kubernetes.io/node": "true",
 						},
 					},
-					Spec: api.NodeSetSpec{
+					Spec: api.NodeGroupSpec{
 						Nodes: int64(count),
 						Template: api.NodeTemplateSpec{
 							Spec: api.NodeSpec{
@@ -66,7 +66,7 @@ func NewCmdCreate() *cobra.Command {
 						},
 					},
 				}
-				_, err := cloud.Store(ctx).NodeSets(cluster.Name).Create(&ig)
+				_, err := cloud.Store(ctx).NodeGroups(cluster.Name).Create(&ig)
 				if err != nil {
 					log.Fatalln(err)
 				}

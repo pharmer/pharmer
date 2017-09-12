@@ -35,12 +35,12 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, cm.cluster.Status.Reason)
 	}
 
-	if l, err := cm.listNodeSets(); err == nil {
+	if l, err := cm.listNodeGroups(); err == nil {
 		for _, g := range l {
 			instanceGroup := g.groupName
 			template := cm.namer.InstanceTemplateName(g.sku)
 
-			if err = cm.deleteNodeSet(instanceGroup); err != nil {
+			if err = cm.deleteNodeGroup(instanceGroup); err != nil {
 				errs = append(errs, err.Error())
 			}
 
@@ -102,7 +102,7 @@ type groupInfo struct {
 	sku       string
 }
 
-func (cm *ClusterManager) listNodeSets() ([]*groupInfo, error) {
+func (cm *ClusterManager) listNodeGroups() ([]*groupInfo, error) {
 	groups := make([]*groupInfo, 0)
 
 	r1, err := cm.conn.computeService.InstanceGroups.List(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone).Do()
@@ -123,7 +123,7 @@ func (cm *ClusterManager) listNodeSets() ([]*groupInfo, error) {
 		cloud.Logger(cm.ctx).Info("Enter correct cluster name")
 		//os.Exit(1)
 	}
-	cloud.Logger(cm.ctx).Debugf("Retrieved NodeSets result %v", groups)
+	cloud.Logger(cm.ctx).Debugf("Retrieved NodeGroups result %v", groups)
 	return groups, nil
 }
 
@@ -140,7 +140,7 @@ func (cm *ClusterManager) deleteMaster() error {
 }
 
 //delete instance group
-func (cm *ClusterManager) deleteNodeSet(instanceGroup string) error {
+func (cm *ClusterManager) deleteNodeGroup(instanceGroup string) error {
 	r1, err := cm.conn.computeService.InstanceGroupManagers.Delete(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, instanceGroup).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()

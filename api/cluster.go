@@ -214,7 +214,7 @@ type ClusterSpec struct {
 	// Deprecated
 	MasterDiskId string `json:"masterDiskID,omitempty"`
 
-	// Delete since moved to NodeSet / Instance
+	// Delete since moved to NodeGroup / Instance
 	// Deprecated
 	MasterDiskType string `json:"masterDiskType,omitempty"`
 	// Deprecated

@@ -5,22 +5,22 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 )
 
-type NodeSet struct {
+type NodeGroup struct {
 	metav1.TypeMeta   `json:",inline,omitempty"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              NodeSetSpec   `json:"spec,omitempty"`
-	Status            NodeSetStatus `json:"status,omitempty"`
+	Spec              NodeGroupSpec   `json:"spec,omitempty"`
+	Status            NodeGroupStatus `json:"status,omitempty"`
 }
 
-type NodeSetSpec struct {
+type NodeGroupSpec struct {
 	Nodes int64 `json:"nodes,omitempty"`
 
 	// Template describes the nodes that will be created.
 	Template NodeTemplateSpec `json:"template" protobuf:"bytes,3,opt,name=template"`
 }
 
-// NodeSetStatus is the most recently observed status of the NodeSet.
-type NodeSetStatus struct {
+// NodeGroupStatus is the most recently observed status of the NodeGroup.
+type NodeGroupStatus struct {
 	// Nodes is the most recently oberved number of nodes.
 	Nodes int32 `json:"nodes" protobuf:"varint,1,opt,name=nodes"`
 
@@ -44,30 +44,30 @@ type NodeSetStatus struct {
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge
-	Conditions []NodeSetCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,6,rep,name=conditions"`
+	Conditions []NodeGroupCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,6,rep,name=conditions"`
 }
 
-type NodeSetConditionType string
+type NodeGroupConditionType string
 
 // These are valid conditions of a deployment.
 const (
 	// Available means the deployment is available, ie. at least the minimum available
 	// nodes required are up and running for at least minReadySeconds.
-	NodeSetAvailable NodeSetConditionType = "Available"
+	NodeGroupAvailable NodeGroupConditionType = "Available"
 	// Progressing means the deployment is progressing. Progress for a deployment is
 	// considered when a new node set is created or adopted, and when new nodes scale
 	// up or old nodes scale down. Progress is not estimated for paused deployments or
 	// when progressDeadlineSeconds is not specified.
-	NodeSetProgressing NodeSetConditionType = "Progressing"
+	NodeGroupProgressing NodeGroupConditionType = "Progressing"
 	// ReplicaFailure is added in a deployment when one of its nodes fails to be created
 	// or deleted.
-	NodeSetReplicaFailure NodeSetConditionType = "ReplicaFailure"
+	NodeGroupReplicaFailure NodeGroupConditionType = "ReplicaFailure"
 )
 
-// NodeSetCondition describes the state of a deployment at a certain point.
-type NodeSetCondition struct {
+// NodeGroupCondition describes the state of a deployment at a certain point.
+type NodeGroupCondition struct {
 	// Type of deployment condition.
-	Type NodeSetConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=NodeSetConditionType"`
+	Type NodeGroupConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=NodeGroupConditionType"`
 	// Status of the condition, one of True, False, Unknown.
 	Status v1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
 	// The last time this condition was updated.
@@ -80,7 +80,7 @@ type NodeSetCondition struct {
 	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
 }
 
-func (ns NodeSet) IsMaster() bool {
+func (ns NodeGroup) IsMaster() bool {
 	_, found := ns.Labels[RoleMasterKey]
 	return found
 }

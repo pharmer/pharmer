@@ -43,8 +43,8 @@ func TestContext(t *testing.T) {
 		DefaultAccessLevel: "kubernetes:cluster-admin",
 		GceProject:         "tigerworks-kube",
 	}
-	/*req.NodeSets = make([]*proto.NodeSet, 1)
-	req.NodeSets[0] = &proto.NodeSet{
+	/*req.NodeGroups = make([]*proto.NodeGroup, 1)
+	req.NodeGroups[0] = &proto.NodeGroup{
 		Sku:   "n1-standard-1",
 		Count: int64(1),
 	}*/

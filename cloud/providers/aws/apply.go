@@ -120,8 +120,8 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	//for _, ng := range req.NodeSets {
-	//	igm := &NodeSetManager{
+	//for _, ng := range req.NodeGroups {
+	//	igm := &NodeGroupManager{
 	//		cm: cm,
 	//		instance: cloud.Instance{
 	//			Type: cloud.InstanceType{
@@ -136,7 +136,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//			},
 	//		},
 	//	}
-	//	igm.AdjustNodeSet()
+	//	igm.AdjustNodeGroup()
 	//}
 
 	cloud.Logger(cm.ctx).Info("Waiting for cluster initialization")
@@ -161,7 +161,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	// -------------------------------------------------------------------------------------------------------------
 	cloud.Logger(cm.ctx).Info("Listing autoscaling groups")
 	groups := make([]*string, 0)
-	//for _, ng := range req.NodeSets {
+	//for _, ng := range req.NodeGroups {
 	//	groups = append(groups, StringP(cm.namer.AutoScalingGroupName(ng.Sku)))
 	//}
 	r2, err := cm.conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{

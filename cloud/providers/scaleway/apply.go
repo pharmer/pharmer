@@ -119,7 +119,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	}
 
 	// start nodes
-	//for _, ng := range req.NodeSets {
+	//for _, ng := range req.NodeGroups {
 	//	for i := int64(0); i < ng.Count; i++ {
 	//		serverID, err := im.createInstance(cm.namer.GenNodeName(), api.RoleKubernetesPool, ng.Sku)
 	//		if err != nil {

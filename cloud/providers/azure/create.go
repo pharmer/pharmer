@@ -12,17 +12,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cm *ClusterManager) CreateMasterNodeSet(cluster *api.Cluster) (*api.NodeSet, error) {
-	ig := api.NodeSet{
+func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error) {
+	ig := api.NodeGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              "master",
-			UID:               phid.NewNodeSet(),
+			UID:               phid.NewNodeGroup(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 			Labels: map[string]string{
 				"node-role.kubernetes.io/master": "true",
 			},
 		},
-		Spec: api.NodeSetSpec{
+		Spec: api.NodeGroupSpec{
 			Nodes: 1,
 			Template: api.NodeTemplateSpec{
 				Spec: api.NodeSpec{
@@ -34,7 +34,7 @@ func (cm *ClusterManager) CreateMasterNodeSet(cluster *api.Cluster) (*api.NodeSe
 			},
 		},
 	}
-	return cloud.Store(cm.ctx).NodeSets(cluster.Name).Create(&ig)
+	return cloud.Store(cm.ctx).NodeGroups(cluster.Name).Create(&ig)
 }
 
 func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {

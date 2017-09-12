@@ -62,7 +62,7 @@ func NewKubeCluster() types.UID {
 	return newACID("K8S", "C")
 }
 
-func NewNodeSet() types.UID {
+func NewNodeGroup() types.UID {
 	return newACID("K8S", "C")
 }
 

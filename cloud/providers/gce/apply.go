@@ -67,12 +67,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	nodeSets, err := cloud.Store(cm.ctx).NodeSets(cm.cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err := cloud.Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	for _, node := range nodeSets {
+	for _, node := range nodeGroups {
 		if node.IsMaster() {
 			cm.cluster.Spec.MasterDiskId, err = cm.createDisk(cm.namer.MasterPDName(), node.Spec.Template.Spec.DiskType, node.Spec.Template.Spec.DiskSize)
 			if err != nil {
@@ -157,8 +157,8 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	//for _, ng := range req.NodeSets {
-	//	igm := &NodeSetManager{
+	//for _, ng := range req.NodeGroups {
+	//	igm := &NodeGroupManager{
 	//		cm: cm,
 	//		instance: cloud.Instance{
 	//			Type: cloud.InstanceType{
@@ -173,7 +173,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//			},
 	//		},
 	//	}
-	//	igm.AdjustNodeSet()
+	//	igm.AdjustNodeGroup()
 	//}
 	cloud.Logger(cm.ctx).Info("Waiting for cluster initialization")
 
@@ -192,7 +192,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	time.Sleep(time.Minute * 1)
 	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 
-	for _, node := range nodeSets {
+	for _, node := range nodeGroups {
 		if node.IsMaster() {
 			continue
 		}
@@ -207,14 +207,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 			},
 		}
 
-		igm := &NodeSetManager{
+		igm := &NodeGroupManager{
 			cm:       cm,
 			instance: instance,
 		}
-		igm.AdjustNodeSet()
+		igm.AdjustNodeGroup()
 	}
-	//for _, ng := range req.NodeSets {
-	//	instances, err := cm.listInstances(cm.namer.NodeSetName(ng.Sku))
+	//for _, ng := range req.NodeGroups {
+	//	instances, err := cm.listInstances(cm.namer.NodeGroupName(ng.Sku))
 	//	if err != nil {
 	//		cm.cluster.Status.Reason = err.Error()
 	//		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -750,8 +750,8 @@ func (cm *ClusterManager) createNodeInstanceTemplate(sku string) (string, error)
 	return r1.Name, nil
 }
 
-func (cm *ClusterManager) createNodeSet(sku string, count int64) (string, error) {
-	name := cm.namer.NodeSetName(sku)
+func (cm *ClusterManager) createNodeGroup(sku string, count int64) (string, error) {
+	name := cm.namer.NodeGroupName(sku)
 	template := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", cm.cluster.Spec.Cloud.Project, cm.namer.InstanceTemplateName(sku))
 
 	cloud.Logger(cm.ctx).Infof("Creating instance group %v from template %v", name, template)
@@ -771,7 +771,7 @@ func (cm *ClusterManager) createNodeSet(sku string, count int64) (string, error)
 
 // Not used since Kube 1.3
 func (cm *ClusterManager) createAutoscaler(sku string, count int64) (string, error) {
-	name := cm.namer.NodeSetName(sku)
+	name := cm.namer.NodeGroupName(sku)
 	target := fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%v/zones/%v/instanceGroupManagers/%v", cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, name)
 
 	cloud.Logger(cm.ctx).Infof("Creating auto scaler %v for instance group %v", name, target)
