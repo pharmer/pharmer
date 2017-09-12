@@ -17,13 +17,14 @@ import (
 	"github.com/jpillora/go-ogle-analytics"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"io"
 )
 
 const (
 	gaTrackingCode = "UA-62096468-20"
 )
 
-func NewRootCmd(version string) *cobra.Command {
+func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command {
 	var (
 		enableAnalytics = true
 	)
@@ -62,7 +63,7 @@ func NewRootCmd(version string) *cobra.Command {
 	rootCmd.AddCommand(cpCmd.NewCmdCreate())
 	rootCmd.AddCommand(cpCmd.NewCmdDelete())
 	rootCmd.AddCommand(cpCmd.NewCmdApply())
-	rootCmd.AddCommand(cpCmd.NewCmdGet())
+	rootCmd.AddCommand(cpCmd.NewCmdGet(out, err))
 	rootCmd.AddCommand(cpCmd.NewCmdUse())
 	rootCmd.AddCommand(cpCmd.NewCmdSSH())
 	rootCmd.AddCommand(cpCmd.NewCmdBackup())
