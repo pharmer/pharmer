@@ -12,17 +12,17 @@ type ClusterManager struct {
 	cfg *api.PharmerConfig
 }
 
-var _ cloud.ClusterManager = &ClusterManager{}
+var _ cloud.Interface = &ClusterManager{}
 
 const (
 	UID = "fake"
 )
 
 func init() {
-	cloud.RegisterCloudManager(UID, func(ctx context.Context) (cloud.ClusterManager, error) { return New(ctx), nil })
+	cloud.RegisterCloudManager(UID, func(ctx context.Context) (cloud.Interface, error) { return New(ctx), nil })
 }
 
-func New(ctx context.Context) cloud.ClusterManager {
+func New(ctx context.Context) cloud.Interface {
 	return &ClusterManager{}
 }
 
