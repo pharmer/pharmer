@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 )
 
 type ClusterManager struct {
@@ -15,17 +15,17 @@ type ClusterManager struct {
 	namer namer
 }
 
-var _ cloud.ClusterManager = &ClusterManager{}
+var _ Interface = &ClusterManager{}
 
 const (
 	UID = "digitalocean"
 )
 
 func init() {
-	cloud.RegisterCloudManager(UID, func(ctx context.Context) (cloud.ClusterManager, error) { return New(ctx), nil })
+	RegisterCloudManager(UID, func(ctx context.Context) (Interface, error) { return New(ctx), nil })
 }
 
-func New(ctx context.Context) cloud.ClusterManager {
+func New(ctx context.Context) Interface {
 	return &ClusterManager{ctx: ctx}
 }
 

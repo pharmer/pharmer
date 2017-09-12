@@ -5,24 +5,24 @@ import (
 
 	"github.com/appscode/mergo"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/data/files"
 	"github.com/appscode/pharmer/phid"
 	semver "github.com/hashicorp/go-version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cm *ClusterManager) CreateMasterNodeSet(cluster *api.Cluster) (*api.NodeSet, error) {
-	ig := api.NodeSet{
+func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error) {
+	ig := api.NodeGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              "master",
-			UID:               phid.NewNodeSet(),
+			UID:               phid.NewNodeGroup(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 			Labels: map[string]string{
 				"node-role.kubernetes.io/master": "true",
 			},
 		},
-		Spec: api.NodeSetSpec{
+		Spec: api.NodeGroupSpec{
 			Nodes: 1,
 			Template: api.NodeTemplateSpec{
 				Spec: api.NodeSpec{
@@ -34,7 +34,7 @@ func (cm *ClusterManager) CreateMasterNodeSet(cluster *api.Cluster) (*api.NodeSe
 			},
 		},
 	}
-	return cloud.Store(cm.ctx).NodeSets(cluster.Name).Create(&ig)
+	return Store(cm.ctx).NodeGroups(cluster.Name).Create(&ig)
 }
 
 func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
@@ -61,11 +61,12 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	// Init object meta
 	cluster.ObjectMeta.UID = phid.NewKubeCluster()
 	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
+	cluster.ObjectMeta.Generation = time.Now().UnixNano()
 	api.AssignTypeKind(cluster)
 
 	// Init spec
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone[:len(cluster.Spec.Cloud.Zone)-2]
-	cluster.Spec.Token = cloud.GetKubeadmToken()
+	cluster.Spec.Token = GetKubeadmToken()
 	cluster.Spec.KubernetesMasterName = n.MasterName()
 
 	// Init status
@@ -148,5 +149,5 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
-	return false, cloud.UnsupportedOperation
+	return false, UnsupportedOperation
 }

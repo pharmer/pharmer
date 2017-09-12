@@ -4,11 +4,11 @@ import (
 	"bytes"
 
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 )
 
 func (cm *ClusterManager) RenderMasterStarter() (string, error) {
-	tpl, err := cloud.StartupScriptTemplate.Clone()
+	tpl, err := StartupScriptTemplate.Clone()
 	if err != nil {
 		return "", err
 	}
@@ -20,7 +20,7 @@ func (cm *ClusterManager) RenderMasterStarter() (string, error) {
 		}
 	*/
 	var buf bytes.Buffer
-	err = tpl.ExecuteTemplate(&buf, api.RoleMaster, cloud.GetTemplateData(cm.ctx, cm.cluster))
+	err = tpl.ExecuteTemplate(&buf, api.RoleMaster, GetTemplateData(cm.ctx, cm.cluster))
 	if err != nil {
 		return "", err
 	}
@@ -29,7 +29,7 @@ func (cm *ClusterManager) RenderMasterStarter() (string, error) {
 }
 
 func (cm *ClusterManager) RenderNodeStarter() (string, error) {
-	tpl, err := cloud.StartupScriptTemplate.Clone()
+	tpl, err := StartupScriptTemplate.Clone()
 	if err != nil {
 		return "", err
 	}
@@ -41,7 +41,7 @@ func (cm *ClusterManager) RenderNodeStarter() (string, error) {
 		}
 	*/
 	var buf bytes.Buffer
-	err = tpl.ExecuteTemplate(&buf, api.RoleNode, cloud.GetTemplateData(cm.ctx, cm.cluster))
+	err = tpl.ExecuteTemplate(&buf, api.RoleNode, GetTemplateData(cm.ctx, cm.cluster))
 	if err != nil {
 		return "", err
 	}

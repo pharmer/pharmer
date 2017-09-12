@@ -7,7 +7,7 @@ import (
 
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	"github.com/packethost/packngo"
 )
@@ -19,7 +19,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := cloud.Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 	attempt := 0
 	for true {
-		cloud.Logger(conn.ctx).Infof("Checking status of instance %v", deviceID)
+		Logger(conn.ctx).Infof("Checking status of instance %v", deviceID)
 		s, _, err := conn.client.Devices.Get(deviceID)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -46,7 +46,7 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 		if strings.ToLower(s.State) == status {
 			break
 		}
-		cloud.Logger(conn.ctx).Infof("Instance %v (%v) is %v, waiting...", s.Hostname, s.ID, s.State)
+		Logger(conn.ctx).Infof("Instance %v (%v) is %v, waiting...", s.Hostname, s.ID, s.State)
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

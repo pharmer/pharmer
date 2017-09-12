@@ -14,39 +14,39 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type NodeSetFileStore struct {
+type NodeGroupFileStore struct {
 	container stow.Container
 	prefix    string
 	cluster   string
 }
 
-var _ store.NodeSetStore = &NodeSetFileStore{}
+var _ store.NodeGroupStore = &NodeGroupFileStore{}
 
-func (s *NodeSetFileStore) resourceHome() string {
-	return filepath.Join(s.prefix, "clusters", s.cluster, "nodesets")
+func (s *NodeGroupFileStore) resourceHome() string {
+	return filepath.Join(s.prefix, "clusters", s.cluster, "nodegroups")
 }
 
-func (s *NodeSetFileStore) resourceID(name string) string {
+func (s *NodeGroupFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *NodeSetFileStore) List(opts metav1.ListOptions) ([]*api.NodeSet, error) {
-	result := make([]*api.NodeSet, 0)
+func (s *NodeGroupFileStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, error) {
+	result := make([]*api.NodeGroup, 0)
 	cursor := stow.CursorStart
 	for {
 		page, err := s.container.Browse(s.resourceHome()+"/", string(os.PathSeparator), cursor, pageSize)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to list node sets. Reason: %v", err)
+			return nil, fmt.Errorf("Failed to list node groups. Reason: %v", err)
 		}
 		for _, item := range page.Items {
 			r, err := item.Open()
 			if err != nil {
-				return nil, fmt.Errorf("Failed to list node sets. Reason: %v", err)
+				return nil, fmt.Errorf("Failed to list node groups. Reason: %v", err)
 			}
-			var obj api.NodeSet
+			var obj api.NodeGroup
 			err = json.NewDecoder(r).Decode(&obj)
 			if err != nil {
-				return nil, fmt.Errorf("Failed to list node sets. Reason: %v", err)
+				return nil, fmt.Errorf("Failed to list node groups. Reason: %v", err)
 			}
 			result = append(result, &obj)
 			r.Close()
@@ -59,17 +59,17 @@ func (s *NodeSetFileStore) List(opts metav1.ListOptions) ([]*api.NodeSet, error)
 	return result, nil
 }
 
-func (s *NodeSetFileStore) Get(name string) (*api.NodeSet, error) {
+func (s *NodeGroupFileStore) Get(name string) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("Missing cluster name")
 	}
 	if name == "" {
-		return nil, errors.New("Missing node set name")
+		return nil, errors.New("Missing node group name")
 	}
 
 	item, err := s.container.Item(s.resourceID(name))
 	if err != nil {
-		return nil, fmt.Errorf("NodeSet `%s` does not exist. Reason: %v", name, err)
+		return nil, fmt.Errorf("NodeGroup `%s` does not exist. Reason: %v", name, err)
 	}
 
 	r, err := item.Open()
@@ -78,7 +78,7 @@ func (s *NodeSetFileStore) Get(name string) (*api.NodeSet, error) {
 	}
 	defer r.Close()
 
-	var existing api.NodeSet
+	var existing api.NodeGroup
 	err = json.NewDecoder(r).Decode(&existing)
 	if err != nil {
 		return nil, err
@@ -86,14 +86,14 @@ func (s *NodeSetFileStore) Get(name string) (*api.NodeSet, error) {
 	return &existing, nil
 }
 
-func (s *NodeSetFileStore) Create(obj *api.NodeSet) (*api.NodeSet, error) {
+func (s *NodeGroupFileStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("Missing cluster name")
 	}
 	if obj == nil {
-		return nil, errors.New("Missing node set")
+		return nil, errors.New("Missing node group")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing node set name")
+		return nil, errors.New("Missing node group name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -103,7 +103,7 @@ func (s *NodeSetFileStore) Create(obj *api.NodeSet) (*api.NodeSet, error) {
 	id := s.resourceID(obj.Name)
 	_, err = s.container.Item(id)
 	if err == nil {
-		return nil, fmt.Errorf("NodeSet `%s` already exists", obj.Name)
+		return nil, fmt.Errorf("NodeGroup `%s` already exists", obj.Name)
 	}
 
 	data, err := json.MarshalIndent(obj, "", "  ")
@@ -114,14 +114,14 @@ func (s *NodeSetFileStore) Create(obj *api.NodeSet) (*api.NodeSet, error) {
 	return obj, err
 }
 
-func (s *NodeSetFileStore) Update(obj *api.NodeSet) (*api.NodeSet, error) {
+func (s *NodeGroupFileStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("Missing cluster name")
 	}
 	if obj == nil {
-		return nil, errors.New("Missing node set")
+		return nil, errors.New("Missing node group")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing node set name")
+		return nil, errors.New("Missing node group name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -132,7 +132,7 @@ func (s *NodeSetFileStore) Update(obj *api.NodeSet) (*api.NodeSet, error) {
 
 	_, err = s.container.Item(id)
 	if err != nil {
-		return nil, fmt.Errorf("NodeSet `%s` does not exist. Reason: %v", obj.Name, err)
+		return nil, fmt.Errorf("NodeGroup `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
 	data, err := json.MarshalIndent(obj, "", "  ")
@@ -143,24 +143,24 @@ func (s *NodeSetFileStore) Update(obj *api.NodeSet) (*api.NodeSet, error) {
 	return obj, err
 }
 
-func (s *NodeSetFileStore) Delete(name string) error {
+func (s *NodeGroupFileStore) Delete(name string) error {
 	if s.cluster == "" {
 		return errors.New("Missing cluster name")
 	}
 	if name == "" {
-		return errors.New("Missing node set name")
+		return errors.New("Missing node group name")
 	}
 	return s.container.RemoveItem(s.resourceID(name))
 }
 
-func (s *NodeSetFileStore) UpdateStatus(obj *api.NodeSet) (*api.NodeSet, error) {
+func (s *NodeGroupFileStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("Missing cluster name")
 	}
 	if obj == nil {
-		return nil, errors.New("Missing node set")
+		return nil, errors.New("Missing node group")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing node set name")
+		return nil, errors.New("Missing node group name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -171,7 +171,7 @@ func (s *NodeSetFileStore) UpdateStatus(obj *api.NodeSet) (*api.NodeSet, error) 
 
 	item, err := s.container.Item(id)
 	if err != nil {
-		return nil, fmt.Errorf("NodeSet `%s` does not exist. Reason: %v", obj.Name, err)
+		return nil, fmt.Errorf("NodeGroup `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
 	r, err := item.Open()
@@ -180,7 +180,7 @@ func (s *NodeSetFileStore) UpdateStatus(obj *api.NodeSet) (*api.NodeSet, error) 
 	}
 	defer r.Close()
 
-	var existing api.NodeSet
+	var existing api.NodeGroup
 	err = json.NewDecoder(r).Decode(&existing)
 	if err != nil {
 		return nil, err

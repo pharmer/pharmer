@@ -5,7 +5,7 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 )
 
 func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
@@ -22,34 +22,34 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	cm.namer = namer{cluster: cm.cluster}
 	im := &instanceManager{cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 
-	inst := cloud.Instance{
-		Type: cloud.InstanceType{
+	inst := Instance{
+		Type: InstanceType{
 			ContextVersion: cm.cluster.Generation,
 			Sku:            req.Sku,
 
 			Master:       false,
 			SpotInstance: false,
 		},
-		Stats: cloud.GroupStats{
+		Stats: GroupStats{
 			Count: req.Count,
 		},
 	}
 
-	nodeAdjust, _ := cloud.Mutator(cm.ctx, cm.cluster, inst)
-	igm := &NodeSetManager{
+	nodeAdjust, _ := Mutator(cm.ctx, cm.cluster, inst)
+	igm := &NodeGroupManager{
 		cm:       cm,
 		instance: inst,
 		im:       im,
 	}
-	igm.AdjustNodeSet()
+	igm.AdjustNodeGroup()
 	fmt.Println(nodeAdjust)
 
 	//flag := false
-	//for x := range cm.cluster.Spec.NodeSets {
-	//	if cm.cluster.Spec.NodeSets[x].SKU == req.Sku {
-	//		cm.cluster.Spec.NodeSets[x].Count += nodeAdjust
+	//for x := range cm.cluster.Spec.NodeGroups {
+	//	if cm.cluster.Spec.NodeGroups[x].SKU == req.Sku {
+	//		cm.cluster.Spec.NodeGroups[x].Count += nodeAdjust
 	//		flag = true
-	//		//fmt.Println(ctx.NodeSets[k].Count, "*********************************>>")
+	//		//fmt.Println(ctx.NodeGroups[k].Count, "*********************************>>")
 	//	}
 	//	//ctx.NumNodes += v.Count
 	//	//fmt.Println(k.String(), " = ", v.Count)
@@ -60,7 +60,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	//		Count:         req.Count,
 	//		SpotInstances: false,
 	//	}
-	//	cm.cluster.Spec.NodeSets = append(cm.cluster.Spec.NodeSets, ig)
+	//	cm.cluster.Spec.NodeGroups = append(cm.cluster.Spec.NodeGroups, ig)
 	//}
 
 	//instances, err := igm.listInstances(req.Sku)
@@ -68,8 +68,8 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	//	igm.cm.cluster.Status.Reason = err.Error()
 	//	//return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	//}
-	//cloud.AdjustDbInstance(cm.ctx, cm.ins, instances, req.Sku)
+	//AdjustDbInstance(cm.ctx, cm.ins, instances, req.Sku)
 
-	cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	return nil
 }

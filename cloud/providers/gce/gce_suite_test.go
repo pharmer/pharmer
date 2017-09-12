@@ -16,8 +16,10 @@ import (
 	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//"github.com/appscode/pharmer/phid"
 	"context"
+	"encoding/json"
 
-	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/api"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 )
 
@@ -29,7 +31,7 @@ func TestGce(t *testing.T) {
 func TestContext(t *testing.T) {
 	cfg, err := config.LoadConfig("/home/sanjid/go/src/appscode.com/ark/conf/tigerworks-kube.json")
 	fmt.Println(err)
-	ctx := cloud.NewContext(context.Background(), cfg)
+	ctx := NewContext(context.Background(), cfg)
 	cm := New(ctx)
 
 	req := proto.ClusterCreateRequest{
@@ -41,12 +43,12 @@ func TestContext(t *testing.T) {
 		DefaultAccessLevel: "kubernetes:cluster-admin",
 		GceProject:         "tigerworks-kube",
 	}
-	req.NodeSets = make([]*proto.NodeSet, 1)
-	req.NodeSets[0] = &proto.NodeSet{
+	/*req.NodeGroups = make([]*proto.NodeGroup, 1)
+	req.NodeGroups[0] = &proto.NodeGroup{
 		Sku:   "n1-standard-1",
 		Count: int64(1),
-	}
-	cm, err = cloud.GetCloudManager(req.Provider, ctx)
+	}*/
+	cm, err = GetCloudManager(req.Provider, ctx)
 	fmt.Println(err, cm)
 
 	/*cm.cluster = &api.Cluster{
@@ -62,7 +64,7 @@ func TestContext(t *testing.T) {
 	cm.cluster.Spec.Cloud.Zone = req.Zone
 
 	api.AssignTypeKind(cm.cluster)
-	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
+	if _, err := Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
 		//oneliners.FILE(err)
 		cm.cluster.Status.Reason = err.Error()
 		fmt.Println(err)
@@ -78,4 +80,16 @@ func TestContext(t *testing.T) {
 	})*/ /*
 		fmt.Println()*/
 
+}
+
+func TestJson(t *testing.T) {
+	data := ``
+	crd := api.CredentialSpec{
+		Data: map[string]string{
+			"projectID":      "tigerworks-kube",
+			"serviceAccount": data,
+		},
+	}
+	jsn, err := json.Marshal(crd)
+	fmt.Println(string(jsn), err)
 }

@@ -9,9 +9,9 @@ import (
 var InstanceNotFound = errors.New("Instance not found")
 var UnsupportedOperation = errors.New("Unsupported operation")
 
-type ClusterManager interface {
+type Interface interface {
 	DefaultSpec(cluster *api.Cluster) (*api.Cluster, error)
-	CreateMasterNodeSet(cluster *api.Cluster) (*api.NodeSet, error)
+	CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error)
 	Apply(cluster *api.Cluster, dryRun bool) error
 	IsValid(cluster *api.Cluster) (bool, error)
 

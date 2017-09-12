@@ -16,6 +16,8 @@ type InstanceType struct {
 	Sku            string
 	SpotInstance   bool
 	Master         bool
+	DiskType       string
+	DiskSize       int64
 }
 
 func (t *InstanceType) String() string {
@@ -47,23 +49,16 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 
 	for _, n := range nodes.Items {
 		nl := api.FromMap(n.GetLabels())
+		if nl.GetString(api.NodeLabelKey_NodeGroup) != (expectedInstance.Type.Sku + "-pool") {
+			continue
+		}
 		k := InstanceType{
 			ContextVersion: nl.GetInt64(api.NodeLabelKey_ContextVersion),
 			Sku:            nl.GetString(api.NodeLabelKey_SKU),
 			SpotInstance:   false,
 			Master:         nl.GetString(api.NodeLabelKey_Role) == "master",
-		}
-		if k.Master {
-			continue
-			// add existing masters to desired state
-			if gs, found := desiredNGs[k]; !found {
-				desiredNGs[k] = GroupStats{
-					Count: 1,
-				}
-			} else {
-				gs.Count = gs.Count + 1
-				desiredNGs[k] = gs
-			}
+			DiskType:       expectedInstance.Type.DiskType,
+			DiskSize:       expectedInstance.Type.DiskSize,
 		}
 		if gs, found := existingNGs[k]; !found {
 			existingNGs[k] = GroupStats{
@@ -121,16 +116,13 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 	//var additions, deletions int64
 	//var addGroups, delGroups int64
 	var adjust int64
-	for k, v := range diffNGs {
-		adjust += v.Count
-		fmt.Println(k.String(), " = ", v.Count)
-	}
+	adjust = diffNGs[expectedInstance.Type].Count
 
-	/*for k := range ctx.NodeSets {
+	/*for k := range ctx.NodeGroups {
 		for x, y := range diffNGs {
-			if ctx.NodeSets[k].Sku == x.Sku {
-				ctx.NodeSets[k].Count += y.Count
-				fmt.Println(ctx.NodeSets[k].Count, "*********************************>>")
+			if ctx.NodeGroups[k].Sku == x.Sku {
+				ctx.NodeGroups[k].Count += y.Count
+				fmt.Println(ctx.NodeGroups[k].Count, "*********************************>>")
 			}
 			//ctx.NumNodes += v.Count
 			//fmt.Println(k.String(), " = ", v.Count)
@@ -196,19 +188,4 @@ type Miner struct {
 
 	Count int64
 	Extra interface{}
-}
-
-// IGM
-type NodeSetManager struct {
-	ContextVersion int64
-	Sku            string
-	SpotInstance   bool
-	Master         bool
-
-	Count int64
-	Extra interface{}
-}
-
-func (igm *NodeSetManager) Execute() {
-
 }

@@ -11,40 +11,40 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type NodeSetFileStore struct {
-	container map[string]*api.NodeSet
+type NodeGroupFileStore struct {
+	container map[string]*api.NodeGroup
 	cluster   string
 
 	mux sync.Mutex
 }
 
-var _ store.NodeSetStore = &NodeSetFileStore{}
+var _ store.NodeGroupStore = &NodeGroupFileStore{}
 
-func (s *NodeSetFileStore) resourceHome() string {
-	return filepath.Join("clusters", s.cluster, "nodesets")
+func (s *NodeGroupFileStore) resourceHome() string {
+	return filepath.Join("clusters", s.cluster, "nodeGroups")
 }
 
-func (s *NodeSetFileStore) resourceID(name string) string {
+func (s *NodeGroupFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *NodeSetFileStore) List(opts metav1.ListOptions) ([]*api.NodeSet, error) {
+func (s *NodeGroupFileStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
-	result := make([]*api.NodeSet, 0)
+	result := make([]*api.NodeGroup, 0)
 	for k := range s.container {
 		result = append(result, s.container[k])
 	}
 	return result, nil
 }
 
-func (s *NodeSetFileStore) Get(name string) (*api.NodeSet, error) {
+func (s *NodeGroupFileStore) Get(name string) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("Missing cluster name")
 	}
 	if name == "" {
-		return nil, errors.New("Missing node set name")
+		return nil, errors.New("Missing node group name")
 	}
 
 	s.mux.Lock()
@@ -52,19 +52,19 @@ func (s *NodeSetFileStore) Get(name string) (*api.NodeSet, error) {
 
 	item, itemOK := s.container[s.resourceID(name)]
 	if !itemOK {
-		return nil, fmt.Errorf("NodeSet `%s` does not exist.", name)
+		return nil, fmt.Errorf("NodeGroup `%s` does not exist.", name)
 	}
 	return item, nil
 }
 
-func (s *NodeSetFileStore) Create(obj *api.NodeSet) (*api.NodeSet, error) {
+func (s *NodeGroupFileStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("Missing cluster name")
 	}
 	if obj == nil {
-		return nil, errors.New("Missing node set")
+		return nil, errors.New("Missing node group")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing node set name")
+		return nil, errors.New("Missing node group name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -76,21 +76,21 @@ func (s *NodeSetFileStore) Create(obj *api.NodeSet) (*api.NodeSet, error) {
 
 	id := s.resourceID(obj.Name)
 	if _, ok := s.container[id]; ok {
-		return nil, fmt.Errorf("NodeSet `%s` already exists", obj.Name)
+		return nil, fmt.Errorf("NodeGroup `%s` already exists", obj.Name)
 	}
 
 	s.container[id] = obj
 	return obj, err
 }
 
-func (s *NodeSetFileStore) Update(obj *api.NodeSet) (*api.NodeSet, error) {
+func (s *NodeGroupFileStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("Missing cluster name")
 	}
 	if obj == nil {
-		return nil, errors.New("Missing node set")
+		return nil, errors.New("Missing node group")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing node set name")
+		return nil, errors.New("Missing node group name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -105,25 +105,25 @@ func (s *NodeSetFileStore) Update(obj *api.NodeSet) (*api.NodeSet, error) {
 	return obj, err
 }
 
-func (s *NodeSetFileStore) Delete(name string) error {
+func (s *NodeGroupFileStore) Delete(name string) error {
 	if s.cluster == "" {
 		return errors.New("Missing cluster name")
 	}
 	if name == "" {
-		return errors.New("Missing node set name")
+		return errors.New("Missing node group name")
 	}
 	delete(s.container, s.resourceID(name))
 	return nil
 }
 
-func (s *NodeSetFileStore) UpdateStatus(obj *api.NodeSet) (*api.NodeSet, error) {
+func (s *NodeGroupFileStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("Missing cluster name")
 	}
 	if obj == nil {
-		return nil, errors.New("Missing node set")
+		return nil, errors.New("Missing node group")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing node set name")
+		return nil, errors.New("Missing node group name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -136,7 +136,7 @@ func (s *NodeSetFileStore) UpdateStatus(obj *api.NodeSet) (*api.NodeSet, error) 
 	id := s.resourceID(obj.Name)
 	existing, itemOK := s.container[id]
 	if !itemOK {
-		return nil, fmt.Errorf("NodeSet `%s` does not exist.", obj.Name)
+		return nil, fmt.Errorf("NodeGroup `%s` does not exist.", obj.Name)
 	}
 	existing.Status = obj.Status
 	s.container[id] = existing

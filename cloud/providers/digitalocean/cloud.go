@@ -10,7 +10,7 @@ import (
 
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	"github.com/digitalocean/godo"
 	"golang.org/x/oauth2"
@@ -24,7 +24,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := cloud.Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -61,14 +61,14 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 
 func (conn *cloudConnector) waitForInstance(id int, status string) error {
 	attempt := 0
-	return wait.PollImmediate(cloud.RetryInterval, cloud.RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		attempt++
 
 		droplet, _, err := conn.client.Droplets.Get(gtx.TODO(), id)
 		if err != nil {
 			return false, nil
 		}
-		cloud.Logger(conn.ctx).Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, id, droplet.Status)
+		Logger(conn.ctx).Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, id, droplet.Status)
 		if strings.ToLower(droplet.Status) == status {
 			return true, nil
 		}

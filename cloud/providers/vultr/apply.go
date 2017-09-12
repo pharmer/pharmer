@@ -8,7 +8,7 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 )
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
@@ -23,10 +23,10 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		if cm.cluster.Status.Phase == api.ClusterPending {
 			cm.cluster.Status.Phase = api.ClusterFailing
 		}
-		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
+		Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+		Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterReady {
-			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
+			Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -38,7 +38,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cloud.Logger(cm.ctx).Infof("Found vultr instance image %v", cm.cluster.Spec.Cloud.InstanceImage)
+	Logger(cm.ctx).Infof("Found vultr instance image %v", cm.cluster.Spec.Cloud.InstanceImage)
 
 	cm.cluster.Status.SSHKeyExternalID, err = cm.importPublicKey()
 	if err != nil {
@@ -85,15 +85,15 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
 	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	fmt.Println("Master EXTERNAL_IP", cm.cluster.Spec.MasterExternalIP, " --- Master INTERNAL_IP", cm.cluster.Spec.MasterInternalIP)
-	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
+	Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 
-	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
+	err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// needed to get master_internal_ip
-	if _, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -101,12 +101,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	// ----------------------------------------------------------------------------------
 	// reboot master to use cert with internal_ip as SANS
 	time.Sleep(60 * time.Second)
-	cloud.Logger(cm.ctx).Info("Rebooting master instance")
+	Logger(cm.ctx).Info("Rebooting master instance")
 	if err = im.reboot(masterID); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cloud.Logger(cm.ctx).Info("Rebooted master instance")
+	Logger(cm.ctx).Info("Rebooted master instance")
 	// -----------------------------------------------------------------------------------
 
 	// start nodes
@@ -115,7 +115,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		state  int
 	}
 	nodes := make([]*NodeInfo, 0)
-	//for _, ng := range req.NodeSets {
+	//for _, ng := range req.NodeGroups {
 	//	nodeScriptId, err := im.createStartupScript(ng.Sku, api.RoleKubernetesPool)
 	//	if err != nil {
 	//		cm.cluster.Status.Reason = err.Error()
@@ -152,9 +152,9 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 				server, err := cm.conn.client.GetServer(info.nodeId)
 				// ignore error, and try again
 				if err == nil {
-					cloud.Logger(cm.ctx).Infof("Instance %v (%v) is %v", server.Name, server.ID, server.Status)
+					Logger(cm.ctx).Infof("Instance %v (%v) is %v", server.Name, server.ID, server.Status)
 					if server.Status == "active" && server.PowerStatus == "running" {
-						cloud.Logger(cm.ctx).Infof("Instance %v is %v", server.Name, server.Status)
+						Logger(cm.ctx).Infof("Instance %v is %v", server.Name, server.Status)
 						info.state = 1
 						// create node
 						node, err := im.newKubeInstance(&server)
@@ -163,7 +163,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 							return errors.FromErr(err).WithContext(cm.ctx).Err()
 						}
 						node.Spec.Role = api.RoleNode
-						cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
+						Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
 					}
 				}
 			} else {
@@ -183,15 +183,15 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 			break
 		}
 	}
-	cloud.Logger(cm.ctx).Info("Waiting for cluster initialization")
+	Logger(cm.ctx).Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
-	if err = cloud.EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
+	if err = EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// wait for nodes to start
-	if err = cloud.WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	if err = WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -200,13 +200,13 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 }
 
 func (cm *ClusterManager) importPublicKey() (string, error) {
-	cloud.Logger(cm.ctx).Infof("Adding SSH public key")
-	resp, err := cm.conn.client.CreateSSHKey(cm.cluster.Status.SSHKeyExternalID, string(cloud.SSHKey(cm.ctx).PublicKey))
+	Logger(cm.ctx).Infof("Adding SSH public key")
+	resp, err := cm.conn.client.CreateSSHKey(cm.cluster.Status.SSHKeyExternalID, string(SSHKey(cm.ctx).PublicKey))
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cloud.Logger(cm.ctx).Debugln("DO response", resp, " errors", err)
-	cloud.Logger(cm.ctx).Infof("New ssh key with name %v and id %v created", cm.cluster.Status.SSHKeyExternalID, resp.ID)
+	Logger(cm.ctx).Debugln("DO response", resp, " errors", err)
+	Logger(cm.ctx).Infof("New ssh key with name %v and id %v created", cm.cluster.Status.SSHKeyExternalID, resp.ID)
 	return resp.ID, nil
 }
 
@@ -220,15 +220,15 @@ func (cm *ClusterManager) reserveIP() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cloud.Logger(cm.ctx).Debugln("DO response", ipID, " errors", err)
-		cloud.Logger(cm.ctx).Infof("Reserved new floating IP=%v", ipID)
+		Logger(cm.ctx).Debugln("DO response", ipID, " errors", err)
+		Logger(cm.ctx).Infof("Reserved new floating IP=%v", ipID)
 
 		ip, err := cm.conn.client.GetReservedIP(ipID)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		cm.cluster.Spec.MasterReservedIP = ip.Subnet
-		cloud.Logger(cm.ctx).Infof("Floating ip %v reserved", ip.Subnet)
+		Logger(cm.ctx).Infof("Floating ip %v reserved", ip.Subnet)
 	}
 	return nil
 }

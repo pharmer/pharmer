@@ -10,7 +10,7 @@ import (
 	stringutil "github.com/appscode/go/strings"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
@@ -23,7 +23,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	} else if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
 	}
-	// cloud.Store(cm.ctx).UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
+	// Store(cm.ctx).UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
 	if cm.conn == nil {
 		conn, err := NewConnector(cm.ctx, cm.cluster)
@@ -48,7 +48,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, cm.cluster.Status.Reason)
 	}
 
-	//for _, ng := range cm.cluster.Spec.NodeSets {
+	//for _, ng := range cm.cluster.Spec.NodeGroups {
 	//	if err = cm.deleteAutoScalingGroup(cm.namer.AutoScalingGroupName(ng.SKU)); err != nil {
 	//		errs = append(errs, err.Error())
 	//	}
@@ -59,7 +59,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	if err = cm.ensureInstancesDeleted(); err != nil {
 		errs = append(errs, err.Error())
 	}
-	//for _, ng := range cm.cluster.Spec.NodeSets {
+	//for _, ng := range cm.cluster.Spec.NodeGroups {
 	//	if err = cm.deleteLaunchConfiguration(cm.namer.AutoScalingGroupName(ng.SKU)); err != nil {
 	//		errs = append(errs, err.Error())
 	//	}
@@ -108,7 +108,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, err.Error())
 	}
 
-	if err = cloud.DeleteARecords(cm.ctx, cm.cluster); err != nil {
+	if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
 		errs = append(errs, err.Error())
 	}
 
@@ -120,7 +120,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
-	cloud.Logger(cm.ctx).Infof("Cluster %v deleted successfully", cm.cluster.Name)
+	Logger(cm.ctx).Infof("Cluster %v deleted successfully", cm.cluster.Name)
 	return nil
 }
 
@@ -141,7 +141,7 @@ func (cm *ClusterManager) deleteAutoScalingGroup(name string) error {
 		ForceDelete:          TrueP(),
 		AutoScalingGroupName: StringP(name),
 	})
-	cloud.Logger(cm.ctx).Infof("Auto scaling group %v is deleted for cluster %v", name, cm.cluster.Name)
+	Logger(cm.ctx).Infof("Auto scaling group %v is deleted for cluster %v", name, cm.cluster.Name)
 	return err
 }
 
@@ -149,7 +149,7 @@ func (cm *ClusterManager) deleteLaunchConfiguration(name string) error {
 	_, err := cm.conn.autoscale.DeleteLaunchConfiguration(&autoscaling.DeleteLaunchConfigurationInput{
 		LaunchConfigurationName: StringP(name),
 	})
-	cloud.Logger(cm.ctx).Infof("Launch configuration %v os de;eted for cluster %v", name, cm.cluster.Name)
+	Logger(cm.ctx).Infof("Launch configuration %v os de;eted for cluster %v", name, cm.cluster.Name)
 	return err
 }
 
@@ -181,7 +181,7 @@ func (cm *ClusterManager) deleteMaster() error {
 		}
 	}
 	fmt.Printf("TerminateInstances %v", stringutil.Join(masterInstances, ","))
-	cloud.Logger(cm.ctx).Infof("Terminating master instance for cluster %v", cm.cluster.Name)
+	Logger(cm.ctx).Infof("Terminating master instance for cluster %v", cm.cluster.Name)
 	_, err = cm.conn.ec2.TerminateInstances(&_ec2.TerminateInstancesInput{
 		InstanceIds: masterInstances,
 	})
@@ -193,7 +193,7 @@ func (cm *ClusterManager) deleteMaster() error {
 	}
 	err = cm.conn.ec2.WaitUntilInstanceTerminated(instanceInput)
 	fmt.Println(err, "--------------------<<<<<<<")
-	cloud.Logger(cm.ctx).Infof("Master instance for cluster %v is terminated", cm.cluster.Name)
+	Logger(cm.ctx).Infof("Master instance for cluster %v is terminated", cm.cluster.Name)
 	return nil
 }
 
@@ -306,7 +306,7 @@ func (cm *ClusterManager) deleteSecurityGroup() error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	cloud.Logger(cm.ctx).Infof("Security groups for cluster %v is deleted", cm.cluster.Name)
+	Logger(cm.ctx).Infof("Security groups for cluster %v is deleted", cm.cluster.Name)
 	return nil
 }
 
@@ -337,7 +337,7 @@ func (cm *ClusterManager) deleteSubnetId() error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		cloud.Logger(cm.ctx).Infof("Subnet ID in VPC %v is deleted", *subnet.SubnetId)
+		Logger(cm.ctx).Infof("Subnet ID in VPC %v is deleted", *subnet.SubnetId)
 	}
 	return nil
 }
@@ -372,7 +372,7 @@ func (cm *ClusterManager) deleteInternetGateway() error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	cloud.Logger(cm.ctx).Infof("Internet gateway for cluster %v are deleted", cm.cluster.Name)
+	Logger(cm.ctx).Infof("Internet gateway for cluster %v are deleted", cm.cluster.Name)
 	return nil
 }
 
@@ -417,7 +417,7 @@ func (cm *ClusterManager) deleteRouteTable() error {
 			}
 		}
 	}
-	cloud.Logger(cm.ctx).Infof("Route tables for cluster %v are deleted", cm.cluster.Name)
+	Logger(cm.ctx).Infof("Route tables for cluster %v are deleted", cm.cluster.Name)
 	return nil
 }
 
@@ -450,7 +450,7 @@ func (cm *ClusterManager) deleteDHCPOption() error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	cloud.Logger(cm.ctx).Infof("DHCP options for cluster %v are deleted", cm.cluster.Name)
+	Logger(cm.ctx).Infof("DHCP options for cluster %v are deleted", cm.cluster.Name)
 	return err
 }
 
@@ -462,7 +462,7 @@ func (cm *ClusterManager) deleteVpc() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cloud.Logger(cm.ctx).Infof("VPC for cluster %v is deleted", cm.cluster.Name)
+	Logger(cm.ctx).Infof("VPC for cluster %v is deleted", cm.cluster.Name)
 	return nil
 }
 
@@ -473,7 +473,7 @@ func (cm *ClusterManager) deleteVolume() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cloud.Logger(cm.ctx).Infof("Master instance volume for cluster %v is deleted", cm.cluster.Spec.MasterDiskId)
+	Logger(cm.ctx).Infof("Master instance volume for cluster %v is deleted", cm.cluster.Spec.MasterDiskId)
 	return nil
 }
 
@@ -485,10 +485,10 @@ func (cm *ClusterManager) deleteSSHKey() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cloud.Logger(cm.ctx).Infof("SSH key for cluster %v is deleted", cm.cluster.Spec.MasterDiskId)
+	Logger(cm.ctx).Infof("SSH key for cluster %v is deleted", cm.cluster.Spec.MasterDiskId)
 	//updates := &storage.SSHKey{IsDeleted: 1}
 	//cond := &storage.SSHKey{PHID: cluster.Spec.ctx.SSHKeyPHID}
-	// _, err = cluster.Spec.cloud.Store(ctx).Engine.Update(updates, cond)
+	// _, err = cluster.Spec.Store(ctx).Engine.Update(updates, cond)
 
 	return err
 }
@@ -509,7 +509,7 @@ func (cm *ClusterManager) releaseReservedIP(publicIP string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cloud.Logger(cm.ctx).Infof("Elastic IP for cluster %v is deleted", cm.cluster.Name)
+	Logger(cm.ctx).Infof("Elastic IP for cluster %v is deleted", cm.cluster.Name)
 	return nil
 }
 
@@ -544,6 +544,6 @@ func (cm *ClusterManager) deleteNetworkInterface(vpcId string) error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	cloud.Logger(cm.ctx).Infof("Network interfaces for cluster %v are deleted", cm.cluster.Name)
+	Logger(cm.ctx).Infof("Network interfaces for cluster %v are deleted", cm.cluster.Name)
 	return nil
 }

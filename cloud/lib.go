@@ -51,7 +51,7 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
 		return nil, err
 	}
-	if _, err = cm.CreateMasterNodeSet(cluster); err != nil {
+	if _, err = cm.CreateMasterNodeGroup(cluster); err != nil {
 		return nil, err
 	}
 	if _, err = Store(ctx).Clusters().Update(cluster); err != nil {
@@ -74,6 +74,7 @@ func Update(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 		return nil, fmt.Errorf("Cluster `%s` does not exist. Reason: %v", cluster.Name, err)
 	}
 	cluster.Status = existing.Status
+	cluster.Generation = time.Now().UnixNano()
 
 	return Store(ctx).Clusters().Update(cluster)
 }

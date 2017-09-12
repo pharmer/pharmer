@@ -11,7 +11,7 @@ import (
 // The config parameter provides an io.Reader handler to the factory in
 // order to load specific configurations. If no configuration is provided
 // the parameter is nil.
-type Factory func(ctx context.Context) (ClusterManager, error)
+type Factory func(ctx context.Context) (Interface, error)
 
 // All registered cloud providers.
 var (
@@ -57,7 +57,7 @@ func CloudManagers() []string {
 // was known but failed to initialize. The config parameter specifies the
 // io.Reader handler of the configuration file for the cloud provider, or nil
 // for no configuation.
-func GetCloudManager(name string, ctx context.Context) (ClusterManager, error) {
+func GetCloudManager(name string, ctx context.Context) (Interface, error) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	f, found := providers[name]
