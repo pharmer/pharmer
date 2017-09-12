@@ -5,7 +5,7 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 )
 
 type ClusterManager struct {
@@ -15,26 +15,26 @@ type ClusterManager struct {
 	namer   namer
 }
 
-var _ cloud.Interface = &ClusterManager{}
+var _ Interface = &ClusterManager{}
 
 const (
 	UID = "linode"
 )
 
 func init() {
-	cloud.RegisterCloudManager(UID, func(ctx context.Context) (cloud.Interface, error) { return New(ctx), nil })
+	RegisterCloudManager(UID, func(ctx context.Context) (Interface, error) { return New(ctx), nil })
 }
 
-func New(ctx context.Context) cloud.Interface {
+func New(ctx context.Context) Interface {
 	return &ClusterManager{ctx: ctx}
 }
 
 func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
-	return cloud.UnsupportedOperation
+	return UnsupportedOperation
 }
 
 func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
-	return cloud.UnsupportedOperation
+	return UnsupportedOperation
 }
 
 func (cm *ClusterManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {

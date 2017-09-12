@@ -9,14 +9,14 @@ import (
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 )
 
 func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
-	//if !cloud.UpgradeRequired(cm.cluster, req) {
-	//	cloud.Logger(cm.ctx).Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
+	//if !UpgradeRequired(cm.cluster, req) {
+	//	Logger(cm.ctx).Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
 	//	return nil
 	//}
 
@@ -34,7 +34,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	// assign new timestamp and new launch_config version
 	cm.cluster.Spec.KubernetesVersion = req.KubernetesVersion
 
-	_, err := cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	_, err := Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -64,11 +64,11 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 		}
 	}
 
-	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cloud.Logger(cm.ctx).Infof("Update Completed")
+	Logger(cm.ctx).Infof("Update Completed")
 	return nil
 }
 
@@ -100,18 +100,18 @@ func (cm *ClusterManager) restartMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	cloud.Logger(cm.ctx).Infof("Attaching persistent data volume %v to master", cm.cluster.Spec.MasterDiskId)
+	Logger(cm.ctx).Infof("Attaching persistent data volume %v to master", cm.cluster.Spec.MasterDiskId)
 	r1, err := cm.conn.ec2.AttachVolume(&_ec2.AttachVolumeInput{
 		VolumeId:   StringP(cm.cluster.Spec.MasterDiskId),
 		Device:     StringP("/dev/sdb"),
 		InstanceId: StringP(masterInstanceID),
 	})
-	cloud.Logger(cm.ctx).Debugln("Attached persistent data volume to master", r1, err)
+	Logger(cm.ctx).Debugln("Attached persistent data volume to master", r1, err)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	if err := cloud.WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	instance, err := cm.newKubeInstance(masterInstanceID) // sets external IP
@@ -140,12 +140,12 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	for _, c := range gc {*/
-	ctxV, err := cloud.GetExistingContextVersion(cm.ctx, cm.cluster, sku)
+	ctxV, err := GetExistingContextVersion(cm.ctx, cm.cluster, sku)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	groupName := cm.namer.AutoScalingGroupName(sku)
-	cloud.Logger(cm.ctx).Infof(" Updating Node groups %v", groupName)
+	Logger(cm.ctx).Infof(" Updating Node groups %v", groupName)
 	// TODO: Namer needs fix
 	newLaunchConfig := cm.namer.LaunchConfigName(sku)
 	oldLaunchConfig := cm.namer.LaunchConfigNameWithContext(sku, ctxV)
@@ -176,9 +176,9 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 		//if err != nil {
 		//	return errors.FromErr(err).WithContext(cm.ctx).Err()
 		//}
-		//err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
+		//err = AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
 		// cluster.Spec.ctx.Instances = append(cluster.Spec.ctx.Instances, instances...)
-		_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+		_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}

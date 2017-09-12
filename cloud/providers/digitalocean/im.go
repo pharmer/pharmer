@@ -10,7 +10,7 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
 	"github.com/digitalocean/godo"
@@ -75,7 +75,7 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 
 func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet, error) {
 	oneliners.FILE()
-	startupScript, err := cloud.RenderStartupScript(im.ctx, im.cluster, role)
+	startupScript, err := RenderStartupScript(im.ctx, im.cluster, role)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 		//Image:  godo.DropletCreateImage{ID: imgID},
 		Image: godo.DropletCreateImage{Slug: DROPLET_IMAGE_SLUG},
 		SSHKeys: []godo.DropletCreateSSHKey{
-			{Fingerprint: cloud.SSHKey(im.ctx).OpensshFingerprint},
+			{Fingerprint: SSHKey(im.ctx).OpensshFingerprint},
 			{Fingerprint: "0d:ff:0d:86:0c:f1:47:1d:85:67:1e:73:c6:0e:46:17"}, // tamal@beast
 			{Fingerprint: "c0:19:c1:81:c5:2e:6d:d9:a6:db:3c:f5:c5:fd:c8:1d"}, // tamal@mbp
 			{Fingerprint: "f6:66:c5:ad:e6:60:30:d9:ab:2c:7c:75:56:e2:d7:f3"}, // tamal@asus
@@ -106,14 +106,14 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 	if _env.FromHost().IsPublic() {
 		oneliners.FILE()
 		req.SSHKeys = []godo.DropletCreateSSHKey{
-			{Fingerprint: cloud.SSHKey(im.ctx).OpensshFingerprint},
+			{Fingerprint: SSHKey(im.ctx).OpensshFingerprint},
 		}
 	}
 	oneliners.FILE()
 	droplet, resp, err := im.conn.client.Droplets.Create(gtx.TODO(), req)
 	oneliners.FILE(droplet, resp, err)
-	cloud.Logger(im.ctx).Debugln("do response", resp, " errors", err)
-	cloud.Logger(im.ctx).Infof("Droplet %v created", droplet.Name)
+	Logger(im.ctx).Debugln("do response", resp, " errors", err)
+	Logger(im.ctx).Infof("Droplet %v created", droplet.Name)
 	return droplet, err
 }
 
@@ -126,7 +126,7 @@ func (im *instanceManager) applyTag(dropletID int) error {
 			},
 		},
 	})
-	cloud.Logger(im.ctx).Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+im.cluster.Name, dropletID)
+	Logger(im.ctx).Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+im.cluster.Name, dropletID)
 	return err
 }
 
@@ -135,16 +135,16 @@ func (im *instanceManager) assignReservedIP(ip string, dropletID int) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	cloud.Logger(im.ctx).Debugln("do response", resp, " errors", err)
-	cloud.Logger(im.ctx).Debug("Created droplet with name", action.String())
-	cloud.Logger(im.ctx).Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
+	Logger(im.ctx).Debugln("do response", resp, " errors", err)
+	Logger(im.ctx).Debug("Created droplet with name", action.String())
+	Logger(im.ctx).Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
 	return nil
 }
 
 func (im *instanceManager) newKubeInstance(id int) (*api.Node, error) {
 	droplet, _, err := im.conn.client.Droplets.Get(gtx.TODO(), id)
 	if err != nil {
-		return nil, cloud.InstanceNotFound
+		return nil, InstanceNotFound
 	}
 	return im.newKubeInstanceFromDroplet(droplet)
 }
@@ -195,12 +195,12 @@ func (im *instanceManager) newKubeInstanceFromDroplet(droplet *godo.Droplet) (*a
 
 // reboot does not seem to run /etc/rc.local
 func (im *instanceManager) reboot(id int) error {
-	cloud.Logger(im.ctx).Infof("Rebooting instance %v", id)
+	Logger(im.ctx).Infof("Rebooting instance %v", id)
 	action, _, err := im.conn.client.DropletActions.Reboot(gtx.TODO(), id)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	cloud.Logger(im.ctx).Debugf("Instance status %v, %v", action, err)
-	cloud.Logger(im.ctx).Infof("Instance %v reboot status %v", action.ResourceID, action.Status)
+	Logger(im.ctx).Debugf("Instance status %v, %v", action, err)
+	Logger(im.ctx).Infof("Instance %v reboot status %v", action.ResourceID, action.Status)
 	return nil
 }

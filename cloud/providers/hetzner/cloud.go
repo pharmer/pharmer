@@ -8,7 +8,7 @@ import (
 	hc "github.com/appscode/go-hetzner"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 )
 
@@ -20,7 +20,7 @@ type cloudConnector struct {
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
 	// TODO: Load once
-	cred, err := cloud.Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 func (conn *cloudConnector) waitForInstance(id, status string) (*hc.Transaction, error) {
 	attempt := 0
 	for {
-		cloud.Logger(conn.ctx).Infof("Checking status of instance %v", id)
+		Logger(conn.ctx).Infof("Checking status of instance %v", id)
 		tx, _, err := conn.client.Ordering.GetTransaction(id)
 		if err != nil {
 			return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -46,7 +46,7 @@ func (conn *cloudConnector) waitForInstance(id, status string) (*hc.Transaction,
 		if strings.ToLower(tx.Status) == status {
 			return tx, nil
 		}
-		cloud.Logger(conn.ctx).Infof("Instance %v is %v, waiting...", *tx.ServerIP, tx.Status)
+		Logger(conn.ctx).Infof("Instance %v is %v, waiting...", *tx.ServerIP, tx.Status)
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

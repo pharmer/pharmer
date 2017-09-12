@@ -8,14 +8,14 @@ import (
 
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/digitalocean/godo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type NodeGroupManager struct {
 	cm       *ClusterManager
-	instance cloud.Instance
+	instance Instance
 	im       *instanceManager
 }
 
@@ -29,10 +29,10 @@ func (igm *NodeGroupManager) AdjustNodeGroup() error {
 	fmt.Println(found)
 
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
-	igm.cm.cluster, _ = cloud.Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
+	igm.cm.cluster, _ = Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 	var nodeAdjust int64 = 0
 	if found {
-		nodeAdjust, _ = cloud.Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
+		nodeAdjust, _ = Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
 	}
 	if !found {
 		err = igm.createNodeGroup(igm.instance.Stats.Count)
@@ -123,7 +123,7 @@ func (igm *NodeGroupManager) deleteNodeGroup(sku string, count int64) error {
 
 func (igm *NodeGroupManager) listInstances(sku string) ([]*api.Node, error) {
 	instances := make([]*api.Node, 0)
-	kc, err := cloud.NewAdminClient(igm.cm.ctx, igm.cm.cluster)
+	kc, err := NewAdminClient(igm.cm.ctx, igm.cm.cluster)
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -163,6 +163,6 @@ func (igm *NodeGroupManager) StartNode() (*api.Node, error) {
 	}
 	igm.im.applyTag(droplet.ID)
 	node.Spec.Role = api.RoleNode
-	cloud.Store(igm.cm.ctx).Instances(igm.cm.cluster.Name).Create(node)
+	Store(igm.cm.ctx).Instances(igm.cm.cluster.Name).Create(node)
 	return node, nil
 }

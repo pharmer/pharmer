@@ -6,7 +6,7 @@ import (
 
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
 	"github.com/packethost/packngo"
@@ -57,7 +57,7 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 }
 
 func (im *instanceManager) createInstance(name, role, sku string, ipid ...string) (*packngo.Device, error) {
-	startupScript, err := RenderStartupScript(im.ctx, im.cluster, role)
+	startupScript, err := renderStartupScript(im.ctx, im.cluster, role)
 	if err != nil {
 		return nil, err
 	}
@@ -71,14 +71,14 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 		UserData:     startupScript,
 		Tags:         []string{im.cluster.Name},
 	})
-	cloud.Logger(im.ctx).Infof("Instance %v created", name)
+	Logger(im.ctx).Infof("Instance %v created", name)
 	return device, err
 }
 
 func (im *instanceManager) newKubeInstance(id string) (*api.Node, error) {
 	s, _, err := im.conn.client.Devices.Get(id)
 	if err != nil {
-		return nil, cloud.InstanceNotFound
+		return nil, InstanceNotFound
 	}
 	return im.newKubeInstanceFromServer(s)
 }
@@ -114,7 +114,7 @@ func (im *instanceManager) newKubeInstanceFromServer(droplet *packngo.Device) (*
 
 // reboot does not seem to run /etc/rc.local
 func (im *instanceManager) reboot(id string) error {
-	cloud.Logger(im.ctx).Infof("Rebooting instance %v", id)
+	Logger(im.ctx).Infof("Rebooting instance %v", id)
 	_, err := im.conn.client.Devices.Reboot(id)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()

@@ -8,7 +8,7 @@ import (
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -32,7 +32,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := cloud.Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (conn *cloudConnector) detectJessieImage() error {
 	}
 	conn.cluster.Spec.Cloud.InstanceImage = *r1.Images[0].ImageId
 	conn.cluster.Status.Cloud.AWS.RootDeviceName = *r1.Images[0].RootDeviceName
-	cloud.Logger(conn.ctx).Infof("Debain image with %v for %v detected", conn.cluster.Spec.Cloud.InstanceImage, conn.cluster.Status.Cloud.AWS.RootDeviceName)
+	Logger(conn.ctx).Infof("Debain image with %v for %v detected", conn.cluster.Spec.Cloud.InstanceImage, conn.cluster.Status.Cloud.AWS.RootDeviceName)
 	return nil
 }
 
@@ -142,6 +142,6 @@ func (conn *cloudConnector) detectUbuntuImage() error {
 	}
 	conn.cluster.Spec.Cloud.InstanceImage = *r1.Images[0].ImageId
 	conn.cluster.Status.Cloud.AWS.RootDeviceName = *r1.Images[0].RootDeviceName
-	cloud.Logger(conn.ctx).Infof("Ubuntu image with %v for %v detected", conn.cluster.Spec.Cloud.InstanceImage, conn.cluster.Status.Cloud.AWS.RootDeviceName)
+	Logger(conn.ctx).Infof("Ubuntu image with %v for %v detected", conn.cluster.Spec.Cloud.InstanceImage, conn.cluster.Status.Cloud.AWS.RootDeviceName)
 	return nil
 }

@@ -5,7 +5,7 @@ import (
 
 	"github.com/appscode/mergo"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/data/files"
 	"github.com/appscode/pharmer/phid"
 	semver "github.com/hashicorp/go-version"
@@ -34,7 +34,7 @@ func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.Node
 			},
 		},
 	}
-	return cloud.Store(cm.ctx).NodeGroups(cluster.Name).Create(&ig)
+	return Store(cm.ctx).NodeGroups(cluster.Name).Create(&ig)
 }
 
 func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
@@ -68,7 +68,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	if cluster.Spec.Cloud.Azure == nil {
 		cluster.Spec.Cloud.Azure = &api.AzureSpec{}
 	}
-	cluster.Spec.Token = cloud.GetKubeadmToken()
+	cluster.Spec.Token = GetKubeadmToken()
 	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
 	cluster.Spec.KubernetesMasterName = n.MasterName()
 
@@ -153,5 +153,5 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
-	return false, cloud.UnsupportedOperation
+	return false, UnsupportedOperation
 }

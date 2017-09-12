@@ -7,13 +7,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/arm/network"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type NodeGroupManager struct {
 	cm       *ClusterManager
-	instance cloud.Instance
+	instance Instance
 	im       *instanceManager
 }
 
@@ -26,12 +26,12 @@ func (igm *NodeGroupManager) AdjustNodeGroup() error {
 	}
 
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
-	igm.cm.cluster, _ = cloud.Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
+	igm.cm.cluster, _ = Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 
 	if !found {
 		err = igm.createNodeGroup(igm.instance.Stats.Count)
 	} else if igm.instance.Stats.Count == 0 {
-		nodeAdjust, _ := cloud.Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
+		nodeAdjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
 		if nodeAdjust < 0 {
 			nodeAdjust = -nodeAdjust
 		}
@@ -41,7 +41,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup() error {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	} else {
-		nodeAdjust, _ := cloud.Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
+		nodeAdjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
 		if nodeAdjust < 0 {
 			err := igm.deleteNodeGroup(instanceGroupName, -nodeAdjust)
 			if err != nil {
@@ -74,12 +74,12 @@ func (igm *NodeGroupManager) GetNodeGroup(instanceGroup string) (bool, error) {
 
 	}
 	return false, nil
-	//cloud.Logger(im.ctx).Infof("Found virtual machine %v", vm)
+	//Logger(im.ctx).Infof("Found virtual machine %v", vm)
 }
 
 func (igm *NodeGroupManager) listInstances(sku string) ([]*api.Node, error) {
 	instances := make([]*api.Node, 0)
-	kc, err := cloud.NewAdminClient(igm.cm.ctx, igm.cm.cluster)
+	kc, err := NewAdminClient(igm.cm.ctx, igm.cm.cluster)
 	if err != nil {
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 
@@ -194,7 +194,7 @@ func (igm *NodeGroupManager) StartNode() (*api.Node, error) {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
-	nodeScript, err := cloud.RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
+	nodeScript, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
 	if err != nil {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -217,6 +217,6 @@ func (igm *NodeGroupManager) StartNode() (*api.Node, error) {
 	}
 	ki.Spec.Role = api.RoleNode
 
-	cloud.Store(igm.cm.ctx).Instances(igm.cm.cluster.Name).Create(ki)
+	Store(igm.cm.ctx).Instances(igm.cm.cluster.Name).Create(ki)
 	return ki, nil
 }

@@ -9,7 +9,7 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/cenkalti/backoff"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -21,7 +21,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	} else if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
 	}
-	// cloud.Store(cm.ctx).UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
+	// Store(cm.ctx).UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
 	var err error
 	if cm.conn == nil {
@@ -32,7 +32,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		}
 	}
 	cm.namer = namer{cluster: cm.cluster}
-	instances, err := cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(metav1.ListOptions{})
+	instances, err := Store(cm.ctx).Instances(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -55,7 +55,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 			}
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cloud.Logger(cm.ctx).Infof("Droplet %v with id %v for clutser is deleted", i.Name, i.Status.ExternalID, cm.cluster.Name)
+		Logger(cm.ctx).Infof("Droplet %v with id %v for clutser is deleted", i.Name, i.Status.ExternalID, cm.cluster.Name)
 	}
 
 	// delete by tag
@@ -63,7 +63,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		_, err := cm.conn.client.Droplets.DeleteByTag(gtx.TODO(), "KubernetesCluster:"+cm.cluster.Name)
 		return err
 	}, backoff.NewExponentialBackOff())
-	cloud.Logger(cm.ctx).Infof("Deleted droplet by tag %v", "KubernetesCluster:"+cm.cluster.Name)
+	Logger(cm.ctx).Infof("Deleted droplet by tag %v", "KubernetesCluster:"+cm.cluster.Name)
 
 	if req.ReleaseReservedIp && cm.cluster.Spec.MasterReservedIP != "" {
 		backoff.Retry(func() error {
@@ -76,7 +76,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, err.Error())
 	}
 
-	if err := cloud.DeleteARecords(cm.ctx, cm.cluster); err != nil {
+	if err := DeleteARecords(cm.ctx, cm.cluster); err != nil {
 		errs = append(errs, err.Error())
 	}
 
@@ -88,34 +88,34 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
-	cloud.Logger(cm.ctx).Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
+	Logger(cm.ctx).Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
 	return nil
 }
 
 func (cm *ClusterManager) releaseReservedIP(ip string) error {
 	resp, err := cm.conn.client.FloatingIPs.Delete(gtx.TODO(), ip)
-	cloud.Logger(cm.ctx).Debugln("DO response", resp, " errors", err)
+	Logger(cm.ctx).Debugln("DO response", resp, " errors", err)
 	if err != nil {
 		return errors.FromErr(err).Err()
 	}
-	cloud.Logger(cm.ctx).Infof("Floating ip %v deleted", ip)
+	Logger(cm.ctx).Infof("Floating ip %v deleted", ip)
 	return nil
 }
 
 func (cm *ClusterManager) deleteSSHKey() error {
-	err := wait.PollImmediate(cloud.RetryInterval, cloud.RetryTimeout, func() (bool, error) {
-		_, err := cm.conn.client.Keys.DeleteByFingerprint(gtx.TODO(), cloud.SSHKey(cm.ctx).OpensshFingerprint)
+	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		_, err := cm.conn.client.Keys.DeleteByFingerprint(gtx.TODO(), SSHKey(cm.ctx).OpensshFingerprint)
 		return err == nil, nil
 	})
 	if err != nil {
 		return err
 	}
-	cloud.Logger(cm.ctx).Infof("SSH key for cluster %v deleted", cm.cluster.Name)
+	Logger(cm.ctx).Infof("SSH key for cluster %v deleted", cm.cluster.Name)
 
 	//if cm.ctx.SSHKeyPHID != "" {
 	//	//updates := &storage.SSHKey{IsDeleted: 1}
 	//	//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
-	//	// _, err = cloud.Store(cm.ctx).Engine.Update(updates, cond)
+	//	// _, err = Store(cm.ctx).Engine.Update(updates, cond)
 	//}
 	return nil
 }
@@ -125,7 +125,7 @@ func (cm *ClusterManager) deleteDroplet(dropletID int, nodeName string) error {
 	if err != nil {
 		return err
 	}
-	cloud.Logger(cm.ctx).Infof("Droplet %v deleted", dropletID)
+	Logger(cm.ctx).Infof("Droplet %v deleted", dropletID)
 	return nil
 }
 
