@@ -17,7 +17,7 @@ const (
 func init() {
 	store.RegisterProvider(UID, func(ctx context.Context, cfg *api.PharmerConfig) (store.Interface, error) {
 		return &FakeStore{
-			nodeSets:     map[string]store.NodeSetStore{},
+			nodeGroups:   map[string]store.NodeGroupStore{},
 			nodes:        map[string]store.InstanceStore{},
 			certificates: map[string]store.CertificateStore{},
 			sshKeys:      map[string]store.SSHKeyStore{},
@@ -28,7 +28,7 @@ func init() {
 type FakeStore struct {
 	credentials  store.CredentialStore
 	clusters     store.ClusterStore
-	nodeSets     map[string]store.NodeSetStore
+	nodeGroups   map[string]store.NodeGroupStore
 	nodes        map[string]store.InstanceStore
 	certificates map[string]store.CertificateStore
 	sshKeys      map[string]store.SSHKeyStore
@@ -58,14 +58,14 @@ func (s *FakeStore) Clusters() store.ClusterStore {
 	return s.clusters
 }
 
-func (s *FakeStore) NodeSets(cluster string) store.NodeSetStore {
+func (s *FakeStore) NodeGroups(cluster string) store.NodeGroupStore {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
-	if _, found := s.nodeSets[cluster]; !found {
-		s.nodeSets[cluster] = &NodeSetFileStore{container: map[string]*api.NodeSet{}, cluster: cluster}
+	if _, found := s.nodeGroups[cluster]; !found {
+		s.nodeGroups[cluster] = &NodeGroupFileStore{container: map[string]*api.NodeGroup{}, cluster: cluster}
 	}
-	return s.nodeSets[cluster]
+	return s.nodeGroups[cluster]
 }
 
 func (s *FakeStore) Instances(cluster string) store.InstanceStore {

@@ -7,49 +7,49 @@ import (
 	"github.com/Azure/azure-sdk-for-go/arm/network"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type NodeSetManager struct {
+type NodeGroupManager struct {
 	cm       *ClusterManager
-	instance cloud.Instance
+	instance Instance
 	im       *instanceManager
 }
 
-func (igm *NodeSetManager) AdjustNodeSet() error {
-	instanceGroupName := igm.cm.namer.GetNodeSetName(igm.instance.Type.Sku) //igm.cm.ctx.Name + "-" + strings.Replace(igm.instance.Type.Sku, "_", "-", -1) + "-node"
-	found, err := igm.GetNodeSet(instanceGroupName)
+func (igm *NodeGroupManager) AdjustNodeGroup() error {
+	instanceGroupName := igm.cm.namer.GetNodeGroupName(igm.instance.Type.Sku) //igm.cm.ctx.Name + "-" + strings.Replace(igm.instance.Type.Sku, "_", "-", -1) + "-node"
+	found, err := igm.GetNodeGroup(instanceGroupName)
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
-	igm.cm.cluster, _ = cloud.Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
+	igm.cm.cluster, _ = Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 
 	if !found {
-		err = igm.createNodeSet(igm.instance.Stats.Count)
+		err = igm.createNodeGroup(igm.instance.Stats.Count)
 	} else if igm.instance.Stats.Count == 0 {
-		nodeAdjust, _ := cloud.Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
+		nodeAdjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
 		if nodeAdjust < 0 {
 			nodeAdjust = -nodeAdjust
 		}
-		err := igm.deleteNodeSet(instanceGroupName, nodeAdjust)
+		err := igm.deleteNodeGroup(instanceGroupName, nodeAdjust)
 		if err != nil {
 			igm.cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	} else {
-		nodeAdjust, _ := cloud.Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
+		nodeAdjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
 		if nodeAdjust < 0 {
-			err := igm.deleteNodeSet(instanceGroupName, -nodeAdjust)
+			err := igm.deleteNodeGroup(instanceGroupName, -nodeAdjust)
 			if err != nil {
 				igm.cm.cluster.Status.Reason = err.Error()
 				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
 		} else {
-			err := igm.createNodeSet(nodeAdjust)
+			err := igm.createNodeGroup(nodeAdjust)
 			if err != nil {
 				igm.cm.cluster.Status.Reason = err.Error()
 				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -59,7 +59,7 @@ func (igm *NodeSetManager) AdjustNodeSet() error {
 	return nil
 }
 
-func (igm *NodeSetManager) GetNodeSet(instanceGroup string) (bool, error) {
+func (igm *NodeGroupManager) GetNodeGroup(instanceGroup string) (bool, error) {
 	vm, err := igm.cm.conn.vmClient.List(igm.cm.namer.ResourceGroupName())
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
@@ -74,12 +74,12 @@ func (igm *NodeSetManager) GetNodeSet(instanceGroup string) (bool, error) {
 
 	}
 	return false, nil
-	//cloud.Logger(im.ctx).Infof("Found virtual machine %v", vm)
+	//Logger(im.ctx).Infof("Found virtual machine %v", vm)
 }
 
-func (igm *NodeSetManager) listInstances(sku string) ([]*api.Node, error) {
+func (igm *NodeGroupManager) listInstances(sku string) ([]*api.Node, error) {
 	instances := make([]*api.Node, 0)
-	kc, err := cloud.NewAdminClient(igm.cm.ctx, igm.cm.cluster)
+	kc, err := NewAdminClient(igm.cm.ctx, igm.cm.cluster)
 	if err != nil {
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 
@@ -112,7 +112,7 @@ func (igm *NodeSetManager) listInstances(sku string) ([]*api.Node, error) {
 	return instances, nil
 
 }
-func (igm *NodeSetManager) createNodeSet(count int64) error {
+func (igm *NodeGroupManager) createNodeGroup(count int64) error {
 	for i := int64(0); i < count; i++ {
 		_, err := igm.StartNode()
 		if err != nil {
@@ -124,7 +124,7 @@ func (igm *NodeSetManager) createNodeSet(count int64) error {
 	return nil
 }
 
-func (igm *NodeSetManager) deleteNodeSet(instanceGroup string, count int64) error {
+func (igm *NodeGroupManager) deleteNodeGroup(instanceGroup string, count int64) error {
 	vm, err := igm.cm.conn.vmClient.List(igm.cm.namer.ResourceGroupName())
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
@@ -153,7 +153,7 @@ func (igm *NodeSetManager) deleteNodeSet(instanceGroup string, count int64) erro
 	return nil
 }
 
-func (igm *NodeSetManager) StartNode() (*api.Node, error) {
+func (igm *NodeGroupManager) StartNode() (*api.Node, error) {
 	ki := &api.Node{}
 
 	nodeName := igm.cm.namer.GenNodeName(igm.instance.Type.Sku)
@@ -194,7 +194,7 @@ func (igm *NodeSetManager) StartNode() (*api.Node, error) {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
-	nodeScript, err := cloud.RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
+	nodeScript, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
 	if err != nil {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -217,6 +217,6 @@ func (igm *NodeSetManager) StartNode() (*api.Node, error) {
 	}
 	ki.Spec.Role = api.RoleNode
 
-	cloud.Store(igm.cm.ctx).Instances(igm.cm.cluster.Name).Create(ki)
+	Store(igm.cm.ctx).Instances(igm.cm.cluster.Name).Create(ki)
 	return ki, nil
 }

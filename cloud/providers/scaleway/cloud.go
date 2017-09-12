@@ -7,7 +7,7 @@ import (
 
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	sapi "github.com/scaleway/scaleway-cli/pkg/api"
 )
@@ -20,7 +20,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := cloud.Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (conn *cloudConnector) DetectBootscript() error {
 func (conn *cloudConnector) waitForInstance(id, status string) error {
 	attempt := 0
 	for true {
-		cloud.Logger(conn.ctx).Infof("Checking status of instance %v", id)
+		Logger(conn.ctx).Infof("Checking status of instance %v", id)
 		s, err := conn.client.GetServer(id)
 		if err != nil {
 			return errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -85,7 +85,7 @@ func (conn *cloudConnector) waitForInstance(id, status string) error {
 		if strings.ToLower(s.State) == status {
 			break
 		}
-		cloud.Logger(conn.ctx).Infof("Instance %v (%v) is %v, waiting...", s.Name, s.Identifier, s.State)
+		Logger(conn.ctx).Infof("Instance %v (%v) is %v, waiting...", s.Name, s.Identifier, s.State)
 		attempt += 1
 		time.Sleep(30 * time.Second)
 	}

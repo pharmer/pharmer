@@ -14,14 +14,14 @@ func (n namer) MasterName() string {
 }
 
 func (n namer) GenNodeName(sku string) string {
-	return rand.WithUniqSuffix(n.GetNodeSetName(sku))
+	return rand.WithUniqSuffix(n.GetNodeGroupName(sku))
 }
 
 func (n namer) GenSSHKeyExternalID() string {
 	return n.cluster.Name + "-" + rand.Characters(6)
 }
 
-func (n namer) GetNodeSetName(sku string) string {
+func (n namer) GetNodeGroupName(sku string) string {
 	return n.cluster.Name + "-" + sku + "-node"
 
 }

@@ -10,7 +10,7 @@ import (
 	_ssh "github.com/appscode/go/crypto/ssh"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"golang.org/x/crypto/ssh"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,18 +49,18 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 func (im *instanceManager) createInstance(role, sku string) (*hc.Transaction, error) {
 	tx, _, err := im.conn.client.Ordering.CreateTransaction(&hc.CreateTransactionRequest{
 		ProductID:     sku,
-		AuthorizedKey: []string{cloud.SSHKey(im.ctx).OpensshFingerprint},
+		AuthorizedKey: []string{SSHKey(im.ctx).OpensshFingerprint},
 		Dist:          im.cluster.Spec.Cloud.InstanceImage,
 		Arch:          64,
 		Lang:          "en",
 		// Test:          true,
 	})
-	cloud.Logger(im.ctx).Infof("Instance with sku %v created", sku)
+	Logger(im.ctx).Infof("Instance with sku %v created", sku)
 	return tx, err
 }
 
 func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Signer) error {
-	cloud.Logger(im.ctx).Infof("Storing config file for server %v", serverIP)
+	Logger(im.ctx).Infof("Storing config file for server %v", serverIP)
 	//cfg, err := im.cluster.StartupConfigResponse(role)
 	//if err != nil {
 	//	return errors.FromErr(err).WithContext(im.ctx).Err()
@@ -70,13 +70,13 @@ func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Sig
 
 	file := fmt.Sprintf("/var/cache/kubernetes_context_%v_%v.yaml", im.cluster.Generation, role)
 	stdOut, stdErr, code, err := _ssh.SCP(file, []byte(cfg), "root", serverIP+":22", signer)
-	cloud.Logger(im.ctx).Debugf(stdOut, stdErr, code)
+	Logger(im.ctx).Debugf(stdOut, stdErr, code)
 	return err
 }
 
 func (im *instanceManager) storeStartupScript(serverIP, sku, role string, signer ssh.Signer) error {
-	cloud.Logger(im.ctx).Infof("Storing startup script for server %v", serverIP)
-	startupScript, err := RenderStartupScript(im.ctx, im.cluster, role)
+	Logger(im.ctx).Infof("Storing startup script for server %v", serverIP)
+	startupScript, err := renderStartupScript(im.ctx, im.cluster, role)
 	if err != nil {
 		return err
 	}
@@ -84,15 +84,15 @@ func (im *instanceManager) storeStartupScript(serverIP, sku, role string, signer
 
 	file := "/var/cache/kubernetes_startupscript.sh"
 	stdOut, stdErr, code, err := _ssh.SCP(file, []byte(startupScript), "root", serverIP+":22", signer)
-	cloud.Logger(im.ctx).Debugf(stdOut, stdErr, code)
+	Logger(im.ctx).Debugf(stdOut, stdErr, code)
 	return err
 }
 
 func (im *instanceManager) executeStartupScript(serverIP string, signer ssh.Signer) error {
-	cloud.Logger(im.ctx).Infof("SSH execing start command %v", serverIP+":22")
+	Logger(im.ctx).Infof("SSH execing start command %v", serverIP+":22")
 
 	stdOut, stdErr, code, err := _ssh.Exec(`bash /var/cache/kubernetes_startupscript.sh`, "root", serverIP+":22", signer)
-	cloud.Logger(im.ctx).Debugf(stdOut, stdErr, code)
+	Logger(im.ctx).Debugf(stdOut, stdErr, code)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -102,7 +102,7 @@ func (im *instanceManager) executeStartupScript(serverIP string, signer ssh.Sign
 func (im *instanceManager) newKubeInstance(serverIP string) (*api.Node, error) {
 	s, _, err := im.conn.client.Server.GetServer(serverIP)
 	if err != nil {
-		return nil, cloud.InstanceNotFound
+		return nil, InstanceNotFound
 	}
 	return im.newKubeInstanceFromSummary(&s.ServerSummary)
 }

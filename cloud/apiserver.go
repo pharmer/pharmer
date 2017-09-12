@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	stringz "github.com/appscode/go/strings"
@@ -46,6 +47,7 @@ func waitForReadyAPIServer(ctx context.Context, client clientset.Interface) erro
 		Logger(ctx).Infof("Attempt %v: Probing Kubernetes api server ...", attempt)
 
 		_, err := client.CoreV1().Pods(apiv1.NamespaceAll).List(metav1.ListOptions{})
+		fmt.Println(err, ",.,.,.,.,.,")
 		return err == nil, nil
 	})
 }

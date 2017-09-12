@@ -11,15 +11,15 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/mgutz/str"
 	compute "google.golang.org/api/compute/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
-	//if !cloud.UpgradeRequired(cm.cluster, req) {
-	//	cloud.Logger(cm.ctx).Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
+	//if !UpgradeRequired(cm.cluster, req) {
+	//	Logger(cm.ctx).Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
 	//	return nil // TODO check error nil
 	//}
 
@@ -37,7 +37,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	cm.updateContext()
 	// assign new timestamp and new launch_config version
 	cm.cluster.Spec.KubernetesVersion = req.KubernetesVersion
-	_, err := cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	_, err := Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -61,7 +61,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	//		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	//	}
 	//}
-	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -102,10 +102,10 @@ func (cm *ClusterManager) masterUpdate(host, instanceName, version string) error
 	err := cmd.Run()
 	output := DefaultWriter.Output()
 	fmt.Println(output, err)
-	if err := cloud.WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -178,7 +178,7 @@ func (cm *clusterManager) updateMaster() error {
 	}
 	err = cm.conn.waitForZoneOperation(op)
 
-	if err := cloud.ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
+	if err := ProbeKubeAPI(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance, err := cm.getInstance(cm.cluster.Spec.KubernetesMasterName)
@@ -187,7 +187,7 @@ func (cm *clusterManager) updateMaster() error {
 	}
 	// cm.ins.Instances = nil
 	// cm.ins.Instances = append(cm.ins.Instances, masterInstance)
-	err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -215,10 +215,10 @@ func (cm *ClusterManager) nodeUpdate(instanceName string) error {
 	err := cmd.Run()
 	output := DefaultWriter.Output()
 	fmt.Println(output, err)
-	if err := cloud.WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -237,12 +237,12 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	ctxV, err := cloud.GetExistingContextVersion(cm.ctx, cm.cluster, sku)
+	ctxV, err := GetExistingContextVersion(cm.ctx, cm.cluster, sku)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	oldInstanceTemplate := cm.namer.InstanceTemplateNameWithContext(sku, ctxV)
-	groupName := cm.namer.NodeSetName(sku)
+	groupName := cm.namer.NodeGroupName(sku)
 	oldinstances, err := cm.listInstances(groupName)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -262,9 +262,9 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 	//if err != nil {
 	//	return errors.FromErr(err).WithContext(cm.ctx).Err()
 	//}
-	//err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
+	//err = AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
 	// cluster.Spec.ctx.Instances = append(cluster.Spec.ctx.Instances, instances...)
-	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -278,7 +278,7 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 }
 
 func (cm *ClusterManager) getExistingContextVersion(sku string) (error, int64) {
-	kc, err := cloud.NewAdminClient(cm.ctx, cm.cluster)
+	kc, err := NewAdminClient(cm.ctx, cm.cluster)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -299,7 +299,7 @@ func (cm *ClusterManager) getExistingContextVersion(sku string) (error, int64) {
 }
 
 func (cm *ClusterManager) rollingUpdate(oldInstances []string, newInstanceTemplate, sku string) error {
-	groupName := cm.namer.NodeSetName(sku)
+	groupName := cm.namer.NodeGroupName(sku)
 	newTemplate := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", cm.cluster.Spec.Cloud.Project, newInstanceTemplate)
 	template := &compute.InstanceGroupManagersSetInstanceTemplateRequest{
 		InstanceTemplate: newTemplate,

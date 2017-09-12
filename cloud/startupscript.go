@@ -36,13 +36,13 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster) TemplateData {
 		KubeadmToken:      cluster.Spec.Token,
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		APIServerHost:     cluster.APIServerURL(),
+		APIServerHost:     cluster.APIServerHost(),
 		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
 		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
 	}
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1alpha1",
+			APIVersion: "kubeadm.k8s.io/v1alpha1",
 			Kind:       "MasterConfiguration",
 		},
 		API:  cluster.Spec.API,
@@ -157,7 +157,7 @@ apt-get install -y \
 	cloud-utils \
 	docker.io || true
 
-curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.2/pre-k-linux-amd64 \
+curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.3/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
@@ -183,11 +183,11 @@ EOF
 {{ end }}
 
 pre-k merge master-config \
-	--config=/etc/kubernetes/kubeadm/config.yaml
+	--config=/etc/kubernetes/kubeadm/config.yaml \
 	--apiserver-bind-port=6443 \
 	--token={{ .KubeadmToken }} \
 	--apiserver-advertise-address=$(pre-k get public-ips --all=false) \
-	--apiserver-cert-extra-sans=$(pre-k get public-ips) \
+	--apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
 	--apiserver-cert-extra-sans=$(pre-k get private-ips) \
 	--apiserver-cert-extra-sans={{ .ExtraDomains }} \
 	> /etc/kubernetes/kubeadm/config.yaml
@@ -198,6 +198,10 @@ kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 {{ else if eq .NetworkProvider "calico" }}
 {{ template "calico" . }}
 {{ end }}
+
+mkdir -p ~/.kube
+sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
+sudo chown $(id -u):$(id -g) ~/.kube/config
 `))
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`#!/bin/bash
@@ -233,14 +237,14 @@ apt-get install -y \
 	cron \
 	glusterfs-client \
 	kubelet \
-	kubeadmkubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
+	kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
 	docker.io || true
 
 systemctl enable docker
 systemctl start docker
 
 kubeadm reset
-kubeadm join --token={{ .KubeadmToken }} {{ .APIServerHost }}:6443 --skip-token-print
+kubeadm join --token={{ .KubeadmToken }} {{ .APIServerHost }}:6443
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("prepare-host").Parse(``))

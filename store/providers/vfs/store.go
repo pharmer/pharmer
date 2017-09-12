@@ -184,8 +184,8 @@ func (s *FileStore) Clusters() store.ClusterStore {
 	return &ClusterFileStore{container: s.container, prefix: s.prefix}
 }
 
-func (s *FileStore) NodeSets(cluster string) store.NodeSetStore {
-	return &NodeSetFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
+func (s *FileStore) NodeGroups(cluster string) store.NodeGroupStore {
+	return &NodeGroupFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
 }
 
 func (s *FileStore) Instances(cluster string) store.InstanceStore {

@@ -15,7 +15,7 @@ type Interface interface {
 	Credentials() CredentialStore
 
 	Clusters() ClusterStore
-	NodeSets(cluster string) NodeSetStore
+	NodeGroups(cluster string) NodeGroupStore
 	Instances(cluster string) InstanceStore
 	Certificates(cluster string) CertificateStore
 	SSHKeys(cluster string) SSHKeyStore
@@ -38,13 +38,13 @@ type ClusterStore interface {
 	UpdateStatus(obj *api.Cluster) (*api.Cluster, error)
 }
 
-type NodeSetStore interface {
-	List(opts metav1.ListOptions) ([]*api.NodeSet, error)
-	Get(name string) (*api.NodeSet, error)
-	Create(obj *api.NodeSet) (*api.NodeSet, error)
-	Update(obj *api.NodeSet) (*api.NodeSet, error)
+type NodeGroupStore interface {
+	List(opts metav1.ListOptions) ([]*api.NodeGroup, error)
+	Get(name string) (*api.NodeGroup, error)
+	Create(obj *api.NodeGroup) (*api.NodeGroup, error)
+	Update(obj *api.NodeGroup) (*api.NodeGroup, error)
 	Delete(name string) error
-	UpdateStatus(obj *api.NodeSet) (*api.NodeSet, error)
+	UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error)
 }
 
 type InstanceStore interface {

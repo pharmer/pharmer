@@ -7,7 +7,7 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/cenkalti/backoff"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -19,7 +19,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 	} else if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
 	}
-	// cloud.Store(cm.ctx).UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
+	// Store(cm.ctx).UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
 
 	var err error
 	if cm.conn == nil {
@@ -30,7 +30,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		}
 	}
 	cm.namer = namer{cluster: cm.cluster}
-	instances, err := cloud.Store(cm.ctx).Instances(cm.cluster.Name).List(metav1.ListOptions{})
+	instances, err := Store(cm.ctx).Instances(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -50,17 +50,17 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 
 			return nil
 		}, backoff.NewExponentialBackOff())
-		cloud.Logger(cm.ctx).Infof("Instance %v with id %v for clutser is deleted", i.Name, i.Status.ExternalID, cm.cluster.Name)
+		Logger(cm.ctx).Infof("Instance %v with id %v for clutser is deleted", i.Name, i.Status.ExternalID, cm.cluster.Name)
 	}
 
 	if req.ReleaseReservedIp && cm.cluster.Spec.MasterReservedIP != "" {
 		backoff.Retry(func() error {
 			return cm.releaseReservedIP(cm.cluster.Spec.MasterReservedIP)
 		}, backoff.NewExponentialBackOff())
-		cloud.Logger(cm.ctx).Infof("Reserved ip for cluster %v", cm.cluster.Name)
+		Logger(cm.ctx).Infof("Reserved ip for cluster %v", cm.cluster.Name)
 	}
 
-	cloud.Logger(cm.ctx).Infof("Deleting startup scripts for cluster %v", cm.cluster.Name)
+	Logger(cm.ctx).Infof("Deleting startup scripts for cluster %v", cm.cluster.Name)
 	backoff.Retry(cm.deleteStartupScript, backoff.NewExponentialBackOff())
 
 	// Delete SSH key from DB
@@ -68,7 +68,7 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		errs = append(errs, err.Error())
 	}
 
-	if err := cloud.DeleteARecords(cm.ctx, cm.cluster); err != nil {
+	if err := DeleteARecords(cm.ctx, cm.cluster); err != nil {
 		errs = append(errs, err.Error())
 	}
 
@@ -80,12 +80,12 @@ func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
 		return fmt.Errorf(strings.Join(errs, "\n"))
 	}
 
-	cloud.Logger(cm.ctx).Infof("Cluster %v is deleted successfully", cm.cluster.Name)
+	Logger(cm.ctx).Infof("Cluster %v is deleted successfully", cm.cluster.Name)
 	return nil
 }
 
 func (cm *ClusterManager) releaseReservedIP(ip string) error {
-	cloud.Logger(cm.ctx).Debugln("Deleting Floating IP", ip)
+	Logger(cm.ctx).Debugln("Deleting Floating IP", ip)
 	err := cm.conn.client.DestroyReservedIP(ip)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -110,20 +110,20 @@ func (cm *ClusterManager) deleteStartupScript() error {
 }
 
 func (cm *ClusterManager) deleteSSHKey() error {
-	cloud.Logger(cm.ctx).Infof("Deleting SSH key for cluster", cm.cluster.Name)
-	err := wait.PollImmediate(cloud.RetryInterval, cloud.RetryTimeout, func() (bool, error) {
+	Logger(cm.ctx).Infof("Deleting SSH key for cluster", cm.cluster.Name)
+	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		err := cm.conn.client.DeleteSSHKey(cm.cluster.Status.SSHKeyExternalID)
 		return err == nil, nil
 	})
 	if err != nil {
 		return err
 	}
-	cloud.Logger(cm.ctx).Infof("SSH key for cluster %v deleted", cm.cluster.Name)
+	Logger(cm.ctx).Infof("SSH key for cluster %v deleted", cm.cluster.Name)
 
 	//if cm.cluster.Spec.SSHKeyPHID != "" {
 	//	//updates := &storage.SSHKey{IsDeleted: 1}
 	//	//cond := &storage.SSHKey{PHID: cm.ctx.SSHKeyPHID}
-	//	//_, err = cloud.Store(cm.ctx).Engine.Update(updates, cond)
+	//	//_, err = Store(cm.ctx).Engine.Update(updates, cond)
 	//}
 	return nil
 }

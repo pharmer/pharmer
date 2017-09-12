@@ -5,24 +5,24 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 )
 
 type ClusterManager struct {
 	cfg *api.PharmerConfig
 }
 
-var _ cloud.ClusterManager = &ClusterManager{}
+var _ Interface = &ClusterManager{}
 
 const (
 	UID = "fake"
 )
 
 func init() {
-	cloud.RegisterCloudManager(UID, func(ctx context.Context) (cloud.ClusterManager, error) { return New(ctx), nil })
+	RegisterCloudManager(UID, func(ctx context.Context) (Interface, error) { return New(ctx), nil })
 }
 
-func New(ctx context.Context) cloud.ClusterManager {
+func New(ctx context.Context) Interface {
 	return &ClusterManager{}
 }
 
@@ -30,16 +30,16 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	return in, nil
 }
 
-func (cm *ClusterManager) CreateMasterNodeSet(cluster *api.Cluster) (*api.NodeSet, error) {
+func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error) {
 	return nil, nil
 }
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
-	return cloud.UnsupportedOperation
+	return UnsupportedOperation
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
-	return false, cloud.UnsupportedOperation
+	return false, UnsupportedOperation
 }
 
 func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
