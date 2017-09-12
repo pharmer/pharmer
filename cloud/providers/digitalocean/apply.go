@@ -6,7 +6,6 @@ import (
 	"os"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/digitalocean/godo"
@@ -14,11 +13,14 @@ import (
 )
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
-	var err error
+	_, err := cm.apply(in, api.DryRun)
+	return err
+}
 
+func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Action, err error) {
 	cm.cluster = in
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
-		return err
+		return
 	}
 
 	defer func(releaseReservedIp bool) {
@@ -39,14 +41,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//cm.cluster.Spec.Cloud.InstanceImage, err = cm.conn.getInstanceImage()
 	//if err != nil {
 	//	cm.cluster.Status.Reason = err.Error()
-	//	return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//	return
 	//}
 	//Logger(cm.ctx).Infof("Image %v is using to create instance", cm.cluster.Spec.Cloud.InstanceImage)
 
 	err = cm.importPublicKey()
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return
 	}
 
 	// ignore errors, since tags are simply informational.
@@ -55,7 +57,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	err = cm.reserveIP()
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return
 	}
 
 	// -------------------------------------------------------------------ASSETS
@@ -66,13 +68,13 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	if err != nil {
 		oneliners.FILE(err)
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return
 	}
 	oneliners.FILE()
 	if err = cm.conn.waitForInstance(masterDroplet.ID, "active"); err != nil {
 		oneliners.FILE(err)
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return
 	}
 	oneliners.FILE()
 	im.applyTag(masterDroplet.ID)
@@ -82,14 +84,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		if err = im.assignReservedIP(cm.cluster.Spec.MasterReservedIP, masterDroplet.ID); err != nil {
 			oneliners.FILE(err)
 			cm.cluster.Status.Reason = err.Error()
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
+			return
 		}
 	}
 	masterInstance, err := im.newKubeInstance(masterDroplet.ID)
 	if err != nil {
 		oneliners.FILE(err)
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return
 	}
 	masterInstance.Spec.Role = api.RoleMaster
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
@@ -99,20 +101,20 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 
 	//if err = GenClusterCerts(cm.ctx, cm.cluster); err != nil {
 	//	cm.cluster.Status.Reason = err.Error()
-	//	return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//	return
 	//}
 	err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		oneliners.FILE(err)
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return
 	}
 	oneliners.FILE()
 	// needed to get master_internal_ip
 	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		oneliners.FILE(err)
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return
 	}
 	//cm.UploadStartupConfig(cm.cluster)
 	//
@@ -122,7 +124,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//Logger(cm.ctx).Info("Rebooting master instance")
 	//if err = im.reboot(masterDroplet.ID); err != nil {
 	//	cm.cluster.Status.Reason = err.Error()
-	//	return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//	return
 	//}
 	//Logger(cm.ctx).Info("Rebooted master instance")
 
@@ -151,20 +153,20 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	Logger(cm.ctx).Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
-	if err := EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
+	if err = EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return
 	}
 
 	os.Exit(1)
 
 	// wait for nodes to start
-	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	if err = WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return
 	}
 	cm.cluster.Status.Phase = api.ClusterReady
-	return nil
+	return
 }
 
 func (cm *ClusterManager) importPublicKey() error {
@@ -173,7 +175,7 @@ func (cm *ClusterManager) importPublicKey() error {
 		PublicKey: string(SSHKey(cm.ctx).PublicKey),
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return err
 	}
 	Logger(cm.ctx).Debugln("DO response", resp, " errors", err)
 	Logger(cm.ctx).Debugf("Created new ssh key with name=%v and id=%v", cm.cluster.Status.SSHKeyExternalID, key.ID)
@@ -190,7 +192,7 @@ func (cm *ClusterManager) createTags() error {
 			Name: tag,
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
+			return err
 		}
 		Logger(cm.ctx).Infof("Tag %v created", tag)
 	}
@@ -203,7 +205,7 @@ func (cm *ClusterManager) reserveIP() error {
 			Region: cm.cluster.Spec.Cloud.Region,
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
+			return err
 		}
 		Logger(cm.ctx).Debugln("DO response", resp, " errors", err)
 		Logger(cm.ctx).Infof("New floating ip %v reserved", fip.IP)
