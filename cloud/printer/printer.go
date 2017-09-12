@@ -4,35 +4,25 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/pkg/api"
-	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	"k8s.io/kubernetes/pkg/printers"
+	"errors"
 )
 
 // ref: k8s.io/kubernetes/pkg/kubectl/resource_printer.go
 
 func NewPrinter(cmd *cobra.Command) (printers.ResourcePrinter, error) {
+	f := cmd.Flags().Lookup("output")
 	humanReadablePrinter := NewHumanReadablePrinter(PrintOptions{
-		WithNamespace: cmdutil.GetFlagBool(cmd, "all-namespaces"),
-		Wide:          cmdutil.GetWideFlag(cmd),
-		ShowAll:       cmdutil.GetFlagBool(cmd, "show-all"),
-		ShowLabels:    cmdutil.GetFlagBool(cmd, "show-labels"),
+		Wide: f != nil && f.Value != nil && f.Value.String() == "wide",
 	})
 
-	format := cmdutil.GetFlagString(cmd, "output")
+	format, _ := cmd.Flags().GetString("output")
 
 	switch format {
 	case "json":
 		return &printers.JSONPrinter{}, nil
 	case "yaml":
 		return &printers.YAMLPrinter{}, nil
-	case "name":
-		return &printers.NamePrinter{
-			Typer:    api.Scheme,
-			Decoders: []runtime.Decoder{api.Codecs.UniversalDecoder()},
-			Mapper:   api.Registry.RESTMapper(api.Registry.EnabledVersions()...),
-		}, nil
 	case "wide":
 		fallthrough
 	case "":
@@ -49,7 +39,7 @@ type editPrinterOptions struct {
 }
 
 func NewEditPrinter(cmd *cobra.Command) (*editPrinterOptions, error) {
-	switch format := cmdutil.GetFlagString(cmd, "output"); format {
+	switch format, _ := cmd.Flags().GetString("output"); format {
 	case "json":
 		return &editPrinterOptions{
 			Printer:   &printers.JSONPrinter{},
@@ -64,6 +54,6 @@ func NewEditPrinter(cmd *cobra.Command) (*editPrinterOptions, error) {
 			AddHeader: true,
 		}, nil
 	default:
-		return nil, cmdutil.UsageError(cmd, "The flag 'output' must be one of yaml|json")
+		return nil, errors.New("The flag 'output' must be one of yaml|json")
 	}
 }

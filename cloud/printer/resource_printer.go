@@ -33,12 +33,7 @@ type handlerEntry struct {
 }
 
 type PrintOptions struct {
-	WithNamespace bool
-	WithKind      bool
 	Wide          bool
-	ShowAll       bool
-	ShowLabels    bool
-	Kind          string
 }
 
 type HumanReadablePrinter struct {
@@ -123,7 +118,7 @@ func getColumns(options PrintOptions, t reflect.Type) []string {
 }
 
 func (h *HumanReadablePrinter) printElastic(item *api.Cluster, w io.Writer, options PrintOptions) (err error) {
-	name := formatResourceName(options.Kind, item.Name, options.WithKind)
+	name := item.Name
 
 	if _, err = fmt.Fprintf(w, "%s\t", name); err != nil {
 		return
@@ -205,15 +200,6 @@ func formatResourceName(kind, name string, withKind bool) string {
 	}
 
 	return kind + "/" + name
-}
-
-func (h *HumanReadablePrinter) GetResourceKind() string {
-	return h.options.Kind
-}
-
-func (h *HumanReadablePrinter) EnsurePrintWithKind(kind string) {
-	h.options.WithKind = true
-	h.options.Kind = kind
 }
 
 func appendAllLabels(showLabels bool, itemLabels map[string]string) string {
