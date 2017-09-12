@@ -9,7 +9,7 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,8 +52,8 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 }
 
 func (im *instanceManager) createStartupScript(sku, role string) (int, error) {
-	cloud.Logger(im.ctx).Infof("creating StackScript for sku %v role %v", sku, role)
-	script, err := RenderStartupScript(im.ctx, im.cluster, role)
+	Logger(im.ctx).Infof("creating StackScript for sku %v role %v", sku, role)
+	script, err := renderStartupScript(im.ctx, im.cluster, role)
 	if err != nil {
 		return 0, err
 	}
@@ -98,9 +98,9 @@ func (im *instanceManager) createInstance(name, sku string, scriptID int) (strin
 		planID,
 		osID,
 		opts)
-	cloud.Logger(im.ctx).Debugln("do response", resp, " errors", err)
-	cloud.Logger(im.ctx).Debug("Created droplet with name", resp.ID)
-	cloud.Logger(im.ctx).Infof("DO droplet %v created", name)
+	Logger(im.ctx).Debugln("do response", resp, " errors", err)
+	Logger(im.ctx).Debug("Created droplet with name", resp.ID)
+	Logger(im.ctx).Infof("DO droplet %v created", name)
 	return resp.ID, err
 }
 
@@ -109,7 +109,7 @@ func (im *instanceManager) assignReservedIP(ip, serverId string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	cloud.Logger(im.ctx).Infof("Reserved ip %v assigned to %v", ip, serverId)
+	Logger(im.ctx).Infof("Reserved ip %v assigned to %v", ip, serverId)
 	return nil
 }
 
@@ -134,7 +134,7 @@ func (im *instanceManager) newKubeInstance(server *gv.Server) (*api.Node, error)
 
 // reboot does not seem to run /etc/rc.local
 func (im *instanceManager) reboot(id string) error {
-	cloud.Logger(im.ctx).Infof("Rebooting instance %v", id)
+	Logger(im.ctx).Infof("Rebooting instance %v", id)
 	err := im.conn.client.RebootServer(id)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()

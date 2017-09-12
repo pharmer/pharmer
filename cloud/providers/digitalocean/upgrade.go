@@ -8,12 +8,12 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 )
 
 func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
-	//if !cloud.UpgradeRequired(cm.cluster, req) {
-	//	cloud.Logger(cm.ctx).Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
+	//if !UpgradeRequired(cm.cluster, req) {
+	//	Logger(cm.ctx).Infof("Upgrade command skipped for cluster %v", cm.cluster.Name)
 	//	return nil
 	//}
 	if cm.conn == nil {
@@ -30,7 +30,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	// assign new timestamp and new launch_config version
 	cm.cluster.Spec.KubernetesVersion = req.KubernetesVersion
 
-	_, err := cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	_, err := Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -51,11 +51,11 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cloud.Logger(cm.ctx).Infof("Update Completed")
+	Logger(cm.ctx).Infof("Update Completed")
 	return nil
 }
 
@@ -97,8 +97,8 @@ func (cm *ClusterManager) updateMaster() error {
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
 	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP, "<><><>", cm.cluster.Spec.MasterReservedIP)
-	cloud.Logger(cm.ctx).Infof("Rebooting master instance")
-	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
+	Logger(cm.ctx).Infof("Rebooting master instance")
+	err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -110,7 +110,7 @@ func (cm *ClusterManager) updateMaster() error {
 	}
 	// TODO; FixIt!
 	// cm.ins = append(cm.ins, masterInstance)
-	if err := cloud.WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	return nil
@@ -133,8 +133,8 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		igm.instance = cloud.Instance{
-			Type: cloud.InstanceType{
+		igm.instance = Instance{
+			Type: InstanceType{
 				ContextVersion: cm.cluster.Generation,
 				Sku:            sku,
 				Master:         false,
@@ -153,9 +153,9 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 	//if err != nil {
 	//	return errors.FromErr(err).WithContext(cm.ctx).Err()
 	//}
-	// err = cloud.AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
+	// err = AdjustDbInstance(cm.ctx, cm.ins, currentIns, sku)
 	// cluster.Spec.ctx.Instances = append(cluster.Spec.ctx.Instances, instances...)
-	_, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 
 	return nil
 }

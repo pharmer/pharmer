@@ -10,7 +10,7 @@ import (
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
 	sapi "github.com/scaleway/scaleway-cli/pkg/api"
@@ -93,12 +93,12 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	cloud.Logger(im.ctx).Infof("Instance %v created", name)
+	Logger(im.ctx).Infof("Instance %v created", name)
 	return serverID, nil
 }
 
 func (im *instanceManager) storeConfigFile(serverID, role string) error {
-	cloud.Logger(im.ctx).Infof("Storing config file for server %v", serverID)
+	Logger(im.ctx).Infof("Storing config file for server %v", serverID)
 	cfg := ""
 	//cfg, err := im.cluster.StartupConfigResponse(role)
 	//if err != nil {
@@ -109,7 +109,7 @@ func (im *instanceManager) storeConfigFile(serverID, role string) error {
 }
 
 func (im *instanceManager) storeStartupScript(serverID, sku, role string) error {
-	cloud.Logger(im.ctx).Infof("Storing startup script for server %v", serverID)
+	Logger(im.ctx).Infof("Storing startup script for server %v", serverID)
 	startupScript := im.RenderStartupScript(sku, role)
 	key := "kubernetes_startupscript.sh"
 	return im.conn.client.PatchUserdata(serverID, key, []byte(startupScript), false)
@@ -121,14 +121,14 @@ func (im *instanceManager) RenderStartupScript(sku, role string) string {
 	//	cmd := fmt.Sprintf(`CONFIG=$(/usr/bin/curl 169.254.42.42/user_data/kubernetes_context_%v_%v.yaml --local-port 1-1024)`, im.cluster.Generation, role)
 	//	return fmt.Sprintf(`%v
 	//systemctl start kube-installer.service
-	//`, cloud.RenderKubeInstaller(im.cluster, sku, role, cmd))
+	//`, RenderKubeInstaller(im.cluster, sku, role, cmd))
 }
 
 func (im *instanceManager) executeStartupScript(instance *api.Node, signer ssh.Signer) error {
-	cloud.Logger(im.ctx).Infof("SSH execing start command %v", instance.Status.PublicIP+":22")
+	Logger(im.ctx).Infof("SSH execing start command %v", instance.Status.PublicIP+":22")
 
 	stdOut, stdErr, code, err := sshtools.Exec(`/usr/bin/curl 169.254.42.42/user_data/kubernetes_startupscript.sh --local-port 1-1024 2> /dev/null | bash`, "root", instance.Status.PublicIP+":22", signer)
-	cloud.Logger(im.ctx).Infoln(stdOut, stdErr, code)
+	Logger(im.ctx).Infoln(stdOut, stdErr, code)
 	if err != nil {
 		return errors.FromErr(err).WithContext(im.ctx).Err()
 	}
@@ -138,7 +138,7 @@ func (im *instanceManager) executeStartupScript(instance *api.Node, signer ssh.S
 func (im *instanceManager) newKubeInstance(id string) (*api.Node, error) {
 	s, err := im.conn.client.GetServer(id)
 	if err != nil {
-		return nil, cloud.InstanceNotFound
+		return nil, InstanceNotFound
 	}
 	return im.newKubeInstanceFromServer(s)
 }

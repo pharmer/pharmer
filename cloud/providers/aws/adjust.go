@@ -8,13 +8,13 @@ import (
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 )
 
 type NodeGroupManager struct {
 	cm       *ClusterManager
-	instance cloud.Instance
+	instance Instance
 }
 
 func (igm *NodeGroupManager) AdjustNodeGroup() error {
@@ -25,7 +25,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup() error {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
-	igm.cm.cluster, _ = cloud.Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
+	igm.cm.cluster, _ = Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 	if err = igm.cm.conn.detectUbuntuImage(); err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -51,7 +51,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup() error {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	}
-	cloud.Store(igm.cm.ctx).Clusters().UpdateStatus(igm.cm.cluster)
+	Store(igm.cm.ctx).Clusters().UpdateStatus(igm.cm.cluster)
 	return nil
 }
 
@@ -80,12 +80,12 @@ func (igm *NodeGroupManager) startNodes(sku string, count int64) error {
 
 func (igm *NodeGroupManager) createLaunchConfiguration(name, sku string) error {
 	//script := igm.cm.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), sku, system.RoleKubernetesPool)
-	script, err := cloud.RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
+	script, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
 	if err != nil {
 		return err
 	}
 
-	cloud.Logger(igm.cm.ctx).Info("Creating node configuration assuming enableNodePublicIP = true")
+	Logger(igm.cm.ctx).Info("Creating node configuration assuming enableNodePublicIP = true")
 	fmt.Println(igm.cm.cluster.Status.Cloud.AWS.RootDeviceName, "<<<<<<<<--------------->>>>>>>>>>>>>>>>>>.")
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
 		LaunchConfigurationName:  StringP(name),
@@ -132,7 +132,7 @@ func (igm *NodeGroupManager) createLaunchConfiguration(name, sku string) error {
 		UserData: StringP(base64.StdEncoding.EncodeToString([]byte(script))),
 	}
 	r1, err := igm.cm.conn.autoscale.CreateLaunchConfiguration(configuration)
-	cloud.Logger(igm.cm.ctx).Debug("Created node configuration", r1, err)
+	Logger(igm.cm.ctx).Debug("Created node configuration", r1, err)
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -187,7 +187,7 @@ func (igm *NodeGroupManager) updateNodeGroup(instanceGroup string, size int64) e
 }
 
 func (igm *NodeGroupManager) listInstances(instanceGroup string) ([]*api.Node, error) {
-	cloud.Logger(igm.cm.ctx).Infof("Retrieving instances in node group %v", instanceGroup)
+	Logger(igm.cm.ctx).Infof("Retrieving instances in node group %v", instanceGroup)
 	instances := make([]*api.Node, 0)
 	group, err := igm.describeGroupInfo(instanceGroup)
 	if err != nil {

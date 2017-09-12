@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 )
 
 var (
@@ -27,8 +27,8 @@ EOF
 )
 
 // http://askubuntu.com/questions/9853/how-can-i-make-rc-local-run-on-startup
-func RenderStartupScript(ctx context.Context, cluster *api.Cluster, role string) (string, error) {
-	tpl, err := cloud.StartupScriptTemplate.Clone()
+func renderStartupScript(ctx context.Context, cluster *api.Cluster, role string) (string, error) {
+	tpl, err := StartupScriptTemplate.Clone()
 	if err != nil {
 		return "", err
 	}
@@ -37,7 +37,7 @@ func RenderStartupScript(ctx context.Context, cluster *api.Cluster, role string)
 		return "", err
 	}
 	var buf bytes.Buffer
-	if err := tpl.ExecuteTemplate(&buf, role, cloud.GetTemplateData(ctx, cluster)); err != nil {
+	if err := tpl.ExecuteTemplate(&buf, role, GetTemplateData(ctx, cluster)); err != nil {
 		return "", err
 	}
 	return buf.String(), nil

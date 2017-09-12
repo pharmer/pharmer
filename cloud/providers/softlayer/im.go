@@ -11,7 +11,7 @@ import (
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
 	"github.com/softlayer/softlayer-go/datatypes"
@@ -62,7 +62,7 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 }
 
 func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
-	startupScript, err := cloud.RenderStartupScript(im.ctx, im.cluster, role)
+	startupScript, err := RenderStartupScript(im.ctx, im.cluster, role)
 	if err != nil {
 		im.cluster.Status.Reason = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
@@ -90,7 +90,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 	}
 	vGuestTemplate := datatypes.Virtual_Guest{
 		Hostname:                     StringP(name),
-		Domain:                       StringP(cloud.Extra(im.ctx).ExternalDomain(im.cluster.Name)),
+		Domain:                       StringP(Extra(im.ctx).ExternalDomain(im.cluster.Name)),
 		MaxMemory:                    IntP(ram),
 		StartCpus:                    IntP(cpu),
 		Datacenter:                   &datatypes.Location{Name: StringP(im.cluster.Spec.Cloud.Zone)},
@@ -100,7 +100,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		SshKeys: []datatypes.Security_Ssh_Key{
 			{
 				Id:          IntP(sshid),
-				Fingerprint: StringP(cloud.SSHKey(im.ctx).OpensshFingerprint),
+				Fingerprint: StringP(SSHKey(im.ctx).OpensshFingerprint),
 			},
 		},
 		UserData: []datatypes.Virtual_Guest_Attribute{
@@ -121,7 +121,7 @@ func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
 		im.cluster.Status.Reason = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	cloud.Logger(im.ctx).Infof("Softlayer instance %v created", name)
+	Logger(im.ctx).Infof("Softlayer instance %v created", name)
 	return *vGuest.Id, nil
 }
 

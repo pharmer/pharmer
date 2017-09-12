@@ -10,7 +10,7 @@ import (
 	"github.com/appscode/go/errors"
 	"github.com/appscode/linodego"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,7 +68,7 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 }
 
 func (im *instanceManager) createStackScript(sku, role string) (int, error) {
-	startupScript, err := RenderStartupScript(im.ctx, im.cluster, role)
+	startupScript, err := renderStartupScript(im.ctx, im.cluster, role)
 	if err != nil {
 		return 0, err
 	}
@@ -78,7 +78,7 @@ func (im *instanceManager) createStackScript(sku, role string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	cloud.Logger(im.ctx).Infof("Stack script for role %v created", role)
+	Logger(im.ctx).Infof("Stack script for role %v created", role)
 	return script.StackScriptId.StackScriptId, nil
 }
 
@@ -115,7 +115,7 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
   "stack_script_id": "%v"
 }`, im.cluster.Name, name, scriptId)
 	args := map[string]string{
-		"rootSSHKey": string(cloud.SSHKey(im.ctx).PublicKey),
+		"rootSSHKey": string(SSHKey(im.ctx).PublicKey),
 	}
 
 	mt, err := data.ClusterMachineType("linode", sku)
@@ -154,8 +154,8 @@ func (im *instanceManager) createInstance(name string, scriptId int, sku string)
 	if err != nil {
 		return 0, 0, errors.FromErr(err).WithContext(im.ctx).Err()
 	}
-	cloud.Logger(im.ctx).Info("Running linode boot job %v", jobResp.JobId.JobId)
-	cloud.Logger(im.ctx).Infof("Linode %v created", name)
+	Logger(im.ctx).Info("Running linode boot job %v", jobResp.JobId.JobId)
+	Logger(im.ctx).Infof("Linode %v created", name)
 
 	return id, config.LinodeConfigId.LinodeConfigId, err
 }
@@ -174,7 +174,7 @@ func (im *instanceManager) bootToGrub2(linodeId, configId int, name string) erro
 		return err
 	}
 	_, err = im.conn.client.Linode.Boot(linodeId, configId)
-	cloud.Logger(im.ctx).Infof("%v booted", name)
+	Logger(im.ctx).Infof("%v booted", name)
 	return err
 }
 

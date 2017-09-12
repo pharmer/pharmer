@@ -13,7 +13,7 @@ import (
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/phid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,7 +71,7 @@ func (im *instanceManager) createPublicIP(name string, alloc network.IPAllocatio
 	if err != nil {
 		return network.PublicIPAddress{}, err
 	}
-	cloud.Logger(im.ctx).Infof("Public ip addres %v created", name)
+	Logger(im.ctx).Infof("Public ip addres %v created", name)
 	return im.conn.publicIPAddressesClient.Get(im.namer.ResourceGroupName(), name, "")
 }
 
@@ -129,7 +129,7 @@ func (im *instanceManager) createNetworkInterface(name string, sg network.Securi
 	if err != nil {
 		return network.Interface{}, err
 	}
-	cloud.Logger(im.ctx).Infof("Network interface %v created", name)
+	Logger(im.ctx).Infof("Network interface %v created", name)
 	return im.conn.interfacesClient.Get(im.namer.ResourceGroupName(), name, "")
 }
 
@@ -158,7 +158,7 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 					SSH: &compute.SSHConfiguration{
 						PublicKeys: &[]compute.SSHPublicKey{
 							{
-								KeyData: StringP(string(cloud.SSHKey(im.ctx).PublicKey)),
+								KeyData: StringP(string(SSHKey(im.ctx).PublicKey)),
 								Path:    StringP(fmt.Sprintf("/home/%v/.ssh/authorized_keys", im.namer.AdminUsername())),
 							},
 						},
@@ -195,12 +195,12 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
-	cloud.Logger(im.ctx).Infof("Virtual machine with disk %v password %v created", im.namer.BootDiskURI(sa, vmName), im.cluster.Spec.Cloud.Azure.InstanceRootPassword)
+	Logger(im.ctx).Infof("Virtual machine with disk %v password %v created", im.namer.BootDiskURI(sa, vmName), im.cluster.Spec.Cloud.Azure.InstanceRootPassword)
 	// https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-linux-extensions-customscript?toc=%2fazure%2fvirtual-machines%2flinux%2ftoc.json
 	// https://github.com/Azure/custom-script-extension-linux
 	// old: https://github.com/Azure/azure-linux-extensions/tree/master/CustomScript
 	// https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-windows-classic-inject-custom-data
-	cloud.Logger(im.ctx).Infof("Running startup script in virtual machine %v", vmName)
+	Logger(im.ctx).Infof("Running startup script in virtual machine %v", vmName)
 	extName := vmName + "-script"
 	extReq := compute.VirtualMachineExtension{
 		Name:     StringP(extName),
@@ -226,14 +226,14 @@ func (im *instanceManager) createVirtualMachine(nic network.Interface, as comput
 		return compute.VirtualMachine{}, err
 	}
 
-	//cloud.Logger(im.ctx).Infof("Restarting virtual machine %v", vmName)
+	//Logger(im.ctx).Infof("Restarting virtual machine %v", vmName)
 	//_, err = im.conn.vmClient.Restart(im.namer.ResourceGroupName(), vmName, nil)
 	//if err != nil {
 	//	return compute.VirtualMachine{}, err
 	//}
 
 	vm, err := im.conn.vmClient.Get(im.namer.ResourceGroupName(), vmName, compute.InstanceView)
-	cloud.Logger(im.ctx).Infof("Found virtual machine %v", vm)
+	Logger(im.ctx).Infof("Found virtual machine %v", vm)
 	return vm, err
 }
 
@@ -248,7 +248,7 @@ func (im *instanceManager) DeleteVirtualMachine(vmName string) error {
 	if err != nil {
 		return err
 	}
-	cloud.Logger(im.ctx).Infof("Virtual machine %v deleted", vmName)
+	Logger(im.ctx).Infof("Virtual machine %v deleted", vmName)
 	storageClient, err := azstore.NewBasicClient(storageName, *(*(keys.Keys))[0].Value)
 	if err != nil {
 		return err
@@ -260,7 +260,7 @@ func (im *instanceManager) DeleteVirtualMachine(vmName string) error {
 
 func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic network.Interface, pip network.PublicIPAddress) (*api.Node, error) {
 	// TODO: Load once
-	cred, err := cloud.Store(im.ctx).Credentials().Get(im.cluster.Spec.CredentialName)
+	cred, err := Store(im.ctx).Credentials().Get(im.cluster.Spec.CredentialName)
 	if err != nil {
 		return nil, err
 	}

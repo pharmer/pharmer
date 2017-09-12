@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 )
 
@@ -31,7 +31,7 @@ func TestGce(t *testing.T) {
 func TestContext(t *testing.T) {
 	cfg, err := config.LoadConfig("/home/sanjid/go/src/appscode.com/ark/conf/tigerworks-kube.json")
 	fmt.Println(err)
-	ctx := cloud.NewContext(context.Background(), cfg)
+	ctx := NewContext(context.Background(), cfg)
 	cm := New(ctx)
 
 	req := proto.ClusterCreateRequest{
@@ -48,7 +48,7 @@ func TestContext(t *testing.T) {
 		Sku:   "n1-standard-1",
 		Count: int64(1),
 	}*/
-	cm, err = cloud.GetCloudManager(req.Provider, ctx)
+	cm, err = GetCloudManager(req.Provider, ctx)
 	fmt.Println(err, cm)
 
 	/*cm.cluster = &api.Cluster{
@@ -64,7 +64,7 @@ func TestContext(t *testing.T) {
 	cm.cluster.Spec.Cloud.Zone = req.Zone
 
 	api.AssignTypeKind(cm.cluster)
-	if _, err := cloud.Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
+	if _, err := Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
 		//oneliners.FILE(err)
 		cm.cluster.Status.Reason = err.Error()
 		fmt.Println(err)

@@ -5,7 +5,7 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 )
 
 func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
@@ -32,20 +32,20 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	//		cm.nodeUpdate(instance.Name)
 	//	}
 	//}
-	inst := cloud.Instance{
-		Type: cloud.InstanceType{
+	inst := Instance{
+		Type: InstanceType{
 			ContextVersion: cm.cluster.Generation,
 			Sku:            req.Sku,
 
 			Master:       false,
 			SpotInstance: false,
 		},
-		Stats: cloud.GroupStats{
+		Stats: GroupStats{
 			Count: req.Count,
 		},
 	}
 	fmt.Println(inst)
-	//nodeAdjust, _ := cloud.Mutator(cm.ctx, cm.cluster, inst)
+	//nodeAdjust, _ := Mutator(cm.ctx, cm.cluster, inst)
 	//igm := &NodeGroupManager{
 	//	cm:       cm,
 	//	instance: inst,
@@ -76,9 +76,9 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 	//	igm.cm.cluster.Status.Reason = err.Error()
 	//	//return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	//}
-	//cloud.AdjustDbInstance(igm.cm.ctx, igm.cm.ins, instances, req.Sku)
+	//AdjustDbInstance(igm.cm.ctx, igm.cm.ins, instances, req.Sku)
 
-	cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	return nil
 }
 

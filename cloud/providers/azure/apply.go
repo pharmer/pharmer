@@ -12,7 +12,7 @@ import (
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 )
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
@@ -27,10 +27,10 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		if cm.cluster.Status.Phase == api.ClusterPending {
 			cm.cluster.Status.Phase = api.ClusterFailing
 		}
-		cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		cloud.Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
+		Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+		Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 		if cm.cluster.Status.Phase != api.ClusterReady {
-			cloud.Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
+			Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
 			cm.Delete(&proto.ClusterDeleteRequest{
 				Name:              cm.cluster.Name,
 				ReleaseReservedIp: releaseReservedIp,
@@ -44,13 +44,13 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cloud.Logger(cm.ctx).Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.cluster.Spec.Cloud.Zone)
+	Logger(cm.ctx).Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.cluster.Spec.Cloud.Zone)
 	as, err := cm.ensureAvailablitySet()
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	cloud.Logger(cm.ctx).Infof("Availablity set %v created", cm.namer.AvailablitySetName())
+	Logger(cm.ctx).Infof("Availablity set %v created", cm.namer.AvailablitySetName())
 	sa, err := cm.createStorageAccount()
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -95,7 +95,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//	// cluster.Spec.ctx.ApiServerUrl = "https://" + *ip.IPAddress
 
 	// needed for master start-up config
-	if _, err = cloud.Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -112,7 +112,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	masterScript, err := cloud.RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster)
+	masterScript, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -131,27 +131,27 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	masterInstance.Spec.Role = api.RoleMaster
 
 	fmt.Println(cm.cluster.Spec.MasterExternalIP, "------------------------------->")
-	cloud.Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
+	Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 
-	err = cloud.EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
+	err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	fmt.Println(err, "<------------------------------->")
 
 	//for _, ng := range req.NodeGroups {
-	//	cloud.Logger(cm.ctx).Infof("Creating %v node with sku %v", ng.Count, ng.Sku)
+	//	Logger(cm.ctx).Infof("Creating %v node with sku %v", ng.Count, ng.Sku)
 	//	igm := &NodeGroupManager{
 	//		cm: cm,
-	//		instance: cloud.Instance{
-	//			Type: cloud.InstanceType{
+	//		instance: Instance{
+	//			Type: InstanceType{
 	//				ContextVersion: cm.cluster.Generation,
 	//				Sku:            ng.Sku,
 	//
 	//				Master:       false,
 	//				SpotInstance: false,
 	//			},
-	//			Stats: cloud.GroupStats{
+	//			Stats: GroupStats{
 	//				Count: ng.Count,
 	//			},
 	//		},
@@ -160,15 +160,15 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//	err = igm.AdjustNodeGroup()
 	//}
 
-	cloud.Logger(cm.ctx).Info("Waiting for cluster initialization")
+	Logger(cm.ctx).Info("Waiting for cluster initialization")
 
 	// Wait for master A record to propagate
-	if err := cloud.EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
+	if err := EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// wait for nodes to start
-	if err := cloud.WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -227,7 +227,7 @@ func (cm *ClusterManager) ensureVirtualNetwork() (network.VirtualNetwork, error)
 	if err != nil {
 		return network.VirtualNetwork{}, err
 	}
-	cloud.Logger(cm.ctx).Infof("Virtual network %v created", name)
+	Logger(cm.ctx).Infof("Virtual network %v created", name)
 	return cm.conn.virtualNetworksClient.Get(cm.namer.ResourceGroupName(), name, "")
 }
 
@@ -249,7 +249,7 @@ func (cm *ClusterManager) createNetworkSecurityGroup() (network.SecurityGroup, e
 	if err != nil {
 		return network.SecurityGroup{}, err
 	}
-	cloud.Logger(cm.ctx).Infof("Network security group %v created", securityGroupName)
+	Logger(cm.ctx).Infof("Network security group %v created", securityGroupName)
 	return cm.conn.securityGroupsClient.Get(cm.namer.ResourceGroupName(), securityGroupName, "")
 }
 
@@ -282,7 +282,7 @@ func (cm *ClusterManager) createSubnetID(vn *network.VirtualNetwork, sg *network
 	if err != nil {
 		return network.Subnet{}, err
 	}
-	cloud.Logger(cm.ctx).Infof("Subnet name %v created", name)
+	Logger(cm.ctx).Infof("Subnet name %v created", name)
 	return cm.conn.subnetsClient.Get(cm.namer.ResourceGroupName(), *vn.Name, name, "")
 }
 
@@ -304,7 +304,7 @@ func (cm *ClusterManager) createRouteTable() (network.RouteTable, error) {
 	if err != nil {
 		return network.RouteTable{}, err
 	}
-	cloud.Logger(cm.ctx).Infof("Route table %v created", name)
+	Logger(cm.ctx).Infof("Route table %v created", name)
 	return cm.conn.routeTablesClient.Get(cm.namer.ResourceGroupName(), name, "")
 }
 
@@ -328,7 +328,7 @@ func (cm *ClusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 	if err != nil {
 		return err
 	}
-	cloud.Logger(cm.ctx).Infof("Network security rule %v created", sshRuleName)
+	Logger(cm.ctx).Infof("Network security rule %v created", sshRuleName)
 	sslRuleName := cm.namer.NetworkSecurityRule("ssl")
 	sslRule := network.SecurityRule{
 		Name: StringP(sshRuleName),
@@ -348,7 +348,7 @@ func (cm *ClusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 	if err != nil {
 		return err
 	}
-	cloud.Logger(cm.ctx).Infof("Network security rule %v created", sslRuleName)
+	Logger(cm.ctx).Infof("Network security rule %v created", sslRuleName)
 
 	mastersslRuleName := cm.namer.NetworkSecurityRule("masterssl")
 	mastersslRule := network.SecurityRule{
@@ -369,7 +369,7 @@ func (cm *ClusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 	if err != nil {
 		return err
 	}
-	cloud.Logger(cm.ctx).Infof("Network security rule %v created", mastersslRuleName)
+	Logger(cm.ctx).Infof("Network security rule %v created", mastersslRuleName)
 
 	return err
 }
@@ -390,7 +390,7 @@ func (cm *ClusterManager) createStorageAccount() (armstorage.Account, error) {
 	if err != nil {
 		return armstorage.Account{}, err
 	}
-	cloud.Logger(cm.ctx).Infof("Storage account %v created", storageName)
+	Logger(cm.ctx).Infof("Storage account %v created", storageName)
 	keys, err := cm.conn.storageClient.ListKeys(cm.namer.ResourceGroupName(), storageName)
 	if err != nil {
 		return armstorage.Account{}, err

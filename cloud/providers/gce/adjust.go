@@ -6,21 +6,21 @@ import (
 
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	compute "google.golang.org/api/compute/v1"
 )
 
 type NodeGroupManager struct {
 	cm       *ClusterManager
-	instance cloud.Instance
+	instance Instance
 }
 
 func (igm *NodeGroupManager) AdjustNodeGroup() error {
 	instanceGroupName := igm.cm.namer.NodeGroupName(igm.instance.Type.Sku)
-	adjust, err := cloud.Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
+	adjust, err := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
 	fmt.Println(err, igm.cm.cluster.Spec.Cloud.Project)
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
-	//igm.cm.cluster, _ = cloud.Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
+	//igm.cm.cluster, _ = Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 	if adjust == igm.instance.Stats.Count {
 		if op2, err := igm.createNodeInstanceTemplate(igm.instance.Type.Sku); err != nil {
 			igm.cm.cluster.Status.Reason = err.Error()
@@ -69,16 +69,16 @@ func (igm *NodeGroupManager) AdjustNodeGroup() error {
 func (igm *NodeGroupManager) createNodeInstanceTemplate(sku string) (string, error) {
 	templateName := igm.cm.namer.InstanceTemplateName(sku)
 
-	cloud.Logger(igm.cm.ctx).Infof("Retrieving node template %v", templateName)
+	Logger(igm.cm.ctx).Infof("Retrieving node template %v", templateName)
 	if r1, err := igm.cm.conn.computeService.InstanceTemplates.Get(igm.cm.cluster.Spec.Cloud.Project, templateName).Do(); err == nil {
-		cloud.Logger(igm.cm.ctx).Debug("Retrieved node template", r1, err)
+		Logger(igm.cm.ctx).Debug("Retrieved node template", r1, err)
 
 		if r2, err := igm.cm.conn.computeService.InstanceTemplates.Delete(igm.cm.cluster.Spec.Cloud.Project, templateName).Do(); err != nil {
-			cloud.Logger(igm.cm.ctx).Debug("Delete node template called", r2, err)
-			cloud.Logger(igm.cm.ctx).Infoln("Failed to delete existing instance template")
+			Logger(igm.cm.ctx).Debug("Delete node template called", r2, err)
+			Logger(igm.cm.ctx).Infoln("Failed to delete existing instance template")
 			os.Exit(1)
 		}
-		cloud.Logger(igm.cm.ctx).Infof("Existing node template %v deleted", templateName)
+		Logger(igm.cm.ctx).Infof("Existing node template %v deleted", templateName)
 	} else {
 		fmt.Println(err)
 	}
@@ -86,7 +86,7 @@ func (igm *NodeGroupManager) createNodeInstanceTemplate(sku string) (string, err
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
 	//  }
 
-	startupScript, err := cloud.RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
+	startupScript, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
 	if err != nil {
 		return "", err
 	}
@@ -157,12 +157,12 @@ func (igm *NodeGroupManager) createNodeInstanceTemplate(sku string) (string, err
 		}
 	}
 	r1, err := igm.cm.conn.computeService.InstanceTemplates.Insert(igm.cm.cluster.Spec.Cloud.Project, tpl).Do()
-	cloud.Logger(igm.cm.ctx).Debug("Create instance template called", r1, err)
+	Logger(igm.cm.ctx).Debug("Create instance template called", r1, err)
 	if err != nil {
 		fmt.Println(err)
 		return "", errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	cloud.Logger(igm.cm.ctx).Infof("Instance template %v created", templateName)
+	Logger(igm.cm.ctx).Infof("Instance template %v created", templateName)
 	return r1.Name, nil
 }
 
@@ -176,11 +176,11 @@ func (igm *NodeGroupManager) createNodeGroup(sku string, count int64) (string, e
 		TargetSize:       count,
 		InstanceTemplate: template,
 	}).Do()
-	cloud.Logger(igm.cm.ctx).Debug("Create instance group called", r1, err)
+	Logger(igm.cm.ctx).Debug("Create instance group called", r1, err)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	cloud.Logger(igm.cm.ctx).Infof("Instance group %v from template %v created", name, template)
+	Logger(igm.cm.ctx).Infof("Instance group %v from template %v created", name, template)
 	return r1.Name, nil
 }
 
@@ -197,11 +197,11 @@ func (igm *NodeGroupManager) createAutoscaler(sku string, count int64) (string, 
 			MaxNumReplicas: count,
 		},
 	}).Do()
-	cloud.Logger(igm.cm.ctx).Debug("Create auto scaler called", r1, err)
+	Logger(igm.cm.ctx).Debug("Create auto scaler called", r1, err)
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	cloud.Logger(igm.cm.ctx).Infof("Auto scaler %v for instance group %v is created", name, target)
+	Logger(igm.cm.ctx).Infof("Auto scaler %v for instance group %v is created", name, target)
 	return r1.Name, nil
 }
 
@@ -217,8 +217,8 @@ func (igm *NodeGroupManager) deleteOnlyNodeGroup(instanceGroupName, template str
 	}
 	operation := r1.Name
 	igm.cm.conn.waitForZoneOperation(operation)
-	cloud.Logger(igm.cm.ctx).Infof("Instance group %v is deleted", instanceGroupName)
-	cloud.Logger(igm.cm.ctx).Infof("Instance template %v is deleting", template)
+	Logger(igm.cm.ctx).Infof("Instance group %v is deleted", instanceGroupName)
+	Logger(igm.cm.ctx).Infof("Instance template %v is deleting", template)
 	r2, err := igm.cm.conn.computeService.InstanceTemplates.Delete(igm.cm.cluster.Spec.Cloud.Project, template).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -227,8 +227,8 @@ func (igm *NodeGroupManager) deleteOnlyNodeGroup(instanceGroupName, template str
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	cloud.Logger(igm.cm.ctx).Infof("Instance template %v is deleted", template)
-	cloud.Logger(igm.cm.ctx).Infof("Autoscaler is deleting for %v", instanceGroupName)
+	Logger(igm.cm.ctx).Infof("Instance template %v is deleted", template)
+	Logger(igm.cm.ctx).Infof("Autoscaler is deleting for %v", instanceGroupName)
 	r3, err := igm.cm.conn.computeService.Autoscalers.Delete(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -237,7 +237,7 @@ func (igm *NodeGroupManager) deleteOnlyNodeGroup(instanceGroupName, template str
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	cloud.Logger(igm.cm.ctx).Infof("Autoscaler is deleted for %v", instanceGroupName)
+	Logger(igm.cm.ctx).Infof("Autoscaler is deleted for %v", instanceGroupName)
 
 	return nil
 }
@@ -249,7 +249,7 @@ func (igm *NodeGroupManager) updateNodeGroup(instanceGroupName string, size int6
 	}
 	max := r1.AutoscalingPolicy.MaxNumReplicas
 	min := r1.AutoscalingPolicy.MinNumReplicas
-	cloud.Logger(igm.cm.ctx).Infof("Updating autoscaller with Max %v and Min %v num of replicas", size, size)
+	Logger(igm.cm.ctx).Infof("Updating autoscaller with Max %v and Min %v num of replicas", size, size)
 	if size > max || size < min {
 		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, &compute.Autoscaler{
 			Name: instanceGroupName,
@@ -266,7 +266,7 @@ func (igm *NodeGroupManager) updateNodeGroup(instanceGroupName string, size int6
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	}
-	cloud.Logger(igm.cm.ctx).Infof("Autoscalling group %v updated", instanceGroupName)
+	Logger(igm.cm.ctx).Infof("Autoscalling group %v updated", instanceGroupName)
 	_, err = igm.cm.conn.computeService.InstanceGroupManagers.ListManagedInstances(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -278,8 +278,8 @@ func (igm *NodeGroupManager) updateNodeGroup(instanceGroupName string, size int6
 	}
 	igm.cm.conn.waitForZoneOperation(resp.Name)
 	fmt.Println(resp.Name)
-	cloud.Logger(igm.cm.ctx).Infof("Instance group %v resized", instanceGroupName)
-	/*err = cloud.WaitForReadyNodes(igm.cm.ctx, size-sz)
+	Logger(igm.cm.ctx).Infof("Instance group %v resized", instanceGroupName)
+	/*err = WaitForReadyNodes(igm.cm.ctx, size-sz)
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}*/

@@ -7,7 +7,7 @@ import (
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
-	"github.com/appscode/pharmer/cloud"
+	. "github.com/appscode/pharmer/cloud"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 )
 
@@ -19,17 +19,17 @@ type ClusterManager struct {
 	namer namer
 }
 
-var _ cloud.ClusterManager = &ClusterManager{}
+var _ Interface = &ClusterManager{}
 
 const (
 	UID = "aws"
 )
 
 func init() {
-	cloud.RegisterCloudManager(UID, func(ctx context.Context) (cloud.ClusterManager, error) { return New(ctx), nil })
+	RegisterCloudManager(UID, func(ctx context.Context) (Interface, error) { return New(ctx), nil })
 }
 
-func New(ctx context.Context) cloud.ClusterManager {
+func New(ctx context.Context) Interface {
 	return &ClusterManager{ctx: ctx}
 }
 
@@ -63,8 +63,8 @@ func (cm *ClusterManager) waitForInstanceState(instanceId string, state string) 
 		if curState == state {
 			break
 		}
-		cloud.Logger(cm.ctx).Infof("Waiting for instance %v to be %v (currently %v)", instanceId, state, curState)
-		cloud.Logger(cm.ctx).Infof("Sleeping for 5 seconds...")
+		Logger(cm.ctx).Infof("Waiting for instance %v to be %v (currently %v)", instanceId, state, curState)
+		Logger(cm.ctx).Infof("Sleeping for 5 seconds...")
 		time.Sleep(5 * time.Second)
 	}
 	return nil
