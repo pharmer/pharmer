@@ -58,9 +58,11 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	}
 
 	// TODO: Should we add *IfMissing suffix to all these functions
-	if err = cm.ensureNetworks(); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if found, _ := cm.getNetworks(); !found {
+		if err = cm.ensureNetworks(); err != nil {
+			cm.cluster.Status.Reason = err.Error()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
 	}
 	if err = cm.ensureFirewallRules(); err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -268,6 +270,36 @@ func (cm *ClusterManager) ensureNetworks() error {
 	}
 	return nil
 }
+func (cm *ClusterManager) getNetworks() (bool, error) {
+	Logger(cm.ctx).Infof("Retrieving network %v for project %v", defaultNetwork, cm.cluster.Spec.Cloud.Project)
+	r1, err := cm.conn.computeService.Networks.Get(cm.cluster.Spec.Cloud.Project, defaultNetwork).Do()
+	Logger(cm.ctx).Debug("Retrieve network result", r1, err)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (cm *ClusterManager) getFirewallRules() (bool, error) {
+	ruleInternal := defaultNetwork + "-allow-internal"
+	Logger(cm.ctx).Infof("Retrieving firewall rule %v", ruleInternal)
+	if r1, err := cm.conn.computeService.Firewalls.Get(cm.cluster.Spec.Cloud.Project, ruleInternal).Do(); err != nil {
+		Logger(cm.ctx).Debug("Retrieved firewall rule", r1, err)
+		return false, err
+	}
+
+	ruleSSH := defaultNetwork + "-allow-ssh"
+	if r2, err := cm.conn.computeService.Firewalls.Get(cm.cluster.Spec.Cloud.Project, ruleSSH).Do(); err != nil {
+		Logger(cm.ctx).Debug("Retrieved firewall rule", r2, err)
+		return false, err
+	}
+	ruleHTTPS := cm.cluster.Spec.KubernetesMasterName + "-https"
+	if r3, err := cm.conn.computeService.Firewalls.Get(cm.cluster.Spec.Cloud.Project, ruleHTTPS).Do(); err != nil {
+		Logger(cm.ctx).Debug("Retrieved firewall rule", r3, err)
+
+	}
+	return true, nil
+}
 
 func (cm *ClusterManager) ensureFirewallRules() error {
 	network := fmt.Sprintf("projects/%v/global/networks/%v", cm.cluster.Spec.Cloud.Project, defaultNetwork)
@@ -358,23 +390,27 @@ func (cm *ClusterManager) createDisk(name, diskType string, sizeGb int64) (strin
 
 	dType := fmt.Sprintf("projects/%v/zones/%v/diskTypes/%v", cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, diskType)
 
-	r1, err := cm.conn.computeService.Disks.Insert(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, &compute.Disk{
-		Name:   name,
-		Zone:   cm.cluster.Spec.Cloud.Zone,
-		Type:   dType,
-		SizeGb: sizeGb,
-	}).Do()
+	if r, err := cm.conn.computeService.Disks.Get(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, name).Do(); err != nil {
+		fmt.Println(r, err)
+		r1, err := cm.conn.computeService.Disks.Insert(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, &compute.Disk{
+			Name:   name,
+			Zone:   cm.cluster.Spec.Cloud.Zone,
+			Type:   dType,
+			SizeGb: sizeGb,
+		}).Do()
 
-	Logger(cm.ctx).Debug("Created master disk", r1, err)
-	if err != nil {
-		return name, errors.FromErr(err).WithContext(cm.ctx).Err()
+		Logger(cm.ctx).Debug("Created master disk", r1, err)
+		if err != nil {
+			return name, errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		err = cm.conn.waitForZoneOperation(r1.Name)
+		if err != nil {
+			return name, errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		Logger(cm.ctx).Infof("Blank disk of type %v created before creating the master VM", dType)
+		return name, nil
 	}
-	err = cm.conn.waitForZoneOperation(r1.Name)
-	if err != nil {
-		return name, errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	Logger(cm.ctx).Infof("Blank disk of type %v created before creating the master VM", dType)
-	return name, nil
+	return "", nil
 }
 
 func (cm *ClusterManager) reserveIP() error {
