@@ -27,6 +27,7 @@ func ExportClientsCorsPatterns() []runtime.Pattern {
 		pattern_Clients_UnregisterPersistentVolume_0,
 		pattern_Clients_RegisterPersistentVolumeClaim_0,
 		pattern_Clients_UnregisterPersistentVolumeClaim_0,
+		pattern_Clients_ReverseIndex_0,
 	}
 }
 
