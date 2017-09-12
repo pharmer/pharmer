@@ -7,13 +7,13 @@ import (
 
 func GetSupportedResource(resource string) (string, error) {
 	switch strings.ToLower(resource) {
-	case strings.ToLower("cluster"):
-		return "*api.Cluster", nil
+	case "cluster":
+		return "cluster", nil
 	default:
 		return "", fmt.Errorf(`pharmer doesn't support a resource type "%v"`, resource)
 	}
 }
 
 func GetAllSupportedResources() []string {
-	return []string{"*api.Cluster"}
+	return []string{"cluster"}
 }

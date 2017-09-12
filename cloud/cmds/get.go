@@ -99,7 +99,7 @@ func RunGet(ctx context.Context, cmd *cobra.Command, out, errOut io.Writer, args
 		items := strings.Split(r, "/")
 		kind := items[0]
 		switch kind {
-		case "*api.Cluster":
+		case "cluster":
 			if len(items) > 1 {
 				objects = []string{items[1]}
 			} else {
