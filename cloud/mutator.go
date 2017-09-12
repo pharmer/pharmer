@@ -189,18 +189,3 @@ type Miner struct {
 	Count int64
 	Extra interface{}
 }
-
-// IGM
-type NodeGroupManager struct {
-	ContextVersion int64
-	Sku            string
-	SpotInstance   bool
-	Master         bool
-
-	Count int64
-	Extra interface{}
-}
-
-func (igm *NodeGroupManager) Execute() {
-
-}
