@@ -67,6 +67,7 @@ func ShortHumanDuration(d time.Duration) string {
 
 func (h *HumanReadablePrinter) addDefaultHandlers() {
 	h.Handler(h.printCluster)
+	h.Handler(h.printNodeGroup)
 }
 
 func (h *HumanReadablePrinter) Handler(printFunc interface{}) error {
@@ -111,6 +112,9 @@ func getColumns(options PrintOptions, t reflect.Type) []string {
 		columns = append(columns, "ZONE")
 		columns = append(columns, "VERSION")
 		columns = append(columns, "RUNNING SINCE")
+	case "*api.NodeGroup":
+		columns = append(columns, "Node")
+		columns = append(columns, "SKU")
 	}
 	return columns
 }
@@ -137,6 +141,23 @@ func (h *HumanReadablePrinter) printCluster(item *api.Cluster, w io.Writer, opti
 
 	PrintNewline(w)
 
+	return
+}
+
+func (h *HumanReadablePrinter) printNodeGroup(item *api.NodeGroup, w io.Writer, options PrintOptions) (err error) {
+	name := item.Name
+
+	if _, err = fmt.Fprintf(w, "%s\t", name); err != nil {
+		return
+	}
+
+	if _, err = fmt.Fprintf(w, "%v\t", item.Spec.Nodes); err != nil {
+		return
+	}
+	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.Template.Spec.SKU); err != nil {
+		return
+	}
+	PrintNewline(w)
 	return
 }
 
