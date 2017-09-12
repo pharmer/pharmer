@@ -62,6 +62,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	// Init object meta
 	cluster.ObjectMeta.UID = phid.NewKubeCluster()
 	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
+	cluster.ObjectMeta.Generation = time.Now().UnixNano()
 	api.AssignTypeKind(cluster)
 
 	// Init spec
