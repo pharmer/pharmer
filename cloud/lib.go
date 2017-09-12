@@ -74,6 +74,7 @@ func Update(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 		return nil, fmt.Errorf("Cluster `%s` does not exist. Reason: %v", cluster.Name, err)
 	}
 	cluster.Status = existing.Status
+	cluster.Generation = time.Now().UnixNano()
 
 	return Store(ctx).Clusters().Update(cluster)
 }

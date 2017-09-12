@@ -24,23 +24,23 @@ type NodeGroupStatus struct {
 	// Nodes is the most recently oberved number of nodes.
 	Nodes int32 `json:"nodes" protobuf:"varint,1,opt,name=nodes"`
 
-	// The number of pods that have labels matching the labels of the pod template of the node set.
+	// The number of pods that have labels matching the labels of the pod template of the node group.
 	// +optional
 	FullyLabeledNodes int32 `json:"fullyLabeledNodes,omitempty" protobuf:"varint,2,opt,name=fullyLabeledNodes"`
 
-	// The number of ready nodes for this node set.
+	// The number of ready nodes for this node group.
 	// +optional
 	ReadyNodes int32 `json:"readyNodes,omitempty" protobuf:"varint,4,opt,name=readyNodes"`
 
-	// The number of available nodes (ready for at least minReadySeconds) for this node set.
+	// The number of available nodes (ready for at least minReadySeconds) for this node group.
 	// +optional
 	AvailableNodes int32 `json:"availableNodes,omitempty" protobuf:"varint,5,opt,name=availableNodes"`
 
-	// ObservedGeneration reflects the generation of the most recently observed ReplicaSet.
+	// ObservedGeneration reflects the generation of the most recently observed node group.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,3,opt,name=observedGeneration"`
 
-	// Represents the latest available observations of a node set's current state.
+	// Represents the latest available observations of a node group's current state.
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge
@@ -49,14 +49,14 @@ type NodeGroupStatus struct {
 
 type NodeGroupConditionType string
 
-// These are valid conditions of a deployment.
+// These are valid conditions of a node group.
 const (
-	// Available means the deployment is available, ie. at least the minimum available
+	// Available means the node group is available, ie. at least the minimum available
 	// nodes required are up and running for at least minReadySeconds.
 	NodeGroupAvailable NodeGroupConditionType = "Available"
 	// Progressing means the deployment is progressing. Progress for a deployment is
-	// considered when a new node set is created or adopted, and when new nodes scale
-	// up or old nodes scale down. Progress is not estimated for paused deployments or
+	// considered when a new node group is created or adopted, and when new nodes scale
+	// up or old nodes scale down. Progress is not estimated for paused node groups or
 	// when progressDeadlineSeconds is not specified.
 	NodeGroupProgressing NodeGroupConditionType = "Progressing"
 	// ReplicaFailure is added in a deployment when one of its nodes fails to be created
