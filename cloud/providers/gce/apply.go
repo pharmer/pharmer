@@ -64,9 +64,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
-	if err = cm.ensureFirewallRules(); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+
+	if found, _ := cm.getFirewallRules(); !found {
+		if err = cm.ensureFirewallRules(); err != nil {
+			cm.cluster.Status.Reason = err.Error()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
 	}
 
 	nodeGroups, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
@@ -76,19 +79,23 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 
 	for _, node := range nodeGroups {
 		if node.IsMaster() {
-			cm.cluster.Spec.MasterDiskId, err = cm.createDisk(cm.namer.MasterPDName(), node.Spec.Template.Spec.DiskType, node.Spec.Template.Spec.DiskSize)
-			if err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				return errors.FromErr(err).WithContext(cm.ctx).Err()
+			if found, _ := cm.getMasterPDDisk(cm.namer.MasterPDName()); !found {
+				cm.cluster.Spec.MasterDiskId, err = cm.createDisk(cm.namer.MasterPDName(), node.Spec.Template.Spec.DiskType, node.Spec.Template.Spec.DiskSize)
+				if err != nil {
+					cm.cluster.Status.Reason = err.Error()
+					return errors.FromErr(err).WithContext(cm.ctx).Err()
+				}
 			}
 			cm.cluster.Spec.MasterSKU = node.Spec.Template.Spec.SKU
 			break
 		}
 	}
 
-	if err = cm.reserveIP(); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if found, _ := cm.getReserveIP(); !found {
+		if err = cm.reserveIP(); err != nil {
+			cm.cluster.Status.Reason = err.Error()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
 	}
 
 	// needed for master start-up config
@@ -115,48 +122,78 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//	ig.Spec.SKU = "n1-standard-32"
 	//}
 
-	op1, err := cm.createMasterIntance()
+	if found, _ := cm.getMasterInstance(); !found {
+		op1, err := cm.createMasterIntance()
 
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	err = cm.conn.waitForZoneOperation(op1)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		if err != nil {
+			cm.cluster.Status.Reason = err.Error()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		err = cm.conn.waitForZoneOperation(op1)
+		if err != nil {
+			cm.cluster.Status.Reason = err.Error()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		masterInstance, err := cm.getInstance(cm.cluster.Spec.KubernetesMasterName)
+		if err != nil {
+			cm.cluster.Status.Reason = err.Error()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		masterInstance.Spec.Role = api.RoleMaster
+		cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
+		cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
+		fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP)
+		Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
+
+		err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
+		if err != nil {
+			cm.cluster.Status.Reason = err.Error()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+
+		Logger(cm.ctx).Info("Waiting for cluster initialization")
+
+		// Wait for master A record to propagate
+		if err := EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
+			cm.cluster.Status.Reason = err.Error()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		// wait for nodes to start
+		if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+			cm.cluster.Status.Reason = err.Error()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		// -------------------------------------------------------------------------------------------------------------
+
+		time.Sleep(time.Minute * 1)
+		Store(cm.ctx).Instances(cm.cluster.Name).Update(masterInstance)
+	} else {
+		masterInstance, err := cm.getInstance(cm.cluster.Spec.KubernetesMasterName)
+		if err != nil {
+			cm.cluster.Status.Reason = err.Error()
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		masterInstance.Spec.Role = api.RoleMaster
+		cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
+		cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 	}
 
-	masterInstance, err := cm.getInstance(cm.cluster.Spec.KubernetesMasterName)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	masterInstance.Spec.Role = api.RoleMaster
-	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
-	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
-	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP)
-	Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
-
-	err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
 	// needed for node start-up config to get master_internal_ip
 	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	// Use zone operation to wait and block.
-	if op2, err := cm.createNodeFirewallRule(); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	} else {
-		if err = cm.conn.waitForGlobalOperation(op2); err != nil {
+	if found, _ := cm.getNodeFirewallRule(); !found {
+		// Use zone operation to wait and block.
+		if op2, err := cm.createNodeFirewallRule(); err != nil {
 			cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		} else {
+			if err = cm.conn.waitForGlobalOperation(op2); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				return errors.FromErr(err).WithContext(cm.ctx).Err()
+			}
 		}
 	}
 	//for _, ng := range req.NodeGroups {
@@ -177,22 +214,6 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//	}
 	//	igm.AdjustNodeGroup()
 	//}
-	Logger(cm.ctx).Info("Waiting for cluster initialization")
-
-	// Wait for master A record to propagate
-	if err := EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	// wait for nodes to start
-	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	// -------------------------------------------------------------------------------------------------------------
-
-	time.Sleep(time.Minute * 1)
-	Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 
 	for _, node := range nodeGroups {
 		if node.IsMaster() {
@@ -215,6 +236,17 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		}
 		igm.AdjustNodeGroup()
 	}
+
+	for _, ng := range nodeGroups {
+		instances, err := cm.listInstances(cm.namer.NodeGroupName(ng.Spec.Template.Spec.SKU))
+		if err != nil {
+			fmt.Println(err, "<><>...")
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		for _, node := range instances {
+			Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
+		}
+	}
 	//for _, ng := range req.NodeGroups {
 	//	instances, err := cm.listInstances(cm.namer.NodeGroupName(ng.Sku))
 	//	if err != nil {
@@ -227,6 +259,8 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//}
 
 	cm.cluster.Status.Phase = api.ClusterReady
+	Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	Store(cm.ctx).Clusters().Update(cm.cluster)
 	return nil
 }
 
@@ -254,22 +288,6 @@ func (cm *ClusterManager) importPublicKey() error {
 	return nil
 }
 
-func (cm *ClusterManager) ensureNetworks() error {
-	Logger(cm.ctx).Infof("Retrieving network %v for project %v", defaultNetwork, cm.cluster.Spec.Cloud.Project)
-	if r1, err := cm.conn.computeService.Networks.Get(cm.cluster.Spec.Cloud.Project, defaultNetwork).Do(); err != nil {
-		Logger(cm.ctx).Debug("Retrieve network result", r1, err)
-		r2, err := cm.conn.computeService.Networks.Insert(cm.cluster.Spec.Cloud.Project, &compute.Network{
-			IPv4Range: "10.240.0.0/16",
-			Name:      defaultNetwork,
-		}).Do()
-		Logger(cm.ctx).Debug("Created new network", r2, err)
-		if err != nil {
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		Logger(cm.ctx).Infof("New network %v is created", defaultNetwork)
-	}
-	return nil
-}
 func (cm *ClusterManager) getNetworks() (bool, error) {
 	Logger(cm.ctx).Infof("Retrieving network %v for project %v", defaultNetwork, cm.cluster.Spec.Cloud.Project)
 	r1, err := cm.conn.computeService.Networks.Get(cm.cluster.Spec.Cloud.Project, defaultNetwork).Do()
@@ -278,6 +296,21 @@ func (cm *ClusterManager) getNetworks() (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func (cm *ClusterManager) ensureNetworks() error {
+	Logger(cm.ctx).Infof("Retrieving network %v for project %v", defaultNetwork, cm.cluster.Spec.Cloud.Project)
+	r2, err := cm.conn.computeService.Networks.Insert(cm.cluster.Spec.Cloud.Project, &compute.Network{
+		IPv4Range: "10.240.0.0/16",
+		Name:      defaultNetwork,
+	}).Do()
+	Logger(cm.ctx).Debug("Created new network", r2, err)
+	if err != nil {
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+	Logger(cm.ctx).Infof("New network %v is created", defaultNetwork)
+
+	return nil
 }
 
 func (cm *ClusterManager) getFirewallRules() (bool, error) {
@@ -296,6 +329,7 @@ func (cm *ClusterManager) getFirewallRules() (bool, error) {
 	ruleHTTPS := cm.cluster.Spec.KubernetesMasterName + "-https"
 	if r3, err := cm.conn.computeService.Firewalls.Get(cm.cluster.Spec.Cloud.Project, ruleHTTPS).Do(); err != nil {
 		Logger(cm.ctx).Debug("Retrieved firewall rule", r3, err)
+		return false, err
 
 	}
 	return true, nil
@@ -384,49 +418,66 @@ func (cm *ClusterManager) ensureFirewallRules() error {
 	return nil
 }
 
+func (cm *ClusterManager) getMasterPDDisk(name string) (bool, error) {
+	if r, err := cm.conn.computeService.Disks.Get(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, name).Do(); err != nil {
+		Logger(cm.ctx).Debug("Retrieved master persistant disk", r, err)
+		return false, err
+	}
+	cm.cluster.Spec.MasterDiskId = name
+	return true, nil
+}
+
 func (cm *ClusterManager) createDisk(name, diskType string, sizeGb int64) (string, error) {
 	// Type:        "https://www.googleapis.com/compute/v1/projects/tigerworks-kube/zones/us-central1-b/diskTypes/pd-ssd",
 	// SourceImage: "https://www.googleapis.com/compute/v1/projects/google-containers/global/images/container-vm-v20150806",
 
 	dType := fmt.Sprintf("projects/%v/zones/%v/diskTypes/%v", cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, diskType)
 
-	if r, err := cm.conn.computeService.Disks.Get(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, name).Do(); err != nil {
-		fmt.Println(r, err)
-		r1, err := cm.conn.computeService.Disks.Insert(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, &compute.Disk{
-			Name:   name,
-			Zone:   cm.cluster.Spec.Cloud.Zone,
-			Type:   dType,
-			SizeGb: sizeGb,
-		}).Do()
+	r1, err := cm.conn.computeService.Disks.Insert(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, &compute.Disk{
+		Name:   name,
+		Zone:   cm.cluster.Spec.Cloud.Zone,
+		Type:   dType,
+		SizeGb: sizeGb,
+	}).Do()
 
-		Logger(cm.ctx).Debug("Created master disk", r1, err)
-		if err != nil {
-			return name, errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		err = cm.conn.waitForZoneOperation(r1.Name)
-		if err != nil {
-			return name, errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		Logger(cm.ctx).Infof("Blank disk of type %v created before creating the master VM", dType)
-		return name, nil
+	Logger(cm.ctx).Debug("Created master disk", r1, err)
+	if err != nil {
+		return name, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	return "", nil
+	err = cm.conn.waitForZoneOperation(r1.Name)
+	if err != nil {
+		return name, errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+	Logger(cm.ctx).Infof("Blank disk of type %v created before creating the master VM", dType)
+	return name, nil
 }
 
-func (cm *ClusterManager) reserveIP() error {
+func (cm *ClusterManager) getReserveIP() (bool, error) {
+	Logger(cm.ctx).Infof("Checking existence of reserved master ip ")
 	if cm.cluster.Spec.MasterReservedIP == "auto" {
 		name := cm.namer.ReserveIPName()
 
 		Logger(cm.ctx).Infof("Checking existence of reserved master ip %v", name)
 		if r1, err := cm.conn.computeService.Addresses.Get(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Region, name).Do(); err == nil {
 			if r1.Status == "IN_USE" {
-				return fmt.Errorf("Found a static IP with name %v in use. Failed to reserve a new ip with the same name.", name)
+				return true, fmt.Errorf("Found a static IP with name %v in use. Failed to reserve a new ip with the same name.", name)
 			}
 
 			Logger(cm.ctx).Debug("Found master IP was already reserved", r1, err)
 			cm.cluster.Spec.MasterReservedIP = r1.Address
 			Logger(cm.ctx).Infof("Newly reserved master ip %v", cm.cluster.Spec.MasterReservedIP)
-			return nil
+			return true, nil
+		}
+	}
+	return false, nil
+
+}
+
+func (cm *ClusterManager) reserveIP() error {
+	if cm.cluster.Spec.MasterReservedIP == "auto" {
+		name := cm.namer.ReserveIPName()
+		if _, err := cm.getReserveIP(); err != nil {
+			return err
 		}
 
 		Logger(cm.ctx).Infof("Reserving master ip %v", name)
@@ -452,12 +503,20 @@ func (cm *ClusterManager) reserveIP() error {
 	return nil
 }
 
+func (cm *ClusterManager) getMasterInstance() (bool, error) {
+	if r1, err := cm.conn.computeService.Instances.Get(cm.cluster.Spec.Cloud.Project, cm.cluster.Spec.Cloud.Zone, cm.cluster.Spec.KubernetesMasterName).Do(); err != nil {
+		Logger(cm.ctx).Debug("Retrieved master instance", r1, err)
+		return false, err
+	}
+	return true, nil
+}
+
 func (cm *ClusterManager) createMasterIntance() (string, error) {
 	// MachineType:  "projects/tigerworks-kube/zones/us-central1-b/machineTypes/n1-standard-1",
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
 	// startupScript := cm.RenderStartupScript(cm.cluster, cm.cluster.Spec.MasterSKU, api.RoleKubernetesMaster)
-	startupScript, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster)
+	startupScript, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, cm.cluster.Spec.MasterSKU)
 	if err != nil {
 		return "", err
 	}
@@ -650,6 +709,15 @@ func (cm *ClusterManager) newKubeInstance(r1 *compute.Instance) (*api.Node, erro
 	return nil, errors.New("Failed to convert gcloud instance to KubeInstance.").WithContext(cm.ctx).Err() //stackerr.New("Failed to convert gcloud instance to KubeInstance.")
 }
 
+func (cm *ClusterManager) getNodeFirewallRule() (bool, error) {
+	name := cm.cluster.Name + "-node-all"
+	if r1, err := cm.conn.computeService.Firewalls.Get(cm.cluster.Spec.Cloud.Project, name).Do(); err != nil {
+		Logger(cm.ctx).Debug("Retrieved node firewall rule", r1, err)
+		return false, err
+	}
+	return true, nil
+}
+
 func (cm *ClusterManager) createNodeFirewallRule() (string, error) {
 	name := cm.cluster.Name + "-node-all"
 	network := fmt.Sprintf("projects/%v/global/networks/%v", cm.cluster.Spec.Cloud.Project, defaultNetwork)
@@ -706,7 +774,7 @@ func (cm *ClusterManager) createNodeInstanceTemplate(sku string) (string, error)
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
 	//  }
 
-	startupScript, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleNode)
+	startupScript, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleNode, sku)
 	if err != nil {
 		return "", err
 	}

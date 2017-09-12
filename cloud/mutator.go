@@ -37,7 +37,7 @@ type InstanceController struct {
 	Client clientset.Interface
 }
 
-func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instance) (int64, error) {
+func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instance, nodeGroup string) (int64, error) {
 	kc, err := NewAdminClient(ctx, cluster)
 	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
@@ -49,7 +49,8 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 
 	for _, n := range nodes.Items {
 		nl := api.FromMap(n.GetLabels())
-		if nl.GetString(api.NodeLabelKey_NodeGroup) != (expectedInstance.Type.Sku + "-pool") {
+		fmt.Println(nl.GetString(api.NodeLabelKey_NodeGroup), "*************************", nodeGroup)
+		if nl.GetString(api.NodeLabelKey_NodeGroup) != nodeGroup {
 			continue
 		}
 		k := InstanceType{

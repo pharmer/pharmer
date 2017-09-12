@@ -27,9 +27,10 @@ type TemplateData struct {
 	MasterConfiguration string
 	CloudConfigPath     string
 	CloudConfig         string
+	NodeGroupName       string
 }
 
-func GetTemplateData(ctx context.Context, cluster *api.Cluster) TemplateData {
+func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string) TemplateData {
 	td := TemplateData{
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		KubeadmVersion:    cluster.Spec.KubeadmVersion,
@@ -39,6 +40,7 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster) TemplateData {
 		APIServerHost:     cluster.APIServerHost(),
 		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
 		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
+		NodeGroupName:     nodeGroup,
 	}
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
@@ -111,9 +113,9 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster) TemplateData {
 	return td
 }
 
-func RenderStartupScript(ctx context.Context, cluster *api.Cluster, role string) (string, error) {
+func RenderStartupScript(ctx context.Context, cluster *api.Cluster, role, nodeGroup string) (string, error) {
 	var buf bytes.Buffer
-	if err := StartupScriptTemplate.ExecuteTemplate(&buf, role, GetTemplateData(ctx, cluster)); err != nil {
+	if err := StartupScriptTemplate.ExecuteTemplate(&buf, role, GetTemplateData(ctx, cluster, nodeGroup)); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
@@ -242,6 +244,13 @@ apt-get install -y \
 
 systemctl enable docker
 systemctl start docker
+
+cat > /etc/systemd/system/kubelet.service.d/20-label-taints.conf <<EOF
+[Service]
+Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }}"
+EOF
+systemctl daemon-reload
+systemctl restart kubelet
 
 kubeadm reset
 kubeadm join --token={{ .KubeadmToken }} {{ .APIServerHost }}:6443

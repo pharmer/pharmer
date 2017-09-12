@@ -17,7 +17,7 @@ type NodeGroupManager struct {
 
 func (igm *NodeGroupManager) AdjustNodeGroup() error {
 	instanceGroupName := igm.cm.namer.NodeGroupName(igm.instance.Type.Sku)
-	adjust, err := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
+	adjust, err := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
 	fmt.Println(err, igm.cm.cluster.Spec.Cloud.Project)
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
 	//igm.cm.cluster, _ = Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
@@ -86,7 +86,7 @@ func (igm *NodeGroupManager) createNodeInstanceTemplate(sku string) (string, err
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
 	//  }
 
-	startupScript, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
+	startupScript, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode, igm.cm.namer.NodeGroupName(sku))
 	if err != nil {
 		return "", err
 	}
