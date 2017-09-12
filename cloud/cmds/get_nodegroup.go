@@ -1,9 +1,9 @@
 package cmds
 
 import (
+	"context"
 	"io"
 
-	"context"
 	"github.com/appscode/log"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
@@ -61,12 +61,12 @@ func RunGetNodeGroup(ctx context.Context, cmd *cobra.Command, out, errOut io.Wri
 		}
 	}
 
-	for i, cluster := range clusterList {
+	for _, cluster := range clusterList {
 		nodegroups, err := getNodeGroupList(ctx, cluster, args)
 		if err != nil {
 			return err
 		}
-		if len(nodegroups) ==0 {
+		if len(nodegroups) == 0 {
 			continue
 		}
 
@@ -77,10 +77,6 @@ func RunGetNodeGroup(ctx context.Context, cmd *cobra.Command, out, errOut io.Wri
 			if rPrinter.IsGeneric() {
 				printer.PrintNewline(w)
 			}
-		}
-
-		if i+1 != len(clusterList) {
-			printer.PrintNewline(w)
 		}
 	}
 

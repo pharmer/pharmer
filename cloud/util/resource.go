@@ -2,8 +2,9 @@ package util
 
 import (
 	"fmt"
-	"github.com/appscode/pharmer/api"
 	"strings"
+
+	"github.com/appscode/pharmer/api"
 )
 
 func GetSupportedResource(resource string) (string, error) {

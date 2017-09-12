@@ -17,6 +17,7 @@ func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.Node
 	ig := api.NodeGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              "master",
+			ClusterName:       cluster.Name,
 			UID:               phid.NewNodeGroup(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 			Labels: map[string]string{

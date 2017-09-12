@@ -48,6 +48,7 @@ func NewCmdCreateCluster() *cobra.Command {
 				ig := api.NodeGroup{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:              sku + "-pool",
+						ClusterName:       cluster.Name,
 						UID:               phid.NewNodeGroup(),
 						CreationTimestamp: metav1.Time{Time: time.Now()},
 						Labels: map[string]string{

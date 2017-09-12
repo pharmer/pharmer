@@ -1,8 +1,9 @@
 package cmds
 
 import (
-	"github.com/spf13/cobra"
 	"io"
+
+	"github.com/spf13/cobra"
 )
 
 func NewCmdGet(out, errOut io.Writer) *cobra.Command {

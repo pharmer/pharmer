@@ -8,7 +8,7 @@ func NewCmdCreate() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "create",
 		DisableAutoGenTag: true,
-		Run: func(cmd *cobra.Command, args []string) {},
+		Run:               func(cmd *cobra.Command, args []string) {},
 	}
 
 	cmd.AddCommand(NewCmdCreateCluster())

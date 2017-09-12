@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"flag"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -17,7 +18,6 @@ import (
 	"github.com/jpillora/go-ogle-analytics"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"io"
 )
 
 const (

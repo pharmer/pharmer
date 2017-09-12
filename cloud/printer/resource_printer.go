@@ -31,7 +31,7 @@ type handlerEntry struct {
 }
 
 type PrintOptions struct {
-	Wide          bool
+	Wide bool
 }
 
 type HumanReadablePrinter struct {
@@ -113,6 +113,7 @@ func getColumns(options PrintOptions, t reflect.Type) []string {
 		columns = append(columns, "VERSION")
 		columns = append(columns, "RUNNING SINCE")
 	case "*api.NodeGroup":
+		columns = append(columns, "Cluster")
 		columns = append(columns, "Node")
 		columns = append(columns, "SKU")
 	}
@@ -148,6 +149,10 @@ func (h *HumanReadablePrinter) printNodeGroup(item *api.NodeGroup, w io.Writer, 
 	name := item.Name
 
 	if _, err = fmt.Fprintf(w, "%s\t", name); err != nil {
+		return
+	}
+
+	if _, err = fmt.Fprintf(w, "%s\t", item.ClusterName); err != nil {
 		return
 	}
 
