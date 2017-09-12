@@ -1,7 +1,6 @@
 package printer
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"reflect"
@@ -12,7 +11,6 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -68,7 +66,7 @@ func ShortHumanDuration(d time.Duration) string {
 }
 
 func (h *HumanReadablePrinter) addDefaultHandlers() {
-	h.Handler(h.printElastic)
+	h.Handler(h.printCluster)
 }
 
 func (h *HumanReadablePrinter) Handler(printFunc interface{}) error {
@@ -117,7 +115,7 @@ func getColumns(options PrintOptions, t reflect.Type) []string {
 	return columns
 }
 
-func (h *HumanReadablePrinter) printElastic(item *api.Cluster, w io.Writer, options PrintOptions) (err error) {
+func (h *HumanReadablePrinter) printCluster(item *api.Cluster, w io.Writer, options PrintOptions) (err error) {
 	name := item.Name
 
 	if _, err = fmt.Fprintf(w, "%s\t", name); err != nil {
@@ -137,6 +135,8 @@ func (h *HumanReadablePrinter) printElastic(item *api.Cluster, w io.Writer, opti
 		return
 	}
 
+	PrintNewline(w)
+
 	return
 }
 
@@ -152,7 +152,7 @@ func (h *HumanReadablePrinter) PrintObj(obj runtime.Object, output io.Writer) er
 		if t != h.lastType {
 			headers := getColumns(h.options, t)
 			if h.lastType != nil {
-				printNewline(w)
+				PrintNewline(w)
 			}
 			h.printHeader(headers, w)
 			h.lastType = t
@@ -177,7 +177,7 @@ func (h *HumanReadablePrinter) AfterPrint(io.Writer, string) error {
 }
 
 func (h *HumanReadablePrinter) IsGeneric() bool {
-	return true
+	return false
 }
 
 func (h *HumanReadablePrinter) printHeader(columnNames []string, w io.Writer) error {
@@ -187,31 +187,11 @@ func (h *HumanReadablePrinter) printHeader(columnNames []string, w io.Writer) er
 	return nil
 }
 
-func printNewline(w io.Writer) error {
+func PrintNewline(w io.Writer) error {
 	if _, err := fmt.Fprintf(w, "\n"); err != nil {
 		return err
 	}
 	return nil
-}
-
-func formatResourceName(kind, name string, withKind bool) string {
-	if !withKind || kind == "" {
-		return name
-	}
-
-	return kind + "/" + name
-}
-
-func appendAllLabels(showLabels bool, itemLabels map[string]string) string {
-	var buffer bytes.Buffer
-
-	if showLabels {
-		buffer.WriteString(fmt.Sprint("\t"))
-		buffer.WriteString(labels.FormatLabels(itemLabels))
-	}
-	buffer.WriteString("\n")
-
-	return buffer.String()
 }
 
 func TranslateTimestamp(timestamp metav1.Time) string {

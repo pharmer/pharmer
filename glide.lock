@@ -1,5 +1,5 @@
-hash: 9c6e248bea1201266c8557a72e688a5e42875f48322f26208a10a906143faec6
-updated: 2017-09-11T22:27:11.271982139-07:00
+hash: 1e2cd7e17ea99f0a8bfeb20f3d42004e19405f88355f07fe8ef66fbc5c88af9f
+updated: 2017-09-12T12:14:30.640367874+06:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -192,6 +192,8 @@ imports:
   version: dcef7f55730566d41eae5db10e7d6981829720f6
 - name: github.com/facebookgo/stack
   version: 751773369052141c013c6e827a71e8f35c07879c
+- name: github.com/fatih/camelcase
+  version: f6a740d52f961c60348ebb109adde9f4635d7540
 - name: github.com/fatih/color
   version: 9aae6aaa22315390f03959adca2c4d395b02fcef
 - name: github.com/ghodss/yaml
@@ -347,7 +349,7 @@ imports:
   subpackages:
   - doc
 - name: github.com/spf13/pflag
-  version: 0f53e09b6e0414581a4e540b3731ea7aa721e7fe
+  version: 8f62c03454809f9fe034ed3b4f564dfd50e7067b
   repo: https://github.com/appscode/pflag.git
   vcs: git
 - name: github.com/tamalsaha/go-oneliners
@@ -631,6 +633,8 @@ imports:
   subpackages:
   - cmd/kubeadm/app/apis/kubeadm/v1alpha1
   - cmd/kubeadm/app/constants
+  - pkg/printers
+  - pkg/util/slice
   - pkg/util/version
 testImports:
 - name: github.com/onsi/ginkgo
