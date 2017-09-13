@@ -16,6 +16,7 @@ import (
 func NewCmdGetNodeGroup(out, errOut io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "nodegroup",
+		Aliases:           []string{"ng"},
 		Short:             "Get a Kubernetes cluster NodeGroup",
 		Example:           "pharmer get nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,
@@ -78,6 +79,8 @@ func RunGetNodeGroup(ctx context.Context, cmd *cobra.Command, out, errOut io.Wri
 				printer.PrintNewline(w)
 			}
 		}
+
+		rPrinter.(*printer.HumanReadablePrinter).PrintHeader(true)
 	}
 
 	w.Flush()

@@ -35,16 +35,17 @@ type PrintOptions struct {
 }
 
 type HumanReadablePrinter struct {
-	handlerMap   map[reflect.Type]*handlerEntry
-	options      PrintOptions
-	lastType     reflect.Type
-	hiddenObjNum int
+	handlerMap        map[reflect.Type]*handlerEntry
+	options           PrintOptions
+	lastType          reflect.Type
+	enablePrintHeader bool
 }
 
 func NewHumanReadablePrinter(options PrintOptions) *HumanReadablePrinter {
 	printer := &HumanReadablePrinter{
-		handlerMap: make(map[reflect.Type]*handlerEntry),
-		options:    options,
+		handlerMap:        make(map[reflect.Type]*handlerEntry),
+		options:           options,
+		enablePrintHeader: true,
 	}
 	printer.addDefaultHandlers()
 	return printer
@@ -68,6 +69,10 @@ func ShortHumanDuration(d time.Duration) string {
 func (h *HumanReadablePrinter) addDefaultHandlers() {
 	h.Handler(h.printCluster)
 	h.Handler(h.printNodeGroup)
+}
+
+func (h *HumanReadablePrinter) PrintHeader(enable bool) {
+	h.enablePrintHeader = enable
 }
 
 func (h *HumanReadablePrinter) Handler(printFunc interface{}) error {
@@ -175,13 +180,15 @@ func (h *HumanReadablePrinter) PrintObj(obj runtime.Object, output io.Writer) er
 
 	t := reflect.TypeOf(obj)
 	if handler := h.handlerMap[t]; handler != nil {
-		if t != h.lastType {
+
+		if t != h.lastType || h.enablePrintHeader {
 			headers := getColumns(h.options, t)
 			if h.lastType != nil {
 				PrintNewline(w)
 			}
 			h.printHeader(headers, w)
 			h.lastType = t
+			h.enablePrintHeader = false
 		}
 		args := []reflect.Value{reflect.ValueOf(obj), reflect.ValueOf(w), reflect.ValueOf(h.options)}
 		resultValue := handler.printFunc.Call(args)[0]
