@@ -44,6 +44,8 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 		log.Fatal(err)
 	}
 
+	fmt.Println("Expected Instance = ", expectedInstance, "**")
+
 	desiredNGs := make(map[InstanceType]GroupStats)
 	existingNGs := make(map[InstanceType]GroupStats)
 
@@ -54,12 +56,9 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 			continue
 		}
 		k := InstanceType{
-			ContextVersion: nl.GetInt64(api.NodeLabelKey_ContextVersion),
-			Sku:            nl.GetString(api.NodeLabelKey_SKU),
-			SpotInstance:   false,
-			Master:         nl.GetString(api.NodeLabelKey_Role) == "master",
-			DiskType:       expectedInstance.Type.DiskType,
-			DiskSize:       expectedInstance.Type.DiskSize,
+			Sku:          getSKUFromNG(cluster.Name, nl.GetString(api.NodeLabelKey_NodeGroup)),
+			SpotInstance: false,
+			Master:       nl.GetString(api.NodeLabelKey_Role) == "master",
 		}
 		if gs, found := existingNGs[k]; !found {
 			existingNGs[k] = GroupStats{
@@ -73,6 +72,9 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 
 	// compute diff
 	diffNGs := make(map[InstanceType]GroupStats)
+	for _, g := range existingNGs {
+		fmt.Println("--", g, "--")
+	}
 
 	if eGS, found := existingNGs[expectedInstance.Type]; found {
 		if expectedInstance.Stats.Count != eGS.Count {
@@ -148,6 +150,10 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 	// delete nodes
 	return adjust, nil
 
+}
+
+func getSKUFromNG(cluster, ng string) string {
+	return ng[len(cluster)+1:]
 }
 
 func GetExistingContextVersion(ctx context.Context, cluster *api.Cluster, sku string) (int64, error) {

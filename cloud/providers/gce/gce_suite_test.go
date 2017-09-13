@@ -93,3 +93,9 @@ func TestJson(t *testing.T) {
 	jsn, err := json.Marshal(crd)
 	fmt.Println(string(jsn), err)
 }
+
+func TestNG(t *testing.T) {
+	cluster := "g12"
+	ng := "g12-n1-standard-2"
+	fmt.Println(ng[len(cluster)+1:])
+}
