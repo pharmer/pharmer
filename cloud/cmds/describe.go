@@ -1,17 +1,18 @@
 package cmds
 
 import (
+	"io"
+
 	"github.com/spf13/cobra"
 )
 
-func NewCmdDelete() *cobra.Command {
+func NewCmdDescribe(out, errOut io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "delete",
+		Use:               "describe",
 		DisableAutoGenTag: true,
 		Run:               func(cmd *cobra.Command, args []string) {},
 	}
 
-	cmd.AddCommand(NewCmdDeleteCluster())
-	cmd.AddCommand(NewCmdDeleteNodeGroup())
+	cmd.AddCommand(NewCmdDescribeCluster(out, errOut))
 	return cmd
 }

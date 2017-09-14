@@ -15,7 +15,12 @@ import (
 
 func NewCmdGetCluster(out, errOut io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "cluster",
+		Use: api.ResourceNameCluster,
+		Aliases: []string{
+			api.ResourceTypeCluster,
+			api.ResourceCodeCluster,
+			api.ResourceKindCluster,
+		},
 		Short:             "Get a Kubernetes cluster",
 		Example:           "pharmer get cluster",
 		DisableAutoGenTag: true,

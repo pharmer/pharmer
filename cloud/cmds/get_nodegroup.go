@@ -15,8 +15,12 @@ import (
 
 func NewCmdGetNodeGroup(out, errOut io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "nodegroup",
-		Aliases:           []string{"ng"},
+		Use: api.ResourceNameNodeGroup,
+		Aliases: []string{
+			api.ResourceTypeNodeGroup,
+			api.ResourceCodeNodeGroup,
+			api.ResourceKindNodeGroup,
+		},
 		Short:             "Get a Kubernetes cluster NodeGroup",
 		Example:           "pharmer get nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,

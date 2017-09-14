@@ -3,17 +3,22 @@ package cmds
 import (
 	"context"
 
+	"github.com/appscode/go/flags"
 	"github.com/appscode/log"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"
-	"github.com/appscode/go/flags"
 )
 
 func NewCmdDeleteNodeGroup() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "nodegroup",
-		Aliases:           []string{"ng"},
+		Use: api.ResourceNameNodeGroup,
+		Aliases: []string{
+			api.ResourceTypeNodeGroup,
+			api.ResourceCodeNodeGroup,
+			api.ResourceKindNodeGroup,
+		},
 		Short:             "Delete a Kubernetes cluster NodeGroup",
 		Example:           "pharmer delete nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,

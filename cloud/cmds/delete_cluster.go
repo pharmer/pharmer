@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/appscode/log"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"
@@ -19,7 +20,12 @@ func NewCmdDeleteCluster() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:               "cluster",
+		Use: api.ResourceNameCluster,
+		Aliases: []string{
+			api.ResourceTypeCluster,
+			api.ResourceCodeCluster,
+			api.ResourceKindCluster,
+		},
 		Short:             "Delete a Kubernetes cluster",
 		Example:           "pharmer delete cluster demo-cluster",
 		DisableAutoGenTag: true,

@@ -64,6 +64,7 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 	rootCmd.AddCommand(cpCmd.NewCmdDelete())
 	rootCmd.AddCommand(cpCmd.NewCmdApply())
 	rootCmd.AddCommand(cpCmd.NewCmdGet(out, err))
+	rootCmd.AddCommand(cpCmd.NewCmdDescribe(out, err))
 	rootCmd.AddCommand(cpCmd.NewCmdUse())
 	rootCmd.AddCommand(cpCmd.NewCmdSSH())
 	rootCmd.AddCommand(cpCmd.NewCmdBackup())
