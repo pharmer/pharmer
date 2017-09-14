@@ -42,6 +42,7 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 					client.Send(ga.NewEvent(parts[0], strings.Join(parts[1:], "/")).Label(version))
 				}
 			}
+
 			files.Load(config.GetEnv(c.Flags()))
 
 			if cfgFile, setByUser := config.GetConfigFile(c.Flags()); !setByUser {
@@ -58,9 +59,10 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 	// ref: https://github.com/kubernetes/kubernetes/issues/17162#issuecomment-225596212
 	flag.CommandLine.Parse([]string{})
 
+	rootCmd.AddCommand(newCmdCreate(out, err))
+
 	rootCmd.AddCommand(credCmd.NewCmdCredential())
 	rootCmd.AddCommand(cfgCmd.NewCmdConfig())
-	rootCmd.AddCommand(cpCmd.NewCmdCreate())
 	rootCmd.AddCommand(cpCmd.NewCmdDelete())
 	rootCmd.AddCommand(cpCmd.NewCmdApply())
 	rootCmd.AddCommand(cpCmd.NewCmdGet(out, err))

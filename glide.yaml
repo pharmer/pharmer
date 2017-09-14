@@ -86,6 +86,8 @@ import:
   version: v1.2.0
 - package: github.com/appscode/mergo
   version: master
+- package: gopkg.in/AlecAivazis/survey.v1
+  version: master
 
 - package: github.com/facebookgo/stack
   version: 751773369052141c013c6e827a71e8f35c07879c

@@ -67,7 +67,7 @@ func RunGetNodeGroup(ctx context.Context, cmd *cobra.Command, out, errOut io.Wri
 	}
 
 	for _, cluster := range clusterList {
-		nodegroups, err := getNodeGroupList(ctx, cluster, args)
+		nodegroups, err := getNodeGroupList(ctx, cluster, args...)
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ func RunGetNodeGroup(ctx context.Context, cmd *cobra.Command, out, errOut io.Wri
 	return nil
 }
 
-func getNodeGroupList(ctx context.Context, cluster string, args []string) (nodeGroupList []*api.NodeGroup, err error) {
+func getNodeGroupList(ctx context.Context, cluster string, args ...string) (nodeGroupList []*api.NodeGroup, err error) {
 	if len(args) != 0 {
 		for _, arg := range args {
 			nodeGroup, er2 := cloud.Store(ctx).NodeGroups(cluster).Get(arg)
