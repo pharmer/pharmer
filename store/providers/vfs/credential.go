@@ -11,7 +11,6 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/store"
 	"github.com/graymeta/stow"
-	"github.com/tamalsaha/go-oneliners"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

@@ -150,3 +150,15 @@ func TestNG(t *testing.T) {
 	ng := "g12-n1-standard-2"
 	fmt.Println(ng[len(cluster)+1:])
 }
+
+func TestJson(t *testing.T) {
+	data := ``
+	crd := api.CredentialSpec{
+		Data: map[string]string{
+			"projectID":      "tigerworks-kube",
+			"serviceAccount": data,
+		},
+	}
+	jsn, err := json.Marshal(crd)
+	fmt.Println(string(jsn), err)
+}

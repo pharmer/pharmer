@@ -7,7 +7,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/api
-  version: 1b19ae8105e4192499a4449f3df0cb5e6d2c449d
+  version: 2e0844caab5be929820a03a7eb975546c796cb9f
   subpackages:
   - attic/v1beta1
   - auth/v1beta1

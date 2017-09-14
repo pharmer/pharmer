@@ -22,6 +22,7 @@ var diskCreateRequestSchema *gojsonschema.Schema
 var diskDeleteRequestSchema *gojsonschema.Schema
 var persistentVolumeRegisterRequestSchema *gojsonschema.Schema
 var deleteResourceRequestSchema *gojsonschema.Schema
+var reverseIndexResourceRequestSchema *gojsonschema.Schema
 
 func init() {
 	var err error
@@ -473,6 +474,37 @@ func init() {
 	if err != nil {
 		glog.Fatal(err)
 	}
+	reverseIndexResourceRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "properties": {
+    "api_version": {
+      "type": "string"
+    },
+    "cluster": {
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 63,
+      "pattern": "^[a-z0-9](?:[a-z0-9\\-]{0,61}[a-z0-9])?$",
+      "type": "string"
+    },
+    "namespace": {
+      "maxLength": 63,
+      "pattern": "^[a-z0-9](?:[a-z0-9\\-]{0,61}[a-z0-9])?$",
+      "type": "string"
+    },
+    "targetType": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    }
+  },
+  "type": "object"
+}`))
+	if err != nil {
+		glog.Fatal(err)
+	}
 }
 
 func (m *SecretEditRequest) IsValid() (*gojsonschema.Result, error) {
@@ -554,4 +586,9 @@ func (m *DeleteResourceRequest) IsValid() (*gojsonschema.Result, error) {
 	return deleteResourceRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *DeleteResourceRequest) IsRequest() {}
+
+func (m *ReverseIndexResourceRequest) IsValid() (*gojsonschema.Result, error) {
+	return reverseIndexResourceRequestSchema.Validate(gojsonschema.NewGoLoader(m))
+}
+func (m *ReverseIndexResourceRequest) IsRequest() {}
 

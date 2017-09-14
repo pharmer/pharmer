@@ -28,6 +28,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
+
 	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
