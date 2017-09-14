@@ -112,7 +112,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	masterScript, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster)
+	masterScript, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, "")
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(cm.ctx).Err()

@@ -33,7 +33,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 		},
 	}
 
-	nodeAdjust, _ := Mutator(cm.ctx, cm.cluster, inst)
+	nodeAdjust, _ := Mutator(cm.ctx, cm.cluster, inst, "")
 	igm := &NodeGroupManager{
 		cm:       cm,
 		instance: inst,

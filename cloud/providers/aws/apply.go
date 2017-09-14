@@ -973,7 +973,7 @@ func (cm *ClusterManager) reserveIP() error {
 }
 
 func (cm *ClusterManager) createMasterInstance(instanceName string, role string) (string, error) {
-	kubeStarter, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster)
+	kubeStarter, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, "")
 	if err != nil {
 		return "", err
 	}
@@ -1182,7 +1182,7 @@ func (cm *ClusterManager) assignIPToInstance(instanceID string) error {
 
 func (cm *ClusterManager) createLaunchConfiguration(name, sku string) error {
 	// script := cm.RenderStartupScript(cm.cluster, sku, api.RoleKubernetesPool)
-	script, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleNode)
+	script, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleNode, sku)
 	if err != nil {
 		return err
 	}
