@@ -17,12 +17,17 @@ import (
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	var err error
+	var (
+		clusterDelete = false
+	)
+	if in.DeletionTimestamp != nil && in.Status.Phase != api.ClusterDeleted {
+		clusterDelete = true
+	}
 
 	cm.cluster = in
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
-
 	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
@@ -30,26 +35,6 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		return err
 	}
 	cm.namer = namer{cluster: cm.cluster}
-
-	/*defer func(releaseReservedIp bool) {
-		if cm.cluster.Status.Phase == api.ClusterPending {
-			cm.cluster.Status.Phase = api.ClusterFailing
-		}
-		Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
-		if cm.cluster.Status.Phase != api.ClusterReady {
-			Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
-			cm.Delete(&proto.ClusterDeleteRequest{
-				Name:              cm.cluster.Name,
-				ReleaseReservedIp: releaseReservedIp,
-			})
-		}
-	}(cm.cluster.Spec.MasterReservedIP == "auto")*/
-
-	//if cm.cluster.Spec.Cloud.InstanceImage, err = cm.conn.getInstanceImage(); err != nil {
-	//	cm.cluster.Status.Reason = err.Error()
-	//	return errors.FromErr(err).WithContext(cm.ctx).Err()
-	//}
 
 	if err = cm.importPublicKey(); err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -142,6 +127,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
 		cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
 		fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP)
+
 		Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 
 		err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
@@ -163,9 +149,11 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 		// -------------------------------------------------------------------------------------------------------------
-
+		master, _ := Store(cm.ctx).NodeGroups(cm.cluster.Name).Get("master")
+		master.Status.Nodes = int32(1)
+		Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(master)
 		time.Sleep(time.Minute * 1)
-		Store(cm.ctx).Instances(cm.cluster.Name).Update(masterInstance)
+		//Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(mas)
 	} else {
 		masterInstance, err := cm.getInstance(cm.cluster.Spec.KubernetesMasterName)
 		if err != nil {
@@ -175,6 +163,27 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 		masterInstance.Spec.Role = api.RoleMaster
 		cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
 		cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
+		if clusterDelete {
+			cm.cluster.Status.Phase = api.ClusterDeleting
+			Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+			if err := cm.deleteMaster(); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+			}
+
+			if err := cm.deleteDisk(); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+			}
+
+			if err := cm.deleteRoutes(); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+			}
+
+			if err := DeleteARecords(cm.ctx, cm.cluster); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+			}
+			masterInstance.Status.Phase = api.NodeDeleted
+			Store(cm.ctx).Instances(cm.cluster.Name).Update(masterInstance)
+		}
 	}
 
 	// needed for node start-up config to get master_internal_ip
@@ -194,45 +203,61 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 				return errors.FromErr(err).WithContext(cm.ctx).Err()
 			}
 		}
+	} else if clusterDelete {
+		if err := cm.deleteFirewalls(); err != nil {
+			cm.cluster.Status.Reason = err.Error()
+		}
 	}
 
 	for _, node := range nodeGroups {
 		if node.IsMaster() {
 			continue
 		}
-		instance := Instance{
-			Type: InstanceType{
-				Sku:          node.Spec.Template.Spec.SKU,
-				Master:       false,
-				SpotInstance: false,
-			},
-			Stats: GroupStats{
-				Count: node.Spec.Nodes,
-			},
-		}
-
 		igm := &NodeGroupManager{
-			cm:       cm,
-			instance: instance,
+			cm: cm,
+			instance: Instance{
+				Type: InstanceType{
+					Sku:          node.Spec.Template.Spec.SKU,
+					Master:       false,
+					SpotInstance: false,
+				},
+				Stats: GroupStats{
+					Count: node.Spec.Nodes,
+				},
+			},
 		}
-		igm.AdjustNodeGroup()
+		if clusterDelete || node.DeletionTimestamp != nil {
+			instanceGroupName := cm.namer.NodeGroupName(node.Spec.Template.Spec.SKU)
+			if err = cm.deleteNodeGroup(instanceGroupName); err != nil {
+				fmt.Println(err)
+			}
+			if err = cm.deleteAutoscaler(instanceGroupName); err != nil {
+				fmt.Println(err)
+			}
+			templateName := cm.namer.InstanceTemplateName(node.Spec.Template.Spec.SKU)
+			if err = cm.deleteInstanceTemplate(templateName); err != nil {
+				fmt.Println(err)
+			}
+			Store(cm.ctx).NodeGroups(cm.cluster.Name).Delete(node.Name)
+		} else {
+			igm.AdjustNodeGroup()
+			node.Status.Nodes = (int32)(node.Spec.Nodes)
+			Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(node)
+		}
 	}
 
 	time.Sleep(1 * time.Minute)
 
 	for _, ng := range nodeGroups {
 		groupName := cm.namer.NodeGroupName(ng.Spec.Template.Spec.SKU)
-		providerInstances, err := cm.listInstances(groupName)
-		if err != nil {
-			fmt.Println(err)
-			//return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
+		providerInstances, _ := cm.listInstances(groupName)
+
 		runningInstance := make(map[string]*api.Node)
 		for _, node := range providerInstances {
 			runningInstance[node.Name] = node
 		}
 
-		clusterInstance, err := GetClusterIstance(cm.ctx, cm.cluster, groupName)
+		clusterInstance, _ := GetClusterIstance(cm.ctx, cm.cluster, groupName)
 		for _, node := range clusterInstance {
 			if _, found := runningInstance[node]; !found {
 				DeleteClusterInstance(cm.ctx, cm.cluster, node)
@@ -251,9 +276,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//	}
 	//}
 
-	cm.cluster.Status.Phase = api.ClusterReady
+	if !clusterDelete {
+		cm.cluster.Status.Phase = api.ClusterReady
+	} else {
+		cm.cluster.Status.Phase = api.ClusterDeleted
+	}
 	Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	Store(cm.ctx).Clusters().Update(cm.cluster)
+	Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
 	return nil
 }
 
