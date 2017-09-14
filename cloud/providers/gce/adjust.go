@@ -18,7 +18,9 @@ type NodeGroupManager struct {
 func (igm *NodeGroupManager) AdjustNodeGroup() error {
 	instanceGroupName := igm.cm.namer.NodeGroupName(igm.instance.Type.Sku)
 	adjust, err := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
-	fmt.Println(err, igm.cm.cluster.Spec.Cloud.Project)
+	if err != nil {
+		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	}
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
 	//igm.cm.cluster, _ = Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 	if adjust == igm.instance.Stats.Count {
@@ -252,15 +254,14 @@ func (igm *NodeGroupManager) updateNodeGroup(instanceGroupName string, size int6
 	Logger(igm.cm.ctx).Infof("current autoscaller  Max %v and Min %v num of replicas", max, min)
 	Logger(igm.cm.ctx).Infof("Updating autoscaller with Max %v and Min %v num of replicas", size, size)
 	if size > max || size < min {
-		r2, err := igm.cm.conn.computeService.Autoscalers.Update(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, &compute.Autoscaler{
+		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, &compute.Autoscaler{
 			Name: r1.Name,
 			AutoscalingPolicy: &compute.AutoscalingPolicy{
 				MaxNumReplicas: size,
 				MinNumReplicas: size,
 			},
 			Target: r1.Target,
-		}).Do()
-		fmt.Println(r2, err, "^^^^^^", r1.Name)
+		}).Autoscaler(instanceGroupName).Do()
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}

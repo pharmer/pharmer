@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
@@ -32,7 +31,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	}
 	cm.namer = namer{cluster: cm.cluster}
 
-	defer func(releaseReservedIp bool) {
+	/*defer func(releaseReservedIp bool) {
 		if cm.cluster.Status.Phase == api.ClusterPending {
 			cm.cluster.Status.Phase = api.ClusterFailing
 		}
@@ -45,7 +44,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 				ReleaseReservedIp: releaseReservedIp,
 			})
 		}
-	}(cm.cluster.Spec.MasterReservedIP == "auto")
+	}(cm.cluster.Spec.MasterReservedIP == "auto")*/
 
 	//if cm.cluster.Spec.Cloud.InstanceImage, err = cm.conn.getInstanceImage(); err != nil {
 	//	cm.cluster.Status.Reason = err.Error()
@@ -221,54 +220,26 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 
 	time.Sleep(1 * time.Minute)
 
-	dbInstances, err := Store(cm.ctx).Instances(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	existingNodes := make(map[string]*api.Node)
-	for _, di := range dbInstances {
-		fmt.Println(di.Name, "&&&&&&&&&&&&&&&&&&&")
-		if di.Spec.Role != api.RoleMaster {
-			existingNodes[di.Name] = di
-			fmt.Println(di.Name, "__________ not master")
-		}
-	}
-
-	fmt.Println("existing nodes = ", existingNodes)
-
-	clusterNodes := make(map[string]*api.Node)
-
 	for _, ng := range nodeGroups {
-		fmt.Println(ng.Name)
-		if ng.IsMaster() {
-			continue
-		}
-		instances, err := cm.listInstances(cm.namer.NodeGroupName(ng.Spec.Template.Spec.SKU))
+		groupName := cm.namer.NodeGroupName(ng.Spec.Template.Spec.SKU)
+		providerInstances, err := cm.listInstances(groupName)
 		if err != nil {
 			fmt.Println(err)
 			//return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
-		fmt.Println(instances, ".,.,.,.,.,.,.,.,.,.,")
-		for _, node := range instances {
-			fmt.Println("Cluster node => ", node.Name)
-			if _, found := existingNodes[node.Name]; found {
-				fmt.Println(node.Name, "__________ update")
-				Store(cm.ctx).Instances(cm.cluster.Name).Update(node)
-			} else {
-				Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
-				fmt.Println(node.Name, "__________ create")
+		runningInstance := make(map[string]*api.Node)
+		for _, node := range providerInstances {
+			runningInstance[node.Name] = node
+		}
+
+		clusterInstance, err := GetClusterIstance(cm.ctx, cm.cluster, groupName)
+		for _, node := range clusterInstance {
+			if _, found := runningInstance[node]; !found {
+				DeleteClusterInstance(cm.ctx, cm.cluster, node)
 			}
-
-			clusterNodes[node.Name] = node
 		}
 	}
 
-	for name := range existingNodes {
-		if _, found := clusterNodes[name]; !found {
-			fmt.Println(name, "delete ***********************")
-			Store(cm.ctx).Instances(cm.cluster.Name).Delete(name)
-		}
-	}
 	//for _, ng := range req.NodeGroups {
 	//	instances, err := cm.listInstances(cm.namer.NodeGroupName(ng.Sku))
 	//	if err != nil {

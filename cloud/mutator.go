@@ -44,14 +44,11 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 		log.Fatal(err)
 	}
 
-	fmt.Println("Expected Instance = ", expectedInstance, "**")
-
 	desiredNGs := make(map[InstanceType]GroupStats)
 	existingNGs := make(map[InstanceType]GroupStats)
 
 	for _, n := range nodes.Items {
 		nl := api.FromMap(n.GetLabels())
-		fmt.Println(nl.GetString(api.NodeLabelKey_NodeGroup), "*************************", nodeGroup)
 		if nl.GetString(api.NodeLabelKey_NodeGroup) != nodeGroup {
 			continue
 		}
@@ -72,9 +69,6 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 
 	// compute diff
 	diffNGs := make(map[InstanceType]GroupStats)
-	for _, g := range existingNGs {
-		fmt.Println("--", g, "--")
-	}
 
 	if eGS, found := existingNGs[expectedInstance.Type]; found {
 		if expectedInstance.Stats.Count != eGS.Count {
@@ -154,6 +148,34 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 
 func getSKUFromNG(cluster, ng string) string {
 	return ng[len(cluster)+1:]
+}
+
+func GetClusterIstance(ctx context.Context, cluster *api.Cluster, nodeGroup string) ([]string, error) {
+	kc, err := NewAdminClient(ctx, cluster)
+	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	existingNodes := make([]string, 0)
+	for _, node := range nodes.Items {
+		nl := api.FromMap(node.GetLabels())
+		if nl.GetString(api.NodeLabelKey_NodeGroup) != nodeGroup {
+			continue
+		}
+		existingNodes = append(existingNodes, node.Name)
+	}
+	return existingNodes, nil
+
+}
+
+func DeleteClusterInstance(ctx context.Context, cluster *api.Cluster, node string) error {
+	kc, err := NewAdminClient(ctx, cluster)
+	err = kc.CoreV1().Nodes().Delete(node, &metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func GetExistingContextVersion(ctx context.Context, cluster *api.Cluster, sku string) (int64, error) {
