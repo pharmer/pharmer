@@ -19,8 +19,24 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 
 func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Action, err error) {
 	cm.cluster = in
+	cm.namer = namer{cluster: cm.cluster}
+	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
+		return
+	}
+	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
+		return
+	}
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return
+	}
+
+	if cm.cluster.Status.Phase == "" {
+		err = fmt.Errorf("cluster `%s` is in unknown status", cm.cluster.Name)
+		return
+	}
+
+	if cm.cluster.Status.Phase == api.ClusterPending {
+		// create cluster
 	}
 
 	defer func(releaseReservedIp bool) {
