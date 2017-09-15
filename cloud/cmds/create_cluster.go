@@ -19,7 +19,12 @@ func NewCmdCreateCluster() *cobra.Command {
 	nodes := map[string]int{}
 
 	cmd := &cobra.Command{
-		Use:               "cluster",
+		Use: api.ResourceNameCluster,
+		Aliases: []string{
+			api.ResourceTypeCluster,
+			api.ResourceCodeCluster,
+			api.ResourceKindCluster,
+		},
 		Short:             "Create a Kubernetes cluster for a given cloud provider",
 		Example:           "pharmer create cluster demo-cluster",
 		DisableAutoGenTag: true,

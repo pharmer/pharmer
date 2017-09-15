@@ -19,7 +19,12 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 	nodes := map[string]int{}
 
 	cmd := &cobra.Command{
-		Use:               "nodegroup",
+		Use: api.ResourceNameNodeGroup,
+		Aliases: []string{
+			api.ResourceTypeNodeGroup,
+			api.ResourceCodeNodeGroup,
+			api.ResourceKindNodeGroup,
+		},
 		Short:             "Create a Kubernetes cluster NodeGroup for a given cloud provider",
 		Example:           "pharmer create nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,
