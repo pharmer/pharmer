@@ -49,3 +49,4 @@ func (m *ArtifactListRequest) IsValid() (*gojsonschema.Result, error) {
 	return artifactListRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *ArtifactListRequest) IsRequest() {}
+
