@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/TamalSaha/go-oneliners"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
@@ -15,58 +16,112 @@ type NodeGroupManager struct {
 	instance Instance
 }
 
-func (igm *NodeGroupManager) AdjustNodeGroup() error {
+func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action, err error) {
+	acts = make([]api.Action, 0)
 	instanceGroupName := igm.cm.namer.NodeGroupName(igm.instance.Type.Sku)
 
-	adjust, err := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
-	if err != nil {
-		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	adjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
+	oneliners.FILE()
+	/*if err != nil {
+		err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		return
+	}*/
+	message := ""
+	var action api.ActionType
+	if adjust == 0 {
+		message = "No changed will be applied"
+		action = api.ActionNOP
+	} else if adjust < 0 {
+		message = fmt.Sprintf("%v node will be deleted from %v group", -adjust, instanceGroupName)
+		action = api.ActionDelete
+	} else {
+		message = fmt.Sprintf("%v node will be added to %v group", adjust, instanceGroupName)
+		action = api.ActionAdd
 	}
+	acts = append(acts, api.Action{
+		Action:   action,
+		Resource: "Node",
+		Message:  message,
+	})
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
 	//igm.cm.cluster, _ = Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 	if adjust == igm.instance.Stats.Count {
-		if op2, err := igm.createNodeInstanceTemplate(igm.instance.Type.Sku); err != nil {
-			igm.cm.cluster.Status.Reason = err.Error()
-			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-		} else {
-			if err = igm.cm.conn.waitForGlobalOperation(op2); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Instance Template",
+			Message:  fmt.Sprintf("Instance template %v will be created", igm.cm.namer.InstanceTemplateName(igm.instance.Type.Sku)),
+		})
+		if rt != api.DryRun {
+			if op2, err := igm.createNodeInstanceTemplate(igm.instance.Type.Sku); err != nil {
 				igm.cm.cluster.Status.Reason = err.Error()
-				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-			}
-		}
-		if op3, err := igm.createNodeGroup(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
-			igm.cm.cluster.Status.Reason = err.Error()
-			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-		} else {
-			if err = igm.cm.conn.waitForZoneOperation(op3); err != nil {
-				igm.cm.cluster.Status.Reason = err.Error()
-				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+				return acts, err
+			} else {
+				if err = igm.cm.conn.waitForGlobalOperation(op2); err != nil {
+					igm.cm.cluster.Status.Reason = err.Error()
+					err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+					return acts, err
+				}
 			}
 		}
 
-		if op4, err := igm.createAutoscaler(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
-			igm.cm.cluster.Status.Reason = err.Error()
-			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-		} else {
-			if err = igm.cm.conn.waitForZoneOperation(op4); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Node group",
+			Message:  fmt.Sprintf("Node group %v will be created", igm.cm.namer.NodeGroupName(igm.instance.Type.Sku)),
+		})
+		if rt != api.DryRun {
+			if op3, err := igm.createNodeGroup(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
 				igm.cm.cluster.Status.Reason = err.Error()
-				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+				return acts, err
+			} else {
+				if err = igm.cm.conn.waitForZoneOperation(op3); err != nil {
+					igm.cm.cluster.Status.Reason = err.Error()
+					err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+					return acts, err
+				}
+			}
+		}
+
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Autoscaler",
+			Message:  fmt.Sprintf("Autoscaler %v will be created", igm.cm.namer.NodeGroupName(igm.instance.Type.Sku)),
+		})
+		if rt != api.DryRun {
+			if op4, err := igm.createAutoscaler(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
+				igm.cm.cluster.Status.Reason = err.Error()
+				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+				return acts, err
+			} else {
+				if err = igm.cm.conn.waitForZoneOperation(op4); err != nil {
+					igm.cm.cluster.Status.Reason = err.Error()
+					err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+					return acts, err
+				}
 			}
 		}
 	} else if igm.instance.Stats.Count == 0 {
 		instanceTemplate := igm.cm.namer.InstanceTemplateName(igm.instance.Type.Sku)
-		err := igm.deleteOnlyNodeGroup(instanceGroupName, instanceTemplate)
-		if err != nil {
-			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		acts = append(acts, api.Action{
+			Action:   api.ActionDelete,
+			Resource: "Node group",
+			Message:  fmt.Sprintf("Node group %v  with instance template %v will be delete", instanceGroupName, instanceTemplate),
+		})
+		if rt != api.DryRun {
+			if err := igm.deleteOnlyNodeGroup(instanceGroupName, instanceTemplate); err != nil {
+				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+				return acts, err
+			}
 		}
 	} else {
-		err := igm.updateNodeGroup(instanceGroupName, igm.instance.Stats.Count)
-		if err != nil {
-			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		if err := igm.updateNodeGroup(instanceGroupName, igm.instance.Stats.Count); err != nil {
+			err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+			return acts, err
 		}
 	}
-
-	return nil
+	return
 }
 
 func (igm *NodeGroupManager) createNodeInstanceTemplate(sku string) (string, error) {
