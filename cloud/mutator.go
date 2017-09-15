@@ -37,7 +37,7 @@ type InstanceController struct {
 	Client clientset.Interface
 }
 
-func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instance) (int64, error) {
+func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instance, nodeGroup string) (int64, error) {
 	kc, err := NewAdminClient(ctx, cluster)
 	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
@@ -49,16 +49,13 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 
 	for _, n := range nodes.Items {
 		nl := api.FromMap(n.GetLabels())
-		if nl.GetString(api.NodeLabelKey_NodeGroup) != (expectedInstance.Type.Sku + "-pool") {
+		if nl.GetString(api.NodeLabelKey_NodeGroup) != nodeGroup {
 			continue
 		}
 		k := InstanceType{
-			ContextVersion: nl.GetInt64(api.NodeLabelKey_ContextVersion),
-			Sku:            nl.GetString(api.NodeLabelKey_SKU),
-			SpotInstance:   false,
-			Master:         nl.GetString(api.NodeLabelKey_Role) == "master",
-			DiskType:       expectedInstance.Type.DiskType,
-			DiskSize:       expectedInstance.Type.DiskSize,
+			Sku:          getSKUFromNG(cluster.Name, nl.GetString(api.NodeLabelKey_NodeGroup)),
+			SpotInstance: false,
+			Master:       nl.GetString(api.NodeLabelKey_Role) == "master",
 		}
 		if gs, found := existingNGs[k]; !found {
 			existingNGs[k] = GroupStats{
@@ -147,6 +144,38 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 	// delete nodes
 	return adjust, nil
 
+}
+
+func getSKUFromNG(cluster, ng string) string {
+	return ng[len(cluster)+1:]
+}
+
+func GetClusterIstance(ctx context.Context, cluster *api.Cluster, nodeGroup string) ([]string, error) {
+	kc, err := NewAdminClient(ctx, cluster)
+	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	existingNodes := make([]string, 0)
+	for _, node := range nodes.Items {
+		nl := api.FromMap(node.GetLabels())
+		if nl.GetString(api.NodeLabelKey_NodeGroup) != nodeGroup {
+			continue
+		}
+		existingNodes = append(existingNodes, node.Name)
+	}
+	return existingNodes, nil
+
+}
+
+func DeleteClusterInstance(ctx context.Context, cluster *api.Cluster, node string) error {
+	kc, err := NewAdminClient(ctx, cluster)
+	err = kc.CoreV1().Nodes().Delete(node, &metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func GetExistingContextVersion(ctx context.Context, cluster *api.Cluster, sku string) (int64, error) {

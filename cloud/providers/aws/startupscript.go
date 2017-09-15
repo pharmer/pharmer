@@ -20,7 +20,7 @@ func (cm *ClusterManager) RenderMasterStarter() (string, error) {
 		}
 	*/
 	var buf bytes.Buffer
-	err = tpl.ExecuteTemplate(&buf, api.RoleMaster, GetTemplateData(cm.ctx, cm.cluster))
+	err = tpl.ExecuteTemplate(&buf, api.RoleMaster, GetTemplateData(cm.ctx, cm.cluster, ""))
 	if err != nil {
 		return "", err
 	}
@@ -41,7 +41,7 @@ func (cm *ClusterManager) RenderNodeStarter() (string, error) {
 		}
 	*/
 	var buf bytes.Buffer
-	err = tpl.ExecuteTemplate(&buf, api.RoleNode, GetTemplateData(cm.ctx, cm.cluster))
+	err = tpl.ExecuteTemplate(&buf, api.RoleNode, GetTemplateData(cm.ctx, cm.cluster, ""))
 	if err != nil {
 		return "", err
 	}

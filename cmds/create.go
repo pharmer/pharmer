@@ -15,6 +15,7 @@ func newCmdCreate() *cobra.Command {
 
 	// Cloud
 	cmd.AddCommand(cpCmd.NewCmdCreateCluster())
+	cmd.AddCommand(cpCmd.NewCmdCreateNodeGroup())
 
 	// Credential
 	cmd.AddCommand(credCmd.NewCmdCreateCredential())

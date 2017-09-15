@@ -72,6 +72,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 
 	// Init status
 	cluster.Status = api.ClusterStatus{
+		Phase:            api.ClusterPending,
 		SSHKeyExternalID: n.GenSSHKeyExternalID(),
 	}
 

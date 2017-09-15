@@ -17,8 +17,11 @@ type NodeGroupManager struct {
 
 func (igm *NodeGroupManager) AdjustNodeGroup() error {
 	instanceGroupName := igm.cm.namer.NodeGroupName(igm.instance.Type.Sku)
-	adjust, err := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
-	fmt.Println(err, igm.cm.cluster.Spec.Cloud.Project)
+
+	adjust, err := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
+	if err != nil {
+		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	}
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
 	//igm.cm.cluster, _ = Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 	if adjust == igm.instance.Stats.Count {
@@ -57,7 +60,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup() error {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	} else {
-		err := igm.updateNodeGroup(instanceGroupName, adjust)
+		err := igm.updateNodeGroup(instanceGroupName, igm.instance.Stats.Count)
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
@@ -86,7 +89,7 @@ func (igm *NodeGroupManager) createNodeInstanceTemplate(sku string) (string, err
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
 	//  }
 
-	startupScript, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
+	startupScript, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode, igm.cm.namer.NodeGroupName(sku))
 	if err != nil {
 		return "", err
 	}
@@ -249,15 +252,18 @@ func (igm *NodeGroupManager) updateNodeGroup(instanceGroupName string, size int6
 	}
 	max := r1.AutoscalingPolicy.MaxNumReplicas
 	min := r1.AutoscalingPolicy.MinNumReplicas
+	Logger(igm.cm.ctx).Infof("current autoscaller  Max %v and Min %v num of replicas", max, min)
+
 	Logger(igm.cm.ctx).Infof("Updating autoscaller with Max %v and Min %v num of replicas", size, size)
 	if size > max || size < min {
 		r2, err := igm.cm.conn.computeService.Autoscalers.Patch(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, &compute.Autoscaler{
-			Name: instanceGroupName,
+			Name: r1.Name,
 			AutoscalingPolicy: &compute.AutoscalingPolicy{
 				MaxNumReplicas: size,
 				MinNumReplicas: size,
 			},
-		}).Do()
+			Target: r1.Target,
+		}).Autoscaler(instanceGroupName).Do()
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}

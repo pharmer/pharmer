@@ -80,7 +80,7 @@ func (igm *NodeGroupManager) startNodes(sku string, count int64) error {
 
 func (igm *NodeGroupManager) createLaunchConfiguration(name, sku string) error {
 	//script := igm.cm.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), sku, system.RoleKubernetesPool)
-	script, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
+	script, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode, sku)
 	if err != nil {
 		return err
 	}

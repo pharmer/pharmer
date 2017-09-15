@@ -32,7 +32,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup() error {
 	igm.cm.cluster, _ = Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 	var nodeAdjust int64 = 0
 	if found {
-		nodeAdjust, _ = Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
+		nodeAdjust, _ = Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
 	}
 	if !found {
 		err = igm.createNodeGroup(igm.instance.Stats.Count)

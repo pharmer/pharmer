@@ -31,7 +31,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup() error {
 	if !found {
 		err = igm.createNodeGroup(igm.instance.Stats.Count)
 	} else if igm.instance.Stats.Count == 0 {
-		nodeAdjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
+		nodeAdjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, "")
 		if nodeAdjust < 0 {
 			nodeAdjust = -nodeAdjust
 		}
@@ -41,7 +41,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup() error {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 	} else {
-		nodeAdjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance)
+		nodeAdjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, "")
 		if nodeAdjust < 0 {
 			err := igm.deleteNodeGroup(instanceGroupName, -nodeAdjust)
 			if err != nil {
@@ -194,7 +194,7 @@ func (igm *NodeGroupManager) StartNode() (*api.Node, error) {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
-	nodeScript, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode)
+	nodeScript, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode, igm.instance.Type.Sku)
 	if err != nil {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}

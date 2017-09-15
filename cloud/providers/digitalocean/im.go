@@ -75,7 +75,7 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 
 func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet, error) {
 	oneliners.FILE()
-	startupScript, err := RenderStartupScript(im.ctx, im.cluster, role)
+	startupScript, err := RenderStartupScript(im.ctx, im.cluster, role, sku)
 	if err != nil {
 		return nil, err
 	}

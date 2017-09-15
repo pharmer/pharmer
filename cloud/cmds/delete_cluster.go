@@ -41,16 +41,8 @@ func NewCmdDeleteCluster() *cobra.Command {
 			ctx := cloud.NewContext(context.Background(), cfg)
 
 			for _, clusterName := range args {
-				err := cloud.Store(ctx).Clusters().Delete(clusterName)
+				_, err := cloud.Delete(ctx, clusterName)
 				term.ExitOnError(err)
-
-				nodeGroups, err := getNodeGroupList(ctx, clusterName)
-				term.ExitOnError(err)
-
-				for _, ng := range nodeGroups {
-					err := cloud.Store(ctx).NodeGroups(clusterName).Delete(ng.Name)
-					term.ExitOnError(err)
-				}
 			}
 		},
 	}

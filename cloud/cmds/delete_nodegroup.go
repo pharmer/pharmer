@@ -36,7 +36,7 @@ func NewCmdDeleteNodeGroup() *cobra.Command {
 			term.ExitOnError(err)
 
 			for _, ng := range nodeGroups {
-				err := cloud.Store(ctx).NodeGroups(clusterName).Delete(ng.Name)
+				err := cloud.DeleteNG(ctx, ng.Name, clusterName)
 				term.ExitOnError(err)
 			}
 		},

@@ -32,7 +32,7 @@ func renderStartupScript(ctx context.Context, cluster *api.Cluster, role string)
 		return "", err
 	}
 	var buf bytes.Buffer
-	if err := tpl.ExecuteTemplate(&buf, role, GetTemplateData(ctx, cluster)); err != nil {
+	if err := tpl.ExecuteTemplate(&buf, role, GetTemplateData(ctx, cluster, "")); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
