@@ -1,11 +1,16 @@
-hash: 1e2cd7e17ea99f0a8bfeb20f3d42004e19405f88355f07fe8ef66fbc5c88af9f
-updated: 2017-09-12T14:07:34.487566907+06:00
+hash: 07b1b2a02379bbad650940cf51231cf6eaa7a64e1ffe837abb73471cbf91dc66
+updated: 2017-09-14T15:14:11.951795563+06:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
   subpackages:
   - compute/metadata
   - internal
+- name: github.com/AlecAivazis/survey
+  version: 19f14ea3b122127358f0de49404a3f916113a7e4
+  subpackages:
+  - core
+  - terminal
 - name: github.com/appscode/api
   version: 2e0844caab5be929820a03a7eb975546c796cb9f
   subpackages:
@@ -287,6 +292,8 @@ imports:
   version: 56b76bdf51f7708750eac80fa38b952bb9f32639
 - name: github.com/mattn/go-runewidth
   version: d6bea18f789704b5f83375793155289da36a3c7f
+- name: github.com/mgutz/ansi
+  version: 9520e82c474b0a04dd04f8a40959027271bab992
 - name: github.com/mgutz/str
   version: 968bf66e3da857419e4f6e71b2d5c9ae95682dc4
 - name: github.com/miekg/dns
@@ -486,6 +493,10 @@ imports:
   - status
   - tap
   - transport
+- name: gopkg.in/AlecAivazis/survey.v1
+  version: 73fd4d7829877a72e03dbb42f84ed383fbbc5fa0
+  subpackages:
+  - terminal
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/ini.v1

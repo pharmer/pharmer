@@ -281,4 +281,3 @@ func (m *ClusterClientConfigRequest) IsValid() (*gojsonschema.Result, error) {
 	return clusterClientConfigRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *ClusterClientConfigRequest) IsRequest() {}
-

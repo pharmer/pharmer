@@ -52,4 +52,3 @@ func (m *LogDescribeRequest) IsValid() (*gojsonschema.Result, error) {
 	return logDescribeRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *LogDescribeRequest) IsRequest() {}
-

@@ -9,6 +9,7 @@ import (
 
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/data/files"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -48,11 +49,11 @@ const (
 
 type CommonSpec api.CredentialSpec
 
-func (c CommonSpec) Load(filename string) error {
+func (c *CommonSpec) Load(filename string) error {
 	return c.LoadFromJSON(filename)
 }
 
-func (c CommonSpec) LoadFromJSON(filename string) error {
+func (c *CommonSpec) LoadFromJSON(filename string) error {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
@@ -108,7 +109,7 @@ func (c CommonSpec) ToMaskedMap() map[string]string {
 	return result
 }
 
-func (c *CommonSpec) String() string {
+func (c CommonSpec) String() string {
 	var buf bytes.Buffer
 	for k, v := range c.ToMaskedMap() {
 		if buf.Len() > 0 {
@@ -119,4 +120,28 @@ func (c *CommonSpec) String() string {
 		buf.WriteString(v)
 	}
 	return buf.String()
+}
+
+func LoadCredentialDataFromJson(provider string, fileName string) (CommonSpec, error) {
+	switch provider {
+	case "GoogleCloud":
+		gce := NewGCE()
+		if err := gce.Load(fileName); err != nil {
+			return CommonSpec{}, err
+		}
+		return gce.CommonSpec, nil
+	case "AWS":
+		aws := NewAWS()
+		if err := aws.Load(fileName); err != nil {
+			return CommonSpec{}, err
+		}
+		return aws.CommonSpec, nil
+	default:
+		commonSpec := CommonSpec{}
+		if err := commonSpec.Load(fileName); err != nil {
+			return CommonSpec{}, err
+		}
+		return commonSpec, nil
+	}
+	return CommonSpec{}, errors.New("Unknown Cloud provider")
 }

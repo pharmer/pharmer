@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/appscode/log"
+	"github.com/appscode/go-term"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/cloud/printer"
@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func NewCmdGetNodeGroup(out, errOut io.Writer) *cobra.Command {
+func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: api.ResourceNameNodeGroup,
 		Aliases: []string{
@@ -27,12 +27,10 @@ func NewCmdGetNodeGroup(out, errOut io.Writer) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			ctx := cloud.NewContext(context.Background(), cfg)
+			term.ExitOnError(err)
 
-			RunGetNodeGroup(ctx, cmd, out, errOut, args)
+			ctx := cloud.NewContext(context.Background(), cfg)
+			RunGetNodeGroup(ctx, cmd, out, args)
 
 		},
 	}
@@ -42,7 +40,7 @@ func NewCmdGetNodeGroup(out, errOut io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunGetNodeGroup(ctx context.Context, cmd *cobra.Command, out, errOut io.Writer, args []string) error {
+func RunGetNodeGroup(ctx context.Context, cmd *cobra.Command, out io.Writer, args []string) error {
 
 	rPrinter, err := printer.NewPrinter(cmd)
 	if err != nil {

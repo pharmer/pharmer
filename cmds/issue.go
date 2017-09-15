@@ -1,17 +1,19 @@
 package cmds
 
 import (
+	credCmd "github.com/appscode/pharmer/credential/cmds"
 	"github.com/spf13/cobra"
 )
 
-func NewCmdDelete() *cobra.Command {
+func newCmdIssue() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "delete",
+		Use:               "issue",
 		DisableAutoGenTag: true,
 		Run:               func(cmd *cobra.Command, args []string) {},
 	}
 
-	cmd.AddCommand(NewCmdDeleteCluster())
-	cmd.AddCommand(NewCmdDeleteNodeGroup())
+	// Credential
+	cmd.AddCommand(credCmd.NewCmdIssue())
+
 	return cmd
 }

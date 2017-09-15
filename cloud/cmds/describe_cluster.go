@@ -2,19 +2,19 @@ package cmds
 
 import (
 	"context"
+	"fmt"
 	"io"
 
-	"github.com/appscode/log"
+	"github.com/appscode/go-term"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/cloud/describer"
 	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"
-	"github.com/appscode/pharmer/cloud/describer"
-	"fmt"
 	"k8s.io/kubernetes/pkg/printers"
 )
 
-func NewCmdDescribeCluster(out, errOut io.Writer) *cobra.Command {
+func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCluster,
 		Aliases: []string{
@@ -28,20 +28,18 @@ func NewCmdDescribeCluster(out, errOut io.Writer) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				log.Fatalln(err)
-			}
+			term.ExitOnError(err)
+
 			ctx := cloud.NewContext(context.Background(), cfg)
-
-			RunDescribeCluster(ctx, cmd, out, errOut, args)
-
+			err = RunDescribeCluster(ctx, cmd, out, args)
+			term.ExitOnError(err)
 		},
 	}
 
 	return cmd
 }
 
-func RunDescribeCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writer, args []string) error {
+func RunDescribeCluster(ctx context.Context, cmd *cobra.Command, out io.Writer, args []string) error {
 
 	rDescriber := describer.NewDescriber(ctx)
 

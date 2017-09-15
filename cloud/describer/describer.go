@@ -1,10 +1,10 @@
 package describer
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
-	"context"
 	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kubernetes/pkg/printers"

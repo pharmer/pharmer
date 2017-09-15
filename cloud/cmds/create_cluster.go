@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/appscode/go-term"
 	"github.com/appscode/go/flags"
-	"github.com/appscode/go/log"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
@@ -27,21 +27,22 @@ func NewCmdCreateCluster() *cobra.Command {
 			flags.EnsureRequiredFlags(cmd, "provider", "zone", "nodes", "kubernetes-version")
 
 			if len(args) == 0 {
-				log.Fatalln("Missing cluster name")
+				term.Fatalln("Missing cluster name.")
 			}
 			if len(args) > 1 {
-				log.Fatalln("Multiple cluster name provided.")
+				term.Fatalln("Multiple cluster name provided.")
 			}
+
 			cluster.Name = args[0]
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
 			if err != nil {
-				log.Fatalln(err)
+				term.Fatalln(err)
 			}
 			ctx := cloud.NewContext(context.Background(), cfg)
 			cluster, err = cloud.Create(ctx, cluster)
 			if err != nil {
-				log.Fatalln(err)
+				term.Fatalln(err)
 			}
 
 			for sku, count := range nodes {
@@ -69,7 +70,7 @@ func NewCmdCreateCluster() *cobra.Command {
 				}
 				_, err := cloud.Store(ctx).NodeGroups(cluster.Name).Create(&ig)
 				if err != nil {
-					log.Fatalln(err)
+					term.Fatalln(err)
 				}
 			}
 		},

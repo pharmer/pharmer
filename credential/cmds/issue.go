@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/appscode/go-term"
 	"github.com/appscode/pharmer/credential/cloud"
@@ -11,25 +10,25 @@ import (
 
 func NewCmdIssue() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "issue",
+		Use:               "credential",
 		Short:             "Issue credential for cloud providers Azure and Google Cloud",
-		Example:           `pharmer credential issue mycred`,
+		Example:           `pharmer issue credential mycred`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {
-				fmt.Fprintf(os.Stderr, "You can only specify one argument, found %d", len(args))
-				cmd.Help()
-				os.Exit(1)
+				term.Fatalln(fmt.Sprintf("You can only specify one argument, found %d", len(args)))
 			}
 
-			_, provider := term.List([]string{"Azure", "GoogleCloud"})
-			if provider == "gce" {
+			provider, _ := cmd.Flags().GetString("provider")
+			if provider == "GoogleCloud" {
 				cloud.IssueGCECredential(args[0])
-			} else if provider == "azure" {
+			} else if provider == "Azure" {
 				cloud.IssueAzureCredential(args[0])
 			}
 			term.Successln("Credential issued successfully!")
 		},
 	}
+
+	cmd.Flags().StringP("provider", "p", "", "Name of the Cloud provider")
 	return cmd
 }

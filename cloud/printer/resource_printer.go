@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/credential"
 	"github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -69,6 +70,7 @@ func ShortHumanDuration(d time.Duration) string {
 func (h *HumanReadablePrinter) addDefaultHandlers() {
 	h.Handler(h.printCluster)
 	h.Handler(h.printNodeGroup)
+	h.Handler(h.printCredential)
 }
 
 func (h *HumanReadablePrinter) PrintHeader(enable bool) {
@@ -121,6 +123,10 @@ func getColumns(options PrintOptions, t reflect.Type) []string {
 		columns = append(columns, "Cluster")
 		columns = append(columns, "Node")
 		columns = append(columns, "SKU")
+	case "*api.Credential":
+		columns = append(columns, "Name")
+		columns = append(columns, "Provider")
+		columns = append(columns, "Data")
 	}
 	return columns
 }
@@ -165,6 +171,23 @@ func (h *HumanReadablePrinter) printNodeGroup(item *api.NodeGroup, w io.Writer, 
 		return
 	}
 	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.Template.Spec.SKU); err != nil {
+		return
+	}
+	PrintNewline(w)
+	return
+}
+
+func (h *HumanReadablePrinter) printCredential(item *api.Credential, w io.Writer, options PrintOptions) (err error) {
+	name := item.Name
+
+	if _, err = fmt.Fprintf(w, "%s\t", name); err != nil {
+		return
+	}
+
+	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.Provider); err != nil {
+		return
+	}
+	if _, err = fmt.Fprintf(w, "%s\t", credential.CommonSpec(item.Spec).String()); err != nil {
 		return
 	}
 	PrintNewline(w)

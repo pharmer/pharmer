@@ -12,7 +12,6 @@ import (
 	_ "github.com/appscode/pharmer/cloud/providers"
 	"github.com/appscode/pharmer/config"
 	cfgCmd "github.com/appscode/pharmer/config/cmds"
-	credCmd "github.com/appscode/pharmer/credential/cmds"
 	"github.com/appscode/pharmer/data/files"
 	_ "github.com/appscode/pharmer/store/providers"
 	"github.com/jpillora/go-ogle-analytics"
@@ -59,14 +58,14 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 	// ref: https://github.com/kubernetes/kubernetes/issues/17162#issuecomment-225596212
 	flag.CommandLine.Parse([]string{})
 
-	rootCmd.AddCommand(newCmdCreate(out, err))
+	rootCmd.AddCommand(newCmdCreate())
+	rootCmd.AddCommand(newCmdGet(out))
+	rootCmd.AddCommand(newCmdDelete())
+	rootCmd.AddCommand(newCmdIssue())
+	rootCmd.AddCommand(newCmdDescribe(out))
 
-	rootCmd.AddCommand(credCmd.NewCmdCredential())
 	rootCmd.AddCommand(cfgCmd.NewCmdConfig())
-	rootCmd.AddCommand(cpCmd.NewCmdDelete())
 	rootCmd.AddCommand(cpCmd.NewCmdApply())
-	rootCmd.AddCommand(cpCmd.NewCmdGet(out, err))
-	rootCmd.AddCommand(cpCmd.NewCmdDescribe(out, err))
 	rootCmd.AddCommand(cpCmd.NewCmdUse())
 	rootCmd.AddCommand(cpCmd.NewCmdSSH())
 	rootCmd.AddCommand(cpCmd.NewCmdBackup())

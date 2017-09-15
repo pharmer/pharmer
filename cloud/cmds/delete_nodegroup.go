@@ -3,8 +3,8 @@ package cmds
 import (
 	"context"
 
+	"github.com/appscode/go-term"
 	"github.com/appscode/go/flags"
-	"github.com/appscode/log"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
@@ -27,22 +27,17 @@ func NewCmdDeleteNodeGroup() *cobra.Command {
 
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			ctx := cloud.NewContext(context.Background(), cfg)
+			term.ExitOnError(err)
 
+			ctx := cloud.NewContext(context.Background(), cfg)
 			clusterName, _ := cmd.Flags().GetString("cluster")
 
 			nodeGroups, err := getNodeGroupList(ctx, clusterName, args...)
-			if err != nil {
-				log.Fatalln(err)
-			}
+			term.ExitOnError(err)
 
 			for _, ng := range nodeGroups {
-				if err := cloud.Store(ctx).NodeGroups(clusterName).Delete(ng.Name); err != nil {
-					log.Fatalln(err)
-				}
+				err := cloud.Store(ctx).NodeGroups(clusterName).Delete(ng.Name)
+				term.ExitOnError(err)
 			}
 		},
 	}

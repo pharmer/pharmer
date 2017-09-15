@@ -3,7 +3,7 @@ package cmds
 import (
 	"context"
 
-	"github.com/appscode/log"
+	"github.com/appscode/go-term"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
@@ -31,30 +31,25 @@ func NewCmdDeleteCluster() *cobra.Command {
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
-				log.Fatalln("Missing cluster name")
+				term.Fatalln("Missing cluster name.")
 			}
 
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				log.Fatalln(err)
-			}
+			term.ExitOnError(err)
+
 			ctx := cloud.NewContext(context.Background(), cfg)
 
 			for _, clusterName := range args {
-				if err := cloud.Store(ctx).Clusters().Delete(clusterName); err != nil {
-					log.Fatalln(err)
-				}
+				err := cloud.Store(ctx).Clusters().Delete(clusterName)
+				term.ExitOnError(err)
 
 				nodeGroups, err := getNodeGroupList(ctx, clusterName)
-				if err != nil {
-					log.Fatalln(err)
-				}
+				term.ExitOnError(err)
 
 				for _, ng := range nodeGroups {
-					if err := cloud.Store(ctx).NodeGroups(clusterName).Delete(ng.Name); err != nil {
-						log.Fatalln(err)
-					}
+					err := cloud.Store(ctx).NodeGroups(clusterName).Delete(ng.Name)
+					term.ExitOnError(err)
 				}
 			}
 		},

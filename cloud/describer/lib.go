@@ -63,4 +63,3 @@ func timeToString(t *metav1.Time) string {
 
 	return t.Format(time.RFC1123Z)
 }
-

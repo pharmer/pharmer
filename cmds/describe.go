@@ -3,17 +3,17 @@ package cmds
 import (
 	"io"
 
+	cpCmd "github.com/appscode/pharmer/cloud/cmds"
 	"github.com/spf13/cobra"
 )
 
-func NewCmdGet(out, errOut io.Writer) *cobra.Command {
+func newCmdDescribe(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "get",
+		Use:               "describe",
 		DisableAutoGenTag: true,
 		Run:               func(cmd *cobra.Command, args []string) {},
 	}
 
-	cmd.AddCommand(NewCmdGetCluster(out, errOut))
-	cmd.AddCommand(NewCmdGetNodeGroup(out, errOut))
+	cmd.AddCommand(cpCmd.NewCmdDescribeCluster(out))
 	return cmd
 }
