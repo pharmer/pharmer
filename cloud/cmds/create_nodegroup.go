@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/appscode/go-term"
+	"github.com/appscode/go/flags"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 	"github.com/appscode/pharmer/phid"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"github.com/appscode/go/flags"
 )
 
 func NewCmdCreateNodeGroup() *cobra.Command {
