@@ -1,33 +1,20 @@
 ## pharmer create
 
-Create a Kubernetes cluster for a given cloud provider
+
 
 ### Synopsis
 
 
-Create a Kubernetes cluster for a given cloud provider
+
 
 ```
 pharmer create [flags]
 ```
 
-### Examples
-
-```
-create --provider=(aws|gce|cc) --nodes=t1=1,t2=2 --zone=us-central1-f demo-cluster
-```
-
 ### Options
 
 ```
-      --credential-uid string       Use preconfigured cloud credential uid
-      --do-not-delete               Set do not delete flag
-  -h, --help                        help for create
-      --kubeadm-version string      Kubeadm version
-      --kubernetes-version string   Kubernetes version
-      --nodes stringToInt           Node set configuration (default [])
-      --provider string             Provider name
-      --zone string                 Cloud provider zone name
+  -h, --help   help for create
 ```
 
 ### Options inherited from parent commands
@@ -47,4 +34,7 @@ create --provider=(aws|gce|cc) --nodes=t1=1,t2=2 --zone=us-central1-f demo-clust
 
 ### SEE ALSO
 * [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer create cluster](pharmer_create_cluster.md)	 - Create a Kubernetes cluster for a given cloud provider
+* [pharmer create credential](pharmer_create_credential.md)	 - Create  credential object
+* [pharmer create nodegroup](pharmer_create_nodegroup.md)	 - Create a Kubernetes cluster NodeGroup for a given cloud provider
 

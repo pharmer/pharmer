@@ -1,20 +1,33 @@
-## pharmer delete
+## pharmer create cluster
 
-
+Create a Kubernetes cluster for a given cloud provider
 
 ### Synopsis
 
 
-
+Create a Kubernetes cluster for a given cloud provider
 
 ```
-pharmer delete [flags]
+pharmer create cluster [flags]
+```
+
+### Examples
+
+```
+pharmer create cluster demo-cluster
 ```
 
 ### Options
 
 ```
-  -h, --help   help for delete
+      --credential-uid string       Use preconfigured cloud credential uid
+      --do-not-delete               Set do not delete flag
+  -h, --help                        help for cluster
+      --kubeadm-version string      Kubeadm version
+      --kubernetes-version string   Kubernetes version
+      --nodes stringToInt           Node set configuration (default [])
+      --provider string             Provider name
+      --zone string                 Cloud provider zone name
 ```
 
 ### Options inherited from parent commands
@@ -33,8 +46,5 @@ pharmer delete [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer delete cluster](pharmer_delete_cluster.md)	 - Delete a Kubernetes cluster
-* [pharmer delete credential](pharmer_delete_credential.md)	 - Delete  credential object
-* [pharmer delete nodegroup](pharmer_delete_nodegroup.md)	 - Delete a Kubernetes cluster NodeGroup
+* [pharmer create](pharmer_create.md)	 - 
 

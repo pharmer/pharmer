@@ -1,26 +1,26 @@
-## pharmer credential issue
+## pharmer delete credential
 
-Issue credential for cloud providers Azure and Google Cloud
+Delete  credential object
 
 ### Synopsis
 
 
-Issue credential for cloud providers Azure and Google Cloud
+Delete  credential object
 
 ```
-pharmer credential issue [flags]
+pharmer delete credential [flags]
 ```
 
 ### Examples
 
 ```
-pharmer credential issue mycred
+pharmer delete credential
 ```
 
 ### Options
 
 ```
-  -h, --help   help for issue
+  -h, --help   help for credential
 ```
 
 ### Options inherited from parent commands
@@ -39,5 +39,5 @@ pharmer credential issue mycred
 ```
 
 ### SEE ALSO
-* [pharmer credential](pharmer_credential.md)	 - Manage cloud provider credentials
+* [pharmer delete](pharmer_delete.md)	 - 
 

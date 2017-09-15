@@ -1,26 +1,30 @@
-## pharmer credential import
+## pharmer delete cluster
 
-Import cloud credentials into Pharmer
+Delete a Kubernetes cluster
 
 ### Synopsis
 
 
-Import cloud credentials into Pharmer
+Delete a Kubernetes cluster
 
 ```
-pharmer credential import [flags]
+pharmer delete cluster [flags]
 ```
 
 ### Examples
 
 ```
-pharmer credential import -p aws mycred
+pharmer delete cluster demo-cluster
 ```
 
 ### Options
 
 ```
-  -h, --help   help for import
+      --delete-dynamic-volumes   Delete dynamically provisioned volumes
+      --force                    Force delete any running non-system apps
+  -h, --help                     help for cluster
+      --keep-loadbalancers       Keep loadbalancers
+      --release-reserved-ip      Release reserved IP
 ```
 
 ### Options inherited from parent commands
@@ -39,5 +43,5 @@ pharmer credential import -p aws mycred
 ```
 
 ### SEE ALSO
-* [pharmer credential](pharmer_credential.md)	 - Manage cloud provider credentials
+* [pharmer delete](pharmer_delete.md)	 - 
 

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/TamalSaha/go-oneliners"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
+	"github.com/tamalsaha/go-oneliners"
 	compute "google.golang.org/api/compute/v1"
 )
 

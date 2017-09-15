@@ -27,10 +27,11 @@ Pharmer by Appscode - Manages farms
 * [pharmer apply](pharmer_apply.md)	 - Apply changes
 * [pharmer backup](pharmer_backup.md)	 - Takes backup of YAML files of cluster
 * [pharmer config](pharmer_config.md)	 - Pharmer configuration
-* [pharmer create](pharmer_create.md)	 - Create a Kubernetes cluster for a given cloud provider
-* [pharmer credential](pharmer_credential.md)	 - Manage cloud provider credentials
-* [pharmer delete](pharmer_delete.md)	 - Delete a Kubernetes cluster
-* [pharmer list](pharmer_list.md)	 - Lists active Kubernetes clusters
+* [pharmer create](pharmer_create.md)	 - 
+* [pharmer delete](pharmer_delete.md)	 - 
+* [pharmer describe](pharmer_describe.md)	 - 
+* [pharmer get](pharmer_get.md)	 - 
+* [pharmer issue](pharmer_issue.md)	 - 
 * [pharmer ssh](pharmer_ssh.md)	 - SSH into a Kubernetes cluster instance
 * [pharmer use](pharmer_use.md)	 - Retrieve Kubeconfig for a Kubernetes cluster and change kubectl context
 * [pharmer version](pharmer_version.md)	 - Prints binary version number.

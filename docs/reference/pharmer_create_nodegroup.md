@@ -1,20 +1,28 @@
-## pharmer delete
+## pharmer create nodegroup
 
-
+Create a Kubernetes cluster NodeGroup for a given cloud provider
 
 ### Synopsis
 
 
-
+Create a Kubernetes cluster NodeGroup for a given cloud provider
 
 ```
-pharmer delete [flags]
+pharmer create nodegroup [flags]
+```
+
+### Examples
+
+```
+pharmer create nodegroup -k <cluster_name>
 ```
 
 ### Options
 
 ```
-  -h, --help   help for delete
+  -k, --cluster string      Name of the Kubernetes cluster
+  -h, --help                help for nodegroup
+      --nodes stringToInt   Node set configuration (default [])
 ```
 
 ### Options inherited from parent commands
@@ -33,8 +41,5 @@ pharmer delete [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer delete cluster](pharmer_delete_cluster.md)	 - Delete a Kubernetes cluster
-* [pharmer delete credential](pharmer_delete_credential.md)	 - Delete  credential object
-* [pharmer delete nodegroup](pharmer_delete_nodegroup.md)	 - Delete a Kubernetes cluster NodeGroup
+* [pharmer create](pharmer_create.md)	 - 
 

@@ -1,4 +1,4 @@
-## pharmer delete
+## pharmer get
 
 
 
@@ -8,13 +8,13 @@
 
 
 ```
-pharmer delete [flags]
+pharmer get [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for delete
+  -h, --help   help for get
 ```
 
 ### Options inherited from parent commands
@@ -34,7 +34,7 @@ pharmer delete [flags]
 
 ### SEE ALSO
 * [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer delete cluster](pharmer_delete_cluster.md)	 - Delete a Kubernetes cluster
-* [pharmer delete credential](pharmer_delete_credential.md)	 - Delete  credential object
-* [pharmer delete nodegroup](pharmer_delete_nodegroup.md)	 - Delete a Kubernetes cluster NodeGroup
+* [pharmer get cluster](pharmer_get_cluster.md)	 - Get a Kubernetes cluster
+* [pharmer get credential](pharmer_get_credential.md)	 - List cloud Credentials
+* [pharmer get nodegroup](pharmer_get_nodegroup.md)	 - Get a Kubernetes cluster NodeGroup
 
