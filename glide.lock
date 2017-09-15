@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-hash: 07b1b2a02379bbad650940cf51231cf6eaa7a64e1ffe837abb73471cbf91dc66
-updated: 2017-09-14T15:14:11.951795563+06:00
-=======
 hash: a3c596328c63105736cdf22f54f1d2587e91a329c8b1c6ef2f779b3f5d4a7a7a
 updated: 2017-09-09T15:42:12.523328537-07:00
->>>>>>> 67d7dcdf3380d508b76c5826521189adf3fdd17d
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
