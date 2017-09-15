@@ -18,7 +18,12 @@ import (
 
 func NewCmdCreateCredential() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "credential",
+		Use: api.ResourceNameCredential,
+		Aliases: []string{
+			api.ResourceTypeCredential,
+			api.ResourceCodeCredential,
+			api.ResourceKindCredential,
+		},
 		Short:             "Create  credential object",
 		Example:           `pharmer create credential`,
 		DisableAutoGenTag: true,

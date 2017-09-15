@@ -15,7 +15,12 @@ import (
 
 func NewCmdGetCredential(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "credential",
+		Use: api.ResourceNameCredential,
+		Aliases: []string{
+			api.ResourceTypeCredential,
+			api.ResourceCodeCredential,
+			api.ResourceKindCredential,
+		},
 		Short:             "List cloud Credentials",
 		Example:           `pharmer get credential`,
 		DisableAutoGenTag: true,
@@ -28,6 +33,7 @@ func NewCmdGetCredential(out io.Writer) *cobra.Command {
 			RunGetCredential(ctx, cmd, out, args)
 		},
 	}
+	cmd.Flags().StringP("output", "o", "", "Output format. One of: json|yaml|wide")
 	return cmd
 }
 

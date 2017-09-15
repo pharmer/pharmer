@@ -4,6 +4,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	ResourceCodeCredential = "cred"
+	ResourceKindCredential = "Credential"
+	ResourceNameCredential = "credential"
+	ResourceTypeCredential = "credentials"
+)
+
 type Credential struct {
 	metav1.TypeMeta   `json:",inline,omitempty"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

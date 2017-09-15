@@ -4,13 +4,19 @@ import (
 	"fmt"
 
 	"github.com/appscode/go-term"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/credential/cloud"
 	"github.com/spf13/cobra"
 )
 
 func NewCmdIssue() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "credential",
+		Use: api.ResourceNameCredential,
+		Aliases: []string{
+			api.ResourceTypeCredential,
+			api.ResourceCodeCredential,
+			api.ResourceKindCredential,
+		},
 		Short:             "Issue credential for cloud providers Azure and Google Cloud",
 		Example:           `pharmer issue credential mycred`,
 		DisableAutoGenTag: true,

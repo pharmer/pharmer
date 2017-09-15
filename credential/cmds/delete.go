@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"github.com/appscode/go-term"
+	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"
@@ -10,7 +11,12 @@ import (
 
 func NewCmdDeleteCredential() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "credential",
+		Use: api.ResourceNameCredential,
+		Aliases: []string{
+			api.ResourceTypeCredential,
+			api.ResourceCodeCredential,
+			api.ResourceKindCredential,
+		},
 		Short:             "Delete  credential object",
 		Example:           `pharmer delete credential`,
 		DisableAutoGenTag: true,
