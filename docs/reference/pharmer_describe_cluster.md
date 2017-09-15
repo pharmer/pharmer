@@ -1,20 +1,26 @@
-## pharmer delete
+## pharmer describe cluster
 
-
+Describe a Kubernetes cluster
 
 ### Synopsis
 
 
-
+Describe a Kubernetes cluster
 
 ```
-pharmer delete [flags]
+pharmer describe cluster [flags]
+```
+
+### Examples
+
+```
+pharmer describe cluster <cluster_name>
 ```
 
 ### Options
 
 ```
-  -h, --help   help for delete
+  -h, --help   help for cluster
 ```
 
 ### Options inherited from parent commands
@@ -33,8 +39,5 @@ pharmer delete [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer delete cluster](pharmer_delete_cluster.md)	 - Delete a Kubernetes cluster
-* [pharmer delete credential](pharmer_delete_credential.md)	 - Delete  credential object
-* [pharmer delete nodegroup](pharmer_delete_nodegroup.md)	 - Delete a Kubernetes cluster NodeGroup
+* [pharmer describe](pharmer_describe.md)	 - 
 

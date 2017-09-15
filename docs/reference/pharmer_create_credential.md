@@ -1,26 +1,29 @@
-## pharmer credential get
+## pharmer create credential
 
-List cloud credentials
+Create  credential object
 
 ### Synopsis
 
 
-List cloud credentials
+Create  credential object
 
 ```
-pharmer credential get [flags]
+pharmer create credential [flags]
 ```
 
 ### Examples
 
 ```
-pharmer credential list
+pharmer create credential
 ```
 
 ### Options
 
 ```
-  -h, --help   help for get
+  -l, --from-env           Load credential data from ENV.
+  -f, --from-file string   Load credential data from file
+  -h, --help               help for credential
+  -p, --provider string    Name of the Cloud provider
 ```
 
 ### Options inherited from parent commands
@@ -39,5 +42,5 @@ pharmer credential list
 ```
 
 ### SEE ALSO
-* [pharmer credential](pharmer_credential.md)	 - Manage cloud provider credentials
+* [pharmer create](pharmer_create.md)	 - 
 

@@ -1,5 +1,5 @@
 hash: 07b1b2a02379bbad650940cf51231cf6eaa7a64e1ffe837abb73471cbf91dc66
-updated: 2017-09-15T10:57:49.659424273-07:00
+updated: 2017-09-15T11:05:26.130044936-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -355,10 +355,12 @@ imports:
   subpackages:
   - doc
 - name: github.com/spf13/pflag
-  version: 8f62c03454809f9fe034ed3b4f564dfd50e7067b
+  version: 0f53e09b6e0414581a4e540b3731ea7aa721e7fe
   repo: https://github.com/appscode/pflag.git
   vcs: git
 - name: github.com/tamalsaha/go-oneliners
+  version: 4ca214c0460d9077e49e3ef394785f92408f7699
+- name: github.com/TamalSaha/go-oneliners
   version: 4ca214c0460d9077e49e3ef394785f92408f7699
 - name: github.com/tent/http-link-go
   version: ac974c61c2f990f4115b119354b5e0b47550e888

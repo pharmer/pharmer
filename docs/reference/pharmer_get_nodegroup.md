@@ -1,20 +1,28 @@
-## pharmer delete
+## pharmer get nodegroup
 
-
+Get a Kubernetes cluster NodeGroup
 
 ### Synopsis
 
 
-
+Get a Kubernetes cluster NodeGroup
 
 ```
-pharmer delete [flags]
+pharmer get nodegroup [flags]
+```
+
+### Examples
+
+```
+pharmer get nodegroup -k <cluster_name>
 ```
 
 ### Options
 
 ```
-  -h, --help   help for delete
+  -k, --cluster string   Name of the Kubernetes cluster
+  -h, --help             help for nodegroup
+  -o, --output string    Output format. One of: json|yaml|wide
 ```
 
 ### Options inherited from parent commands
@@ -33,8 +41,5 @@ pharmer delete [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer delete cluster](pharmer_delete_cluster.md)	 - Delete a Kubernetes cluster
-* [pharmer delete credential](pharmer_delete_credential.md)	 - Delete  credential object
-* [pharmer delete nodegroup](pharmer_delete_nodegroup.md)	 - Delete a Kubernetes cluster NodeGroup
+* [pharmer get](pharmer_get.md)	 - 
 

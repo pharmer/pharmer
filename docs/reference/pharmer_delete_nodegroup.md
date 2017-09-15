@@ -1,20 +1,27 @@
-## pharmer credential
+## pharmer delete nodegroup
 
-Manage cloud provider credentials
+Delete a Kubernetes cluster NodeGroup
 
 ### Synopsis
 
 
-Manage cloud provider credentials
+Delete a Kubernetes cluster NodeGroup
 
 ```
-pharmer credential [flags]
+pharmer delete nodegroup [flags]
+```
+
+### Examples
+
+```
+pharmer delete nodegroup -k <cluster_name>
 ```
 
 ### Options
 
 ```
-  -h, --help   help for credential
+  -k, --cluster string   Name of the Kubernetes cluster
+  -h, --help             help for nodegroup
 ```
 
 ### Options inherited from parent commands
@@ -33,9 +40,5 @@ pharmer credential [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer credential delete](pharmer_credential_delete.md)	 - Delete a cloud credential
-* [pharmer credential get](pharmer_credential_get.md)	 - List cloud credentials
-* [pharmer credential import](pharmer_credential_import.md)	 - Import cloud credentials into Pharmer
-* [pharmer credential issue](pharmer_credential_issue.md)	 - Issue credential for cloud providers Azure and Google Cloud
+* [pharmer delete](pharmer_delete.md)	 - 
 

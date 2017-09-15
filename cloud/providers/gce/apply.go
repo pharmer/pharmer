@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/TamalSaha/go-oneliners"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
+	"github.com/tamalsaha/go-oneliners"
 	compute "google.golang.org/api/compute/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

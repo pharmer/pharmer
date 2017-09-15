@@ -1,20 +1,27 @@
-## pharmer credential delete
+## pharmer get cluster
 
-Delete a cloud credential
+Get a Kubernetes cluster
 
 ### Synopsis
 
 
-Delete a cloud credential
+Get a Kubernetes cluster
 
 ```
-pharmer credential delete [flags]
+pharmer get cluster [flags]
+```
+
+### Examples
+
+```
+pharmer get cluster
 ```
 
 ### Options
 
 ```
-  -h, --help   help for delete
+  -h, --help            help for cluster
+  -o, --output string   Output format. One of: json|yaml|wide
 ```
 
 ### Options inherited from parent commands
@@ -33,5 +40,5 @@ pharmer credential delete [flags]
 ```
 
 ### SEE ALSO
-* [pharmer credential](pharmer_credential.md)	 - Manage cloud provider credentials
+* [pharmer get](pharmer_get.md)	 - 
 

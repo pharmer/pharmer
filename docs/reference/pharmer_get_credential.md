@@ -1,26 +1,27 @@
-## pharmer list
+## pharmer get credential
 
-Lists active Kubernetes clusters
+List cloud Credentials
 
 ### Synopsis
 
 
-Lists active Kubernetes clusters
+List cloud Credentials
 
 ```
-pharmer list [flags]
+pharmer get credential [flags]
 ```
 
 ### Examples
 
 ```
-appctl cluster list
+pharmer get credential
 ```
 
 ### Options
 
 ```
-  -h, --help   help for list
+  -h, --help            help for credential
+  -o, --output string   Output format. One of: json|yaml|wide
 ```
 
 ### Options inherited from parent commands
@@ -39,5 +40,5 @@ appctl cluster list
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer get](pharmer_get.md)	 - 
 
