@@ -1,38 +1,42 @@
 package cmds
 
 import (
-	gtx "context"
-	"fmt"
-	"os"
-
-	"github.com/appscode/go/log"
+	"github.com/appscode/go-term"
+	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
 )
 
-func NewCmdDelete() *cobra.Command {
+func NewCmdDeleteCredential() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "delete",
-		Short:             "Delete a cloud credential",
+		Use: api.ResourceNameCredential,
+		Aliases: []string{
+			api.ResourceTypeCredential,
+			api.ResourceCodeCredential,
+			api.ResourceKindCredential,
+		},
+		Short:             "Delete  credential object",
+		Example:           `pharmer delete credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 1 {
-				fmt.Fprintf(os.Stderr, "You can only specify one argument, found %d", len(args))
-				cmd.Help()
-				os.Exit(1)
+			if len(args) == 0 {
+				term.Fatalln("Missing Credential name.")
 			}
 
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			store := config.NewStoreProvider(gtx.TODO(), cfg)
-			err = store.Credentials().Delete(args[0])
-			if err != nil {
-				log.Fatalln(err)
+			term.ExitOnError(err)
+
+			ctx := cloud.NewContext(context.Background(), cfg)
+
+			for _, arg := range args {
+				err := cloud.Store(ctx).Credentials().Delete(arg)
+				term.ExitOnError(err)
 			}
 		},
 	}
+
 	return cmd
 }

@@ -69,9 +69,9 @@ type InstanceType struct {
 
 type CloudKubernetes struct {
 	DefaultSetup struct {
-		NodeGroup struct {
+		Nodeset struct {
 			M4Large int `json:"m4.large"`
-		} `json:"nodeGroup"`
+		} `json:"nodeset"`
 	} `json:"default_setup"`
 	VersionsByEnv map[string][]*CloudKubernetesVersion `json:"versions_by_env"`
 }
