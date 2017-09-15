@@ -6,6 +6,11 @@ imports:
   subpackages:
   - compute/metadata
   - internal
+- name: github.com/AlecAivazis/survey
+  version: 19f14ea3b122127358f0de49404a3f916113a7e4
+  subpackages:
+  - core
+  - terminal
 - name: github.com/appscode/api
   version: 2e0844caab5be929820a03a7eb975546c796cb9f
   subpackages:
@@ -28,7 +33,6 @@ imports:
   subpackages:
   - pkg/config
   - pkg/util
-  - pkg/util/timeutil
 - name: github.com/appscode/client
   version: 9844500890e8cf3df84b3c86ddc17c220db38af1
   subpackages:
@@ -192,6 +196,8 @@ imports:
   version: dcef7f55730566d41eae5db10e7d6981829720f6
 - name: github.com/facebookgo/stack
   version: 751773369052141c013c6e827a71e8f35c07879c
+- name: github.com/fatih/camelcase
+  version: f6a740d52f961c60348ebb109adde9f4635d7540
 - name: github.com/fatih/color
   version: 9aae6aaa22315390f03959adca2c4d395b02fcef
 - name: github.com/ghodss/yaml
@@ -286,6 +292,8 @@ imports:
   version: 56b76bdf51f7708750eac80fa38b952bb9f32639
 - name: github.com/mattn/go-runewidth
   version: d6bea18f789704b5f83375793155289da36a3c7f
+- name: github.com/mgutz/ansi
+  version: 9520e82c474b0a04dd04f8a40959027271bab992
 - name: github.com/mgutz/str
   version: 968bf66e3da857419e4f6e71b2d5c9ae95682dc4
 - name: github.com/miekg/dns
@@ -347,7 +355,7 @@ imports:
   subpackages:
   - doc
 - name: github.com/spf13/pflag
-  version: 0f53e09b6e0414581a4e540b3731ea7aa721e7fe
+  version: 8f62c03454809f9fe034ed3b4f564dfd50e7067b
   repo: https://github.com/appscode/pflag.git
   vcs: git
 - name: github.com/tamalsaha/go-oneliners
@@ -485,6 +493,10 @@ imports:
   - status
   - tap
   - transport
+- name: gopkg.in/AlecAivazis/survey.v1
+  version: 73fd4d7829877a72e03dbb42f84ed383fbbc5fa0
+  subpackages:
+  - terminal
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/ini.v1
@@ -631,6 +643,8 @@ imports:
   subpackages:
   - cmd/kubeadm/app/apis/kubeadm/v1alpha1
   - cmd/kubeadm/app/constants
+  - pkg/printers
+  - pkg/util/slice
   - pkg/util/version
 testImports:
 - name: github.com/onsi/ginkgo

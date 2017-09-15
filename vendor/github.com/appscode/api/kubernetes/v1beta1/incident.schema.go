@@ -136,4 +136,3 @@ func (m *IncidentDescribeRequest) IsValid() (*gojsonschema.Result, error) {
 	return incidentDescribeRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *IncidentDescribeRequest) IsRequest() {}
-

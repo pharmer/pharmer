@@ -8,10 +8,14 @@ type AWS struct {
 	CommonSpec
 }
 
+func NewAWS() *AWS {
+	return &AWS{}
+}
+
 func (c AWS) AccessKeyID() string     { return c.Data[AWSAccessKeyID] }
 func (c AWS) SecretAccessKey() string { return c.Data[AWSSecretAccessKey] }
 
-func (c AWS) Load(filename string) error {
+func (c *AWS) Load(filename string) error {
 	if c.Data != nil {
 		c.Data = map[string]string{}
 	}

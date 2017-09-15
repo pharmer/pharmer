@@ -11,6 +11,13 @@ import (
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
+const (
+	ResourceCodeCluster = ""
+	ResourceKindCluster = "Cluster"
+	ResourceNameCluster = "cluster"
+	ResourceTypeCluster = "clusters"
+)
+
 // ref: https://github.com/kubernetes/kubernetes/blob/8b9f0ea5de2083589f3b9b289b90273556bc09c4/pkg/cloudprovider/providers/azure/azure.go#L56
 type AzureCloudConfig struct {
 	TenantID           string `json:"tenantId,omitempty"`

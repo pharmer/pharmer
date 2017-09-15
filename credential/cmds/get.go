@@ -1,51 +1,77 @@
 package cmds
 
 import (
-	gtx "context"
-	"fmt"
-	"os"
-	"text/tabwriter"
+	"io"
 
-	"github.com/appscode/go/log"
+	"github.com/appscode/go-term"
+	"github.com/appscode/pharmer/api"
+	"github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/cloud/printer"
 	"github.com/appscode/pharmer/config"
-	"github.com/appscode/pharmer/credential"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func NewCmdGet() *cobra.Command {
+func NewCmdGetCredential(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "get",
-		Short:             "List cloud credentials",
-		Example:           `pharmer credential list`,
+		Use:               "credential",
+		Short:             "List cloud Credentials",
+		Example:           `pharmer get credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) > 0 {
-				fmt.Fprintf(os.Stderr, "No argument is supported, found %d", len(args))
-				cmd.Help()
-				os.Exit(1)
-			}
-
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			store := config.NewStoreProvider(gtx.TODO(), cfg)
-			creds, err := store.Credentials().List(metav1.ListOptions{})
-			if err != nil {
-				log.Fatalln(err)
-			}
+			term.ExitOnError(err)
 
-			w := new(tabwriter.Writer)
-			w.Init(os.Stdout, 0, 8, 0, '\t', 0)
-			fmt.Fprintln(w, "NAME\tProvider\tData")
-			for _, c := range creds {
-				spec := credential.CommonSpec(c.Spec)
-				fmt.Fprintf(w, "%s\t%s\t%s\n", c.Name, spec.Provider, spec.String())
-			}
-			w.Flush()
+			ctx := cloud.NewContext(context.Background(), cfg)
+			RunGetCredential(ctx, cmd, out, args)
 		},
 	}
 	return cmd
+}
+
+func RunGetCredential(ctx context.Context, cmd *cobra.Command, out io.Writer, args []string) error {
+
+	rPrinter, err := printer.NewPrinter(cmd)
+	if err != nil {
+		return err
+	}
+
+	w := printer.GetNewTabWriter(out)
+
+	credentials, err := getCredentialList(ctx, args)
+	if err != nil {
+		return err
+	}
+	for _, credential := range credentials {
+		if err := rPrinter.PrintObj(credential, w); err != nil {
+			return err
+		}
+		if rPrinter.IsGeneric() {
+			printer.PrintNewline(w)
+		}
+	}
+
+	w.Flush()
+	return nil
+}
+
+func getCredentialList(ctx context.Context, args []string) (credentialList []*api.Credential, err error) {
+	if len(args) != 0 {
+		for _, arg := range args {
+			credential, er2 := cloud.Store(ctx).Credentials().Get(arg)
+			if er2 != nil {
+				return nil, er2
+			}
+			credentialList = append(credentialList, credential)
+		}
+
+	} else {
+		credentialList, err = cloud.Store(ctx).Credentials().List(metav1.ListOptions{})
+		if err != nil {
+			return
+		}
+	}
+	return
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/store"
 	"github.com/graymeta/stow"
-	"github.com/tamalsaha/go-oneliners"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -39,7 +38,6 @@ func (s *ClusterFileStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 			return nil, fmt.Errorf("Failed to list clusters. Reason: %v", err)
 		}
 		for _, item := range page.Items {
-			oneliners.FILE(item.Name())
 			r, err := item.Open()
 			if err != nil {
 				return nil, fmt.Errorf("Failed to list clusters. Reason: %v", err)

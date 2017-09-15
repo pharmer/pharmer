@@ -93,37 +93,30 @@ func Delete(ctx context.Context, name string) (*api.Cluster, error) {
 	return Store(ctx).Clusters().Update(cluster)
 }
 
-func DeleteNG(ctx context.Context, sku, name string) (*api.Cluster, error) {
-	if name == "" {
-		return nil, errors.New("Missing cluster name")
+func DeleteNG(ctx context.Context, nodeGroupName, clusterName string) error {
+	if clusterName == "" {
+		return errors.New("Missing cluster name.")
 	}
-	if sku == "" {
-		return nil, errors.New("Missing node sku")
-	}
-	cluster, err := Store(ctx).Clusters().Get(name)
-	if err != nil {
-		return nil, fmt.Errorf("Cluster `%s` does not exist. Reason: %v", name, err)
+	if nodeGroupName == "" {
+		return errors.New("Missing nodegroup name.")
 	}
 
-	nodeGroups, err := Store(ctx).NodeGroups(name).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf(`No nodegroup exists`)
-	}
-	var found = false
-	for _, ng := range nodeGroups {
-		if !ng.IsMaster() && ng.Spec.Template.Spec.SKU == sku {
-			ng.DeletionTimestamp = &metav1.Time{Time: time.Now()}
-			Store(ctx).NodeGroups(name).Update(ng)
-			found = true
-		}
-	}
-	if !found {
-		if err != nil {
-			return nil, fmt.Errorf("Node group with  `%s` does not exist. Reason: %v", sku, err)
-		}
+	if _, err := Store(ctx).Clusters().Get(clusterName); err != nil {
+		return fmt.Errorf("Cluster `%s` does not exist. Reason: %v", clusterName, err)
 	}
 
-	return cluster, nil
+	nodeGroup, err := Store(ctx).NodeGroups(clusterName).Get(nodeGroupName)
+	if err != nil {
+		return fmt.Errorf(`nodegroup not found`)
+	}
+
+	if !nodeGroup.IsMaster() {
+		nodeGroup.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+		_, err := Store(ctx).NodeGroups(clusterName).Update(nodeGroup)
+		return err
+	}
+
+	return nil
 }
 
 func GetAdminConfig(ctx context.Context, name string) (*clientcmd.Config, error) {

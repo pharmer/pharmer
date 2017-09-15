@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"flag"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	_ "github.com/appscode/pharmer/cloud/providers"
 	"github.com/appscode/pharmer/config"
 	cfgCmd "github.com/appscode/pharmer/config/cmds"
-	credCmd "github.com/appscode/pharmer/credential/cmds"
 	"github.com/appscode/pharmer/data/files"
 	_ "github.com/appscode/pharmer/store/providers"
 	"github.com/jpillora/go-ogle-analytics"
@@ -23,7 +23,7 @@ const (
 	gaTrackingCode = "UA-62096468-20"
 )
 
-func NewRootCmd(version string) *cobra.Command {
+func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command {
 	var (
 		enableAnalytics = true
 	)
@@ -41,6 +41,7 @@ func NewRootCmd(version string) *cobra.Command {
 					client.Send(ga.NewEvent(parts[0], strings.Join(parts[1:], "/")).Label(version))
 				}
 			}
+
 			files.Load(config.GetEnv(c.Flags()))
 
 			if cfgFile, setByUser := config.GetConfigFile(c.Flags()); !setByUser {
@@ -57,12 +58,14 @@ func NewRootCmd(version string) *cobra.Command {
 	// ref: https://github.com/kubernetes/kubernetes/issues/17162#issuecomment-225596212
 	flag.CommandLine.Parse([]string{})
 
-	rootCmd.AddCommand(credCmd.NewCmdCredential())
+	rootCmd.AddCommand(newCmdCreate())
+	rootCmd.AddCommand(newCmdGet(out))
+	rootCmd.AddCommand(newCmdDelete())
+	rootCmd.AddCommand(newCmdIssue())
+	rootCmd.AddCommand(newCmdDescribe(out))
+
 	rootCmd.AddCommand(cfgCmd.NewCmdConfig())
-	rootCmd.AddCommand(cpCmd.NewCmdCreate())
-	rootCmd.AddCommand(cpCmd.NewCmdDelete())
 	rootCmd.AddCommand(cpCmd.NewCmdApply())
-	rootCmd.AddCommand(cpCmd.NewCmdGet())
 	rootCmd.AddCommand(cpCmd.NewCmdUse())
 	rootCmd.AddCommand(cpCmd.NewCmdSSH())
 	rootCmd.AddCommand(cpCmd.NewCmdBackup())
