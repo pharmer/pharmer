@@ -355,7 +355,7 @@ imports:
   subpackages:
   - doc
 - name: github.com/spf13/pflag
-  version: 0f53e09b6e0414581a4e540b3731ea7aa721e7fe
+  version: 8f62c03454809f9fe034ed3b4f564dfd50e7067b
   repo: https://github.com/appscode/pflag.git
   vcs: git
 - name: github.com/tamalsaha/go-oneliners

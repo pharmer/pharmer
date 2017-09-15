@@ -41,7 +41,7 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 	kc, err := NewAdminClient(ctx, cluster)
 	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
-		log.Fatal(err)
+		return expectedInstance.Stats.Count, err
 	}
 
 	desiredNGs := make(map[InstanceType]GroupStats)

@@ -52,4 +52,3 @@ func (m *ProjectMemberListRequest) IsValid() (*gojsonschema.Result, error) {
 	return projectMemberListRequestSchema.Validate(gojsonschema.NewGoLoader(m))
 }
 func (m *ProjectMemberListRequest) IsRequest() {}
-

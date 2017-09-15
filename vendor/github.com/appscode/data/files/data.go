@@ -266,13 +266,13 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"files/cloud_credential.json": filesCloud_credentialJson,
-	"files/cloud_provider.json": filesCloud_providerJson,
-	"files/dashboard.json": filesDashboardJson,
-	"files/dns_provider.json": filesDns_providerJson,
-	"files/pkg.latest.json": filesPkgLatestJson,
+	"files/cloud_credential.json":  filesCloud_credentialJson,
+	"files/cloud_provider.json":    filesCloud_providerJson,
+	"files/dashboard.json":         filesDashboardJson,
+	"files/dns_provider.json":      filesDns_providerJson,
+	"files/pkg.latest.json":        filesPkgLatestJson,
 	"files/products.appscode.json": filesProductsAppscodeJson,
-	"files/products.onebox.json": filesProductsOneboxJson,
+	"files/products.onebox.json":   filesProductsOneboxJson,
 }
 
 // AssetDir returns the file names below a certain
@@ -314,15 +314,16 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
 	"files": &bintree{nil, map[string]*bintree{
-		"cloud_credential.json": &bintree{filesCloud_credentialJson, map[string]*bintree{}},
-		"cloud_provider.json": &bintree{filesCloud_providerJson, map[string]*bintree{}},
-		"dashboard.json": &bintree{filesDashboardJson, map[string]*bintree{}},
-		"dns_provider.json": &bintree{filesDns_providerJson, map[string]*bintree{}},
-		"pkg.latest.json": &bintree{filesPkgLatestJson, map[string]*bintree{}},
+		"cloud_credential.json":  &bintree{filesCloud_credentialJson, map[string]*bintree{}},
+		"cloud_provider.json":    &bintree{filesCloud_providerJson, map[string]*bintree{}},
+		"dashboard.json":         &bintree{filesDashboardJson, map[string]*bintree{}},
+		"dns_provider.json":      &bintree{filesDns_providerJson, map[string]*bintree{}},
+		"pkg.latest.json":        &bintree{filesPkgLatestJson, map[string]*bintree{}},
 		"products.appscode.json": &bintree{filesProductsAppscodeJson, map[string]*bintree{}},
-		"products.onebox.json": &bintree{filesProductsOneboxJson, map[string]*bintree{}},
+		"products.onebox.json":   &bintree{filesProductsOneboxJson, map[string]*bintree{}},
 	}},
 }}
 
@@ -372,4 +373,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-
