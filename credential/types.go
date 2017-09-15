@@ -102,7 +102,13 @@ func (c CommonSpec) ToMaskedMap() map[string]string {
 				// TODO: FixIt! mask it
 				result[f.JSON] = "*****"
 			} else {
-				result[f.JSON] = c.Data[f.JSON]
+				if len(c.Data[f.JSON]) > 50 {
+					// TODO: FixIt! show shorter version of large amount of data
+					result[f.JSON] = "<data>"
+				} else{
+					result[f.JSON] = c.Data[f.JSON]
+				}
+
 			}
 		}
 	}

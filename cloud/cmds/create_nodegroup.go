@@ -15,7 +15,7 @@ import (
 )
 
 func NewCmdCreateNodeGroup() *cobra.Command {
-	cluster := &api.Cluster{}
+
 	nodes := map[string]int{}
 
 	cmd := &cobra.Command{
@@ -37,7 +37,8 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 
 			ctx := cloud.NewContext(context.Background(), cfg)
 
-			cluster, err = cloud.Get(ctx, cluster.Name)
+			clusterName, _ := cmd.Flags().GetString("cluster")
+			cluster, err := cloud.Get(ctx, clusterName)
 			term.ExitOnError(err)
 
 			for sku, count := range nodes {

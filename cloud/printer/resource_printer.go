@@ -124,7 +124,6 @@ func getColumns(options PrintOptions, t reflect.Type) []string {
 		columns = append(columns, "Node")
 		columns = append(columns, "SKU")
 	case "*api.Credential":
-		columns = append(columns, "Name")
 		columns = append(columns, "Provider")
 		columns = append(columns, "Data")
 	}
