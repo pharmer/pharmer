@@ -19,24 +19,20 @@ type NodeGroupManager struct {
 
 func (igm *NodeGroupManager) AdjustNodeGroup() error {
 	instanceGroupName := igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku)
-	found, err := igm.checkNodeGroup(instanceGroupName)
-	if err != nil {
-		igm.cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-	}
+	adjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
+
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
-	igm.cm.cluster, _ = Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
-	if err = igm.cm.conn.detectUbuntuImage(); err != nil {
+	if err := igm.cm.conn.detectUbuntuImage(); err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
-	if !found {
+	if adjust == igm.instance.Stats.Count {
 		if err := igm.startNodes(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
 			igm.cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithMessage("failed to start node").WithContext(igm.cm.ctx).Err()
 		}
 	} else if igm.instance.Stats.Count == 0 {
-		err = igm.deleteOnlyNodeGroup(instanceGroupName)
+		err := igm.deleteOnlyNodeGroup(instanceGroupName)
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
