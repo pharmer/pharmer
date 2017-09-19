@@ -257,13 +257,13 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 	} else {
 		oneliners.FILE()
 		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
+			Action:   api.ActionNOP,
 			Resource: "Master Instance",
 			Message:  fmt.Sprintf("Found master instance with name %v", cm.cluster.Spec.KubernetesMasterName),
 		})
 
 		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
+			Action:   api.ActionNOP,
 			Resource: "A Record",
 			Message:  fmt.Sprintf("Found cluster apps A record %v, External domain %v and internal domain %v", Extra(cm.ctx).Domain(cm.cluster.Name), Extra(cm.ctx).ExternalDomain(cm.cluster.Name), Extra(cm.ctx).InternalDomain(cm.cluster.Name)),
 		})

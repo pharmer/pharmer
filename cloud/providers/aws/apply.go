@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
+	"github.com/cenkalti/backoff"
 )
 
 const (
@@ -100,11 +101,20 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			}
 		}
 	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "VPC",
-			Message:  fmt.Sprintf("Found vpc with id %v", cm.cluster.Status.Cloud.AWS.VpcId),
-		})
+		if clusterDelete {
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "VPC",
+				Message:  fmt.Sprintf("VPC with id %v will be deleted", cm.cluster.Status.Cloud.AWS.VpcId),
+			})
+		} else {
+			acts = append(acts, api.Action{
+				Action:   api.ActionNOP,
+				Resource: "VPC",
+				Message:  fmt.Sprintf("Found vpc with id %v", cm.cluster.Status.Cloud.AWS.VpcId),
+			})
+		}
+
 	}
 
 	if found, _ := cm.getDSCPOptionSet(); !found {
@@ -119,6 +129,20 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
 				return
 			}
+		}
+	} else {
+		if clusterDelete {
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "DSCP Option set",
+				Message:  fmt.Sprintf("%v.compute.internal dscp option set will be deleted", cm.cluster.Spec.Cloud.Region),
+			})
+		} else {
+			acts = append(acts, api.Action{
+				Action:   api.ActionNOP,
+				Resource: "DSCP Option set",
+				Message:  fmt.Sprintf("Found %v.compute.internal dscp option set", cm.cluster.Spec.Cloud.Region),
+			})
 		}
 	}
 
@@ -136,11 +160,19 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			}
 		}
 	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Subnet",
-			Message:  fmt.Sprintf("Subnet found with id %v", cm.cluster.Status.Cloud.AWS.SubnetId),
-		})
+		if clusterDelete {
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "Subnet",
+				Message:  "Subnet will be deleted",
+			})
+		} else {
+			acts = append(acts, api.Action{
+				Action:   api.ActionNOP,
+				Resource: "Subnet",
+				Message:  fmt.Sprintf("Subnet found with id %v", cm.cluster.Status.Cloud.AWS.SubnetId),
+			})
+		}
 	}
 
 	if found, _ := cm.getInternetGateway(); !found {
@@ -155,6 +187,20 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
 				return
 			}
+		}
+	} else {
+		if clusterDelete {
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "Internet Gateway",
+				Message:  "Internet gateway will be deleted",
+			})
+		} else {
+			acts = append(acts, api.Action{
+				Action:   api.ActionNOP,
+				Resource: "Internet Gateway",
+				Message:  "Internet gateway found",
+			})
 		}
 	}
 
@@ -171,6 +217,20 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				return
 			}
 		}
+	} else {
+		if clusterDelete {
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "Route table",
+				Message:  "Route table will be deleted",
+			})
+		} else {
+			acts = append(acts, api.Action{
+				Action:   api.ActionNOP,
+				Resource: "Route table",
+				Message:  "Route table found",
+			})
+		}
 	}
 
 	if _, ok, _ := cm.getSecurityGroupId(cm.cluster.Spec.Cloud.AWS.MasterSGName); !ok {
@@ -185,6 +245,21 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
 				return
 			}
+		}
+	} else {
+		cm.detectSecurityGroups()
+		if clusterDelete {
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "Security group",
+				Message:  fmt.Sprintf("Master security gropu %v and node security group %v will be deleted", cm.cluster.Spec.Cloud.AWS.MasterSGName, cm.cluster.Spec.Cloud.AWS.NodeSGName),
+			})
+		} else {
+			acts = append(acts, api.Action{
+				Action:   api.ActionNOP,
+				Resource: "Security group",
+				Message:  fmt.Sprintf("Found master security gropu %v and node security group %v", cm.cluster.Spec.Cloud.AWS.MasterSGName, cm.cluster.Spec.Cloud.AWS.NodeSGName),
+			})
 		}
 	}
 
@@ -203,7 +278,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 		}
 	}
 	// https://github.com/kubernetes/kubernetes/blob/8eb75a5810cba92ccad845ca360cf924f2385881/cluster/aws/config-default.sh#L33
-	//ig.Spec.SKU = "m3.medium"
+	masterNG.Spec.Template.Spec.SKU = "m3.medium"
 	if totalNodes > 5 {
 		masterNG.Spec.Template.Spec.SKU = "m3.large"
 	}
@@ -221,13 +296,64 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 	}
 
 	cm.cluster.Spec.MasterSKU = masterNG.Spec.Template.Spec.SKU
+	cm.cluster.Spec.MasterDiskSize = masterNG.Spec.Template.Spec.DiskSize
+	cm.cluster.Spec.MasterDiskType = masterNG.Spec.Template.Spec.DiskType
+
 	Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
 
-	masterInstance, err := cm.startMaster()
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		errors.FromErr(err).WithContext(cm.ctx).Err()
-		return
+	if found, _ := cm.getMaster(); !found {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Master Instance",
+			Message:  fmt.Sprintf("Master instance with name %v will be created", cm.cluster.Spec.KubernetesMasterName),
+		})
+		if rt != api.DryRun {
+			masterInstance, err := cm.startMaster()
+			if err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				err = errors.FromErr(err).WithContext(cm.ctx).Err()
+				return acts, err
+			}
+
+			Logger(cm.ctx).Info("Waiting for cluster initialization")
+
+			// Wait for master A record to propagate
+			if err := EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				err = errors.FromErr(err).WithContext(cm.ctx).Err()
+				return acts, err
+			}
+
+			// wait for nodes to start
+			if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				err = errors.FromErr(err).WithContext(cm.ctx).Err()
+				return acts, err
+			}
+
+			masterNG.Status.Nodes = int32(1)
+			Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
+			Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
+			time.Sleep(1 * time.Minute)
+		}
+	} else {
+		if clusterDelete {
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "Master Instance",
+				Message:  fmt.Sprintf("Master instance with name %v will be deleted", cm.cluster.Spec.KubernetesMasterName),
+			})
+			if rt != api.DryRun {
+				cm.deleteMaster()
+
+			}
+		} else {
+			acts = append(acts, api.Action{
+				Action:   api.ActionNOP,
+				Resource: "Master Instance",
+				Message:  fmt.Sprintf("Found Master instance with name %v", cm.cluster.Spec.KubernetesMasterName),
+			})
+		}
 	}
 
 	//for _, ng := range req.NodeGroups {
@@ -265,54 +391,154 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				},
 			},
 		}
-		igm.AdjustNodeGroup()
-	}
-
-	Logger(cm.ctx).Info("Waiting for cluster initialization")
-
-	// Wait for master A record to propagate
-	if err := EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-
-	if err := EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-
-	// wait for nodes to start
-	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-
-	// -------------------------------------------------------------------------------------------------------------
-	Logger(cm.ctx).Info("Listing autoscaling groups")
-	groups := make([]*string, 0)
-	//for _, ng := range req.NodeGroups {
-	//	groups = append(groups, StringP(cm.namer.AutoScalingGroupName(ng.Sku)))
-	//}
-	r2, err := cm.conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
-		AutoScalingGroupNames: groups,
-	})
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	fmt.Println(r2)
-	Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
-	for _, group := range r2.AutoScalingGroups {
-		for _, instance := range group.Instances {
-			ki, err := cm.newKubeInstance(*instance.InstanceId)
-			ki.Spec.Role = api.RoleNode
-			Store(cm.ctx).Instances(cm.cluster.Name).Create(ki)
-			if err != nil {
-				errors.FromErr(err).WithContext(cm.ctx).Err()
+		if clusterDelete || node.DeletionTimestamp != nil {
+			instanceGroupName := igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku)
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "Node Group",
+				Message:  fmt.Sprintf("Node group %v  will be deleted", instanceGroupName),
+			})
+			if rt != api.DryRun {
+				err := igm.deleteOnlyNodeGroup(instanceGroupName)
+				if err != nil {
+					err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+				}
 			}
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "Autoscaler",
+				Message:  fmt.Sprintf("Autoscaler %v  will be deleted", instanceGroupName),
+			})
+			if rt != api.DryRun {
+				err = igm.cm.deleteAutoScalingGroup(igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku))
+				if err != nil {
+					err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+				}
+			}
+			launchConfig := igm.cm.namer.LaunchConfigName(igm.instance.Type.Sku)
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "Launch Configuration",
+				Message:  fmt.Sprintf("launch configuration %v  will be deleted", launchConfig),
+			})
+			if rt != api.DryRun {
+				err = igm.cm.deleteLaunchConfiguration(launchConfig)
+				if err != nil {
+					err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+				}
+			}
+		} else {
+			igm.AdjustNodeGroup()
 		}
 	}
 
+	if clusterDelete && rt != api.DryRun {
+		if err = cm.deleteVolume(); err != nil {
+			fmt.Println(err)
+		}
+		if err := backoff.Retry(cm.deleteSecurityGroup, backoff.NewExponentialBackOff()); err != nil {
+			fmt.Println(err)
+		}
+
+		if err := backoff.Retry(cm.deleteSecurityGroup, backoff.NewExponentialBackOff()); err != nil {
+			fmt.Println(err)
+		}
+
+		if err := backoff.Retry(cm.deleteInternetGateway, backoff.NewExponentialBackOff()); err != nil {
+			fmt.Println(err)
+		}
+
+		if err := backoff.Retry(cm.deleteDHCPOption, backoff.NewExponentialBackOff()); err != nil {
+			fmt.Println(err)
+		}
+
+		if err := backoff.Retry(cm.deleteRouteTable, backoff.NewExponentialBackOff()); err != nil {
+			fmt.Println(err)
+		}
+
+		if err := backoff.Retry(cm.deleteSubnetId, backoff.NewExponentialBackOff()); err != nil {
+			fmt.Println(err)
+		}
+
+		if err := backoff.Retry(cm.deleteVpc, backoff.NewExponentialBackOff()); err != nil {
+			fmt.Println(err)
+		}
+
+		// Delete SSH key from DB
+		if err = cm.deleteSSHKey(); err != nil {
+			fmt.Println(err)
+		}
+
+		if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	if rt != api.DryRun {
+		time.Sleep(1 * time.Minute)
+
+		for _, ng := range nodeGroups {
+			groupName := ng.Name
+			providerInstances, _ := cm.listInstances(groupName)
+
+			runningInstance := make(map[string]*api.Node)
+			for _, node := range providerInstances {
+				runningInstance[node.Name] = node
+			}
+
+			clusterInstance, _ := GetClusterIstance(cm.ctx, cm.cluster, groupName)
+			for _, node := range clusterInstance {
+				if _, found := runningInstance[node]; !found {
+					DeleteClusterInstance(cm.ctx, cm.cluster, node)
+				}
+			}
+		}
+
+		//for _, ng := range req.NodeGroups {
+		//	instances, err := cm.listInstances(cm.namer.NodeGroupName(ng.Sku))
+		//	if err != nil {
+		//		cm.cluster.Status.Reason = err.Error()
+		//		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		//	}
+		//	for _, node := range instances {
+		//		Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
+		//	}
+		//}
+
+		if !clusterDelete {
+			cm.cluster.Status.Phase = api.ClusterReady
+		} else {
+			cm.cluster.Status.Phase = api.ClusterDeleted
+		}
+		Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+		Store(cm.ctx).Clusters().Update(cm.cluster)
+	}
+	// -------------------------------------------------------------------------------------------------------------
+	/*	Logger(cm.ctx).Info("Listing autoscaling groups")
+		groups := make([]*string, 0)
+		//for _, ng := range req.NodeGroups {
+		//	groups = append(groups, StringP(cm.namer.AutoScalingGroupName(ng.Sku)))
+		//}
+		r2, err := cm.conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
+			AutoScalingGroupNames: groups,
+		})
+		if err != nil {
+			cm.cluster.Status.Reason = err.Error()
+			errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
+		fmt.Println(r2)
+
+		for _, group := range r2.AutoScalingGroups {
+			for _, instance := range group.Instances {
+				ki, err := cm.newKubeInstance(*instance.InstanceId)
+				ki.Spec.Role = api.RoleNode
+				Store(cm.ctx).Instances(cm.cluster.Name).Create(ki)
+				if err != nil {
+					errors.FromErr(err).WithContext(cm.ctx).Err()
+				}
+			}
+		}
+	*/
 	// detect-master
 	// wait-master: via curl call polling
 	// build-config
@@ -427,6 +653,7 @@ func (cm *ClusterManager) importPublicKey() error {
 		KeyName:           StringP(cm.cluster.Status.SSHKeyExternalID),
 		PublicKeyMaterial: SSHKey(cm.ctx).PublicKey,
 	})
+	fmt.Println("------>", SSHKey(cm.ctx).PublicKey, "<----")
 	Logger(cm.ctx).Debug("Imported SSH key", resp, err)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -462,7 +689,7 @@ func (cm *ClusterManager) getVpc() (bool, error) {
 		},
 	})
 	Logger(cm.ctx).Debug("VPC described", r1, err)
-	if len(r1.Vpcs) > 1 {
+	if len(r1.Vpcs) > 0 {
 		cm.cluster.Status.Cloud.AWS.VpcId = *r1.Vpcs[0].VpcId
 		Logger(cm.ctx).Infof("VPC %v found", cm.cluster.Status.Cloud.AWS.VpcId)
 		return true, nil
@@ -539,12 +766,12 @@ func (cm ClusterManager) getDSCPOptionSet() (bool, error) {
 	r1, err := cm.conn.ec2.DescribeDhcpOptions(&_ec2.DescribeDhcpOptionsInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name:   StringP("domain-name"),
-				Values: []*string{StringP(optionSetDomain)},
+				Name:   StringP("key"),
+				Values: []*string{StringP("domain-name")},
 			},
 			{
-				Name:   StringP("domain-name-servers"),
-				Values: []*string{StringP("AmazonProviderdDNS")},
+				Name:   StringP("value"),
+				Values: []*string{StringP(optionSetDomain)},
 			},
 		},
 	})
@@ -665,6 +892,19 @@ func (cm *ClusterManager) setupSubnet() error {
 	time.Sleep(preTagDelay)
 	cm.addTag(cm.cluster.Status.Cloud.AWS.SubnetId, "KubernetesCluster", cm.cluster.Name)
 
+	Logger(cm.ctx).Infof("Retrieving VPC %v", cm.cluster.Status.Cloud.AWS.VpcId)
+	r3, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
+		VpcIds: []*string{StringP(cm.cluster.Status.Cloud.AWS.VpcId)},
+	})
+	Logger(cm.ctx).Debug("Retrieved VPC", r3, err)
+	if err != nil {
+		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+
+	octets := strings.Split(*r3.Vpcs[0].CidrBlock, ".")
+	cm.cluster.Spec.Cloud.AWS.VpcCIDRBase = octets[0] + "." + octets[1]
+	cm.cluster.Spec.MasterInternalIP = cm.cluster.Spec.Cloud.AWS.VpcCIDRBase + ".0" + cm.cluster.Spec.Cloud.AWS.MasterIPSuffix
+	Logger(cm.ctx).Infof("Assuming MASTER_INTERNAL_IP=%v", cm.cluster.Spec.MasterInternalIP)
 	return nil
 }
 
@@ -986,16 +1226,46 @@ func (cm *ClusterManager) autohrizeIngressByPort(groupID string, port int64) err
 	return nil
 }
 
-//
-// -------------------------------------
-//
+func (cm *ClusterManager) getMaster() (bool, error) {
+	r1, err := cm.conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
+		Filters: []*_ec2.Filter{
+			{
+				Name:   StringP("tag:Name"),
+				Values: StringPSlice([]string{cm.cluster.Spec.KubernetesMasterName}),
+			},
+			{
+				Name:   StringP("tag:Role"),
+				Values: StringPSlice([]string{"master"}),
+			},
+			{
+				Name:   StringP("tag:KubernetesCluster"),
+				Values: StringPSlice([]string{cm.cluster.Name}),
+			},
+			{
+				Name:   StringP("instance-state-name"),
+				Values: StringPSlice([]string{"running"}),
+			},
+		},
+	})
+	if err != nil {
+		return false, err
+	}
+	if len(r1.Reservations) == 0 {
+		return false, nil
+	}
+	cm.cluster.Spec.MasterInternalIP = *r1.Reservations[0].Instances[0].PrivateIpAddress
+	cm.cluster.Spec.MasterExternalIP = *r1.Reservations[0].Instances[0].PublicIpAddress
+	fmt.Println(r1, err, "....................")
+	return true, err
+}
+
 func (cm *ClusterManager) startMaster() (*api.Node, error) {
 	var err error
 	// TODO: FixIt!
-	//cm.cluster.Spec.MasterDiskId, err = cm.ensurePd(cm.namer.MasterPDName(), cm.cluster.Spec.MasterDiskType, cm.cluster.Spec.MasterDiskSize)
-	//if err != nil {
-	//	return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
-	//}
+	cm.cluster.Spec.MasterDiskId, err = cm.ensurePd(cm.namer.MasterPDName(), cm.cluster.Spec.MasterDiskType, cm.cluster.Spec.MasterDiskSize)
+	if err != nil {
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
 	err = cm.reserveIP()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -1040,18 +1310,17 @@ func (cm *ClusterManager) startMaster() (*api.Node, error) {
 	if err != nil {
 		return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	/*
-		r1, err := cm.conn.ec2.AttachVolume(&_ec2.AttachVolumeInput{
-			VolumeId:   StringP(cm.cluster.Spec.MasterDiskId),
-			Device:     StringP("/dev/sdb"),
-			InstanceId: StringP(masterInstanceID),
-		})
-		Logger(cm.ctx).Debug("Attached persistent data volume to master", r1, err)
-		if err != nil {
-			return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		Logger(cm.ctx).Infof("Persistent data volume %v attatched to master", cm.cluster.Spec.MasterDiskId)
-	*/
+
+	r1, err := cm.conn.ec2.AttachVolume(&_ec2.AttachVolumeInput{
+		VolumeId:   StringP(cm.cluster.Spec.MasterDiskId),
+		Device:     StringP("/dev/sdb"),
+		InstanceId: StringP(masterInstanceID),
+	})
+	Logger(cm.ctx).Debug("Attached persistent data volume to master", r1, err)
+	if err != nil {
+		return masterInstance, errors.FromErr(err).WithContext(cm.ctx).Err()
+	}
+	Logger(cm.ctx).Infof("Persistent data volume %v attatched to master", cm.cluster.Spec.MasterDiskId)
 
 	time.Sleep(15 * time.Second)
 	r2, err := cm.conn.ec2.CreateRoute(&_ec2.CreateRouteInput{
@@ -1159,40 +1428,44 @@ func (cm *ClusterManager) createMasterInstance(instanceName string, role string)
 	if err != nil {
 		return "", err
 	}
+	fmt.Println("*********************")
+	fmt.Println(kubeStarter)
+	fmt.Println("*********************")
+	fmt.Println()
 	req := &_ec2.RunInstancesInput{
 		ImageId:  StringP(cm.cluster.Spec.Cloud.InstanceImage),
 		MaxCount: Int64P(1),
 		MinCount: Int64P(1),
 		//// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html
-		//BlockDeviceMappings: []*_ec2.BlockDeviceMapping{
-		//	// MASTER_BLOCK_DEVICE_MAPPINGS
-		//	{
-		//		// https://github.com/appscode/kubernetes/blob/55d9dec8eb5eb02e1301045b7b81bbac689c86a1/cluster/aws/util.sh#L397
-		//		DeviceName: StringP(cm.cluster.Spec.RootDeviceName),
-		//		Ebs: &_ec2.EbsBlockDevice{
-		//			DeleteOnTermination: TrueP(),
-		//			VolumeSize:          Int64P(cm.cluster.Spec.MasterDiskSize),
-		//			VolumeType:          StringP(cm.cluster.Spec.MasterDiskType),
-		//		},
-		//	},
-		//	// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
-		//	{
-		//		DeviceName:  StringP("/dev/sdc"),
-		//		VirtualName: StringP("ephemeral0"),
-		//	},
-		//	{
-		//		DeviceName:  StringP("/dev/sdd"),
-		//		VirtualName: StringP("ephemeral1"),
-		//	},
-		//	{
-		//		DeviceName:  StringP("/dev/sde"),
-		//		VirtualName: StringP("ephemeral2"),
-		//	},
-		//	{
-		//		DeviceName:  StringP("/dev/sdf"),
-		//		VirtualName: StringP("ephemeral3"),
-		//	},
-		//},
+		BlockDeviceMappings: []*_ec2.BlockDeviceMapping{
+			// MASTER_BLOCK_DEVICE_MAPPINGS
+			{
+				// https://github.com/appscode/kubernetes/blob/55d9dec8eb5eb02e1301045b7b81bbac689c86a1/cluster/aws/util.sh#L397
+				DeviceName: StringP(cm.cluster.Status.Cloud.AWS.RootDeviceName),
+				Ebs: &_ec2.EbsBlockDevice{
+					DeleteOnTermination: TrueP(),
+					VolumeSize:          Int64P(cm.cluster.Spec.MasterDiskSize),
+					VolumeType:          StringP(cm.cluster.Spec.MasterDiskType),
+				},
+			},
+			// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
+			{
+				DeviceName:  StringP("/dev/sdc"),
+				VirtualName: StringP("ephemeral0"),
+			},
+			{
+				DeviceName:  StringP("/dev/sdd"),
+				VirtualName: StringP("ephemeral1"),
+			},
+			{
+				DeviceName:  StringP("/dev/sde"),
+				VirtualName: StringP("ephemeral2"),
+			},
+			{
+				DeviceName:  StringP("/dev/sdf"),
+				VirtualName: StringP("ephemeral3"),
+			},
+		},
 		IamInstanceProfile: &_ec2.IamInstanceProfileSpecification{
 			Name: StringP(cm.cluster.Spec.Cloud.AWS.IAMProfileMaster),
 		},
@@ -1513,4 +1786,9 @@ func (cm *ClusterManager) getInstanceIDFromName(tagName string) (string, error) 
 		return *r1.Reservations[0].Instances[0].InstanceId, nil
 	}
 	return "", nil
+}
+
+func (cm *ClusterManager) deleteNodeGroup() error {
+
+	return nil
 }
