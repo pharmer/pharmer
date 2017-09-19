@@ -119,6 +119,7 @@ func getColumns(options PrintOptions, t reflect.Type) []string {
 		columns = append(columns, "ZONE")
 		columns = append(columns, "VERSION")
 		columns = append(columns, "RUNNING SINCE")
+		columns = append(columns, "STATUS")
 	case "*api.NodeGroup":
 		columns = append(columns, "Cluster")
 		columns = append(columns, "Node")
@@ -149,7 +150,9 @@ func (h *HumanReadablePrinter) printCluster(item *api.Cluster, w io.Writer, opti
 	if _, err = fmt.Fprintf(w, "%s\t", TranslateTimestamp(item.CreationTimestamp)); err != nil {
 		return
 	}
-
+	if _, err = fmt.Fprintf(w, "%s\t", item.Status.Phase); err != nil {
+		return
+	}
 	PrintNewline(w)
 
 	return
