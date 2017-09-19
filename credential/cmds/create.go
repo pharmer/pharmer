@@ -24,7 +24,7 @@ func NewCmdCreateCredential() *cobra.Command {
 			api.ResourceCodeCredential,
 			api.ResourceKindCredential,
 		},
-		Short:             "Create  credential object",
+		Short:             "Create credential object",
 		Example:           `pharmer create credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {

@@ -23,7 +23,6 @@ func NewCmdDeleteCluster() *cobra.Command {
 		Use: api.ResourceNameCluster,
 		Aliases: []string{
 			api.ResourceTypeCluster,
-			api.ResourceCodeCluster,
 			api.ResourceKindCluster,
 		},
 		Short:             "Delete a Kubernetes cluster",

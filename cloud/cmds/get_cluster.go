@@ -18,7 +18,6 @@ func NewCmdGetCluster(out io.Writer) *cobra.Command {
 		Use: api.ResourceNameCluster,
 		Aliases: []string{
 			api.ResourceTypeCluster,
-			api.ResourceCodeCluster,
 			api.ResourceKindCluster,
 		},
 		Short:             "Get a Kubernetes cluster",

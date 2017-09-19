@@ -22,7 +22,6 @@ func NewCmdCreateCluster() *cobra.Command {
 		Use: api.ResourceNameCluster,
 		Aliases: []string{
 			api.ResourceTypeCluster,
-			api.ResourceCodeCluster,
 			api.ResourceKindCluster,
 		},
 		Short:             "Create a Kubernetes cluster for a given cloud provider",
