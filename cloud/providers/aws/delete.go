@@ -149,7 +149,7 @@ func (cm *ClusterManager) deleteLaunchConfiguration(name string) error {
 	_, err := cm.conn.autoscale.DeleteLaunchConfiguration(&autoscaling.DeleteLaunchConfigurationInput{
 		LaunchConfigurationName: StringP(name),
 	})
-	Logger(cm.ctx).Infof("Launch configuration %v os de;eted for cluster %v", name, cm.cluster.Name)
+	Logger(cm.ctx).Infof("Launch configuration %v os deleted for cluster %v", name, cm.cluster.Name)
 	return err
 }
 

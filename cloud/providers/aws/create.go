@@ -72,6 +72,15 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	}
 	cluster.Spec.Cloud.AWS.MasterSGName = n.GenMasterSGName()
 	cluster.Spec.Cloud.AWS.NodeSGName = n.GenNodeSGName()
+
+	cluster.Spec.Cloud.AWS.IAMProfileMaster = "kubernetes-master"
+	cluster.Spec.Cloud.AWS.IAMProfileNode = "kubernetes-node"
+	cluster.Spec.Cloud.AWS.VpcCIDRBase = "172.20"
+	cluster.Spec.Cloud.AWS.MasterIPSuffix = ".9"
+	cluster.Spec.Networking.NetworkProvider = "flannel"
+	cluster.Spec.Cloud.AWS.VpcCIDR = "172.20.0.0/16"
+	cluster.Spec.Cloud.AWS.SubnetCIDR = "172.20.0.0/24"
+	cluster.Spec.Networking.MasterSubnet = "10.246.0.0/24"
 	cluster.Spec.Token = GetKubeadmToken()
 	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
 	cluster.Spec.KubernetesMasterName = n.MasterName()
