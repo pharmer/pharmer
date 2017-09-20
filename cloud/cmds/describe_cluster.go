@@ -19,7 +19,6 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 		Use: api.ResourceNameCluster,
 		Aliases: []string{
 			api.ResourceTypeCluster,
-			api.ResourceCodeCluster,
 			api.ResourceKindCluster,
 		},
 		Short:             "Describe a Kubernetes cluster",
