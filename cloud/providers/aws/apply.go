@@ -428,7 +428,12 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				}
 			}
 		} else {
-			igm.AdjustNodeGroup()
+			act, _ := igm.AdjustNodeGroup(rt)
+			acts = append(acts, act...)
+			if rt != api.DryRun {
+				node.Status.Nodes = (int32)(node.Spec.Nodes)
+				Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(node)
+			}
 		}
 	}
 
@@ -478,32 +483,25 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 		time.Sleep(1 * time.Minute)
 
 		for _, ng := range nodeGroups {
-			groupName := ng.Name
+			groupName := cm.namer.AutoScalingGroupName(ng.Spec.Template.Spec.SKU)
 			providerInstances, _ := cm.listInstances(groupName)
 
 			runningInstance := make(map[string]*api.Node)
 			for _, node := range providerInstances {
-				runningInstance[node.Name] = node
+				host := "ip-" + strings.Replace(node.Status.PrivateIP, ".", "-", -1)
+				fmt.Println(node.Name, host)
+				runningInstance[host] = node
 			}
 
 			clusterInstance, _ := GetClusterIstance(cm.ctx, cm.cluster, groupName)
 			for _, node := range clusterInstance {
+				fmt.Println(node)
 				if _, found := runningInstance[node]; !found {
-					DeleteClusterInstance(cm.ctx, cm.cluster, node)
+					err = DeleteClusterInstance(cm.ctx, cm.cluster, node)
+					fmt.Println(err)
 				}
 			}
 		}
-
-		//for _, ng := range req.NodeGroups {
-		//	instances, err := cm.listInstances(cm.namer.NodeGroupName(ng.Sku))
-		//	if err != nil {
-		//		cm.cluster.Status.Reason = err.Error()
-		//		return errors.FromErr(err).WithContext(cm.ctx).Err()
-		//	}
-		//	for _, node := range instances {
-		//		Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
-		//	}
-		//}
 
 		if !clusterDelete {
 			cm.cluster.Status.Phase = api.ClusterReady
@@ -653,7 +651,6 @@ func (cm *ClusterManager) importPublicKey() error {
 		KeyName:           StringP(cm.cluster.Status.SSHKeyExternalID),
 		PublicKeyMaterial: SSHKey(cm.ctx).PublicKey,
 	})
-	fmt.Println("------>", SSHKey(cm.ctx).PublicKey, "<----")
 	Logger(cm.ctx).Debug("Imported SSH key", resp, err)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -1424,14 +1421,10 @@ func (cm *ClusterManager) reserveIP() error {
 }
 
 func (cm *ClusterManager) createMasterInstance(instanceName string, role string) (string, error) {
-	kubeStarter, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, "")
+	kubeStarter, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, cm.cluster.Spec.MasterSKU)
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("*********************")
-	fmt.Println(kubeStarter)
-	fmt.Println("*********************")
-	fmt.Println()
 	req := &_ec2.RunInstancesInput{
 		ImageId:  StringP(cm.cluster.Spec.Cloud.InstanceImage),
 		MaxCount: Int64P(1),
@@ -1566,6 +1559,14 @@ func (cm *ClusterManager) newKubeInstance(instanceID string) (*api.Node, error) 
 	}
 
 	// Don't reassign internal_ip for AWS to keep the fixed 172.20.0.9 for master_internal_ip
+	var publicIP, privateIP string
+	if *r1.Reservations[0].Instances[0].State.Name != "running" {
+		publicIP = ""
+		privateIP = ""
+	} else {
+		publicIP = *r1.Reservations[0].Instances[0].PublicIpAddress
+		privateIP = *r1.Reservations[0].Instances[0].PrivateIpAddress
+	}
 	i := api.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
@@ -1577,8 +1578,8 @@ func (cm *ClusterManager) newKubeInstance(instanceID string) (*api.Node, error) 
 		Status: api.NodeStatus{
 			ExternalID:    instanceID,
 			ExternalPhase: *r1.Reservations[0].Instances[0].State.Name,
-			PublicIP:      *r1.Reservations[0].Instances[0].PublicIpAddress,
-			PrivateIP:     *r1.Reservations[0].Instances[0].PrivateIpAddress,
+			PublicIP:      publicIP,
+			PrivateIP:     privateIP,
 		},
 	}
 	/*

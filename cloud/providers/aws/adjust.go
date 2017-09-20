@@ -17,38 +17,89 @@ type NodeGroupManager struct {
 	instance Instance
 }
 
-func (igm *NodeGroupManager) AdjustNodeGroup() error {
+func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action, err error) {
 	instanceGroupName := igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku)
 	adjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
-
+	message := ""
+	var action api.ActionType
+	if adjust == 0 {
+		message = "No changed will be applied"
+		action = api.ActionNOP
+	} else if adjust < 0 {
+		message = fmt.Sprintf("%v node will be deleted from %v group", -adjust, instanceGroupName)
+		action = api.ActionDelete
+	} else {
+		message = fmt.Sprintf("%v node will be added to %v group", adjust, instanceGroupName)
+		action = api.ActionAdd
+	}
+	acts = append(acts, api.Action{
+		Action:   action,
+		Resource: "Node",
+		Message:  message,
+	})
+	if adjust == 0 {
+		return
+	}
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
-	if err := igm.cm.conn.detectUbuntuImage(); err != nil {
+	if err = igm.cm.conn.detectUbuntuImage(); err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		return
 	}
 	if adjust == igm.instance.Stats.Count {
-		if err := igm.startNodes(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
-			igm.cm.cluster.Status.Reason = err.Error()
-			return errors.FromErr(err).WithMessage("failed to start node").WithContext(igm.cm.ctx).Err()
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Lunch Configuration",
+			Message:  fmt.Sprintf("Lunch configuration %v will be created", igm.cm.namer.LaunchConfigName(igm.instance.Type.Sku)),
+		})
+
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Auto scaler",
+			Message:  fmt.Sprintf("Autoscaler %v will be created", igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku)),
+		})
+		if rt != api.DryRun {
+			if err = igm.startNodes(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
+				igm.cm.cluster.Status.Reason = err.Error()
+				err = errors.FromErr(err).WithMessage("failed to start node").WithContext(igm.cm.ctx).Err()
+				return
+			}
 		}
 	} else if igm.instance.Stats.Count == 0 {
-		err := igm.deleteOnlyNodeGroup(instanceGroupName)
-		if err != nil {
-			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		autoscaler := igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku)
+		acts = append(acts, api.Action{
+			Action:   api.ActionDelete,
+			Resource: "Autoscaler",
+			Message:  fmt.Sprintf("Autoscaler %v  will be delete", autoscaler),
+		})
+		if rt != api.DryRun {
+			err = igm.cm.deleteAutoScalingGroup(igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku))
+			if err != nil {
+				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+				return
+			}
 		}
-
-		err = igm.cm.deleteAutoScalingGroup(igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku))
-		if err != nil {
-			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		launchConfig := igm.cm.namer.LaunchConfigName(igm.instance.Type.Sku)
+		acts = append(acts, api.Action{
+			Action:   api.ActionDelete,
+			Resource: "Launch configuration",
+			Message:  fmt.Sprintf("Launch configuration %v  will be delete", launchConfig),
+		})
+		if rt != api.DryRun {
+			err = igm.cm.deleteLaunchConfiguration(launchConfig)
+			if err != nil {
+				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+			}
 		}
 	} else {
-		err := igm.updateNodeGroup(instanceGroupName, igm.instance.Stats.Count)
+		err = igm.updateNodeGroup(instanceGroupName, igm.instance.Stats.Count)
 		if err != nil {
-			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+			err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+			return
 		}
 	}
 	Store(igm.cm.ctx).Clusters().UpdateStatus(igm.cm.cluster)
-	return nil
+	return
 }
 
 func (igm *NodeGroupManager) checkNodeGroup(instanceGroup string) (bool, error) {
@@ -76,7 +127,7 @@ func (igm *NodeGroupManager) startNodes(sku string, count int64) error {
 
 func (igm *NodeGroupManager) createLaunchConfiguration(name, sku string) error {
 	//script := igm.cm.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), sku, system.RoleKubernetesPool)
-	script, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode, sku)
+	script, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode, igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku))
 	if err != nil {
 		return err
 	}

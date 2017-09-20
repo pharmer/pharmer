@@ -7,7 +7,6 @@ import (
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
-	"github.com/tamalsaha/go-oneliners"
 	compute "google.golang.org/api/compute/v1"
 )
 
@@ -21,7 +20,6 @@ func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action,
 	instanceGroupName := igm.cm.namer.NodeGroupName(igm.instance.Type.Sku)
 
 	adjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
-	oneliners.FILE()
 	/*if err != nil {
 		err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		return

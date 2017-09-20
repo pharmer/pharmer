@@ -327,8 +327,6 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			}
 		}
 	}
-	oneliners.FILE()
-
 	// needed for node start-up config to get master_internal_ip
 	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
@@ -337,7 +335,6 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 	}
 
 	if found, _ := cm.getNodeFirewallRule(); !found {
-		oneliners.FILE()
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Node Firewall Rule",
@@ -428,7 +425,6 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				Store(cm.ctx).NodeGroups(cm.cluster.Name).Delete(node.Name)
 			}
 		} else {
-			oneliners.FILE()
 			act, _ := igm.AdjustNodeGroup(rt)
 			acts = append(acts, act...)
 			if rt != api.DryRun {
@@ -438,7 +434,6 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 		}
 	}
 
-	oneliners.FILE()
 	if rt != api.DryRun {
 		time.Sleep(1 * time.Minute)
 
