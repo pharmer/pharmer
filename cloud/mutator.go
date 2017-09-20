@@ -53,7 +53,7 @@ func Mutator(ctx context.Context, cluster *api.Cluster, expectedInstance Instanc
 			continue
 		}
 		k := InstanceType{
-			Sku:          getSKUFromNG(cluster.Name, nl.GetString(api.NodeLabelKey_NodeGroup)),
+			Sku:          expectedInstance.Type.Sku,
 			SpotInstance: false,
 			Master:       nl.GetString(api.NodeLabelKey_Role) == "master",
 		}
