@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	proto "github.com/appscode/api/ssh/v1beta1"
 	"github.com/appscode/pharmer/api"
 	"k8s.io/client-go/util/cert"
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -112,9 +111,10 @@ func LoadSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, err
 	if err != nil {
 		return ctx, fmt.Errorf("Failed to get SSH key. Reason: %v.", err)
 	}
-	protoSSH := &proto.SSHKey{
-		PublicKey:  publicKey,
-		PrivateKey: privateKey,
+
+	protoSSH, err := api.ParseSSHKeyPair(string(publicKey), string(privateKey))
+	if err != nil {
+		return ctx, fmt.Errorf("Failed to parse SSH key. Reason: %v.", err)
 	}
 	ctx = context.WithValue(ctx, paramSSHKey{}, protoSSH)
 	return ctx, nil

@@ -1,15 +1,12 @@
 package digitalocean
 
 import (
-	gtx "context"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
-	"github.com/digitalocean/godo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -19,73 +16,52 @@ type NodeGroupManager struct {
 	im       *instanceManager
 }
 
-func (igm *NodeGroupManager) AdjustNodeGroup() error {
+func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action, err error) {
+	acts = make([]api.Action, 0)
 	instanceGroupName := igm.cm.namer.GetNodeGroupName(igm.instance.Type.Sku) //igm.cm.ctx.Name + "-" + strings.Replace(igm.instance.Type.Sku, "_", "-", -1) + "-node"
-	found, _, err := igm.GetNodeGroup(instanceGroupName)
-	if err != nil {
-		igm.cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-	}
-	fmt.Println(found)
 
-	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
-	igm.cm.cluster, _ = Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
-	var nodeAdjust int64 = 0
-	if found {
-		nodeAdjust, _ = Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
+	adjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
+	message := ""
+	var action api.ActionType
+	if adjust == 0 {
+		message = "No changed will be applied"
+		action = api.ActionNOP
+	} else if adjust < 0 {
+		message = fmt.Sprintf("%v node will be deleted from %v group", -adjust, instanceGroupName)
+		action = api.ActionDelete
+	} else {
+		message = fmt.Sprintf("%v node will be added to %v group", adjust, instanceGroupName)
+		action = api.ActionAdd
 	}
-	if !found {
+	acts = append(acts, api.Action{
+		Action:   action,
+		Resource: "Node",
+		Message:  message,
+	})
+	if adjust == 0 || rt == api.DryRun {
+		return
+	}
+	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
+	if adjust == igm.instance.Stats.Count {
 		err = igm.createNodeGroup(igm.instance.Stats.Count)
-	} else if igm.instance.Stats.Count == 0 {
-		if nodeAdjust < 0 {
-			nodeAdjust = -nodeAdjust
+		if err != nil {
+			return
 		}
-		err := igm.deleteNodeGroup(igm.instance.Type.Sku, nodeAdjust)
+	} else if igm.instance.Stats.Count == 0 {
+		err = igm.deleteNodeGroup(igm.instance.Type.Sku)
 		if err != nil {
 			igm.cm.cluster.Status.Reason = err.Error()
-			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+			return
 		}
 	} else {
-		if nodeAdjust < 0 {
-			err := igm.deleteNodeGroup(igm.instance.Type.Sku, -nodeAdjust)
-			if err != nil {
-				igm.cm.cluster.Status.Reason = err.Error()
-				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-			}
-		} else {
-			err := igm.createNodeGroup(nodeAdjust)
-			if err != nil {
-				igm.cm.cluster.Status.Reason = err.Error()
-				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-			}
-		}
-	}
-	return nil
-}
-
-func (igm *NodeGroupManager) GetNodeGroup(instanceGroup string) (bool, map[string]*api.Node, error) {
-	var flag bool = false
-	igm.im.conn.client.Droplets.List(gtx.TODO(), &godo.ListOptions{})
-	existingNGs := make(map[string]*api.Node)
-	droplets, _, err := igm.cm.conn.client.Droplets.List(gtx.TODO(), &godo.ListOptions{})
-	if err != nil {
-		return flag, existingNGs, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-	}
-
-	for _, item := range droplets {
-		if strings.HasPrefix(item.Name, instanceGroup) {
-			flag = true
-			instance, err := igm.im.newKubeInstance(item.ID)
-			if err != nil {
-				return flag, existingNGs, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-			}
-			instance.Spec.Role = api.RoleNode
-			internalIP, err := item.PrivateIPv4()
-			existingNGs[internalIP] = instance
+		err = igm.updateNodeGroup(igm.instance.Type.Sku, adjust)
+		if err != nil {
+			igm.cm.cluster.Status.Reason = err.Error()
+			return
 		}
 
 	}
-	return flag, existingNGs, nil
+	return
 }
 
 func (igm *NodeGroupManager) createNodeGroup(count int64) error {
@@ -99,23 +75,47 @@ func (igm *NodeGroupManager) createNodeGroup(count int64) error {
 	return nil
 }
 
-func (igm *NodeGroupManager) deleteNodeGroup(sku string, count int64) error {
-	instances, err := igm.listInstances(sku)
+func (igm *NodeGroupManager) deleteNodeGroup(sku string) error {
+	found, instances, err := igm.im.GetNodeGroup(igm.cm.namer.GetNodeGroupName(sku))
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
+	if !found {
+		return errors.New("Instance group not found").Err()
+	}
 	for _, instance := range instances {
-		count--
 		dropletID, err := strconv.Atoi(instance.Status.ExternalID)
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
-		err = igm.cm.deleteDroplet(dropletID, instance.Status.PrivateIP)
+		err = igm.cm.deleteDroplet(dropletID)
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
-		if count <= 0 {
-			break
+	}
+	return nil
+}
+
+func (igm *NodeGroupManager) updateNodeGroup(sku string, count int64) error {
+	found, instances, err := igm.im.GetNodeGroup(igm.cm.namer.GetNodeGroupName(sku))
+	if err != nil {
+		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	}
+	if !found {
+		return errors.New("Instance group not found").Err()
+	}
+	if count < 0 {
+		for _, instance := range instances {
+			dropletID, _ := strconv.Atoi(instance.Status.ExternalID)
+			igm.cm.deleteDroplet(dropletID)
+			count++
+			if count >= 0 {
+				return nil
+			}
+		}
+	} else {
+		for i := int64(0); i < count; i++ {
+			igm.StartNode()
 		}
 	}
 	return nil
@@ -129,7 +129,7 @@ func (igm *NodeGroupManager) listInstances(sku string) ([]*api.Node, error) {
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 
 	}
-	_, droplets, err := igm.GetNodeGroup(igm.cm.namer.GetNodeGroupName(sku))
+	_, droplets, err := igm.im.GetNodeGroup(igm.cm.namer.GetNodeGroupName(sku))
 	if err != nil {
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}

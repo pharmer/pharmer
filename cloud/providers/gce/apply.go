@@ -134,7 +134,6 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				})
 
 			}
-			cm.cluster.Spec.MasterSKU = node.Spec.Template.Spec.SKU
 			break
 		}
 	}
@@ -167,23 +166,32 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 		return
 	}
 
+	var totalNodes int64 = 0
+	for _, ng := range nodeGroups {
+		if ng.IsMaster() {
+			continue
+		} else {
+			totalNodes += ng.Spec.Nodes
+		}
+	}
+
 	//// check for instance count
-	//ig.Spec.SKU = "n1-standard-1"
-	//if totalNodes > 5 {
-	//	ig.Spec.SKU = "n1-standard-2"
-	//}
-	//if totalNodes > 10 {
-	//	ig.Spec.SKU = "n1-standard-4"
-	//}
-	//if totalNodes > 100 {
-	//	ig.Spec.SKU = "n1-standard-8"
-	//}
-	//if totalNodes > 250 {
-	//	ig.Spec.SKU = "n1-standard-16"
-	//}
-	//if totalNodes > 500 {
-	//	ig.Spec.SKU = "n1-standard-32"
-	//}
+	cm.cluster.Spec.MasterSKU = "n1-standard-1"
+	if totalNodes > 5 {
+		cm.cluster.Spec.MasterSKU = "n1-standard-2"
+	}
+	if totalNodes > 10 {
+		cm.cluster.Spec.MasterSKU = "n1-standard-4"
+	}
+	if totalNodes > 100 {
+		cm.cluster.Spec.MasterSKU = "n1-standard-8"
+	}
+	if totalNodes > 250 {
+		cm.cluster.Spec.MasterSKU = "n1-standard-16"
+	}
+	if totalNodes > 500 {
+		cm.cluster.Spec.MasterSKU = "n1-standard-32"
+	}
 
 	if found, _ := cm.getMasterInstance(); !found {
 		acts = append(acts, api.Action{
@@ -255,7 +263,6 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 		}
 
 	} else {
-		oneliners.FILE()
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "Master Instance",

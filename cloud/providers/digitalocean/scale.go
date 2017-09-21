@@ -5,6 +5,7 @@ import (
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
+	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
 )
 
@@ -41,7 +42,7 @@ func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
 		instance: inst,
 		im:       im,
 	}
-	igm.AdjustNodeGroup()
+	igm.AdjustNodeGroup(api.StdRun)
 	fmt.Println(nodeAdjust)
 
 	//flag := false

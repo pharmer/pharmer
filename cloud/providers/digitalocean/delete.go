@@ -120,26 +120,11 @@ func (cm *ClusterManager) deleteSSHKey() error {
 	return nil
 }
 
-func (cm *ClusterManager) deleteDroplet(dropletID int, nodeName string) error {
+func (cm *ClusterManager) deleteDroplet(dropletID int) error {
 	_, err := cm.conn.client.Droplets.Delete(gtx.TODO(), dropletID)
 	if err != nil {
 		return err
 	}
 	Logger(cm.ctx).Infof("Droplet %v deleted", dropletID)
 	return nil
-}
-
-func (cm *ClusterManager) deleteMaster(dropletID int) error {
-	_, err := cm.conn.client.Droplets.Delete(gtx.TODO(), dropletID)
-	if err != nil {
-		return err
-	}
-	// TODO; FixIt!
-	//for i, v := range instances {
-	//	droplet, _ := strconv.Atoi(v.Status.ExternalID)
-	//	if droplet == dropletID {
-	//		cm.ins[i].Status.Phase = api.InstancePhaseDeleted
-	//	}
-	//}
-	return err
 }
