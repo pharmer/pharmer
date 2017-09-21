@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/errors"
@@ -73,9 +74,28 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 	return instance, nil
 }
 
+func (im *instanceManager) getMasterInstance(name string) (bool, error) {
+	_, err := im.getInstanceId(name)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+/*func (im *instanceManager) getInstance(id int) (*godo.Droplet, error) {
+	droplet, _, err := im.conn.client.Droplets.Get(gtx.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	return droplet, err
+}*/
+
 func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet, error) {
-	oneliners.FILE()
-	startupScript, err := RenderStartupScript(im.ctx, im.cluster, role, sku)
+	instanceGroup := ""
+	if role == api.RoleNode {
+		instanceGroup = im.namer.GetNodeGroupName(sku)
+	}
+	startupScript, err := RenderStartupScript(im.ctx, im.cluster, role, instanceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +104,6 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 	//if err != nil {
 	//	return nil, errors.FromErr(err).WithContext(im.ctx).Err()
 	//}
-	oneliners.FILE()
 	req := &godo.DropletCreateRequest{
 		Name:   name,
 		Region: im.cluster.Spec.Cloud.Zone,
@@ -147,6 +166,30 @@ func (im *instanceManager) newKubeInstance(id int) (*api.Node, error) {
 		return nil, InstanceNotFound
 	}
 	return im.newKubeInstanceFromDroplet(droplet)
+}
+
+func (im *instanceManager) GetNodeGroup(instanceGroup string) (bool, map[string]*api.Node, error) {
+	var flag bool = false
+	existingNGs := make(map[string]*api.Node)
+	droplets, _, err := im.conn.client.Droplets.List(gtx.TODO(), &godo.ListOptions{})
+	if err != nil {
+		return flag, existingNGs, errors.FromErr(err).WithContext(im.ctx).Err()
+	}
+
+	for _, item := range droplets {
+		if strings.HasPrefix(item.Name, instanceGroup) {
+			flag = true
+			instance, err := im.newKubeInstance(item.ID)
+			if err != nil {
+				return flag, existingNGs, errors.FromErr(err).WithContext(im.ctx).Err()
+			}
+			instance.Spec.Role = api.RoleNode
+			internalIP, err := item.PrivateIPv4()
+			existingNGs[internalIP] = instance
+		}
+
+	}
+	return flag, existingNGs, nil
 }
 
 func (im *instanceManager) getInstanceId(name string) (int, error) {

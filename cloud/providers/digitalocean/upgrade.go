@@ -66,7 +66,7 @@ func (cm *ClusterManager) updateMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	err = cm.deleteMaster(masterInstanceID)
+	err = cm.deleteDroplet(masterInstanceID)
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
@@ -129,7 +129,7 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 
 	for _, instance := range oldinstances {
 		dropletID, err := strconv.Atoi(instance.Status.ExternalID)
-		err = cm.deleteDroplet(dropletID, instance.Status.PrivateIP)
+		err = cm.deleteDroplet(dropletID)
 		if err != nil {
 			return errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
