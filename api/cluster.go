@@ -131,6 +131,8 @@ type ClusterSpec struct {
 
 	Multizone StrToBool `json:"multizone,omitempty"`
 
+	IsPreRelease bool `json:"isPreRelease, omitempty"`
+
 	KubernetesVersion string `json:"kubernetesVersion,omitempty"`
 	KubeadmVersion    string `json:"kubeadmVersion,omitempty"`
 
