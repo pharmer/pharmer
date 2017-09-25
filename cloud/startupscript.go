@@ -168,9 +168,9 @@ apt-get install -y \
 	docker.io || true
 
 {{ if .IsPreReleaseVersion }}
-wget -O kubeadm dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
+curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
     && chmod +x kubeadm \
-	&& sudo mv kubeadm /usr/bin/
+	&& mv kubeadm /usr/bin/
 {{ end }}
 
 curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.3/pre-k-linux-amd64 \
@@ -258,9 +258,9 @@ apt-get install -y \
 	docker.io || true
 
 {{ if .IsPreReleaseVersion }}
-wget -O kubeadm dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
+curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
     && chmod +x kubeadm \
-	&& sudo mv kubeadm /usr/bin/
+	&& mv kubeadm /usr/bin/
 {{ end }}
 
 systemctl enable docker
