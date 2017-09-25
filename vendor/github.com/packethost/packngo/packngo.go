@@ -42,11 +42,6 @@ type Response struct {
 	Rate
 }
 
-// Href is an API link
-type Href struct {
-	Href string `json:"href"`
-}
-
 func (r *Response) populateRate() {
 	// parse the rate limit headers and populate Response.Rate
 	if limit := r.Header.Get(headerRateLimit); limit != "" {
@@ -64,14 +59,13 @@ func (r *Response) populateRate() {
 
 // ErrorResponse is the http response used on errrors
 type ErrorResponse struct {
-	Response    *http.Response
-	Errors      []string `json:"errors"`
-	SingleError string   `json:"error"`
+	Response *http.Response
+	Errors   []string `json:"errors"`
 }
 
 func (r *ErrorResponse) Error() string {
-	return fmt.Sprintf("%v %v: %d %v %v",
-		r.Response.Request.Method, r.Response.Request.URL, r.Response.StatusCode, strings.Join(r.Errors, ", "), r.SingleError)
+	return fmt.Sprintf("%v %v: %d %v",
+		r.Response.Request.Method, r.Response.Request.URL, r.Response.StatusCode, strings.Join(r.Errors, ", "))
 }
 
 // Client is the base API Client
@@ -87,19 +81,17 @@ type Client struct {
 	RateLimit Rate
 
 	// Packet Api Objects
-	Plans             PlanService
-	Users             UserService
-	Emails            EmailService
-	SSHKeys           SSHKeyService
-	Devices           DeviceService
-	Projects          ProjectService
-	Facilities        FacilityService
-	OperatingSystems  OSService
-	DeviceIPs         DeviceIPService
-	ProjectIPs        ProjectIPService
-	Volumes           VolumeService
-	VolumeAttachments VolumeAttachmentService
-	SpotMarket        SpotMarketService
+	Plans            PlanService
+	Users            UserService
+	Emails           EmailService
+	SSHKeys          SSHKeyService
+	Devices          DeviceService
+	Projects         ProjectService
+	Facilities       FacilityService
+	OperatingSystems OSService
+	Ips              IPService
+	IpReservations   IPReservationService
+	Volumes          VolumeService
 }
 
 // NewRequest inits a new http request with the proper headers
@@ -179,9 +171,6 @@ func NewClient(consumerToken string, apiKey string, httpClient *http.Client) *Cl
 	client, _ := NewClientWithBaseURL(consumerToken, apiKey, httpClient, baseURL)
 	return client
 }
-
-// NewClientWithBaseURL returns a Client pointing to nonstandard API URL, e.g.
-// for mocking the remote API
 func NewClientWithBaseURL(consumerToken string, apiKey string, httpClient *http.Client, apiBaseURL string) (*Client, error) {
 	if httpClient == nil {
 		// Don't fall back on http.DefaultClient as it's not nice to adjust state
@@ -204,11 +193,9 @@ func NewClientWithBaseURL(consumerToken string, apiKey string, httpClient *http.
 	c.Projects = &ProjectServiceOp{client: c}
 	c.Facilities = &FacilityServiceOp{client: c}
 	c.OperatingSystems = &OSServiceOp{client: c}
-	c.DeviceIPs = &DeviceIPServiceOp{client: c}
-	c.ProjectIPs = &ProjectIPServiceOp{client: c}
+	c.Ips = &IPServiceOp{client: c}
+	c.IpReservations = &IPReservationServiceOp{client: c}
 	c.Volumes = &VolumeServiceOp{client: c}
-	c.VolumeAttachments = &VolumeAttachmentServiceOp{client: c}
-	c.SpotMarket = &SpotMarketServiceOp{client: c}
 
 	return c, nil
 }
