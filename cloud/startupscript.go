@@ -9,6 +9,7 @@ import (
 
 	"github.com/appscode/pharmer/api"
 	"github.com/ghodss/yaml"
+	"github.com/hashicorp/go-version"
 	"gopkg.in/ini.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
@@ -33,17 +34,22 @@ type TemplateData struct {
 
 func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string) TemplateData {
 	td := TemplateData{
-		IsPreReleaseVersion: cluster.Spec.IsPreRelease,
-		KubernetesVersion:   cluster.Spec.KubernetesVersion,
-		KubeadmVersion:      cluster.Spec.KubeadmVersion,
-		KubeadmToken:        cluster.Spec.Token,
-		CAKey:               string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		FrontProxyKey:       string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		APIServerHost:       cluster.APIServerHost(),
-		ExtraDomains:        cluster.Spec.ClusterExternalDomain,
-		NetworkProvider:     cluster.Spec.Networking.NetworkProvider,
-		NodeGroupName:       nodeGroup,
+		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		KubeadmVersion:    cluster.Spec.KubeadmVersion,
+		KubeadmToken:      cluster.Spec.Token,
+		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		APIServerHost:     cluster.APIServerHost(),
+		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
+		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
+		NodeGroupName:     nodeGroup,
 	}
+	if cluster.Spec.KubeadmVersion != "" {
+		if v, err := version.NewVersion(cluster.Spec.KubeadmVersion); err == nil && v.Prerelease() != "" {
+			td.IsPreReleaseVersion = true
+		}
+	}
+
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "kubeadm.k8s.io/v1alpha1",
@@ -157,6 +163,7 @@ apt-get install -y \
 	cron \
 	glusterfs-client \
 	kubelet \
+	{{ if .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
 	cloud-utils \
 	docker.io || true
 
@@ -164,8 +171,6 @@ apt-get install -y \
 wget -O kubeadm dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
     && chmod +x kubeadm \
 	&& sudo mv kubeadm /usr/bin/
-{{ else }}
-apt-get install -y kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }}
 {{ end }}
 
 curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.3/pre-k-linux-amd64 \
@@ -249,14 +254,13 @@ apt-get install -y \
 	cron \
 	glusterfs-client \
 	kubelet \
+	{{ if .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
 	docker.io || true
 
 {{ if .IsPreReleaseVersion }}
 wget -O kubeadm dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
     && chmod +x kubeadm \
 	&& sudo mv kubeadm /usr/bin/
-{{ else }}
-apt-get install -y kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }}
 {{ end }}
 
 systemctl enable docker
