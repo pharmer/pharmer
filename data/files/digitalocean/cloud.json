@@ -235,8 +235,8 @@
   ],
   "kubernetesVersions": [
     {
-      "version": "1.7.4",
-      "description": "1.7.4",
+      "version": "v1.7.5",
+      "description": "v1.7.5",
       "env": {
         "dev": true
       },

@@ -9,6 +9,7 @@ import (
 
 	"github.com/appscode/pharmer/api"
 	"github.com/ghodss/yaml"
+	"github.com/hashicorp/go-version"
 	"gopkg.in/ini.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
@@ -16,6 +17,7 @@ import (
 )
 
 type TemplateData struct {
+	IsPreReleaseVersion bool
 	KubernetesVersion   string
 	KubeadmVersion      string
 	KubeadmToken        string
@@ -42,6 +44,12 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
 		NodeGroupName:     nodeGroup,
 	}
+	if cluster.Spec.KubeadmVersion != "" {
+		if v, err := version.NewVersion(cluster.Spec.KubeadmVersion); err == nil && v.Prerelease() != "" {
+			td.IsPreReleaseVersion = true
+		}
+	}
+
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "kubeadm.k8s.io/v1alpha1",
@@ -155,9 +163,15 @@ apt-get install -y \
 	cron \
 	glusterfs-client \
 	kubelet \
-	kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
+	{{ if not .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
 	cloud-utils \
 	docker.io || true
+
+{{ if .IsPreReleaseVersion }}
+curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
+    && chmod +x kubeadm \
+	&& mv kubeadm /usr/bin/
+{{ end }}
 
 curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.3/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
@@ -192,6 +206,7 @@ pre-k merge master-config \
 	--apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
 	--apiserver-cert-extra-sans=$(pre-k get private-ips) \
 	--apiserver-cert-extra-sans={{ .ExtraDomains }} \
+	--kubernetes-version={{ .KubernetesVersion }} \
 	> /etc/kubernetes/kubeadm/config.yaml
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 
@@ -239,8 +254,14 @@ apt-get install -y \
 	cron \
 	glusterfs-client \
 	kubelet \
-	kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
+	{{ if not .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
 	docker.io || true
+
+{{ if .IsPreReleaseVersion }}
+curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
+    && chmod +x kubeadm \
+	&& mv kubeadm /usr/bin/
+{{ end }}
 
 systemctl enable docker
 systemctl start docker
