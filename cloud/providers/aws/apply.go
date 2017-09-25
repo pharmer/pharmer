@@ -395,17 +395,6 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			instanceGroupName := igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku)
 			acts = append(acts, api.Action{
 				Action:   api.ActionDelete,
-				Resource: "Node Group",
-				Message:  fmt.Sprintf("Node group %v  will be deleted", instanceGroupName),
-			})
-			if rt != api.DryRun {
-				err := igm.deleteOnlyNodeGroup(instanceGroupName)
-				if err != nil {
-					err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-				}
-			}
-			acts = append(acts, api.Action{
-				Action:   api.ActionDelete,
 				Resource: "Autoscaler",
 				Message:  fmt.Sprintf("Autoscaler %v  will be deleted", instanceGroupName),
 			})
