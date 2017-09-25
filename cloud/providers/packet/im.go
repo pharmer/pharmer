@@ -62,7 +62,7 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 		return nil, err
 	}
 	device, _, err := im.conn.client.Devices.Create(&packngo.DeviceCreateRequest{
-		Hostname:     name,
+		HostName:     name,
 		Plan:         sku,
 		Facility:     im.cluster.Spec.Cloud.Zone,
 		OS:           im.cluster.Spec.Cloud.InstanceImage,
