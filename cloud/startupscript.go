@@ -163,7 +163,7 @@ apt-get install -y \
 	cron \
 	glusterfs-client \
 	kubelet \
-	{{ if .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
+	{{ if not .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
 	cloud-utils \
 	docker.io || true
 
@@ -254,7 +254,7 @@ apt-get install -y \
 	cron \
 	glusterfs-client \
 	kubelet \
-	{{ if .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
+	{{ if not .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
 	docker.io || true
 
 {{ if .IsPreReleaseVersion }}
