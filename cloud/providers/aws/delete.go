@@ -2,10 +2,8 @@ package aws
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
-	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
 	stringutil "github.com/appscode/go/strings"
 	. "github.com/appscode/go/types"
@@ -14,115 +12,7 @@ import (
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/cenkalti/backoff"
 )
-
-func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
-	if cm.cluster.Status.Phase == api.ClusterPending {
-		cm.cluster.Status.Phase = api.ClusterFailing
-	} else if cm.cluster.Status.Phase == api.ClusterReady {
-		cm.cluster.Status.Phase = api.ClusterDeleting
-	}
-	// Store(cm.ctx).UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)
-
-	if cm.conn == nil {
-		conn, err := NewConnector(cm.ctx, cm.cluster)
-		if err != nil {
-			cm.cluster.Status.Reason = err.Error()
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
-		}
-		cm.conn = conn
-	}
-	cm.namer = namer{cluster: cm.cluster}
-
-	exists, err := cm.findVPC()
-	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	if !exists {
-		return errors.Newf("VPC %v not found for Cluster %v", cm.cluster.Status.Cloud.AWS.VpcId, cm.cluster.Name).WithContext(cm.ctx).Err()
-	}
-
-	var errs []string
-	if cm.cluster.Status.Reason != "" {
-		errs = append(errs, cm.cluster.Status.Reason)
-	}
-
-	//for _, ng := range cm.cluster.Spec.NodeGroups {
-	//	if err = cm.deleteAutoScalingGroup(cm.namer.AutoScalingGroupName(ng.SKU)); err != nil {
-	//		errs = append(errs, err.Error())
-	//	}
-	//}
-	if err = cm.deleteMaster(); err != nil {
-		errs = append(errs, err.Error())
-	}
-	if err = cm.ensureInstancesDeleted(); err != nil {
-		errs = append(errs, err.Error())
-	}
-	//for _, ng := range cm.cluster.Spec.NodeGroups {
-	//	if err = cm.deleteLaunchConfiguration(cm.namer.AutoScalingGroupName(ng.SKU)); err != nil {
-	//		errs = append(errs, err.Error())
-	//	}
-	//}
-
-	if err = cm.deleteVolume(); err != nil {
-		errs = append(errs, err.Error())
-	}
-
-	if req.ReleaseReservedIp && cm.cluster.Spec.MasterReservedIP != "" {
-		if err = cm.releaseReservedIP(cm.cluster.Spec.MasterReservedIP); err != nil {
-			errs = append(errs, err.Error())
-		}
-	}
-
-	if err := backoff.Retry(cm.deleteSecurityGroup, backoff.NewExponentialBackOff()); err != nil {
-		errs = append(errs, err.Error())
-	}
-
-	if err := backoff.Retry(cm.deleteSecurityGroup, backoff.NewExponentialBackOff()); err != nil {
-		errs = append(errs, err.Error())
-	}
-
-	if err := backoff.Retry(cm.deleteInternetGateway, backoff.NewExponentialBackOff()); err != nil {
-		errs = append(errs, err.Error())
-	}
-
-	if err := backoff.Retry(cm.deleteDHCPOption, backoff.NewExponentialBackOff()); err != nil {
-		errs = append(errs, err.Error())
-	}
-
-	if err := backoff.Retry(cm.deleteRouteTable, backoff.NewExponentialBackOff()); err != nil {
-		errs = append(errs, err.Error())
-	}
-
-	if err := backoff.Retry(cm.deleteSubnetId, backoff.NewExponentialBackOff()); err != nil {
-		errs = append(errs, err.Error())
-	}
-
-	if err := backoff.Retry(cm.deleteVpc, backoff.NewExponentialBackOff()); err != nil {
-		errs = append(errs, err.Error())
-	}
-
-	// Delete SSH key from DB
-	if err = cm.deleteSSHKey(); err != nil {
-		errs = append(errs, err.Error())
-	}
-
-	if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
-		errs = append(errs, err.Error())
-	}
-
-	if len(errs) > 0 {
-		// Preserve statusCause for failed cluster
-		if cm.cluster.Status.Phase == api.ClusterDeleting {
-			cm.cluster.Status.Reason = strings.Join(errs, "\n")
-		}
-		return fmt.Errorf(strings.Join(errs, "\n"))
-	}
-
-	Logger(cm.ctx).Infof("Cluster %v deleted successfully", cm.cluster.Name)
-	return nil
-}
 
 func (cm *ClusterManager) findVPC() (bool, error) {
 	r1, err := cm.conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{

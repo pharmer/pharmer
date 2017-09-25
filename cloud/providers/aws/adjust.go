@@ -186,15 +186,6 @@ func (igm *NodeGroupManager) createLaunchConfiguration(name, sku string) error {
 	return nil
 }
 
-func (igm *NodeGroupManager) deleteOnlyNodeGroup(instanceGroup string) error {
-	_, err := igm.describeGroupInfo(instanceGroup)
-	if err != nil {
-		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-	}
-
-	return nil
-}
-
 func (igm *NodeGroupManager) updateNodeGroup(instanceGroup string, size int64) error {
 	group, err := igm.describeGroupInfo(instanceGroup)
 	if err != nil {
