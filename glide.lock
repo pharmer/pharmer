@@ -1,5 +1,5 @@
-hash: 07b1b2a02379bbad650940cf51231cf6eaa7a64e1ffe837abb73471cbf91dc66
-updated: 2017-09-15T11:05:26.130044936-07:00
+hash: 91e2cf94fd548c4f134f099f8915f7d0914f144d622ecbc6f62d3d02651dd796
+updated: 2017-09-24T19:38:38.160034469-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -12,7 +12,7 @@ imports:
   - core
   - terminal
 - name: github.com/appscode/api
-  version: 2e0844caab5be929820a03a7eb975546c796cb9f
+  version: 1db7d24a24ea0591376eea23a011d9afea090e02
   subpackages:
   - attic/v1beta1
   - auth/v1beta1
@@ -43,10 +43,12 @@ imports:
   version: f4f29933a76479d990f6adbd70157f8cbfbaefc7
   subpackages:
   - files
+- name: github.com/appscode/envconfig
+  version: 8debe51c027cc6d944705e16415fd948cb32824c
 - name: github.com/appscode/errors
   version: 748883e321a9f99fe901bd2663c7af3fcae43ea4
 - name: github.com/appscode/go
-  version: d1fbd14e5c6e78557c12f6d2c9c282b3c0d0c612
+  version: 5f5a94d551a6a3147a2dfc5e287da0fc251b1bac
   subpackages:
   - context
   - crypto/rand
@@ -64,7 +66,7 @@ imports:
   - version
   - wait
 - name: github.com/appscode/go-dns
-  version: cfe43e45d5a947ef0bfcc1b024a2aeda77c9734a
+  version: fb73cc77670ccedf571d05bc6d17336f762fe9cf
   subpackages:
   - aws
   - azure
@@ -150,7 +152,7 @@ imports:
 - name: github.com/cenkalti/backoff
   version: 61153c768f31ee5f130071d08fc82b85208528de
 - name: github.com/cloudflare/cloudflare-go
-  version: ba610b87e64f5e99e8ddd614e50669c66c2ec9b5
+  version: 73188131583704facec77adbb1e666a7917f973c
 - name: github.com/cpuguy83/go-md2man
   version: 71acacd42f85e5e82f70a55327789582a5200a90
   subpackages:
@@ -309,11 +311,11 @@ imports:
 - name: github.com/olekukonko/tablewriter
   version: cca8bbc0798408af109aaaa239cbd2634846b340
 - name: github.com/packethost/packngo
-  version: eb2f55d19cc5fda85fadbf1411523ab12cbc812a
+  version: 39bed7c0688e7508a74b18c998ebacbadb56e17c
 - name: github.com/pborman/uuid
   version: e790cca94e6cc75c7064b1332e63811d4aae1a53
 - name: github.com/pkg/errors
-  version: a22138067af1c4942683050411a841ade67fe1eb
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/PuerkitoBio/purell
   version: 8a290539e2e8629dbc4e6bad948158f790ec31f4
 - name: github.com/PuerkitoBio/urlesc
@@ -355,12 +357,10 @@ imports:
   subpackages:
   - doc
 - name: github.com/spf13/pflag
-  version: 0f53e09b6e0414581a4e540b3731ea7aa721e7fe
+  version: 8f62c03454809f9fe034ed3b4f564dfd50e7067b
   repo: https://github.com/appscode/pflag.git
   vcs: git
 - name: github.com/tamalsaha/go-oneliners
-  version: 4ca214c0460d9077e49e3ef394785f92408f7699
-- name: github.com/TamalSaha/go-oneliners
   version: 4ca214c0460d9077e49e3ef394785f92408f7699
 - name: github.com/tent/http-link-go
   version: ac974c61c2f990f4115b119354b5e0b47550e888
@@ -381,7 +381,7 @@ imports:
 - name: github.com/xeipuuv/gojsonschema
   version: 93e72a773fade158921402d6a24c819b48aba29d
 - name: github.com/xenolf/lego
-  version: 8f574e6ca289b530cd3f266f4aa73c9a1161c48a
+  version: 66641c9c561e651eb110bec39b5012a51ab64e24
   repo: https://github.com/appscode/lego.git
   vcs: git
   subpackages:
@@ -475,7 +475,7 @@ imports:
   - internal/urlfetch
   - urlfetch
 - name: google.golang.org/genproto
-  version: 595979c8a7bf586b2d293fb42246bf91a0b893d9
+  version: 1e559d0a00eef8a9a43151db4665280bd8dd5886
   subpackages:
   - googleapis/api/annotations
   - googleapis/rpc/status

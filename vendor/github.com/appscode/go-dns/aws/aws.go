@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
@@ -26,7 +28,8 @@ const (
 
 // DNSProvider implements the acme.ChallengeProvider interface
 type DNSProvider struct {
-	client *route53.Route53
+	client       *route53.Route53
+	hostedZoneID string
 }
 
 var _ dp.Provider = &DNSProvider{}
@@ -56,7 +59,7 @@ func (d customRetryer) RetryRules(r *request.Request) time.Duration {
 type Options struct {
 	AccessKeyId     string `json:"access_key_id" envconfig:"AWS_ACCESS_KEY_ID" form:"aws_access_key_id"`
 	SecretAccessKey string `json:"secret_access_key" envconfig:"AWS_SECRET_ACCESS_KEY" form:"aws_secret_access_key"`
-	Region          string `json:"region" envconfig:"AWS_REGION" form:"aws_region"`
+	HostedZoneID    string `json:"hosted_zone_id" envconfig:"AWS_HOSTED_ZONE_ID" form:"aws_hosted_zone_id"`
 }
 
 // NewDNSProvider returns a DNSProvider instance configured for the AWS
@@ -70,30 +73,47 @@ type Options struct {
 // 3. Amazon EC2 IAM role
 //
 // See also: https://github.com/aws/aws-sdk-go/wiki/configuring-sdk
-func NewDNSProvider() (*DNSProvider, error) {
+func Default() (*DNSProvider, error) {
+	hostedZoneID := os.Getenv("AWS_HOSTED_ZONE_ID")
+
 	r := customRetryer{}
 	r.NumMaxRetries = maxRetries
 	config := request.WithRetryer(aws.NewConfig(), r)
-	client := route53.New(session.New(config))
-
-	return &DNSProvider{client: client}, nil
+	s, err := session.NewSessionWithOptions(session.Options{
+		Config: *config,
+		// Support MFA when authing using assumed roles.
+		SharedConfigState:       session.SharedConfigEnable,
+		AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &DNSProvider{client: route53.New(s), hostedZoneID: hostedZoneID}, nil
 }
 
-func NewDNSProviderCredentials(opt Options) (*DNSProvider, error) {
+func New(opt Options) (*DNSProvider, error) {
 	r := customRetryer{}
 	r.NumMaxRetries = maxRetries
 	config := &aws.Config{
-		Credentials: credentials.NewStaticCredentials(opt.AccessKeyId, opt.SecretAccessKey, " "),
-		Region:      aws.String(opt.Region),
+		Credentials: credentials.NewStaticCredentials(opt.AccessKeyId, opt.SecretAccessKey, ""),
 		Retryer:     r,
+		Region:      aws.String("us-east-1"),
 	}
-	client := route53.New(session.New(config))
-	return &DNSProvider{client: client}, nil
+	s, err := session.NewSessionWithOptions(session.Options{
+		Config: *config,
+		// Support MFA when authing using assumed roles.
+		SharedConfigState:       session.SharedConfigEnable,
+		AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &DNSProvider{client: route53.New(s), hostedZoneID: opt.HostedZoneID}, nil
 }
 
 func (r *DNSProvider) EnsureARecord(domain string, ip string) error {
 	fqdn := acme.ToFqdn(domain)
-	hostedZoneID, err := getHostedZoneID(fqdn, r.client)
+	hostedZoneID, err := r.getHostedZoneID(fqdn)
 	if err != nil {
 		return fmt.Errorf("Failed to determine Route 53 hosted zone ID: %v", err)
 	}
@@ -152,7 +172,7 @@ func (r *DNSProvider) EnsureARecord(domain string, ip string) error {
 
 func (r *DNSProvider) DeleteARecords(domain string) error {
 	fqdn := acme.ToFqdn(domain)
-	hostedZoneID, err := getHostedZoneID(fqdn, r.client)
+	hostedZoneID, err := r.getHostedZoneID(fqdn)
 	if err != nil {
 		return fmt.Errorf("Failed to determine Route 53 hosted zone ID: %v", err)
 	}
@@ -190,7 +210,7 @@ func (r *DNSProvider) DeleteARecords(domain string) error {
 
 func (r *DNSProvider) DeleteARecord(domain string, ip string) error {
 	fqdn := acme.ToFqdn(domain)
-	hostedZoneID, err := getHostedZoneID(fqdn, r.client)
+	hostedZoneID, err := r.getHostedZoneID(fqdn)
 	if err != nil {
 		return fmt.Errorf("Failed to determine Route 53 hosted zone ID: %v", err)
 	}
@@ -248,7 +268,11 @@ func (r *DNSProvider) DeleteARecord(domain string, ip string) error {
 	return nil
 }
 
-func getHostedZoneID(fqdn string, client *route53.Route53) (string, error) {
+func (r *DNSProvider) getHostedZoneID(fqdn string) (string, error) {
+	if r.hostedZoneID != "" {
+		return r.hostedZoneID, nil
+	}
+
 	authZone, err := acme.FindZoneByFqdn(fqdn, acme.RecursiveNameservers)
 	if err != nil {
 		return "", err
@@ -258,7 +282,7 @@ func getHostedZoneID(fqdn string, client *route53.Route53) (string, error) {
 	reqParams := &route53.ListHostedZonesByNameInput{
 		DNSName: aws.String(acme.UnFqdn(authZone)),
 	}
-	resp, err := client.ListHostedZonesByName(reqParams)
+	resp, err := r.client.ListHostedZonesByName(reqParams)
 	if err != nil {
 		return "", err
 	}

@@ -88,24 +88,16 @@ import:
   version: master
 - package: gopkg.in/AlecAivazis/survey.v1
   version: master
-
 - package: github.com/facebookgo/stack
   version: 751773369052141c013c6e827a71e8f35c07879c
-- package: github.com/google/go-querystring
-  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
-- package: github.com/kelseyhightower/envconfig
-  version: f611eb38b3875cc3bd991ca91c51d06446afa14c
 - package: github.com/mattn/go-colorable
   version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
 - package: github.com/mattn/go-runewidth
   version: d6bea18f789704b5f83375793155289da36a3c7f
-- package: github.com/mitchellh/go-homedir
-  version: b8bc1bf767474819792c23f32d8286a45736f1c6
 - package: github.com/xenolf/lego
-  version: 8f574e6ca289b530cd3f266f4aa73c9a1161c48a
+  version: master
   repo: https://github.com/appscode/lego.git
   vcs: git
-
 testImport:
 - package: github.com/onsi/ginkgo
   version: v1.4.0

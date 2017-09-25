@@ -104,7 +104,7 @@ func NewStoreProvider(ctx context.Context, cfg *api.PharmerConfig) store.Interfa
 func NewDNSProvider(cfg *api.PharmerConfig) dns_provider.Provider {
 	if cfg.DNS != nil {
 		if cred, err := cfg.GetCredential(cfg.DNS.CredentialName); err == nil {
-			if dp, err := dns.NewDNSProvider(cred.Spec.Provider); err == nil {
+			if dp, err := dns.Default(cred.Spec.Provider); err == nil {
 				return dp
 			}
 		}

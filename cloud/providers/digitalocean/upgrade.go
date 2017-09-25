@@ -28,7 +28,7 @@ func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error
 	cm.cluster.Generation = int64(0)
 	cm.namer = namer{cluster: cm.cluster}
 	// assign new timestamp and new launch_config version
-	cm.cluster.Spec.KubernetesVersion = req.KubernetesVersion
+	cm.cluster.Spec.KubernetesVersion = req.KubeletVersion
 
 	_, err := Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
