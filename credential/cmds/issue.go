@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"context"
+	"strings"
 
 	"github.com/appscode/go-term"
 	"github.com/appscode/pharmer/api"
@@ -40,7 +41,7 @@ func NewCmdIssue() *cobra.Command {
 			provider, _ := cmd.Flags().GetString("provider")
 			if provider == "GoogleCloud" {
 				cc.IssueGCECredential(args[0])
-			} else if provider == "Azure" {
+			} else if strings.ToLower(provider) == "azure" {
 				cred, err := cc.IssueAzureCredential(args[0])
 				if err != nil {
 					term.Fatalln(err)
