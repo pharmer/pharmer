@@ -10,7 +10,6 @@ import (
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/cenkalti/backoff"
 	"github.com/digitalocean/godo"
-	"github.com/tamalsaha/go-oneliners"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -199,15 +198,12 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			}
 
 			if err = cm.conn.waitForInstance(masterDroplet.ID, "active"); err != nil {
-				oneliners.FILE(err)
 				cm.cluster.Status.Reason = err.Error()
 				return acts, err
 			}
 			im.applyTag(masterDroplet.ID)
 			if cm.cluster.Spec.MasterReservedIP != "" {
-				oneliners.FILE()
 				if err = im.assignReservedIP(cm.cluster.Spec.MasterReservedIP, masterDroplet.ID); err != nil {
-					oneliners.FILE(err)
 					cm.cluster.Status.Reason = err.Error()
 					return acts, err
 				}
@@ -368,7 +364,6 @@ func (cm *ClusterManager) getPublicKey() (bool, error) {
 }
 
 func (cm *ClusterManager) importPublicKey() error {
-	oneliners.FILE()
 	key, resp, err := cm.conn.client.Keys.Create(gtx.TODO(), &godo.KeyCreateRequest{
 		Name:      cm.cluster.Status.SSHKeyExternalID,
 		PublicKey: string(SSHKey(cm.ctx).PublicKey),

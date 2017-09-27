@@ -12,7 +12,6 @@ import (
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
-	"github.com/tamalsaha/go-oneliners"
 	compute "google.golang.org/api/compute/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -205,9 +204,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "A Record",
 			Message:  fmt.Sprintf("Will create cluster apps A record %v, External domain %v and internal domain %v", Extra(cm.ctx).Domain(cm.cluster.Name), Extra(cm.ctx).ExternalDomain(cm.cluster.Name), Extra(cm.ctx).InternalDomain(cm.cluster.Name)),
 		})
-		oneliners.FILE()
 		if rt != api.DryRun {
-			oneliners.FILE()
 			if op1, err := cm.createMasterIntance(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
