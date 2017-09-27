@@ -46,21 +46,23 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 
 	namer := namer{cluster: cluster}
+
+	fmt.Println(typed.TenantID(), "<>", typed.SubscriptionID(), "<>", typed.ClientID(), "<>", typed.ClientSecret())
 	cluster.Spec.Cloud.Azure.CloudConfig = &api.AzureCloudConfig{
-		TenantID:           typed.TenantID(),
-		SubscriptionID:     typed.SubscriptionID(),
-		AadClientID:        typed.ClientID(),
-		AadClientSecret:    typed.ClientSecret(),
-		ResourceGroup:      namer.ResourceGroupName(),
-		Location:           cluster.Spec.Cloud.Zone,
-		SubnetName:         namer.SubnetName(),
-		SecurityGroupName:  namer.NetworkSecurityGroupName(),
-		VnetName:           namer.VirtualNetworkName(),
-		RouteTableName:     namer.RouteTableName(),
-		StorageAccountName: namer.GenStorageAccountName(),
+		TenantID:          typed.TenantID(),
+		SubscriptionID:    typed.SubscriptionID(),
+		AadClientID:       typed.ClientID(),
+		AadClientSecret:   typed.ClientSecret(),
+		ResourceGroup:     namer.ResourceGroupName(),
+		Location:          cluster.Spec.Cloud.Zone,
+		SubnetName:        namer.SubnetName(),
+		SecurityGroupName: namer.NetworkSecurityGroupName(),
+		VnetName:          namer.VirtualNetworkName(),
+		RouteTableName:    namer.RouteTableName(),
+		//	StorageAccountName: namer.GenStorageAccountName(),
 	}
 	cluster.Spec.Cloud.CloudConfigPath = "/etc/kubernetes/azure.json"
-	cluster.Spec.Cloud.Azure.StorageAccountName = cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName
+	cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName = cluster.Spec.Cloud.Azure.StorageAccountName
 
 	/*
 		if az.Cloud == "" {
@@ -189,4 +191,12 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		interfacesClient:        interfacesClient,
 		storageClient:           storageClient,
 	}, nil
+}
+
+func (conn *cloudConnector) detectUbuntuImage() error {
+	conn.cluster.Spec.Cloud.OS = "UbuntuServer"
+	conn.cluster.Spec.Cloud.InstanceImageProject = "Canonical"
+	conn.cluster.Spec.Cloud.InstanceImage = "16.04-LTS"
+	conn.cluster.Spec.Cloud.Azure.InstanceImageVersion = "latest"
+	return nil
 }

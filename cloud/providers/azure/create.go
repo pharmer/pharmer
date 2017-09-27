@@ -3,6 +3,7 @@ package azure
 import (
 	"time"
 
+	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/mergo"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
@@ -59,6 +60,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	}
 	n := namer{cluster: cluster}
 
+	cluster.Spec.Networking.NetworkProvider = "calico"
 	// Init object meta
 	cluster.ObjectMeta.UID = phid.NewKubeCluster()
 	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
@@ -80,6 +82,16 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 		SSHKeyExternalID: n.GenSSHKeyExternalID(),
 	}
 
+	cluster.Spec.Cloud.Azure.StorageAccountName = n.GenStorageAccountName()
+	cluster.Spec.Cloud.Azure.SubnetCIDR = "10.240.0.0/16"
+	cluster.Spec.Cloud.Azure.InstanceRootPassword = rand.GeneratePassword()
+
+	/*
+		cm.ctx.VpcCidrBase = "10.240"
+		cm.ctx.MasterIPSuffix = ".4"
+		cm.ctx.MasterInternalIP = cm.ctx.VpcCidrBase + ".1" + cm.ctx.MasterIPSuffix
+	*/
+	cluster.Spec.MasterInternalIP = "10.240.1.4"
 	// Fix the stuff below ----------------------------------------------------
 
 	// cluster.Spec.ctx.MasterSGName = cluster.Spec.ctx.Name + "-master-" + rand.Characters(6)
@@ -152,6 +164,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 			}
 		}
 	}
+	cluster.Spec.KubernetesVersion = "v" + in.Spec.KubernetesVersion
 	return cluster, nil
 }
 
