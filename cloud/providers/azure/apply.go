@@ -1,29 +1,62 @@
 package azure
 
 import (
+	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
 	"github.com/Azure/azure-sdk-for-go/arm/network"
 	"github.com/Azure/azure-sdk-for-go/arm/resources/resources"
 	armstorage "github.com/Azure/azure-sdk-for-go/arm/storage"
 	azstore "github.com/Azure/azure-sdk-for-go/storage"
-	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	var err error
+	if dryRun {
+		action, err := cm.apply(in, api.DryRun)
+		fmt.Println(err)
+		jm, err := json.Marshal(action)
+		fmt.Println(string(jm), err)
+	} else {
+		_, err = cm.apply(in, api.StdRun)
+	}
+	return err
+}
 
-	cm.cluster = in
-	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
-		return err
+func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Action, err error) {
+	var (
+		clusterDelete = false
+	)
+	if in.DeletionTimestamp != nil && in.Status.Phase != api.ClusterDeleted {
+		clusterDelete = true
 	}
 
-	defer func(releaseReservedIp bool) {
+	cm.cluster = in
+	cm.namer = namer{cluster: cm.cluster}
+	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
+		return
+	}
+	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
+		return
+	}
+	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+		return
+	}
+	acts = make([]api.Action, 0)
+
+	if cm.cluster.Status.Phase == "" {
+		err = fmt.Errorf("cluster `%s` is in unknown status", cm.cluster.Name)
+		return
+	}
+
+	/*defer func(releaseReservedIp bool) {
 		if cm.cluster.Status.Phase == api.ClusterPending {
 			cm.cluster.Status.Phase = api.ClusterFailing
 		}
@@ -36,51 +69,200 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 				ReleaseReservedIp: releaseReservedIp,
 			})
 		}
-	}(cm.cluster.Spec.MasterReservedIP == "auto")
+	}(cm.cluster.Spec.MasterReservedIP == "auto")*/
 
 	// Common stuff
-	_, err = cm.ensureResourceGroup()
-	if err != nil {
+	if err = cm.conn.detectUbuntuImage(); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		err = errors.FromErr(err).WithContext(cm.ctx).Err()
+		return
 	}
-	Logger(cm.ctx).Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.cluster.Spec.Cloud.Zone)
-	as, err := cm.ensureAvailablitySet()
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+
+	if found, _ := cm.getResourceGroup(); !found {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Resource group",
+			Message:  "Resource group will be created",
+		})
+		if rt != api.DryRun {
+			if _, err = cm.ensureResourceGroup(); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				err = errors.FromErr(err).WithContext(cm.ctx).Err()
+				return
+			}
+			Logger(cm.ctx).Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.cluster.Spec.Cloud.Zone)
+		}
+	} else {
+		if clusterDelete {
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "Resource group",
+				Message:  "Resource group will be deleted",
+			})
+		} else {
+			acts = append(acts, api.Action{
+				Action:   api.ActionNOP,
+				Resource: "Resource group",
+				Message:  "Resource group found",
+			})
+		}
 	}
-	Logger(cm.ctx).Infof("Availablity set %v created", cm.namer.AvailablitySetName())
-	sa, err := cm.createStorageAccount()
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+
+	var as compute.AvailabilitySet
+	if as, err = cm.getAvailablitySet(); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Availablity set",
+			Message:  fmt.Sprintf("Availablity set %v created", cm.namer.AvailablitySetName()),
+		})
+		if rt != api.DryRun {
+			if as, err = cm.ensureAvailablitySet(); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				err = errors.FromErr(err).WithContext(cm.ctx).Err()
+				return
+				Logger(cm.ctx).Infof("Availablity set %v created", cm.namer.AvailablitySetName())
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Availablity set",
+			Message:  fmt.Sprintf("Availablity set %v found", cm.namer.AvailablitySetName()),
+		})
 	}
-	vn, err := cm.ensureVirtualNetwork()
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+
+	var sa armstorage.Account
+	if sa, err = cm.getStorageAccount(); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Storage account",
+			Message:  fmt.Sprintf("Storage account %v will be created", cm.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName),
+		})
+		if rt != api.DryRun {
+			if sa, err = cm.createStorageAccount(); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				err = errors.FromErr(err).WithContext(cm.ctx).Err()
+				return
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Storage account",
+			Message:  fmt.Sprintf("Storage account %v found", cm.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName),
+		})
 	}
-	sg, err := cm.createNetworkSecurityGroup()
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+
+	var vn network.VirtualNetwork
+	if vn, err = cm.getVirtualNetwork(); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Virtual network",
+			Message:  fmt.Sprintf("Virtual network %v will be created", cm.namer.VirtualNetworkName()),
+		})
+		if rt != api.DryRun {
+			if vn, err = cm.ensureVirtualNetwork(); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				errors.FromErr(err).WithContext(cm.ctx).Err()
+				return
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Virtual network",
+			Message:  fmt.Sprintf("Virtual network %v found", cm.namer.VirtualNetworkName()),
+		})
 	}
-	sn, err := cm.createSubnetID(&vn, &sg)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+
+	var sg network.SecurityGroup
+	if sg, err = cm.getNetworkSecurityGroup(); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Network security group",
+			Message:  fmt.Sprintf("Network security group %v will be created", cm.namer.NetworkSecurityGroupName()),
+		})
+		if rt != api.DryRun {
+			if sg, err = cm.createNetworkSecurityGroup(); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				errors.FromErr(err).WithContext(cm.ctx).Err()
+				return
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Network security group",
+			Message:  fmt.Sprintf("Network security group %v found", cm.namer.NetworkSecurityGroupName()),
+		})
+	}
+
+	var sn network.Subnet
+	if sn, err = cm.getSubnetID(&vn); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Subnet id",
+			Message:  fmt.Sprintf("Subnet %v will be created", cm.namer.SubnetName()),
+		})
+		if rt != api.DryRun {
+			if sn, err = cm.createSubnetID(&vn, &sg); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				errors.FromErr(err).WithContext(cm.ctx).Err()
+				return
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Subnet id",
+			Message:  fmt.Sprintf("Subnet %v found", cm.namer.SubnetName()),
+		})
 	}
 
 	// -------------------------------------------------------------------ASSETS
-	im := &instanceManager{cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
+	im := &instanceManager{ctx: cm.ctx, cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
 
-	masterPIP, err := im.createPublicIP(cm.namer.PublicIPName(cm.namer.MasterName()), network.Static)
+	nodeGroups, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return
 	}
-	cm.cluster.Spec.MasterReservedIP = String(masterPIP.IPAddress)
+
+	var masterNG *api.NodeGroup
+	var totalNodes int64 = 0
+	for _, ng := range nodeGroups {
+		if ng.IsMaster() {
+			masterNG = ng
+		} else {
+			totalNodes += ng.Spec.Nodes
+		}
+	}
+	fmt.Println(totalNodes)
+	cm.cluster.Spec.MasterSKU = "Standard_D2_v2"
+
+	var masterPIP network.PublicIPAddress
+
+	if masterPIP, err = im.getPublicIP(cm.namer.PublicIPName(cm.namer.MasterName())); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Master public ip address",
+			Message:  fmt.Sprintf("Master public ip will be created"),
+		})
+		if rt != api.DryRun {
+			if masterPIP, err = im.createPublicIP(cm.namer.PublicIPName(cm.namer.MasterName()), network.Static); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				errors.FromErr(err).WithContext(cm.ctx).Err()
+				return
+			}
+			cm.cluster.Spec.MasterReservedIP = String(masterPIP.IPAddress)
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Master public ip address",
+			Message:  fmt.Sprintf("Master Public ip found"),
+		})
+		cm.cluster.Spec.MasterReservedIP = String(masterPIP.IPAddress)
+	}
 
 	// @dipta
 	if cm.cluster.Spec.MasterExternalIP == "" {
@@ -97,84 +279,207 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	// needed for master start-up config
 	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		errors.FromErr(err).WithContext(cm.ctx).Err()
+		return
 	}
 
 	// Master Stuff
-	masterNIC, err := im.createNetworkInterface(cm.namer.NetworkInterfaceName(cm.cluster.Spec.KubernetesMasterName), sg, sn, network.Static, cm.cluster.Spec.MasterInternalIP, masterPIP)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	err = cm.createNetworkSecurityRule(&sg)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-
-	masterScript, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, "")
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	masterVM, err := im.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), masterScript, cm.cluster.Spec.MasterSKU)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-
-	masterInstance, err := im.newKubeInstance(masterVM, masterNIC, masterPIP)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	masterInstance.Spec.Role = api.RoleMaster
-
-	fmt.Println(cm.cluster.Spec.MasterExternalIP, "------------------------------->")
-	Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
-
-	err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
-	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	fmt.Println(err, "<------------------------------->")
-
-	//for _, ng := range req.NodeGroups {
-	//	Logger(cm.ctx).Infof("Creating %v node with sku %v", ng.Count, ng.Sku)
-	//	igm := &NodeGroupManager{
-	//		cm: cm,
-	//		instance: Instance{
-	//			Type: InstanceType{
-	//				ContextVersion: cm.cluster.Generation,
-	//				Sku:            ng.Sku,
-	//
-	//				Master:       false,
-	//				SpotInstance: false,
-	//			},
-	//			Stats: GroupStats{
-	//				Count: ng.Count,
-	//			},
-	//		},
-	//		im: im,
-	//	}
-	//	err = igm.AdjustNodeGroup()
-	//}
-
-	Logger(cm.ctx).Info("Waiting for cluster initialization")
-
-	// Wait for master A record to propagate
-	if err := EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	// wait for nodes to start
-	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	var masterNIC network.Interface
+	if masterNIC, err = im.getNetworkInterface(cm.namer.NetworkInterfaceName(cm.cluster.Spec.KubernetesMasterName)); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Master network interface",
+			Message:  fmt.Sprintf("Masater network interface %v will be created", cm.namer.NetworkInterfaceName(cm.cluster.Spec.KubernetesMasterName)),
+		})
+		if rt != api.DryRun {
+			if masterNIC, err = im.createNetworkInterface(cm.namer.NetworkInterfaceName(cm.cluster.Spec.KubernetesMasterName), sg, sn, network.Static, cm.cluster.Spec.MasterInternalIP, masterPIP); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				errors.FromErr(err).WithContext(cm.ctx).Err()
+				return
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Master network interface",
+			Message:  fmt.Sprintf("Masater network interface %v found", cm.namer.NetworkInterfaceName(cm.cluster.Spec.KubernetesMasterName)),
+		})
 	}
 
-	cm.cluster.Status.Phase = api.ClusterReady
-	return nil
+	if found, _ := cm.getNetworkSecurityRule(); !found {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Network security rule",
+			Message:  fmt.Sprintf("All network security will be created"),
+		})
+		if rt != api.DryRun {
+			if err = cm.createNetworkSecurityRule(&sg); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				errors.FromErr(err).WithContext(cm.ctx).Err()
+				return
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Network security rule",
+			Message:  fmt.Sprintf("All network security found"),
+		})
+	}
+
+	var masterVM compute.VirtualMachine
+	if masterVM, err = im.getVirtualMachine(cm.namer.MasterName()); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Master virtual machine",
+			Message:  fmt.Sprintf("Virtual machine %v will be created", cm.namer.MasterName()),
+		})
+		if rt != api.DryRun {
+			var masterScript string
+			masterScript, err = RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, "")
+			if err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				errors.FromErr(err).WithContext(cm.ctx).Err()
+				return
+			}
+			masterVM, err = im.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), masterScript, cm.cluster.Spec.MasterSKU)
+			if err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				errors.FromErr(err).WithContext(cm.ctx).Err()
+				return
+			}
+			var masterInstance *api.Node
+			masterInstance, err = im.newKubeInstance(masterVM, masterNIC, masterPIP)
+			if err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				errors.FromErr(err).WithContext(cm.ctx).Err()
+				return
+			}
+			masterInstance.Spec.Role = api.RoleMaster
+			cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
+			cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
+
+			fmt.Println(cm.cluster.Spec.MasterExternalIP, "------------------------------->")
+			Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
+
+			err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
+			if err != nil {
+				errors.FromErr(err).WithContext(cm.ctx).Err()
+				return
+			}
+			masterNG.Status.Nodes = int32(1)
+			Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
+			Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
+			// needed to get master_internal_ip
+			if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+				cm.cluster.Status.Reason = err.Error()
+				return acts, err
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Master Instance",
+			Message:  fmt.Sprintf("Found master instance with name %v", cm.cluster.Spec.KubernetesMasterName),
+		})
+		masterInstance, _ := im.newKubeInstance(masterVM, masterNIC, masterPIP)
+		if err != nil {
+			cm.cluster.Status.Reason = err.Error()
+			errors.FromErr(err).WithContext(cm.ctx).Err()
+			return
+		}
+		masterInstance.Spec.Role = api.RoleMaster
+		cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
+		cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
+		if clusterDelete {
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "A record",
+				Message:  fmt.Sprintf("A record will be deleted"),
+			})
+		}
+	}
+
+	for _, node := range nodeGroups {
+		if node.IsMaster() {
+			continue
+		}
+		igm := &NodeGroupManager{
+			cm: cm,
+			instance: Instance{
+				Type: InstanceType{
+					Sku:          node.Spec.Template.Spec.SKU,
+					Master:       false,
+					SpotInstance: false,
+				},
+				Stats: GroupStats{
+					Count: node.Spec.Nodes,
+				},
+			},
+			im: im,
+		}
+		if clusterDelete || node.DeletionTimestamp != nil {
+			instanceGroupName := igm.cm.namer.GetNodeGroupName(igm.instance.Type.Sku)
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "Node Group",
+				Message:  fmt.Sprintf("Node group %v  will be deleted", instanceGroupName),
+			})
+			if rt != api.DryRun {
+				err = igm.deleteNodeGroup(igm.instance.Type.Sku)
+				Store(cm.ctx).NodeGroups(cm.cluster.Name).Delete(node.Name)
+			}
+		} else {
+			act, _ := igm.AdjustNodeGroup(rt)
+			acts = append(acts, act...)
+			if rt != api.DryRun {
+				node.Status.Nodes = (int32)(node.Spec.Nodes)
+				Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(node)
+			}
+		}
+
+	}
+
+	if clusterDelete && rt != api.DryRun {
+		cm.deleteResourceGroup(cm.namer.ResourceGroupName())
+		if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
+			return
+		}
+	}
+
+	if rt != api.DryRun {
+		time.Sleep(1 * time.Minute)
+
+		for _, ng := range nodeGroups {
+			if ng.IsMaster() {
+				continue
+			}
+			groupName := cm.namer.GetNodeGroupName(ng.Spec.Template.Spec.SKU)
+			_, providerInstances, _ := im.GetNodeGroup(groupName)
+
+			runningInstance := make(map[string]*api.Node)
+			for _, node := range providerInstances {
+				runningInstance[node.Name] = node
+			}
+
+			clusterInstance, _ := GetClusterIstance(cm.ctx, cm.cluster, groupName)
+			for _, node := range clusterInstance {
+				if _, found := runningInstance[node]; !found {
+					err = DeleteClusterInstance(cm.ctx, cm.cluster, node)
+					fmt.Println(err)
+				}
+			}
+		}
+
+		if !clusterDelete {
+			cm.cluster.Status.Phase = api.ClusterReady
+		} else {
+			cm.cluster.Status.Phase = api.ClusterDeleted
+		}
+		Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+		Store(cm.ctx).Clusters().Update(cm.cluster)
+	}
+	return
 }
 
 // IP >>>>>>>>>>>>>>>>
@@ -183,6 +488,11 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 //	// cluster.Spec.ctx.MasterExternalIP = *ip.IPAddress
 //	cluster.Spec.ctx.MasterReservedIP = *ip.IPAddress
 //	// cluster.Spec.ctx.ApiServerUrl = "https://" + *ip.IPAddress
+
+func (cm *ClusterManager) getResourceGroup() (bool, error) {
+	_, err := cm.conn.groupsClient.Get(cm.namer.ResourceGroupName())
+	return err == nil, err
+}
 
 func (cm *ClusterManager) ensureResourceGroup() (resources.Group, error) {
 	req := resources.Group{
@@ -195,6 +505,10 @@ func (cm *ClusterManager) ensureResourceGroup() (resources.Group, error) {
 	return cm.conn.groupsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), req)
 }
 
+func (cm *ClusterManager) getAvailablitySet() (compute.AvailabilitySet, error) {
+	return cm.conn.availabilitySetsClient.Get(cm.namer.ResourceGroupName(), cm.namer.AvailablitySetName())
+}
+
 func (cm *ClusterManager) ensureAvailablitySet() (compute.AvailabilitySet, error) {
 	name := cm.namer.AvailablitySetName()
 	req := compute.AvailabilitySet{
@@ -205,6 +519,10 @@ func (cm *ClusterManager) ensureAvailablitySet() (compute.AvailabilitySet, error
 		},
 	}
 	return cm.conn.availabilitySetsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), name, req)
+}
+
+func (cm *ClusterManager) getVirtualNetwork() (network.VirtualNetwork, error) {
+	return cm.conn.virtualNetworksClient.Get(cm.namer.ResourceGroupName(), cm.namer.VirtualNetworkName(), "")
 }
 
 func (cm *ClusterManager) ensureVirtualNetwork() (network.VirtualNetwork, error) {
@@ -231,8 +549,8 @@ func (cm *ClusterManager) ensureVirtualNetwork() (network.VirtualNetwork, error)
 	return cm.conn.virtualNetworksClient.Get(cm.namer.ResourceGroupName(), name, "")
 }
 
-func (cm *ClusterManager) getVirtualNetwork() (network.VirtualNetwork, error) {
-	return cm.conn.virtualNetworksClient.Get(cm.namer.ResourceGroupName(), cm.namer.VirtualNetworkName(), "")
+func (cm *ClusterManager) getNetworkSecurityGroup() (network.SecurityGroup, error) {
+	return cm.conn.securityGroupsClient.Get(cm.namer.ResourceGroupName(), cm.namer.NetworkSecurityGroupName(), "")
 }
 
 func (cm *ClusterManager) createNetworkSecurityGroup() (network.SecurityGroup, error) {
@@ -253,16 +571,22 @@ func (cm *ClusterManager) createNetworkSecurityGroup() (network.SecurityGroup, e
 	return cm.conn.securityGroupsClient.Get(cm.namer.ResourceGroupName(), securityGroupName, "")
 }
 
-func (cm *ClusterManager) getNetworkSecurityGroup() (network.SecurityGroup, error) {
-	securityGroupName := cm.namer.NetworkSecurityGroupName()
-	return cm.conn.securityGroupsClient.Get(cm.namer.ResourceGroupName(), securityGroupName, "")
+func (cm *ClusterManager) getSubnetID(vn *network.VirtualNetwork) (network.Subnet, error) {
+	n := &network.VirtualNetwork{}
+	if vn.Name == n.Name {
+		return network.Subnet{}, errors.New("Virtualnetwork not found").Err()
+	}
+	return cm.conn.subnetsClient.Get(cm.namer.ResourceGroupName(), *vn.Name, cm.namer.SubnetName(), "")
 }
 
 func (cm *ClusterManager) createSubnetID(vn *network.VirtualNetwork, sg *network.SecurityGroup) (network.Subnet, error) {
 	name := cm.namer.SubnetName()
-	routeTable, err := cm.createRouteTable()
-	if err != nil {
-		return network.Subnet{}, err
+	var routeTable network.RouteTable
+	var err error
+	if routeTable, err = cm.getRouteTable(); err != nil {
+		if routeTable, err = cm.createRouteTable(); err != nil {
+			return network.Subnet{}, err
+		}
 	}
 	req := network.Subnet{
 		Name: StringP(name),
@@ -286,8 +610,8 @@ func (cm *ClusterManager) createSubnetID(vn *network.VirtualNetwork, sg *network
 	return cm.conn.subnetsClient.Get(cm.namer.ResourceGroupName(), *vn.Name, name, "")
 }
 
-func (cm *ClusterManager) getSubnetID(vn *network.VirtualNetwork) (network.Subnet, error) {
-	return cm.conn.subnetsClient.Get(cm.namer.ResourceGroupName(), *vn.Name, cm.namer.SubnetName(), "")
+func (cm *ClusterManager) getRouteTable() (network.RouteTable, error) {
+	return cm.conn.routeTablesClient.Get(cm.namer.ResourceGroupName(), cm.namer.RouteTableName(), "")
 }
 
 func (cm *ClusterManager) createRouteTable() (network.RouteTable, error) {
@@ -306,6 +630,22 @@ func (cm *ClusterManager) createRouteTable() (network.RouteTable, error) {
 	}
 	Logger(cm.ctx).Infof("Route table %v created", name)
 	return cm.conn.routeTablesClient.Get(cm.namer.ResourceGroupName(), name, "")
+}
+
+func (cm *ClusterManager) getNetworkSecurityRule() (bool, error) {
+	_, err := cm.conn.securityRulesClient.Get(cm.namer.ResourceGroupName(), cm.namer.NetworkSecurityGroupName(), cm.namer.NetworkSecurityRule("ssh"))
+	if err != nil {
+		return false, err
+	}
+	_, err = cm.conn.securityRulesClient.Get(cm.namer.ResourceGroupName(), cm.namer.NetworkSecurityGroupName(), cm.namer.NetworkSecurityRule("ssl"))
+	if err != nil {
+		return false, err
+	}
+	_, err = cm.conn.securityRulesClient.Get(cm.namer.ResourceGroupName(), cm.namer.NetworkSecurityGroupName(), cm.namer.NetworkSecurityRule("masterssl"))
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (cm *ClusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) error {
@@ -372,6 +712,11 @@ func (cm *ClusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 	Logger(cm.ctx).Infof("Network security rule %v created", mastersslRuleName)
 
 	return err
+}
+
+func (cm *ClusterManager) getStorageAccount() (armstorage.Account, error) {
+	storageName := cm.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName
+	return cm.conn.storageClient.GetProperties(cm.namer.ResourceGroupName(), storageName)
 }
 
 func (cm *ClusterManager) createStorageAccount() (armstorage.Account, error) {

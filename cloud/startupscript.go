@@ -219,6 +219,7 @@ kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 mkdir -p ~/.kube
 sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
 sudo chown $(id -u):$(id -g) ~/.kube/config
+echo "LOL"
 `))
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`#!/bin/bash

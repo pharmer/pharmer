@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
 	"github.com/Azure/azure-sdk-for-go/arm/network"
@@ -90,6 +91,36 @@ func (im *instanceManager) getStorageAccount() (armstorage.Account, error) {
 	return account, err
 }
 
+func (im *instanceManager) getNetworkInterface(name string) (network.Interface, error) {
+	return im.conn.interfacesClient.Get(im.namer.ResourceGroupName(), name, "")
+}
+
+func (im *instanceManager) GetNodeGroup(instanceGroup string) (bool, map[string]*api.Node, error) {
+	var flag bool = false
+	existingNGs := make(map[string]*api.Node)
+	vm, err := im.conn.vmClient.List(im.namer.ResourceGroupName())
+	if err != nil {
+		return false, existingNGs, errors.FromErr(err).WithContext(im.ctx).Err()
+	}
+	for _, i := range *vm.Value {
+		name := *i.Name
+		if strings.HasPrefix(name, instanceGroup) {
+			flag = true
+			nic, _ := im.getNetworkInterface(im.namer.NetworkInterfaceName(name))
+			pip, _ := im.getPublicIP(im.namer.PublicIPName(name))
+			instance, err := im.newKubeInstance(i, nic, pip)
+			if err != nil {
+				return flag, existingNGs, errors.FromErr(err).WithContext(im.ctx).Err()
+			}
+			instance.Spec.Role = api.RoleNode
+			existingNGs[*i.Name] = instance
+		}
+
+	}
+	return flag, existingNGs, nil
+	//Logger(im.ctx).Infof("Found virtual machine %v", vm)
+}
+
 func (im *instanceManager) createNetworkInterface(name string, sg network.SecurityGroup, subnet network.Subnet, alloc network.IPAllocationMethod, internalIP string, pip network.PublicIPAddress) (network.Interface, error) {
 	req := network.Interface{
 		Name:     StringP(name),
@@ -131,6 +162,10 @@ func (im *instanceManager) createNetworkInterface(name string, sg network.Securi
 	}
 	Logger(im.ctx).Infof("Network interface %v created", name)
 	return im.conn.interfacesClient.Get(im.namer.ResourceGroupName(), name, "")
+}
+
+func (im *instanceManager) getVirtualMachine(name string) (compute.VirtualMachine, error) {
+	return im.conn.vmClient.Get(im.namer.ResourceGroupName(), name, "")
 }
 
 func (im *instanceManager) createVirtualMachine(nic network.Interface, as compute.AvailabilitySet, sa armstorage.Account, vmName, data, vmSize string) (compute.VirtualMachine, error) {
@@ -272,7 +307,7 @@ func (im *instanceManager) newKubeInstance(vm compute.VirtualMachine, nic networ
 	i := api.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:  phid.NewKubeInstance(),
-			Name: *vm.Name,
+			Name: strings.ToLower(*vm.Name),
 		},
 		Spec: api.NodeSpec{
 			SKU: string(vm.HardwareProfile.VMSize),
