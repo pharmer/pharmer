@@ -83,6 +83,10 @@ func (igm *NodeGroupManager) updateNodeGroup(sku string, count int64) error {
 			if err != nil {
 				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
+			err = igm.cm.deletePublicIp(igm.cm.namer.PublicIPName(instance.Name))
+			if err != nil {
+				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+			}
 			count++
 			if count >= 0 {
 				return nil
@@ -196,6 +200,10 @@ func (igm *NodeGroupManager) deleteNodeGroup(sku string) error {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
 		err = igm.cm.deleteNodeNetworkInterface(igm.cm.namer.NetworkInterfaceName(instance.Name))
+		if err != nil {
+			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		}
+		err = igm.cm.deletePublicIp(igm.cm.namer.PublicIPName(instance.Name))
 		if err != nil {
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}

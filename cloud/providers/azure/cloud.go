@@ -47,7 +47,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 
 	namer := namer{cluster: cluster}
 
-	fmt.Println(typed.TenantID(), "<>", typed.SubscriptionID(), "<>", typed.ClientID(), "<>", typed.ClientSecret())
 	cluster.Spec.Cloud.Azure.CloudConfig = &api.AzureCloudConfig{
 		TenantID:          typed.TenantID(),
 		SubscriptionID:    typed.SubscriptionID(),
