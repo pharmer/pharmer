@@ -70,7 +70,7 @@ func (n namer) StorageContainerName() string {
 }
 
 func (n namer) GetNodeGroupName(sku string) string {
-	return n.cluster.Name + "-" + strings.Replace(sku, "_", "-", -1) + "-node"
+	return n.cluster.Name + "-" + strings.Replace(sku, "_", "-", -1)
 
 }
 

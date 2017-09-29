@@ -1,5 +1,5 @@
 hash: b45f1f23517b63fbde5dcb1f281a3ef3c8cb798c1a0a961ab556b06088bff3fd
-updated: 2017-09-25T08:17:29.384372409-07:00
+updated: 2017-09-27T00:20:18.800293059-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -39,7 +39,7 @@ imports:
   subpackages:
   - files
 - name: github.com/appscode/envconfig
-  version: 8debe51c027cc6d944705e16415fd948cb32824c
+  version: 183bbe643a2875eaa69c85627ac6b25813983203
 - name: github.com/appscode/errors
   version: 748883e321a9f99fe901bd2663c7af3fcae43ea4
 - name: github.com/appscode/go
@@ -219,7 +219,7 @@ imports:
   - proto
   - sortkeys
 - name: github.com/golang/glog
-  version: 44145f04b68cf362d9c4df2182967c2275eaefed
+  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/golang/protobuf
   version: 6e4cc92cc905d5f4a73041c1b8228ea08f4c6147
   subpackages:
@@ -282,7 +282,7 @@ imports:
   - jlexer
   - jwriter
 - name: github.com/mattn/go-colorable
-  version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
+  version: ad5389df28cdac544c99bd7b9161a0b5b6ca9d1b
 - name: github.com/mattn/go-isatty
   version: 56b76bdf51f7708750eac80fa38b952bb9f32639
 - name: github.com/mgutz/ansi
@@ -349,8 +349,6 @@ imports:
   version: 8f62c03454809f9fe034ed3b4f564dfd50e7067b
   repo: https://github.com/appscode/pflag.git
   vcs: git
-- name: github.com/tamalsaha/go-oneliners
-  version: 4ca214c0460d9077e49e3ef394785f92408f7699
 - name: github.com/tent/http-link-go
   version: ac974c61c2f990f4115b119354b5e0b47550e888
 - name: github.com/timewasted/linode
@@ -368,9 +366,9 @@ imports:
 - name: github.com/xeipuuv/gojsonreference
   version: e02fc20de94c78484cd5ffb007f8af96be030a45
 - name: github.com/xeipuuv/gojsonschema
-  version: 93e72a773fade158921402d6a24c819b48aba29d
+  version: 3f523f4c14b6e925da10475eb0447c2f28614aac
 - name: github.com/xenolf/lego
-  version: 66641c9c561e651eb110bec39b5012a51ab64e24
+  version: 8a62215d047836bc4da6f32f4c3cf7662e3e76bd
   repo: https://github.com/appscode/lego.git
   vcs: git
   subpackages:
@@ -631,7 +629,7 @@ imports:
   - util/integer
   - util/jsonpath
 - name: k8s.io/kubernetes
-  version: 4bc5e7f9a6c25dc4c03d4d656f2cefd21540e28c
+  version: d3faa3f8f2e85c8089e80a661955626ae24abf80
   subpackages:
   - cmd/kubeadm/app/apis/kubeadm/v1alpha1
   - cmd/kubeadm/app/constants

@@ -7,20 +7,18 @@ import (
 	"os"
 	"strings"
 	"time"
-	// "github.com/appscode/pharmer/templates"
+
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/phid"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	// "github.com/appscode/pharmer/templates"
-	//"github.com/tamalsaha/go-oneliners"
 	"github.com/appscode/pharmer/cloud/providers/aws/iam"
+	"github.com/appscode/pharmer/phid"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
 	"github.com/cenkalti/backoff"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (

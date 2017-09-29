@@ -13,7 +13,6 @@ import (
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/digitalocean/godo"
-	"github.com/tamalsaha/go-oneliners"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -35,7 +34,6 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 	if err != nil {
 		return nil, err
 	}
-	oneliners.FILE(startupScript)
 	//imgID, err := strconv.Atoi(im.cluster.Spec.Cloud.InstanceImage)
 	//if err != nil {
 	//	return nil, errors.FromErr(err).WithContext(im.ctx).Err()
@@ -59,14 +57,11 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 		UserData:          startupScript,
 	}
 	if _env.FromHost().IsPublic() {
-		oneliners.FILE()
 		req.SSHKeys = []godo.DropletCreateSSHKey{
 			{Fingerprint: SSHKey(im.ctx).OpensshFingerprint},
 		}
 	}
-	oneliners.FILE()
 	droplet, resp, err := im.conn.client.Droplets.Create(gtx.TODO(), req)
-	oneliners.FILE(droplet, resp, err)
 	Logger(im.ctx).Debugln("do response", resp, " errors", err)
 	Logger(im.ctx).Infof("Droplet %v created", droplet.Name)
 	return droplet, err

@@ -1,7 +1,7 @@
 package azure
 
 import (
-	"strings"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
 	"github.com/Azure/azure-sdk-for-go/arm/network"
@@ -17,64 +17,106 @@ type NodeGroupManager struct {
 	im       *instanceManager
 }
 
-func (igm *NodeGroupManager) AdjustNodeGroup() error {
+func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action, err error) {
+	acts = make([]api.Action, 0)
 	instanceGroupName := igm.cm.namer.GetNodeGroupName(igm.instance.Type.Sku) //igm.cm.ctx.Name + "-" + strings.Replace(igm.instance.Type.Sku, "_", "-", -1) + "-node"
-	found, err := igm.GetNodeGroup(instanceGroupName)
-	if err != nil {
-		igm.cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	adjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
+	fmt.Println(adjust)
+
+	message := ""
+	var action api.ActionType
+	if adjust == 0 {
+		message = "No changed will be applied"
+		action = api.ActionNOP
+	} else if adjust < 0 {
+		message = fmt.Sprintf("%v node will be deleted from %v group", -adjust, instanceGroupName)
+		action = api.ActionDelete
+	} else {
+		message = fmt.Sprintf("%v node will be added to %v group", adjust, instanceGroupName)
+		action = api.ActionAdd
+	}
+	acts = append(acts, api.Action{
+		Action:   action,
+		Resource: "Node",
+		Message:  message,
+	})
+	if adjust == 0 || rt == api.DryRun {
+		return
 	}
 
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
-	igm.cm.cluster, _ = Store(igm.cm.ctx).Clusters().Get(igm.cm.cluster.Name)
 
-	if !found {
+	if adjust == igm.instance.Stats.Count {
 		err = igm.createNodeGroup(igm.instance.Stats.Count)
 	} else if igm.instance.Stats.Count == 0 {
-		nodeAdjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, "")
-		if nodeAdjust < 0 {
-			nodeAdjust = -nodeAdjust
-		}
-		err := igm.deleteNodeGroup(instanceGroupName, nodeAdjust)
+		err = igm.deleteNodeGroup(igm.instance.Type.Sku)
 		if err != nil {
 			igm.cm.cluster.Status.Reason = err.Error()
-			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+			err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+			return
 		}
 	} else {
-		nodeAdjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, "")
-		if nodeAdjust < 0 {
-			err := igm.deleteNodeGroup(instanceGroupName, -nodeAdjust)
+		err = igm.updateNodeGroup(igm.instance.Type.Sku, adjust)
+		if err != nil {
+			igm.cm.cluster.Status.Reason = err.Error()
+			return
+		}
+	}
+	return
+}
+
+func (igm *NodeGroupManager) updateNodeGroup(sku string, count int64) error {
+	found, instances, err := igm.im.GetNodeGroup(igm.cm.namer.GetNodeGroupName(sku))
+	if err != nil {
+		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	}
+	if !found {
+		return errors.New("Instance group not found").Err()
+	}
+	if count < 0 {
+		for _, instance := range instances {
+			err = igm.im.DeleteVirtualMachine(instance.Name)
 			if err != nil {
-				igm.cm.cluster.Status.Reason = err.Error()
 				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
-		} else {
-			err := igm.createNodeGroup(nodeAdjust)
+			err = igm.cm.deleteNodeNetworkInterface(igm.cm.namer.NetworkInterfaceName(instance.Name))
 			if err != nil {
-				igm.cm.cluster.Status.Reason = err.Error()
 				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 			}
+			err = igm.cm.deletePublicIp(igm.cm.namer.PublicIPName(instance.Name))
+			if err != nil {
+				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+			}
+			count++
+			if count >= 0 {
+				return nil
+			}
+		}
+	} else {
+		as, err := igm.im.getAvailablitySet()
+		if err != nil {
+			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		}
+
+		vn, err := igm.cm.getVirtualNetwork()
+		if err != nil {
+			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		}
+
+		sn, err := igm.cm.getSubnetID(&vn)
+		if err != nil {
+			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		}
+
+		sg, err := igm.cm.getNetworkSecurityGroup()
+		if err != nil {
+			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		}
+		for i := int64(0); i < count; i++ {
+			igm.StartNode(as, sg, sn)
 		}
 	}
 	return nil
-}
-
-func (igm *NodeGroupManager) GetNodeGroup(instanceGroup string) (bool, error) {
-	vm, err := igm.cm.conn.vmClient.List(igm.cm.namer.ResourceGroupName())
-	if err != nil {
-		igm.cm.cluster.Status.Reason = err.Error()
-		return false, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-
-	}
-	for _, i := range *vm.Value {
-		name := strings.Split(*i.ID, "/")
-		if strings.HasPrefix(name[len(name)-1], instanceGroup) {
-			return true, nil
-		}
-
-	}
-	return false, nil
-	//Logger(im.ctx).Infof("Found virtual machine %v", vm)
 }
 
 func (igm *NodeGroupManager) listInstances(sku string) ([]*api.Node, error) {
@@ -113,8 +155,28 @@ func (igm *NodeGroupManager) listInstances(sku string) ([]*api.Node, error) {
 
 }
 func (igm *NodeGroupManager) createNodeGroup(count int64) error {
+	as, err := igm.im.getAvailablitySet()
+	if err != nil {
+		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	}
+
+	vn, err := igm.cm.getVirtualNetwork()
+	if err != nil {
+		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	}
+
+	sn, err := igm.cm.getSubnetID(&vn)
+	if err != nil {
+		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	}
+
+	sg, err := igm.cm.getNetworkSecurityGroup()
+	if err != nil {
+		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+	}
+
 	for i := int64(0); i < count; i++ {
-		_, err := igm.StartNode()
+		_, err := igm.StartNode(as, sg, sn)
 		if err != nil {
 			igm.cm.cluster.Status.Reason = err.Error()
 			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -124,62 +186,38 @@ func (igm *NodeGroupManager) createNodeGroup(count int64) error {
 	return nil
 }
 
-func (igm *NodeGroupManager) deleteNodeGroup(instanceGroup string, count int64) error {
-	vm, err := igm.cm.conn.vmClient.List(igm.cm.namer.ResourceGroupName())
+func (igm *NodeGroupManager) deleteNodeGroup(sku string) error {
+	found, instances, err := igm.im.GetNodeGroup(igm.cm.namer.GetNodeGroupName(sku))
 	if err != nil {
-		igm.cm.cluster.Status.Reason = err.Error()
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-
 	}
-	for _, i := range *vm.Value {
-		name := strings.Split(*i.ID, "/")
-		instance := name[len(name)-1]
-		if strings.HasPrefix(instance, instanceGroup) {
-			count--
-			err = igm.im.DeleteVirtualMachine(instance)
-			if err != nil {
-				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-			}
-			err = igm.cm.deleteNodeNetworkInterface(igm.cm.namer.NetworkInterfaceName(instance))
-			if err != nil {
-				return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-			}
+	if !found {
+		return errors.New("Instance group not found").Err()
+	}
+	for _, instance := range instances {
+		err = igm.im.DeleteVirtualMachine(instance.Name)
+		if err != nil {
+			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
-		if count <= 0 {
-			break
+		err = igm.cm.deleteNodeNetworkInterface(igm.cm.namer.NetworkInterfaceName(instance.Name))
+		if err != nil {
+			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		}
-
+		err = igm.cm.deletePublicIp(igm.cm.namer.PublicIPName(instance.Name))
+		if err != nil {
+			return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		}
 	}
 	return nil
 }
 
-func (igm *NodeGroupManager) StartNode() (*api.Node, error) {
+func (igm *NodeGroupManager) StartNode(as compute.AvailabilitySet, sg network.SecurityGroup, sn network.Subnet) (*api.Node, error) {
 	ki := &api.Node{}
 
 	nodeName := igm.cm.namer.GenNodeName(igm.instance.Type.Sku)
 	nodePIP, err := igm.im.createPublicIP(igm.cm.namer.PublicIPName(nodeName), network.Dynamic)
 	if err != nil {
 		igm.cm.cluster.Status.Reason = err.Error()
-		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-	}
-
-	as, err := igm.im.getAvailablitySet()
-	if err != nil {
-		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-	}
-
-	vn, err := igm.cm.getVirtualNetwork()
-	if err != nil {
-		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-	}
-
-	sn, err := igm.cm.getSubnetID(&vn)
-	if err != nil {
-		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-	}
-
-	sg, err := igm.cm.getNetworkSecurityGroup()
-	if err != nil {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
@@ -194,7 +232,7 @@ func (igm *NodeGroupManager) StartNode() (*api.Node, error) {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
 
-	nodeScript, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode, igm.instance.Type.Sku)
+	nodeScript, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode, igm.im.namer.GetNodeGroupName(igm.instance.Type.Sku))
 	if err != nil {
 		return ki, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}

@@ -163,7 +163,7 @@ apt-get install -y \
 	cron \
 	glusterfs-client \
 	kubelet \
-	{{ if not .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
+	{{ if not .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }}{{ end }} \
 	cloud-utils \
 	docker.io || true
 
@@ -219,6 +219,7 @@ kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 mkdir -p ~/.kube
 sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
 sudo chown $(id -u):$(id -g) ~/.kube/config
+echo "LOL"
 `))
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`#!/bin/bash
@@ -254,7 +255,7 @@ apt-get install -y \
 	cron \
 	glusterfs-client \
 	kubelet \
-	{{ if not .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }} \
+	{{ if not .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }}{{ end }} \
 	docker.io || true
 
 {{ if .IsPreReleaseVersion }}
