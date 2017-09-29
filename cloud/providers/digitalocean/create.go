@@ -70,6 +70,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
 	cluster.Spec.Token = GetKubeadmToken()
 	cluster.Spec.KubernetesMasterName = n.MasterName()
+	cluster.Spec.Cloud.InstanceImage = "ubuntu-16-04-x64"
 
 	// Init status
 	cluster.Status = api.ClusterStatus{

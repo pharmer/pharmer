@@ -23,5 +23,4 @@ func (n namer) GenSSHKeyExternalID() string {
 
 func (n namer) GetNodeGroupName(sku string) string {
 	return n.cluster.Name + "-" + sku
-
 }

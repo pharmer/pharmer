@@ -4,7 +4,6 @@ import (
 	"context"
 	gtx "context"
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
-	"github.com/cenkalti/backoff"
 	"github.com/digitalocean/godo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -25,70 +23,6 @@ type instanceManager struct {
 	namer   namer
 }
 
-const DROPLET_IMAGE_SLUG = "ubuntu-16-04-x64"
-
-func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
-	master := net.ParseIP(md.Name) == nil
-
-	var instance *api.Node
-	backoff.Retry(func() (err error) {
-		const pageSize = 50
-		curPage := 0
-		for {
-			var droplets []godo.Droplet
-			droplets, _, err = im.conn.client.Droplets.List(gtx.TODO(), &godo.ListOptions{
-				Page:    curPage,
-				PerPage: pageSize,
-			})
-			if err != nil {
-				return
-			}
-			for _, droplet := range droplets {
-				var internalIP string
-				internalIP, err = droplet.PrivateIPv4()
-				if err != nil {
-					return
-				}
-				if internalIP == md.PrivateIP {
-					instance, err = im.newKubeInstanceFromDroplet(&droplet)
-					if master {
-						instance.Spec.Role = api.RoleMaster
-					} else {
-						instance.Spec.Role = api.RoleNode
-					}
-					return
-				}
-			}
-			curPage++
-			if len(droplets) < pageSize {
-				break
-			}
-		}
-		return nil
-	}, backoff.NewExponentialBackOff())
-
-	if instance == nil {
-		return nil, errors.New("No instance found with name", md.Name).WithContext(im.ctx).Err()
-	}
-	return instance, nil
-}
-
-func (im *instanceManager) getMasterInstance(name string) (bool, error) {
-	_, err := im.getInstanceId(name)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-/*func (im *instanceManager) getInstance(id int) (*godo.Droplet, error) {
-	droplet, _, err := im.conn.client.Droplets.Get(gtx.TODO(), id)
-	if err != nil {
-		return nil, err
-	}
-	return droplet, err
-}*/
-
 func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet, error) {
 	instanceGroup := ""
 	if role == api.RoleNode {
@@ -98,16 +32,11 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 	if err != nil {
 		return nil, err
 	}
-	//imgID, err := strconv.Atoi(im.cluster.Spec.Cloud.InstanceImage)
-	//if err != nil {
-	//	return nil, errors.FromErr(err).WithContext(im.ctx).Err()
-	//}
 	req := &godo.DropletCreateRequest{
 		Name:   name,
 		Region: im.cluster.Spec.Cloud.Zone,
 		Size:   sku,
-		//Image:  godo.DropletCreateImage{ID: imgID},
-		Image: godo.DropletCreateImage{Slug: DROPLET_IMAGE_SLUG},
+		Image:  godo.DropletCreateImage{Slug: im.cluster.Spec.Cloud.InstanceImage},
 		SSHKeys: []godo.DropletCreateSSHKey{
 			{Fingerprint: SSHKey(im.ctx).OpensshFingerprint},
 			{Fingerprint: "0d:ff:0d:86:0c:f1:47:1d:85:67:1e:73:c6:0e:46:17"}, // tamal@beast
