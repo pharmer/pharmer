@@ -23,8 +23,6 @@ type instanceManager struct {
 	namer   namer
 }
 
-const DROPLET_IMAGE_SLUG = "ubuntu-16-04-x64"
-
 func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet, error) {
 	instanceGroup := ""
 	if role == api.RoleNode {
@@ -34,16 +32,11 @@ func (im *instanceManager) createInstance(name, role, sku string) (*godo.Droplet
 	if err != nil {
 		return nil, err
 	}
-	//imgID, err := strconv.Atoi(im.cluster.Spec.Cloud.InstanceImage)
-	//if err != nil {
-	//	return nil, errors.FromErr(err).WithContext(im.ctx).Err()
-	//}
 	req := &godo.DropletCreateRequest{
 		Name:   name,
 		Region: im.cluster.Spec.Cloud.Zone,
 		Size:   sku,
-		//Image:  godo.DropletCreateImage{ID: imgID},
-		Image: godo.DropletCreateImage{Slug: DROPLET_IMAGE_SLUG},
+		Image:  godo.DropletCreateImage{Slug: im.cluster.Spec.Cloud.InstanceImage},
 		SSHKeys: []godo.DropletCreateSSHKey{
 			{Fingerprint: SSHKey(im.ctx).OpensshFingerprint},
 			{Fingerprint: "0d:ff:0d:86:0c:f1:47:1d:85:67:1e:73:c6:0e:46:17"}, // tamal@beast
