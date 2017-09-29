@@ -27,11 +27,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 }
 
 func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Action, err error) {
-	var (
-		clusterDelete = false
-	)
-	if in.DeletionTimestamp != nil && in.Status.Phase != api.ClusterDeleted {
-		clusterDelete = true
+	if in.Status.Phase == "" {
+		err = fmt.Errorf("cluster `%s` is in unknown phase", cm.cluster.Name)
+		return
+	}
+	if in.Status.Phase == api.ClusterDeleted {
+		return nil, nil
 	}
 
 	cm.cluster = in
@@ -45,16 +46,18 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return
 	}
-	acts = make([]api.Action, 0)
 
-	if cm.cluster.Status.Phase == "" {
-		err = fmt.Errorf("cluster `%s` is in unknown status", cm.cluster.Name)
-		return
+	var (
+		clusterDelete = false
+	)
+	if in.DeletionTimestamp != nil && in.Status.Phase != api.ClusterDeleted {
+		clusterDelete = true
 	}
 
 	if cm.cluster.Status.Phase == api.ClusterPending {
 		// create cluster
 	}
+	var found bool
 
 	/*defer func(releaseReservedIp bool) {
 		if cm.cluster.Status.Phase == api.ClusterPending {
@@ -71,14 +74,11 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 		}
 	}(cm.cluster.Spec.MasterReservedIP == "auto")*/
 
-	//cm.cluster.Spec.Cloud.InstanceImage, err = cm.conn.getInstanceImage()
-	//if err != nil {
-	//	cm.cluster.Status.Reason = err.Error()
-	//	return
-	//}
-	//Logger(cm.ctx).Infof("Image %v is using to create instance", cm.cluster.Spec.Cloud.InstanceImage)
-
-	if found, _ := cm.getPublicKey(); !found {
+	found, err = cm.getPublicKey()
+	if err != nil {
+		return
+	}
+	if !found {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Public key",

@@ -28,3 +28,9 @@ const (
 	StdRun
 	Forced
 )
+
+type ApplyMode int
+const (
+	CreateCluster = iota
+	DeleteCluster
+)
