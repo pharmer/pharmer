@@ -12,12 +12,12 @@ import (
 	"github.com/packethost/packngo"
 )
 
-func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
+func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
 	var err error
 
 	cm.cluster = in
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
-		return err
+		return nil, err
 	}
 
 	defer func(releaseReservedIp bool) {
@@ -40,7 +40,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	err = cm.importPublicKey()
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// -------------------------------------------------------------------ASSETS
@@ -50,17 +50,17 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	masterDroplet, err := im.createInstance(cm.cluster.Spec.KubernetesMasterName, api.RoleMaster, cm.cluster.Spec.MasterSKU)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if err = cm.conn.waitForInstance(masterDroplet.ID, "active"); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// Need to reload te master server Object to get the IP address
 	masterInstance, err := im.newKubeInstance(masterDroplet.ID)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Spec.Role = api.RoleMaster
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
@@ -71,12 +71,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// needed to get master_internal_ip
 	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// -------------------------- NODES
@@ -87,7 +87,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	Logger(cm.ctx).Info("Rebooting master instance")
 	if err = im.reboot(masterDroplet.ID); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	Logger(cm.ctx).Info("Rebooted master instance")
 
@@ -97,7 +97,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//		droplet, err := im.createInstance(cm.namer.GenNodeName(), api.RoleKubernetesPool, ng.Sku)
 	//		if err != nil {
 	//			cm.cluster.Status.Reason = err.Error()
-	//			return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	//		}
 	//
 	//		// record nodes
@@ -105,7 +105,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//		node, err := im.newKubeInstanceFromServer(droplet)
 	//		if err != nil {
 	//			cm.cluster.Status.Reason = err.Error()
-	//			return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	//		}
 	//		node.Spec.Role = api.RoleKubernetesPool
 	//		Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
@@ -117,16 +117,17 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	// Wait for master A record to propagate
 	if err := EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
+	kc, err := cm.GetAdminClient()
 	// wait for nodes to start
-	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	if err := WaitForReadyMaster(cm.ctx, kc); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.cluster.Status.Phase = api.ClusterReady
-	return nil
+	return nil, nil
 }
 
 func (cm *ClusterManager) importPublicKey() error {

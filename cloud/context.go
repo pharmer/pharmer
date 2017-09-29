@@ -8,6 +8,7 @@ import (
 	proto "github.com/appscode/api/ssh/v1beta1"
 	"github.com/appscode/go-dns"
 	dns_provider "github.com/appscode/go-dns/provider"
+	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/store"
@@ -15,6 +16,7 @@ import (
 	"github.com/appscode/pharmer/store/providers/vfs"
 )
 
+type paramEnv struct{}
 type paramDNS struct{}
 type paramExtra struct{}
 type paramLogger struct{}
@@ -26,6 +28,12 @@ type paramFrontProxyCACert struct{}
 type paramFrontProxyCAKey struct{}
 
 type paramSSHKey struct{}
+
+type paramK8sClient struct{}
+
+func Env(ctx context.Context) _env.Environment {
+	return ctx.Value(paramEnv{}).(_env.Environment)
+}
 
 func DNSProvider(ctx context.Context) dns_provider.Provider {
 	return ctx.Value(paramDNS{}).(dns_provider.Provider)
@@ -61,8 +69,9 @@ func SSHKey(ctx context.Context) *proto.SSHKey {
 	return ctx.Value(paramSSHKey{}).(*proto.SSHKey)
 }
 
-func NewContext(parent context.Context, cfg *api.PharmerConfig) context.Context {
+func NewContext(parent context.Context, cfg *api.PharmerConfig, env _env.Environment) context.Context {
 	c := parent
+	c = context.WithValue(c, paramEnv{}, env)
 	c = context.WithValue(c, paramExtra{}, &api.FakeDomainManager{})
 	c = context.WithValue(c, paramLogger{}, log.New(c))
 	c = context.WithValue(c, paramStore{}, NewStoreProvider(parent, cfg))

@@ -2,9 +2,11 @@ package azure
 
 import (
 	"context"
+	"sync"
 
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
+	"k8s.io/client-go/kubernetes"
 )
 
 type ClusterManager struct {
@@ -13,6 +15,7 @@ type ClusterManager struct {
 	conn    *cloudConnector
 	// Deprecated
 	namer namer
+	m     sync.Mutex
 }
 
 var _ Interface = &ClusterManager{}
@@ -40,4 +43,23 @@ func (cm *ClusterManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 
 func (cm *ClusterManager) MatchInstance(i *api.Node, md *api.NodeStatus) bool {
 	return i.Status.ExternalID == md.ExternalID
+}
+
+type paramK8sClient struct{}
+
+func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
+	cm.m.Lock()
+	defer cm.m.Unlock()
+
+	v := cm.ctx.Value(paramK8sClient{})
+	if kc, ok := v.(kubernetes.Interface); ok && kc != nil {
+		return kc, nil
+	}
+
+	kc, err := NewAdminClient(cm.ctx, cm.cluster)
+	if err != nil {
+		return nil, err
+	}
+	cm.ctx = context.WithValue(cm.ctx, paramK8sClient{}, kc)
+	return kc, nil
 }

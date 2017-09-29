@@ -20,7 +20,7 @@ type NodeGroup struct {
 }
 
 type NodeGroupSpec struct {
-	Nodes int64 `json:"nodes,omitempty"`
+	Nodes int64 `json:"nodes"`
 
 	// Template describes the nodes that will be created.
 	Template NodeTemplateSpec `json:"template" protobuf:"bytes,3,opt,name=template"`
@@ -29,19 +29,19 @@ type NodeGroupSpec struct {
 // NodeGroupStatus is the most recently observed status of the NodeGroup.
 type NodeGroupStatus struct {
 	// Nodes is the most recently oberved number of nodes.
-	Nodes int32 `json:"nodes" protobuf:"varint,1,opt,name=nodes"`
+	Nodes int64 `json:"nodes" protobuf:"varint,1,opt,name=nodes"`
 
 	// The number of pods that have labels matching the labels of the pod template of the node group.
 	// +optional
-	FullyLabeledNodes int32 `json:"fullyLabeledNodes,omitempty" protobuf:"varint,2,opt,name=fullyLabeledNodes"`
+	FullyLabeledNodes int64 `json:"fullyLabeledNodes,omitempty" protobuf:"varint,2,opt,name=fullyLabeledNodes"`
 
 	// The number of ready nodes for this node group.
 	// +optional
-	ReadyNodes int32 `json:"readyNodes,omitempty" protobuf:"varint,4,opt,name=readyNodes"`
+	ReadyNodes int64 `json:"readyNodes,omitempty" protobuf:"varint,4,opt,name=readyNodes"`
 
 	// The number of available nodes (ready for at least minReadySeconds) for this node group.
 	// +optional
-	AvailableNodes int32 `json:"availableNodes,omitempty" protobuf:"varint,5,opt,name=availableNodes"`
+	AvailableNodes int64 `json:"availableNodes,omitempty" protobuf:"varint,5,opt,name=availableNodes"`
 
 	// ObservedGeneration reflects the generation of the most recently observed node group.
 	// +optional
@@ -52,6 +52,8 @@ type NodeGroupStatus struct {
 	// +patchMergeKey=type
 	// +patchStrategy=merge
 	Conditions []NodeGroupCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,6,rep,name=conditions"`
+
+	ExternalIPs []NodeIP
 }
 
 type NodeGroupConditionType string
@@ -87,9 +89,22 @@ type NodeGroupCondition struct {
 	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
 }
 
+type NodeIP struct {
+	Name   string
+	IP     string
+	IPName string
+}
+
 func (ns NodeGroup) IsMaster() bool {
 	_, found := ns.Labels[RoleMasterKey]
 	return found
+}
+
+func (ns NodeGroup) Role() string {
+	if ns.IsMaster() {
+		return RoleMaster
+	}
+	return RoleNode
 }
 
 // PodTemplateSpec describes the data a pod should have when created from a template
@@ -113,15 +128,23 @@ type Node struct {
 	Status            NodeStatus `json:"status,omitempty"`
 }
 
+type IPType string
+
+const (
+	IPTypeEphemeral IPType = "Ephemeral"
+	IPTypeReserved  IPType = "Reserved"
+)
+
 // Deprecated
 type NodeSpec struct {
 	// Deprecated
 	Role string
 
-	SKU           string `json:"sku,omitempty"`
-	SpotInstances bool   `json:"spotInstances,omitempty"`
-	DiskType      string `json:"nodeDiskType,omitempty"`
-	DiskSize      int64  `json:"nodeDiskSize,omitempty"`
+	SKU            string `json:"sku,omitempty"`
+	SpotInstances  bool   `json:"spotInstances,omitempty"`
+	DiskType       string `json:"nodeDiskType,omitempty"`
+	DiskSize       int64  `json:"nodeDiskSize,omitempty"`
+	ExternalIPType IPType `json:"externalIPType,omitempty"`
 }
 
 // Deprecated
@@ -149,3 +172,12 @@ const (
 	NodeReady   NodePhase = "Ready"
 	NodeDeleted NodePhase = "Deleted"
 )
+
+type SimpleNode struct {
+	metav1.TypeMeta `json:",inline,omitempty"`
+	Name            string
+	ExternalID      string
+	PublicIP        string
+	PrivateIP       string
+	DiskId          string `json:"diskID,omitempty"`
+}

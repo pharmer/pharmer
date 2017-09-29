@@ -29,7 +29,7 @@ func NewCmdDeleteCredential() *cobra.Command {
 			cfg, err := config.LoadConfig(cfgFile)
 			term.ExitOnError(err)
 
-			ctx := cloud.NewContext(context.Background(), cfg)
+			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
 			for _, arg := range args {
 				err := cloud.Store(ctx).Credentials().Delete(arg)

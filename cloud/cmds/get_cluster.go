@@ -28,7 +28,7 @@ func NewCmdGetCluster(out io.Writer) *cobra.Command {
 			cfg, err := config.LoadConfig(cfgFile)
 			term.ExitOnError(err)
 
-			ctx := cloud.NewContext(context.Background(), cfg)
+			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 			RunGetCluster(ctx, cmd, out, args)
 		},
 	}

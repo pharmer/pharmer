@@ -2,7 +2,6 @@ package aws
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -25,20 +24,7 @@ const (
 	preTagDelay = 5 * time.Second
 )
 
-func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
-	var err error
-	if dryRun {
-		action, err := cm.apply(in, api.DryRun)
-		fmt.Println(err)
-		jm, err := json.Marshal(action)
-		fmt.Println(string(jm), err)
-	} else {
-		_, err = cm.apply(in, api.StdRun)
-	}
-	return err
-}
-
-func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Action, err error) {
+func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) (acts []api.Action, err error) {
 	var (
 		clusterDelete = false
 	)
@@ -75,7 +61,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 		return
 	}
 
-	if rt != api.DryRun {
+	if !dryRun {
 		if found, _ := cm.getPublicKey(); !found {
 			if err = cm.importPublicKey(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
@@ -91,7 +77,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "VPC",
 			Message:  "Not found, will be created new vpc",
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if err = cm.setupVpc(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -121,7 +107,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "DSCP Option set",
 			Message:  fmt.Sprintf("%v.compute.internal dscp option set will be created", cm.cluster.Spec.Cloud.Region),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if err = cm.createDHCPOptionSet(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -150,7 +136,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Subnet",
 			Message:  "Subnet will be added",
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if err = cm.setupSubnet(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -179,7 +165,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Internet Gateway",
 			Message:  "Internet gateway will be added",
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if err = cm.setupInternetGateway(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -208,7 +194,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Route table",
 			Message:  "Route table will be created",
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if err = cm.setupRouteTable(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -237,7 +223,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Security group",
 			Message:  fmt.Sprintf("Master security gropu %v and node security group %v will be created", cm.cluster.Spec.Cloud.AWS.MasterSGName, cm.cluster.Spec.Cloud.AWS.NodeSGName),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if err = cm.setupSecurityGroups(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -305,7 +291,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Master Instance",
 			Message:  fmt.Sprintf("Master instance with name %v will be created", cm.cluster.Spec.KubernetesMasterName),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			masterInstance, err := cm.startMaster()
 			if err != nil {
 				cm.cluster.Status.Reason = err.Error()
@@ -323,13 +309,14 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			}
 
 			// wait for nodes to start
-			if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+			kc, err := cm.GetAdminClient()
+			if err := WaitForReadyMaster(cm.ctx, kc); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
 				return acts, err
 			}
 
-			masterNG.Status.Nodes = int32(1)
+			masterNG.Status.Nodes = int64(1)
 			Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
 			Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 			time.Sleep(1 * time.Minute)
@@ -341,7 +328,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				Resource: "Master Instance",
 				Message:  fmt.Sprintf("Master instance with name %v will be deleted", cm.cluster.Spec.KubernetesMasterName),
 			})
-			if rt != api.DryRun {
+			if !dryRun {
 				cm.deleteMaster()
 
 			}
@@ -370,13 +357,13 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 	//			},
 	//		},
 	//	}
-	//	igm.AdjustNodeGroup()
+	//	igm.Apply()
 	//}
 	for _, node := range nodeGroups {
 		if node.IsMaster() {
 			continue
 		}
-		igm := &NodeGroupManager{
+		igm := &AWSNodeGroupManager{
 			cm: cm,
 			instance: Instance{
 				Type: InstanceType{
@@ -396,7 +383,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				Resource: "Node Group",
 				Message:  fmt.Sprintf("Node group %v  will be deleted", instanceGroupName),
 			})
-			if rt != api.DryRun {
+			if !dryRun {
 				err := igm.deleteOnlyNodeGroup(instanceGroupName)
 				if err != nil {
 					err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -407,7 +394,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				Resource: "Autoscaler",
 				Message:  fmt.Sprintf("Autoscaler %v  will be deleted", instanceGroupName),
 			})
-			if rt != api.DryRun {
+			if !dryRun {
 				err = igm.cm.deleteAutoScalingGroup(igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku))
 				if err != nil {
 					err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -419,23 +406,23 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				Resource: "Launch Configuration",
 				Message:  fmt.Sprintf("launch configuration %v  will be deleted", launchConfig),
 			})
-			if rt != api.DryRun {
+			if !dryRun {
 				err = igm.cm.deleteLaunchConfiguration(launchConfig)
 				if err != nil {
 					err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 				}
 			}
 		} else {
-			act, _ := igm.AdjustNodeGroup(rt)
+			act, _ := igm.AdjustNodeGroup(dryRun)
 			acts = append(acts, act...)
-			if rt != api.DryRun {
-				node.Status.Nodes = (int32)(node.Spec.Nodes)
+			if !dryRun {
+				node.Status.Nodes = (int64)(node.Spec.Nodes)
 				Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(node)
 			}
 		}
 	}
 
-	if clusterDelete && rt != api.DryRun {
+	if clusterDelete && !dryRun {
 		if err = cm.deleteVolume(); err != nil {
 			fmt.Println(err)
 		}
@@ -477,7 +464,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 		}
 	}
 
-	if rt != api.DryRun {
+	if !dryRun {
 		time.Sleep(1 * time.Minute)
 
 		for _, ng := range nodeGroups {

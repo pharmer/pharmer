@@ -13,7 +13,7 @@ import (
 )
 
 func List(ctx context.Context, opts metav1.ListOptions) ([]*api.Cluster, error) {
-	return Store(ctx).Clusters().List(metav1.ListOptions{})
+	return Store(ctx).Clusters().List(opts)
 }
 
 func Get(ctx context.Context, name string) (*api.Cluster, error) {
@@ -22,16 +22,16 @@ func Get(ctx context.Context, name string) (*api.Cluster, error) {
 
 func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if cluster == nil {
-		return nil, errors.New("Missing cluster")
+		return nil, errors.New("missing cluster")
 	} else if cluster.Name == "" {
-		return nil, errors.New("Missing cluster name")
+		return nil, errors.New("missing cluster name")
 	} else if cluster.Spec.KubernetesVersion == "" {
-		return nil, errors.New("Missing cluster version")
+		return nil, errors.New("missing cluster version")
 	}
 
 	_, err := Store(ctx).Clusters().Get(cluster.Name)
 	if err == nil {
-		return nil, fmt.Errorf("Cluster exists with name `%s`.", cluster.Name)
+		return nil, fmt.Errorf("cluster exists with name `%s`", cluster.Name)
 	}
 
 	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
@@ -62,16 +62,16 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 
 func Update(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if cluster == nil {
-		return nil, errors.New("Missing cluster")
+		return nil, errors.New("missing cluster")
 	} else if cluster.Name == "" {
-		return nil, errors.New("Missing cluster name")
+		return nil, errors.New("missing cluster name")
 	} else if cluster.Spec.KubernetesVersion == "" {
-		return nil, errors.New("Missing cluster version")
+		return nil, errors.New("missing cluster version")
 	}
 
 	existing, err := Store(ctx).Clusters().Get(cluster.Name)
 	if err != nil {
-		return nil, fmt.Errorf("Cluster `%s` does not exist. Reason: %v", cluster.Name, err)
+		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", cluster.Name, err)
 	}
 	cluster.Status = existing.Status
 	cluster.Generation = time.Now().UnixNano()
@@ -81,12 +81,12 @@ func Update(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 
 func Delete(ctx context.Context, name string) (*api.Cluster, error) {
 	if name == "" {
-		return nil, errors.New("Missing cluster name")
+		return nil, errors.New("missing cluster name")
 	}
 
 	cluster, err := Store(ctx).Clusters().Get(name)
 	if err != nil {
-		return nil, fmt.Errorf("Cluster `%s` does not exist. Reason: %v", name, err)
+		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
 	cluster.DeletionTimestamp = &metav1.Time{Time: time.Now()}
 
@@ -95,14 +95,14 @@ func Delete(ctx context.Context, name string) (*api.Cluster, error) {
 
 func DeleteNG(ctx context.Context, nodeGroupName, clusterName string) error {
 	if clusterName == "" {
-		return errors.New("Missing cluster name.")
+		return errors.New("missing cluster name")
 	}
 	if nodeGroupName == "" {
-		return errors.New("Missing nodegroup name.")
+		return errors.New("missing nodegroup name")
 	}
 
 	if _, err := Store(ctx).Clusters().Get(clusterName); err != nil {
-		return fmt.Errorf("Cluster `%s` does not exist. Reason: %v", clusterName, err)
+		return fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
 	}
 
 	nodeGroup, err := Store(ctx).NodeGroups(clusterName).Get(nodeGroupName)
@@ -176,19 +176,19 @@ func GetAdminConfig(ctx context.Context, name string) (*clientcmd.Config, error)
 	return &cfg, nil
 }
 
-func Apply(ctx context.Context, name string, dryRun bool) error {
+func Apply(ctx context.Context, name string, dryRun bool) ([]api.Action, error) {
 	if name == "" {
-		return errors.New("Missing cluster name")
+		return nil, errors.New("missing cluster name")
 	}
 
 	cluster, err := Store(ctx).Clusters().Get(name)
 	if err != nil {
-		return fmt.Errorf("Cluster `%s` does not exist. Reason: %v", name, err)
+		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
 
 	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	return cm.Apply(cluster, dryRun)

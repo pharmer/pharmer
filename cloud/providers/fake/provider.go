@@ -34,8 +34,8 @@ func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.Node
 	return nil, nil
 }
 
-func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
-	return UnsupportedOperation
+func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
+	return nil, UnsupportedOperation
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {

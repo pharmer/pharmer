@@ -11,12 +11,12 @@ import (
 	. "github.com/appscode/pharmer/cloud"
 )
 
-func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
+func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
 	var err error
 
 	cm.cluster = in
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
-		return err
+		return nil, err
 	}
 
 	defer func(releaseReservedIp bool) {
@@ -36,13 +36,13 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 
 	if err = cm.conn.detectInstanceImage(); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	Logger(cm.ctx).Debugln("Linode instance image", cm.cluster.Spec.Cloud.InstanceImage)
 
 	if err = cm.conn.detectKernel(); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	Logger(cm.ctx).Infof("Linode kernel %v found", cm.cluster.Spec.Cloud.Kernel)
 
@@ -52,23 +52,23 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	masterScriptId, err := im.createStackScript(cm.cluster.Spec.MasterSKU, api.RoleMaster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterLinodeId, masterLinodeConfigId, err := im.createInstance(cm.cluster.Spec.KubernetesMasterName, masterScriptId, cm.cluster.Spec.MasterSKU)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterLinode, err := cm.conn.waitForStatus(masterLinodeId, LinodeStatus_PoweredOff)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	Logger(cm.ctx).Debugln("Linode", masterLinodeId, "is powered off.")
 	masterInstance, err := im.newKubeInstance(masterLinode)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Name = cm.namer.MasterName()
 	masterInstance.Spec.Role = api.RoleMaster
@@ -80,12 +80,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// needed to get master_internal_ip
 	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	//if api.UseFirebase() {
 	//	SaveInstancesInFirebase(cm.cluster, cm.ins)
@@ -95,7 +95,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	err = im.bootToGrub2(masterLinodeId, masterLinodeConfigId, masterInstance.Name)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// -----------------------------------------------------------------------------------
 
@@ -110,13 +110,13 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//	nodeScriptId, err := im.createStackScript(ng.Sku, api.RoleKubernetesPool)
 	//	if err != nil {
 	//		cm.cluster.Status.Reason = err.Error()
-	//		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	//	}
 	//	for i := int64(0); i < ng.Count; i++ {
 	//		linodeId, configId, err := im.createInstance(cm.namer.GenNodeName(), nodeScriptId, ng.Sku)
 	//		if err != nil {
 	//			cm.cluster.Status.Reason = err.Error()
-	//			return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	//		}
 	//		nodes = append(nodes, &NodeInfo{
 	//			nodeId:   linodeId,
@@ -151,7 +151,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 						node, err := im.newKubeInstance(&linode)
 						if err != nil {
 							cm.cluster.Status.Reason = err.Error()
-							return errors.FromErr(err).WithContext(cm.ctx).Err()
+							return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 						}
 						node.Name = cm.cluster.Name + "-node-" + strconv.Itoa(info.nodeId)
 						node.Spec.Role = api.RoleNode
@@ -185,15 +185,16 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	// Wait for master A record to propagate
 	if err := EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// wait for nodes to start
-	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	kc, err := cm.GetAdminClient()
+	if err := WaitForReadyMaster(cm.ctx, kc); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	cm.cluster.Status.Phase = api.ClusterReady
-	return nil
+	return nil, nil
 }

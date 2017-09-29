@@ -39,7 +39,7 @@ func NewCmdUpdateNodeGroup() *cobra.Command {
 			if err != nil {
 				term.Fatalln(err)
 			}
-			ctx := cloud.NewContext(context.Background(), cfg)
+			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
 			if err := runUpdateNodeGroup(ctx, cmd, args); err != nil {
 				term.Fatalln(err)

@@ -10,12 +10,12 @@ import (
 	compute "google.golang.org/api/compute/v1"
 )
 
-type NodeGroupManager struct {
+type GCENodeGroupManager struct {
 	cm       *ClusterManager
 	instance Instance
 }
 
-func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action, err error) {
+func (igm *GCENodeGroupManager) AdjustNodeGroup(dryRun bool) (acts []api.Action, err error) {
 	acts = make([]api.Action, 0)
 	instanceGroupName := igm.cm.namer.NodeGroupName(igm.instance.Type.Sku)
 
@@ -49,7 +49,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action,
 			Resource: "Instance Template",
 			Message:  fmt.Sprintf("Instance template %v will be created", igm.cm.namer.InstanceTemplateName(igm.instance.Type.Sku)),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if op2, err := igm.createNodeInstanceTemplate(igm.instance.Type.Sku); err != nil {
 				igm.cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -68,7 +68,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action,
 			Resource: "Node group",
 			Message:  fmt.Sprintf("Node group %v will be created", igm.cm.namer.NodeGroupName(igm.instance.Type.Sku)),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if op3, err := igm.createNodeGroup(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
 				igm.cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -87,7 +87,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action,
 			Resource: "Autoscaler",
 			Message:  fmt.Sprintf("Autoscaler %v will be created", igm.cm.namer.NodeGroupName(igm.instance.Type.Sku)),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if op4, err := igm.createAutoscaler(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
 				igm.cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -107,7 +107,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action,
 			Resource: "Node group",
 			Message:  fmt.Sprintf("Node group %v  with instance template %v will be delete", instanceGroupName, instanceTemplate),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if err := igm.deleteOnlyNodeGroup(instanceGroupName, instanceTemplate); err != nil {
 				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 				return acts, err
@@ -122,7 +122,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action,
 	return
 }
 
-func (igm *NodeGroupManager) createNodeInstanceTemplate(sku string) (string, error) {
+func (igm *GCENodeGroupManager) createNodeInstanceTemplate(sku string) (string, error) {
 	templateName := igm.cm.namer.InstanceTemplateName(sku)
 
 	Logger(igm.cm.ctx).Infof("Retrieving node template %v", templateName)
@@ -222,7 +222,7 @@ func (igm *NodeGroupManager) createNodeInstanceTemplate(sku string) (string, err
 	return r1.Name, nil
 }
 
-func (igm *NodeGroupManager) createNodeGroup(sku string, count int64) (string, error) {
+func (igm *GCENodeGroupManager) createNodeGroup(sku string, count int64) (string, error) {
 	name := igm.cm.namer.NodeGroupName(sku)
 	template := fmt.Sprintf("projects/%v/global/instanceTemplates/%v", igm.cm.cluster.Spec.Cloud.Project, igm.cm.namer.InstanceTemplateName(sku))
 
@@ -241,7 +241,7 @@ func (igm *NodeGroupManager) createNodeGroup(sku string, count int64) (string, e
 }
 
 // Not used since Kube 1.3
-func (igm *NodeGroupManager) createAutoscaler(sku string, count int64) (string, error) {
+func (igm *GCENodeGroupManager) createAutoscaler(sku string, count int64) (string, error) {
 	name := igm.cm.namer.NodeGroupName(sku)
 	target := fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%v/zones/%v/instanceGroupManagers/%v", igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, name)
 
@@ -261,7 +261,7 @@ func (igm *NodeGroupManager) createAutoscaler(sku string, count int64) (string, 
 	return r1.Name, nil
 }
 
-func (igm *NodeGroupManager) deleteOnlyNodeGroup(instanceGroupName, template string) error {
+func (igm *GCENodeGroupManager) deleteOnlyNodeGroup(instanceGroupName, template string) error {
 	_, err := igm.cm.conn.computeService.InstanceGroupManagers.ListManagedInstances(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -298,7 +298,7 @@ func (igm *NodeGroupManager) deleteOnlyNodeGroup(instanceGroupName, template str
 	return nil
 }
 
-func (igm *NodeGroupManager) updateNodeGroup(instanceGroupName string, size int64) error {
+func (igm *GCENodeGroupManager) updateNodeGroup(instanceGroupName string, size int64) error {
 	r1, err := igm.cm.conn.computeService.Autoscalers.Get(igm.cm.cluster.Spec.Cloud.Project, igm.cm.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()

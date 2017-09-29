@@ -20,11 +20,3 @@ type Action struct {
 	Resource string
 	Message  string
 }
-
-type RunType int
-
-const (
-	DryRun = iota
-	StdRun
-	Forced
-)

@@ -1,7 +1,6 @@
 package gce
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -16,20 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
-	var err error
-	if dryRun {
-		action, err := cm.apply(in, api.DryRun)
-		fmt.Println(err)
-		jm, err := json.Marshal(action)
-		fmt.Println(string(jm), err)
-	} else {
-		_, err = cm.apply(in, api.StdRun)
-	}
-	return err
-}
-
-func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Action, err error) {
+func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) (acts []api.Action, err error) {
 	var (
 		clusterDelete = false
 	)
@@ -51,7 +37,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 	}
 	cm.namer = namer{cluster: cm.cluster}
 
-	if rt != api.DryRun {
+	if !dryRun {
 		if err = cm.importPublicKey(); err != nil {
 			cm.cluster.Status.Reason = err.Error()
 			err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -66,7 +52,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Default Network",
 			Message:  "Not found, will add default network with ipv4 range 10.240.0.0/16",
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if err = cm.ensureNetworks(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -87,7 +73,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Default Firewall rule",
 			Message:  "default-allow-internal, default-allow-ssh, https rules will be created",
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if err = cm.ensureFirewallRules(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -116,7 +102,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 					Resource: "Master persistant disk",
 					Message:  fmt.Sprintf("Not found, will be added with disk type %v, size %v and name %v", node.Spec.Template.Spec.DiskType, node.Spec.Template.Spec.DiskSize, cm.namer.MasterPDName()),
 				})
-				if rt == api.DryRun {
+				if dryRun {
 					break
 				}
 				cm.cluster.Spec.MasterDiskId, err = cm.createDisk(cm.namer.MasterPDName(), node.Spec.Template.Spec.DiskType, node.Spec.Template.Spec.DiskSize)
@@ -143,7 +129,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Reserve IP",
 			Message:  fmt.Sprintf("Not found, MasterReservedIP = ", cm.cluster.Spec.MasterReservedIP),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if err = cm.reserveIP(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -204,7 +190,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "A Record",
 			Message:  fmt.Sprintf("Will create cluster apps A record %v, External domain %v and internal domain %v", Extra(cm.ctx).Domain(cm.cluster.Name), Extra(cm.ctx).ExternalDomain(cm.cluster.Name), Extra(cm.ctx).InternalDomain(cm.cluster.Name)),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if op1, err := cm.createMasterIntance(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -245,14 +231,15 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				return acts, err
 			}
 			// wait for nodes to start
-			if err = WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+			kc, err := cm.GetAdminClient()
+			if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
 				return acts, err
 			}
 			// -------------------------------------------------------------------------------------------------------------
 			master, _ := Store(cm.ctx).NodeGroups(cm.cluster.Name).Get("master")
-			master.Status.Nodes = int32(1)
+			master.Status.Nodes = int64(1)
 			Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(master)
 			time.Sleep(time.Minute * 1)
 			//Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(mas)
@@ -286,7 +273,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				Resource: "Master Instance",
 				Message:  fmt.Sprintf("Will delete master instance with name %v", cm.cluster.Spec.KubernetesMasterName),
 			})
-			if rt != api.DryRun {
+			if !dryRun {
 				cm.cluster.Status.Phase = api.ClusterDeleting
 				Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 				if err := cm.deleteMaster(); err != nil {
@@ -300,7 +287,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				Message:  fmt.Sprintf("Will delete master persistant with name %v", cm.namer.MasterPDName()),
 			})
 
-			if rt != api.DryRun {
+			if !dryRun {
 				if err := cm.deleteDisk(); err != nil {
 					cm.cluster.Status.Reason = err.Error()
 				}
@@ -311,7 +298,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				Resource: "Route",
 				Message:  fmt.Sprintf("Route will be delete"),
 			})
-			if rt != api.DryRun {
+			if !dryRun {
 				if err := cm.deleteRoutes(); err != nil {
 					cm.cluster.Status.Reason = err.Error()
 				}
@@ -322,7 +309,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				Resource: "Route",
 				Message:  fmt.Sprintf("Cluster apps A record %v, External domain %v and internal domain %v will be deleted", Extra(cm.ctx).Domain(cm.cluster.Name), Extra(cm.ctx).ExternalDomain(cm.cluster.Name), Extra(cm.ctx).InternalDomain(cm.cluster.Name)),
 			})
-			if rt != api.DryRun {
+			if !dryRun {
 				if err := DeleteARecords(cm.ctx, cm.cluster); err != nil {
 					cm.cluster.Status.Reason = err.Error()
 				}
@@ -344,7 +331,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Node Firewall Rule",
 			Message:  fmt.Sprintf("%v node firewall rule will be created", cm.cluster.Name+"-node-all"),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			// Use zone operation to wait and block.
 			if op2, err := cm.createNodeFirewallRule(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
@@ -364,7 +351,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Node Firewall Rule",
 			Message:  fmt.Sprintf("%v node firewall rule will be deleted", cm.cluster.Name+"-node-all"),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if err := cm.deleteFirewalls(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 			}
@@ -381,7 +368,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 		if node.IsMaster() {
 			continue
 		}
-		igm := &NodeGroupManager{
+		igm := &GCENodeGroupManager{
 			cm: cm,
 			instance: Instance{
 				Type: InstanceType{
@@ -401,7 +388,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				Resource: "Node Group",
 				Message:  fmt.Sprintf("Node group %v  will be deleted", instanceGroupName),
 			})
-			if rt != api.DryRun {
+			if !dryRun {
 				if err = cm.deleteNodeGroup(instanceGroupName); err != nil {
 					fmt.Println(err)
 				}
@@ -411,7 +398,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				Resource: "Autoscaler",
 				Message:  fmt.Sprintf("Autoscaler %v  will be deleted", instanceGroupName),
 			})
-			if rt != api.DryRun {
+			if !dryRun {
 				if err = cm.deleteAutoscaler(instanceGroupName); err != nil {
 					fmt.Println(err)
 				}
@@ -422,23 +409,23 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				Resource: "Instance Template",
 				Message:  fmt.Sprintf("Instance template %v  will be deleted", templateName),
 			})
-			if rt != api.DryRun {
+			if !dryRun {
 				if err = cm.deleteInstanceTemplate(templateName); err != nil {
 					fmt.Println(err)
 				}
 				Store(cm.ctx).NodeGroups(cm.cluster.Name).Delete(node.Name)
 			}
 		} else {
-			act, _ := igm.AdjustNodeGroup(rt)
+			act, _ := igm.AdjustNodeGroup(dryRun)
 			acts = append(acts, act...)
-			if rt != api.DryRun {
-				node.Status.Nodes = (int32)(node.Spec.Nodes)
+			if !dryRun {
+				node.Status.Nodes = (int64)(node.Spec.Nodes)
 				Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(node)
 			}
 		}
 	}
 
-	if rt != api.DryRun {
+	if !dryRun {
 		time.Sleep(1 * time.Minute)
 
 		for _, ng := range nodeGroups {

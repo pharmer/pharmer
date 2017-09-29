@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
 
@@ -27,6 +28,38 @@ func EnsureARecord(ctx context.Context, cluster *api.Cluster, master *api.Node) 
 	internalDomain := Extra(ctx).InternalDomain(cluster.Name)
 	if err := DNSProvider(ctx).EnsureARecord(internalDomain, master.Status.PrivateIP); err != nil {
 		return err
+	}
+	Logger(ctx).Infof("Internal A record %v added", internalDomain)
+	return nil
+}
+
+func EnsureARecord2(ctx context.Context, cluster *api.Cluster, publicIP, privateIP string) error {
+	clusterDomain := Extra(ctx).Domain(cluster.Name)
+	// TODO: FixIT!
+	//for _, ip := range system.Config.Compass.IPs {
+	//	if err := DNSProvider(ctx).EnsureARecord(clusterDomain, ip); err != nil {
+	//		return err
+	//	}
+	//}
+	Logger(ctx).Infof("Cluster apps A record %v added", clusterDomain)
+	externalDomain := Extra(ctx).ExternalDomain(cluster.Name)
+	if err := DNSProvider(ctx).EnsureARecord(externalDomain, publicIP); err != nil {
+		return err
+	} else {
+		cluster.Status.APIAddress = append(cluster.Status.APIAddress, api.Address{
+			Type: api.AddressTypeExternalDNS,
+			URL:  fmt.Sprintf("https://%s:6443", externalDomain),
+		})
+	}
+	Logger(ctx).Infof("External A record %v added", externalDomain)
+	internalDomain := Extra(ctx).InternalDomain(cluster.Name)
+	if err := DNSProvider(ctx).EnsureARecord(internalDomain, privateIP); err != nil {
+		return err
+	} else {
+		cluster.Status.APIAddress = append(cluster.Status.APIAddress, api.Address{
+			Type: api.AddressTypeInternalDNS,
+			URL:  fmt.Sprintf("https://%s:6443", internalDomain),
+		})
 	}
 	Logger(ctx).Infof("Internal A record %v added", internalDomain)
 	return nil

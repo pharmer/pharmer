@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
+	_env "github.com/appscode/go/env"
 	//. "github.com/appscode/pharmer/cloud/providers/gce"
 	//"github.com/appscode/pharmer/config"
 	//"github.com/appscode/pharmer/context"
@@ -31,7 +32,7 @@ func TestGce(t *testing.T) {
 func TestContext(t *testing.T) {
 	cfg, err := config.LoadConfig("/home/sanjid/go/src/appscode.com/ark/conf/tigerworks-kube.json")
 	fmt.Println(err)
-	ctx := NewContext(context.Background(), cfg)
+	ctx := NewContext(context.Background(), cfg, _env.Dev)
 	cm := New(ctx)
 
 	req := proto.ClusterCreateRequest{
@@ -65,7 +66,6 @@ func TestContext(t *testing.T) {
 
 	api.AssignTypeKind(cm.cluster)
 	if _, err := Store(cm.ctx).Clusters().Create(cm.cluster); err != nil {
-		//oneliners.FILE(err)
 		cm.cluster.Status.Reason = err.Error()
 		fmt.Println(err)
 	}

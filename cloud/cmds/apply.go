@@ -3,7 +3,6 @@ package cmds
 import (
 	"context"
 
-	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/log"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
@@ -32,19 +31,17 @@ func NewCmdApply() *cobra.Command {
 			if err != nil {
 				log.Fatalln(err)
 			}
-			ctx := cloud.NewContext(context.Background(), cfg)
+			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			err = cloud.Apply(ctx, name, dryRun)
+			acts, err := cloud.Apply(ctx, name, dryRun)
 			if err != nil {
 				log.Fatalln(err)
 			}
+			for _, a := range acts {
+				log.Infoln(a.Action, a.Resource, a.Message)
+			}
 		},
 	}
-
 	cmd.Flags().BoolVar(&dryRun, "dry-run", dryRun, "Dry run.")
 	return cmd
-}
-
-func reconfigure(req *proto.ClusterReconfigureRequest) error {
-	return nil
 }

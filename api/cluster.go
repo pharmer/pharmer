@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -298,12 +297,27 @@ const (
 	ClusterDeleted  ClusterPhase = "Deleted"
 )
 
+type AddressType string
+
+const (
+	AddressTypeReservedIP  AddressType = "ReservedIP"
+	AddressTypeInternalIP  AddressType = "InternalIP"
+	AddressTypeExternalIP  AddressType = "ExternalIP"
+	AddressTypeInternalDNS AddressType = "InternalDNS"
+	AddressTypeExternalDNS AddressType = "ExternalDNS"
+)
+
+type Address struct {
+	Type AddressType `json:"type,omitempty"`
+	URL  string      `json:"url,omitempty"`
+}
+
 type ClusterStatus struct {
 	Phase            ClusterPhase `json:"phase,omitempty,omitempty"`
 	Reason           string       `json:"reason,omitempty,omitempty"`
 	SSHKeyExternalID string       `json:"sshKeyExternalID,omitempty"`
-
-	Cloud CloudStatus `json:"cloud"`
+	Cloud            CloudStatus  `json:"cloud,omitempty"`
+	APIAddress       []Address    `json:"apiServer,omitempty"`
 }
 
 func (cluster *Cluster) clusterIP(seq int64) string {
@@ -318,20 +332,21 @@ func (cluster *Cluster) KubernetesClusterIP() string {
 	return cluster.clusterIP(1)
 }
 
-// This is a onetime initializer method.
-func (cluster *Cluster) APIServerURL() string {
-	//if ctx.ApiServerUrl == "" {
-	//	host := ctx.Extra().ExternalDomain(ctx.Name)
-	//	if ctx.MasterReservedIP != "" {
-	//		host = ctx.MasterReservedIP
-	//	}
-	host := cluster.Spec.MasterReservedIP
-	if host == "" {
-		host = cluster.Spec.MasterExternalIP
+func (cluster Cluster) APIServerURL() string {
+	m := map[AddressType]string{}
+	for _, addr := range cluster.Status.APIAddress {
+		m[addr.Type] = addr.URL
 	}
-	return fmt.Sprintf("https://%v:6443", host)
-	// ctx.Logger().Infoln(fmt.Sprintf("Cluster %v 's api server url: %v\n", ctx.Name, ctx.ApiServerUrl))
-	//}
+	if u, found := m[AddressTypeReservedIP]; found {
+		return u
+	}
+	if u, found := m[AddressTypeExternalDNS]; found {
+		return u
+	}
+	if u, found := m[AddressTypeExternalIP]; found {
+		return u
+	}
+	return ""
 }
 
 func (cluster *Cluster) APIServerHost() string {

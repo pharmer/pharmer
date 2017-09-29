@@ -2,9 +2,11 @@ package gce
 
 import (
 	"context"
+	"sync"
 
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -17,6 +19,7 @@ type ClusterManager struct {
 	cluster *api.Cluster
 	conn    *cloudConnector
 	namer   namer
+	m       sync.Mutex
 }
 
 var _ Interface = &ClusterManager{}
@@ -35,4 +38,23 @@ func New(ctx context.Context) Interface {
 
 func (cm *ClusterManager) MatchInstance(i *api.Node, md *api.NodeStatus) bool {
 	return i.Name == md.Name
+}
+
+type paramK8sClient struct{}
+
+func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
+	cm.m.Lock()
+	defer cm.m.Unlock()
+
+	v := cm.ctx.Value(paramK8sClient{})
+	if kc, ok := v.(kubernetes.Interface); ok && kc != nil {
+		return kc, nil
+	}
+
+	kc, err := NewAdminClient(cm.ctx, cm.cluster)
+	if err != nil {
+		return nil, err
+	}
+	cm.ctx = context.WithValue(cm.ctx, paramK8sClient{}, kc)
+	return kc, nil
 }
