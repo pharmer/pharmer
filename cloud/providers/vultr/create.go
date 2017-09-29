@@ -63,6 +63,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	}
 	n := namer{cluster: cluster}
 
+	cluster.Spec.Networking.NetworkProvider = "calico"
 	// Init object meta
 	cluster.ObjectMeta.UID = phid.NewKubeCluster()
 	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
@@ -71,6 +72,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 
 	// Init spec
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
+	cluster.Spec.Token = GetKubeadmToken()
 	cluster.Spec.KubernetesMasterName = n.MasterName()
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 
@@ -151,6 +153,8 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 			}
 		}
 	}
+	cluster.Spec.KubernetesVersion = "v" + in.Spec.KubernetesVersion
+
 	return cluster, nil
 }
 

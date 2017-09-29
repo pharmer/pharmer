@@ -15,8 +15,8 @@ func (n namer) MasterName() string {
 	return n.cluster.Name + "-master"
 }
 
-func (n namer) GenNodeName() string {
-	return rand.WithUniqSuffix(n.cluster.Name + "-node")
+func (n namer) GenNodeName(sku string) string {
+	return rand.WithUniqSuffix(n.GetNodeGroupName(sku))
 }
 
 func (n namer) GenSSHKeyExternalID() string {
@@ -29,4 +29,8 @@ func (n namer) ReserveIPName() string {
 
 func (n namer) StartupScriptName(sku, role string) string {
 	return n.cluster.Name + "-" + sku + "-" + role + "-V" + strconv.FormatInt(n.cluster.Generation, 10)
+}
+
+func (n namer) GetNodeGroupName(sku string) string {
+	return n.cluster.Name + "-" + sku
 }

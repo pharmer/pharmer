@@ -2,8 +2,10 @@ package vultr
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"strconv"
+	"strings"
 
 	gv "github.com/JamesClonk/vultr/lib"
 	_env "github.com/appscode/go/env"
@@ -51,7 +53,25 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 	return instance, nil
 }
 
+func (im *instanceManager) getStartupScript(sku, role string) (bool, int, error) {
+	scripts, err := im.conn.client.GetStartupScripts()
+	if err != nil {
+		return false, -1, err
+	}
+	for _, script := range scripts {
+		if script.Name == im.namer.StartupScriptName(sku, role) {
+			scriptID, _ := strconv.Atoi(script.ID)
+			return true, scriptID, nil
+		}
+	}
+	return false, -1, nil
+}
+
 func (im *instanceManager) createStartupScript(sku, role string) (int, error) {
+	instanceGroup := ""
+	if role == api.RoleNode {
+		instanceGroup = im.namer.GetNodeGroupName(sku)
+	}
 	Logger(im.ctx).Infof("creating StackScript for sku %v role %v", sku, role)
 	//script, err := renderStartupScript(im.ctx, im.cluster, role)
 	//if err != nil {
@@ -70,6 +90,34 @@ func (im *instanceManager) createStartupScript(sku, role string) (int, error) {
 	return scriptID, nil
 }
 
+func (im *instanceManager) getInstance(name string) (string, error) {
+	servers, err := im.conn.client.GetServersByTag(im.cluster.Name)
+	fmt.Println(err, servers)
+	if err != nil {
+		return "", err
+	}
+	for _, server := range servers {
+		fmt.Println(server.Name, "***")
+		if server.Name == name {
+			return server.ID, nil
+		}
+	}
+	return "", nil
+}
+
+func (im *instanceManager) getPublicKey() (bool, string, error) {
+	keys, err := im.conn.client.GetSSHKeys()
+	if err != nil {
+		return false, "", err
+	}
+	for _, key := range keys {
+		if key.Name == im.cluster.Status.SSHKeyExternalID {
+			return true, key.ID, nil
+		}
+	}
+	return false, "", nil
+}
+
 func (im *instanceManager) createInstance(name, sku string, scriptID int) (string, error) {
 	regionID, err := strconv.Atoi(im.cluster.Spec.Cloud.Zone)
 	if err != nil {
@@ -83,8 +131,15 @@ func (im *instanceManager) createInstance(name, sku string, scriptID int) (strin
 	if err != nil {
 		return "", errors.FromErr(err).WithContext(im.ctx).Err()
 	}
+
+	_, sshKeyID, err := im.getPublicKey()
+	fmt.Println(sshKeyID, "*************")
+	if err != nil {
+		return "", errors.FromErr(err).WithContext(im.ctx).Err()
+	}
+
 	opts := &gv.ServerOptions{
-		SSHKey:               im.cluster.Status.SSHKeyExternalID + ",57dcbce7cd3b6,58027d56a1190,58a498ec7ee19",
+		SSHKey:               sshKeyID + ",57dcbce7cd3b6,58027d56a1190,58a498ec7ee19,57ee2df762851",
 		PrivateNetworking:    true,
 		DontNotifyOnActivate: false,
 		Script:               scriptID,
@@ -92,7 +147,7 @@ func (im *instanceManager) createInstance(name, sku string, scriptID int) (strin
 		Tag:                  im.cluster.Name,
 	}
 	if _env.FromHost().IsPublic() {
-		opts.SSHKey = im.cluster.Status.SSHKeyExternalID
+		opts.SSHKey = sshKeyID
 	}
 	resp, err := im.conn.client.CreateServer(
 		name,
@@ -100,9 +155,9 @@ func (im *instanceManager) createInstance(name, sku string, scriptID int) (strin
 		planID,
 		osID,
 		opts)
-	Logger(im.ctx).Debugln("do response", resp, " errors", err)
-	Logger(im.ctx).Debug("Created droplet with name", resp.ID)
-	Logger(im.ctx).Infof("DO droplet %v created", name)
+	Logger(im.ctx).Debugln("Vultr response", resp, " errors", err)
+	Logger(im.ctx).Debug("Created server with name", resp.ID)
+	Logger(im.ctx).Infof("Vultr server %v created", name)
 	return resp.ID, err
 }
 
@@ -134,8 +189,43 @@ func (im *instanceManager) newKubeInstance(server *gv.Server) (*api.Node, error)
 	}, nil
 }
 
+func (im *instanceManager) GetNodeGroup(instanceGroup string) (bool, map[string]*api.Node, error) {
+	var flag bool = false
+	existingNGs := make(map[string]*api.Node)
+	servers, err := im.conn.client.GetServersByTag(im.cluster.Name)
+	if err != nil {
+		return flag, existingNGs, errors.FromErr(err).WithContext(im.ctx).Err()
+	}
+
+	for _, item := range servers {
+		if strings.HasPrefix(item.Name, instanceGroup) {
+			flag = true
+			instance, err := im.newKubeInstance(&item)
+			if err != nil {
+				return flag, existingNGs, errors.FromErr(err).WithContext(im.ctx).Err()
+			}
+			instance.Spec.Role = api.RoleNode
+			existingNGs[item.Name] = instance
+		}
+
+	}
+	return flag, existingNGs, nil
+}
+
+func (im *instanceManager) deleteServer(id string) error {
+	return backoff.Retry(func() error {
+		err := im.conn.client.DeleteServer(id)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}, backoff.NewExponentialBackOff())
+}
+
 // reboot does not seem to run /etc/rc.local
 func (im *instanceManager) reboot(id string) error {
+	return nil
 	Logger(im.ctx).Infof("Rebooting instance %v", id)
 	err := im.conn.client.RebootServer(id)
 	if err != nil {

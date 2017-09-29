@@ -41,11 +41,12 @@ func (conn *cloudConnector) detectInstanceImage() error {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	for _, os := range oses {
-		if os.Arch == "x64" && os.Family == "debian" && strings.HasPrefix(os.Name, "Debian 8") {
+		if os.Arch == "x64" && os.Family == "ubuntu" && strings.HasPrefix(os.Name, "Ubuntu 16.04 x64") {
 			conn.cluster.Spec.Cloud.InstanceImage = strconv.Itoa(os.ID)
 			return nil
 		}
 	}
+
 	return errors.New("Can't find Debian 8 image").WithContext(conn.ctx).Err()
 }
 
@@ -75,4 +76,12 @@ func (conn *cloudConnector) waitForActiveInstance(id string) (*gv.Server, error)
 		time.Sleep(30 * time.Second)
 	}
 	return nil, errors.New("Timed out waiting for instance to become active.").WithContext(conn.ctx).Err()
+}
+
+func (conn *cloudConnector) getServer(id string) (*gv.Server, error) {
+	server, err := conn.client.GetServer(id)
+	if err != nil {
+		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+	return &server, nil
 }
