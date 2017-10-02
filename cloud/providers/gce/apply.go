@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/appscode/go/errors"
+	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
@@ -992,7 +993,7 @@ func (cm *ClusterManager) createNodeInstanceTemplate(sku string) (string, error)
 		Properties: &compute.InstanceProperties{
 			MachineType: sku,
 			Scheduling: &compute.Scheduling{
-				AutomaticRestart:  false,
+				AutomaticRestart:  types.FalseP(),
 				OnHostMaintenance: "TERMINATE",
 			},
 			Disks: []*compute.AttachedDisk{

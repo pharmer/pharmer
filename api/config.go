@@ -3,7 +3,9 @@ package api
 import (
 	"fmt"
 
+	"github.com/appscode/mergo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type LocalSpec struct {
@@ -51,6 +53,17 @@ type PharmerConfig struct {
 	Credentials     []Credential   `json:"credentials,omitempty"`
 	Store           StorageBackend `json:"store,omitempty"`
 	DNS             *DNSProvider   `json:"dns,omitempty"`
+}
+
+var _ runtime.Object = &PharmerConfig{}
+
+func (pc *PharmerConfig) DeepCopyObject() runtime.Object {
+	if pc == nil {
+		return pc
+	}
+	out := new(PharmerConfig)
+	mergo.MergeWithOverwrite(out, pc)
+	return out
 }
 
 func (pc PharmerConfig) GetStoreType() string {

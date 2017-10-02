@@ -1,8 +1,9 @@
 package api
 
 import (
+	"github.com/appscode/mergo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -18,6 +19,8 @@ type NodeGroup struct {
 	Spec              NodeGroupSpec   `json:"spec,omitempty"`
 	Status            NodeGroupStatus `json:"status,omitempty"`
 }
+
+var _ runtime.Object = &NodeGroup{}
 
 type NodeGroupSpec struct {
 	Nodes int64 `json:"nodes"`
@@ -73,12 +76,24 @@ const (
 	NodeGroupReplicaFailure NodeGroupConditionType = "ReplicaFailure"
 )
 
+type ConditionStatus string
+
+// These are valid condition statuses. "ConditionTrue" means a resource is in the condition.
+// "ConditionFalse" means a resource is not in the condition. "ConditionUnknown" means kubernetes
+// can't decide if a resource is in the condition or not. In the future, we could add other
+// intermediate conditions, e.g. ConditionDegraded.
+const (
+	ConditionTrue    ConditionStatus = "True"
+	ConditionFalse   ConditionStatus = "False"
+	ConditionUnknown ConditionStatus = "Unknown"
+)
+
 // NodeGroupCondition describes the state of a deployment at a certain point.
 type NodeGroupCondition struct {
 	// Type of deployment condition.
 	Type NodeGroupConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=NodeGroupConditionType"`
 	// Status of the condition, one of True, False, Unknown.
-	Status v1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
+	Status ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
 	// The last time this condition was updated.
 	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty" protobuf:"bytes,6,opt,name=lastUpdateTime"`
 	// Last time the condition transitioned from one status to another.
@@ -95,13 +110,22 @@ type NodeIP struct {
 	IPName string
 }
 
-func (ns NodeGroup) IsMaster() bool {
-	_, found := ns.Labels[RoleMasterKey]
+func (ng *NodeGroup) DeepCopyObject() runtime.Object {
+	if ng == nil {
+		return ng
+	}
+	out := new(NodeGroup)
+	mergo.MergeWithOverwrite(out, ng)
+	return out
+}
+
+func (ng NodeGroup) IsMaster() bool {
+	_, found := ng.Labels[RoleMasterKey]
 	return found
 }
 
-func (ns NodeGroup) Role() string {
-	if ns.IsMaster() {
+func (ng NodeGroup) Role() string {
+	if ng.IsMaster() {
 		return RoleMaster
 	}
 	return RoleNode
@@ -180,4 +204,15 @@ type SimpleNode struct {
 	PublicIP        string
 	PrivateIP       string
 	DiskId          string `json:"diskID,omitempty"`
+}
+
+var _ runtime.Object = &SimpleNode{}
+
+func (n *SimpleNode) DeepCopyObject() runtime.Object {
+	if n == nil {
+		return n
+	}
+	out := new(SimpleNode)
+	mergo.MergeWithOverwrite(out, n)
+	return out
 }

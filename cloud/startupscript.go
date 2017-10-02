@@ -67,7 +67,6 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 		// AuthorizationModes:
 		Token:                      cluster.Spec.Token,
 		TokenTTL:                   cluster.Spec.TokenTTL,
-		SelfHosted:                 cluster.Spec.SelfHosted,
 		APIServerExtraArgs:         map[string]string{},
 		ControllerManagerExtraArgs: map[string]string{},
 		SchedulerExtraArgs:         map[string]string{},
@@ -173,7 +172,7 @@ curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64
 	&& mv kubeadm /usr/bin/
 {{ end }}
 
-curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.3/pre-k-linux-amd64 \
+curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.5/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
@@ -305,10 +304,6 @@ kubectl apply \
 	_ = template.Must(StartupScriptTemplate.New("flannel").Parse(`
 kubectl apply \
   -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml \
-  --kubeconfig /etc/kubernetes/admin.conf
-
-kubectl apply \
-  -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel-rbac.yml \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 )

@@ -73,11 +73,11 @@ import:
 - package: gopkg.in/ini.v1
   version: v1.28.2
 - package: k8s.io/apimachinery
-  version: 1fd2e63a9a370677308a42f24fd40c86438afddf
+  version: 9d38e20d609d27e00d4ec18f7b9db67105a2bde0
 - package: k8s.io/client-go
-  version: v4.0.0
+  version: release-5.0
 - package: k8s.io/kubernetes
-  version: ~1.7.0
+  version: ~1.8.0
 - package: github.com/golang/protobuf
   version: 6e4cc92cc905d5f4a73041c1b8228ea08f4c6147
 - package: github.com/grpc-ecosystem/grpc-gateway

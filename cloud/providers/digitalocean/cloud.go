@@ -156,6 +156,9 @@ func (conn *cloudConnector) CreateInstance(name string, ng *api.NodeGroup) (*api
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println()
+	fmt.Println(startupScript)
+	fmt.Println()
 	req := &godo.DropletCreateRequest{
 		Name:   name,
 		Region: conn.cluster.Spec.Cloud.Zone,

@@ -3,10 +3,11 @@ package api
 import (
 	"strconv"
 	"strings"
-	"time"
 
 	. "github.com/appscode/go/encoding/json/types"
+	"github.com/appscode/mergo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
@@ -49,6 +50,8 @@ type Cluster struct {
 	Spec              ClusterSpec   `json:"spec,omitempty,omitempty"`
 	Status            ClusterStatus `json:"status,omitempty,omitempty"`
 }
+
+var _ runtime.Object = &Cluster{}
 
 type Networking struct {
 	PodSubnet     string `json:"podSubnet,omitempty"`
@@ -136,13 +139,8 @@ type ClusterSpec struct {
 	DoNotDelete        bool     `json:"doNotDelete,omitempty"`
 	AuthorizationModes []string `json:"authorizationModes,omitempty"`
 
-	Token    string        `json:"token"`
-	TokenTTL time.Duration `json:"tokenTTL"`
-
-	// SelfHosted enables an alpha deployment type where the apiserver, scheduler, and
-	// controller manager are managed by Kubernetes itself. This option is likely to
-	// become the default in the future.
-	SelfHosted bool `json:"selfHosted"`
+	Token    string          `json:"token"`
+	TokenTTL metav1.Duration `json:"tokenTTL"`
 
 	// APIServerCertSANs sets extra Subject Alternative Names for the API Server signing cert
 	APIServerCertSANs     []string `json:"apiServerCertSANs,omitempty"`
@@ -320,21 +318,21 @@ type ClusterStatus struct {
 	APIAddress       []Address    `json:"apiServer,omitempty"`
 }
 
-func (cluster *Cluster) clusterIP(seq int64) string {
-	octets := strings.Split(cluster.Spec.Networking.ServiceSubnet, ".")
+func (c *Cluster) clusterIP(seq int64) string {
+	octets := strings.Split(c.Spec.Networking.ServiceSubnet, ".")
 	p, _ := strconv.ParseInt(octets[3], 10, 64)
 	p = p + seq
 	octets[3] = strconv.FormatInt(p, 10)
 	return strings.Join(octets, ".")
 }
 
-func (cluster *Cluster) KubernetesClusterIP() string {
-	return cluster.clusterIP(1)
+func (c *Cluster) KubernetesClusterIP() string {
+	return c.clusterIP(1)
 }
 
-func (cluster Cluster) APIServerURL() string {
+func (c Cluster) APIServerURL() string {
 	m := map[AddressType]string{}
-	for _, addr := range cluster.Status.APIAddress {
+	for _, addr := range c.Status.APIAddress {
 		m[addr.Type] = addr.URL
 	}
 	if u, found := m[AddressTypeReservedIP]; found {
@@ -349,10 +347,19 @@ func (cluster Cluster) APIServerURL() string {
 	return ""
 }
 
-func (cluster *Cluster) APIServerHost() string {
-	host := cluster.Spec.MasterReservedIP
+func (c *Cluster) APIServerHost() string {
+	host := c.Spec.MasterReservedIP
 	if host == "" {
-		host = cluster.Spec.MasterExternalIP
+		host = c.Spec.MasterExternalIP
 	}
 	return host
+}
+
+func (c *Cluster) DeepCopyObject() runtime.Object {
+	if c == nil {
+		return c
+	}
+	out := new(Cluster)
+	mergo.MergeWithOverwrite(out, c)
+	return out
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/appscode/go/errors"
+	"github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
 	compute "google.golang.org/api/compute/v1"
@@ -155,7 +156,7 @@ func (igm *GCENodeGroupManager) createNodeInstanceTemplate(sku string) (string, 
 		Properties: &compute.InstanceProperties{
 			MachineType: sku,
 			Scheduling: &compute.Scheduling{
-				AutomaticRestart:  false,
+				AutomaticRestart:  types.FalseP(),
 				OnHostMaintenance: "TERMINATE",
 			},
 			Disks: []*compute.AttachedDisk{

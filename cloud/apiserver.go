@@ -9,10 +9,10 @@ import (
 	"github.com/appscode/go/wait"
 	"github.com/appscode/pharmer/api"
 	"github.com/cenkalti/backoff"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	apiv1 "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/cert"
 )
