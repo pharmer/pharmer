@@ -1,7 +1,9 @@
 package api
 
 import (
+	"github.com/appscode/mergo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type ActionType string
@@ -21,10 +23,13 @@ type Action struct {
 	Message  string
 }
 
-type RunType int
+var _ runtime.Object = &Action{}
 
-const (
-	DryRun = iota
-	StdRun
-	Forced
-)
+func (n *Action) DeepCopyObject() runtime.Object {
+	if n == nil {
+		return n
+	}
+	out := new(Action)
+	mergo.MergeWithOverwrite(out, n)
+	return out
+}

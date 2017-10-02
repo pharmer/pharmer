@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	. "github.com/appscode/go/encoding/json/types"
+	"github.com/appscode/mergo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
@@ -50,6 +51,8 @@ type Cluster struct {
 	Spec              ClusterSpec   `json:"spec,omitempty,omitempty"`
 	Status            ClusterStatus `json:"status,omitempty,omitempty"`
 }
+
+var _ runtime.Object = &Cluster{}
 
 type Networking struct {
 	PodSubnet     string `json:"podSubnet,omitempty"`
@@ -137,13 +140,8 @@ type ClusterSpec struct {
 	DoNotDelete        bool     `json:"doNotDelete,omitempty"`
 	AuthorizationModes []string `json:"authorizationModes,omitempty"`
 
-	Token    string        `json:"token"`
-	TokenTTL time.Duration `json:"tokenTTL"`
-
-	// SelfHosted enables an alpha deployment type where the apiserver, scheduler, and
-	// controller manager are managed by Kubernetes itself. This option is likely to
-	// become the default in the future.
-	SelfHosted bool `json:"selfHosted"`
+	Token    string          `json:"token"`
+	TokenTTL metav1.Duration `json:"tokenTTL"`
 
 	// APIServerCertSANs sets extra Subject Alternative Names for the API Server signing cert
 	APIServerCertSANs     []string `json:"apiServerCertSANs,omitempty"`
@@ -298,46 +296,80 @@ const (
 	ClusterDeleted  ClusterPhase = "Deleted"
 )
 
+type AddressType string
+
+const (
+	AddressTypeReservedIP  AddressType = "ReservedIP"
+	AddressTypeInternalIP  AddressType = "InternalIP"
+	AddressTypeExternalIP  AddressType = "ExternalIP"
+	AddressTypeInternalDNS AddressType = "InternalDNS"
+	AddressTypeExternalDNS AddressType = "ExternalDNS"
+)
+
+type Address struct {
+	Type AddressType `json:"type,omitempty"`
+	Host string      `json:"host,omitempty"`
+}
+
 type ClusterStatus struct {
 	Phase            ClusterPhase `json:"phase,omitempty,omitempty"`
 	Reason           string       `json:"reason,omitempty,omitempty"`
 	SSHKeyExternalID string       `json:"sshKeyExternalID,omitempty"`
-
-	Cloud CloudStatus `json:"cloud"`
+	Cloud            CloudStatus  `json:"cloud,omitempty"`
+	APIAddress       []Address    `json:"apiServer,omitempty"`
 }
 
-func (cluster *Cluster) clusterIP(seq int64) string {
-	octets := strings.Split(cluster.Spec.Networking.ServiceSubnet, ".")
+func (c *Cluster) clusterIP(seq int64) string {
+	octets := strings.Split(c.Spec.Networking.ServiceSubnet, ".")
 	p, _ := strconv.ParseInt(octets[3], 10, 64)
 	p = p + seq
 	octets[3] = strconv.FormatInt(p, 10)
 	return strings.Join(octets, ".")
 }
 
-func (cluster *Cluster) KubernetesClusterIP() string {
-	return cluster.clusterIP(1)
+func (c *Cluster) KubernetesClusterIP() string {
+	return c.clusterIP(1)
 }
 
-// This is a onetime initializer method.
-func (cluster *Cluster) APIServerURL() string {
-	//if ctx.ApiServerUrl == "" {
-	//	host := ctx.Extra().ExternalDomain(ctx.Name)
-	//	if ctx.MasterReservedIP != "" {
-	//		host = ctx.MasterReservedIP
-	//	}
-	host := cluster.Spec.MasterReservedIP
-	if host == "" {
-		host = cluster.Spec.MasterExternalIP
+func (c Cluster) APIServerURL() string {
+	m := map[AddressType]string{}
+	for _, addr := range c.Status.APIAddress {
+		m[addr.Type] = fmt.Sprintf("https://%s:%d", addr.Host, c.Spec.API.BindPort)
 	}
-	return fmt.Sprintf("https://%v:6443", host)
-	// ctx.Logger().Infoln(fmt.Sprintf("Cluster %v 's api server url: %v\n", ctx.Name, ctx.ApiServerUrl))
-	//}
+	if u, found := m[AddressTypeReservedIP]; found {
+		return u
+	}
+	if u, found := m[AddressTypeExternalDNS]; found {
+		return u
+	}
+	if u, found := m[AddressTypeExternalIP]; found {
+		return u
+	}
+	return ""
 }
 
-func (cluster *Cluster) APIServerHost() string {
-	host := cluster.Spec.MasterReservedIP
-	if host == "" {
-		host = cluster.Spec.MasterExternalIP
+func (c *Cluster) APIServerAddress() string {
+	m := map[AddressType]string{}
+	for _, addr := range c.Status.APIAddress {
+		m[addr.Type] = fmt.Sprintf("%s:%d", addr.Host, c.Spec.API.BindPort)
 	}
-	return host
+	if u, found := m[AddressTypeReservedIP]; found {
+		return u
+	}
+	if u, found := m[AddressTypeExternalDNS]; found {
+		return u
+	}
+	if u, found := m[AddressTypeExternalIP]; found {
+		return u
+	}
+	return ""
+}
+
+func (c *Cluster) DeepCopyObject() runtime.Object {
+	if c == nil {
+		return c
+	}
+	out := new(Cluster)
+	mergo.MergeWithOverwrite(out, c)
+	return out
 }

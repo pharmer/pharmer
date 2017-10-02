@@ -11,12 +11,12 @@ import (
 	. "github.com/appscode/pharmer/cloud"
 )
 
-func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
+func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
 	var err error
 
 	cm.cluster = in
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
-		return err
+		return nil, err
 	}
 
 	defer func(releaseReservedIp bool) {
@@ -36,19 +36,19 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 
 	if err = cm.conn.detectInstanceImage(); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	Logger(cm.ctx).Infof("Found vultr instance image %v", cm.cluster.Spec.Cloud.InstanceImage)
 
 	cm.cluster.Status.SSHKeyExternalID, err = cm.importPublicKey()
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	err = cm.reserveIP()
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// -------------------------------------------------------------------ASSETS
@@ -57,29 +57,29 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	masterScriptId, err := im.createStartupScript(cm.cluster.Spec.MasterSKU, api.RoleMaster)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterID, err := im.createInstance(cm.cluster.Spec.KubernetesMasterName, cm.cluster.Spec.MasterSKU, masterScriptId)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterServer, err := cm.conn.waitForActiveInstance(masterID)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	if cm.cluster.Spec.MasterReservedIP != "" {
 		err = im.assignReservedIP(cm.cluster.Spec.MasterReservedIP, masterID)
 		if err != nil {
 			cm.cluster.Status.Reason = err.Error()
-			return errors.FromErr(err).WithContext(cm.ctx).Err()
+			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 		}
 	}
 	masterInstance, err := im.newKubeInstance(masterServer)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Spec.Role = api.RoleMaster
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
@@ -90,12 +90,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// needed to get master_internal_ip
 	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// ----------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	Logger(cm.ctx).Info("Rebooting master instance")
 	if err = im.reboot(masterID); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	Logger(cm.ctx).Info("Rebooted master instance")
 	// -----------------------------------------------------------------------------------
@@ -119,14 +119,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//	nodeScriptId, err := im.createStartupScript(ng.Sku, api.RoleKubernetesPool)
 	//	if err != nil {
 	//		cm.cluster.Status.Reason = err.Error()
-	//		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	//	}
 	//
 	//	for i := int64(0); i < ng.Count; i++ {
 	//		nodeID, err := im.createInstance(cm.namer.GenNodeName(), ng.Sku, nodeScriptId)
 	//		if err != nil {
 	//			cm.cluster.Status.Reason = err.Error()
-	//			return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	//		}
 	//		nodes = append(nodes, &NodeInfo{
 	//			nodeId: nodeID,
@@ -160,7 +160,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 						node, err := im.newKubeInstance(&server)
 						if err != nil {
 							cm.cluster.Status.Reason = err.Error()
-							return errors.FromErr(err).WithContext(cm.ctx).Err()
+							return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 						}
 						node.Spec.Role = api.RoleNode
 						Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
@@ -188,15 +188,16 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	// Wait for master A record to propagate
 	if err = EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
+	kc, err := cm.GetAdminClient()
 	// wait for nodes to start
-	if err = WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.cluster.Status.Phase = api.ClusterReady
-	return nil
+	return nil, nil
 }
 
 func (cm *ClusterManager) importPublicKey() (string, error) {

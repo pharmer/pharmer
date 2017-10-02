@@ -11,6 +11,7 @@ import (
 	"github.com/appscode/pharmer/phid"
 	semver "github.com/hashicorp/go-version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
 func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error) {
@@ -75,6 +76,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	cluster.Spec.Token = GetKubeadmToken()
 	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
 	cluster.Spec.KubernetesMasterName = n.MasterName()
+	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 
 	// Init status
 	cluster.Status = api.ClusterStatus{

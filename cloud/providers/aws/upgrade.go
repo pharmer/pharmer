@@ -111,7 +111,8 @@ func (cm *ClusterManager) restartMaster() error {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
-	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	kc, err := cm.GetAdminClient()
+	if err := WaitForReadyMaster(cm.ctx, kc); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	instance, err := cm.newKubeInstance(masterInstanceID) // sets external IP

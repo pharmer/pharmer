@@ -1,8 +1,9 @@
 package api
 
 import (
+	"github.com/appscode/mergo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -19,8 +20,10 @@ type NodeGroup struct {
 	Status            NodeGroupStatus `json:"status,omitempty"`
 }
 
+var _ runtime.Object = &NodeGroup{}
+
 type NodeGroupSpec struct {
-	Nodes int64 `json:"nodes,omitempty"`
+	Nodes int64 `json:"nodes"`
 
 	// Template describes the nodes that will be created.
 	Template NodeTemplateSpec `json:"template" protobuf:"bytes,3,opt,name=template"`
@@ -29,19 +32,19 @@ type NodeGroupSpec struct {
 // NodeGroupStatus is the most recently observed status of the NodeGroup.
 type NodeGroupStatus struct {
 	// Nodes is the most recently oberved number of nodes.
-	Nodes int32 `json:"nodes" protobuf:"varint,1,opt,name=nodes"`
+	Nodes int64 `json:"nodes" protobuf:"varint,1,opt,name=nodes"`
 
 	// The number of pods that have labels matching the labels of the pod template of the node group.
 	// +optional
-	FullyLabeledNodes int32 `json:"fullyLabeledNodes,omitempty" protobuf:"varint,2,opt,name=fullyLabeledNodes"`
+	FullyLabeledNodes int64 `json:"fullyLabeledNodes,omitempty" protobuf:"varint,2,opt,name=fullyLabeledNodes"`
 
 	// The number of ready nodes for this node group.
 	// +optional
-	ReadyNodes int32 `json:"readyNodes,omitempty" protobuf:"varint,4,opt,name=readyNodes"`
+	ReadyNodes int64 `json:"readyNodes,omitempty" protobuf:"varint,4,opt,name=readyNodes"`
 
 	// The number of available nodes (ready for at least minReadySeconds) for this node group.
 	// +optional
-	AvailableNodes int32 `json:"availableNodes,omitempty" protobuf:"varint,5,opt,name=availableNodes"`
+	AvailableNodes int64 `json:"availableNodes,omitempty" protobuf:"varint,5,opt,name=availableNodes"`
 
 	// ObservedGeneration reflects the generation of the most recently observed node group.
 	// +optional
@@ -52,6 +55,8 @@ type NodeGroupStatus struct {
 	// +patchMergeKey=type
 	// +patchStrategy=merge
 	Conditions []NodeGroupCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,6,rep,name=conditions"`
+
+	ExternalIPs []NodeIP
 }
 
 type NodeGroupConditionType string
@@ -71,12 +76,24 @@ const (
 	NodeGroupReplicaFailure NodeGroupConditionType = "ReplicaFailure"
 )
 
+type ConditionStatus string
+
+// These are valid condition statuses. "ConditionTrue" means a resource is in the condition.
+// "ConditionFalse" means a resource is not in the condition. "ConditionUnknown" means kubernetes
+// can't decide if a resource is in the condition or not. In the future, we could add other
+// intermediate conditions, e.g. ConditionDegraded.
+const (
+	ConditionTrue    ConditionStatus = "True"
+	ConditionFalse   ConditionStatus = "False"
+	ConditionUnknown ConditionStatus = "Unknown"
+)
+
 // NodeGroupCondition describes the state of a deployment at a certain point.
 type NodeGroupCondition struct {
 	// Type of deployment condition.
 	Type NodeGroupConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=NodeGroupConditionType"`
 	// Status of the condition, one of True, False, Unknown.
-	Status v1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
+	Status ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
 	// The last time this condition was updated.
 	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty" protobuf:"bytes,6,opt,name=lastUpdateTime"`
 	// Last time the condition transitioned from one status to another.
@@ -87,9 +104,31 @@ type NodeGroupCondition struct {
 	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
 }
 
-func (ns NodeGroup) IsMaster() bool {
-	_, found := ns.Labels[RoleMasterKey]
+type NodeIP struct {
+	Name   string
+	IP     string
+	IPName string
+}
+
+func (ng *NodeGroup) DeepCopyObject() runtime.Object {
+	if ng == nil {
+		return ng
+	}
+	out := new(NodeGroup)
+	mergo.MergeWithOverwrite(out, ng)
+	return out
+}
+
+func (ng NodeGroup) IsMaster() bool {
+	_, found := ng.Labels[RoleMasterKey]
 	return found
+}
+
+func (ng NodeGroup) Role() string {
+	if ng.IsMaster() {
+		return RoleMaster
+	}
+	return RoleNode
 }
 
 // PodTemplateSpec describes the data a pod should have when created from a template
@@ -113,15 +152,23 @@ type Node struct {
 	Status            NodeStatus `json:"status,omitempty"`
 }
 
+type IPType string
+
+const (
+	IPTypeEphemeral IPType = "Ephemeral"
+	IPTypeReserved  IPType = "Reserved"
+)
+
 // Deprecated
 type NodeSpec struct {
 	// Deprecated
 	Role string
 
-	SKU           string `json:"sku,omitempty"`
-	SpotInstances bool   `json:"spotInstances,omitempty"`
-	DiskType      string `json:"nodeDiskType,omitempty"`
-	DiskSize      int64  `json:"nodeDiskSize,omitempty"`
+	SKU            string `json:"sku,omitempty"`
+	SpotInstances  bool   `json:"spotInstances,omitempty"`
+	DiskType       string `json:"nodeDiskType,omitempty"`
+	DiskSize       int64  `json:"nodeDiskSize,omitempty"`
+	ExternalIPType IPType `json:"externalIPType,omitempty"`
 }
 
 // Deprecated
@@ -149,3 +196,23 @@ const (
 	NodeReady   NodePhase = "Ready"
 	NodeDeleted NodePhase = "Deleted"
 )
+
+type SimpleNode struct {
+	metav1.TypeMeta `json:",inline,omitempty"`
+	Name            string
+	ExternalID      string
+	PublicIP        string
+	PrivateIP       string
+	DiskId          string `json:"diskID,omitempty"`
+}
+
+var _ runtime.Object = &SimpleNode{}
+
+func (n *SimpleNode) DeepCopyObject() runtime.Object {
+	if n == nil {
+		return n
+	}
+	out := new(SimpleNode)
+	mergo.MergeWithOverwrite(out, n)
+	return out
+}

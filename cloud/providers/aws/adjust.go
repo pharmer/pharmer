@@ -12,12 +12,12 @@ import (
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 )
 
-type NodeGroupManager struct {
+type AWSNodeGroupManager struct {
 	cm       *ClusterManager
 	instance Instance
 }
 
-func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action, err error) {
+func (igm *AWSNodeGroupManager) AdjustNodeGroup(dryRun bool) (acts []api.Action, err error) {
 	instanceGroupName := igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku)
 	adjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
 	message := ""
@@ -58,7 +58,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action,
 			Resource: "Auto scaler",
 			Message:  fmt.Sprintf("Autoscaler %v will be created", igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku)),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if err = igm.startNodes(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
 				igm.cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithMessage("failed to start node").WithContext(igm.cm.ctx).Err()
@@ -72,7 +72,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action,
 			Resource: "Autoscaler",
 			Message:  fmt.Sprintf("Autoscaler %v  will be delete", autoscaler),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			err = igm.cm.deleteAutoScalingGroup(igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku))
 			if err != nil {
 				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -85,7 +85,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action,
 			Resource: "Launch configuration",
 			Message:  fmt.Sprintf("Launch configuration %v  will be delete", launchConfig),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			err = igm.cm.deleteLaunchConfiguration(launchConfig)
 			if err != nil {
 				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -102,7 +102,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action,
 	return
 }
 
-func (igm *NodeGroupManager) checkNodeGroup(instanceGroup string) (bool, error) {
+func (igm *AWSNodeGroupManager) checkNodeGroup(instanceGroup string) (bool, error) {
 	groups, err := igm.describeGroupInfo(instanceGroup)
 	if err != nil {
 		return false, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -113,7 +113,7 @@ func (igm *NodeGroupManager) checkNodeGroup(instanceGroup string) (bool, error) 
 	return false, nil
 }
 
-func (igm *NodeGroupManager) startNodes(sku string, count int64) error {
+func (igm *AWSNodeGroupManager) startNodes(sku string, count int64) error {
 	launchConfig := igm.cm.namer.LaunchConfigName(sku)
 	scalingGroup := igm.cm.namer.AutoScalingGroupName(sku)
 
@@ -125,7 +125,7 @@ func (igm *NodeGroupManager) startNodes(sku string, count int64) error {
 	return nil
 }
 
-func (igm *NodeGroupManager) createLaunchConfiguration(name, sku string) error {
+func (igm *AWSNodeGroupManager) createLaunchConfiguration(name, sku string) error {
 	//script := igm.cm.RenderStartupScript(igm.cm.ctx.NewScriptOptions(), sku, system.RoleKubernetesPool)
 	script, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode, igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku))
 	if err != nil {
@@ -186,7 +186,7 @@ func (igm *NodeGroupManager) createLaunchConfiguration(name, sku string) error {
 	return nil
 }
 
-func (igm *NodeGroupManager) deleteOnlyNodeGroup(instanceGroup string) error {
+func (igm *AWSNodeGroupManager) deleteOnlyNodeGroup(instanceGroup string) error {
 	_, err := igm.describeGroupInfo(instanceGroup)
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -195,7 +195,7 @@ func (igm *NodeGroupManager) deleteOnlyNodeGroup(instanceGroup string) error {
 	return nil
 }
 
-func (igm *NodeGroupManager) updateNodeGroup(instanceGroup string, size int64) error {
+func (igm *AWSNodeGroupManager) updateNodeGroup(instanceGroup string, size int64) error {
 	group, err := igm.describeGroupInfo(instanceGroup)
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -233,7 +233,7 @@ func (igm *NodeGroupManager) updateNodeGroup(instanceGroup string, size int64) e
 	return nil
 }
 
-func (igm *NodeGroupManager) listInstances(instanceGroup string) ([]*api.Node, error) {
+func (igm *AWSNodeGroupManager) listInstances(instanceGroup string) ([]*api.Node, error) {
 	Logger(igm.cm.ctx).Infof("Retrieving instances in node group %v", instanceGroup)
 	instances := make([]*api.Node, 0)
 	group, err := igm.describeGroupInfo(instanceGroup)
@@ -252,7 +252,7 @@ func (igm *NodeGroupManager) listInstances(instanceGroup string) ([]*api.Node, e
 	return instances, nil
 }
 
-func (igm *NodeGroupManager) describeGroupInfo(instanceGroup string) (*autoscaling.DescribeAutoScalingGroupsOutput, error) {
+func (igm *AWSNodeGroupManager) describeGroupInfo(instanceGroup string) (*autoscaling.DescribeAutoScalingGroupsOutput, error) {
 	groups := make([]*string, 0)
 	groups = append(groups, StringP(instanceGroup))
 	r1, err := igm.cm.conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{

@@ -23,7 +23,8 @@ type TemplateData struct {
 	KubeadmToken        string
 	CAKey               string
 	FrontProxyKey       string
-	APIServerHost       string
+	APIServerAddress    string
+	APIBindPort         int32
 	ExtraDomains        string
 	NetworkProvider     string
 	MasterConfiguration string
@@ -39,7 +40,7 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 		KubeadmToken:      cluster.Spec.Token,
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		APIServerHost:     cluster.APIServerHost(),
+		APIServerAddress:  cluster.APIServerAddress(),
 		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
 		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
 		NodeGroupName:     nodeGroup,
@@ -67,7 +68,6 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 		// AuthorizationModes:
 		Token:                      cluster.Spec.Token,
 		TokenTTL:                   cluster.Spec.TokenTTL,
-		SelfHosted:                 cluster.Spec.SelfHosted,
 		APIServerExtraArgs:         map[string]string{},
 		ControllerManagerExtraArgs: map[string]string{},
 		SchedulerExtraArgs:         map[string]string{},
@@ -173,7 +173,7 @@ curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64
 	&& mv kubeadm /usr/bin/
 {{ end }}
 
-curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.3/pre-k-linux-amd64 \
+curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.5/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
@@ -200,7 +200,7 @@ EOF
 
 pre-k merge master-config \
 	--config=/etc/kubernetes/kubeadm/config.yaml \
-	--apiserver-bind-port=6443 \
+	--apiserver-bind-port={{ .APIBindPort }} \
 	--token={{ .KubeadmToken }} \
 	--apiserver-advertise-address=$(pre-k get public-ips --all=false) \
 	--apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
@@ -269,13 +269,13 @@ systemctl start docker
 
 cat > /etc/systemd/system/kubelet.service.d/20-label-taints.conf <<EOF
 [Service]
-Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }}"
+Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }},node-role.kubernetes.io/node="
 EOF
 systemctl daemon-reload
 systemctl restart kubelet
 
 kubeadm reset
-kubeadm join --token={{ .KubeadmToken }} {{ .APIServerHost }}:6443
+kubeadm join --token={{ .KubeadmToken }} {{ .APIServerAddress }}
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("prepare-host").Parse(``))
@@ -305,10 +305,6 @@ kubectl apply \
 	_ = template.Must(StartupScriptTemplate.New("flannel").Parse(`
 kubectl apply \
   -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml \
-  --kubeconfig /etc/kubernetes/admin.conf
-
-kubectl apply \
-  -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel-rbac.yml \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 )

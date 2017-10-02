@@ -11,13 +11,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type NodeGroupManager struct {
+type AzureNodeGroupManager struct {
 	cm       *ClusterManager
 	instance Instance
 	im       *instanceManager
 }
 
-func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action, err error) {
+func (igm *AzureNodeGroupManager) AdjustNodeGroup(dryRun bool) (acts []api.Action, err error) {
 	acts = make([]api.Action, 0)
 	instanceGroupName := igm.cm.namer.GetNodeGroupName(igm.instance.Type.Sku) //igm.cm.ctx.Name + "-" + strings.Replace(igm.instance.Type.Sku, "_", "-", -1) + "-node"
 	adjust, _ := Mutator(igm.cm.ctx, igm.cm.cluster, igm.instance, instanceGroupName)
@@ -40,7 +40,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action,
 		Resource: "Node",
 		Message:  message,
 	})
-	if adjust == 0 || rt == api.DryRun {
+	if adjust == 0 || dryRun {
 		return
 	}
 
@@ -65,7 +65,7 @@ func (igm *NodeGroupManager) AdjustNodeGroup(rt api.RunType) (acts []api.Action,
 	return
 }
 
-func (igm *NodeGroupManager) updateNodeGroup(sku string, count int64) error {
+func (igm *AzureNodeGroupManager) updateNodeGroup(sku string, count int64) error {
 	found, instances, err := igm.im.GetNodeGroup(igm.cm.namer.GetNodeGroupName(sku))
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -119,14 +119,14 @@ func (igm *NodeGroupManager) updateNodeGroup(sku string, count int64) error {
 	return nil
 }
 
-func (igm *NodeGroupManager) listInstances(sku string) ([]*api.Node, error) {
+func (igm *AzureNodeGroupManager) listInstances(sku string) ([]*api.Node, error) {
 	instances := make([]*api.Node, 0)
-	kc, err := NewAdminClient(igm.cm.ctx, igm.cm.cluster)
+	kc, err := igm.cm.GetAdminClient()
+	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		return instances, errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 
 	}
-	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{})
 	for _, n := range nodes.Items {
 		nl := api.FromMap(n.GetLabels())
 		if nl.GetString(api.NodeLabelKey_SKU) == sku && nl.GetString(api.NodeLabelKey_Role) == "node" {
@@ -154,7 +154,7 @@ func (igm *NodeGroupManager) listInstances(sku string) ([]*api.Node, error) {
 	return instances, nil
 
 }
-func (igm *NodeGroupManager) createNodeGroup(count int64) error {
+func (igm *AzureNodeGroupManager) createNodeGroup(count int64) error {
 	as, err := igm.im.getAvailablitySet()
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -186,7 +186,7 @@ func (igm *NodeGroupManager) createNodeGroup(count int64) error {
 	return nil
 }
 
-func (igm *NodeGroupManager) deleteNodeGroup(sku string) error {
+func (igm *AzureNodeGroupManager) deleteNodeGroup(sku string) error {
 	found, instances, err := igm.im.GetNodeGroup(igm.cm.namer.GetNodeGroupName(sku))
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
@@ -211,7 +211,7 @@ func (igm *NodeGroupManager) deleteNodeGroup(sku string) error {
 	return nil
 }
 
-func (igm *NodeGroupManager) StartNode(as compute.AvailabilitySet, sg network.SecurityGroup, sn network.Subnet) (*api.Node, error) {
+func (igm *AzureNodeGroupManager) StartNode(as compute.AvailabilitySet, sg network.SecurityGroup, sn network.Subnet) (*api.Node, error) {
 	ki := &api.Node{}
 
 	nodeName := igm.cm.namer.GenNodeName(igm.instance.Type.Sku)

@@ -43,7 +43,7 @@ func NewCmdCreateCluster() *cobra.Command {
 			if err != nil {
 				term.Fatalln(err)
 			}
-			ctx := cloud.NewContext(context.Background(), cfg)
+			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 			cluster, err = cloud.Create(ctx, cluster)
 			if err != nil {
 				term.Fatalln(err)

@@ -12,12 +12,12 @@ import (
 	. "github.com/appscode/pharmer/cloud"
 )
 
-func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
+func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
 	var err error
 
 	cm.cluster = in
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
-		return err
+		return nil, err
 	}
 
 	defer func(releaseReservedIp bool) {
@@ -40,13 +40,13 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	err = cm.importPublicKey()
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	signer, err := _ssh.MakePrivateKeySignerFromBytes(SSHKey(cm.ctx).PrivateKey)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	// -------------------------------------------------------------------ASSETS
@@ -56,17 +56,17 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	masterTx, err := im.createInstance(api.RoleMaster, cm.cluster.Spec.MasterSKU)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterTx, err = cm.conn.waitForInstance(masterTx.ID, "ready")
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance, err := im.newKubeInstance(*masterTx.ServerIP)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	masterInstance.Spec.Role = api.RoleMaster
 	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
@@ -77,12 +77,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// needed to get master_internal_ip
 	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	// cluster.Spec.UploadStartupConfig(cluster.Spec.ctx)
 
@@ -96,23 +96,23 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	err = im.storeConfigFile(*masterTx.ServerIP, api.RoleMaster, signer)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	err = im.storeStartupScript(*masterTx.ServerIP, cm.cluster.Spec.MasterSKU, api.RoleMaster, signer)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	err = im.executeStartupScript(*masterTx.ServerIP, signer)
 	if err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
 	//cluster.Spec.Logger(ctx).Info(">>>>>>>>>>>>>>>>>>>>>>> Rebooting master instance")
 	//if err = cluster.Spec.reboot(masterDroplet.ID); err != nil {
 	//	cluster.Spec.ctx.StatusCause = err.Error()
-	//	return errors.FromErr(err).WithContext(cluster.Spec.ctx).Err()
+	//	return nil, errors.FromErr(err).WithContext(cluster.Spec.ctx).Err()
 	//}
 	//cluster.Spec.Logger(ctx).Info(">>>>>>>>>>>>>>>>>>>>>>> Rebooted master instance")
 
@@ -122,13 +122,13 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//		tx, err := im.createInstance(api.RoleKubernetesPool, ng.Sku)
 	//		if err != nil {
 	//			cm.cluster.Status.Reason = err.Error()
-	//			return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	//		}
 	//
 	//		tx, err = cm.conn.waitForInstance(tx.ID, "ready")
 	//		if err != nil {
 	//			cm.cluster.Status.Reason = err.Error()
-	//			return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	//		}
 	//		cm.conn.client.Server.UpdateServer(&hc.ServerUpdateRequest{
 	//			ServerIP:   *tx.ServerIP,
@@ -138,24 +138,24 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	//		err = im.storeConfigFile(*tx.ServerIP, api.RoleKubernetesPool, signer)
 	//		if err != nil {
 	//			cm.cluster.Status.Reason = err.Error()
-	//			return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	//		}
 	//		err = im.storeStartupScript(*tx.ServerIP, ng.Sku, api.RoleKubernetesPool, signer)
 	//		if err != nil {
 	//			cm.cluster.Status.Reason = err.Error()
-	//			return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	//		}
 	//		err = im.executeStartupScript(*tx.ServerIP, signer)
 	//		if err != nil {
 	//			cm.cluster.Status.Reason = err.Error()
-	//			return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	//		}
 	//
 	//		// record nodes
 	//		node, err := im.newKubeInstance(*tx.ServerIP)
 	//		if err != nil {
 	//			cm.cluster.Status.Reason = err.Error()
-	//			return errors.FromErr(err).WithContext(cm.ctx).Err()
+	//			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	//		}
 	//		node.Spec.Role = api.RoleKubernetesPool
 	//		Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
@@ -167,16 +167,17 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
 	// Wait for master A record to propagate
 	if err := EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 
+	kc, err := cm.GetAdminClient()
 	// wait for nodes to start
-	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	if err := WaitForReadyMaster(cm.ctx, kc); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	cm.cluster.Status.Phase = api.ClusterReady
-	return nil
+	return nil, nil
 }
 
 func (cm *ClusterManager) importPublicKey() error {

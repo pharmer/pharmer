@@ -102,7 +102,8 @@ func (cm *ClusterManager) masterUpdate(host, instanceName, version string) error
 	err := cmd.Run()
 	output := DefaultWriter.Output()
 	fmt.Println(output, err)
-	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	kc, err := cm.GetAdminClient()
+	if err := WaitForReadyMaster(cm.ctx, kc); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
@@ -215,7 +216,8 @@ func (cm *ClusterManager) nodeUpdate(instanceName string) error {
 	err := cmd.Run()
 	output := DefaultWriter.Output()
 	fmt.Println(output, err)
-	if err := WaitForReadyMaster(cm.ctx, cm.cluster); err != nil {
+	kc, err := cm.GetAdminClient()
+	if err := WaitForReadyMaster(cm.ctx, kc); err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
 	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
@@ -278,10 +280,7 @@ func (cm *ClusterManager) updateNodes(sku string) error {
 }
 
 func (cm *ClusterManager) getExistingContextVersion(sku string) (error, int64) {
-	kc, err := NewAdminClient(cm.ctx, cm.cluster)
-	if err != nil {
-		log.Fatal(err)
-	}
+	kc, err := cm.GetAdminClient()
 	//re, _ := labels.NewRequirement(api.NodeLabelKey_SKU, selection.Equals, []string{sku})
 	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{
 	//LabelSelector: labels.Selector.Add(*re).Matches(labels.Labels(api.NodeLabelKey_SKU)),

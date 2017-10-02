@@ -32,6 +32,43 @@ func EnsureARecord(ctx context.Context, cluster *api.Cluster, master *api.Node) 
 	return nil
 }
 
+func EnsureARecord2(ctx context.Context, cluster *api.Cluster, publicIP, privateIP string) error {
+	clusterDomain := Extra(ctx).Domain(cluster.Name)
+	// TODO: FixIT!
+	//for _, ip := range system.Config.Compass.IPs {
+	//	if err := DNSProvider(ctx).EnsureARecord(clusterDomain, ip); err != nil {
+	//		return err
+	//	}
+	//}
+	Logger(ctx).Infof("Cluster apps A record %v added", clusterDomain)
+	externalDomain := Extra(ctx).ExternalDomain(cluster.Name)
+	if externalDomain != "" {
+		if err := DNSProvider(ctx).EnsureARecord(externalDomain, publicIP); err != nil {
+			return err
+		} else {
+			cluster.Status.APIAddress = append(cluster.Status.APIAddress, api.Address{
+				Type: api.AddressTypeExternalDNS,
+				Host: externalDomain,
+			})
+		}
+		Logger(ctx).Infof("External A record %v added", externalDomain)
+	}
+
+	internalDomain := Extra(ctx).InternalDomain(cluster.Name)
+	if internalDomain != "" {
+		if err := DNSProvider(ctx).EnsureARecord(internalDomain, privateIP); err != nil {
+			return err
+		} else {
+			cluster.Status.APIAddress = append(cluster.Status.APIAddress, api.Address{
+				Type: api.AddressTypeInternalDNS,
+				Host: internalDomain,
+			})
+		}
+		Logger(ctx).Infof("Internal A record %v added", internalDomain)
+	}
+	return nil
+}
+
 func DeleteARecords(ctx context.Context, cluster *api.Cluster) error {
 	clusterDomain := Extra(ctx).Domain(cluster.Name)
 	if err := DNSProvider(ctx).DeleteARecords(clusterDomain); err == nil {

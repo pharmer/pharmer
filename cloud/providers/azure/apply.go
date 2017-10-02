@@ -1,7 +1,6 @@
 package azure
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -17,20 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) error {
-	var err error
-	if dryRun {
-		action, err := cm.apply(in, api.DryRun)
-		fmt.Println(err)
-		jm, err := json.Marshal(action)
-		fmt.Println(string(jm), err)
-	} else {
-		_, err = cm.apply(in, api.StdRun)
-	}
-	return err
-}
-
-func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Action, err error) {
+func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) (acts []api.Action, err error) {
 	var (
 		clusterDelete = false
 	)
@@ -84,7 +70,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Resource group",
 			Message:  "Resource group will be created",
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if _, err = cm.ensureResourceGroup(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -115,7 +101,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Availablity set",
 			Message:  fmt.Sprintf("Availablity set %v created", cm.namer.AvailablitySetName()),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if as, err = cm.ensureAvailablitySet(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -138,7 +124,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Storage account",
 			Message:  fmt.Sprintf("Storage account %v will be created", cm.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if sa, err = cm.createStorageAccount(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -160,7 +146,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Virtual network",
 			Message:  fmt.Sprintf("Virtual network %v will be created", cm.namer.VirtualNetworkName()),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if vn, err = cm.ensureVirtualNetwork(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -182,7 +168,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Network security group",
 			Message:  fmt.Sprintf("Network security group %v will be created", cm.namer.NetworkSecurityGroupName()),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if sg, err = cm.createNetworkSecurityGroup(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -204,7 +190,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Subnet id",
 			Message:  fmt.Sprintf("Subnet %v will be created", cm.namer.SubnetName()),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if sn, err = cm.createSubnetID(&vn, &sg); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -247,7 +233,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Master public ip address",
 			Message:  fmt.Sprintf("Master public ip will be created"),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if masterPIP, err = im.createPublicIP(cm.namer.PublicIPName(cm.namer.MasterName()), network.Static); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -291,7 +277,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Master network interface",
 			Message:  fmt.Sprintf("Masater network interface %v will be created", cm.namer.NetworkInterfaceName(cm.cluster.Spec.KubernetesMasterName)),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if masterNIC, err = im.createNetworkInterface(cm.namer.NetworkInterfaceName(cm.cluster.Spec.KubernetesMasterName), sg, sn, network.Static, cm.cluster.Spec.MasterInternalIP, masterPIP); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -312,7 +298,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Network security rule",
 			Message:  fmt.Sprintf("All network security will be created"),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			if err = cm.createNetworkSecurityRule(&sg); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				errors.FromErr(err).WithContext(cm.ctx).Err()
@@ -334,7 +320,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 			Resource: "Master virtual machine",
 			Message:  fmt.Sprintf("Virtual machine %v will be created", cm.namer.MasterName()),
 		})
-		if rt != api.DryRun {
+		if !dryRun {
 			var masterScript string
 			masterScript, err = RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, "")
 			if err != nil {
@@ -367,7 +353,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				errors.FromErr(err).WithContext(cm.ctx).Err()
 				return
 			}
-			masterNG.Status.Nodes = int32(1)
+			masterNG.Status.Nodes = int64(1)
 			Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
 			Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
 			// needed to get master_internal_ip
@@ -404,7 +390,7 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 		if node.IsMaster() {
 			continue
 		}
-		igm := &NodeGroupManager{
+		igm := &AzureNodeGroupManager{
 			cm: cm,
 			instance: Instance{
 				Type: InstanceType{
@@ -425,29 +411,29 @@ func (cm *ClusterManager) apply(in *api.Cluster, rt api.RunType) (acts []api.Act
 				Resource: "Node Group",
 				Message:  fmt.Sprintf("Node group %v  will be deleted", instanceGroupName),
 			})
-			if rt != api.DryRun {
+			if !dryRun {
 				err = igm.deleteNodeGroup(igm.instance.Type.Sku)
 				Store(cm.ctx).NodeGroups(cm.cluster.Name).Delete(node.Name)
 			}
 		} else {
-			act, _ := igm.AdjustNodeGroup(rt)
+			act, _ := igm.AdjustNodeGroup(dryRun)
 			acts = append(acts, act...)
-			if rt != api.DryRun {
-				node.Status.Nodes = (int32)(node.Spec.Nodes)
+			if !dryRun {
+				node.Status.Nodes = (int64)(node.Spec.Nodes)
 				Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(node)
 			}
 		}
 
 	}
 
-	if clusterDelete && rt != api.DryRun {
+	if clusterDelete && !dryRun {
 		cm.deleteResourceGroup(cm.namer.ResourceGroupName())
 		if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
 			return
 		}
 	}
 
-	if rt != api.DryRun {
+	if !dryRun {
 		time.Sleep(1 * time.Minute)
 
 		for _, ng := range nodeGroups {
@@ -696,7 +682,7 @@ func (cm *ClusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
 			Access: network.SecurityRuleAccessAllow,
 			DestinationAddressPrefix: StringP("*"),
-			DestinationPortRange:     StringP("6443"),
+			DestinationPortRange:     StringP(fmt.Sprintf("%d", cm.cluster.Spec.API.BindPort)),
 			Direction:                network.SecurityRuleDirectionInbound,
 			Priority:                 Int32P(120),
 			Protocol:                 network.SecurityRuleProtocolTCP,
