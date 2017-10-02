@@ -10,6 +10,7 @@ import (
 	"github.com/appscode/pharmer/phid"
 	semver "github.com/hashicorp/go-version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
 func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error) {
@@ -68,6 +69,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	// Init spec
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
 	cluster.Spec.KubernetesMasterName = n.MasterName()
+	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 
 	// Init status
 	cluster.Status = api.ClusterStatus{

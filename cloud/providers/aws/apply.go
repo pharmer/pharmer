@@ -1076,9 +1076,11 @@ func (cm *ClusterManager) setupSecurityGroups() error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
-	err = cm.autohrizeIngressByPort(cm.cluster.Status.Cloud.AWS.MasterSGId, 6443)
-	if err != nil {
-		return errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.cluster.Spec.API.BindPort != 443 {
+		err = cm.autohrizeIngressByPort(cm.cluster.Status.Cloud.AWS.MasterSGId, int64(cm.cluster.Spec.API.BindPort))
+		if err != nil {
+			return errors.FromErr(err).WithContext(cm.ctx).Err()
+		}
 	}
 	return nil
 }

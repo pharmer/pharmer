@@ -11,6 +11,7 @@ import (
 	"github.com/appscode/pharmer/phid"
 	semver "github.com/hashicorp/go-version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
 func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error) {
@@ -70,6 +71,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone[0:strings.LastIndex(cluster.Spec.Cloud.Zone, "-")]
 	cluster.Spec.Token = GetKubeadmToken()
 	cluster.Spec.KubernetesMasterName = n.MasterName()
+	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	// REGISTER_MASTER_KUBELET = false // always false, keep master lightweight
 	// PREEMPTIBLE_NODE = false // Removed Support
 

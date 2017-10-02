@@ -154,13 +154,13 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			if masterDroplet.PublicIP != "" {
 				cm.cluster.Status.APIAddress = append(cm.cluster.Status.APIAddress, api.Address{
 					Type: api.AddressTypeExternalIP,
-					URL:  fmt.Sprintf("https://%s:6443", masterDroplet.PublicIP),
+					Host: masterDroplet.PublicIP,
 				})
 			}
 			if masterDroplet.PrivateIP != "" {
 				cm.cluster.Status.APIAddress = append(cm.cluster.Status.APIAddress, api.Address{
 					Type: api.AddressTypeInternalIP,
-					URL:  fmt.Sprintf("https://%s:6443", masterDroplet.PrivateIP),
+					Host: masterDroplet.PrivateIP,
 				})
 			}
 
@@ -210,7 +210,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				}
 				cm.cluster.Status.APIAddress = append(cm.cluster.Status.APIAddress, api.Address{
 					Type: api.AddressTypeReservedIP,
-					URL:  fmt.Sprintf("https://%s:6443", masterNIP.IP),
+					Host: masterNIP.IP,
 				})
 			}
 

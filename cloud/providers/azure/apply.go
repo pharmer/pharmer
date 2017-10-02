@@ -682,7 +682,7 @@ func (cm *ClusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) e
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
 			Access: network.SecurityRuleAccessAllow,
 			DestinationAddressPrefix: StringP("*"),
-			DestinationPortRange:     StringP("6443"),
+			DestinationPortRange:     StringP(fmt.Sprintf("%d", cm.cluster.Spec.API.BindPort)),
 			Direction:                network.SecurityRuleDirectionInbound,
 			Priority:                 Int32P(120),
 			Protocol:                 network.SecurityRuleProtocolTCP,

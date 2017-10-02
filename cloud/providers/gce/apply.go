@@ -609,7 +609,7 @@ func (cm *ClusterManager) ensureFirewallRules() error {
 				},
 				{
 					IPProtocol: "tcp",
-					Ports:      []string{"6443"},
+					Ports:      []string{fmt.Sprintf("%d", cm.cluster.Spec.API.BindPort)},
 				},
 			},
 			TargetTags: []string{cm.cluster.Name + "-master"},

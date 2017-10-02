@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -307,7 +308,7 @@ const (
 
 type Address struct {
 	Type AddressType `json:"type,omitempty"`
-	URL  string      `json:"url,omitempty"`
+	Host string      `json:"host,omitempty"`
 }
 
 type ClusterStatus struct {
@@ -333,7 +334,7 @@ func (c *Cluster) KubernetesClusterIP() string {
 func (c Cluster) APIServerURL() string {
 	m := map[AddressType]string{}
 	for _, addr := range c.Status.APIAddress {
-		m[addr.Type] = addr.URL
+		m[addr.Type] = fmt.Sprintf("https://%s:%d", addr.Host, c.Spec.API.BindPort)
 	}
 	if u, found := m[AddressTypeReservedIP]; found {
 		return u
@@ -347,12 +348,21 @@ func (c Cluster) APIServerURL() string {
 	return ""
 }
 
-func (c *Cluster) APIServerHost() string {
-	host := c.Spec.MasterReservedIP
-	if host == "" {
-		host = c.Spec.MasterExternalIP
+func (c *Cluster) APIServerAddress() string {
+	m := map[AddressType]string{}
+	for _, addr := range c.Status.APIAddress {
+		m[addr.Type] = fmt.Sprintf("%s:%d", addr.Host, c.Spec.API.BindPort)
 	}
-	return host
+	if u, found := m[AddressTypeReservedIP]; found {
+		return u
+	}
+	if u, found := m[AddressTypeExternalDNS]; found {
+		return u
+	}
+	if u, found := m[AddressTypeExternalIP]; found {
+		return u
+	}
+	return ""
 }
 
 func (c *Cluster) DeepCopyObject() runtime.Object {
