@@ -50,7 +50,7 @@ type NodeGroupStatus struct {
 	AvailableNodes int64 `json:"availableNodes,omitempty" protobuf:"varint,5,opt,name=availableNodes"`
 
 	// ObservedGeneration reflects the generation of the most recently observed node group.
-	// +optional
+	// +optiopharmer-linux-amd64nal
 	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,3,opt,name=observedGeneration"`
 
 	// Represents the latest available observations of a node group's current state.
@@ -58,8 +58,6 @@ type NodeGroupStatus struct {
 	// +patchMergeKey=type
 	// +patchStrategy=merge
 	Conditions []NodeGroupCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,6,rep,name=conditions"`
-
-	ExternalIPs []NodeIP
 }
 
 type NodeGroupConditionType string
@@ -105,12 +103,6 @@ type NodeGroupCondition struct {
 	Reason string `json:"reason,omitempty" protobuf:"bytes,4,opt,name=reason"`
 	// A human readable message indicating details about the transition.
 	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
-}
-
-type NodeIP struct {
-	Name   string
-	IP     string
-	IPName string
 }
 
 func (ng *NodeGroup) DeepCopyObject() runtime.Object {
