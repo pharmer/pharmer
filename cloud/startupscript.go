@@ -180,6 +180,13 @@ curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.5/pre-k-linux
 systemctl enable docker
 systemctl start docker
 
+cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
+[Service]
+Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }}"
+EOF
+systemctl daemon-reload
+systemctl restart kubelet
+
 kubeadm reset
 
 {{ template "setup-certs" . }}
@@ -267,7 +274,7 @@ curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64
 systemctl enable docker
 systemctl start docker
 
-cat > /etc/systemd/system/kubelet.service.d/20-label-taints.conf <<EOF
+cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
 Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }},node-role.kubernetes.io/node="
 EOF
