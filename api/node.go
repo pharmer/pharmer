@@ -31,19 +31,22 @@ type NodeGroupSpec struct {
 
 // NodeGroupStatus is the most recently observed status of the NodeGroup.
 type NodeGroupStatus struct {
-	// Nodes is the most recently oberved number of nodes.
-	Nodes int64 `json:"nodes" protobuf:"varint,1,opt,name=nodes"`
-
 	// The number of pods that have labels matching the labels of the pod template of the node group.
 	// +optional
 	FullyLabeledNodes int64 `json:"fullyLabeledNodes,omitempty" protobuf:"varint,2,opt,name=fullyLabeledNodes"`
 
+	// Nodes is the most recently oberved number of nodes.
+	// Deprecated
+	Nodes int64 `json:"nodes" protobuf:"varint,1,opt,name=nodes"`
+
 	// The number of ready nodes for this node group.
 	// +optional
+	// Deprecated
 	ReadyNodes int64 `json:"readyNodes,omitempty" protobuf:"varint,4,opt,name=readyNodes"`
 
 	// The number of available nodes (ready for at least minReadySeconds) for this node group.
 	// +optional
+	// Deprecated
 	AvailableNodes int64 `json:"availableNodes,omitempty" protobuf:"varint,5,opt,name=availableNodes"`
 
 	// ObservedGeneration reflects the generation of the most recently observed node group.

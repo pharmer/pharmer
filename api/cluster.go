@@ -288,8 +288,10 @@ type ClusterPhase string
 
 // These are the valid statuses of Cluster.
 const (
-	ClusterPending  ClusterPhase = "Pending"
-	ClusterFailing  ClusterPhase = "Failing"
+	ClusterPending ClusterPhase = "Pending"
+	// Deprecated
+	ClusterFailing ClusterPhase = "Failing"
+	// Deprecated
 	ClusterFailed   ClusterPhase = "Failed"
 	ClusterReady    ClusterPhase = "Ready"
 	ClusterDeleting ClusterPhase = "Deleting"

@@ -75,6 +75,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	return acts, nil
 }
 
+// Creates network, and creates a ready master
 func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
 	var found bool
 	found, err = cm.conn.getPublicKey()
@@ -239,6 +240,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 			// needed to get master_internal_ip
+			cm.cluster.Status.Phase = api.ClusterReady
 			if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 				return
 			}
@@ -254,6 +256,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	return
 }
 
+// Scales up/down regular nodes
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
 	var nodeGroups []*api.NodeGroup
 	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
@@ -278,24 +281,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 			return
 		}
 		acts = append(acts, a2...)
-		// TODO: move to Adjust---------------
-		if !dryRun {
-			ng.Status.Nodes = ng.Spec.Nodes
-			Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(ng)
-		}
 	}
-
-	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		// deleting cluster, so no need to wait
-		return
-	}
-
-	cm.cluster.Status.Phase = api.ClusterReady
-	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-	if err != nil {
-		return
-	}
-
 	return
 }
 
@@ -393,6 +379,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		}
 	}
 
+	// Failed
 	cm.cluster.Status.Phase = api.ClusterDeleted
 	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
