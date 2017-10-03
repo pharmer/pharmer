@@ -75,7 +75,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	return acts, nil
 }
 
-// Creates network, and creates a ready master
+// Creates network, and creates ready master(s)
 func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
 	var found bool
 	found, err = cm.conn.getPublicKey()
@@ -256,7 +256,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	return
 }
 
-// Scales up/down regular nodes
+// Scales up/down regular node groups
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
 	var nodeGroups []*api.NodeGroup
 	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
@@ -274,7 +274,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		if ng.IsMaster() {
 			continue
 		}
-		igm := NewNodeGroupManager(ng, cm.conn, kc)
+		igm := NewNodeGroupManager(cm.ctx, ng, cm.conn, kc)
 		var a2 []api.Action
 		a2, err = igm.Apply(dryRun)
 		if err != nil {
@@ -285,12 +285,11 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 	return
 }
 
+// Deletes master(s) and releases other cloud resources
 func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error) {
 	var found bool
 
-	if cm.cluster.Status.Phase == api.ClusterPending {
-		cm.cluster.Status.Phase = api.ClusterFailing
-	} else if cm.cluster.Status.Phase == api.ClusterReady {
+	if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
 	}
 	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)

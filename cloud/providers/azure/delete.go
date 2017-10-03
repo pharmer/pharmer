@@ -11,9 +11,7 @@ import (
 )
 
 func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
-	if cm.cluster.Status.Phase == api.ClusterPending {
-		cm.cluster.Status.Phase = api.ClusterFailing
-	} else if cm.cluster.Status.Phase == api.ClusterReady {
+	if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
 	}
 	// Store(cm.ctx).UpdateKubernetesStatus(cm.ctx.PHID, cm.ctx.Status)

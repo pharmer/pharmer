@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/crypto/ssh"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
@@ -21,20 +20,20 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 		return nil, err
 	}
 
-	defer func(releaseReservedIP bool) {
-		if cm.cluster.Status.Phase == api.ClusterPending {
-			cm.cluster.Status.Phase = api.ClusterFailing
-		}
-		Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
-		if cm.cluster.Status.Phase != api.ClusterReady {
-			Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
-			cm.Delete(&proto.ClusterDeleteRequest{
-				Name:              cm.cluster.Name,
-				ReleaseReservedIp: releaseReservedIP,
-			})
-		}
-	}(cm.cluster.Spec.MasterReservedIP == "auto")
+	//defer func(releaseReservedIP bool) {
+	//	if cm.cluster.Status.Phase == api.ClusterPending {
+	//		cm.cluster.Status.Phase = api.ClusterFailing
+	//	}
+	//	Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	//	Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
+	//	if cm.cluster.Status.Phase != api.ClusterReady {
+	//		Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
+	//		cm.Delete(&proto.ClusterDeleteRequest{
+	//			Name:              cm.cluster.Name,
+	//			ReleaseReservedIp: releaseReservedIP,
+	//		})
+	//	}
+	//}(cm.cluster.Spec.MasterReservedIP == "auto")
 
 	cm.cluster.Spec.Cloud.InstanceImage, err = cm.conn.getInstanceImage()
 	if err != nil {
