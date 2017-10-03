@@ -7,6 +7,7 @@ import (
 
 	. "github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/mergo"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
@@ -289,34 +290,24 @@ type ClusterPhase string
 // These are the valid statuses of Cluster.
 const (
 	ClusterPending  ClusterPhase = "Pending"
-	ClusterFailing  ClusterPhase = "Failing"
-	ClusterFailed   ClusterPhase = "Failed"
 	ClusterReady    ClusterPhase = "Ready"
 	ClusterDeleting ClusterPhase = "Deleting"
 	ClusterDeleted  ClusterPhase = "Deleted"
 )
 
-type AddressType string
-
-const (
-	AddressTypeReservedIP  AddressType = "ReservedIP"
-	AddressTypeInternalIP  AddressType = "InternalIP"
-	AddressTypeExternalIP  AddressType = "ExternalIP"
-	AddressTypeInternalDNS AddressType = "InternalDNS"
-	AddressTypeExternalDNS AddressType = "ExternalDNS"
-)
-
-type Address struct {
-	Type AddressType `json:"type,omitempty"`
-	Host string      `json:"host,omitempty"`
+type ClusterStatus struct {
+	Phase            ClusterPhase        `json:"phase,omitempty,omitempty"`
+	Reason           string              `json:"reason,omitempty,omitempty"`
+	SSHKeyExternalID string              `json:"sshKeyExternalID,omitempty"`
+	Cloud            CloudStatus         `json:"cloud,omitempty"`
+	APIAddresses     []apiv1.NodeAddress `json:"apiServer,omitempty"`
+	ReservedIPs      []ReservedIP        `json:"reservedIP,omitempty"`
 }
 
-type ClusterStatus struct {
-	Phase            ClusterPhase `json:"phase,omitempty,omitempty"`
-	Reason           string       `json:"reason,omitempty,omitempty"`
-	SSHKeyExternalID string       `json:"sshKeyExternalID,omitempty"`
-	Cloud            CloudStatus  `json:"cloud,omitempty"`
-	APIAddress       []Address    `json:"apiServer,omitempty"`
+type ReservedIP struct {
+	IP   string `json:"ip,omitempty"`
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
 }
 
 func (c *Cluster) clusterIP(seq int64) string {
@@ -332,34 +323,31 @@ func (c *Cluster) KubernetesClusterIP() string {
 }
 
 func (c Cluster) APIServerURL() string {
-	m := map[AddressType]string{}
-	for _, addr := range c.Status.APIAddress {
-		m[addr.Type] = fmt.Sprintf("https://%s:%d", addr.Host, c.Spec.API.BindPort)
+	m := map[apiv1.NodeAddressType]string{}
+	for _, addr := range c.Status.APIAddresses {
+		m[addr.Type] = fmt.Sprintf("https://%s:%d", addr.Address, c.Spec.API.BindPort)
 	}
-	if u, found := m[AddressTypeReservedIP]; found {
+	if u, found := m[apiv1.NodeExternalIP]; found {
 		return u
 	}
-	if u, found := m[AddressTypeExternalDNS]; found {
-		return u
-	}
-	if u, found := m[AddressTypeExternalIP]; found {
+	if u, found := m[apiv1.NodeExternalDNS]; found {
 		return u
 	}
 	return ""
 }
 
 func (c *Cluster) APIServerAddress() string {
-	m := map[AddressType]string{}
-	for _, addr := range c.Status.APIAddress {
-		m[addr.Type] = fmt.Sprintf("%s:%d", addr.Host, c.Spec.API.BindPort)
+	m := map[apiv1.NodeAddressType]string{}
+	for _, addr := range c.Status.APIAddresses {
+		m[addr.Type] = fmt.Sprintf("%s:%d", addr.Address, c.Spec.API.BindPort)
 	}
-	if u, found := m[AddressTypeReservedIP]; found {
+	if u, found := m[apiv1.NodeInternalIP]; found {
 		return u
 	}
-	if u, found := m[AddressTypeExternalDNS]; found {
+	if u, found := m[apiv1.NodeHostName]; found {
 		return u
 	}
-	if u, found := m[AddressTypeExternalIP]; found {
+	if u, found := m[apiv1.NodeInternalDNS]; found {
 		return u
 	}
 	return ""

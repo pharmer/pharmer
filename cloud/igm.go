@@ -1,6 +1,7 @@
 package cloud
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/appscode/go/crypto/rand"
@@ -13,19 +14,16 @@ import (
 )
 
 type GenericNodeGroupManager struct {
-	ng *api.NodeGroup
-	im InstanceManager
-	kc kubernetes.Interface
+	ctx context.Context
+	ng  *api.NodeGroup
+	im  InstanceManager
+	kc  kubernetes.Interface
 }
 
 var _ NodeGroupManager = &GenericNodeGroupManager{}
 
-func NewNodeGroupManager(ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface) NodeGroupManager {
-	return &GenericNodeGroupManager{
-		ng: ng,
-		im: im,
-		kc: kc,
-	}
+func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface) NodeGroupManager {
+	return &GenericNodeGroupManager{ctx: ctx, ng: ng, im: im, kc: kc}
 }
 
 func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
@@ -41,6 +39,7 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 		}
 	}
 	igm.ng.Status.FullyLabeledNodes = int64(len(nodes.Items))
+	igm.ng.Status.ObservedGeneration = igm.ng.Generation
 
 	if igm.ng.Spec.Nodes == igm.ng.Status.FullyLabeledNodes {
 		acts = append(acts, api.Action{
@@ -60,6 +59,10 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 			if err != nil {
 				return
 			}
+			igm.ng, err = Store(igm.ctx).NodeGroups(igm.ng.ClusterName).UpdateStatus(igm.ng)
+			if err != nil {
+				return
+			}
 		}
 	} else {
 		acts = append(acts, api.Action{
@@ -69,6 +72,10 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 		})
 		if !dryRun {
 			err = igm.AddNodes(igm.ng.Spec.Nodes - igm.ng.Status.FullyLabeledNodes)
+			if err != nil {
+				return
+			}
+			igm.ng, err = Store(igm.ctx).NodeGroups(igm.ng.ClusterName).UpdateStatus(igm.ng)
 			if err != nil {
 				return
 			}

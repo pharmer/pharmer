@@ -75,6 +75,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	return acts, nil
 }
 
+// Creates network, and creates ready master(s)
 func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
 	var found bool
 	found, err = cm.conn.getPublicKey()
@@ -146,72 +147,80 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Master instance %s will be created", cm.namer.MasterName()),
 		})
 		if !dryRun {
-			var masterDroplet *api.SimpleNode
-			masterDroplet, err = cm.conn.CreateInstance(cm.namer.MasterName(), masterNG)
+			var masterServer *api.SimpleNode
+			masterServer, err = cm.conn.CreateInstance(cm.namer.MasterName(), masterNG)
 			if err != nil {
 				return
 			}
-			if masterDroplet.PublicIP != "" {
-				cm.cluster.Status.APIAddress = append(cm.cluster.Status.APIAddress, api.Address{
-					Type: api.AddressTypeExternalIP,
-					Host: masterDroplet.PublicIP,
-				})
-			}
-			if masterDroplet.PrivateIP != "" {
-				cm.cluster.Status.APIAddress = append(cm.cluster.Status.APIAddress, api.Address{
-					Type: api.AddressTypeInternalIP,
-					Host: masterDroplet.PrivateIP,
+			if masterServer.PrivateIP != "" {
+				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, apiv1.NodeAddress{
+					Type:    apiv1.NodeInternalIP,
+					Address: masterServer.PrivateIP,
 				})
 			}
 
 			if masterNG.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
-				var masterNIP *api.NodeIP
-				for _, rip := range masterNG.Status.ExternalIPs {
-					if rip.Name == cm.namer.MasterName() {
-						masterNIP = &rip
-						break
-					}
-				}
-				if masterNIP == nil {
+				if len(cm.cluster.Status.ReservedIPs) == 0 {
 					acts = append(acts, api.Action{
 						Action:   api.ActionAdd,
 						Resource: "ReserveIP",
 						Message:  "ReservedIP will be created",
 					})
 					if !dryRun {
-						masterNIP = &api.NodeIP{
-							Name: cm.namer.MasterName(),
-						}
-						masterNIP.IP, err = cm.conn.createReserveIP()
+						var reservedIP string
+						reservedIP, err = cm.conn.createReserveIP()
 						if err != nil {
 							return
 						}
-						masterNG.Status.ExternalIPs = append(masterNG.Status.ExternalIPs, *masterNIP)
+						id, _ := strconv.Atoi(masterServer.ExternalID)
+						if err = cm.conn.assignReservedIP(reservedIP, id); err != nil {
+							return
+						}
+						cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, apiv1.NodeAddress{
+							Type:    apiv1.NodeExternalIP,
+							Address: reservedIP,
+						})
+						cm.cluster.Status.ReservedIPs = append(cm.cluster.Status.ReservedIPs, api.ReservedIP{
+							IP: reservedIP,
+						})
 					}
 				} else {
-					found, err = cm.conn.getReserveIP(masterNIP.IP)
+					reservedIP := cm.cluster.Status.ReservedIPs[0].IP
+					found, err = cm.conn.getReserveIP(reservedIP)
 					if err != nil {
 						return
 					}
 					if !found {
-						err = fmt.Errorf("ReservedIP %s not found", masterNIP.IP)
+						err = fmt.Errorf("ReservedIP %s not found", reservedIP)
 						return
 					} else {
 						acts = append(acts, api.Action{
 							Action:   api.ActionNOP,
 							Resource: "ReserveIP",
-							Message:  fmt.Sprintf("Reserved ip %s found", masterNIP.IP),
+							Message:  fmt.Sprintf("Reserved ip %s found", reservedIP),
+						})
+					}
+					if reservedIP != masterServer.PublicIP {
+						id, _ := strconv.Atoi(masterServer.ExternalID)
+						if err = cm.conn.assignReservedIP(reservedIP, id); err != nil {
+							return
+						}
+						cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, apiv1.NodeAddress{
+							Type:    apiv1.NodeExternalIP,
+							Address: reservedIP,
+						})
+						cm.cluster.Status.ReservedIPs = append(cm.cluster.Status.ReservedIPs, api.ReservedIP{
+							IP: reservedIP,
 						})
 					}
 				}
-				id, _ := strconv.Atoi(masterDroplet.ExternalID)
-				if err = cm.conn.assignReservedIP(masterNIP.IP, id); err != nil {
-					return
+			} else {
+				if masterServer.PublicIP != "" {
+					cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, apiv1.NodeAddress{
+						Type:    apiv1.NodeExternalIP,
+						Address: masterServer.PublicIP,
+					})
 				}
-				cm.cluster.Status.APIAddress = append(cm.cluster.Status.APIAddress, api.Address{
-					Type: api.AddressTypeReservedIP,
-					Host: masterNIP.IP,
-				})
 			}
 
 			var kc kubernetes.Interface
@@ -230,7 +239,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 
-			err = EnsureARecord2(cm.ctx, cm.cluster, masterDroplet.PublicIP, masterDroplet.PrivateIP) // works for reserved or non-reserved mode
+			err = EnsureARecord2(cm.ctx, cm.cluster, masterServer.PublicIP, masterServer.PrivateIP) // works for reserved or non-reserved mode
 			if err != nil {
 				return
 			}
@@ -239,6 +248,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 			// needed to get master_internal_ip
+			cm.cluster.Status.Phase = api.ClusterReady
 			if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 				return
 			}
@@ -254,6 +264,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	return
 }
 
+// Scales up/down regular node groups
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
 	var nodeGroups []*api.NodeGroup
 	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
@@ -271,40 +282,22 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		if ng.IsMaster() {
 			continue
 		}
-		igm := NewNodeGroupManager(ng, cm.conn, kc)
+		igm := NewNodeGroupManager(cm.ctx, ng, cm.conn, kc)
 		var a2 []api.Action
 		a2, err = igm.Apply(dryRun)
 		if err != nil {
 			return
 		}
 		acts = append(acts, a2...)
-		// TODO: move to Adjust---------------
-		if !dryRun {
-			ng.Status.Nodes = ng.Spec.Nodes
-			Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(ng)
-		}
 	}
-
-	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		// deleting cluster, so no need to wait
-		return
-	}
-
-	cm.cluster.Status.Phase = api.ClusterReady
-	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-	if err != nil {
-		return
-	}
-
 	return
 }
 
+// Deletes master(s) and releases other cloud resources
 func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error) {
 	var found bool
 
-	if cm.cluster.Status.Phase == api.ClusterPending {
-		cm.cluster.Status.Phase = api.ClusterFailing
-	} else if cm.cluster.Status.Phase == api.ClusterReady {
+	if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
 	}
 	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
@@ -340,16 +333,13 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 				return
 			}
 			if masterNG.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
-				var masterNIP *api.NodeIP
-				for _, rip := range masterNG.Status.ExternalIPs {
-					if rip.Name == cm.namer.MasterName() {
-						masterNIP = &rip
-						break
+				for _, addr := range masterInstance.Status.Addresses {
+					if addr.Type == apiv1.NodeExternalIP {
+						err = cm.conn.releaseReservedIP(addr.Address)
+						if err != nil {
+							return
+						}
 					}
-				}
-				err = cm.conn.releaseReservedIP(masterNIP.IP)
-				if err != nil {
-					return
 				}
 			}
 		}
@@ -393,6 +383,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		}
 	}
 
+	// Failed
 	cm.cluster.Status.Phase = api.ClusterDeleted
 	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
