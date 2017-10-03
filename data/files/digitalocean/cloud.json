@@ -235,37 +235,6 @@
   ],
   "kubernetesVersions": [
     {
-      "version": "v1.7.5",
-      "description": "v1.7.5",
-      "env": {
-        "dev": true
-      },
-      "defaultSpec": {
-        "podSubnet": "10.244.0.0/16",
-        "serviceSubnet": "10.0.0.0/16",
-        "allocateNodeCidrs": true,
-        "enableClusterMonitoring": "appscode",
-        "enableClusterLogging": true,
-        "enableNodeLogging": true,
-        "loggingDestination": "appscode-elasticsearch",
-        "elasticsearchLoggingReplicas": 1,
-        "dnsServerIP": "10.0.0.10",
-        "dnsDomain": "cluster.local",
-        "admissionControl": "NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota",
-        "masterSubnet": "10.246.0.0/24",
-        "networkProvider": "flannel",
-        "enableClusterAlert": "appscode",
-        "os": "debian",
-        "networkPolicyProvider": "none",
-        "enableWebhookTokenAuthn": true,
-        "enableRbacAuthz": true,
-        "enableAPIserverBasicAudit": true,
-        "enableAppscodeAttic": true,
-        "pollSleepInterval": 3,
-        "enableNodePublicIP": true
-      }
-    },
-    {
       "version": "v1.8.0",
       "description": "v1.8.0",
       "env": {
