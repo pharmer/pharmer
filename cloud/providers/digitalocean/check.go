@@ -5,8 +5,7 @@ import (
 
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
-	"golang.org/x/crypto/ssh"
-	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (cm *ClusterManager) Check(in *api.Cluster) (string, error) {
@@ -39,19 +38,13 @@ func (cm *ClusterManager) Check(in *api.Cluster) (string, error) {
 }
 
 func (cm *ClusterManager) checkClusterUpgrade() (string, error) {
-	keySigner, _ := ssh.ParsePrivateKey(SSHKey(cm.ctx).PrivateKey)
-	config := &ssh.ClientConfig{
-		User: "root",
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(keySigner),
-		},
+	kc, err := cm.GetAdminClient()
+	if err != nil {
+		return "", err
 	}
-	var externalIP string = ""
-	for _, addr := range cm.cluster.Status.APIAddresses {
-		if addr.Type == apiv1.NodeExternalIP {
-			externalIP = addr.Address
-			break
-		}
+	masterInstance, err := kc.CoreV1().Nodes().Get(cm.namer.MasterName(), metav1.GetOptions{})
+	if err != nil {
+		return "", err
 	}
-	return ExecuteCommand("kubeadm upgrade plan", fmt.Sprintf("%v:%v", externalIP, 22), config)
+	return cm.conn.ExecuteSSHCommand("kubeadm upgrade plan", masterInstance)
 }

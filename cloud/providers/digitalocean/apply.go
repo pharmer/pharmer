@@ -7,7 +7,6 @@ import (
 
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
-	"golang.org/x/crypto/ssh"
 	apiv1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -400,27 +399,22 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 }
 
 func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err error) {
-	keySigner, _ := ssh.ParsePrivateKey(SSHKey(cm.ctx).PrivateKey)
-	config := &ssh.ClientConfig{
-		User: "root",
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(keySigner),
-		},
+	var kc kubernetes.Interface
+	if kc, err = cm.GetAdminClient(); err != nil {
+		return
 	}
-	acts = append(acts, api.Action{
-		Action:   api.ActionUpdate,
-		Resource: "Cluster",
-		Message:  fmt.Sprintf("Cluster will be upgraded to %v", cm.cluster.Spec.KubernetesVersion),
-	})
+
+	upm := NewUpgradeManager(cm.ctx, cm.conn, kc, cm.cluster, cm.cluster.Spec.KubernetesVersion)
+	a, err := upm.Apply(dryRun)
+	if err != nil {
+		return
+	}
+	acts = append(acts, a...)
 	if !dryRun {
-		var externalIP string = ""
-		for _, addr := range cm.cluster.Status.APIAddresses {
-			if addr.Type == apiv1.NodeExternalIP {
-				externalIP = addr.Address
-				break
-			}
+		cm.cluster.Status.Phase = api.ClusterReady
+		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+			return
 		}
-		ExecuteCommand(fmt.Sprintf("kubeadm upgrade apply %v -y", cm.cluster.Spec.KubernetesVersion), fmt.Sprintf("%v:%v", externalIP, 22), config)
 	}
-	return acts, nil
+	return
 }

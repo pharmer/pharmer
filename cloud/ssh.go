@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func ExecuteCommand(command, addr string, config *ssh.ClientConfig) (string, error) {
+func ExecuteTCPCommand(command, addr string, config *ssh.ClientConfig) (string, error) {
 	conn, err := ssh.Dial("tcp", addr, config)
 	if err != nil {
 		return "", err
