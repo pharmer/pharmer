@@ -15,6 +15,7 @@ type Interface interface {
 	CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error)
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
+	Check(cluster *api.Cluster) (string, error)
 
 	// IsValid(cluster *api.Cluster) (bool, error)
 	// Delete(req *proto.ClusterDeleteRequest) error

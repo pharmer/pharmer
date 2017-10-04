@@ -66,8 +66,8 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		CloudProvider:     cluster.Spec.Cloud.CloudProvider,
 		// AuthorizationModes:
-		Token:                      cluster.Spec.Token,
-		TokenTTL:                   cluster.Spec.TokenTTL,
+		Token: cluster.Spec.Token,
+		//	TokenTTL:                   cluster.Spec.TokenTTL,
 		APIServerExtraArgs:         map[string]string{},
 		ControllerManagerExtraArgs: map[string]string{},
 		SchedulerExtraArgs:         map[string]string{},

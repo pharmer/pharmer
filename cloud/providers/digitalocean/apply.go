@@ -7,6 +7,7 @@ import (
 
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
+	"golang.org/x/crypto/ssh"
 	apiv1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +34,10 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return nil, err
+	}
+
+	if cm.cluster.Status.Phase == api.ClusterUpgrading {
+		return cm.applyUpgrade(dryRun)
 	}
 
 	if cm.cluster.Status.Phase == api.ClusterPending {
@@ -392,4 +397,30 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 
 	Logger(cm.ctx).Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
 	return
+}
+
+func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err error) {
+	keySigner, _ := ssh.ParsePrivateKey(SSHKey(cm.ctx).PrivateKey)
+	config := &ssh.ClientConfig{
+		User: "root",
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(keySigner),
+		},
+	}
+	acts = append(acts, api.Action{
+		Action:   api.ActionUpdate,
+		Resource: "Cluster",
+		Message:  fmt.Sprintf("Cluster will be upgraded to %v", cm.cluster.Spec.KubernetesVersion),
+	})
+	if !dryRun {
+		var externalIP string = ""
+		for _, addr := range cm.cluster.Status.APIAddresses {
+			if addr.Type == apiv1.NodeExternalIP {
+				externalIP = addr.Address
+				break
+			}
+		}
+		ExecuteCommand(fmt.Sprintf("kubeadm upgrade apply %v -y", cm.cluster.Spec.KubernetesVersion), fmt.Sprintf("%v:%v", externalIP, 22), config)
+	}
+	return acts, nil
 }

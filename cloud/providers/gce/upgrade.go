@@ -131,6 +131,7 @@ func (cm *ClusterManager) masterUpdate(host, instanceName, version string) error
 	return nil
 }
 
+/*
 var DefaultWriter = &StringWriter{
 	data: make([]byte, 0),
 }
@@ -138,6 +139,7 @@ var DefaultWriter = &StringWriter{
 type StringWriter struct {
 	data []byte
 }
+
 
 func (s *StringWriter) Flush() {
 	s.data = make([]byte, 0)
@@ -152,7 +154,7 @@ func (s *StringWriter) Write(b []byte) (int, error) {
 	s.data = append(s.data, b...)
 	return len(b), nil
 }
-
+*/
 func newStringReader(ss []string) io.Reader {
 	formattedString := strings.Join(ss, "\n")
 	reader := strings.NewReader(formattedString)
