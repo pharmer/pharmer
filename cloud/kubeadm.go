@@ -3,13 +3,8 @@ package cloud
 import (
 	"fmt"
 	mrnd "math/rand"
+	"regexp"
 	"time"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/kubernetes/pkg/api"
-	apiv1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/fields"
 )
 
 func GetKubeadmToken() string {
@@ -23,6 +18,17 @@ func init() {
 // Hexidecimal
 var letterRunes = []rune("0123456789abcdef")
 
+var (
+	// TokenIDRegexpString defines token's id regular expression pattern
+	TokenIDRegexpString = "^([a-z0-9]{6})$"
+	// TokenIDRegexp is a compiled regular expression of TokenIDRegexpString
+	TokenIDRegexp = regexp.MustCompile(TokenIDRegexpString)
+	// TokenRegexpString defines id.secret regular expression pattern
+	TokenRegexpString = "^([a-z0-9]{6})\\.([a-z0-9]{16})$"
+	// TokenRegexp is a compiled regular expression of TokenRegexpString
+	TokenRegexp = regexp.MustCompile(TokenRegexpString)
+)
+
 func RandStringRunes(n int) string {
 	b := make([]rune, n)
 	for i := range b {
@@ -31,11 +37,10 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 
-func CheckValidToken(kc kubernetes.Interface)  {
-	secrets, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).List(metav1.ListOptions{
-		FieldSelector: fields.SelectorFromSet(map[string]string{
-			api.SecretTypeField: "bootstrap.kubernetes.io/token",
-		}).String(),
-	})
-	fmt.Println(secrets, err)
+func ParseToken(s string) (string, string, error) {
+	split := TokenRegexp.FindStringSubmatch(s)
+	if len(split) != 3 {
+		return "", "", fmt.Errorf("token [%q] was not of form [%q]", s, TokenRegexpString)
+	}
+	return split[1], split[2], nil
 }
