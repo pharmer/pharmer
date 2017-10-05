@@ -42,8 +42,6 @@ func (igm *AWSNodeGroupManager) AdjustNodeGroup(dryRun bool) (acts []api.Action,
 	}
 	igm.cm.cluster.Generation = igm.instance.Type.ContextVersion
 	if err = igm.cm.conn.detectUbuntuImage(); err != nil {
-		igm.cm.cluster.Status.Reason = err.Error()
-		err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 		return
 	}
 	if adjust == igm.instance.Stats.Count {
@@ -60,8 +58,6 @@ func (igm *AWSNodeGroupManager) AdjustNodeGroup(dryRun bool) (acts []api.Action,
 		})
 		if !dryRun {
 			if err = igm.startNodes(igm.instance.Type.Sku, igm.instance.Stats.Count); err != nil {
-				igm.cm.cluster.Status.Reason = err.Error()
-				err = errors.FromErr(err).WithMessage("failed to start node").WithContext(igm.cm.ctx).Err()
 				return
 			}
 		}
@@ -73,9 +69,7 @@ func (igm *AWSNodeGroupManager) AdjustNodeGroup(dryRun bool) (acts []api.Action,
 			Message:  fmt.Sprintf("Autoscaler %v  will be delete", autoscaler),
 		})
 		if !dryRun {
-			err = igm.cm.deleteAutoScalingGroup(igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku))
-			if err != nil {
-				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+			if err = igm.cm.conn.deleteAutoScalingGroup(igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku)); err != nil {
 				return
 			}
 		}
@@ -86,15 +80,12 @@ func (igm *AWSNodeGroupManager) AdjustNodeGroup(dryRun bool) (acts []api.Action,
 			Message:  fmt.Sprintf("Launch configuration %v  will be delete", launchConfig),
 		})
 		if !dryRun {
-			err = igm.cm.deleteLaunchConfiguration(launchConfig)
-			if err != nil {
-				err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+			if err = igm.cm.conn.deleteLaunchConfiguration(launchConfig); err != nil {
+				return
 			}
 		}
 	} else {
-		err = igm.updateNodeGroup(instanceGroupName, igm.instance.Stats.Count)
-		if err != nil {
-			err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
+		if err = igm.updateNodeGroup(instanceGroupName, igm.instance.Stats.Count); err != nil {
 			return
 		}
 	}
@@ -118,7 +109,7 @@ func (igm *AWSNodeGroupManager) startNodes(sku string, count int64) error {
 	scalingGroup := igm.cm.namer.AutoScalingGroupName(sku)
 
 	err := igm.createLaunchConfiguration(launchConfig, sku)
-	err = igm.cm.createAutoScalingGroup(scalingGroup, launchConfig, count)
+	err = igm.cm.conn.createAutoScalingGroup(scalingGroup, launchConfig, count)
 	if err != nil {
 		return errors.FromErr(err).WithContext(igm.cm.ctx).Err()
 	}
@@ -242,7 +233,7 @@ func (igm *AWSNodeGroupManager) listInstances(instanceGroup string) ([]*api.Node
 	}
 
 	for _, item := range group.AutoScalingGroups[0].Instances {
-		instance, err := igm.cm.newKubeInstance(*item.InstanceId)
+		instance, err := igm.cm.conn.newKubeInstance(*item.InstanceId)
 		instance.Spec.Role = api.RoleNode
 		instances = append(instances, instance)
 		if err != nil {
