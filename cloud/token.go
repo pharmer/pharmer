@@ -33,13 +33,14 @@ func GetValidToken(kc kubernetes.Interface) (string, error) {
 		fmt.Println(string(data))
 
 	}
+	return "", nil
 }
 
 func CreateValidToken(kc kubernetes.Interface) (string, error) {
 	token := GetKubeadmToken()
 	tokenID, tokenSecret, err := ParseToken(token)
 	if err != nil {
-		return "",err
+		return "", err
 	}
 	secretName := fmt.Sprintf("%s%s", bootstrapapi.BootstrapTokenSecretPrefix, tokenID)
 	description := "Bootstrap token generated for 24 hours"
