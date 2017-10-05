@@ -19,25 +19,27 @@ var (
 	BootstrapTokenExtraGroupsKey = "auth-extra-groups"
 )
 
-func CheckValidToken(kc kubernetes.Interface) {
+func GetValidToken(kc kubernetes.Interface) (string, error) {
 	secrets, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).List(metav1.ListOptions{
 		FieldSelector: fields.SelectorFromSet(map[string]string{
 			"type": TypeBootstrapToken,
 		}).String(),
 	})
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 	for _, secret := range secrets.Items {
 		data := secret.Data["expiration"]
 		fmt.Println(string(data))
+
 	}
 }
 
-func CreateValidToken(kc kubernetes.Interface) error {
-	tokenID, tokenSecret, err := ParseToken(GetKubeadmToken())
+func CreateValidToken(kc kubernetes.Interface) (string, error) {
+	token := GetKubeadmToken()
+	tokenID, tokenSecret, err := ParseToken(token)
 	if err != nil {
-		return err
+		return "",err
 	}
 	secretName := fmt.Sprintf("%s%s", bootstrapapi.BootstrapTokenSecretPrefix, tokenID)
 	description := "Bootstrap token generated for 24 hours"
@@ -53,9 +55,9 @@ func CreateValidToken(kc kubernetes.Interface) error {
 	}
 
 	if _, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret); err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return token, nil
 }
 
 // encodeTokenSecretData takes the token discovery object and an optional duration and returns the .Data for the Secret
