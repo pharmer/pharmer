@@ -19,24 +19,33 @@ var (
 	BootstrapTokenExtraGroupsKey = "auth-extra-groups"
 )
 
-func GetValidToken(kc kubernetes.Interface) (string, error) {
-	secrets, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).List(metav1.ListOptions{
-		FieldSelector: fields.SelectorFromSet(map[string]string{
-			"type": TypeBootstrapToken,
-		}).String(),
-	})
-	if err != nil {
-		return "", err
-	}
-	for _, secret := range secrets.Items {
-		data := secret.Data["expiration"]
-		fmt.Println(string(data))
+const tokenCreateRetries = 5
 
+func GetExistingKubeadmToken(kc kubernetes.Interface) (string, error) {
+	for i := 0; i < tokenCreateRetries; i++ {
+		secrets, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).List(metav1.ListOptions{
+			FieldSelector: fields.SelectorFromSet(map[string]string{
+				"type": TypeBootstrapToken,
+			}).String(),
+		})
+		if err != nil {
+			return "", err
+		}
+		now := time.Now()
+		now.Format(time.RFC3339)
+		for _, secret := range secrets.Items {
+			data := secret.Data["expiration"]
+			t, _ := time.Parse(time.RFC3339, string(data))
+			if now.Before(t) {
+				return decodeToken(secret.Data["token-id"], secret.Data["token-secret"]), nil
+			}
+		}
+		time.Sleep(15 * time.Second)
 	}
-	return "", nil
+	return CreateValidKubeadmToken(kc)
 }
 
-func CreateValidToken(kc kubernetes.Interface) (string, error) {
+func CreateValidKubeadmToken(kc kubernetes.Interface) (string, error) {
 	token := GetKubeadmToken()
 	tokenID, tokenSecret, err := ParseToken(token)
 	if err != nil {
@@ -85,4 +94,8 @@ func encodeTokenSecretData(tokenID, tokenSecret string, duration time.Duration, 
 		data[bootstrapapi.BootstrapTokenUsagePrefix+usage] = []byte("true")
 	}
 	return data
+}
+
+func decodeToken(tokenID, tokenSecret []byte) string {
+	return string(tokenID) + "." + string(tokenSecret)
 }
