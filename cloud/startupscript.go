@@ -187,6 +187,7 @@ cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
 Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }} {{ if  .CloudConfigPath }} --cloud-provider={{ .Provider }} --cloud-config={{ .CloudConfigPath }} {{ end }}"
 EOF
+
 systemctl daemon-reload
 systemctl restart kubelet
 
@@ -230,6 +231,9 @@ mkdir -p ~/.kube
 sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
 sudo chown $(id -u):$(id -g) ~/.kube/config
 
+{{ if eq .Provider "external" }}
+{{ template "master-ccm" . }}
+{{end}}
 `))
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`#!/bin/bash
@@ -283,10 +287,18 @@ cat > {{ .CloudConfigPath }} <<EOF
 EOF
 {{ end }}
 
+{{ if eq .Provider "external" }}
+cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
+[Service]
+Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }},node-role.kubernetes.io/node= --cloud-provider=external"
+EOF
+{{ else }}
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
 Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }},node-role.kubernetes.io/node= {{ if  .CloudConfigPath }} --cloud-provider={{ .Provider }} --cloud-config={{ .CloudConfigPath }} {{ end }}"
 EOF
+{{end}}
+
 systemctl daemon-reload
 systemctl restart kubelet
 
@@ -320,7 +332,41 @@ kubectl apply \
 
 	_ = template.Must(StartupScriptTemplate.New("flannel").Parse(`
 kubectl apply \
-  -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml \
+  -f https://raw.githubusercontent.com/coreos/flannel/v0.8.0/Documentation/kube-flannel.yml \
   --kubeconfig /etc/kubernetes/admin.conf
+kubectl apply \
+  -f https://raw.githubusercontent.com/coreos/flannel/v0.8.0/Documentation/kube-flannel-rbac.yml \
+  --kubeconfig /etc/kubernetes/admin.conf
+`))
+
+	_ = template.Must(StartupScriptTemplate.New("master-ccm").Parse(`
+until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath={.items[0].status.phase} --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
+do
+   echo '.'
+   sleep 5
+done
+
+kubectl apply -f "https://raw.githubusercontent.com/appscode/pharmer/ccm/cloud/providers/{{ .Provider }}/cloud-control-manager.yaml" --kubeconfig /etc/kubernetes/admin.conf
+
+until [ $(kubectl get pods -n kube-system -l app=cloud-controller-manager -o jsonpath={.items[0].status.phase} --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
+do
+   echo '.'
+   sleep 5
+done
+
+cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
+[Service]
+Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }} --cloud-provider=external"
+EOF
+
+NODE_NAME=$(uname -n)
+kubectl taint nodes ${NODE_NAME} node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
+
+systemctl daemon-reload
+systemctl restart kubelet
+
+sleep 10
+reboot
+
 `))
 )

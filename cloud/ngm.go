@@ -75,6 +75,7 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 			if err != nil {
 				return
 			}
+
 			igm.ng, err = Store(igm.ctx).NodeGroups(igm.ng.ClusterName).UpdateStatus(igm.ng)
 			if err != nil {
 				return

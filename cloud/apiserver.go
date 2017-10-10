@@ -168,3 +168,22 @@ func DeleteDyanamicVolumes(client kubernetes.Interface) error {
 	}, backoff.NewExponentialBackOff())
 	return nil
 }
+
+func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cluster *api.Cluster) error {
+	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	if err != nil {
+		return err
+	}
+	secret := &apiv1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: cluster.Spec.Cloud.CloudProvider,
+		},
+		StringData: cred.Spec.Data,
+		Type:       apiv1.SecretTypeOpaque,
+	}
+
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		_, err := client.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
+		return err == nil, nil
+	})
+}
