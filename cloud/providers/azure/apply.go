@@ -16,14 +16,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) (acts []api.Action, err error) {
-	var (
-		clusterDelete = false
-	)
-	if in.DeletionTimestamp != nil && in.Status.Phase != api.ClusterDeleted {
-		clusterDelete = true
-	}
+func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
+	var err error
+	var acts []api.Action
 
+	if in.Status.Phase == "" {
+		return nil, fmt.Errorf("cluster `%s` is in unknown phase", cm.cluster.Name)
+	}
+	if in.Status.Phase == api.ClusterDeleted {
+		return nil, nil
+	}
 	cm.cluster = in
 	cm.namer = namer{cluster: cm.cluster}
 	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
