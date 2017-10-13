@@ -9,14 +9,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
+	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	bootstrapapi "k8s.io/kubernetes/pkg/bootstrap/api"
-)
-
-var (
-	TypeBootstrapToken           = "bootstrap.kubernetes.io/token"
-	DefaultTokenUsages           = []string{"signing", "authentication"}
-	BootstrapGroupPattern        = "system:bootstrappers:[a-z0-9:-]{0,255}[a-z0-9]"
-	BootstrapTokenExtraGroupsKey = "auth-extra-groups"
 )
 
 const tokenCreateRetries = 5
@@ -25,7 +19,7 @@ func GetExistingKubeadmToken(kc kubernetes.Interface) (string, error) {
 	for i := 0; i < tokenCreateRetries; i++ {
 		secrets, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).List(metav1.ListOptions{
 			FieldSelector: fields.SelectorFromSet(map[string]string{
-				"type": TypeBootstrapToken,
+				"type": string(bootstrapapi.SecretTypeBootstrapToken),
 			}).String(),
 		})
 		if err != nil {
@@ -34,10 +28,10 @@ func GetExistingKubeadmToken(kc kubernetes.Interface) (string, error) {
 		now := time.Now()
 		now.Format(time.RFC3339)
 		for _, secret := range secrets.Items {
-			data := secret.Data["expiration"]
+			data := secret.Data[bootstrapapi.BootstrapTokenExpirationKey]
 			t, _ := time.Parse(time.RFC3339, string(data))
-			if now.Before(t) {
-				return decodeToken(secret.Data["token-id"], secret.Data["token-secret"]), nil
+			if now.Before(t.Add(-60 * time.Minute)) { // at least valid for 60 mins
+				return decodeToken(secret.Data[bootstrapapi.BootstrapTokenIDKey], secret.Data[bootstrapapi.BootstrapTokenSecretKey]), nil
 			}
 		}
 		time.Sleep(15 * time.Second)
@@ -53,15 +47,13 @@ func CreateValidKubeadmToken(kc kubernetes.Interface) (string, error) {
 	}
 	secretName := fmt.Sprintf("%s%s", bootstrapapi.BootstrapTokenSecretPrefix, tokenID)
 	description := "Bootstrap token generated for 24 hours"
-	tokenDuration := 24 * time.Hour
-	usages := DefaultTokenUsages
-	extraGroups := []string{"system:bootstrappers:kubeadm:default-node-token"}
+	extraGroups := []string{kubeadmconsts.V18NodeBootstrapTokenAuthGroup}
 	secret := &apiv1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: secretName,
 		},
-		Type: apiv1.SecretType(bootstrapapi.SecretTypeBootstrapToken),
-		Data: encodeTokenSecretData(tokenID, tokenSecret, tokenDuration, usages, extraGroups, description),
+		Type: bootstrapapi.SecretTypeBootstrapToken,
+		Data: encodeTokenSecretData(tokenID, tokenSecret, kubeadmconsts.DefaultTokenDuration, kubeadmconsts.DefaultTokenUsages, extraGroups, description),
 	}
 
 	if _, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret); err != nil {
@@ -78,7 +70,7 @@ func encodeTokenSecretData(tokenID, tokenSecret string, duration time.Duration, 
 	}
 
 	if len(extraGroups) > 0 {
-		data[BootstrapTokenExtraGroupsKey] = []byte(strings.Join(extraGroups, ","))
+		data[bootstrapapi.BootstrapTokenExtraGroupsKey] = []byte(strings.Join(extraGroups, ","))
 	}
 
 	if duration > 0 {
