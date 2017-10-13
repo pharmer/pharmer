@@ -13,17 +13,13 @@ import (
 	bootstrapapi "k8s.io/kubernetes/pkg/bootstrap/api"
 )
 
-var (
-	TypeBootstrapToken = "bootstrap.kubernetes.io/token"
-)
-
 const tokenCreateRetries = 5
 
 func GetExistingKubeadmToken(kc kubernetes.Interface) (string, error) {
 	for i := 0; i < tokenCreateRetries; i++ {
 		secrets, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).List(metav1.ListOptions{
 			FieldSelector: fields.SelectorFromSet(map[string]string{
-				"type": TypeBootstrapToken,
+				"type": string(bootstrapapi.SecretTypeBootstrapToken),
 			}).String(),
 		})
 		if err != nil {
@@ -56,7 +52,7 @@ func CreateValidKubeadmToken(kc kubernetes.Interface) (string, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: secretName,
 		},
-		Type: apiv1.SecretType(bootstrapapi.SecretTypeBootstrapToken),
+		Type: bootstrapapi.SecretTypeBootstrapToken,
 		Data: encodeTokenSecretData(tokenID, tokenSecret, kubeadmconsts.DefaultTokenDuration, kubeadmconsts.DefaultTokenUsages, extraGroups, description),
 	}
 
