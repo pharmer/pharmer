@@ -1,5 +1,5 @@
 hash: a1027d7fb728a316de18c3bf06b7eaf12232da2643b22049b1a1683fea310e92
-updated: 2017-10-02T11:23:42.940247293-07:00
+updated: 2017-10-11T08:27:59.017205199-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -39,11 +39,11 @@ imports:
   subpackages:
   - files
 - name: github.com/appscode/envconfig
-  version: 8debe51c027cc6d944705e16415fd948cb32824c
+  version: 183bbe643a2875eaa69c85627ac6b25813983203
 - name: github.com/appscode/errors
   version: 748883e321a9f99fe901bd2663c7af3fcae43ea4
 - name: github.com/appscode/go
-  version: 5f5a94d551a6a3147a2dfc5e287da0fc251b1bac
+  version: f719fe83ed5dd094e07c4456dc68e1227131d581
   subpackages:
   - context
   - crypto/rand
@@ -143,7 +143,7 @@ imports:
   - autorest/to
   - autorest/validation
 - name: github.com/bndr/gojenkins
-  version: 10d416706df701ae959182e4ae94fde6984c7c22
+  version: 2869ec456dc299340fd5456bd321c586aa3f0ad7
 - name: github.com/cenkalti/backoff
   version: 61153c768f31ee5f130071d08fc82b85208528de
 - name: github.com/cloudflare/cloudflare-go
@@ -161,7 +161,7 @@ imports:
 - name: github.com/dgrijalva/jwt-go
   version: 01aeca54ebda6e0fbfafd0a524d234159c05ec20
 - name: github.com/digitalocean/godo
-  version: 77ea48de76a7b31b234d854f15d003c68bb2fb90
+  version: 801cee9569723107654606a8e00d79b56470072e
   subpackages:
   - context
 - name: github.com/docker/docker
@@ -246,6 +246,8 @@ imports:
   - query
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
+- name: github.com/google/uuid
+  version: 7e072fc3a7be179aee6d3359e46015aa8c995314
 - name: github.com/googleapis/gnostic
   version: 0c5108395e2debce0d731cf0287ddf7242066aba
   subpackages:
@@ -339,7 +341,7 @@ imports:
   - jlexer
   - jwriter
 - name: github.com/mattn/go-colorable
-  version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
+  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
 - name: github.com/mattn/go-isatty
   version: 56b76bdf51f7708750eac80fa38b952bb9f32639
 - name: github.com/mgutz/ansi
@@ -387,13 +389,13 @@ imports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 10ef21a441db47d8b13ebcc5fd2310f636973c77
 - name: github.com/Sirupsen/logrus
-  version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
+  version: 51fe59aca108dc5680109e7b2051cbdcfa5a253c
 - name: github.com/skratchdot/open-golang
   version: 75fb7ed4208cf72d323d7d02fd1a5964a7a9073c
   subpackages:
   - open
 - name: github.com/softlayer/softlayer-go
-  version: ba0eaed1782df1b25af8af69df2950472b71135d
+  version: 95095b3def2dcb558b9c141da1041ded4c61acd9
   subpackages:
   - config
   - datatypes
@@ -401,11 +403,11 @@ imports:
   - session
   - sl
 - name: github.com/spf13/cobra
-  version: 0dacccfbaabc71b872087c1719c5380d3e185173
+  version: 40f18800b20df8f74ad2b02aa4e56748a3d17239
   subpackages:
   - doc
 - name: github.com/spf13/pflag
-  version: 8f62c03454809f9fe034ed3b4f564dfd50e7067b
+  version: f4aa504bb62057ca90e8defc26e169353fd772d4
   repo: https://github.com/appscode/pflag.git
   vcs: git
 - name: github.com/tent/http-link-go
@@ -421,7 +423,7 @@ imports:
 - name: github.com/xeipuuv/gojsonreference
   version: e02fc20de94c78484cd5ffb007f8af96be030a45
 - name: github.com/xeipuuv/gojsonschema
-  version: 93e72a773fade158921402d6a24c819b48aba29d
+  version: 3f523f4c14b6e925da10475eb0447c2f28614aac
 - name: github.com/xenolf/lego
   version: 8a62215d047836bc4da6f32f4c3cf7662e3e76bd
   repo: https://github.com/appscode/lego.git
@@ -539,7 +541,7 @@ imports:
   - tap
   - transport
 - name: gopkg.in/AlecAivazis/survey.v1
-  version: 9d910423e24aa6d7c7950160658c295e0734c7e0
+  version: 18a4dbb1d9d05349aea1a2bf9c84028c36817c10
   subpackages:
   - core
   - terminal
@@ -572,6 +574,7 @@ imports:
   - certificates/v1beta1
   - core/v1
   - extensions/v1beta1
+  - imagepolicy/v1alpha1
   - networking/v1
   - policy/v1beta1
   - rbac/v1

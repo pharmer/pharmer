@@ -15,6 +15,7 @@ type Interface interface {
 	CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error)
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
+	Check(cluster *api.Cluster) (string, error)
 
 	// IsValid(cluster *api.Cluster) (bool, error)
 	// Delete(req *proto.ClusterDeleteRequest) error
@@ -32,4 +33,14 @@ type NodeGroupManager interface {
 type InstanceManager interface {
 	CreateInstance(name string, ng *api.NodeGroup) (*api.SimpleNode, error)
 	DeleteInstanceByProviderID(providerID string) error
+}
+
+type UpgradeManager interface {
+	Apply(dryRun bool) ([]api.Action, error)
+	MasterUpgrade() error
+	NodeGroupUpgrade(ng *api.NodeGroup) error
+}
+
+type SSHExecutor interface {
+	ExecuteSSHCommand(command string, instance *apiv1.Node) (string, error)
 }

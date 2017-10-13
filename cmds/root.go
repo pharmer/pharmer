@@ -64,6 +64,8 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 	rootCmd.AddCommand(newCmdUpdate())
 	rootCmd.AddCommand(newCmdIssue())
 	rootCmd.AddCommand(newCmdDescribe(out))
+	rootCmd.AddCommand(newCmdCheck())
+	rootCmd.AddCommand(newCmdEdit())
 
 	rootCmd.AddCommand(cfgCmd.NewCmdConfig())
 	rootCmd.AddCommand(cpCmd.NewCmdApply())

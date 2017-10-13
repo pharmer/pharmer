@@ -34,5 +34,5 @@ pharmer issue [flags]
 
 ### SEE ALSO
 * [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer issue credential](pharmer_issue_credential.md)	 - Issue credential for cloud providers Azure and Google Cloud
+* [pharmer issue credential](pharmer_issue_credential.md)	 - Issue credential for cc providers Azure and Google Cloud
 

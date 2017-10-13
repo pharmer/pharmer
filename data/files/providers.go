@@ -69,14 +69,14 @@ func parseData(bytes []byte, env _env.Environment) error {
 
 	if len(cloud.Versions) > 0 {
 		if _, exists := clouds[cloud.Name]; exists {
-			return fmt.Errorf("Redeclared cloud provider %s", cloud.Name)
+			return fmt.Errorf("redeclared cloud provider %s", cloud.Name)
 		}
 		clouds[cloud.Name] = cloud
 	}
 
 	for _, c := range cd.Credentials {
 		if _, exists := credentials[c.Provider]; exists {
-			return fmt.Errorf("Redeclared credential type %s in cloud provider %s", c.Provider, cloud.Name)
+			return fmt.Errorf("redeclared credential type %s in cloud provider %s", c.Provider, cloud.Name)
 		}
 		credentials[c.Provider] = c
 	}
@@ -152,7 +152,7 @@ func Load(env _env.Environment) error {
 func GetDefaultClusterSpec(provider string, x *version.Version) (*api.ClusterSpec, error) {
 	p, found := clouds[provider]
 	if !found {
-		return nil, fmt.Errorf("Can't find cluster provider %v", provider)
+		return nil, fmt.Errorf("can't find cluster provider %v", provider)
 	}
 	firstPatch := x.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().Done() // x.y.0
 	sanitizedX := x.Clone().ToMutator().ResetPrerelease().ResetMetadata().Done()              // x.y.z
@@ -187,11 +187,11 @@ func GetDefaultClusterSpec(provider string, x *version.Version) (*api.ClusterSpe
 func GetInstanceType(provider, sku string) (*data.InstanceType, error) {
 	p, found := clouds[provider]
 	if !found {
-		return nil, fmt.Errorf("Can't find cluster provider %v", provider)
+		return nil, fmt.Errorf("can't find cluster provider %v", provider)
 	}
 	s, found := p.InstanceTypes[sku]
 	if !found {
-		return nil, fmt.Errorf("Can't find instance type %s for provider %s.", sku, provider)
+		return nil, fmt.Errorf("can't find instance type %s for provider %s", sku, provider)
 	}
 	return &s, nil
 }

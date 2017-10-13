@@ -21,7 +21,7 @@ pharmer cluster use <name>
 
 ```
   -h, --help        help for use
-      --overwrite   Overwrite context if found.
+      --overwrite   Overwrite context if found. (default true)
 ```
 
 ### Options inherited from parent commands

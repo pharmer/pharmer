@@ -193,3 +193,36 @@ func Apply(ctx context.Context, name string, dryRun bool) ([]api.Action, error) 
 
 	return cm.Apply(cluster, dryRun)
 }
+
+func Check(ctx context.Context, name string) (string, error) {
+	if name == "" {
+		return "", errors.New("missing cluster name")
+	}
+
+	cluster, err := Store(ctx).Clusters().Get(name)
+	if err != nil {
+		return "", fmt.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
+	}
+
+	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return cm.Check(cluster)
+}
+
+func Edit(ctx context.Context, name, version string) (*api.Cluster, error) {
+	if name == "" {
+		return nil, errors.New("missing cluster name")
+	}
+
+	cluster, err := Store(ctx).Clusters().Get(name)
+	if err != nil {
+		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
+	}
+	cluster.Spec.KubernetesVersion = version
+	cluster.Generation = time.Now().UnixNano()
+	cluster.Status.Phase = api.ClusterUpgrading
+	return Store(ctx).Clusters().Update(cluster)
+}

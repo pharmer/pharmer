@@ -35,6 +35,10 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 		return nil, err
 	}
 
+	if cm.cluster.Status.Phase == api.ClusterUpgrading {
+		return cm.applyUpgrade(dryRun)
+	}
+
 	if cm.cluster.Status.Phase == api.ClusterPending {
 		a, err := cm.applyCreate(dryRun)
 		if err != nil {
@@ -391,5 +395,26 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	}
 
 	Logger(cm.ctx).Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
+	return
+}
+
+func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err error) {
+	var kc kubernetes.Interface
+	if kc, err = cm.GetAdminClient(); err != nil {
+		return
+	}
+
+	upm := NewUpgradeManager(cm.ctx, cm.conn, kc, cm.cluster, cm.cluster.Spec.KubernetesVersion)
+	a, err := upm.Apply(dryRun)
+	if err != nil {
+		return
+	}
+	acts = append(acts, a...)
+	if !dryRun {
+		cm.cluster.Status.Phase = api.ClusterReady
+		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+			return
+		}
+	}
 	return
 }

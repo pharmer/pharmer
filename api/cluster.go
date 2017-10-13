@@ -141,8 +141,8 @@ type ClusterSpec struct {
 	DoNotDelete        bool     `json:"doNotDelete,omitempty"`
 	AuthorizationModes []string `json:"authorizationModes,omitempty"`
 
-	Token    string          `json:"token"`
-	TokenTTL metav1.Duration `json:"tokenTTL"`
+	Token string `json:"token"`
+	//TokenTTL metav1.Duration `json:"tokenTTL"`
 
 	// APIServerCertSANs sets extra Subject Alternative Names for the API Server signing cert
 	APIServerCertSANs     []string `json:"apiServerCertSANs,omitempty"`
@@ -289,10 +289,11 @@ type ClusterPhase string
 
 // These are the valid statuses of Cluster.
 const (
-	ClusterPending  ClusterPhase = "Pending"
-	ClusterReady    ClusterPhase = "Ready"
-	ClusterDeleting ClusterPhase = "Deleting"
-	ClusterDeleted  ClusterPhase = "Deleted"
+	ClusterPending   ClusterPhase = "Pending"
+	ClusterReady     ClusterPhase = "Ready"
+	ClusterDeleting  ClusterPhase = "Deleting"
+	ClusterDeleted   ClusterPhase = "Deleted"
+	ClusterUpgrading ClusterPhase = "Upgrading"
 )
 
 type ClusterStatus struct {

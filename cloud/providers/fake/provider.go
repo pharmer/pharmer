@@ -38,6 +38,10 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	return nil, UnsupportedOperation
 }
 
+func (cm *ClusterManager) Check(in *api.Cluster) (string, error) {
+	return "", UnsupportedOperation
+}
+
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, UnsupportedOperation
 }

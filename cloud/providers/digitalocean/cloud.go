@@ -13,7 +13,9 @@ import (
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	"github.com/digitalocean/godo"
+	"golang.org/x/crypto/ssh"
 	"golang.org/x/oauth2"
+	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -287,4 +289,25 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	}
 	Logger(conn.ctx).Infof("Droplet %v deleted", dropletID)
 	return nil
+}
+
+func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *apiv1.Node) (string, error) {
+	var ip string = ""
+	for _, addr := range instance.Status.Addresses {
+		if addr.Type == apiv1.NodeExternalIP {
+			ip = addr.Address
+			break
+		}
+	}
+	if ip == "" {
+		return "", fmt.Errorf("no IP found for ssh")
+	}
+	keySigner, _ := ssh.ParsePrivateKey(SSHKey(conn.ctx).PrivateKey)
+	config := &ssh.ClientConfig{
+		User: "root",
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(keySigner),
+		},
+	}
+	return ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", ip, 22), config)
 }
