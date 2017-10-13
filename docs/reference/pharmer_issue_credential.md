@@ -1,11 +1,11 @@
 ## pharmer issue credential
 
-Issue credential for cloud providers Azure and Google Cloud
+Issue credential for cc providers Azure and Google Cloud
 
 ### Synopsis
 
 
-Issue credential for cloud providers Azure and Google Cloud
+Issue credential for cc providers Azure and Google Cloud
 
 ```
 pharmer issue credential [flags]

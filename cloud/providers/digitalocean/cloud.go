@@ -294,13 +294,13 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *apiv1.Node) (string, error) {
 	var ip string = ""
 	for _, addr := range instance.Status.Addresses {
-		if addr.Type == apiv1.NodeInternalIP {
+		if addr.Type == apiv1.NodeExternalIP {
 			ip = addr.Address
 			break
 		}
 	}
 	if ip == "" {
-		return "", fmt.Errorf("No ip found for ssh")
+		return "", fmt.Errorf("no IP found for ssh")
 	}
 	keySigner, _ := ssh.ParsePrivateKey(SSHKey(conn.ctx).PrivateKey)
 	config := &ssh.ClientConfig{
