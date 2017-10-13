@@ -1,5 +1,5 @@
-hash: a1027d7fb728a316de18c3bf06b7eaf12232da2643b22049b1a1683fea310e92
-updated: 2017-10-11T08:27:59.017205199-07:00
+hash: 30e4bc9d22395eff7fe65cd40ab8737455dd6635d0330544b1826048822183d3
+updated: 2017-10-13T14:11:41.025791812-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -7,7 +7,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/api
-  version: 1db7d24a24ea0591376eea23a011d9afea090e02
+  version: 245ca3497c37e4999cca4f42764d51306a15c01d
   subpackages:
   - attic/v1beta1
   - auth/v1beta1
@@ -403,7 +403,7 @@ imports:
   - session
   - sl
 - name: github.com/spf13/cobra
-  version: 40f18800b20df8f74ad2b02aa4e56748a3d17239
+  version: 7b2c5ac9fc04fc5efafb60700713d4fa609b777b
   subpackages:
   - doc
 - name: github.com/spf13/pflag
@@ -683,11 +683,12 @@ imports:
   subpackages:
   - pkg/common
 - name: k8s.io/kubernetes
-  version: 0b9efaeb34a2fc51ff8e4d34ad9bc6375459c4a4
+  version: f38e43b221d08850172a9a4ea785a86a3ffa3b3a
   subpackages:
   - cmd/kubeadm/app/apis/kubeadm
   - cmd/kubeadm/app/apis/kubeadm/v1alpha1
   - cmd/kubeadm/app/constants
+  - pkg/bootstrap/api
   - pkg/printers
   - pkg/util/version
 testImports:
@@ -725,3 +726,11 @@ testImports:
   - matchers/support/goraph/node
   - matchers/support/goraph/util
   - types
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert

@@ -42,6 +42,7 @@ func (cm *ClusterManager) checkClusterUpgrade() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	masterInstance, err := kc.CoreV1().Nodes().Get(cm.namer.MasterName(), metav1.GetOptions{})
 	if err != nil {
 		return "", err

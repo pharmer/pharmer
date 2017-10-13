@@ -281,6 +281,15 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		if err != nil {
 			return
 		}
+		if !dryRun {
+			if cm.cluster.Spec.Token, err = GetExistingKubeadmToken(kc); err != nil {
+				return
+			}
+			if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
+				return
+			}
+		}
+
 	}
 	for _, ng := range nodeGroups {
 		if ng.IsMaster() {

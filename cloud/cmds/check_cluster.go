@@ -43,6 +43,5 @@ func NewCmdCheckCluster() *cobra.Command {
 			term.Println(resp)
 		},
 	}
-
 	return cmd
 }
