@@ -5,6 +5,7 @@ import (
 
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (cm *ClusterManager) Check(in *api.Cluster) (string, error) {
@@ -26,6 +27,26 @@ func (cm *ClusterManager) Check(in *api.Cluster) (string, error) {
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return "", err
 	}
+	cm.conn.namer = cm.namer
 
-	return "", nil
+	resp, err := cm.checkClusterUpgrade()
+	if err != nil {
+		return "", err
+	}
+	//TODO: add other check
+
+	return resp, nil
+}
+
+func (cm *ClusterManager) checkClusterUpgrade() (string, error) {
+	kc, err := cm.GetAdminClient()
+	if err != nil {
+		return "", err
+	}
+
+	masterInstance, err := kc.CoreV1().Nodes().Get(cm.namer.MasterName(), metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	return cm.conn.ExecuteSSHCommand("sudo kubeadm upgrade plan", masterInstance)
 }

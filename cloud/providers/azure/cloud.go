@@ -22,6 +22,8 @@ import (
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
+	"golang.org/x/crypto/ssh"
+	apiv1 "k8s.io/api/core/v1"
 	ktype "k8s.io/apimachinery/pkg/types"
 )
 
@@ -842,4 +844,29 @@ func splitProviderID(providerID string) (ktype.NodeName, error) {
 		return "", errors.New("error splitting providerID")
 	}
 	return ktype.NodeName(matches[1]), nil
+}
+
+func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *apiv1.Node) (string, error) {
+	pip, err := conn.getPublicIP(conn.namer.PublicIPName(instance.Name))
+	if err != nil {
+		return "", err
+	}
+
+	var ip string = *pip.IPAddress
+	if ip == "" {
+		return "", fmt.Errorf("No ip found for ssh")
+	}
+
+	keySigner, _ := ssh.ParsePrivateKey(SSHKey(conn.ctx).PrivateKey)
+	config := &ssh.ClientConfig{
+		User: conn.namer.AdminUsername(),
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(keySigner),
+		},
+	}
+
+	// login as ubuntu user but command needs to run as root
+	command = fmt.Sprintf("sudo %v", command)
+
+	return ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", ip, 22), config)
 }

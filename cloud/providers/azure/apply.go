@@ -45,7 +45,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
-		//return cm.applyUpgrade(dryRun)
+		return cm.applyUpgrade(dryRun)
 	}
 
 	if cm.cluster.Status.Phase == api.ClusterPending {
@@ -460,85 +460,23 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	return
 }
 
-/*
-for i := int64(0); i < ng.Count; i++ {
-			nodeName := cm.namer.GenNodeName(ng.Sku)
-
-			nodePIP, err := im.createPublicIP(cm.namer.PublicIPName(nodeName), network.Dynamic)
-			if err != nil {
-				cm.ctx.StatusCause = err.Error()
-				return errors.FromErr(err).WithContext(cm.ctx).Err()
-			}
-
-			nodeNIC, err := im.createNetworkInterface(cm.namer.NetworkInterfaceName(nodeName), sn, network.Dynamic, "", nodePIP)
-			if err != nil {
-				cm.ctx.StatusCause = err.Error()
-				return errors.FromErr(err).WithContext(cm.ctx).Err()
-			}
-
-			nodeScript := im.RenderStartupScript(cm.ctx.NewScriptOptions(), ng.Sku, api.RoleKubernetesPool)
-			nodeVM, err := im.createVirtualMachine(nodeNIC, as, sa, nodeName, nodeScript, ng.Sku)
-			if err != nil {
-				cm.ctx.StatusCause = err.Error()
-				return errors.FromErr(err).WithContext(cm.ctx).Err()
-			}
-
-			nodePIP, err = im.getPublicIP(cm.namer.PublicIPName(nodeName))
-			if err != nil {
-				cm.ctx.StatusCause = err.Error()
-				return errors.FromErr(err).WithContext(cm.ctx).Err()
-			}
-
-			ki, err := im.newKubeInstance(nodeVM, nodeNIC, nodePIP)
-			if err != nil {
-				cm.ctx.StatusCause = err.Error()
-				return errors.FromErr(err).WithContext(cm.ctx).Err()
-			}
-			ki.Role = api.RoleKubernetesPool
-			cm.ins.Instances = append(cm.ins.Instances, ki)
-			// cm.ins.Instances = append(cm.ins.Instances, ki)
-		}
-*/
-
-/*
-
-for _, node := range nodeGroups {
-		if node.IsMaster() {
-			continue
-		}
-		igm := &AzureNodeGroupManager{
-			cm: cm,
-			instance: Instance{
-				Type: InstanceType{
-					Sku:          node.Spec.Template.Spec.SKU,
-					Master:       false,
-					SpotInstance: false,
-				},
-				Stats: GroupStats{
-					Count: node.Spec.Nodes,
-				},
-			},
-			im: im,
-		}
-		if clusterDelete || node.DeletionTimestamp != nil {
-			instanceGroupName := igm.cm.namer.GetNodeGroupName(igm.instance.Type.Sku)
-			acts = append(acts, api.Action{
-				Action:   api.ActionDelete,
-				Resource: "Node Group",
-				Message:  fmt.Sprintf("Node group %v  will be deleted", instanceGroupName),
-			})
-			if !dryRun {
-				err = igm.deleteNodeGroup(igm.instance.Type.Sku)
-				Store(cm.ctx).NodeGroups(cm.cluster.Name).Delete(node.Name)
-			}
-		} else {
-			act, _ := igm.AdjustNodeGroup(dryRun)
-			acts = append(acts, act...)
-			if !dryRun {
-				node.Status.Nodes = (int64)(node.Spec.Nodes)
-				Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(node)
-			}
-		}
-
+func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err error) {
+	var kc kubernetes.Interface
+	if kc, err = cm.GetAdminClient(); err != nil {
+		return
 	}
-*/
+
+	upm := NewUpgradeManager(cm.ctx, cm.conn, kc, cm.cluster, cm.cluster.Spec.KubernetesVersion)
+	a, err := upm.Apply(dryRun)
+	if err != nil {
+		return
+	}
+	acts = append(acts, a...)
+	if !dryRun {
+		cm.cluster.Status.Phase = api.ClusterReady
+		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+			return
+		}
+	}
+	return
+}
