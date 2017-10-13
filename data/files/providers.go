@@ -154,37 +154,34 @@ func GetDefaultClusterSpec(provider string, x *version.Version) (*api.ClusterSpe
 	if !found {
 		return nil, fmt.Errorf("can't find cluster provider %v", provider)
 	}
+	firstPatch := x.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().Done() // x.y.0
+	sanitizedX := x.Clone().ToMutator().ResetPrerelease().ResetMetadata().Done()              // x.y.z
+
+	xGE, err := version.NewConstraint(fmt.Sprintf(">= %s", firstPatch.String()))
+	if err != nil {
+		return nil, err
+	}
+	xWB, err := version.NewConstraint(fmt.Sprintf(">= %s, <= %s", firstPatch.String(), sanitizedX.String()))
+	if err != nil {
+		return nil, err
+	}
+
 	// ref: https://golang.org/pkg/sort/#Search
-	pos := sort.Search(len(p.Versions), func(i int) bool { return !p.Versions[i].Version.LessThan(x) })
-	if pos < len(p.Versions) && p.Versions[pos].Version.Equal(x) {
-		c, err := version.NewConstraint(fmt.Sprintf(">= %s, <= %s", x.Clone().ToMutator().ResetMetadata().ResetPatch().Done().String(), x.Clone().ToMutator().ResetMetadata().Done().String()))
+	pos := sort.Search(len(p.Versions), func(i int) bool { return xGE.Check(p.Versions[i].Version) })
+	if pos < len(p.Versions) && xWB.Check(p.Versions[pos].Version) {
+		// perform deep copy so that cache is not modified
+		var result api.ClusterSpec
+		b, err := json.Marshal(p.Versions[pos].DefaultSpec)
 		if err != nil {
 			return nil, err
 		}
-		i := pos
-		for i >= 0 {
-			if i != pos && !c.Check(p.Versions[i].Version) { // ensures that pre versions don't fail constraint
-				break
-			}
-			if p.Versions[i].DefaultSpec != nil {
-				// perform deep copy so that cache is not modified
-				var result api.ClusterSpec
-				b, err := json.Marshal(p.Versions[i].DefaultSpec)
-				if err != nil {
-					return nil, err
-				}
-				err = json.Unmarshal(b, &result)
-				if err != nil {
-					return nil, err
-				}
-				return &result, nil
-			}
-			i--
+		err = json.Unmarshal(b, &result)
+		if err != nil {
+			return nil, err
 		}
-		return nil, fmt.Errorf("can't find default spec for Kubernetes version %v for provider %v", x, provider)
-	} else {
-		return nil, fmt.Errorf("can't find Kubernetes version %v for provider %v", x, provider)
+		return &result, nil
 	}
+	return nil, fmt.Errorf("can't find default spec for Kubernetes version %v for provider %v", x, provider)
 }
 
 func GetInstanceType(provider, sku string) (*data.InstanceType, error) {
