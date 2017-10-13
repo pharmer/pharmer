@@ -64,7 +64,7 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 	var err error
 	masterInstances, err := upm.kc.CoreV1().Nodes().List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			"node-role.kubernetes.io/master": "",
+			api.RoleMasterKey: "",
 		}).String(),
 	})
 	if err != nil {
@@ -72,8 +72,10 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 	}
 	if len(masterInstances.Items) == 1 {
 		masterInstance = &masterInstances.Items[0]
+	} else if len(masterInstances.Items) > 1 {
+		return fmt.Errorf("multiple master found")
 	} else {
-		return fmt.Errorf("No master found")
+		return fmt.Errorf("no master found")
 	}
 
 	desireVersion, _ := semver.NewVersion(upm.version)

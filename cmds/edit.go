@@ -5,14 +5,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newCmdUpgrade() *cobra.Command {
+func newCmdEdit() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "upgrade",
+		Use:               "edit",
 		DisableAutoGenTag: true,
 		Run:               func(cmd *cobra.Command, args []string) {},
 	}
 
 	// Cloud
-	cmd.AddCommand(cpCmd.NewCmdUpgradeCluster())
+	cmd.AddCommand(cpCmd.NewCmdEditCluster())
 	return cmd
 }

@@ -1,9 +1,7 @@
 package cloud
 
 import (
-	"io"
 	"os"
-	"strings"
 
 	"github.com/appscode/log"
 	"golang.org/x/crypto/ssh"
@@ -48,10 +46,4 @@ func (s *StringWriter) Write(b []byte) (int, error) {
 	log.Infoln("$ ", string(b))
 	s.data = append(s.data, b...)
 	return len(b), nil
-}
-
-func newStringReader(ss []string) io.Reader {
-	formattedString := strings.Join(ss, "\n")
-	reader := strings.NewReader(formattedString)
-	return reader
 }

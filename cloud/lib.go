@@ -212,20 +212,16 @@ func Check(ctx context.Context, name string) (string, error) {
 	return cm.Check(cluster)
 }
 
-func Upgrade(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
-	if cluster == nil {
-		return nil, errors.New("missing cluster")
-	} else if cluster.Name == "" {
+func Edit(ctx context.Context, name, version string) (*api.Cluster, error) {
+	if name == "" {
 		return nil, errors.New("missing cluster name")
-	} else if cluster.Spec.KubernetesVersion == "" {
-		return nil, errors.New("missing cluster version")
 	}
 
-	existing, err := Store(ctx).Clusters().Get(cluster.Name)
+	cluster, err := Store(ctx).Clusters().Get(name)
 	if err != nil {
-		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", cluster.Name, err)
+		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
-	cluster.Status = existing.Status
+	cluster.Spec.KubernetesVersion = version
 	cluster.Generation = time.Now().UnixNano()
 	cluster.Status.Phase = api.ClusterUpgrading
 	return Store(ctx).Clusters().Update(cluster)
