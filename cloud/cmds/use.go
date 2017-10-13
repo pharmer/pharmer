@@ -157,7 +157,7 @@ func NewCmdUse() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVar(&overwrite, "overwrite", false, "Overwrite context if found.")
+	cmd.Flags().BoolVar(&overwrite, "overwrite", true, "Overwrite context if found.")
 	return cmd
 }
 
