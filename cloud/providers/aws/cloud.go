@@ -11,11 +11,11 @@ import (
 	"github.com/appscode/go/errors"
 	stringutil "github.com/appscode/go/strings"
 	. "github.com/appscode/go/types"
+	"github.com/appscode/go/wait"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/cloud/providers/aws/iam"
 	"github.com/appscode/pharmer/credential"
-	"github.com/appscode/pharmer/phid"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -24,7 +24,8 @@ import (
 	_elb "github.com/aws/aws-sdk-go/service/elb"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
 	_s3 "github.com/aws/aws-sdk-go/service/s3"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"golang.org/x/crypto/ssh"
+	apiv1 "k8s.io/api/core/v1"
 )
 
 type cloudConnector struct {
@@ -106,30 +107,6 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 		return false, "Credential missing required authorization: " + strings.Join(missing, ", ")
 	}
 	return true, ""
-}
-
-// https://github.com/kubernetes/kubernetes/blob/master/cluster/aws/jessie/util.sh#L28
-// Based on https://github.com/kubernetes/kube-deploy/tree/master/imagebuilder
-func (conn *cloudConnector) detectJessieImage() error {
-	conn.cluster.Spec.Cloud.OS = "debian"
-	r1, err := conn.ec2.DescribeImages(&_ec2.DescribeImagesInput{
-		Owners: []*string{StringP("282335181503")},
-		Filters: []*_ec2.Filter{
-			{
-				Name: StringP("name"),
-				Values: []*string{
-					StringP("k8s-1.3-debian-jessie-amd64-hvm-ebs-2016-06-18"),
-				},
-			},
-		},
-	})
-	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	conn.cluster.Spec.Cloud.InstanceImage = *r1.Images[0].ImageId
-	conn.cluster.Status.Cloud.AWS.RootDeviceName = *r1.Images[0].RootDeviceName
-	Logger(conn.ctx).Infof("Debain image with %v for %v detected", conn.cluster.Spec.Cloud.InstanceImage, conn.cluster.Status.Cloud.AWS.RootDeviceName)
-	return nil
 }
 
 func (conn *cloudConnector) detectUbuntuImage() error {
@@ -870,8 +847,6 @@ func (conn *cloudConnector) getMaster() (bool, error) {
 	if len(r1.Reservations) == 0 {
 		return false, nil
 	}
-	conn.cluster.Spec.MasterInternalIP = *r1.Reservations[0].Instances[0].PrivateIpAddress
-	conn.cluster.Spec.MasterExternalIP = *r1.Reservations[0].Instances[0].PublicIpAddress
 	fmt.Println(r1, err, "....................")
 	return true, err
 }
@@ -883,10 +858,7 @@ func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.Si
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	err = conn.reserveIP()
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
+
 	Store(conn.ctx).Clusters().UpdateStatus(conn.cluster) // needed for master start-up config
 
 	masterInstanceID, err := conn.createMasterInstance(name, ng)
@@ -900,10 +872,38 @@ func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.Si
 		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	Logger(conn.ctx).Info("Master instance is ready")
-	if conn.cluster.Spec.MasterReservedIP != "" {
-		err = conn.assignIPToInstance(masterInstanceID)
+	if ng.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
+		var reservedIP string
+		if len(conn.cluster.Status.ReservedIPs) == 0 {
+			if reservedIP, err = conn.createReserveIP(ng); err != nil {
+				return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+			}
+		} else {
+			reservedIP = conn.cluster.Status.ReservedIPs[0].IP
+		}
+		err = conn.assignIPToInstance(reservedIP, masterInstanceID)
 		if err != nil {
 			return nil, errors.FromErr(err).WithMessage("failed to assign ip").WithContext(conn.ctx).Err()
+		}
+		conn.cluster.Status.APIAddresses = append(conn.cluster.Status.APIAddresses, apiv1.NodeAddress{
+			Type:    apiv1.NodeExternalIP,
+			Address: reservedIP,
+		})
+		conn.cluster.Status.ReservedIPs = append(conn.cluster.Status.ReservedIPs, api.ReservedIP{
+			IP: reservedIP,
+		})
+	} else {
+		rx, err := conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
+			InstanceIds: []*string{StringP(masterInstanceID)},
+		})
+		if err != nil {
+			return nil, err
+		}
+		if *rx.Reservations[0].Instances[0].PublicIpAddress != "" {
+			conn.cluster.Status.APIAddresses = append(conn.cluster.Status.APIAddresses, apiv1.NodeAddress{
+				Type:    apiv1.NodeExternalIP,
+				Address: *rx.Reservations[0].Instances[0].PublicIpAddress,
+			})
 		}
 	}
 
@@ -951,8 +951,8 @@ func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.Si
 	if err != nil {
 		return &node, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	Logger(conn.ctx).Infof("Persistent data volume %v attatched to master", conn.cluster.Spec.MasterDiskId)
-
+	Logger(conn.ctx).Infof("Persistent data volume %v attatched to master", masterDiskId)
+	conn.cluster.Status.Cloud.AWS.VolumeId = masterDiskId
 	time.Sleep(15 * time.Second)
 	r2, err := conn.ec2.CreateRoute(&_ec2.CreateRouteInput{
 		RouteTableId:         StringP(conn.cluster.Status.Cloud.AWS.RouteTableId),
@@ -1055,26 +1055,25 @@ func (conn *cloudConnector) findPD(name string) (string, error) {
 	return "", nil
 }
 
-func (conn *cloudConnector) reserveIP() error {
+func (conn *cloudConnector) createReserveIP(masterNG *api.NodeGroup) (string, error) {
 	// Check that MASTER_RESERVED_IP looks like an IPv4 address
 	// if match, _ := regexp.MatchString("^[0-9]+.[0-9]+.[0-9]+.[0-9]+$", cluster.Spec.ctx.MasterReservedIP); !match {
-	if conn.cluster.Spec.MasterReservedIP == "auto" {
-		r1, err := conn.ec2.AllocateAddress(&_ec2.AllocateAddressInput{
-			Domain: StringP("vpc"),
-		})
-		Logger(conn.ctx).Debug("Allocated elastic IP", r1, err)
-		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
-		}
-		time.Sleep(5 * time.Second)
-		conn.cluster.Spec.MasterReservedIP = *r1.PublicIp
-		Logger(conn.ctx).Infof("Elastic IP %v allocated", conn.cluster.Spec.MasterReservedIP)
+	r1, err := conn.ec2.AllocateAddress(&_ec2.AllocateAddressInput{
+		Domain: StringP("vpc"),
+	})
+	Logger(conn.ctx).Debug("Allocated elastic IP", r1, err)
+	if err != nil {
+		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	return nil
+	time.Sleep(5 * time.Second)
+
+	Logger(conn.ctx).Infof("Elastic IP %v allocated", conn.cluster.Spec.MasterReservedIP)
+
+	return *r1.PublicIp, nil
 }
 
 func (conn *cloudConnector) createMasterInstance(name string, ng *api.NodeGroup) (string, error) {
-	kubeStarter, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleMaster, conn.cluster.Spec.MasterSKU)
+	kubeStarter, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleMaster, ng.Name)
 	if err != nil {
 		return "", err
 	}
@@ -1179,61 +1178,60 @@ func (conn *cloudConnector) getInstancePublicIP(instanceID string) (string, bool
 	return "", false, nil
 }
 
-func (conn *cloudConnector) listInstances(groupName string) ([]*api.Node, error) {
+func (conn *cloudConnector) listInstances(groupName string) ([]*api.SimpleNode, error) {
 	r2, err := conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: []*string{
 			StringP(groupName),
 		},
 	})
 	if err != nil {
-		conn.cluster.Status.Reason = err.Error()
 		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	instances := make([]*api.Node, 0)
+	instances := make([]*api.SimpleNode, 0)
 	for _, group := range r2.AutoScalingGroups {
 		for _, instance := range group.Instances {
 			ki, err := conn.newKubeInstance(*instance.InstanceId)
 			if err != nil {
 				return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
 			}
-			ki.Spec.Role = api.RoleNode
 			instances = append(instances, ki)
 		}
 	}
 	return instances, nil
 }
-func (conn *cloudConnector) newKubeInstance(instanceID string) (*api.Node, error) {
-	r1, err := conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
-		InstanceIds: []*string{StringP(instanceID)},
+
+func (conn *cloudConnector) newKubeInstance(instanceID string) (*api.SimpleNode, error) {
+	var err error
+	var instance *_ec2.DescribeInstancesOutput
+	attempt := 0
+	wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+		instance, err = conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
+			InstanceIds: []*string{StringP(instanceID)},
+		})
+		fmt.Println(*instance.Reservations[0].Instances[0].State.Name, instanceID)
+		Logger(conn.ctx).Infof("Attempt %v: Describing instance ...", attempt)
+		if *instance.Reservations[0].Instances[0].State.Name != "pending" {
+			return true, nil
+		}
+		return false, err
 	})
-	Logger(conn.ctx).Debug("Retrieved instance ", r1, err)
+
+	Logger(conn.ctx).Debug("Retrieved instance ", instance, err)
 	if err != nil {
 		return nil, InstanceNotFound
 	}
 
-	// Don't reassign internal_ip for AWS to keep the fixed 172.20.0.9 for master_internal_ip
-	var publicIP, privateIP string
-	if *r1.Reservations[0].Instances[0].State.Name != "running" {
-		publicIP = ""
-		privateIP = ""
-	} else {
-		publicIP = *r1.Reservations[0].Instances[0].PublicIpAddress
-		privateIP = *r1.Reservations[0].Instances[0].PrivateIpAddress
+	if *instance.Reservations[0].Instances[0].State.Name != "running" {
+		return &api.SimpleNode{}, nil
 	}
-	i := api.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:  phid.NewKubeInstance(),
-			Name: *r1.Reservations[0].Instances[0].PrivateDnsName,
-		},
-		Spec: api.NodeSpec{
-			SKU: *r1.Reservations[0].Instances[0].InstanceType,
-		},
-		Status: api.NodeStatus{
-			ExternalID:    instanceID,
-			ExternalPhase: *r1.Reservations[0].Instances[0].State.Name,
-			PublicIP:      publicIP,
-			PrivateIP:     privateIP,
-		},
+
+	// Don't reassign internal_ip for AWS to keep the fixed 172.20.0.9 for master_internal_ip
+	i := api.SimpleNode{
+		Name:       *instance.Reservations[0].Instances[0].PrivateDnsName,
+		ExternalID: instanceID,
+		PublicIP:   *instance.Reservations[0].Instances[0].PublicIpAddress,
+		PrivateIP:  *instance.Reservations[0].Instances[0].PrivateIpAddress,
 	}
 	/*
 		// The low byte represents the state. The high byte is an opaque internal value
@@ -1246,11 +1244,7 @@ func (conn *cloudConnector) newKubeInstance(instanceID string) (*api.Node, error
 		//    64 : stopping
 		//    80 : stopped
 	*/
-	if i.Status.ExternalPhase == "terminated" {
-		i.Status.Phase = api.NodeDeleted
-	} else {
-		i.Status.Phase = api.NodeReady
-	}
+
 	return &i, nil
 }
 
@@ -1267,15 +1261,15 @@ func (conn *cloudConnector) allocateElasticIp() (string, error) {
 	return *r1.PublicIp, nil
 }
 
-func (conn *cloudConnector) assignIPToInstance(instanceID string) error {
+func (conn *cloudConnector) assignIPToInstance(reservedIP, instanceID string) error {
 	r1, err := conn.ec2.DescribeAddresses(&_ec2.DescribeAddressesInput{
-		PublicIps: []*string{StringP(conn.cluster.Spec.MasterReservedIP)},
+		PublicIps: []*string{StringP(reservedIP)},
 	})
 	Logger(conn.ctx).Debug("Retrieved allocation ID for elastic IP", r1, err)
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	Logger(conn.ctx).Infof("Found allocation id %v for elastic IP %v", r1.Addresses[0].AllocationId, conn.cluster.Spec.MasterReservedIP)
+	Logger(conn.ctx).Infof("Found allocation id %v for elastic IP %v", r1.Addresses[0].AllocationId, reservedIP)
 	time.Sleep(1 * time.Minute)
 
 	r2, err := conn.ec2.AssociateAddress(&_ec2.AssociateAddressInput{
@@ -1286,13 +1280,13 @@ func (conn *cloudConnector) assignIPToInstance(instanceID string) error {
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	Logger(conn.ctx).Infof("IP %v attached to instance %v", conn.cluster.Spec.MasterReservedIP, instanceID)
+	Logger(conn.ctx).Infof("IP %v attached to instance %v", reservedIP, instanceID)
 	return nil
 }
 
-func (conn *cloudConnector) createLaunchConfiguration(name, sku string) error {
+func (conn *cloudConnector) createLaunchConfiguration(name string, ng *api.NodeGroup) error {
 	// script := conn.RenderStartupScript(conn.cluster, sku, api.RoleKubernetesPool)
-	script, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleNode, sku)
+	script, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleNode, ng.Name)
 	if err != nil {
 		return err
 	}
@@ -1307,8 +1301,8 @@ func (conn *cloudConnector) createLaunchConfiguration(name, sku string) error {
 				DeviceName: StringP(conn.cluster.Status.Cloud.AWS.RootDeviceName),
 				Ebs: &autoscaling.Ebs{
 					DeleteOnTermination: TrueP(),
-					VolumeSize:          Int64P(conn.cluster.Spec.NodeDiskSize),
-					VolumeType:          StringP(conn.cluster.Spec.NodeDiskType),
+					VolumeSize:          Int64P(ng.Spec.Template.Spec.DiskSize),
+					VolumeType:          StringP(ng.Spec.Template.Spec.DiskType),
 				},
 			},
 			// EPHEMERAL_BLOCK_DEVICE_MAPPINGS
@@ -1331,7 +1325,7 @@ func (conn *cloudConnector) createLaunchConfiguration(name, sku string) error {
 		},
 		IamInstanceProfile: StringP(conn.cluster.Spec.Cloud.AWS.IAMProfileNode),
 		ImageId:            StringP(conn.cluster.Spec.Cloud.InstanceImage),
-		InstanceType:       StringP(sku),
+		InstanceType:       StringP(ng.Spec.Template.Spec.SKU),
 		KeyName:            StringP(conn.cluster.Status.SSHKeyExternalID),
 		SecurityGroups: []*string{
 			StringP(conn.cluster.Status.Cloud.AWS.NodeSGId),
@@ -1675,7 +1669,7 @@ func (conn *cloudConnector) deleteVpc() error {
 
 func (conn *cloudConnector) deleteVolume() error {
 	_, err := conn.ec2.DeleteVolume(&_ec2.DeleteVolumeInput{
-		VolumeId: StringP(conn.cluster.Spec.MasterDiskId),
+		VolumeId: StringP(conn.cluster.Status.Cloud.AWS.VolumeId),
 	})
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -1791,7 +1785,6 @@ func (conn *cloudConnector) deleteMaster() error {
 		InstanceIds: masterInstances,
 	}
 	err = conn.ec2.WaitUntilInstanceTerminated(instanceInput)
-	fmt.Println(err, "--------------------<<<<<<<")
 	Logger(conn.ctx).Infof("Master instance for cluster %v is terminated", conn.cluster.Name)
 	return nil
 }
@@ -1852,4 +1845,67 @@ func (conn *cloudConnector) ensureInstancesDeleted() error {
 		time.Sleep(15 * time.Second)
 	}
 	return nil
+}
+
+func (conn *cloudConnector) describeGroupInfo(instanceGroup string) (*autoscaling.DescribeAutoScalingGroupsOutput, error) {
+	groups := make([]*string, 0)
+	groups = append(groups, StringP(instanceGroup))
+	r1, err := conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
+		AutoScalingGroupNames: groups,
+	})
+	if err != nil {
+		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+	return r1, nil
+}
+
+func (conn *cloudConnector) getInstancePublicDNS(providerID string) (string, error) {
+	r1, err := conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
+		Filters: []*_ec2.Filter{
+			{
+				Name: StringP("instance-id"),
+				Values: []*string{
+					StringP(providerID),
+				},
+			},
+			{
+				Name: StringP("tag:KubernetesCluster"),
+				Values: []*string{
+					StringP(conn.cluster.Name),
+				},
+			},
+		},
+	})
+	if err != nil {
+		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+	return *r1.Reservations[0].Instances[0].PublicDnsName, nil
+}
+
+func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *apiv1.Node) (string, error) {
+	///"providerID": "aws:////i-01c7b221cb9f1037a",
+	providerID := strings.Split(instance.Spec.ProviderID, ":////")
+	fmt.Println(providerID)
+	if len(providerID) <= 1 {
+		return "", fmt.Errorf("No provider id found for this instance")
+	}
+	ip, err := conn.getInstancePublicDNS(providerID[1])
+	if err != nil {
+		return "", err
+	}
+	if ip == "" {
+		return "", fmt.Errorf("No ip found for ssh")
+	}
+
+	keySigner, _ := ssh.ParsePrivateKey(SSHKey(conn.ctx).PrivateKey)
+	config := &ssh.ClientConfig{
+		User: "ubuntu",
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(keySigner),
+		},
+	}
+	// login as ubuntu user but command needs to run as root
+	command = fmt.Sprintf("sudo %v", command)
+
+	return ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", ip, 22), config)
 }

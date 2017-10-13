@@ -40,6 +40,16 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return nil, err
 	}
+	cm.conn.namer = cm.namer
+
+	if err = cm.conn.detectUbuntuImage(); err != nil {
+		return nil, err
+	}
+	cm.cluster.Spec.Cloud.InstanceImage = cm.conn.cluster.Spec.Cloud.InstanceImage
+
+	if cm.cluster.Status.Phase == api.ClusterUpgrading {
+		return cm.applyUpgrade(dryRun)
+	}
 
 	if cm.cluster.Status.Phase == api.ClusterPending {
 		a, err := cm.applyCreate(dryRun)
@@ -103,16 +113,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 
 func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
 	var found bool
-	if err = cm.conn.detectUbuntuImage(); err != nil {
-		return
-	}
-	cm.cluster.Spec.Cloud.InstanceImage = cm.conn.cluster.Spec.Cloud.InstanceImage
 	// TODO: FixIt!
 	//cm.cluster.Spec.RootDeviceName = cm.conn.cluster.Spec.RootDeviceName
 	//fmt.Println(cm.cluster.Spec.Cloud.InstanceImage, cm.cluster.Spec.RootDeviceName, "---------------*********")
 
 	if found, err = cm.conn.getIAMProfile(); err != nil {
-		return
+		//return
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -134,7 +140,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if found, err = cm.conn.getPublicKey(); err != nil {
-		return
+		//return
 	}
 
 	if !found {
@@ -157,7 +163,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if found, err = cm.conn.getVpc(); err != nil {
-		return
+		//return
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -179,7 +185,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if found, err = cm.conn.getDSCPOptionSet(); err != nil {
-		return
+		//return
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -201,7 +207,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if found, err = cm.conn.getSubnet(); err != nil {
-		return
+		//return
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -223,7 +229,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if found, err = cm.conn.getInternetGateway(); err != nil {
-		return
+		//return
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -245,7 +251,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if found, err = cm.conn.getRouteTable(); err != nil {
-		return
+		//return
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -267,7 +273,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if _, found, err = cm.conn.getSecurityGroupId(cm.cluster.Spec.Cloud.AWS.MasterSGName); err != nil {
-		return
+		//return
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -326,7 +332,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if found, err = cm.conn.getMaster(); err != nil {
-		return
+		//return
 	}
 	if !found {
 		Logger(cm.ctx).Info("Creating master instance")
@@ -342,6 +348,12 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.FromErr(err).WithContext(cm.ctx).Err()
 				return acts, err
+			}
+			if masterServer.PrivateIP != "" {
+				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, apiv1.NodeAddress{
+					Type:    apiv1.NodeInternalIP,
+					Address: masterServer.PrivateIP,
+				})
 			}
 
 			var kc kubernetes.Interface
@@ -391,88 +403,57 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 	if err != nil {
 		return
 	}
+	var kc kubernetes.Interface
+	if cm.cluster.Status.Phase != api.ClusterPending {
+		kc, err = cm.GetAdminClient()
+		if err != nil {
+			return
+		}
+		if !dryRun {
+			if cm.cluster.Spec.Token, err = GetExistingKubeadmToken(kc); err != nil {
+				return
+			}
+			if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
+				return
+			}
+		}
+
+	}
 	for _, node := range nodeGroups {
 		if node.IsMaster() {
 			continue
 		}
-		igm := &AWSNodeGroupManager{
-			cm: cm,
-			instance: Instance{
-				Type: InstanceType{
-					Sku:          node.Spec.Template.Spec.SKU,
-					Master:       false,
-					SpotInstance: false,
-				},
-				Stats: GroupStats{
-					Count: node.Spec.Nodes,
-				},
-			},
+		igm := NewAWSNodeGroupManager(cm, node, kc)
+		var a2 []api.Action
+		a2, err = igm.Apply(dryRun)
+		if err != nil {
+			return
 		}
-		if node.DeletionTimestamp != nil {
-			instanceGroupName := igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku)
-			acts = append(acts, api.Action{
-				Action:   api.ActionDelete,
-				Resource: "Node Group",
-				Message:  fmt.Sprintf("Node group %v  will be deleted", instanceGroupName),
-			})
-			if !dryRun {
-				err := igm.deleteOnlyNodeGroup(instanceGroupName)
-				if err != nil {
-					err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-				}
-			}
-			acts = append(acts, api.Action{
-				Action:   api.ActionDelete,
-				Resource: "Autoscaler",
-				Message:  fmt.Sprintf("Autoscaler %v  will be deleted", instanceGroupName),
-			})
-			if !dryRun {
-				err = igm.cm.conn.deleteAutoScalingGroup(igm.cm.namer.AutoScalingGroupName(igm.instance.Type.Sku))
-				if err != nil {
-					err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-				}
-			}
-			launchConfig := igm.cm.namer.LaunchConfigName(igm.instance.Type.Sku)
-			acts = append(acts, api.Action{
-				Action:   api.ActionDelete,
-				Resource: "Launch Configuration",
-				Message:  fmt.Sprintf("launch configuration %v  will be deleted", launchConfig),
-			})
-			if !dryRun {
-				err = igm.cm.conn.deleteLaunchConfiguration(launchConfig)
-				if err != nil {
-					err = errors.FromErr(err).WithContext(igm.cm.ctx).Err()
-				}
-			}
-		} else {
-			act, _ := igm.AdjustNodeGroup(dryRun)
-			acts = append(acts, act...)
-			if !dryRun {
-				node.Status.Nodes = (int64)(node.Spec.Nodes)
-				Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(node)
-			}
-		}
+		acts = append(acts, a2...)
 	}
 	if !dryRun {
 		time.Sleep(1 * time.Minute)
 
 		for _, ng := range nodeGroups {
-			groupName := cm.namer.AutoScalingGroupName(ng.Spec.Template.Spec.SKU)
-			providerInstances, _ := cm.conn.listInstances(groupName)
+			if ng.IsMaster() {
+				continue
+			}
+			providerInstances, _ := cm.conn.listInstances(ng.Name)
 
-			runningInstance := make(map[string]*api.Node)
+			runningInstance := make(map[string]*api.SimpleNode)
 			for _, node := range providerInstances {
-				host := "ip-" + strings.Replace(node.Status.PrivateIP, ".", "-", -1)
+				host := "ip-" + strings.Replace(node.PrivateIP, ".", "-", -1)
 				fmt.Println(node.Name, host)
 				runningInstance[host] = node
 			}
 
-			clusterInstance, _ := GetClusterIstance(cm.ctx, cm.cluster, groupName)
+			clusterInstance, _ := GetClusterIstance2(kc, ng.Name)
 			for _, node := range clusterInstance {
-				fmt.Println(node)
 				if _, found := runningInstance[node]; !found {
-					err = DeleteClusterInstance(cm.ctx, cm.cluster, node)
-					fmt.Println(err)
+					if err = DeleteClusterInstance2(kc, node); err != nil {
+						return
+					}
+
 				}
 			}
 		}
@@ -525,7 +506,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		return
 	}
 	if err = cm.conn.ensureInstancesDeleted(); err != nil {
-		return
+		//return
 	}
 	if err = cm.conn.deleteVolume(); err != nil {
 		return
@@ -577,6 +558,29 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
 		return
 	}
+	cm.cluster.Status.Phase = api.ClusterDeleted
+	Store(cm.ctx).Clusters().Update(cm.cluster)
 
+	return
+}
+
+func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err error) {
+	var kc kubernetes.Interface
+	if kc, err = cm.GetAdminClient(); err != nil {
+		return
+	}
+
+	upm := NewUpgradeManager(cm.ctx, cm.conn, kc, cm.cluster, cm.cluster.Spec.KubernetesVersion)
+	a, err := upm.Apply(dryRun)
+	if err != nil {
+		return
+	}
+	acts = append(acts, a...)
+	if !dryRun {
+		cm.cluster.Status.Phase = api.ClusterReady
+		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+			return
+		}
+	}
 	return
 }

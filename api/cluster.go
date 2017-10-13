@@ -250,6 +250,7 @@ type AWSStatus struct {
 	RouteTableId  string `json:"routeTableID,omitempty"`
 	IGWId         string `json:"igwID,omitempty"`
 	DHCPOptionsId string `json:"dhcpOptionsID,omitempty"`
+	VolumeId      string `json:"volumeID,omitempty"`
 
 	// only aws
 	RootDeviceName string `json:"-"`
