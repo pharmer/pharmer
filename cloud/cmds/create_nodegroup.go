@@ -61,7 +61,7 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, nodes map[string
 				UID:               phid.NewNodeGroup(),
 				CreationTimestamp: metav1.Time{Time: time.Now()},
 				Labels: map[string]string{
-					"node-role.kubernetes.io/node": "true",
+					api.RoleNodeKey: "",
 				},
 			},
 			Spec: api.NodeGroupSpec{

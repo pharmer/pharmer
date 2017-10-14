@@ -10,7 +10,6 @@ import (
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
-	"github.com/cenkalti/backoff"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -443,7 +442,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		Message:  "Resource group will be deleted",
 	})
 	if !dryRun {
-		if err = backoff.Retry(cm.conn.deleteResourceGroup, backoff.NewExponentialBackOff()); err != nil {
+		if err = cm.conn.deleteResourceGroup(); err != nil {
 			return
 		}
 		if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {

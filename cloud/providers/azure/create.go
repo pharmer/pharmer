@@ -22,7 +22,7 @@ func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.Node
 			UID:               phid.NewNodeGroup(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 			Labels: map[string]string{
-				"node-role.kubernetes.io/master": "true",
+				api.RoleMasterKey: "",
 			},
 		},
 		Spec: api.NodeGroupSpec{

@@ -24,7 +24,6 @@ import (
 	"github.com/appscode/pharmer/credential"
 	"golang.org/x/crypto/ssh"
 	apiv1 "k8s.io/api/core/v1"
-	ktype "k8s.io/apimachinery/pkg/types"
 )
 
 const (
@@ -794,21 +793,21 @@ func (conn *cloudConnector) CreateInstance(name string, ng *api.NodeGroup) (*api
 }
 
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
-	name, err := splitProviderID(providerID)
-	fmt.Println(name, err, "***********")
-	node := string(name)
-	//	conn.vmClient.
+	node, err := splitProviderID(providerID)
+	if err != nil {
+		return err
+	}
 	err = conn.DeleteVirtualMachine(node)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	err = conn.deleteNodeNetworkInterface(conn.namer.NetworkInterfaceName(node))
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	err = conn.deletePublicIp(conn.namer.PublicIPName(node))
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	return nil
 }
@@ -838,12 +837,12 @@ func (conn *cloudConnector) deleteVirtualMachine(machineName string) error {
 
 // splitProviderID converts a providerID to a NodeName.
 //https://github.com/kubernetes/kubernetes/blob/0f5f82fa44148c36955f704dd4dfc119bad4b03c/pkg/cloudprovider/providers/azure/azure_util.go#L306
-func splitProviderID(providerID string) (ktype.NodeName, error) {
+func splitProviderID(providerID string) (string, error) {
 	matches := providerIDRE.FindStringSubmatch(providerID)
 	if len(matches) != 2 {
 		return "", errors.New("error splitting providerID")
 	}
-	return ktype.NodeName(matches[1]), nil
+	return matches[1], nil
 }
 
 func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *apiv1.Node) (string, error) {
