@@ -232,7 +232,7 @@ sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
 sudo chown $(id -u):$(id -g) ~/.kube/config
 
 {{ if eq .Provider "external" }}
-{{ template "master-ccm" . }}
+{{ template "ccm" . }}
 {{end}}
 `))
 
@@ -324,22 +324,7 @@ pre-k get cacert --common-name=front-proxy-ca < /etc/kubernetes/pki/front-proxy-
 chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 `))
 
-	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
-kubectl apply \
-  -f http://docs.projectcalico.org/v2.3/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml \
-  --kubeconfig /etc/kubernetes/admin.conf
-`))
-
-	_ = template.Must(StartupScriptTemplate.New("flannel").Parse(`
-kubectl apply \
-  -f https://raw.githubusercontent.com/coreos/flannel/v0.8.0/Documentation/kube-flannel.yml \
-  --kubeconfig /etc/kubernetes/admin.conf
-kubectl apply \
-  -f https://raw.githubusercontent.com/coreos/flannel/v0.8.0/Documentation/kube-flannel-rbac.yml \
-  --kubeconfig /etc/kubernetes/admin.conf
-`))
-
-	_ = template.Must(StartupScriptTemplate.New("master-ccm").Parse(`
+	_ = template.Must(StartupScriptTemplate.New("ccm").Parse(`
 until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath={.items[0].status.phase} --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
 do
    echo '.'
@@ -367,6 +352,20 @@ systemctl restart kubelet
 
 sleep 10
 reboot
+`))
 
+	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
+kubectl apply \
+  -f http://docs.projectcalico.org/v2.3/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+`))
+
+	_ = template.Must(StartupScriptTemplate.New("flannel").Parse(`
+kubectl apply \
+  -f https://raw.githubusercontent.com/coreos/flannel/v0.8.0/Documentation/kube-flannel.yml \
+  --kubeconfig /etc/kubernetes/admin.conf
+kubectl apply \
+  -f https://raw.githubusercontent.com/coreos/flannel/v0.8.0/Documentation/kube-flannel-rbac.yml \
+  --kubeconfig /etc/kubernetes/admin.conf
 `))
 )
