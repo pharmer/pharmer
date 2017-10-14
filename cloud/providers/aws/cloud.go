@@ -122,7 +122,7 @@ func (conn *cloudConnector) detectUbuntuImage() error {
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	conn.cluster.Spec.Cloud.InstanceImage = *r1.Images[0].ImageId
 	conn.cluster.Status.Cloud.AWS.RootDeviceName = *r1.Images[0].RootDeviceName
@@ -147,7 +147,7 @@ func (conn *cloudConnector) ensureIAMProfile() error {
 	if r1.InstanceProfile == nil {
 		err := conn.createIAMProfile(conn.cluster.Spec.Cloud.AWS.IAMProfileMaster)
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 		Logger(conn.ctx).Infof("Master instance profile %v created", conn.cluster.Spec.Cloud.AWS.IAMProfileMaster)
 	}
@@ -155,7 +155,7 @@ func (conn *cloudConnector) ensureIAMProfile() error {
 	if r2.InstanceProfile == nil {
 		err := conn.createIAMProfile(conn.cluster.Spec.Cloud.AWS.IAMProfileNode)
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 		Logger(conn.ctx).Infof("Node instance profile %v created", conn.cluster.Spec.Cloud.AWS.IAMProfileNode)
 	}
@@ -173,7 +173,7 @@ func (conn *cloudConnector) createIAMProfile(key string) error {
 	Logger(conn.ctx).Debug("Created IAM role", r1, err)
 	Logger(conn.ctx).Infof("IAM role %v created", key)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	reqPolicy := &_iam.PutRolePolicyInput{
@@ -189,7 +189,7 @@ func (conn *cloudConnector) createIAMProfile(key string) error {
 	Logger(conn.ctx).Debug("Created IAM role-policy", r2, err)
 	Logger(conn.ctx).Infof("IAM role-policy %v created", key)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	r3, err := conn.iam.CreateInstanceProfile(&_iam.CreateInstanceProfileInput{
@@ -197,7 +197,7 @@ func (conn *cloudConnector) createIAMProfile(key string) error {
 	})
 	Logger(conn.ctx).Debug("Created IAM instance-policy", r3, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("IAM instance-policy %v created", key)
 
@@ -207,7 +207,7 @@ func (conn *cloudConnector) createIAMProfile(key string) error {
 	})
 	Logger(conn.ctx).Debug("Added IAM role to instance-policy", r4, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("IAM role %v added to instance-policy %v", key, key)
 	return nil
@@ -233,13 +233,13 @@ func (conn *cloudConnector) importPublicKey() error {
 	})
 	Logger(conn.ctx).Debug("Imported SSH key", resp, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	// TODO ignore "InvalidKeyPair.Duplicate" error
 	if err != nil {
 		Logger(conn.ctx).Info("Error importing public key", resp, err)
 		//os.Exit(1)
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 
 	}
 	Logger(conn.ctx).Infof("SSH key with (AWS) fingerprint %v imported", SSHKey(conn.ctx).AwsFingerprint)
@@ -254,7 +254,7 @@ func (conn *cloudConnector) findVPC() (bool, error) {
 		},
 	})
 	if err != nil {
-		return false, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return false, err
 	}
 	return len(r1.Vpcs) > 0, nil
 }
@@ -295,7 +295,7 @@ func (conn *cloudConnector) setupVpc() error {
 	Logger(conn.ctx).Debug("VPC created", r2, err)
 	//errorutil.EOE(err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("VPC %v created", *r2.Vpc.VpcId)
 	conn.cluster.Status.Cloud.AWS.VpcId = *r2.Vpc.VpcId
@@ -309,7 +309,7 @@ func (conn *cloudConnector) setupVpc() error {
 	Logger(conn.ctx).Debug("DNS support enabled", r3, err)
 	Logger(conn.ctx).Infof("Enabled DNS support for VPCID %v", conn.cluster.Status.Cloud.AWS.VpcId)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	r4, err := conn.ec2.ModifyVpcAttribute(&_ec2.ModifyVpcAttributeInput{
@@ -321,7 +321,7 @@ func (conn *cloudConnector) setupVpc() error {
 	Logger(conn.ctx).Debug("DNS hostnames enabled", r4, err)
 	Logger(conn.ctx).Infof("Enabled DNS hostnames for VPCID %v", conn.cluster.Status.Cloud.AWS.VpcId)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	time.Sleep(preTagDelay)
@@ -344,13 +344,13 @@ func (conn *cloudConnector) addTag(id string, key string, value string) error {
 	})
 	Logger(conn.ctx).Debug("Added tag ", resp, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("Added tag %v:%v to id %v", key, value, id)
 	return nil
 }
 
-func (conn cloudConnector) getDSCPOptionSet() (bool, error) {
+func (conn cloudConnector) getDHCPOptionSet() (bool, error) {
 	optionSetDomain := fmt.Sprintf("%v.compute.internal", conn.cluster.Spec.Cloud.Region)
 	r1, err := conn.ec2.DescribeDhcpOptions(&_ec2.DescribeDhcpOptionsInput{
 		Filters: []*_ec2.Filter{
@@ -364,7 +364,9 @@ func (conn cloudConnector) getDSCPOptionSet() (bool, error) {
 			},
 		},
 	})
-	fmt.Println(err)
+	if err != nil {
+		return false, err
+	}
 	if len(r1.DhcpOptions) > 0 {
 		return true, nil
 	}
@@ -390,7 +392,7 @@ func (conn *cloudConnector) createDHCPOptionSet() error {
 	})
 	Logger(conn.ctx).Debug("Created DHCP options ", r1, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("DHCP options created with id %v", *r1.DhcpOptions.DhcpOptionsId)
 	conn.cluster.Status.Cloud.AWS.DHCPOptionsId = *r1.DhcpOptions.DhcpOptionsId
@@ -405,7 +407,7 @@ func (conn *cloudConnector) createDHCPOptionSet() error {
 	})
 	Logger(conn.ctx).Debug("Associated DHCP options ", r2, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("DHCP options %v associated with %v", conn.cluster.Status.Cloud.AWS.DHCPOptionsId, conn.cluster.Status.Cloud.AWS.VpcId)
 
@@ -438,7 +440,7 @@ func (conn *cloudConnector) getSubnet() (bool, error) {
 	})
 	Logger(conn.ctx).Debug("Retrieved subnet", r1, err)
 	if err != nil {
-		return false, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return false, err
 	}
 	if len(r1.Subnets) == 0 {
 		return false, fmt.Errorf("No subnet found")
@@ -453,7 +455,7 @@ func (conn *cloudConnector) getSubnet() (bool, error) {
 	})
 	Logger(conn.ctx).Debug("Retrieved VPC", r3, err)
 	if err != nil {
-		return true, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return true, err
 	}
 
 	octets := strings.Split(*r3.Vpcs[0].CidrBlock, ".")
@@ -473,7 +475,7 @@ func (conn *cloudConnector) setupSubnet() error {
 	})
 	Logger(conn.ctx).Debug("Created subnet", r2, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("Subnet %v created", *r2.Subnet.SubnetId)
 	conn.cluster.Status.Cloud.AWS.SubnetId = *r2.Subnet.SubnetId
@@ -487,7 +489,7 @@ func (conn *cloudConnector) setupSubnet() error {
 	})
 	Logger(conn.ctx).Debug("Retrieved VPC", r3, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	octets := strings.Split(*r3.Vpcs[0].CidrBlock, ".")
@@ -511,7 +513,7 @@ func (conn *cloudConnector) getInternetGateway() (bool, error) {
 	})
 	Logger(conn.ctx).Debug("Retrieved IGW", r1, err)
 	if err != nil {
-		return false, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return false, err
 	}
 	if len(r1.InternetGateways) == 0 {
 		return false, fmt.Errorf("IGW not found")
@@ -526,7 +528,7 @@ func (conn *cloudConnector) setupInternetGateway() error {
 	r2, err := conn.ec2.CreateInternetGateway(&_ec2.CreateInternetGatewayInput{})
 	Logger(conn.ctx).Debug("Created IGW", r2, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	conn.cluster.Status.Cloud.AWS.IGWId = *r2.InternetGateway.InternetGatewayId
 	time.Sleep(preTagDelay)
@@ -538,7 +540,7 @@ func (conn *cloudConnector) setupInternetGateway() error {
 	})
 	Logger(conn.ctx).Debug("Attached IGW to VPC", r3, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("Attached IGW %v to VPCID %v", conn.cluster.Status.Cloud.AWS.IGWId, conn.cluster.Status.Cloud.AWS.VpcId)
 
@@ -567,7 +569,7 @@ func (conn *cloudConnector) getRouteTable() (bool, error) {
 	})
 	Logger(conn.ctx).Debug("Attached IGW to VPC", r1, err)
 	if err != nil {
-		return false, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return false, err
 	}
 	if len(r1.RouteTables) == 0 {
 		return false, fmt.Errorf("Route table not found")
@@ -584,7 +586,7 @@ func (conn *cloudConnector) setupRouteTable() error {
 	})
 	Logger(conn.ctx).Debug("Created route table", r2, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	conn.cluster.Status.Cloud.AWS.RouteTableId = *r2.RouteTable.RouteTableId
@@ -598,7 +600,7 @@ func (conn *cloudConnector) setupRouteTable() error {
 	})
 	Logger(conn.ctx).Debug("Associating route table to subnet", r3, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("Route table %v associated to subnet %v", conn.cluster.Status.Cloud.AWS.RouteTableId, conn.cluster.Status.Cloud.AWS.SubnetId)
 
@@ -609,7 +611,7 @@ func (conn *cloudConnector) setupRouteTable() error {
 	})
 	Logger(conn.ctx).Debug("Added route to route table", r4, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("Route added to route table %v", conn.cluster.Status.Cloud.AWS.RouteTableId)
 	return nil
@@ -620,50 +622,50 @@ func (conn *cloudConnector) setupSecurityGroups() error {
 	var err error
 	if conn.cluster.Status.Cloud.AWS.MasterSGId, ok, err = conn.getSecurityGroupId(conn.cluster.Spec.Cloud.AWS.MasterSGName); !ok {
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 		err = conn.createSecurityGroup(conn.cluster.Spec.Cloud.AWS.MasterSGName, "Kubernetes security group applied to master instance")
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 		Logger(conn.ctx).Infof("Master security group %v created", conn.cluster.Spec.Cloud.AWS.MasterSGName)
 	}
 	if conn.cluster.Status.Cloud.AWS.NodeSGId, ok, err = conn.getSecurityGroupId(conn.cluster.Spec.Cloud.AWS.NodeSGName); !ok {
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 		err = conn.createSecurityGroup(conn.cluster.Spec.Cloud.AWS.NodeSGName, "Kubernetes security group applied to node instances")
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 		Logger(conn.ctx).Infof("Node security group %v created", conn.cluster.Spec.Cloud.AWS.NodeSGName)
 	}
 
 	err = conn.detectSecurityGroups()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	Logger(conn.ctx).Info("Masters can talk to master")
 	err = conn.autohrizeIngressBySGID(conn.cluster.Status.Cloud.AWS.MasterSGId, conn.cluster.Status.Cloud.AWS.MasterSGId)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	Logger(conn.ctx).Info("Nodes can talk to nodes")
 	err = conn.autohrizeIngressBySGID(conn.cluster.Status.Cloud.AWS.NodeSGId, conn.cluster.Status.Cloud.AWS.NodeSGId)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	Logger(conn.ctx).Info("Masters and nodes can talk to each other")
 	err = conn.autohrizeIngressBySGID(conn.cluster.Status.Cloud.AWS.MasterSGId, conn.cluster.Status.Cloud.AWS.NodeSGId)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	err = conn.autohrizeIngressBySGID(conn.cluster.Status.Cloud.AWS.NodeSGId, conn.cluster.Status.Cloud.AWS.MasterSGId)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	// TODO(justinsb): Would be fairly easy to replace 0.0.0.0/0 in these rules
@@ -671,22 +673,22 @@ func (conn *cloudConnector) setupSecurityGroups() error {
 	Logger(conn.ctx).Info("SSH is opened to the world")
 	err = conn.autohrizeIngressByPort(conn.cluster.Status.Cloud.AWS.MasterSGId, 22)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	err = conn.autohrizeIngressByPort(conn.cluster.Status.Cloud.AWS.NodeSGId, 22)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	Logger(conn.ctx).Info("HTTPS to the master is allowed (for API access)")
 	err = conn.autohrizeIngressByPort(conn.cluster.Status.Cloud.AWS.MasterSGId, 443)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	if conn.cluster.Spec.API.BindPort != 443 {
 		err = conn.autohrizeIngressByPort(conn.cluster.Status.Cloud.AWS.MasterSGId, int64(conn.cluster.Spec.API.BindPort))
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 	}
 	return nil
@@ -718,7 +720,7 @@ func (conn *cloudConnector) getSecurityGroupId(groupName string) (string, bool, 
 	})
 	Logger(conn.ctx).Debug("Retrieved security group", r1, err)
 	if err != nil {
-		return "", false, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", false, err
 	}
 	if len(r1.SecurityGroups) == 0 {
 		Logger(conn.ctx).Infof("No security group %v found", groupName)
@@ -737,13 +739,13 @@ func (conn *cloudConnector) createSecurityGroup(groupName string, description st
 	})
 	Logger(conn.ctx).Debug("Created security group", r2, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	time.Sleep(preTagDelay)
 	err = conn.addTag(*r2.GroupId, "KubernetesCluster", conn.cluster.Name)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	return nil
 }
@@ -766,7 +768,7 @@ func (conn *cloudConnector) detectSecurityGroups() error {
 		}
 	}
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	return nil
 }
@@ -787,7 +789,7 @@ func (conn *cloudConnector) autohrizeIngressBySGID(groupID string, srcGroup stri
 	})
 	Logger(conn.ctx).Debug("Authorized ingress", r1, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("Ingress authorized into SG %v from SG %v", groupID, srcGroup)
 	return nil
@@ -811,7 +813,7 @@ func (conn *cloudConnector) autohrizeIngressByPort(groupID string, port int64) e
 	})
 	Logger(conn.ctx).Debug("Authorized ingress", r1, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("Authorized ingress into SG %v via port %v", groupID, port)
 	return nil
@@ -853,27 +855,27 @@ func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.Si
 	// TODO: FixIt!
 	masterDiskId, err := conn.ensurePd(conn.namer.MasterPDName(), ng.Spec.Template.Spec.DiskType, ng.Spec.Template.Spec.DiskSize)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, err
 	}
 
 	Store(conn.ctx).Clusters().UpdateStatus(conn.cluster) // needed for master start-up config
 
 	masterInstanceID, err := conn.createMasterInstance(name, ng)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, err
 	}
 	Logger(conn.ctx).Info("Waiting for master instance to be ready")
 	// We are not able to add an elastic ip, a route or volume to the instance until that instance is in "running" state.
 	err = conn.waitForInstanceState(masterInstanceID, "running")
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, err
 	}
 	Logger(conn.ctx).Info("Master instance is ready")
 	if ng.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
 		var reservedIP string
 		if len(conn.cluster.Status.ReservedIPs) == 0 {
 			if reservedIP, err = conn.createReserveIP(ng); err != nil {
-				return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+				return nil, err
 			}
 		} else {
 			reservedIP = conn.cluster.Status.ReservedIPs[0].IP
@@ -936,7 +938,7 @@ func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.Si
 	// There appears to be no way to start an AWS instance with a volume attached.
 	// To work around this, we wait for volume to be ready in setup-master-pd.sh
 	if err != nil {
-		return &node, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return &node, err
 	}
 
 	r1, err := conn.ec2.AttachVolume(&_ec2.AttachVolumeInput{
@@ -946,7 +948,7 @@ func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.Si
 	})
 	Logger(conn.ctx).Debug("Attached persistent data volume to master", r1, err)
 	if err != nil {
-		return &node, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return &node, err
 	}
 	Logger(conn.ctx).Infof("Persistent data volume %v attatched to master", masterDiskId)
 	conn.cluster.Status.Cloud.AWS.VolumeId = masterDiskId
@@ -958,7 +960,7 @@ func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.Si
 	})
 	Logger(conn.ctx).Debug("Created route to master", r2, err)
 	if err != nil {
-		return &node, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return &node, err
 	}
 	Logger(conn.ctx).Infof("Master route to route table %v for ip %v created", conn.cluster.Status.Cloud.AWS.RouteTableId, masterInstanceID)
 	return &node, nil
@@ -970,7 +972,7 @@ func (conn *cloudConnector) waitForInstanceState(instanceId string, state string
 			InstanceIds: []*string{StringP(instanceId)},
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 		curState := *r1.Reservations[0].Instances[0].State.Name
 		if curState == state {
@@ -986,7 +988,7 @@ func (conn *cloudConnector) waitForInstanceState(instanceId string, state string
 func (conn *cloudConnector) ensurePd(name, diskType string, sizeGb int64) (string, error) {
 	volumeId, err := conn.findPD(name)
 	if err != nil {
-		return volumeId, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return volumeId, err
 	}
 	if volumeId == "" {
 		// name := cluster.Spec.ctx.KubernetesMasterName + "-pd"
@@ -997,7 +999,7 @@ func (conn *cloudConnector) ensurePd(name, diskType string, sizeGb int64) (strin
 		})
 		Logger(conn.ctx).Debug("Created master pd", r1, err)
 		if err != nil {
-			return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+			return "", err
 		}
 		volumeId = *r1.VolumeId
 		Logger(conn.ctx).Infof("Master disk with size %vGB, type %v created", conn.cluster.Spec.MasterDiskSize, conn.cluster.Spec.MasterDiskType)
@@ -1005,11 +1007,11 @@ func (conn *cloudConnector) ensurePd(name, diskType string, sizeGb int64) (strin
 		time.Sleep(preTagDelay)
 		err = conn.addTag(volumeId, "Name", name)
 		if err != nil {
-			return volumeId, errors.FromErr(err).WithContext(conn.ctx).Err()
+			return volumeId, err
 		}
 		err = conn.addTag(volumeId, "KubernetesCluster", conn.cluster.Name)
 		if err != nil {
-			return volumeId, errors.FromErr(err).WithContext(conn.ctx).Err()
+			return volumeId, err
 		}
 	}
 	return volumeId, nil
@@ -1042,7 +1044,7 @@ func (conn *cloudConnector) findPD(name string) (string, error) {
 	})
 	Logger(conn.ctx).Debug("Retrieved master pd", r1, err)
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", err
 	}
 	if len(r1.Volumes) > 0 {
 		Logger(conn.ctx).Infof("Found master pd %v", name)
@@ -1060,7 +1062,7 @@ func (conn *cloudConnector) createReserveIP(masterNG *api.NodeGroup) (string, er
 	})
 	Logger(conn.ctx).Debug("Allocated elastic IP", r1, err)
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", err
 	}
 	time.Sleep(5 * time.Second)
 
@@ -1139,7 +1141,7 @@ func (conn *cloudConnector) createMasterInstance(name string, ng *api.NodeGroup)
 	r1, err := conn.ec2.RunInstances(req)
 	Logger(conn.ctx).Debug("Created instance", r1, err)
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", err
 	}
 	Logger(conn.ctx).Infof("Instance %v created with role %v", name, api.RoleMaster)
 	instanceID := *r1.Instances[0].InstanceId
@@ -1147,15 +1149,15 @@ func (conn *cloudConnector) createMasterInstance(name string, ng *api.NodeGroup)
 
 	err = conn.addTag(instanceID, "Name", conn.cluster.Spec.KubernetesMasterName)
 	if err != nil {
-		return instanceID, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return instanceID, err
 	}
 	err = conn.addTag(instanceID, "Role", api.RoleMaster)
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", err
 	}
 	err = conn.addTag(instanceID, "KubernetesCluster", conn.cluster.Name)
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", err
 	}
 	return instanceID, nil
 }
@@ -1166,7 +1168,7 @@ func (conn *cloudConnector) getInstancePublicIP(instanceID string) (string, bool
 	})
 	Logger(conn.ctx).Debug("Retrieved Public IP for Instance", r1, err)
 	if err != nil {
-		return "", false, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", false, err
 	}
 	if r1.Reservations != nil && r1.Reservations[0].Instances != nil && r1.Reservations[0].Instances[0].NetworkInterfaces != nil {
 		Logger(conn.ctx).Infof("Public ip for instance id %v retrieved", instanceID)
@@ -1182,14 +1184,14 @@ func (conn *cloudConnector) listInstances(groupName string) ([]*api.SimpleNode, 
 		},
 	})
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, err
 	}
 	instances := make([]*api.SimpleNode, 0)
 	for _, group := range r2.AutoScalingGroups {
 		for _, instance := range group.Instances {
 			ki, err := conn.newKubeInstance(*instance.InstanceId)
 			if err != nil {
-				return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+				return nil, err
 			}
 			instances = append(instances, ki)
 		}
@@ -1251,7 +1253,7 @@ func (conn *cloudConnector) allocateElasticIp() (string, error) {
 	})
 	Logger(conn.ctx).Debug("Allocated elastic IP", r1, err)
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", err
 	}
 	Logger(conn.ctx).Infof("Elastic IP %v allocated", *r1.PublicIp)
 	time.Sleep(5 * time.Second)
@@ -1264,7 +1266,7 @@ func (conn *cloudConnector) assignIPToInstance(reservedIP, instanceID string) er
 	})
 	Logger(conn.ctx).Debug("Retrieved allocation ID for elastic IP", r1, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("Found allocation id %v for elastic IP %v", r1.Addresses[0].AllocationId, reservedIP)
 	time.Sleep(1 * time.Minute)
@@ -1275,7 +1277,7 @@ func (conn *cloudConnector) assignIPToInstance(reservedIP, instanceID string) er
 	})
 	Logger(conn.ctx).Debug("Attached IP to instance", r2, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("IP %v attached to instance %v", reservedIP, instanceID)
 	return nil
@@ -1332,7 +1334,7 @@ func (conn *cloudConnector) createLaunchConfiguration(name string, ng *api.NodeG
 	r1, err := conn.autoscale.CreateLaunchConfiguration(configuration)
 	Logger(conn.ctx).Debug("Created node configuration", r1, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Info("Node configuration created assuming node public ip is enabled")
 	return nil
@@ -1372,7 +1374,7 @@ func (conn *cloudConnector) createAutoScalingGroup(name, launchConfig string, co
 	})
 	Logger(conn.ctx).Debug("Created autoscaling group", r2, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("Autoscaling group %v created", name)
 	return nil
@@ -1385,7 +1387,7 @@ func (conn *cloudConnector) detectMaster() error {
 		//os.Exit(0)
 	}
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	masterIP, _, err := conn.getInstancePublicIP(masterID)
@@ -1395,7 +1397,7 @@ func (conn *cloudConnector) detectMaster() error {
 	}
 	Logger(conn.ctx).Infof("Using master: %v (external IP: %v)", conn.cluster.Spec.KubernetesMasterName, masterIP)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	return nil
 }
@@ -1425,7 +1427,7 @@ func (conn *cloudConnector) getInstanceIDFromName(tagName string) (string, error
 	})
 	Logger(conn.ctx).Debug("Retrieved instace via name", r1, err)
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", err
 	}
 	if r1.Reservations != nil && r1.Reservations[0].Instances != nil {
 		return *r1.Reservations[0].Instances[0].InstanceId, nil
@@ -1440,14 +1442,14 @@ func (conn *cloudConnector) releaseReservedIP(publicIP string) error {
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	_, err = conn.ec2.ReleaseAddress(&_ec2.ReleaseAddressInput{
 		AllocationId: r1.Addresses[0].AllocationId,
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("Elastic IP for cluster %v is deleted", conn.cluster.Name)
 	return nil
@@ -1471,7 +1473,7 @@ func (conn *cloudConnector) deleteSecurityGroup() error {
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	for _, sg := range r.SecurityGroups {
@@ -1481,7 +1483,7 @@ func (conn *cloudConnector) deleteSecurityGroup() error {
 				IpPermissions: sg.IpPermissions,
 			})
 			if err != nil {
-				return errors.FromErr(err).WithContext(conn.ctx).Err()
+				return err
 			}
 		}
 
@@ -1491,7 +1493,7 @@ func (conn *cloudConnector) deleteSecurityGroup() error {
 				IpPermissions: sg.IpPermissionsEgress,
 			})
 			if err != nil {
-				return errors.FromErr(err).WithContext(conn.ctx).Err()
+				return err
 			}
 		}
 	}
@@ -1501,7 +1503,7 @@ func (conn *cloudConnector) deleteSecurityGroup() error {
 			GroupId: sg.GroupId,
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 	}
 	Logger(conn.ctx).Infof("Security groups for cluster %v is deleted", conn.cluster.Name)
@@ -1526,14 +1528,14 @@ func (conn *cloudConnector) deleteSubnetId() error {
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	for _, subnet := range r.Subnets {
 		_, err := conn.ec2.DeleteSubnet(&_ec2.DeleteSubnetInput{
 			SubnetId: subnet.SubnetId,
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 		Logger(conn.ctx).Infof("Subnet ID in VPC %v is deleted", *subnet.SubnetId)
 	}
@@ -1552,7 +1554,7 @@ func (conn *cloudConnector) deleteInternetGateway() error {
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	for _, igw := range r1.InternetGateways {
 		_, err := conn.ec2.DetachInternetGateway(&_ec2.DetachInternetGatewayInput{
@@ -1560,14 +1562,14 @@ func (conn *cloudConnector) deleteInternetGateway() error {
 			VpcId:             StringP(conn.cluster.Status.Cloud.AWS.VpcId),
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 
 		_, err = conn.ec2.DeleteInternetGateway(&_ec2.DeleteInternetGatewayInput{
 			InternetGatewayId: igw.InternetGatewayId,
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 	}
 	Logger(conn.ctx).Infof("Internet gateway for cluster %v are deleted", conn.cluster.Name)
@@ -1588,7 +1590,7 @@ func (conn *cloudConnector) deleteRouteTable() error {
 
 	if err != nil {
 		fmt.Println(err)
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	for _, rt := range r1.RouteTables {
 		mainTable := false
@@ -1601,7 +1603,7 @@ func (conn *cloudConnector) deleteRouteTable() error {
 				})
 				if err != nil {
 					fmt.Println(err)
-					return errors.FromErr(err).WithContext(conn.ctx).Err()
+					return err
 				}
 			}
 		}
@@ -1611,7 +1613,7 @@ func (conn *cloudConnector) deleteRouteTable() error {
 			})
 			if err != nil {
 				fmt.Println(err)
-				return errors.FromErr(err).WithContext(conn.ctx).Err()
+				return err
 			}
 		}
 	}
@@ -1626,7 +1628,7 @@ func (conn *cloudConnector) deleteDHCPOption() error {
 	})
 	if err != nil {
 		fmt.Println(err)
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	r, err := conn.ec2.DescribeDhcpOptions(&_ec2.DescribeDhcpOptionsInput{
@@ -1645,7 +1647,7 @@ func (conn *cloudConnector) deleteDHCPOption() error {
 		})
 		if err != nil {
 			fmt.Println(err)
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 	}
 	Logger(conn.ctx).Infof("DHCP options for cluster %v are deleted", conn.cluster.Name)
@@ -1658,7 +1660,7 @@ func (conn *cloudConnector) deleteVpc() error {
 	})
 
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("VPC for cluster %v is deleted", conn.cluster.Name)
 	return nil
@@ -1669,7 +1671,7 @@ func (conn *cloudConnector) deleteVolume() error {
 		VolumeId: StringP(conn.cluster.Status.Cloud.AWS.VolumeId),
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("Master instance volume for cluster %v is deleted", conn.cluster.Spec.MasterDiskId)
 	return nil
@@ -1681,7 +1683,7 @@ func (conn *cloudConnector) deleteSSHKey() error {
 		KeyName: StringP(conn.cluster.Status.SSHKeyExternalID),
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	Logger(conn.ctx).Infof("SSH key for cluster %v is deleted", conn.cluster.Spec.MasterDiskId)
 	//updates := &storage.SSHKey{IsDeleted: 1}
@@ -1703,7 +1705,7 @@ func (conn *cloudConnector) deleteNetworkInterface(vpcId string) error {
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	for _, iface := range r.NetworkInterfaces {
 		_, err = conn.ec2.DetachNetworkInterface(&_ec2.DetachNetworkInterfaceInput{
@@ -1711,7 +1713,7 @@ func (conn *cloudConnector) deleteNetworkInterface(vpcId string) error {
 			Force:        TrueP(),
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 
 		time.Sleep(1 * time.Minute)
@@ -1719,7 +1721,7 @@ func (conn *cloudConnector) deleteNetworkInterface(vpcId string) error {
 			NetworkInterfaceId: iface.NetworkInterfaceId,
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 	}
 	Logger(conn.ctx).Infof("Network interfaces for cluster %v are deleted", conn.cluster.Name)
@@ -1761,7 +1763,7 @@ func (conn *cloudConnector) deleteMaster() error {
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 
 	masterInstances := make([]*string, 0)
@@ -1776,7 +1778,7 @@ func (conn *cloudConnector) deleteMaster() error {
 		InstanceIds: masterInstances,
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	instanceInput := &_ec2.DescribeInstancesInput{
 		InstanceIds: masterInstances,
@@ -1800,7 +1802,7 @@ func (conn *cloudConnector) ensureInstancesDeleted() error {
 		},
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
 	instances := make(map[string]bool)
 	for _, reservation := range r1.Reservations {
@@ -1822,7 +1824,7 @@ func (conn *cloudConnector) ensureInstancesDeleted() error {
 
 		r2, err := conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{InstanceIds: ris})
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return err
 		}
 		stillRunning := false
 		for _, reservation := range r2.Reservations {
@@ -1851,7 +1853,7 @@ func (conn *cloudConnector) describeGroupInfo(instanceGroup string) (*autoscalin
 		AutoScalingGroupNames: groups,
 	})
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, err
 	}
 	return r1, nil
 }
@@ -1874,7 +1876,7 @@ func (conn *cloudConnector) getInstancePublicDNS(providerID string) (string, err
 		},
 	})
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", err
 	}
 	return *r1.Reservations[0].Instances[0].PublicDnsName, nil
 }

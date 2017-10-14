@@ -8,7 +8,6 @@ import (
 	"github.com/appscode/go/errors"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
-	"github.com/cenkalti/backoff"
 	apiv1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -184,7 +183,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 	}
 
-	if found, err = cm.conn.getDSCPOptionSet(); err != nil {
+	if found, err = cm.conn.getDHCPOptionSet(); err != nil {
 		//return
 	}
 	if !found {
@@ -523,31 +522,31 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		}
 	}
 
-	if err = backoff.Retry(cm.conn.deleteSecurityGroup, backoff.NewExponentialBackOff()); err != nil {
+	if err = cm.conn.deleteSecurityGroup(); err != nil {
 		return
 	}
 
-	if err = backoff.Retry(cm.conn.deleteSecurityGroup, backoff.NewExponentialBackOff()); err != nil {
+	if err = cm.conn.deleteSecurityGroup(); err != nil {
 		return
 	}
 
-	if err = backoff.Retry(cm.conn.deleteInternetGateway, backoff.NewExponentialBackOff()); err != nil {
+	if err = cm.conn.deleteInternetGateway(); err != nil {
 		return
 	}
 
-	if err = backoff.Retry(cm.conn.deleteDHCPOption, backoff.NewExponentialBackOff()); err != nil {
+	if err = cm.conn.deleteDHCPOption(); err != nil {
 		return
 	}
 
-	if err = backoff.Retry(cm.conn.deleteRouteTable, backoff.NewExponentialBackOff()); err != nil {
+	if err = cm.conn.deleteRouteTable(); err != nil {
 		return
 	}
 
-	if err = backoff.Retry(cm.conn.deleteSubnetId, backoff.NewExponentialBackOff()); err != nil {
+	if err = cm.conn.deleteSubnetId(); err != nil {
 		return
 	}
 
-	if err = backoff.Retry(cm.conn.deleteVpc, backoff.NewExponentialBackOff()); err != nil {
+	if err = cm.conn.deleteVpc(); err != nil {
 		return
 	}
 
