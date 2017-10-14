@@ -423,7 +423,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		if node.IsMaster() {
 			continue
 		}
-		igm := NewAWSNodeGroupManager(cm, node, kc)
+		igm := NewAWSNodeGroupManager(cm.ctx, cm.conn, cm.namer, node, kc)
 		var a2 []api.Action
 		a2, err = igm.Apply(dryRun)
 		if err != nil {
