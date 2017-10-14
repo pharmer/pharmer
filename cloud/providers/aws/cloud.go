@@ -14,7 +14,6 @@ import (
 	"github.com/appscode/go/wait"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/cloud/providers/aws/iam"
 	"github.com/appscode/pharmer/credential"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -164,31 +163,29 @@ func (conn *cloudConnector) ensureIAMProfile() error {
 }
 
 func (conn *cloudConnector) createIAMProfile(key string) error {
-	//rootDir := "kubernetes/aws/iam/"
-	data, _ := iamrule.Asset(key + "-role.json")
-	role := string(data)
-	fmt.Println(role, "***********", key)
-	r1, err := conn.iam.CreateRole(&_iam.CreateRoleInput{
-		RoleName:                 &key,
-		AssumeRolePolicyDocument: &role,
-	})
+	reqRole := &_iam.CreateRoleInput{RoleName: &key}
+	if key == api.RoleMaster {
+		reqRole.AssumeRolePolicyDocument = StringP(IAMMasterRole)
+	} else {
+		reqRole.AssumeRolePolicyDocument = StringP(IAMNodeRole)
+	}
+	r1, err := conn.iam.CreateRole(reqRole)
 	Logger(conn.ctx).Debug("Created IAM role", r1, err)
 	Logger(conn.ctx).Infof("IAM role %v created", key)
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 
-	data, _ = iamrule.Asset(key + "-policy.json")
-	policy := string(data)
-	fmt.Println(policy)
-	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	reqPolicy := &_iam.PutRolePolicyInput{
+		RoleName:   &key,
+		PolicyName: &key,
 	}
-	r2, err := conn.iam.PutRolePolicy(&_iam.PutRolePolicyInput{
-		RoleName:       &key,
-		PolicyName:     &key,
-		PolicyDocument: &policy,
-	})
+	if key == api.RoleMaster {
+		reqPolicy.PolicyDocument = StringP(IAMMasterPolicy)
+	} else {
+		reqPolicy.PolicyDocument = StringP(IAMNodePolicy)
+	}
+	r2, err := conn.iam.PutRolePolicy(reqPolicy)
 	Logger(conn.ctx).Debug("Created IAM role-policy", r2, err)
 	Logger(conn.ctx).Infof("IAM role-policy %v created", key)
 	if err != nil {

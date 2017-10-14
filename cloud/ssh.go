@@ -1,9 +1,6 @@
 package cloud
 
 import (
-	"io"
-	"os"
-	"strings"
 	"os"
 
 	"github.com/appscode/log"
