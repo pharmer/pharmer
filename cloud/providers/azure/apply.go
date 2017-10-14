@@ -2,18 +2,18 @@ package azure
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
 	"github.com/Azure/azure-sdk-for-go/arm/network"
-	"github.com/Azure/azure-sdk-for-go/arm/resources/resources"
 	armstorage "github.com/Azure/azure-sdk-for-go/arm/storage"
-	azstore "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
+	"github.com/cenkalti/backoff"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
@@ -29,20 +29,63 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	cm.cluster = in
 	cm.namer = namer{cluster: cm.cluster}
 	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
-		return
+		return nil, err
 	}
 	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
-		return
+		return nil, err
 	}
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
-		return
+		return nil, err
 	}
-	acts = make([]api.Action, 0)
+	cm.conn.namer = cm.namer
 
-	if cm.cluster.Status.Phase == "" {
-		err = fmt.Errorf("cluster `%s` is in unknown status", cm.cluster.Name)
-		return
+	// Common stuff
+	if err = cm.conn.detectUbuntuImage(); err != nil {
+		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
 	}
+
+	if cm.cluster.Status.Phase == api.ClusterUpgrading {
+		//return cm.applyUpgrade(dryRun)
+	}
+
+	if cm.cluster.Status.Phase == api.ClusterPending {
+		a, err := cm.applyCreate(dryRun)
+		if err != nil {
+			return nil, err
+		}
+		acts = append(acts, a...)
+	}
+
+	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
+		nodeGroups, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+		for _, ng := range nodeGroups {
+			ng.Spec.Nodes = 0
+			_, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(ng)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	{
+		a, err := cm.applyScale(dryRun)
+		if err != nil {
+			return nil, err
+		}
+		acts = append(acts, a...)
+	}
+
+	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
+		a, err := cm.applyDelete(dryRun)
+		if err != nil {
+			return nil, err
+		}
+		acts = append(acts, a...)
+	}
+	return acts, nil
 
 	/*defer func(releaseReservedIp bool) {
 		if cm.cluster.Status.Phase == api.ClusterPending {
@@ -58,58 +101,49 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 			})
 		}
 	}(cm.cluster.Spec.MasterReservedIP == "auto")*/
+}
 
-	// Common stuff
-	if err = cm.conn.detectUbuntuImage(); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		err = errors.FromErr(err).WithContext(cm.ctx).Err()
-		return
-	}
+// IP >>>>>>>>>>>>>>>>
+// TODO(tamal): if cluster.Spec.ctx.MasterReservedIP == "auto"
+//	name := cluster.Spec.ctx.KubernetesMasterName + "-pip"
+//	// cluster.Spec.ctx.MasterExternalIP = *ip.IPAddress
+//	cluster.Spec.ctx.MasterReservedIP = *ip.IPAddress
+//	// cluster.Spec.ctx.ApiServerUrl = "https://" + *ip.IPAddress
 
-	if found, _ := cm.getResourceGroup(); !found {
+func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
+	var found bool
+	found, _ = cm.conn.getResourceGroup()
+	if !found {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Resource group",
 			Message:  "Resource group will be created",
 		})
 		if !dryRun {
-			if _, err = cm.ensureResourceGroup(); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				err = errors.FromErr(err).WithContext(cm.ctx).Err()
+			if _, err = cm.conn.ensureResourceGroup(); err != nil {
 				return
 			}
 			Logger(cm.ctx).Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.cluster.Spec.Cloud.Zone)
 		}
 	} else {
-		if clusterDelete {
-			acts = append(acts, api.Action{
-				Action:   api.ActionDelete,
-				Resource: "Resource group",
-				Message:  "Resource group will be deleted",
-			})
-		} else {
-			acts = append(acts, api.Action{
-				Action:   api.ActionNOP,
-				Resource: "Resource group",
-				Message:  "Resource group found",
-			})
-		}
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Resource group",
+			Message:  "Resource group found",
+		})
 	}
-
 	var as compute.AvailabilitySet
-	if as, err = cm.getAvailablitySet(); err != nil {
+	if as, err = cm.conn.getAvailablitySet(); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Availablity set",
-			Message:  fmt.Sprintf("Availablity set %v created", cm.namer.AvailablitySetName()),
+			Message:  fmt.Sprintf("Availablity set %v will be created", cm.namer.AvailablitySetName()),
 		})
 		if !dryRun {
-			if as, err = cm.ensureAvailablitySet(); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				err = errors.FromErr(err).WithContext(cm.ctx).Err()
+			if as, err = cm.conn.ensureAvailablitySet(); err != nil {
 				return
-				Logger(cm.ctx).Infof("Availablity set %v created", cm.namer.AvailablitySetName())
 			}
+			Logger(cm.ctx).Infof("Availablity set %v created", cm.namer.AvailablitySetName())
 		}
 	} else {
 		acts = append(acts, api.Action{
@@ -118,18 +152,15 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 			Message:  fmt.Sprintf("Availablity set %v found", cm.namer.AvailablitySetName()),
 		})
 	}
-
 	var sa armstorage.Account
-	if sa, err = cm.getStorageAccount(); err != nil {
+	if sa, err = cm.conn.getStorageAccount(); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Storage account",
 			Message:  fmt.Sprintf("Storage account %v will be created", cm.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName),
 		})
 		if !dryRun {
-			if sa, err = cm.createStorageAccount(); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				err = errors.FromErr(err).WithContext(cm.ctx).Err()
+			if sa, err = cm.conn.createStorageAccount(); err != nil {
 				return
 			}
 		}
@@ -142,16 +173,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 
 	var vn network.VirtualNetwork
-	if vn, err = cm.getVirtualNetwork(); err != nil {
+	if vn, err = cm.conn.getVirtualNetwork(); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Virtual network",
 			Message:  fmt.Sprintf("Virtual network %v will be created", cm.namer.VirtualNetworkName()),
 		})
 		if !dryRun {
-			if vn, err = cm.ensureVirtualNetwork(); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				errors.FromErr(err).WithContext(cm.ctx).Err()
+			if vn, err = cm.conn.ensureVirtualNetwork(); err != nil {
 				return
 			}
 		}
@@ -164,16 +193,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 
 	var sg network.SecurityGroup
-	if sg, err = cm.getNetworkSecurityGroup(); err != nil {
+	if sg, err = cm.conn.getNetworkSecurityGroup(); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Network security group",
 			Message:  fmt.Sprintf("Network security group %v will be created", cm.namer.NetworkSecurityGroupName()),
 		})
 		if !dryRun {
-			if sg, err = cm.createNetworkSecurityGroup(); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				errors.FromErr(err).WithContext(cm.ctx).Err()
+			if sg, err = cm.conn.createNetworkSecurityGroup(); err != nil {
 				return
 			}
 		}
@@ -186,16 +213,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 
 	var sn network.Subnet
-	if sn, err = cm.getSubnetID(&vn); err != nil {
+	if sn, err = cm.conn.getSubnetID(&vn); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Subnet id",
 			Message:  fmt.Sprintf("Subnet %v will be created", cm.namer.SubnetName()),
 		})
 		if !dryRun {
-			if sn, err = cm.createSubnetID(&vn, &sg); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				errors.FromErr(err).WithContext(cm.ctx).Err()
+			if sn, err = cm.conn.createSubnetID(&vn, &sg); err != nil {
 				return
 			}
 		}
@@ -207,41 +232,39 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 		})
 	}
 
-	// -------------------------------------------------------------------ASSETS
-	im := &instanceManager{ctx: cm.ctx, cluster: cm.cluster, conn: cm.conn, namer: cm.namer}
-
 	nodeGroups, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
 
 	var masterNG *api.NodeGroup
-	var totalNodes int64 = 0
-	for _, ng := range nodeGroups {
-		if ng.IsMaster() {
-			masterNG = ng
-		} else {
-			totalNodes += ng.Spec.Nodes
+	masterNG = FindMasterNodeGroup(nodeGroups)
+	if masterNG.Spec.Template.Spec.SKU == "" {
+		masterNG.Spec.Template.Spec.SKU = "Standard_D2_v2"
+		masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
+		if err != nil {
+			return
 		}
 	}
-	fmt.Println(totalNodes)
-	cm.cluster.Spec.MasterSKU = "Standard_D2_v2"
 
+	//Creating Master
 	var masterPIP network.PublicIPAddress
 
-	if masterPIP, err = im.getPublicIP(cm.namer.PublicIPName(cm.namer.MasterName())); err != nil {
+	if masterPIP, err = cm.conn.getPublicIP(cm.namer.PublicIPName(cm.namer.MasterName())); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Master public ip address",
 			Message:  fmt.Sprintf("Master public ip will be created"),
 		})
 		if !dryRun {
-			if masterPIP, err = im.createPublicIP(cm.namer.PublicIPName(cm.namer.MasterName()), network.Static); err != nil {
+			if masterPIP, err = cm.conn.createPublicIP(cm.namer.PublicIPName(cm.namer.MasterName()), network.Static); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				errors.FromErr(err).WithContext(cm.ctx).Err()
 				return
 			}
-			cm.cluster.Spec.MasterReservedIP = String(masterPIP.IPAddress)
+			cm.cluster.Status.ReservedIPs = append(cm.cluster.Status.ReservedIPs, api.ReservedIP{
+				IP: String(masterPIP.IPAddress),
+			})
 		}
 	} else {
 		acts = append(acts, api.Action{
@@ -249,12 +272,6 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 			Resource: "Master public ip address",
 			Message:  fmt.Sprintf("Master Public ip found"),
 		})
-		cm.cluster.Spec.MasterReservedIP = String(masterPIP.IPAddress)
-	}
-
-	// @dipta
-	if cm.cluster.Spec.MasterExternalIP == "" {
-		cm.cluster.Spec.MasterExternalIP = cm.cluster.Spec.MasterReservedIP
 	}
 
 	// IP >>>>>>>>>>>>>>>>
@@ -273,16 +290,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 
 	// Master Stuff
 	var masterNIC network.Interface
-	if masterNIC, err = im.getNetworkInterface(cm.namer.NetworkInterfaceName(cm.cluster.Spec.KubernetesMasterName)); err != nil {
+	if masterNIC, err = cm.conn.getNetworkInterface(cm.namer.NetworkInterfaceName(cm.namer.MasterName())); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Master network interface",
-			Message:  fmt.Sprintf("Masater network interface %v will be created", cm.namer.NetworkInterfaceName(cm.cluster.Spec.KubernetesMasterName)),
+			Message:  fmt.Sprintf("Masater network interface %v will be created", cm.namer.NetworkInterfaceName(cm.namer.MasterName())),
 		})
 		if !dryRun {
-			if masterNIC, err = im.createNetworkInterface(cm.namer.NetworkInterfaceName(cm.cluster.Spec.KubernetesMasterName), sg, sn, network.Static, cm.cluster.Spec.MasterInternalIP, masterPIP); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				errors.FromErr(err).WithContext(cm.ctx).Err()
+			if masterNIC, err = cm.conn.createNetworkInterface(cm.namer.NetworkInterfaceName(cm.namer.MasterName()), sg, sn, network.Static, cm.cluster.Spec.MasterInternalIP, masterPIP); err != nil {
 				return
 			}
 		}
@@ -294,14 +309,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 		})
 	}
 
-	if found, _ := cm.getNetworkSecurityRule(); !found {
+	if found, _ := cm.conn.getNetworkSecurityRule(); !found {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Network security rule",
 			Message:  fmt.Sprintf("All network security will be created"),
 		})
 		if !dryRun {
-			if err = cm.createNetworkSecurityRule(&sg); err != nil {
+			if err = cm.conn.createNetworkSecurityRule(&sg); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				errors.FromErr(err).WithContext(cm.ctx).Err()
 				return
@@ -316,7 +331,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 
 	var masterVM compute.VirtualMachine
-	if masterVM, err = im.getVirtualMachine(cm.namer.MasterName()); err != nil {
+	if masterVM, err = cm.conn.getVirtualMachine(cm.namer.MasterName()); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Master virtual machine",
@@ -324,44 +339,53 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 		})
 		if !dryRun {
 			var masterScript string
-			masterScript, err = RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, "")
-			if err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				errors.FromErr(err).WithContext(cm.ctx).Err()
+			if masterScript, err = RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, masterNG.Name); err != nil {
 				return
 			}
-			masterVM, err = im.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), masterScript, cm.cluster.Spec.MasterSKU)
+			fmt.Println("----------------------------")
+			fmt.Println(masterScript)
+			fmt.Println("----------------------------")
+			masterVM, err = cm.conn.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), masterScript, masterNG.Spec.Template.Spec.SKU)
 			if err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				errors.FromErr(err).WithContext(cm.ctx).Err()
 				return
 			}
-			var masterInstance *api.Node
-			masterInstance, err = im.newKubeInstance(masterVM, masterNIC, masterPIP)
-			if err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				errors.FromErr(err).WithContext(cm.ctx).Err()
+			var masterInstance *api.SimpleNode
+			if masterInstance, err = cm.conn.newKubeInstance(masterVM, masterNIC, masterPIP); err != nil {
 				return
 			}
-			masterInstance.Spec.Role = api.RoleMaster
-			cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
-			cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
+			cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, apiv1.NodeAddress{
+				Type:    apiv1.NodeExternalIP,
+				Address: masterInstance.PublicIP,
+			})
+			cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, apiv1.NodeAddress{
+				Type:    apiv1.NodeInternalIP,
+				Address: masterInstance.PrivateIP,
+			})
 
-			fmt.Println(cm.cluster.Spec.MasterExternalIP, "------------------------------->")
-			Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
-
-			err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
+			var kc kubernetes.Interface
+			kc, err = cm.GetAdminClient()
 			if err != nil {
-				errors.FromErr(err).WithContext(cm.ctx).Err()
 				return
 			}
-			masterNG.Status.Nodes = int64(1)
-			Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
-			Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
-			// needed to get master_internal_ip
+			// wait for nodes to start
+			if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
+				return
+			}
+
+			masterNG.Status.Nodes = 1
+			masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(masterNG)
+			if err != nil {
+				return
+			}
+
+			err = EnsureARecord2(cm.ctx, cm.cluster, masterInstance.PublicIP, masterInstance.PrivateIP) // works for reserved or non-reserved mode
+			if err != nil {
+				return
+			}
+
+			cm.cluster.Status.Phase = api.ClusterReady
 			if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				return acts, err
+				return
 			}
 		}
 	} else {
@@ -370,375 +394,70 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 			Resource: "Master Instance",
 			Message:  fmt.Sprintf("Found master instance with name %v", cm.cluster.Spec.KubernetesMasterName),
 		})
-		masterInstance, _ := im.newKubeInstance(masterVM, masterNIC, masterPIP)
-		if err != nil {
-			cm.cluster.Status.Reason = err.Error()
-			errors.FromErr(err).WithContext(cm.ctx).Err()
-			return
-		}
-		masterInstance.Spec.Role = api.RoleMaster
-		cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
-		cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
-		if clusterDelete {
-			acts = append(acts, api.Action{
-				Action:   api.ActionDelete,
-				Resource: "A record",
-				Message:  fmt.Sprintf("A record will be deleted"),
-			})
-		}
 	}
 
-	for _, node := range nodeGroups {
-		if node.IsMaster() {
+	return
+}
+
+func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
+	var nodeGroups []*api.NodeGroup
+	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+	if err != nil {
+		return
+	}
+	var kc kubernetes.Interface
+	if cm.cluster.Status.Phase != api.ClusterPending {
+		kc, err = cm.GetAdminClient()
+		if err != nil {
+			return
+		}
+		if !dryRun {
+			if cm.cluster.Spec.Token, err = GetExistingKubeadmToken(kc); err != nil {
+				return
+			}
+			if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
+				return
+			}
+		}
+
+	}
+	for _, ng := range nodeGroups {
+		if ng.IsMaster() {
 			continue
 		}
-		igm := &AzureNodeGroupManager{
-			cm: cm,
-			instance: Instance{
-				Type: InstanceType{
-					Sku:          node.Spec.Template.Spec.SKU,
-					Master:       false,
-					SpotInstance: false,
-				},
-				Stats: GroupStats{
-					Count: node.Spec.Nodes,
-				},
-			},
-			im: im,
-		}
-		if clusterDelete || node.DeletionTimestamp != nil {
-			instanceGroupName := igm.cm.namer.GetNodeGroupName(igm.instance.Type.Sku)
-			acts = append(acts, api.Action{
-				Action:   api.ActionDelete,
-				Resource: "Node Group",
-				Message:  fmt.Sprintf("Node group %v  will be deleted", instanceGroupName),
-			})
-			if !dryRun {
-				err = igm.deleteNodeGroup(igm.instance.Type.Sku)
-				Store(cm.ctx).NodeGroups(cm.cluster.Name).Delete(node.Name)
-			}
-		} else {
-			act, _ := igm.AdjustNodeGroup(dryRun)
-			acts = append(acts, act...)
-			if !dryRun {
-				node.Status.Nodes = (int64)(node.Spec.Nodes)
-				Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(node)
-			}
-		}
-
-	}
-
-	if clusterDelete && !dryRun {
-		cm.deleteResourceGroup(cm.namer.ResourceGroupName())
-		if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
+		igm := NewNodeGroupManager(cm.ctx, ng, cm.conn, kc)
+		var a2 []api.Action
+		a2, err = igm.Apply(dryRun)
+		if err != nil {
 			return
 		}
-	}
-
-	if !dryRun {
-		time.Sleep(1 * time.Minute)
-
-		for _, ng := range nodeGroups {
-			if ng.IsMaster() {
-				continue
-			}
-			groupName := cm.namer.GetNodeGroupName(ng.Spec.Template.Spec.SKU)
-			_, providerInstances, _ := im.GetNodeGroup(groupName)
-
-			runningInstance := make(map[string]*api.Node)
-			for _, node := range providerInstances {
-				runningInstance[node.Name] = node
-			}
-
-			clusterInstance, _ := GetClusterIstance(cm.ctx, cm.cluster, groupName)
-			for _, node := range clusterInstance {
-				if _, found := runningInstance[node]; !found {
-					err = DeleteClusterInstance(cm.ctx, cm.cluster, node)
-					fmt.Println(err)
-				}
-			}
-		}
-
-		if !clusterDelete {
-			cm.cluster.Status.Phase = api.ClusterReady
-		} else {
-			cm.cluster.Status.Phase = api.ClusterDeleted
-		}
-		Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		Store(cm.ctx).Clusters().Update(cm.cluster)
+		acts = append(acts, a2...)
 	}
 	return
 }
 
-// IP >>>>>>>>>>>>>>>>
-// TODO(tamal): if cluster.Spec.ctx.MasterReservedIP == "auto"
-//	name := cluster.Spec.ctx.KubernetesMasterName + "-pip"
-//	// cluster.Spec.ctx.MasterExternalIP = *ip.IPAddress
-//	cluster.Spec.ctx.MasterReservedIP = *ip.IPAddress
-//	// cluster.Spec.ctx.ApiServerUrl = "https://" + *ip.IPAddress
-
-func (cm *ClusterManager) getResourceGroup() (bool, error) {
-	_, err := cm.conn.groupsClient.Get(cm.namer.ResourceGroupName())
-	return err == nil, err
-}
-
-func (cm *ClusterManager) ensureResourceGroup() (resources.Group, error) {
-	req := resources.Group{
-		Name:     StringP(cm.namer.ResourceGroupName()),
-		Location: StringP(cm.cluster.Spec.Cloud.Zone),
-		Tags: &map[string]*string{
-			"KubernetesCluster": StringP(cm.cluster.Name),
-		},
-	}
-	return cm.conn.groupsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), req)
-}
-
-func (cm *ClusterManager) getAvailablitySet() (compute.AvailabilitySet, error) {
-	return cm.conn.availabilitySetsClient.Get(cm.namer.ResourceGroupName(), cm.namer.AvailablitySetName())
-}
-
-func (cm *ClusterManager) ensureAvailablitySet() (compute.AvailabilitySet, error) {
-	name := cm.namer.AvailablitySetName()
-	req := compute.AvailabilitySet{
-		Name:     StringP(name),
-		Location: StringP(cm.cluster.Spec.Cloud.Zone),
-		Tags: &map[string]*string{
-			"KubernetesCluster": StringP(cm.cluster.Name),
-		},
-	}
-	return cm.conn.availabilitySetsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), name, req)
-}
-
-func (cm *ClusterManager) getVirtualNetwork() (network.VirtualNetwork, error) {
-	return cm.conn.virtualNetworksClient.Get(cm.namer.ResourceGroupName(), cm.namer.VirtualNetworkName(), "")
-}
-
-func (cm *ClusterManager) ensureVirtualNetwork() (network.VirtualNetwork, error) {
-	name := cm.namer.VirtualNetworkName()
-	req := network.VirtualNetwork{
-		Name:     StringP(name),
-		Location: StringP(cm.cluster.Spec.Cloud.Zone),
-		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
-			AddressSpace: &network.AddressSpace{
-				AddressPrefixes: &[]string{cm.cluster.Spec.Networking.NonMasqueradeCIDR},
-			},
-		},
-		Tags: &map[string]*string{
-			"KubernetesCluster": StringP(cm.cluster.Name),
-		},
-	}
-
-	_, errchan := cm.conn.virtualNetworksClient.CreateOrUpdate(cm.namer.ResourceGroupName(), name, req, nil)
-	err := <-errchan
-	if err != nil {
-		return network.VirtualNetwork{}, err
-	}
-	Logger(cm.ctx).Infof("Virtual network %v created", name)
-	return cm.conn.virtualNetworksClient.Get(cm.namer.ResourceGroupName(), name, "")
-}
-
-func (cm *ClusterManager) getNetworkSecurityGroup() (network.SecurityGroup, error) {
-	return cm.conn.securityGroupsClient.Get(cm.namer.ResourceGroupName(), cm.namer.NetworkSecurityGroupName(), "")
-}
-
-func (cm *ClusterManager) createNetworkSecurityGroup() (network.SecurityGroup, error) {
-	securityGroupName := cm.namer.NetworkSecurityGroupName()
-	securityGroup := network.SecurityGroup{
-		Name:     StringP(securityGroupName),
-		Location: StringP(cm.cluster.Spec.Cloud.Zone),
-		Tags: &map[string]*string{
-			"KubernetesCluster": StringP(cm.cluster.Name),
-		},
-	}
-	_, errchan := cm.conn.securityGroupsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), securityGroupName, securityGroup, nil)
-	err := <-errchan
-	if err != nil {
-		return network.SecurityGroup{}, err
-	}
-	Logger(cm.ctx).Infof("Network security group %v created", securityGroupName)
-	return cm.conn.securityGroupsClient.Get(cm.namer.ResourceGroupName(), securityGroupName, "")
-}
-
-func (cm *ClusterManager) getSubnetID(vn *network.VirtualNetwork) (network.Subnet, error) {
-	n := &network.VirtualNetwork{}
-	if vn.Name == n.Name {
-		return network.Subnet{}, errors.New("Virtualnetwork not found").Err()
-	}
-	return cm.conn.subnetsClient.Get(cm.namer.ResourceGroupName(), *vn.Name, cm.namer.SubnetName(), "")
-}
-
-func (cm *ClusterManager) createSubnetID(vn *network.VirtualNetwork, sg *network.SecurityGroup) (network.Subnet, error) {
-	name := cm.namer.SubnetName()
-	var routeTable network.RouteTable
-	var err error
-	if routeTable, err = cm.getRouteTable(); err != nil {
-		if routeTable, err = cm.createRouteTable(); err != nil {
-			return network.Subnet{}, err
+func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error) {
+	acts = append(acts, api.Action{
+		Action:   api.ActionDelete,
+		Resource: "Resource group",
+		Message:  "Resource group will be deleted",
+	})
+	if !dryRun {
+		if err = backoff.Retry(cm.conn.deleteResourceGroup, backoff.NewExponentialBackOff()); err != nil {
+			return
+		}
+		if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
+			return
+		}
+		// Failed
+		cm.cluster.Status.Phase = api.ClusterDeleted
+		_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+		if err != nil {
+			return
 		}
 	}
-	req := network.Subnet{
-		Name: StringP(name),
-		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-			NetworkSecurityGroup: &network.SecurityGroup{
-				ID: sg.ID,
-			},
-			AddressPrefix: StringP(cm.cluster.Spec.Cloud.Azure.SubnetCIDR),
-			RouteTable: &network.RouteTable{
-				ID: routeTable.ID,
-			},
-		},
-	}
 
-	_, errchan := cm.conn.subnetsClient.CreateOrUpdate(cm.namer.ResourceGroupName(), *vn.Name, name, req, nil)
-	err = <-errchan
-	if err != nil {
-		return network.Subnet{}, err
-	}
-	Logger(cm.ctx).Infof("Subnet name %v created", name)
-	return cm.conn.subnetsClient.Get(cm.namer.ResourceGroupName(), *vn.Name, name, "")
-}
-
-func (cm *ClusterManager) getRouteTable() (network.RouteTable, error) {
-	return cm.conn.routeTablesClient.Get(cm.namer.ResourceGroupName(), cm.namer.RouteTableName(), "")
-}
-
-func (cm *ClusterManager) createRouteTable() (network.RouteTable, error) {
-	name := cm.namer.RouteTableName()
-	req := network.RouteTable{
-		Name:     StringP(name),
-		Location: StringP(cm.cluster.Spec.Cloud.Zone),
-		Tags: &map[string]*string{
-			"KubernetesCluster": StringP(cm.cluster.Name),
-		},
-	}
-	_, errchan := cm.conn.routeTablesClient.CreateOrUpdate(cm.namer.ResourceGroupName(), name, req, nil)
-	err := <-errchan
-	if err != nil {
-		return network.RouteTable{}, err
-	}
-	Logger(cm.ctx).Infof("Route table %v created", name)
-	return cm.conn.routeTablesClient.Get(cm.namer.ResourceGroupName(), name, "")
-}
-
-func (cm *ClusterManager) getNetworkSecurityRule() (bool, error) {
-	_, err := cm.conn.securityRulesClient.Get(cm.namer.ResourceGroupName(), cm.namer.NetworkSecurityGroupName(), cm.namer.NetworkSecurityRule("ssh"))
-	if err != nil {
-		return false, err
-	}
-	_, err = cm.conn.securityRulesClient.Get(cm.namer.ResourceGroupName(), cm.namer.NetworkSecurityGroupName(), cm.namer.NetworkSecurityRule("ssl"))
-	if err != nil {
-		return false, err
-	}
-	_, err = cm.conn.securityRulesClient.Get(cm.namer.ResourceGroupName(), cm.namer.NetworkSecurityGroupName(), cm.namer.NetworkSecurityRule("masterssl"))
-	if err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-func (cm *ClusterManager) createNetworkSecurityRule(sg *network.SecurityGroup) error {
-	sshRuleName := cm.namer.NetworkSecurityRule("ssh")
-	sshRule := network.SecurityRule{
-		Name: StringP(sshRuleName),
-		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Access: network.SecurityRuleAccessAllow,
-			DestinationAddressPrefix: StringP("*"),
-			DestinationPortRange:     StringP("22"),
-			Direction:                network.SecurityRuleDirectionInbound,
-			Priority:                 Int32P(100),
-			Protocol:                 network.SecurityRuleProtocolTCP,
-			SourceAddressPrefix:      StringP("*"),
-			SourcePortRange:          StringP("*"),
-		},
-	}
-	_, errchan := cm.conn.securityRulesClient.CreateOrUpdate(cm.namer.ResourceGroupName(), *sg.Name, sshRuleName, sshRule, nil)
-	err := <-errchan
-	if err != nil {
-		return err
-	}
-	Logger(cm.ctx).Infof("Network security rule %v created", sshRuleName)
-	sslRuleName := cm.namer.NetworkSecurityRule("ssl")
-	sslRule := network.SecurityRule{
-		Name: StringP(sshRuleName),
-		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Access: network.SecurityRuleAccessAllow,
-			DestinationAddressPrefix: StringP("*"),
-			DestinationPortRange:     StringP("443"),
-			Direction:                network.SecurityRuleDirectionInbound,
-			Priority:                 Int32P(110),
-			Protocol:                 network.SecurityRuleProtocolTCP,
-			SourceAddressPrefix:      StringP("*"),
-			SourcePortRange:          StringP("*"),
-		},
-	}
-	_, errchan = cm.conn.securityRulesClient.CreateOrUpdate(cm.namer.ResourceGroupName(), *sg.Name, sslRuleName, sslRule, nil)
-	err = <-errchan
-	if err != nil {
-		return err
-	}
-	Logger(cm.ctx).Infof("Network security rule %v created", sslRuleName)
-
-	mastersslRuleName := cm.namer.NetworkSecurityRule("masterssl")
-	mastersslRule := network.SecurityRule{
-		Name: StringP(mastersslRuleName),
-		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Access: network.SecurityRuleAccessAllow,
-			DestinationAddressPrefix: StringP("*"),
-			DestinationPortRange:     StringP(fmt.Sprintf("%d", cm.cluster.Spec.API.BindPort)),
-			Direction:                network.SecurityRuleDirectionInbound,
-			Priority:                 Int32P(120),
-			Protocol:                 network.SecurityRuleProtocolTCP,
-			SourceAddressPrefix:      StringP("*"),
-			SourcePortRange:          StringP("*"),
-		},
-	}
-	_, errchan = cm.conn.securityRulesClient.CreateOrUpdate(cm.namer.ResourceGroupName(), *sg.Name, mastersslRuleName, mastersslRule, nil)
-	err = <-errchan
-	if err != nil {
-		return err
-	}
-	Logger(cm.ctx).Infof("Network security rule %v created", mastersslRuleName)
-
-	return err
-}
-
-func (cm *ClusterManager) getStorageAccount() (armstorage.Account, error) {
-	storageName := cm.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName
-	return cm.conn.storageClient.GetProperties(cm.namer.ResourceGroupName(), storageName)
-}
-
-func (cm *ClusterManager) createStorageAccount() (armstorage.Account, error) {
-	storageName := cm.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName
-	req := armstorage.AccountCreateParameters{
-		Location: StringP(cm.cluster.Spec.Cloud.Zone),
-		Sku: &armstorage.Sku{
-			Name: armstorage.StandardLRS,
-		},
-		Tags: &map[string]*string{
-			"KubernetesCluster": StringP(cm.cluster.Name),
-		},
-	}
-	_, errchan := cm.conn.storageClient.Create(cm.namer.ResourceGroupName(), storageName, req, nil)
-	err := <-errchan
-	if err != nil {
-		return armstorage.Account{}, err
-	}
-	Logger(cm.ctx).Infof("Storage account %v created", storageName)
-	keys, err := cm.conn.storageClient.ListKeys(cm.namer.ResourceGroupName(), storageName)
-	if err != nil {
-		return armstorage.Account{}, err
-	}
-	storageClient, err := azstore.NewBasicClient(storageName, *(*(keys.Keys))[0].Value)
-	if err != nil {
-		return armstorage.Account{}, err
-	}
-
-	bs := storageClient.GetBlobService()
-	_, err = bs.GetContainerReference(cm.namer.StorageContainerName()).CreateIfNotExists(&azstore.CreateContainerOptions{Access: azstore.ContainerAccessTypeContainer})
-	if err != nil {
-		return armstorage.Account{}, err
-	}
-	return cm.conn.storageClient.GetProperties(cm.namer.ResourceGroupName(), storageName)
+	return
 }
 
 /*
@@ -779,4 +498,47 @@ for i := int64(0); i < ng.Count; i++ {
 			cm.ins.Instances = append(cm.ins.Instances, ki)
 			// cm.ins.Instances = append(cm.ins.Instances, ki)
 		}
+*/
+
+/*
+
+for _, node := range nodeGroups {
+		if node.IsMaster() {
+			continue
+		}
+		igm := &AzureNodeGroupManager{
+			cm: cm,
+			instance: Instance{
+				Type: InstanceType{
+					Sku:          node.Spec.Template.Spec.SKU,
+					Master:       false,
+					SpotInstance: false,
+				},
+				Stats: GroupStats{
+					Count: node.Spec.Nodes,
+				},
+			},
+			im: im,
+		}
+		if clusterDelete || node.DeletionTimestamp != nil {
+			instanceGroupName := igm.cm.namer.GetNodeGroupName(igm.instance.Type.Sku)
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "Node Group",
+				Message:  fmt.Sprintf("Node group %v  will be deleted", instanceGroupName),
+			})
+			if !dryRun {
+				err = igm.deleteNodeGroup(igm.instance.Type.Sku)
+				Store(cm.ctx).NodeGroups(cm.cluster.Name).Delete(node.Name)
+			}
+		} else {
+			act, _ := igm.AdjustNodeGroup(dryRun)
+			acts = append(acts, act...)
+			if !dryRun {
+				node.Status.Nodes = (int64)(node.Spec.Nodes)
+				Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(node)
+			}
+		}
+
+	}
 */

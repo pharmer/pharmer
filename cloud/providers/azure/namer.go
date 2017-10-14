@@ -21,8 +21,8 @@ func (n namer) GenSSHKeyExternalID() string {
 	return n.cluster.Name + "-" + rand.Characters(6)
 }
 
-func (n namer) GenNodeName(sku string) string {
-	return rand.WithUniqSuffix(n.cluster.Name + "-" + strings.Replace(sku, "_", "-", -1) + "-node")
+func (n namer) GenNodeName(ng string) string {
+	return rand.WithUniqSuffix(ng)
 }
 
 func (n namer) NetworkInterfaceName(instanceName string) string {
@@ -67,11 +67,6 @@ func (n namer) GenStorageAccountName() string {
 
 func (n namer) StorageContainerName() string {
 	return n.cluster.Name + "-data"
-}
-
-func (n namer) GetNodeGroupName(sku string) string {
-	return n.cluster.Name + "-" + strings.Replace(sku, "_", "-", -1)
-
 }
 
 func (n namer) AdminUsername() string {

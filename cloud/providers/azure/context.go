@@ -32,19 +32,6 @@ func New(ctx context.Context) Interface {
 	return &ClusterManager{ctx: ctx}
 }
 
-func (cm *ClusterManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
-	conn, err := NewConnector(cm.ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	im := &instanceManager{conn: conn}
-	return im.GetInstance(md)
-}
-
-func (cm *ClusterManager) MatchInstance(i *api.Node, md *api.NodeStatus) bool {
-	return i.Status.ExternalID == md.ExternalID
-}
-
 type paramK8sClient struct{}
 
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
