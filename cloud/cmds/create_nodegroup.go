@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/appscode/go-term"
@@ -40,33 +41,8 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 			clusterName, _ := cmd.Flags().GetString("cluster")
 			cluster, err := cloud.Get(ctx, clusterName)
 			term.ExitOnError(err)
+			CreateNodeGroup(ctx, cluster, nodes)
 
-			for sku, count := range nodes {
-				ig := api.NodeGroup{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              sku + "-pool",
-						ClusterName:       cluster.Name,
-						UID:               phid.NewNodeGroup(),
-						CreationTimestamp: metav1.Time{Time: time.Now()},
-						Labels: map[string]string{
-							"node-role.kubernetes.io/node": "true",
-						},
-					},
-					Spec: api.NodeGroupSpec{
-						Nodes: int64(count),
-						Template: api.NodeTemplateSpec{
-							Spec: api.NodeSpec{
-								SKU:           sku,
-								SpotInstances: false,
-								DiskType:      "pd-standard",
-								DiskSize:      100,
-							},
-						},
-					},
-				}
-				_, err := cloud.Store(ctx).NodeGroups(cluster.Name).Create(&ig)
-				term.ExitOnError(err)
-			}
 		},
 	}
 
@@ -74,4 +50,33 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 	cmd.Flags().StringToIntVar(&nodes, "nodes", map[string]int{}, "Node set configuration")
 
 	return cmd
+}
+
+func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, nodes map[string]int) {
+	for sku, count := range nodes {
+		ig := api.NodeGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              strings.Replace(sku, "_", "-", -1) + "-pool",
+				ClusterName:       cluster.Name,
+				UID:               phid.NewNodeGroup(),
+				CreationTimestamp: metav1.Time{Time: time.Now()},
+				Labels: map[string]string{
+					api.RoleNodeKey: "",
+				},
+			},
+			Spec: api.NodeGroupSpec{
+				Nodes: int64(count),
+				Template: api.NodeTemplateSpec{
+					Spec: api.NodeSpec{
+						SKU:           sku,
+						SpotInstances: false,
+						DiskType:      "pd-standard",
+						DiskSize:      100,
+					},
+				},
+			},
+		}
+		_, err := cloud.Store(ctx).NodeGroups(cluster.Name).Create(&ig)
+		term.ExitOnError(err)
+	}
 }

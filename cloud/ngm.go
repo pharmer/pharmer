@@ -31,7 +31,7 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 	if igm.kc != nil {
 		nodes, err = igm.kc.CoreV1().Nodes().List(metav1.ListOptions{
 			LabelSelector: labels.SelectorFromSet(map[string]string{
-				api.NodeLabelKey_NodeGroup: igm.ng.Spec.Template.Spec.SKU,
+				api.NodeLabelKey_NodeGroup: igm.ng.Name,
 			}).String(),
 		})
 		if err != nil {

@@ -2,16 +2,13 @@ package cmds
 
 import (
 	"context"
-	"time"
 
 	"github.com/appscode/go-term"
 	"github.com/appscode/go/flags"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
-	"github.com/appscode/pharmer/phid"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func NewCmdCreateCluster() *cobra.Command {
@@ -48,34 +45,7 @@ func NewCmdCreateCluster() *cobra.Command {
 			if err != nil {
 				term.Fatalln(err)
 			}
-
-			for sku, count := range nodes {
-				ig := api.NodeGroup{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:              sku + "-pool",
-						ClusterName:       cluster.Name,
-						UID:               phid.NewNodeGroup(),
-						CreationTimestamp: metav1.Time{Time: time.Now()},
-						Labels: map[string]string{
-							"node-role.kubernetes.io/node": "true",
-						},
-					},
-					Spec: api.NodeGroupSpec{
-						Nodes: int64(count),
-						Template: api.NodeTemplateSpec{
-							Spec: api.NodeSpec{
-								SKU:           sku,
-								SpotInstances: false,
-								DiskSize:      100,
-							},
-						},
-					},
-				}
-				_, err := cloud.Store(ctx).NodeGroups(cluster.Name).Create(&ig)
-				if err != nil {
-					term.Fatalln(err)
-				}
-			}
+			CreateNodeGroup(ctx, cluster, nodes)
 		},
 	}
 

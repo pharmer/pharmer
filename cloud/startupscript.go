@@ -31,6 +31,7 @@ type TemplateData struct {
 	CloudConfigPath     string
 	CloudConfig         string
 	NodeGroupName       string
+	Provider            string
 }
 
 func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string) TemplateData {
@@ -41,9 +42,11 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
 		APIServerAddress:  cluster.APIServerAddress(),
+		APIBindPort:       6443,
 		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
 		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
 		NodeGroupName:     nodeGroup,
+		Provider:          cluster.Spec.Cloud.CloudProvider,
 	}
 	if cluster.Spec.KubeadmVersion != "" {
 		if v, err := version.NewVersion(cluster.Spec.KubeadmVersion); err == nil && v.Prerelease() != "" {
@@ -182,7 +185,7 @@ systemctl start docker
 
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
-Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }}"
+Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }} {{ if  .CloudConfigPath }} --cloud-provider={{ .Provider }} --cloud-config={{ .CloudConfigPath }} {{ end }}"
 EOF
 systemctl daemon-reload
 systemctl restart kubelet
@@ -274,9 +277,15 @@ curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64
 systemctl enable docker
 systemctl start docker
 
+{{ if .CloudConfigPath }}
+cat > {{ .CloudConfigPath }} <<EOF
+{{ .CloudConfig }}
+EOF
+{{ end }}
+
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
-Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }},node-role.kubernetes.io/node="
+Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }},node-role.kubernetes.io/node= {{ if  .CloudConfigPath }} --cloud-provider={{ .Provider }} --cloud-config={{ .CloudConfigPath }} {{ end }}"
 EOF
 systemctl daemon-reload
 systemctl restart kubelet
