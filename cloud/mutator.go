@@ -8,6 +8,7 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/appscode/pharmer/api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -45,6 +46,7 @@ func getSKUFromNG(cluster, ng string) string {
 	return ng[len(cluster)+1:]
 }
 
+//Deprecated
 func GetClusterIstance(ctx context.Context, cluster *api.Cluster, nodeGroup string) ([]string, error) {
 	var kc kubernetes.Interface // TODO: Fix NPE, pass client
 	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{})
@@ -63,6 +65,30 @@ func GetClusterIstance(ctx context.Context, cluster *api.Cluster, nodeGroup stri
 
 }
 
+func GetClusterIstance2(kc kubernetes.Interface, nodeGroup string) ([]string, error) {
+	//	var kc kubernetes.Interface // TODO: Fix NPE, pass client
+
+	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			api.NodeLabelKey_NodeGroup: nodeGroup,
+		}).String(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	existingNodes := make([]string, 0)
+	for _, node := range nodes.Items {
+		nl := api.FromMap(node.GetLabels())
+		if nl.GetString(api.NodeLabelKey_NodeGroup) != nodeGroup {
+			continue
+		}
+		existingNodes = append(existingNodes, node.Name)
+	}
+	return existingNodes, nil
+
+}
+
+//Deprecated
 func DeleteClusterInstance(ctx context.Context, cluster *api.Cluster, node string) error {
 	var kc kubernetes.Interface // TODO: Fix NPE, pass client
 	err := kc.CoreV1().Nodes().Delete(node, &metav1.DeleteOptions{})
@@ -71,6 +97,10 @@ func DeleteClusterInstance(ctx context.Context, cluster *api.Cluster, node strin
 	}
 
 	return nil
+}
+
+func DeleteClusterInstance2(kc kubernetes.Interface, node string) error {
+	return kc.CoreV1().Nodes().Delete(node, &metav1.DeleteOptions{})
 }
 
 func GetExistingContextVersion(ctx context.Context, cluster *api.Cluster, sku string) (int64, error) {
