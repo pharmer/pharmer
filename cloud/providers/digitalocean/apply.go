@@ -256,6 +256,11 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 				return
 			}
+			// need to run ccm
+			if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
+				return
+			}
+
 		}
 	} else {
 		acts = append(acts, api.Action{

@@ -275,6 +275,10 @@ func (conn *cloudConnector) deleteSSHKey() error {
 }
 
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
+	if providerID == "" {
+		return errors.New("providerID cannot be empty string")
+	}
+
 	parts := strings.SplitN(providerID, "://", 2)
 	if len(parts) != 2 {
 		return fmt.Errorf("skipping deleting node with providerID `%s`", providerID)

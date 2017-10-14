@@ -60,7 +60,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	}
 	n := namer{cluster: cluster}
 
-	cluster.Spec.Networking.NetworkProvider = "flannel"
+	cluster.Spec.Networking.NetworkProvider = "calico"
 	// Init object meta
 	cluster.ObjectMeta.UID = phid.NewKubeCluster()
 	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
