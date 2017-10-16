@@ -748,7 +748,7 @@ func (conn *cloudConnector) StartNode(nodeName string, as compute.AvailabilitySe
 		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 
-	nodeScript, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleNode, ng.Name)
+	nodeScript, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleNode, ng.Name, false)
 	if err != nil {
 		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}

@@ -338,7 +338,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 		if !dryRun {
 			var masterScript string
-			if masterScript, err = RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, masterNG.Name); err != nil {
+			if masterScript, err = RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, masterNG.Name, false); err != nil {
 				return
 			}
 			fmt.Println("----------------------------")

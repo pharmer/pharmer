@@ -1072,7 +1072,7 @@ func (conn *cloudConnector) createReserveIP(masterNG *api.NodeGroup) (string, er
 }
 
 func (conn *cloudConnector) createMasterInstance(name string, ng *api.NodeGroup) (string, error) {
-	kubeStarter, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleMaster, ng.Name)
+	kubeStarter, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleMaster, ng.Name, false)
 	if err != nil {
 		return "", err
 	}
@@ -1285,7 +1285,7 @@ func (conn *cloudConnector) assignIPToInstance(reservedIP, instanceID string) er
 
 func (conn *cloudConnector) createLaunchConfiguration(name string, ng *api.NodeGroup) error {
 	// script := conn.RenderStartupScript(conn.cluster, sku, api.RoleKubernetesPool)
-	script, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleNode, ng.Name)
+	script, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleNode, ng.Name, false)
 	if err != nil {
 		return err
 	}

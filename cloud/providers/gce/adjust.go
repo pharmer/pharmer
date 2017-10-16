@@ -143,7 +143,7 @@ func (igm *GCENodeGroupManager) createNodeInstanceTemplate(sku string) (string, 
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
 	//  }
 
-	startupScript, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode, igm.cm.namer.NodeGroupName(sku))
+	startupScript, err := RenderStartupScript(igm.cm.ctx, igm.cm.cluster, api.RoleNode, igm.cm.namer.NodeGroupName(sku), false)
 	if err != nil {
 		return "", err
 	}
