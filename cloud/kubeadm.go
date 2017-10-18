@@ -5,6 +5,8 @@ import (
 	mrnd "math/rand"
 	"regexp"
 	"time"
+
+	kubeadmutil "github.com/appscode/pharmer/cloud/util"
 )
 
 func GetKubeadmToken() string {
@@ -43,4 +45,8 @@ func ParseToken(s string) (string, string, error) {
 		return "", "", fmt.Errorf("token [%q] was not of form [%q]", s, TokenRegexpString)
 	}
 	return split[1], split[2], nil
+}
+
+func GetLatestKubeadmVerson() (string, error) {
+	return kubeadmutil.FetchFromURL("https://dl.k8s.io/release/stable.txt")
 }

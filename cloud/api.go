@@ -36,6 +36,8 @@ type InstanceManager interface {
 }
 
 type UpgradeManager interface {
+	GetAvailableUpgrades() ([]api.Upgrade, error)
+	PrintAvailableUpgrades([]api.Upgrade)
 	Apply(dryRun bool) ([]api.Action, error)
 	MasterUpgrade() error
 	NodeGroupUpgrade(ng *api.NodeGroup) error

@@ -18,6 +18,7 @@ const (
 	NodeLabelKey_SKU       = "kubernetes.appscode.com/sku"
 	NodeLabelKey_Checksum  = "meta.appscode.com/checksum"
 	NodeLabelKey_NodeGroup = "cloud.appscode.com/pool"
+	KubeSystem_App         = "k8s-app"
 )
 
 // MissingChecksumError records an error and the operation and file path that caused it.

@@ -41,14 +41,11 @@ func (cm *ClusterManager) checkClusterUpgrade() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	v := NewKubeVersionGetter(kc)
-	fmt.Println(v.ClusterVersion())
-	fmt.Println(v.VersionFromCILabel("stable", "stable version"))
+	upm := NewUpgradeManager(cm.ctx, cm.conn, kc, cm.cluster, cm.cluster.Spec.KubernetesVersion)
+	upgrades, err := upm.GetAvailableUpgrades()
+	if err != nil {
+		return "", err
+	}
+	upm.PrintAvailableUpgrades(upgrades)
 	return "", nil
-	/*	masterInstance, err := kc.CoreV1().Nodes().Get(cm.namer.MasterName(), metav1.GetOptions{})
-		if err != nil {
-			return "", err
-		}
-
-		return cm.conn.ExecuteSSHCommand("kubeadm upgrade plan", masterInstance)*/
 }

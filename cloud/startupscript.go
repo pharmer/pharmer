@@ -38,7 +38,7 @@ type TemplateData struct {
 func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string, externalProvider bool) TemplateData {
 	td := TemplateData{
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
-		KubeadmVersion:    cluster.Spec.KubeadmVersion,
+		KubeadmVersion:    cluster.Spec.MasterKubeadmVersion,
 		KubeadmToken:      cluster.Spec.Token,
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
@@ -50,9 +50,13 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 		Provider:          cluster.Spec.Cloud.CloudProvider,
 		ExternalProvider:  externalProvider,
 	}
-	if cluster.Spec.KubeadmVersion != "" {
-		if v, err := version.NewVersion(cluster.Spec.KubeadmVersion); err == nil && v.Prerelease() != "" {
+	if cluster.Spec.MasterKubeadmVersion != "" {
+		if v, err := version.NewVersion(cluster.Spec.MasterKubeadmVersion); err == nil && v.Prerelease() != "" {
 			td.IsPreReleaseVersion = true
+		} else {
+			if lv, err := GetLatestKubeadmVerson(); err == nil && lv == cluster.Spec.MasterKubeadmVersion {
+				td.KubeadmVersion = ""
+			}
 		}
 	}
 
