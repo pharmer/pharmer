@@ -32,9 +32,10 @@ type TemplateData struct {
 	CloudConfig         string
 	NodeGroupName       string
 	Provider            string
+	ExternalProvider    bool
 }
 
-func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string) TemplateData {
+func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string, externalProvider bool) TemplateData {
 	td := TemplateData{
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		KubeadmVersion:    cluster.Spec.KubeadmVersion,
@@ -47,6 +48,7 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
 		NodeGroupName:     nodeGroup,
 		Provider:          cluster.Spec.Cloud.CloudProvider,
+		ExternalProvider:  externalProvider,
 	}
 	if cluster.Spec.KubeadmVersion != "" {
 		if v, err := version.NewVersion(cluster.Spec.KubeadmVersion); err == nil && v.Prerelease() != "" {
@@ -76,6 +78,10 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 		SchedulerExtraArgs:         map[string]string{},
 		APIServerCertSANs:          []string{},
 	}
+	if externalProvider {
+		cfg.CloudProvider = "external"
+	}
+
 	{
 		if cluster.Spec.Cloud.GCE != nil {
 			cfg.APIServerExtraArgs["cloud-config"] = cluster.Spec.Cloud.CloudConfigPath
@@ -124,9 +130,9 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 	return td
 }
 
-func RenderStartupScript(ctx context.Context, cluster *api.Cluster, role, nodeGroup string) (string, error) {
+func RenderStartupScript(ctx context.Context, cluster *api.Cluster, role, nodeGroup string, externalProvider bool) (string, error) {
 	var buf bytes.Buffer
-	if err := StartupScriptTemplate.ExecuteTemplate(&buf, role, GetTemplateData(ctx, cluster, nodeGroup)); err != nil {
+	if err := StartupScriptTemplate.ExecuteTemplate(&buf, role, GetTemplateData(ctx, cluster, nodeGroup, externalProvider)); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
@@ -231,7 +237,7 @@ mkdir -p ~/.kube
 sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
 sudo chown $(id -u):$(id -g) ~/.kube/config
 
-{{ if eq .Provider "external" }}
+{{ if .ExternalProvider }}
 {{ template "ccm" . }}
 {{end}}
 `))
@@ -287,7 +293,7 @@ cat > {{ .CloudConfigPath }} <<EOF
 EOF
 {{ end }}
 
-{{ if eq .Provider "external" }}
+{{ if .ExternalProvider }}
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
 Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool={{ .NodeGroupName }},node-role.kubernetes.io/node= --cloud-provider=external"

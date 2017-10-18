@@ -721,7 +721,7 @@ func (cm *ClusterManager) createMasterIntance() (string, error) {
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
 	// startupScript := cm.RenderStartupScript(cm.cluster, cm.cluster.Spec.MasterSKU, api.RoleKubernetesMaster)
-	startupScript, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, cm.cluster.Spec.MasterSKU)
+	startupScript, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, cm.cluster.Spec.MasterSKU, false)
 	if err != nil {
 		return "", err
 	}
@@ -979,7 +979,7 @@ func (cm *ClusterManager) createNodeInstanceTemplate(sku string) (string, error)
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
 	//  }
 
-	startupScript, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleNode, sku)
+	startupScript, err := RenderStartupScript(cm.ctx, cm.cluster, api.RoleNode, sku, false)
 	if err != nil {
 		return "", err
 	}
