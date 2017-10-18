@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"time"
 
-	kubeadmutil "github.com/appscode/pharmer/cloud/util"
+	"github.com/appscode/pharmer/cloud/util"
 )
 
 func GetKubeadmToken() string {
@@ -48,5 +48,5 @@ func ParseToken(s string) (string, string, error) {
 }
 
 func GetLatestKubeadmVerson() (string, error) {
-	return kubeadmutil.FetchFromURL("https://dl.k8s.io/release/stable.txt")
+	return util.FetchFromURL("https://dl.k8s.io/release/stable.txt")
 }

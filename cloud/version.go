@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/appscode/pharmer/api"
-	kubeadmutil "github.com/appscode/pharmer/cloud/util"
+	"github.com/appscode/pharmer/cloud/util"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -91,7 +91,7 @@ func (g *KubeVersionGetter) KubeDNSVersion() (string, error) {
 
 // VersionFromCILabel resolves a version label like "latest" or "stable" to an actual version using the public Kubernetes CI uploads
 func (g *KubeVersionGetter) VersionFromCILabel(ciVersionLabel, description string) (string, *versionutil.Version, error) {
-	versionStr, err := kubeadmutil.KubernetesReleaseVersion(ciVersionLabel)
+	versionStr, err := util.KubernetesReleaseVersion(ciVersionLabel)
 	if err != nil {
 		return "", nil, fmt.Errorf("Couldn't fetch latest %s version from the internet: %v", description, err)
 	}
