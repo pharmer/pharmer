@@ -337,7 +337,7 @@ do
    sleep 5
 done
 
-kubectl apply -f "https://raw.githubusercontent.com/appscode/pharmer/ccm/cloud/providers/{{ .Provider }}/cloud-control-manager.yaml" --kubeconfig /etc/kubernetes/admin.conf
+kubectl apply -f "https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/{{ .Provider }}/cloud-control-manager.yaml" --kubeconfig /etc/kubernetes/admin.conf
 
 until [ $(kubectl get pods -n kube-system -l app=cloud-controller-manager -o jsonpath={.items[0].status.phase} --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
 do

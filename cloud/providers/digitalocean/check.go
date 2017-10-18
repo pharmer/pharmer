@@ -5,7 +5,6 @@ import (
 
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (cm *ClusterManager) Check(in *api.Cluster) (string, error) {
@@ -42,10 +41,14 @@ func (cm *ClusterManager) checkClusterUpgrade() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	v := NewKubeVersionGetter(kc)
+	fmt.Println(v.ClusterVersion())
+	fmt.Println(v.VersionFromCILabel("stable", "stable version"))
+	return "", nil
+	/*	masterInstance, err := kc.CoreV1().Nodes().Get(cm.namer.MasterName(), metav1.GetOptions{})
+		if err != nil {
+			return "", err
+		}
 
-	masterInstance, err := kc.CoreV1().Nodes().Get(cm.namer.MasterName(), metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-	return cm.conn.ExecuteSSHCommand("kubeadm upgrade plan", masterInstance)
+		return cm.conn.ExecuteSSHCommand("kubeadm upgrade plan", masterInstance)*/
 }
