@@ -89,6 +89,7 @@ func Delete(ctx context.Context, name string) (*api.Cluster, error) {
 		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
 	cluster.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+	cluster.Status.Phase = api.ClusterDeleting
 
 	return Store(ctx).Clusters().Update(cluster)
 }
@@ -221,8 +222,10 @@ func Edit(ctx context.Context, name, version string) (*api.Cluster, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
-	cluster.Spec.KubernetesVersion = version
-	cluster.Generation = time.Now().UnixNano()
-	cluster.Status.Phase = api.ClusterUpgrading
+	if cluster.Spec.KubernetesVersion != version {
+		cluster.Spec.KubernetesVersion = version
+		//cluster.Generation = time.Now().UnixNano()
+		cluster.Status.Phase = api.ClusterUpgrading
+	}
 	return Store(ctx).Clusters().Update(cluster)
 }

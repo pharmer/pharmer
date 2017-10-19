@@ -43,7 +43,3 @@ func (n namer) InstanceTemplateName(sku string) string {
 func (n namer) InstanceTemplateNameWithContext(sku string, ctxVersion int64) string {
 	return stringutil.DomainForm(n.cluster.Name + "-" + sku + "-V" + strconv.FormatInt(ctxVersion, 10))
 }
-
-func (n namer) NodeGroupName(sku string) string {
-	return stringutil.DomainForm(n.cluster.Name + "-" + sku) //+ "-V" + strconv.FormatInt(n.ctx.ContextVersion, 10))
-}
