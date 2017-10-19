@@ -44,11 +44,11 @@ func (u *Upgrade) CanUpgradeKubelets() bool {
 	return !sameVersionFound
 }
 
-func (n *Upgrade) DeepCopyObject() runtime.Object {
-	if n == nil {
-		return n
+func (u *Upgrade) DeepCopyObject() runtime.Object {
+	if u == nil {
+		return u
 	}
 	out := new(Upgrade)
-	mergo.MergeWithOverwrite(out, n)
+	mergo.MergeWithOverwrite(out, u)
 	return out
 }
