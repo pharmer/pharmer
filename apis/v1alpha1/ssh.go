@@ -12,13 +12,19 @@ import (
 	"fmt"
 	"strings"
 
-	proto "github.com/appscode/api/ssh/v1beta1"
 	"github.com/appscode/go/errors"
 	"github.com/appscode/go/log"
 	"golang.org/x/crypto/ssh"
 )
 
 const RSABitSize = 2048
+
+type SSHKey struct {
+	PublicKey          []byte `json:"publicKey,omitempty"`
+	PrivateKey         []byte `json:"privateKey,omitempty"`
+	AwsFingerprint     string `json:"awsFingerprint,omitempty"`
+	OpensshFingerprint string `json:"opensshFingerprint,omitempty"`
+}
 
 // Source: https://github.com/flynn/flynn/blob/master/pkg/sshkeygen/sshkeygen.go
 // This generates a single RSA 2048-bit SSH key
@@ -29,7 +35,7 @@ const RSABitSize = 2048
 // From PUB key: ssh-keygen -f ~/.ssh/id_rsa.pub -e -m PKCS8 | openssl pkey -pubin -outform DER | openssl md5 -c
 // From PRIV key: openssl rsa -in ~/.ssh/id_rsa -pubout -outform DER | openssl md5 -c
 //
-func NewSSHKeyPair() (*proto.SSHKey, error) {
+func NewSSHKeyPair() (*SSHKey, error) {
 	log.Debugln("generating ssh key")
 	rsaKey, err := rsa.GenerateKey(rand.Reader, RSABitSize)
 	if err != nil {
@@ -41,7 +47,7 @@ func NewSSHKeyPair() (*proto.SSHKey, error) {
 		return nil, errors.FromErr(err).Err()
 	}
 
-	k := &proto.SSHKey{}
+	k := &SSHKey{}
 	k.PublicKey = bytes.TrimSpace(ssh.MarshalAuthorizedKey(rsaPubKey))
 	k.PrivateKey = pem.EncodeToMemory(&pem.Block{
 		Type:  "RSA PRIVATE KEY",
@@ -75,10 +81,10 @@ func rfc4716hex(data []byte) string {
 	return fingerprint
 }
 
-func ParseSSHKeyPair(pub, priv string) (*proto.SSHKey, error) {
+func ParseSSHKeyPair(pub, priv string) (*SSHKey, error) {
 	pub = strings.TrimSpace(pub)
 
-	k := &proto.SSHKey{}
+	k := &SSHKey{}
 	k.PublicKey = bytes.TrimSpace([]byte(pub))
 	block, _ := pem.Decode([]byte(priv))
 	k.PrivateKey = pem.EncodeToMemory(block)
