@@ -44,3 +44,7 @@ func ParseToken(s string) (string, string, error) {
 	}
 	return split[1], split[2], nil
 }
+
+func GetLatestKubeadmVerson() (string, error) {
+	return FetchFromURL("https://dl.k8s.io/release/stable.txt")
+}

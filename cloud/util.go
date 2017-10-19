@@ -1,4 +1,4 @@
-package util
+package cloud
 
 import (
 	"io/ioutil"

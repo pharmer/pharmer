@@ -348,7 +348,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		if !dryRun {
 			err = cm.conn.DeleteInstanceByProviderID(masterInstance.Spec.ProviderID)
 			if err != nil {
-				return
+				Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", masterInstance.Spec.ProviderID, err)
 			}
 			if masterNG.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
 				for _, addr := range masterInstance.Status.Addresses {
@@ -364,11 +364,12 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	}
 
 	// delete by tag
-	_, err = cm.conn.client.Droplets.DeleteByTag(context.TODO(), "KubernetesCluster:"+cm.cluster.Name)
+	tag := "KubernetesCluster:" + cm.cluster.Name
+	_, err = cm.conn.client.Droplets.DeleteByTag(context.TODO(), tag)
 	if err != nil {
-		return
+		Logger(cm.ctx).Infof("Failed to delete resources by tag %s. Reason: %s", tag, err)
 	}
-	Logger(cm.ctx).Infof("Deleted droplet by tag %v", "KubernetesCluster:"+cm.cluster.Name)
+	Logger(cm.ctx).Infof("Deleted droplet by tag %s", tag)
 
 	// Delete SSH key
 	found, err = cm.conn.getPublicKey()
@@ -418,7 +419,7 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 		return
 	}
 
-	upm := NewUpgradeManager(cm.ctx, cm.conn, kc, cm.cluster, cm.cluster.Spec.KubernetesVersion)
+	upm := NewUpgradeManager(cm.ctx, cm.conn, kc, cm.cluster)
 	a, err := upm.Apply(dryRun)
 	if err != nil {
 		return

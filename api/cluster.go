@@ -133,9 +133,9 @@ type ClusterSpec struct {
 	Etcd       kubeadm.Etcd `json:"etcd"`
 	Networking Networking   `json:"networking"`
 
-	Multizone         StrToBool `json:"multizone,omitempty"`
-	KubernetesVersion string    `json:"kubernetesVersion,omitempty"`
-	KubeadmVersion    string    `json:"kubeadmVersion,omitempty"`
+	Multizone            StrToBool `json:"multizone,omitempty"`
+	KubernetesVersion    string    `json:"kubernetesVersion,omitempty"`
+	MasterKubeadmVersion string    `json:"masterKubeadmVersion,omitempty"`
 
 	// request data. This is needed to give consistent access to these values for all commands.
 	DoNotDelete        bool     `json:"doNotDelete,omitempty"`
