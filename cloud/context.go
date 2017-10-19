@@ -5,7 +5,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 
-	proto "github.com/appscode/api/ssh/v1beta1"
 	"github.com/appscode/go-dns"
 	dns_provider "github.com/appscode/go-dns/provider"
 	_env "github.com/appscode/go/env"
@@ -65,8 +64,8 @@ func FrontProxyCAKey(ctx context.Context) *rsa.PrivateKey {
 	return ctx.Value(paramFrontProxyCAKey{}).(*rsa.PrivateKey)
 }
 
-func SSHKey(ctx context.Context) *proto.SSHKey {
-	return ctx.Value(paramSSHKey{}).(*proto.SSHKey)
+func SSHKey(ctx context.Context) *api.SSHKey {
+	return ctx.Value(paramSSHKey{}).(*api.SSHKey)
 }
 
 func NewContext(parent context.Context, cfg *api.PharmerConfig, env _env.Environment) context.Context {
