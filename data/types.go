@@ -2,7 +2,7 @@ package data
 
 import (
 	_env "github.com/appscode/go/env"
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/hashicorp/go-version"
 )
 

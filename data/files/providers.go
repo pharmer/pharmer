@@ -7,7 +7,7 @@ import (
 
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/data"
 	"github.com/appscode/pharmer/data/files/aws"
 	"github.com/appscode/pharmer/data/files/azure"

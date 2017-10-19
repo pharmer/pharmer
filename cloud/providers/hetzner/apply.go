@@ -7,7 +7,7 @@ import (
 	hc "github.com/appscode/go-hetzner"
 	_ssh "github.com/appscode/go/crypto/ssh"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 )
 

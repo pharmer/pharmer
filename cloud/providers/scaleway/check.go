@@ -3,7 +3,7 @@ package scaleway
 import (
 	"fmt"
 
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 )
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/ghodss/yaml"
 	"github.com/hashicorp/go-version"
 	"gopkg.in/ini.v1"

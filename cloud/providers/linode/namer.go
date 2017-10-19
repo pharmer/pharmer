@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/appscode/go/crypto/rand"
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 )
 
 type namer struct {

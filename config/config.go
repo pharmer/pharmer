@@ -12,7 +12,7 @@ import (
 	yc "github.com/appscode/go/encoding/yaml"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/store"
 	"github.com/appscode/pharmer/store/providers/fake"
 	"github.com/appscode/pharmer/store/providers/vfs"
