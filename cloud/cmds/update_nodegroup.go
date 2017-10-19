@@ -8,7 +8,6 @@ import (
 	"github.com/appscode/go/flags"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/cloud/util"
 	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"
 )
@@ -63,7 +62,7 @@ func runUpdateNodeGroup(ctx context.Context, cmd *cobra.Command, args []string) 
 	fileName, _ := cmd.Flags().GetString("file")
 
 	var updatedNodeGroup *api.NodeGroup
-	if err := util.ReadFileAs(fileName, &updatedNodeGroup); err != nil {
+	if err := cloud.ReadFileAs(fileName, &updatedNodeGroup); err != nil {
 		return err
 	}
 

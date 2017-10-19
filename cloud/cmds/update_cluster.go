@@ -8,7 +8,6 @@ import (
 	"github.com/appscode/go/flags"
 	"github.com/appscode/pharmer/api"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/cloud/util"
 	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"
 )
@@ -52,7 +51,6 @@ func NewCmdUpdateCluster() *cobra.Command {
 }
 
 func runUpdateCluster(ctx context.Context, cmd *cobra.Command, args []string) error {
-
 	cluster, err := cloud.Get(ctx, args[0])
 	if err != nil {
 		return fmt.Errorf(`Cluster "%v" not found.`, cluster)
@@ -61,7 +59,7 @@ func runUpdateCluster(ctx context.Context, cmd *cobra.Command, args []string) er
 	fileName, _ := cmd.Flags().GetString("file")
 
 	var updatedCluster *api.Cluster
-	if err := util.ReadFileAs(fileName, &updatedCluster); err != nil {
+	if err := cloud.ReadFileAs(fileName, &updatedCluster); err != nil {
 		return err
 	}
 

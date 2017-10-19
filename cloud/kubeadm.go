@@ -5,8 +5,6 @@ import (
 	mrnd "math/rand"
 	"regexp"
 	"time"
-
-	"github.com/appscode/pharmer/cloud/util"
 )
 
 func GetKubeadmToken() string {
@@ -48,5 +46,5 @@ func ParseToken(s string) (string, string, error) {
 }
 
 func GetLatestKubeadmVerson() (string, error) {
-	return util.FetchFromURL("https://dl.k8s.io/release/stable.txt")
+	return FetchFromURL("https://dl.k8s.io/release/stable.txt")
 }
