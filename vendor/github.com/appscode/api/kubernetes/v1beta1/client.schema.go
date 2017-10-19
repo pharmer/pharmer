@@ -1,4 +1,4 @@
-package v1beta2
+package v1beta1
 
 // Auto-generated. DO NOT EDIT.
 import (
@@ -104,7 +104,7 @@ func init() {
 	createResourceRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "definitions": {
-    "v1beta2Raw": {
+    "v1beta1Raw": {
       "properties": {
         "data": {
           "type": "string"
@@ -128,7 +128,7 @@ func init() {
       "type": "string"
     },
     "raw": {
-      "$ref": "#/definitions/v1beta2Raw"
+      "$ref": "#/definitions/v1beta1Raw"
     },
     "type": {
       "type": "string"
@@ -142,7 +142,7 @@ func init() {
 	updateResourceRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "definitions": {
-    "v1beta2Raw": {
+    "v1beta1Raw": {
       "properties": {
         "data": {
           "type": "string"
@@ -171,7 +171,7 @@ func init() {
       "type": "string"
     },
     "raw": {
-      "$ref": "#/definitions/v1beta2Raw"
+      "$ref": "#/definitions/v1beta1Raw"
     },
     "type": {
       "type": "string"
@@ -220,7 +220,7 @@ func init() {
 	copyResourceRequestSchema, err = gojsonschema.NewSchema(gojsonschema.NewStringLoader(`{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "definitions": {
-    "v1beta2KubeObject": {
+    "v1beta1KubeObject": {
       "properties": {
         "cluster": {
           "type": "string"
@@ -246,10 +246,10 @@ func init() {
       "type": "string"
     },
     "destination": {
-      "$ref": "#/definitions/v1beta2KubeObject"
+      "$ref": "#/definitions/v1beta1KubeObject"
     },
     "source": {
-      "$ref": "#/definitions/v1beta2KubeObject"
+      "$ref": "#/definitions/v1beta1KubeObject"
     }
   },
   "type": "object"

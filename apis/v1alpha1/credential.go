@@ -1,9 +1,7 @@
 package v1alpha1
 
 import (
-	"github.com/appscode/mergo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -12,6 +10,8 @@ const (
 	ResourceNameCredential = "credential"
 	ResourceTypeCredential = "credentials"
 )
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type Credential struct {
 	metav1.TypeMeta   `json:",inline,omitempty"`
@@ -22,15 +22,4 @@ type Credential struct {
 type CredentialSpec struct {
 	Provider string            `json:"provider"`
 	Data     map[string]string `json:"data"`
-}
-
-var _ runtime.Object = &Credential{}
-
-func (c *Credential) DeepCopyObject() runtime.Object {
-	if c == nil {
-		return c
-	}
-	out := new(Credential)
-	mergo.MergeWithOverwrite(out, c)
-	return out
 }

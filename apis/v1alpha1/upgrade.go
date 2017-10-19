@@ -1,10 +1,10 @@
 package v1alpha1
 
 import (
-	"github.com/appscode/mergo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 //https://github.com/kubernetes/kubernetes/blob/aa1dc9db3532dfbf09e45c8e3786a648cd217417/cmd/kubeadm/app/phases/upgrade/compute.go#L28
 type Upgrade struct {
@@ -27,8 +27,6 @@ type ClusterState struct {
 	KubeletVersions map[string]uint32
 }
 
-var _ runtime.Object = &Action{}
-
 // CanUpgradeKubelets returns whether an upgrade of any kubelet in the cluster is possible
 func (u *Upgrade) CanUpgradeKubelets() bool {
 	// If there are multiple different versions now, an upgrade is possible (even if only for a subset of the nodes)
@@ -43,13 +41,4 @@ func (u *Upgrade) CanUpgradeKubelets() bool {
 	// if the same version number existed both before and after, we don't have to upgrade it
 	_, sameVersionFound := u.Before.KubeletVersions[u.After.KubeVersion]
 	return !sameVersionFound
-}
-
-func (u *Upgrade) DeepCopyObject() runtime.Object {
-	if u == nil {
-		return u
-	}
-	out := new(Upgrade)
-	mergo.MergeWithOverwrite(out, u)
-	return out
 }

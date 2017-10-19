@@ -6,10 +6,8 @@ import (
 	"strings"
 
 	. "github.com/appscode/go/encoding/json/types"
-	"github.com/appscode/mergo"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
@@ -46,14 +44,14 @@ type GCECloudConfig struct {
 	Multizone          bool     `gcfg:"multizone"            ini:"multizone,omitempty"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 type Cluster struct {
 	metav1.TypeMeta   `json:",inline,omitempty,omitempty"`
 	metav1.ObjectMeta `json:"metadata,omitempty,omitempty"`
 	Spec              ClusterSpec   `json:"spec,omitempty,omitempty"`
 	Status            ClusterStatus `json:"status,omitempty,omitempty"`
 }
-
-var _ runtime.Object = &Cluster{}
 
 type Networking struct {
 	PodSubnet     string `json:"podSubnet,omitempty"`
@@ -359,13 +357,4 @@ func (c *Cluster) APIServerAddress() string {
 		return u
 	}
 	return ""
-}
-
-func (c *Cluster) DeepCopyObject() runtime.Object {
-	if c == nil {
-		return c
-	}
-	out := new(Cluster)
-	mergo.MergeWithOverwrite(out, c)
-	return out
 }

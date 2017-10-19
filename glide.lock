@@ -1,5 +1,5 @@
-hash: 30e4bc9d22395eff7fe65cd40ab8737455dd6635d0330544b1826048822183d3
-updated: 2017-10-13T15:38:57.077549358-07:00
+hash: a1027d7fb728a316de18c3bf06b7eaf12232da2643b22049b1a1683fea310e92
+updated: 2017-10-19T12:58:13.856596682-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -7,7 +7,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/api
-  version: 245ca3497c37e4999cca4f42764d51306a15c01d
+  version: 934ee7e989e7b806071b82ba2922438d73806d11
   subpackages:
   - attic/v1beta1
   - auth/v1beta1
@@ -17,19 +17,18 @@ imports:
   - dtypes
   - health
   - kubernetes/v1beta1
-  - kubernetes/v1beta2
   - mailinglist/v1beta1
   - namespace/v1beta1
   - operation/v1beta1
   - ssh/v1beta1
   - version
 - name: github.com/appscode/appctl
-  version: 51b7c060ac949d4cb645ef8d4d5f081bec1ee652
+  version: 08e351b0cbf207d4526b7abd8932e5f11fd2d171
   subpackages:
   - pkg/config
   - pkg/util
 - name: github.com/appscode/client
-  version: 9844500890e8cf3df84b3c86ddc17c220db38af1
+  version: 0223eab3f6f0acbfb13b6bdc901bba92d656344a
   subpackages:
   - cli
   - credential
@@ -43,7 +42,7 @@ imports:
 - name: github.com/appscode/errors
   version: 748883e321a9f99fe901bd2663c7af3fcae43ea4
 - name: github.com/appscode/go
-  version: f719fe83ed5dd094e07c4456dc68e1227131d581
+  version: c01120782e8b487d1c86ab4299241edfe36a3ca2
   subpackages:
   - context
   - crypto/rand
@@ -247,7 +246,7 @@ imports:
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/google/uuid
-  version: 7e072fc3a7be179aee6d3359e46015aa8c995314
+  version: e367a344cbe8e08149f9951115dc299ebd42b919
 - name: github.com/googleapis/gnostic
   version: 0c5108395e2debce0d731cf0287ddf7242066aba
   subpackages:
@@ -341,7 +340,7 @@ imports:
   - jlexer
   - jwriter
 - name: github.com/mattn/go-colorable
-  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
+  version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
 - name: github.com/mattn/go-isatty
   version: 56b76bdf51f7708750eac80fa38b952bb9f32639
 - name: github.com/mgutz/ansi
@@ -357,7 +356,7 @@ imports:
 - name: github.com/moul/gotty-client
   version: 92f0c24d5b2985522174e3ff5ad882a1c4d7f1d9
 - name: github.com/ncw/swift
-  version: 9d3f812e23d270d1c66a9a01e20af1005061cdc4
+  version: c95c6e5c2d1a3d37fc44c8c6dc9e231c7500667d
 - name: github.com/packethost/packngo
   version: 131798f2804a1b3e895ca98047d56f0d7e094e2a
 - name: github.com/pborman/uuid
@@ -423,7 +422,7 @@ imports:
 - name: github.com/xeipuuv/gojsonreference
   version: e02fc20de94c78484cd5ffb007f8af96be030a45
 - name: github.com/xeipuuv/gojsonschema
-  version: 3f523f4c14b6e925da10475eb0447c2f28614aac
+  version: 93e72a773fade158921402d6a24c819b48aba29d
 - name: github.com/xenolf/lego
   version: 8a62215d047836bc4da6f32f4c3cf7662e3e76bd
   repo: https://github.com/appscode/lego.git
@@ -557,7 +556,7 @@ imports:
 - name: gopkg.in/yaml.v2
   version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: k8s.io/api
-  version: fe29995db37613b9c5b2a647544cf627bfa8d299
+  version: 6c6dac0277229b9e9578c5ca3f74a4345d35cdc2
   subpackages:
   - admissionregistration/v1alpha1
   - apps/v1beta1
@@ -626,7 +625,7 @@ imports:
   - pkg/watch
   - third_party/forked/golang/reflect
 - name: k8s.io/client-go
-  version: afb4606c45bae77c4dc2c15291d4d7d6d792196c
+  version: 1fb83015bea362f028381bc0fcfb2a4e3eb7390b
   subpackages:
   - discovery
   - dynamic

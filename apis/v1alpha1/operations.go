@@ -1,9 +1,7 @@
 package v1alpha1
 
 import (
-	"github.com/appscode/mergo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type ActionType string
@@ -15,21 +13,12 @@ const (
 	ActionDelete ActionType = "Delete"
 )
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 type Action struct {
 	metav1.TypeMeta `json:",inline,omitempty,omitempty"`
 
 	Action   ActionType
 	Resource string
 	Message  string
-}
-
-var _ runtime.Object = &Action{}
-
-func (n *Action) DeepCopyObject() runtime.Object {
-	if n == nil {
-		return n
-	}
-	out := new(Action)
-	mergo.MergeWithOverwrite(out, n)
-	return out
 }
