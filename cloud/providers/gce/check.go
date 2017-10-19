@@ -5,8 +5,6 @@ import (
 
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 func (cm *ClusterManager) Check(in *api.Cluster) (string, error) {
@@ -43,23 +41,11 @@ func (cm *ClusterManager) checkClusterUpgrade() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	nodeGroups, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+	upm := NewUpgradeManager(cm.ctx, cm.conn, kc, cm.cluster)
+	upgrades, err := upm.GetAvailableUpgrades()
 	if err != nil {
 		return "", err
 	}
-	masterNG := FindMasterNodeGroup(nodeGroups)
-
-	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{
-		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.NodeLabelKey_NodeGroup: masterNG.Name,
-			//api.RoleMasterKey:          "",
-		}).String(),
-	})
-	if err != nil {
-		return "", err
-	}
-	if len(nodes.Items) == 0 {
-		return "", fmt.Errorf("Master node not found")
-	}
-	return cm.conn.ExecuteSSHCommand("kubeadm upgrade plan", &nodes.Items[0])
+	upm.PrintAvailableUpgrades(upgrades)
+	return "", nil
 }

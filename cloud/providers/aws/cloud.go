@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -1285,6 +1286,15 @@ func (conn *cloudConnector) assignIPToInstance(reservedIP, instanceID string) er
 
 func (conn *cloudConnector) createLaunchConfiguration(name string, ng *api.NodeGroup) error {
 	// script := conn.RenderStartupScript(conn.cluster, sku, api.RoleKubernetesPool)
+	configScript, err := KubeConfigScript(conn.cluster)
+	if err != nil {
+		return err
+	}
+
+	if err = conn.uploadStartupConfig(conn.cluster.Status.Cloud.AWS.BucketName, configScript); err != nil {
+		return err
+	}
+
 	script, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleNode, ng.Name, false)
 	if err != nil {
 		return err
@@ -1879,6 +1889,64 @@ func (conn *cloudConnector) getInstancePublicDNS(providerID string) (string, err
 		return "", err
 	}
 	return *r1.Reservations[0].Instances[0].PublicDnsName, nil
+}
+
+func (conn *cloudConnector) getExistingLaunchConfigurationTemplate(ng *api.NodeGroup) (string, error) {
+	as, err := conn.describeGroupInfo(ng.Name)
+	if err != nil {
+		return "", err
+	}
+	return *as.AutoScalingGroups[0].LaunchConfigurationName, nil
+}
+
+//Launch configuration template update
+func (conn *cloudConnector) updateLaunchConfigurationTemplate(ng *api.NodeGroup) error {
+	newConfigurationTemplate := conn.namer.LaunchConfigName(ng.Spec.Template.Spec.SKU)
+
+	if err := conn.createLaunchConfiguration(newConfigurationTemplate, ng); err != nil {
+		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+	oldConfigurationTemplate, err := conn.getExistingLaunchConfigurationTemplate(ng)
+	if err != nil {
+		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+
+	fmt.Println("Updating autoscalling group")
+	_, err = conn.autoscale.UpdateAutoScalingGroup(&autoscaling.UpdateAutoScalingGroupInput{
+		AutoScalingGroupName:    StringP(ng.Name),
+		LaunchConfigurationName: StringP(newConfigurationTemplate),
+	})
+	if err != nil {
+		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+
+	err = conn.deleteLaunchConfiguration(oldConfigurationTemplate)
+	if err != nil {
+		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+	return nil
+}
+
+func (conn *cloudConnector) uploadStartupConfig(bucketName, data string) error {
+	_, err := conn.s3.GetBucketLocation(&_s3.GetBucketLocationInput{Bucket: StringP(bucketName)})
+	if err != nil {
+		_, err = conn.s3.CreateBucket(&_s3.CreateBucketInput{Bucket: StringP(bucketName)})
+		if err != nil {
+			Logger(conn.ctx).Infof("Bucket name is no unique")
+			return errors.FromErr(err).WithContext(conn.ctx).Err()
+		}
+	}
+
+	params := &_s3.PutObjectInput{
+		Bucket: StringP(bucketName),
+		Key:    StringP("config.sh"),
+		ACL:    StringP("authenticated-read"),
+		Body:   bytes.NewReader([]byte(data)),
+	}
+	if _, err = conn.s3.PutObject(params); err != nil {
+		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+	return nil
 }
 
 func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *apiv1.Node) (string, error) {

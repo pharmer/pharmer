@@ -232,7 +232,7 @@ func Edit(ctx context.Context, name, version string) (*api.Cluster, error) {
 	}
 	if cluster.Spec.KubernetesVersion != version {
 		cluster.Spec.KubernetesVersion = version
-		//cluster.Generation = time.Now().UnixNano()
+		cluster.Generation = time.Now().UnixNano()
 		cluster.Status.Phase = api.ClusterUpgrading
 	}
 	return Store(ctx).Clusters().Update(cluster)

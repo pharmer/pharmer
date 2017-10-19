@@ -251,13 +251,19 @@ type AWSStatus struct {
 	IGWId         string `json:"igwID,omitempty"`
 	DHCPOptionsId string `json:"dhcpOptionsID,omitempty"`
 	VolumeId      string `json:"volumeID,omitempty"`
+	BucketName    string `json:"bucketName,omitempty"`
 
 	// only aws
 	RootDeviceName string `json:"-"`
 }
 
+type GCEStatus struct {
+	BucketName string `json:"bucketName,omitempty"`
+}
+
 type CloudStatus struct {
 	AWS *AWSStatus `json:"aws,omitempty"`
+	GCE *GCEStatus `json:",omitempty"`
 }
 
 /*
