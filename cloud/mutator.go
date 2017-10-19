@@ -66,8 +66,6 @@ func GetClusterIstance(ctx context.Context, cluster *api.Cluster, nodeGroup stri
 }
 
 func GetClusterIstance2(kc kubernetes.Interface, nodeGroup string) ([]string, error) {
-	//	var kc kubernetes.Interface // TODO: Fix NPE, pass client
-
 	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			api.NodeLabelKey_NodeGroup: nodeGroup,
