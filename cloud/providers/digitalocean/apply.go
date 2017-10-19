@@ -349,7 +349,6 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 			err = cm.conn.DeleteInstanceByProviderID(masterInstance.Spec.ProviderID)
 			if err != nil {
 				Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", masterInstance.Spec.ProviderID, err)
-				err = nil
 			}
 			if masterNG.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
 				for _, addr := range masterInstance.Status.Addresses {
@@ -369,7 +368,6 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	_, err = cm.conn.client.Droplets.DeleteByTag(context.TODO(), tag)
 	if err != nil {
 		Logger(cm.ctx).Infof("Failed to delete resources by tag %s. Reason: %s", tag, err)
-		err = nil
 	}
 	Logger(cm.ctx).Infof("Deleted droplet by tag %s", tag)
 
