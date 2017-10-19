@@ -6,7 +6,6 @@ import (
 	ca "github.com/appscode/api/certificate/v1beta1"
 	ci "github.com/appscode/api/ci/v1beta1"
 	kubernetesV1beta1 "github.com/appscode/api/kubernetes/v1beta1"
-	kubernetesV1beta2 "github.com/appscode/api/kubernetes/v1beta2"
 	namespace "github.com/appscode/api/namespace/v1beta1"
 	"google.golang.org/grpc"
 )
@@ -51,14 +50,11 @@ func newMultiClientService(conn *grpc.ClientConn) multiClientInterface {
 		},
 		versionedKubernetesClient: &versionedKubernetesService{
 			v1beta1Service: &kubernetesV1beta1Service{
-				clusterClient:      kubernetesV1beta1.NewClustersClient(conn),
-				incidentClient:     kubernetesV1beta1.NewIncidentsClient(conn),
-				loadBalancerClient: kubernetesV1beta1.NewLoadBalancersClient(conn),
-				metdataClient:      kubernetesV1beta1.NewMetadataClient(conn),
-			},
-			v1beta2Service: &kubernetesV1beta2Service{
-				clientsClient: kubernetesV1beta2.NewClientsClient(conn),
-				diskClient:    kubernetesV1beta2.NewDisksClient(conn),
+				clusterClient:  kubernetesV1beta1.NewClustersClient(conn),
+				incidentClient: kubernetesV1beta1.NewIncidentsClient(conn),
+				metdataClient:  kubernetesV1beta1.NewMetadataClient(conn),
+				clientsClient:  kubernetesV1beta1.NewClientsClient(conn),
+				diskClient:     kubernetesV1beta1.NewDisksClient(conn),
 			},
 		},
 		nsClient: &nsService{
@@ -155,22 +151,18 @@ func (c *caService) CertificatesClient() ca.CertificatesClient {
 
 type versionedKubernetesService struct {
 	v1beta1Service *kubernetesV1beta1Service
-	v1beta2Service *kubernetesV1beta2Service
 }
 
 func (v *versionedKubernetesService) V1beta1() *kubernetesV1beta1Service {
 	return v.v1beta1Service
 }
 
-func (v *versionedKubernetesService) V1beta2() *kubernetesV1beta2Service {
-	return v.v1beta2Service
-}
-
 type kubernetesV1beta1Service struct {
-	clusterClient      kubernetesV1beta1.ClustersClient
-	incidentClient     kubernetesV1beta1.IncidentsClient
-	loadBalancerClient kubernetesV1beta1.LoadBalancersClient
-	metdataClient      kubernetesV1beta1.MetadataClient
+	clusterClient  kubernetesV1beta1.ClustersClient
+	incidentClient kubernetesV1beta1.IncidentsClient
+	metdataClient  kubernetesV1beta1.MetadataClient
+	clientsClient  kubernetesV1beta1.ClientsClient
+	diskClient     kubernetesV1beta1.DisksClient
 }
 
 func (k *kubernetesV1beta1Service) Cluster() kubernetesV1beta1.ClustersClient {
@@ -181,23 +173,14 @@ func (a *kubernetesV1beta1Service) Incident() kubernetesV1beta1.IncidentsClient 
 	return a.incidentClient
 }
 
-func (a *kubernetesV1beta1Service) LoadBalancer() kubernetesV1beta1.LoadBalancersClient {
-	return a.loadBalancerClient
-}
-
 func (k *kubernetesV1beta1Service) Metadata() kubernetesV1beta1.MetadataClient {
 	return k.metdataClient
 }
 
-type kubernetesV1beta2Service struct {
-	clientsClient kubernetesV1beta2.ClientsClient
-	diskClient    kubernetesV1beta2.DisksClient
-}
-
-func (k *kubernetesV1beta2Service) Client() kubernetesV1beta2.ClientsClient {
+func (k *kubernetesV1beta1Service) Client() kubernetesV1beta1.ClientsClient {
 	return k.clientsClient
 }
 
-func (k *kubernetesV1beta2Service) Disk() kubernetesV1beta2.DisksClient {
+func (k *kubernetesV1beta1Service) Disk() kubernetesV1beta1.DisksClient {
 	return k.diskClient
 }

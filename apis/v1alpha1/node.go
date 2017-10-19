@@ -1,9 +1,7 @@
 package v1alpha1
 
 import (
-	"github.com/appscode/mergo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -13,14 +11,14 @@ const (
 	ResourceTypeNodeGroup = "nodegroups"
 )
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 type NodeGroup struct {
 	metav1.TypeMeta   `json:",inline,omitempty"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              NodeGroupSpec   `json:"spec,omitempty"`
 	Status            NodeGroupStatus `json:"status,omitempty"`
 }
-
-var _ runtime.Object = &NodeGroup{}
 
 type NodeGroupSpec struct {
 	Nodes int64 `json:"nodes"`
@@ -105,15 +103,6 @@ type NodeGroupCondition struct {
 	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
 }
 
-func (ng *NodeGroup) DeepCopyObject() runtime.Object {
-	if ng == nil {
-		return ng
-	}
-	out := new(NodeGroup)
-	mergo.MergeWithOverwrite(out, ng)
-	return out
-}
-
 func (ng NodeGroup) IsMaster() bool {
 	_, found := ng.Labels[RoleMasterKey]
 	return found
@@ -139,6 +128,7 @@ type NodeTemplateSpec struct {
 	Spec NodeSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // Deprecated, replace with Kubernetes Node
 type Node struct {
 	metav1.TypeMeta   `json:",inline,omitempty"`
@@ -192,6 +182,8 @@ const (
 	NodeDeleted NodePhase = "Deleted"
 )
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 type SimpleNode struct {
 	metav1.TypeMeta `json:",inline,omitempty"`
 	Name            string
@@ -199,15 +191,4 @@ type SimpleNode struct {
 	PublicIP        string
 	PrivateIP       string
 	DiskId          string `json:"diskID,omitempty"`
-}
-
-var _ runtime.Object = &SimpleNode{}
-
-func (n *SimpleNode) DeepCopyObject() runtime.Object {
-	if n == nil {
-		return n
-	}
-	out := new(SimpleNode)
-	mergo.MergeWithOverwrite(out, n)
-	return out
 }
