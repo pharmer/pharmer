@@ -294,7 +294,7 @@ func isPatch(v1, v2 *semver.Version) bool {
 }
 
 // sortedSliceFromStringIntMap returns a slice of the keys in the map sorted alphabetically
-func sortedSliceFromStringIntMap(strMap map[string]uint16) []string {
+func sortedSliceFromStringIntMap(strMap map[string]uint32) []string {
 	strSlice := []string{}
 	for k := range strMap {
 		strSlice = append(strSlice, k)

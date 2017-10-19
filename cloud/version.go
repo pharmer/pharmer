@@ -111,7 +111,7 @@ type VersionGetter interface {
 	// VersionFromCILabel should resolve CI labels like `latest`, `stable`, `stable-1.8`, etc. to real versions
 	VersionFromCILabel(string, string) (string, *versionutil.Version, error)
 	// KubeletVersions should return a map with a version and a number that describes how many kubelets there are for that version
-	KubeletVersions() (map[string]uint16, error)
+	KubeletVersions() (map[string]uint32, error)
 }
 
 // KubeVersionGetter handles the version-fetching mechanism from external sources
@@ -195,7 +195,7 @@ func (g *KubeVersionGetter) VersionFromCILabel(ciVersionLabel, description strin
 }
 
 // KubeletVersions gets the versions of the kubelets in the cluster
-func (g *KubeVersionGetter) KubeletVersions() (map[string]uint16, error) {
+func (g *KubeVersionGetter) KubeletVersions() (map[string]uint32, error) {
 	nodes, err := g.client.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("couldn't list all nodes in cluster")
@@ -205,8 +205,8 @@ func (g *KubeVersionGetter) KubeletVersions() (map[string]uint16, error) {
 }
 
 // computeKubeletVersions returns a string-int map that describes how many nodes are of a specific version
-func computeKubeletVersions(nodes []apiv1.Node) map[string]uint16 {
-	kubeletVersions := map[string]uint16{}
+func computeKubeletVersions(nodes []apiv1.Node) map[string]uint32 {
+	kubeletVersions := map[string]uint32{}
 	for _, node := range nodes {
 		kver := node.Status.NodeInfo.KubeletVersion
 		if _, found := kubeletVersions[kver]; !found {

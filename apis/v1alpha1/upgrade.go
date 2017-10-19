@@ -24,7 +24,7 @@ type ClusterState struct {
 	// MasterKubeadmVersion describes the version of the kubeadm CLI
 	KubeadmVersion string
 	// KubeletVersions is a map with a version number linked to the amount of kubelets running that version in the cluster
-	KubeletVersions map[string]uint16
+	KubeletVersions map[string]uint32
 }
 
 var _ runtime.Object = &Action{}
