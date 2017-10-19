@@ -6,7 +6,7 @@ import (
 
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	apiv1 "k8s.io/api/core/v1"

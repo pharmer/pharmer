@@ -13,7 +13,7 @@ import (
 	azdate "github.com/Azure/go-autorest/autorest/date"
 	"github.com/appscode/go-term"
 	"github.com/appscode/go/types"
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/credential"
 	"github.com/cenkalti/backoff"
 	"github.com/pborman/uuid"

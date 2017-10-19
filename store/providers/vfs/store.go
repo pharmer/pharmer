@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/credential"
 	"github.com/appscode/pharmer/store"
 	"github.com/graymeta/stow"

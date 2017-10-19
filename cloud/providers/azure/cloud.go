@@ -19,7 +19,7 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	"golang.org/x/crypto/ssh"

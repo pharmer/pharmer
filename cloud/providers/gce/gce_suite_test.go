@@ -13,14 +13,14 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	//	"time"
-	//	"github.com/appscode/pharmer/api"
+	//	api "github.com/appscode/pharmer/apis/v1alpha1"
 	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//"github.com/appscode/pharmer/phid"
 	"context"
 	"encoding/json"
 	"regexp"
 
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 )

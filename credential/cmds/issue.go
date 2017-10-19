@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/appscode/go-term"
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 	cc "github.com/appscode/pharmer/credential/cloud"

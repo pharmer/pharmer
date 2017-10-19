@@ -10,7 +10,7 @@ import (
 	"github.com/appscode/data"
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"

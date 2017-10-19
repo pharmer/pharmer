@@ -13,7 +13,7 @@ import (
 	stringutil "github.com/appscode/go/strings"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/go/wait"
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	_aws "github.com/aws/aws-sdk-go/aws"

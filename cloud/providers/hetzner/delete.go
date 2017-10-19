@@ -8,7 +8,7 @@ import (
 	proto "github.com/appscode/api/kubernetes/v1beta1"
 	hc "github.com/appscode/go-hetzner"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"

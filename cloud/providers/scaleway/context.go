@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	proto "github.com/appscode/api/kubernetes/v1beta1"
-	"github.com/appscode/pharmer/api"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"k8s.io/client-go/kubernetes"
 )
