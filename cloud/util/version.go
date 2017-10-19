@@ -56,26 +56,6 @@ func KubernetesReleaseVersion(version string) (string, error) {
 	return "", fmt.Errorf("version %q doesn't match patterns for neither semantic version nor labels (stable, latest, ...)", version)
 }
 
-// KubernetesVersionToImageTag is helper function that replaces all
-// non-allowed symbols in tag strings with underscores.
-// Image tag can only contain lowercase and uppercase letters, digits,
-// underscores, periods and dashes.
-// Current usage is for CI images where all of symbols except '+' are valid,
-// but function is for generic usage where input can't be always pre-validated.
-func KubernetesVersionToImageTag(version string) string {
-	allowed := regexp.MustCompile(`[^-a-zA-Z0-9_\.]`)
-	return allowed.ReplaceAllString(version, "_")
-}
-
-// KubernetesIsCIVersion checks if user requested CI version
-func KubernetesIsCIVersion(version string) bool {
-	subs := kubeBucketPrefixes.FindAllStringSubmatch(version, 1)
-	if len(subs) == 1 && len(subs[0]) == 4 && strings.HasPrefix(subs[0][2], "ci") {
-		return true
-	}
-	return false
-}
-
 // Internal helper: split version parts,
 // Return base URL and cleaned-up version
 func splitVersion(version string) (string, string, error) {

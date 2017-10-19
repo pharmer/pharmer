@@ -20,13 +20,12 @@ type GenericUpgradeManager struct {
 	ssh     SSHExecutor
 	kc      kubernetes.Interface
 	cluster *api.Cluster
-	version string
 }
 
 var _ UpgradeManager = &GenericUpgradeManager{}
 
-func NewUpgradeManager(ctx context.Context, ssh SSHExecutor, kc kubernetes.Interface, cluster *api.Cluster, version string) UpgradeManager {
-	return &GenericUpgradeManager{ctx: ctx, ssh: ssh, kc: kc, cluster: cluster, version: version}
+func NewUpgradeManager(ctx context.Context, ssh SSHExecutor, kc kubernetes.Interface, cluster *api.Cluster) UpgradeManager {
+	return &GenericUpgradeManager{ctx: ctx, ssh: ssh, kc: kc, cluster: cluster}
 }
 
 func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]api.Upgrade, error) {
@@ -195,7 +194,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 	acts = append(acts, api.Action{
 		Action:   api.ActionUpdate,
 		Resource: "Master upgrade",
-		Message:  fmt.Sprintf("Master instance will be upgraded to %v", upm.version),
+		Message:  fmt.Sprintf("Master instance will be upgraded to %v", upm.cluster.Spec.KubernetesVersion),
 	})
 	if !dryRun {
 		if err = upm.MasterUpgrade(); err != nil {
@@ -210,7 +209,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 	acts = append(acts, api.Action{
 		Action:   api.ActionUpdate,
 		Resource: "Node group upgrade",
-		Message:  fmt.Sprintf("Node group will be upgraded to %v", upm.version),
+		Message:  fmt.Sprintf("Node group will be upgraded to %v", upm.cluster.Spec.KubernetesVersion),
 	})
 	if !dryRun {
 		for _, ng := range nodeGroups {
@@ -243,7 +242,7 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 		return fmt.Errorf("no master found")
 	}
 
-	desireVersion, _ := semver.NewVersion(upm.version)
+	desireVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
 	currentVersion, _ := semver.NewVersion(masterInstance.Status.NodeInfo.KubeletVersion)
 
 	if isPatch(desireVersion, currentVersion) {
@@ -252,7 +251,7 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 		}
 	}
 
-	if _, err = upm.ssh.ExecuteSSHCommand(fmt.Sprintf("kubeadm upgrade apply %v -y", upm.version), masterInstance); err != nil {
+	if _, err = upm.ssh.ExecuteSSHCommand(fmt.Sprintf("kubeadm upgrade apply %v -y", upm.cluster.Spec.KubernetesVersion), masterInstance); err != nil {
 		return err
 	}
 	return nil
@@ -270,7 +269,7 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 			return
 		}
 	}
-	desireVersion, _ := semver.NewVersion(upm.version)
+	desireVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
 	for _, node := range nodes.Items {
 		currentVersion, _ := semver.NewVersion(node.Status.NodeInfo.KubeletVersion)
 		if isPatch(desireVersion, currentVersion) {

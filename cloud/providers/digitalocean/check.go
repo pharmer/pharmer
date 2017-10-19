@@ -41,7 +41,7 @@ func (cm *ClusterManager) checkClusterUpgrade() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	upm := NewUpgradeManager(cm.ctx, cm.conn, kc, cm.cluster, cm.cluster.Spec.KubernetesVersion)
+	upm := NewUpgradeManager(cm.ctx, cm.conn, kc, cm.cluster)
 	upgrades, err := upm.GetAvailableUpgrades()
 	if err != nil {
 		return "", err
