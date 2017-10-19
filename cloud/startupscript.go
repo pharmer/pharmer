@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"text/template"
 
@@ -33,6 +34,7 @@ type TemplateData struct {
 	NodeGroupName       string
 	Provider            string
 	ExternalProvider    bool
+	ConfigurationBucket string
 }
 
 func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string, externalProvider bool) TemplateData {
@@ -57,6 +59,17 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 			if lv, err := GetLatestKubeadmVerson(); err == nil && lv == cluster.Spec.MasterKubeadmVersion {
 				td.KubeadmVersion = ""
 			}
+		}
+	}
+
+	{
+		if cluster.Spec.Cloud.GCE != nil {
+			td.ConfigurationBucket = fmt.Sprintf(`gsutil cat gs://%v/config.sh > /etc/kubernetes/config.sh
+			`, cluster.Status.Cloud.GCE.BucketName)
+		} else if cluster.Spec.Cloud.AWS != nil {
+			td.ConfigurationBucket = fmt.Sprintf(`apt-get install awscli -y
+			aws s3api get-object --bucket %v --key config.sh /etc/kubernetes/config.sh`,
+				cluster.Status.Cloud.AWS.BucketName)
 		}
 	}
 
@@ -133,6 +146,23 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 	td.MasterConfiguration = string(cb)
 	return td
 }
+
+func KubeConfigScript(cluster *api.Cluster) (string, error) {
+	var buf bytes.Buffer
+	var token = struct {
+		Token string
+	}{Token: cluster.Spec.Token}
+	if err := kubConfigScriptTemplate.ExecuteTemplate(&buf, "config", token); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+var (
+	kubConfigScriptTemplate = template.Must(template.New("config").Parse(`#!/bin/bash
+	declare -x KUBEADM_TOKEN={{ .Token }}
+	`))
+)
 
 func RenderStartupScript(ctx context.Context, cluster *api.Cluster, role, nodeGroup string, externalProvider bool) (string, error) {
 	var buf bytes.Buffer
@@ -313,7 +343,13 @@ systemctl daemon-reload
 systemctl restart kubelet
 
 kubeadm reset
-kubeadm join --token={{ .KubeadmToken }} {{ .APIServerAddress }}
+{{ if .ConfigurationBucket }}
+ {{ .ConfigurationBucket  }}
+ source /etc/kubernetes/config.sh
+ kubeadm join --token=${KUBEADM_TOKEN} {{ .APIServerAddress }}
+{{ else }}
+ kubeadm join --token={{ .KubeadmToken }} {{ .APIServerAddress }}
+{{ end }}
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("prepare-host").Parse(``))

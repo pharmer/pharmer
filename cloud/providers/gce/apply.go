@@ -524,7 +524,7 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 		return
 	}
 
-	upm := NewUpgradeManager(cm.ctx, cm.conn, kc, cm.cluster, cm.cluster.Spec.KubernetesVersion)
+	upm := NewUpgradeManager(cm.ctx, cm.conn, kc, cm.cluster)
 	if !dryRun {
 		var a []api.Action
 		a, err = upm.Apply(dryRun)
@@ -532,11 +532,43 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 			return
 		}
 		acts = append(acts, a...)
+	}
 
+	var nodeGroups []*api.NodeGroup
+	if nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{}); err != nil {
+		return
+	}
+
+	if !dryRun {
+		if cm.cluster.Spec.Token, err = GetExistingKubeadmToken(kc); err != nil {
+			return
+		}
+		if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
+			return
+		}
+	}
+
+	for _, ng := range nodeGroups {
+		if !ng.IsMaster() {
+			acts = append(acts, api.Action{
+				Action:   api.ActionUpdate,
+				Resource: "Instance Template",
+				Message:  fmt.Sprintf("Instance template of %v will be updated to %v", ng.Name, cm.namer.InstanceTemplateName(ng.Spec.Template.Spec.SKU)),
+			})
+			if !dryRun {
+				if err = cm.conn.updateNodeGroupTemplate(ng); err != nil {
+					return
+				}
+			}
+		}
+	}
+
+	if !dryRun {
 		cm.cluster.Status.Phase = api.ClusterReady
 		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 			return
 		}
 	}
+
 	return
 }

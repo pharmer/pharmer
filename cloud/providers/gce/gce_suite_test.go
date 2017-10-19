@@ -18,6 +18,7 @@ import (
 	//"github.com/appscode/pharmer/phid"
 	"context"
 	"encoding/json"
+	"regexp"
 
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
@@ -36,10 +37,10 @@ func TestContext(t *testing.T) {
 	cm := New(ctx)
 
 	req := proto.ClusterCreateRequest{
-		Name:               "gce-kube",
-		Provider:           "gce",
-		Zone:               "us-central1-f",
-		CredentialUid:      "gce",
+		Name:     "gce-kube",
+		Provider: "gce",
+		Zone:     "us-central1-f",
+		//CredentialUid:      "gce",
 		DoNotDelete:        false,
 		DefaultAccessLevel: "kubernetes:cluster-admin",
 		GceProject:         "tigerworks-kube",
@@ -133,18 +134,6 @@ func TestContext(t *testing.T) {
 
 }
 
-func TestJson(t *testing.T) {
-	data := ``
-	crd := api.CredentialSpec{
-		Data: map[string]string{
-			"projectID":      "tigerworks-kube",
-			"serviceAccount": data,
-		},
-	}
-	jsn, err := json.Marshal(crd)
-	fmt.Println(string(jsn), err)
-}
-
 func TestNG(t *testing.T) {
 	cluster := "g12"
 	ng := "g12-n1-standard-2"
@@ -161,4 +150,14 @@ func TestJson(t *testing.T) {
 	}
 	jsn, err := json.Marshal(crd)
 	fmt.Println(string(jsn), err)
+}
+
+func TestRE(t *testing.T) {
+	fmt.Println(TemplateURI)
+	abc := regexp.MustCompile(`^` + TemplateURI + `([^/]+)/global/instanceTemplates/([^/]+)$`)
+	r := abc.FindStringSubmatch("https://www.googleapis.com/compute/v1/projects/k8s-qa/global/instanceTemplates/gc1-n1-standard-2-v1508392105708944214")
+	fmt.Println(len(r), r[2])
+	//regexp.MustCompile(`^` + ProviderName + `://([^/]+)/([^/]+)/([^/]+)$`)
+	x := providerIdRE.FindStringSubmatch("gce://k8s-qa/us-central1-f/n1-standard-2-pool-xcoq6s-rr19")
+	fmt.Println(x)
 }

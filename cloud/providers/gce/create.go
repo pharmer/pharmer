@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/mergo"
 	"github.com/appscode/pharmer/api"
 	. "github.com/appscode/pharmer/cloud"
@@ -78,6 +79,11 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	cluster.Status = api.ClusterStatus{
 		Phase:            api.ClusterPending,
 		SSHKeyExternalID: n.GenSSHKeyExternalID(),
+		Cloud: api.CloudStatus{
+			GCE: &api.GCEStatus{
+				BucketName: rand.WithUniqSuffix("pharmer-config"),
+			},
+		},
 	}
 
 	// Fix the stuff below ----------------------------------------------------

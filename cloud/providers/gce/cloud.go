@@ -23,9 +23,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-const ProviderName = "gce"
+const (
+	ProviderName = "gce"
+	TemplateURI  = "https://www.googleapis.com/compute/v1/projects/"
+)
 
 var providerIdRE = regexp.MustCompile(`^` + ProviderName + `://([^/]+)/([^/]+)/([^/]+)$`)
+var templateNameRE = regexp.MustCompile(`^` + TemplateURI + `([^/]+)/global/instanceTemplates/([^/]+)$`)
 
 type cloudConnector struct {
 	ctx     context.Context
@@ -661,6 +665,15 @@ func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup) (strin
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
 	//  }
 
+	configScript, err := KubeConfigScript(conn.cluster)
+	if err != nil {
+		return "", err
+	}
+
+	if err = conn.uploadStartupConfig(conn.cluster.Status.Cloud.GCE.BucketName, configScript); err != nil {
+		return "", err
+	}
+
 	startupScript, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleNode, ng.Name, false)
 	if err != nil {
 		return "", err
@@ -807,12 +820,7 @@ func (conn *cloudConnector) deleteOnlyNodeGroup(instanceGroupName, template stri
 	conn.waitForZoneOperation(operation)
 	Logger(conn.ctx).Infof("Instance group %v is deleted", instanceGroupName)
 	Logger(conn.ctx).Infof("Instance template %v is deleting", template)
-	r2, err := conn.computeService.InstanceTemplates.Delete(conn.cluster.Spec.Cloud.Project, template).Do()
-	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	err = conn.waitForGlobalOperation(r2.Name)
-	if err != nil {
+	if err = conn.deleteInstanceTemplate(template); err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	Logger(conn.ctx).Infof("Instance template %v is deleted", template)
@@ -828,6 +836,15 @@ func (conn *cloudConnector) deleteOnlyNodeGroup(instanceGroupName, template stri
 	Logger(conn.ctx).Infof("Autoscaler is deleted for %v", instanceGroupName)
 
 	return nil
+}
+
+//delete template
+func (conn *cloudConnector) deleteInstanceTemplate(template string) error {
+	op, err := conn.computeService.InstanceTemplates.Delete(conn.cluster.Spec.Cloud.Project, template).Do()
+	if err != nil {
+		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+	return conn.waitForGlobalOperation(op.Name)
 }
 
 func (conn *cloudConnector) updateNodeGroup(ng *api.NodeGroup, size int64) error {
@@ -974,6 +991,76 @@ func (conn *cloudConnector) releaseReservedIP() error {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	Logger(conn.ctx).Infof("Master ip %v released", r1.Address)
+	return nil
+}
+
+func (conn *cloudConnector) getExistingInstanceTemplate(ng *api.NodeGroup) (string, error) {
+	ig, err := conn.computeService.InstanceGroupManagers.Get(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, ng.Name).Do()
+	if err != nil {
+		return "", err
+	}
+	//"instanceTemplate": "https://www.googleapis.com/compute/v1/projects/k8s-qa/global/instanceTemplates/gc1-n1-standard-2-v1508392105708944214",
+	matches := templateNameRE.FindStringSubmatch(ig.InstanceTemplate)
+	if len(matches) != 3 {
+		return "", errors.New("error splitting providerID")
+	}
+	return matches[2], nil
+}
+
+//Node template update
+func (conn *cloudConnector) updateNodeGroupTemplate(ng *api.NodeGroup) error {
+	op, err := conn.createNodeInstanceTemplate(ng)
+	if err != nil {
+		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+	err = conn.waitForGlobalOperation(op)
+	if err != nil {
+		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+	oldInstanceTemplate, err := conn.getExistingInstanceTemplate(ng)
+	if err != nil {
+		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+
+	newInstanceTemplate := &compute.InstanceGroupManagersSetInstanceTemplateRequest{
+		InstanceTemplate: fmt.Sprintf("projects/%v/global/instanceTemplates/%v", conn.cluster.Spec.Cloud.Project, conn.namer.InstanceTemplateName(ng.Spec.Template.Spec.SKU)),
+	}
+	op2, err := conn.computeService.InstanceGroupManagers.SetInstanceTemplate(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, ng.Name, newInstanceTemplate).Do()
+	if err != nil {
+		return err
+	}
+	if err = conn.waitForZoneOperation(op2.Name); err != nil {
+		return err
+	}
+
+	err = conn.deleteInstanceTemplate(oldInstanceTemplate)
+	if err != nil {
+		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+
+	return nil
+}
+
+func (conn *cloudConnector) uploadStartupConfig(bucketName, data string) error {
+	if _, err := conn.storageService.Buckets.Get(bucketName).Do(); err != nil {
+		_, err := conn.storageService.Buckets.Insert(conn.cluster.Spec.Cloud.Project, &gcs.Bucket{
+			Name: bucketName,
+		}).Do()
+		if err != nil {
+			return errors.FromErr(err).WithContext(conn.ctx).Err()
+		}
+		Logger(conn.ctx).Infof("Created bucket %s", bucketName)
+	} else {
+		Logger(conn.ctx).Infof("Bucket %s already exists", bucketName)
+	}
+	fileName := &gcs.Object{
+		Name: "config.sh",
+	}
+
+	_, err := conn.storageService.Objects.Insert(bucketName, fileName).Media(strings.NewReader(data)).Do()
+	if err != nil {
+		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
 	return nil
 }
 
