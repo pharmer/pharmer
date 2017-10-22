@@ -7,7 +7,7 @@ import (
 	"github.com/appscode/go/errors"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -191,8 +191,8 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				if reservedIP, err = cm.conn.reserveIP(); err != nil {
 					return
 				}
-				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, apiv1.NodeAddress{
-					Type:    apiv1.NodeExternalIP,
+				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
+					Type:    core.NodeExternalIP,
 					Address: reservedIP,
 				})
 				cm.cluster.Status.ReservedIPs = append(cm.cluster.Status.ReservedIPs, api.ReservedIP{
@@ -274,14 +274,14 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			}
 
 			if masterInstance.PrivateIP != "" {
-				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, apiv1.NodeAddress{
-					Type:    apiv1.NodeInternalIP,
+				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
+					Type:    core.NodeInternalIP,
 					Address: masterInstance.PrivateIP,
 				})
 			}
 			if masterNG.Spec.Template.Spec.ExternalIPType != api.IPTypeReserved {
-				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, apiv1.NodeAddress{
-					Type:    apiv1.NodeExternalIP,
+				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
+					Type:    core.NodeExternalIP,
 					Address: masterInstance.PublicIP,
 				})
 			}

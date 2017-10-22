@@ -8,7 +8,7 @@ import (
 	"github.com/appscode/go/errors"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -349,8 +349,8 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return acts, err
 			}
 			if masterServer.PrivateIP != "" {
-				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, apiv1.NodeAddress{
-					Type:    apiv1.NodeInternalIP,
+				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
+					Type:    core.NodeInternalIP,
 					Address: masterServer.PrivateIP,
 				})
 			}
@@ -495,7 +495,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	var masterInstance *apiv1.Node
+	var masterInstance *core.Node
 	masterInstance, err = kc.CoreV1().Nodes().Get(cm.namer.MasterName(), metav1.GetOptions{})
 	if err != nil && !kerr.IsNotFound(err) {
 		return
@@ -513,7 +513,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 
 	if masterNG.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
 		for _, addr := range masterInstance.Status.Addresses {
-			if addr.Type == apiv1.NodeExternalIP {
+			if addr.Type == core.NodeExternalIP {
 				err = cm.conn.releaseReservedIP(addr.Address)
 				if err != nil {
 					return

@@ -9,7 +9,7 @@ import (
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -28,7 +28,7 @@ func NewAWSNodeGroupManager(ctx context.Context, conn *cloudConnector, namer nam
 }
 
 func (igm *AWSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
-	nodes := &apiv1.NodeList{}
+	nodes := &core.NodeList{}
 	if igm.kc != nil {
 		nodes, err = igm.kc.CoreV1().Nodes().List(metav1.ListOptions{
 			LabelSelector: labels.SelectorFromSet(map[string]string{

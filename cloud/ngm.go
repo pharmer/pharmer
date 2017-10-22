@@ -6,8 +6,7 @@ import (
 
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"k8s.io/api/core/v1"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -27,7 +26,7 @@ func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceMana
 }
 
 func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
-	nodes := &v1.NodeList{}
+	nodes := &core.NodeList{}
 	if igm.kc != nil {
 		nodes, err = igm.kc.CoreV1().Nodes().List(metav1.ListOptions{
 			LabelSelector: labels.SelectorFromSet(map[string]string{
@@ -95,7 +94,7 @@ func (igm *GenericNodeGroupManager) AddNodes(count int64) error {
 	return nil
 }
 
-func (igm *GenericNodeGroupManager) DeleteNodes(nodes []apiv1.Node) error {
+func (igm *GenericNodeGroupManager) DeleteNodes(nodes []core.Node) error {
 	for _, node := range nodes {
 		// TODO: Drain Node
 		err := igm.im.DeleteInstanceByProviderID(node.Spec.ProviderID)

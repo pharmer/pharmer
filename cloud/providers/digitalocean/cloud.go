@@ -15,7 +15,7 @@ import (
 	"github.com/digitalocean/godo"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/oauth2"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -295,10 +295,10 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	return nil
 }
 
-func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *apiv1.Node) (string, error) {
+func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *core.Node) (string, error) {
 	var ip string = ""
 	for _, addr := range instance.Status.Addresses {
-		if addr.Type == apiv1.NodeExternalIP {
+		if addr.Type == core.NodeExternalIP {
 			ip = addr.Address
 			break
 		}

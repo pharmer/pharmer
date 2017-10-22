@@ -25,7 +25,7 @@ import (
 	_iam "github.com/aws/aws-sdk-go/service/iam"
 	_s3 "github.com/aws/aws-sdk-go/service/s3"
 	"golang.org/x/crypto/ssh"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 )
 
 type cloudConnector struct {
@@ -885,8 +885,8 @@ func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.Si
 		if err != nil {
 			return nil, errors.FromErr(err).WithMessage("failed to assign ip").WithContext(conn.ctx).Err()
 		}
-		conn.cluster.Status.APIAddresses = append(conn.cluster.Status.APIAddresses, apiv1.NodeAddress{
-			Type:    apiv1.NodeExternalIP,
+		conn.cluster.Status.APIAddresses = append(conn.cluster.Status.APIAddresses, core.NodeAddress{
+			Type:    core.NodeExternalIP,
 			Address: reservedIP,
 		})
 		conn.cluster.Status.ReservedIPs = append(conn.cluster.Status.ReservedIPs, api.ReservedIP{
@@ -900,8 +900,8 @@ func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.Si
 			return nil, err
 		}
 		if *rx.Reservations[0].Instances[0].PublicIpAddress != "" {
-			conn.cluster.Status.APIAddresses = append(conn.cluster.Status.APIAddresses, apiv1.NodeAddress{
-				Type:    apiv1.NodeExternalIP,
+			conn.cluster.Status.APIAddresses = append(conn.cluster.Status.APIAddresses, core.NodeAddress{
+				Type:    core.NodeExternalIP,
 				Address: *rx.Reservations[0].Instances[0].PublicIpAddress,
 			})
 		}
@@ -1949,7 +1949,7 @@ func (conn *cloudConnector) uploadStartupConfig(bucketName, data string) error {
 	return nil
 }
 
-func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *apiv1.Node) (string, error) {
+func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *core.Node) (string, error) {
 	///"providerID": "aws:////i-01c7b221cb9f1037a",
 	providerID := strings.Split(instance.Spec.ProviderID, ":////")
 	fmt.Println(providerID)

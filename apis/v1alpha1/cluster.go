@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	. "github.com/appscode/go/encoding/json/types"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
@@ -302,12 +302,12 @@ const (
 )
 
 type ClusterStatus struct {
-	Phase            ClusterPhase        `json:"phase,omitempty,omitempty"`
-	Reason           string              `json:"reason,omitempty,omitempty"`
-	SSHKeyExternalID string              `json:"sshKeyExternalID,omitempty"`
-	Cloud            CloudStatus         `json:"cloud,omitempty"`
-	APIAddresses     []apiv1.NodeAddress `json:"apiServer,omitempty"`
-	ReservedIPs      []ReservedIP        `json:"reservedIP,omitempty"`
+	Phase            ClusterPhase       `json:"phase,omitempty,omitempty"`
+	Reason           string             `json:"reason,omitempty,omitempty"`
+	SSHKeyExternalID string             `json:"sshKeyExternalID,omitempty"`
+	Cloud            CloudStatus        `json:"cloud,omitempty"`
+	APIAddresses     []core.NodeAddress `json:"apiServer,omitempty"`
+	ReservedIPs      []ReservedIP       `json:"reservedIP,omitempty"`
 }
 
 type ReservedIP struct {
@@ -329,31 +329,31 @@ func (c *Cluster) KubernetesClusterIP() string {
 }
 
 func (c Cluster) APIServerURL() string {
-	m := map[apiv1.NodeAddressType]string{}
+	m := map[core.NodeAddressType]string{}
 	for _, addr := range c.Status.APIAddresses {
 		m[addr.Type] = fmt.Sprintf("https://%s:%d", addr.Address, c.Spec.API.BindPort)
 	}
-	if u, found := m[apiv1.NodeExternalIP]; found {
+	if u, found := m[core.NodeExternalIP]; found {
 		return u
 	}
-	if u, found := m[apiv1.NodeExternalDNS]; found {
+	if u, found := m[core.NodeExternalDNS]; found {
 		return u
 	}
 	return ""
 }
 
 func (c *Cluster) APIServerAddress() string {
-	m := map[apiv1.NodeAddressType]string{}
+	m := map[core.NodeAddressType]string{}
 	for _, addr := range c.Status.APIAddresses {
 		m[addr.Type] = fmt.Sprintf("%s:%d", addr.Address, c.Spec.API.BindPort)
 	}
-	if u, found := m[apiv1.NodeInternalIP]; found {
+	if u, found := m[core.NodeInternalIP]; found {
 		return u
 	}
-	if u, found := m[apiv1.NodeHostName]; found {
+	if u, found := m[core.NodeHostName]; found {
 		return u
 	}
-	if u, found := m[apiv1.NodeInternalDNS]; found {
+	if u, found := m[core.NodeInternalDNS]; found {
 		return u
 	}
 	return ""

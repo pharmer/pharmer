@@ -1,5 +1,5 @@
-hash: a1027d7fb728a316de18c3bf06b7eaf12232da2643b22049b1a1683fea310e92
-updated: 2017-10-19T12:58:13.856596682-07:00
+hash: 7cc3e0528a3d529de3fb8b48fa6b1f1e1bb6b5a4dc1ecc321a801947a3b8d4a4
+updated: 2017-10-21T17:07:30.547494581-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -388,7 +388,7 @@ imports:
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 10ef21a441db47d8b13ebcc5fd2310f636973c77
 - name: github.com/Sirupsen/logrus
-  version: 51fe59aca108dc5680109e7b2051cbdcfa5a253c
+  version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
 - name: github.com/skratchdot/open-golang
   version: 75fb7ed4208cf72d323d7d02fd1a5964a7a9073c
   subpackages:
@@ -556,7 +556,7 @@ imports:
 - name: gopkg.in/yaml.v2
   version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: k8s.io/api
-  version: 6c6dac0277229b9e9578c5ca3f74a4345d35cdc2
+  version: fe29995db37613b9c5b2a647544cf627bfa8d299
   subpackages:
   - admissionregistration/v1alpha1
   - apps/v1beta1
@@ -573,7 +573,6 @@ imports:
   - certificates/v1beta1
   - core/v1
   - extensions/v1beta1
-  - imagepolicy/v1alpha1
   - networking/v1
   - policy/v1beta1
   - rbac/v1
@@ -584,7 +583,7 @@ imports:
   - storage/v1
   - storage/v1beta1
 - name: k8s.io/apimachinery
-  version: 9d38e20d609d27e00d4ec18f7b9db67105a2bde0
+  version: 019ae5ada31de202164b118aee88ee2d14075c31
   subpackages:
   - pkg/api/equality
   - pkg/api/errors
@@ -625,7 +624,7 @@ imports:
   - pkg/watch
   - third_party/forked/golang/reflect
 - name: k8s.io/client-go
-  version: 1fb83015bea362f028381bc0fcfb2a4e3eb7390b
+  version: 35874c597fed17ca62cd197e516d7d5ff9a2958c
   subpackages:
   - discovery
   - dynamic
@@ -682,7 +681,7 @@ imports:
   subpackages:
   - pkg/common
 - name: k8s.io/kubernetes
-  version: f38e43b221d08850172a9a4ea785a86a3ffa3b3a
+  version: 0b9efaeb34a2fc51ff8e4d34ad9bc6375459c4a4
   subpackages:
   - cmd/kubeadm/app/apis/kubeadm
   - cmd/kubeadm/app/apis/kubeadm/v1alpha1
