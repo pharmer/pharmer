@@ -18,7 +18,7 @@ const (
 type Action struct {
 	metav1.TypeMeta `json:",inline,omitempty,omitempty"`
 
-	Action   ActionType
-	Resource string
-	Message  string
+	Action   ActionType `protobuf:"bytes,1,opt,name=action,casttype=ActionType"`
+	Resource string     `protobuf:"bytes,2,opt,name=resource"`
+	Message  string     `protobuf:"bytes,3,opt,name=message"`
 }

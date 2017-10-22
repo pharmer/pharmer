@@ -78,8 +78,10 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 			APIVersion: "kubeadm.k8s.io/v1alpha1",
 			Kind:       "MasterConfiguration",
 		},
-		API:  cluster.Spec.API,
-		Etcd: cluster.Spec.Etcd,
+		API: kubeadmapi.API{
+			AdvertiseAddress: cluster.Spec.API.AdvertiseAddress,
+			BindPort:         cluster.Spec.API.BindPort,
+		},
 		Networking: kubeadmapi.Networking{
 			ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
 			PodSubnet:     cluster.Spec.Networking.PodSubnet,

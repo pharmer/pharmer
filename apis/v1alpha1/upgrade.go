@@ -10,21 +10,21 @@ import (
 type Upgrade struct {
 	metav1.TypeMeta `json:",inline,omitempty,omitempty"`
 
-	Description string
-	Before      ClusterState
-	After       ClusterState
+	Description string       `protobuf:"bytes,1,opt,name=description"`
+	Before      ClusterState `protobuf:"bytes,2,opt,name=before"`
+	After       ClusterState `protobuf:"bytes,3,opt,name=after"`
 }
 
 // ClusterState describes the state of certain versions for a cluster
 type ClusterState struct {
 	// KubeVersion describes the version of the Kubernetes API Server, Controller Manager, Scheduler and Proxy.
-	KubeVersion string
+	KubeVersion string `protobuf:"bytes,1,opt,name=kubeVersion"`
 	// DNSVersion describes the version of the kube-dns images used and manifest version
-	DNSVersion string
+	DNSVersion string `protobuf:"bytes,2,opt,name=dNSVersion"`
 	// MasterKubeadmVersion describes the version of the kubeadm CLI
-	KubeadmVersion string
+	KubeadmVersion string `protobuf:"bytes,3,opt,name=kubeadmVersion"`
 	// KubeletVersions is a map with a version number linked to the amount of kubelets running that version in the cluster
-	KubeletVersions map[string]uint32
+	KubeletVersions map[string]uint32 `protobuf:"bytes,4,rep,name=kubeletVersions"`
 }
 
 // CanUpgradeKubelets returns whether an upgrade of any kubelet in the cluster is possible
