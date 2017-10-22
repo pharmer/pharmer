@@ -3,6 +3,7 @@ package linodego
 import (
 	"encoding/json"
 	"net/url"
+	"strconv"
 )
 
 // Avail Service
@@ -84,6 +85,31 @@ func (t *AvailService) Kernels(args map[string]string) (*KernelsResponse, error)
 		return nil, err
 	}
 	v.Kernels = make([]Kernel, 0)
+	if err := json.Unmarshal(v.RawData, &v.Kernels); err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
+// Get filtered Kernels
+func (t *AvailService) FilterKernels(isxen int, iskvm int) (*KernelsResponse, error) {
+	params := &url.Values{}
+	v := KernelsResponse{}
+	xen_s := strconv.Itoa(isxen)
+	kvm_s := strconv.Itoa(iskvm)
+	if isxen < 2 && iskvm < 2 {
+		params.Add("isxen", xen_s)
+		params.Add("iskvm", kvm_s)
+	} else if isxen < 2 {
+		params.Add("isxen", xen_s)
+	} else if iskvm < 2 {
+		params.Add("iskvm", kvm_s)
+	}
+
+	if err := t.client.do("avail.kernels", params, &v.Response); err != nil {
+		return nil, err
+	}
+	v.Kernels = make([]Kernel, 5)
 	if err := json.Unmarshal(v.RawData, &v.Kernels); err != nil {
 		return nil, err
 	}

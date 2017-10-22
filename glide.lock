@@ -1,5 +1,5 @@
-hash: 781fa9ebd28db01b25eaf6f164fb2fdda646073c590fde28c8f3f7ee64c03e11
-updated: 2017-10-21T20:08:41.258047768-07:00
+hash: 3d573ddcc9a96d1215e31de12181808e8efe044995698d0cb29f7515039c19dd
+updated: 2017-10-22T05:38:31.172939373-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -76,8 +76,6 @@ imports:
   version: d0c677f2d84034b1357d3f69ffd29c5fb81f662f
 - name: github.com/appscode/go-tracer
   version: 01dab6fa8d48a96bf54d07ee082b60bad8b44449
-- name: github.com/appscode/linodego
-  version: d1e1c2c7c4cb9979d3079b3468e2db5448438048
 - name: github.com/appscode/log
   version: 68e0e42e42c01371f3950571fc87c2298a51dd8f
   subpackages:
@@ -259,33 +257,9 @@ imports:
   version: 2bf16b94fdd9b01557c4d076e567fe5cbbe5a961
   subpackages:
   - openstack
-  - openstack/blockstorage/v1/apiversions
-  - openstack/blockstorage/v1/volumes
-  - openstack/blockstorage/v2/volumes
-  - openstack/common/extensions
-  - openstack/compute/v2/extensions/attachinterfaces
-  - openstack/compute/v2/extensions/volumeattach
-  - openstack/compute/v2/flavors
-  - openstack/compute/v2/images
-  - openstack/compute/v2/servers
   - openstack/identity/v2/tenants
   - openstack/identity/v2/tokens
-  - openstack/identity/v3/extensions/trusts
   - openstack/identity/v3/tokens
-  - openstack/networking/v2/extensions
-  - openstack/networking/v2/extensions/layer3/floatingips
-  - openstack/networking/v2/extensions/layer3/routers
-  - openstack/networking/v2/extensions/lbaas/members
-  - openstack/networking/v2/extensions/lbaas/monitors
-  - openstack/networking/v2/extensions/lbaas/pools
-  - openstack/networking/v2/extensions/lbaas/vips
-  - openstack/networking/v2/extensions/lbaas_v2/listeners
-  - openstack/networking/v2/extensions/lbaas_v2/loadbalancers
-  - openstack/networking/v2/extensions/lbaas_v2/monitors
-  - openstack/networking/v2/extensions/lbaas_v2/pools
-  - openstack/networking/v2/extensions/security/groups
-  - openstack/networking/v2/extensions/security/rules
-  - openstack/networking/v2/ports
   - openstack/utils
   - pagination
 - name: github.com/gorilla/websocket
@@ -414,6 +388,10 @@ imports:
 - name: github.com/spf13/pflag
   version: f4aa504bb62057ca90e8defc26e169353fd772d4
   repo: https://github.com/appscode/pflag.git
+  vcs: git
+- name: github.com/taoh/linodego
+  version: 7e90047cfdce66fc9df2763f18ca0fde32dbb345
+  repo: https://github.com/appscode/linodego.git
   vcs: git
 - name: github.com/tent/http-link-go
   version: ac974c61c2f990f4115b119354b5e0b47550e888
