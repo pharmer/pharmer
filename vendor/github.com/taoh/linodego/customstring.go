@@ -1,5 +1,7 @@
 package linodego
 
+import ()
+
 // A special class to handle marshaling string response from Linode
 // As sometimes Linode returns integer instead of string from API
 // https://github.com/taoh/linodego/issues/1

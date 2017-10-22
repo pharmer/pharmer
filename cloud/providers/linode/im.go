@@ -8,11 +8,11 @@ import (
 
 	"github.com/appscode/data"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/linodego"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
 	"github.com/cenkalti/backoff"
+	"github.com/taoh/linodego"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

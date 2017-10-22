@@ -19,8 +19,10 @@ import:
 - package: github.com/appscode/go-hetzner
 - package: github.com/appscode/go-term
 - package: github.com/appscode/go
-- package: github.com/appscode/linodego
+- package: github.com/taoh/linodego
+  repo: https://github.com/appscode/linodego.git
   version: master
+  vcs: git
 - package: github.com/appscode/log
 - package: github.com/appscode/mergo
   version: master
