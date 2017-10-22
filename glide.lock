@@ -1,5 +1,5 @@
-hash: 7cc3e0528a3d529de3fb8b48fa6b1f1e1bb6b5a4dc1ecc321a801947a3b8d4a4
-updated: 2017-10-21T17:07:30.547494581-07:00
+hash: c6d1178e1cc38169d3eefecf174af3153b0d9d6ac9d373ab78d68d36e5281601
+updated: 2017-10-21T19:38:55.634785098-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -77,7 +77,7 @@ imports:
 - name: github.com/appscode/go-tracer
   version: 01dab6fa8d48a96bf54d07ee082b60bad8b44449
 - name: github.com/appscode/linodego
-  version: 60ff9c2dd53acbb2ba9c879ebef2ebae313720e2
+  version: d1e1c2c7c4cb9979d3079b3468e2db5448438048
 - name: github.com/appscode/log
   version: 68e0e42e42c01371f3950571fc87c2298a51dd8f
   subpackages:
@@ -354,7 +354,9 @@ imports:
 - name: github.com/moul/anonuuid
   version: 609b752a95effbbef26d134ac18ed6f57e01b98e
 - name: github.com/moul/gotty-client
-  version: 92f0c24d5b2985522174e3ff5ad882a1c4d7f1d9
+  version: 990fa23220655da4599785d2821e9e3f7488fd52
+  repo: https://github.com/tamalsaha/gotty-client.git
+  vcs: git
 - name: github.com/ncw/swift
   version: c95c6e5c2d1a3d37fc44c8c6dc9e231c7500667d
 - name: github.com/packethost/packngo
@@ -380,15 +382,17 @@ imports:
 - name: github.com/satori/uuid
   version: 5bf94b69c6b68ee1b541973bb8e1144db23a194b
 - name: github.com/scaleway/scaleway-cli
-  version: 4c4502fd13230d91b52d99a6069cffffea536a5e
+  version: 53e53aa5e3ecd18f49ec69471e82c80d288afacc
+  repo: https://github.com/tamalsaha/scaleway-cli.git
+  vcs: git
   subpackages:
   - pkg/api
   - pkg/sshcommand
   - pkg/utils
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 10ef21a441db47d8b13ebcc5fd2310f636973c77
-- name: github.com/Sirupsen/logrus
-  version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
+- name: github.com/sirupsen/logrus
+  version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
 - name: github.com/skratchdot/open-golang
   version: 75fb7ed4208cf72d323d7d02fd1a5964a7a9073c
   subpackages:
@@ -507,7 +511,7 @@ imports:
   - replicapoolupdater/v1beta1
   - storage/v1
 - name: google.golang.org/appengine
-  version: 12d5545dc1cfa6047a286d5e853841b6471f4c19
+  version: 4f7eeb5305a4ba1966344836ba4af9996b7b4e05
   subpackages:
   - internal
   - internal/app_identity

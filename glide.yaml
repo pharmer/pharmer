@@ -20,6 +20,7 @@ import:
 - package: github.com/appscode/go-term
 - package: github.com/appscode/go
 - package: github.com/appscode/linodego
+  version: master
 - package: github.com/appscode/log
 - package: github.com/appscode/mergo
   version: master
@@ -52,7 +53,13 @@ import:
 - package: github.com/pkg/errors
   version: v0.8.0
 - package: github.com/scaleway/scaleway-cli
-  version: v1.14
+  version: logrus
+  repo: https://github.com/tamalsaha/scaleway-cli.git
+  vcs: git
+- package: github.com/moul/gotty-client
+  version: master
+  repo: https://github.com/tamalsaha/gotty-client.git
+  vcs: git
 - package: github.com/skratchdot/open-golang
 - package: github.com/softlayer/softlayer-go
 - package: github.com/spf13/cobra
