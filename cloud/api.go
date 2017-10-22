@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 )
 
 var InstanceNotFound = errors.New("Instance not found")
@@ -27,7 +27,7 @@ type Interface interface {
 type NodeGroupManager interface {
 	Apply(dryRun bool) (acts []api.Action, err error)
 	AddNodes(count int64) error
-	DeleteNodes(nodes []apiv1.Node) error
+	DeleteNodes(nodes []core.Node) error
 }
 
 type InstanceManager interface {
@@ -44,5 +44,5 @@ type UpgradeManager interface {
 }
 
 type SSHExecutor interface {
-	ExecuteSSHCommand(command string, instance *apiv1.Node) (string, error)
+	ExecuteSSHCommand(command string, instance *core.Node) (string, error)
 }

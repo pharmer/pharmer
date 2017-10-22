@@ -9,7 +9,7 @@ import (
 	"github.com/appscode/go/wait"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/cenkalti/backoff"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -67,7 +67,7 @@ func waitForReadyAPIServer(ctx context.Context, client kubernetes.Interface) err
 		attempt++
 		Logger(ctx).Infof("Attempt %v: Probing Kubernetes api server ...", attempt)
 
-		_, err := client.CoreV1().Pods(apiv1.NamespaceAll).List(metav1.ListOptions{})
+		_, err := client.CoreV1().Pods(core.NamespaceAll).List(metav1.ListOptions{})
 		fmt.Println(err, ",.,.,.,.,.,")
 		return err == nil, nil
 	})
@@ -87,7 +87,7 @@ func waitForReadyComponents(ctx context.Context, client kubernetes.Interface) er
 		}
 		for _, status := range resp.Items {
 			for _, cond := range status.Conditions {
-				if cond.Type == apiv1.ComponentHealthy && cond.Status != apiv1.ConditionTrue {
+				if cond.Type == core.ComponentHealthy && cond.Status != core.ConditionTrue {
 					Logger(ctx).Infof("Component %v is in condition %v with status %v", status.Name, cond.Type, cond.Status)
 					return false, nil
 				}
@@ -108,7 +108,7 @@ func WaitForReadyMaster(ctx context.Context, client kubernetes.Interface) error 
 var restrictedNamespaces []string = []string{"appscode", "kube-system"}
 
 func HasNoUserApps(client kubernetes.Interface) (bool, error) {
-	pods, err := client.CoreV1().Pods(apiv1.NamespaceAll).List(metav1.ListOptions{})
+	pods, err := client.CoreV1().Pods(core.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		// If we can't connect to kube apiserver, then delete cluster.
 		// Cluster probably failed to create.
@@ -130,7 +130,7 @@ func DeleteLoadBalancers(client kubernetes.Interface) error {
 			return err
 		}
 		for _, svc := range svcs.Items {
-			if svc.Spec.Type == apiv1.ServiceTypeLoadBalancer {
+			if svc.Spec.Type == core.ServiceTypeLoadBalancer {
 				trueValue := true
 				err = client.CoreV1().Services(svc.Namespace).Delete(svc.Name, &metav1.DeleteOptions{OrphanDependents: &trueValue})
 				if err != nil {
@@ -151,7 +151,7 @@ func DeleteDyanamicVolumes(client kubernetes.Interface) error {
 			return err
 		}
 		for _, pvc := range pvcs.Items {
-			if pvc.Status.Phase == apiv1.ClaimBound {
+			if pvc.Status.Phase == core.ClaimBound {
 				for k, v := range pvc.Annotations {
 					if (k == "volume.alpha.kubernetes.io/storage-class" ||
 						k == "volume.beta.kubernetes.io/storage-class") && v != "" {
@@ -174,12 +174,12 @@ func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cl
 	if err != nil {
 		return err
 	}
-	secret := &apiv1.Secret{
+	secret := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: cluster.Spec.Cloud.CloudProvider,
 		},
 		StringData: cred.Spec.Data,
-		Type:       apiv1.SecretTypeOpaque,
+		Type:       core.SecretTypeOpaque,
 	}
 
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {

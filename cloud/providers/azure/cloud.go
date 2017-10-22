@@ -23,7 +23,7 @@ import (
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	"golang.org/x/crypto/ssh"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 )
 
 const (
@@ -845,7 +845,7 @@ func splitProviderID(providerID string) (string, error) {
 	return matches[1], nil
 }
 
-func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *apiv1.Node) (string, error) {
+func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *core.Node) (string, error) {
 	pip, err := conn.getPublicIP(conn.namer.PublicIPName(instance.Name))
 	if err != nil {
 		return "", err

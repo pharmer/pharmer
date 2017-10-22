@@ -19,7 +19,7 @@ import (
 	compute "google.golang.org/api/compute/v1"
 	rupdate "google.golang.org/api/replicapoolupdater/v1beta1"
 	gcs "google.golang.org/api/storage/v1"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -1075,10 +1075,10 @@ func splitProviderID(providerID string) (project, zone, instance string, err err
 	return matches[1], matches[2], matches[3], nil
 }
 
-func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *apiv1.Node) (string, error) {
+func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *core.Node) (string, error) {
 	var ip string = ""
 	for _, addr := range instance.Status.Addresses {
-		if addr.Type == apiv1.NodeExternalIP {
+		if addr.Type == core.NodeExternalIP {
 			ip = addr.Address
 			break
 		}

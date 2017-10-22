@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -48,7 +48,7 @@ func CreateValidKubeadmToken(kc kubernetes.Interface) (string, error) {
 	secretName := fmt.Sprintf("%s%s", bootstrapapi.BootstrapTokenSecretPrefix, tokenID)
 	description := "Bootstrap token generated for 24 hours"
 	extraGroups := []string{kubeadmconsts.V18NodeBootstrapTokenAuthGroup}
-	secret := &apiv1.Secret{
+	secret := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: secretName,
 		},

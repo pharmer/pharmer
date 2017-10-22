@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -205,7 +205,7 @@ func (g *KubeVersionGetter) KubeletVersions() (map[string]uint32, error) {
 }
 
 // computeKubeletVersions returns a string-int map that describes how many nodes are of a specific version
-func computeKubeletVersions(nodes []apiv1.Node) map[string]uint32 {
+func computeKubeletVersions(nodes []core.Node) map[string]uint32 {
 	kubeletVersions := map[string]uint32{}
 	for _, node := range nodes {
 		kver := node.Status.NodeInfo.KubeletVersion

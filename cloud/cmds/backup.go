@@ -14,7 +14,7 @@ import (
 	"github.com/appscode/go/flags"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -139,7 +139,7 @@ func (backup backupReq) getAndWriteAllObjectsFromCluster(kubeConfig *rest.Config
 			kubeConfig.ContentConfig = dynamic.ContentConfig()
 			kubeConfig.GroupVersion = &schema.GroupVersion{Group: gv.Group, Version: gv.Version}
 			kubeConfig.APIPath = "/apis"
-			if gv.Group == apiv1.GroupName {
+			if gv.Group == core.GroupName {
 				kubeConfig.APIPath = "/api"
 			}
 			restClient, err := rest.RESTClientFor(kubeConfig)
@@ -262,13 +262,13 @@ func cleanUpPodSpec(podSpec map[string]interface{}) map[string]interface{} {
 		term.Errorln(err)
 		return podSpec
 	}
-	p := &apiv1.PodSpec{}
+	p := &core.PodSpec{}
 	err = yaml.Unmarshal(b, p)
 	if err != nil {
 		term.Errorln(err)
 		return podSpec // Not a podspec
 	}
-	p.DNSPolicy = apiv1.DNSPolicy("")
+	p.DNSPolicy = core.DNSPolicy("")
 	p.NodeName = ""
 	if p.ServiceAccountName == "default" {
 		p.ServiceAccountName = ""

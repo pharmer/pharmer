@@ -9,7 +9,7 @@ import (
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	semver "github.com/hashicorp/go-version"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -224,7 +224,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 	return
 }
 func (upm *GenericUpgradeManager) MasterUpgrade() error {
-	var masterInstance *apiv1.Node
+	var masterInstance *core.Node
 	var err error
 	masterInstances, err := upm.kc.CoreV1().Nodes().List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
@@ -258,7 +258,7 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 }
 
 func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error) {
-	nodes := &apiv1.NodeList{}
+	nodes := &core.NodeList{}
 	if upm.kc != nil {
 		nodes, err = upm.kc.CoreV1().Nodes().List(metav1.ListOptions{
 			LabelSelector: labels.SelectorFromSet(map[string]string{

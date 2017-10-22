@@ -7,7 +7,7 @@ import (
 
 	"github.com/appscode/go/errors"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -47,8 +47,8 @@ func EnsureARecord2(ctx context.Context, cluster *api.Cluster, publicIP, private
 		if err := DNSProvider(ctx).EnsureARecord(externalDomain, publicIP); err != nil {
 			return err
 		} else {
-			cluster.Status.APIAddresses = append(cluster.Status.APIAddresses, apiv1.NodeAddress{
-				Type:    apiv1.NodeExternalDNS,
+			cluster.Status.APIAddresses = append(cluster.Status.APIAddresses, core.NodeAddress{
+				Type:    core.NodeExternalDNS,
 				Address: externalDomain,
 			})
 		}
@@ -60,8 +60,8 @@ func EnsureARecord2(ctx context.Context, cluster *api.Cluster, publicIP, private
 		if err := DNSProvider(ctx).EnsureARecord(internalDomain, privateIP); err != nil {
 			return err
 		} else {
-			cluster.Status.APIAddresses = append(cluster.Status.APIAddresses, apiv1.NodeAddress{
-				Type:    apiv1.NodeInternalDNS,
+			cluster.Status.APIAddresses = append(cluster.Status.APIAddresses, core.NodeAddress{
+				Type:    core.NodeInternalDNS,
 				Address: internalDomain,
 			})
 		}
