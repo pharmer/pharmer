@@ -8,6 +8,6 @@
 pushd $GOPATH/src/github.com/appscode/pharmer
 
 glide up -v
-glide vc --only-code --no-tests
+glide vc --only-code --no-tests --keep=**/*.proto
 
 popd
