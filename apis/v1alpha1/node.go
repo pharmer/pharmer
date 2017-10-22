@@ -15,13 +15,13 @@ const (
 
 type NodeGroup struct {
 	metav1.TypeMeta   `json:",inline,omitempty"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              NodeGroupSpec   `json:"spec,omitempty"`
-	Status            NodeGroupStatus `json:"status,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	Spec              NodeGroupSpec   `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Status            NodeGroupStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 type NodeGroupSpec struct {
-	Nodes int64 `json:"nodes"`
+	Nodes int64 `json:"nodes" protobuf:"varint,4,opt,name=nodes"`
 
 	// Template describes the nodes that will be created.
 	Template NodeTemplateSpec `json:"template" protobuf:"bytes,3,opt,name=template"`
@@ -132,9 +132,9 @@ type NodeTemplateSpec struct {
 // Deprecated, replace with Kubernetes Node
 type Node struct {
 	metav1.TypeMeta   `json:",inline,omitempty"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              NodeSpec   `json:"spec,omitempty"`
-	Status            NodeStatus `json:"status,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	Spec              NodeSpec   `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Status            NodeStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 type IPType string
@@ -147,25 +147,25 @@ const (
 // Deprecated
 type NodeSpec struct {
 	// Deprecated
-	Role string
+	Role string `protobuf:"bytes,1,opt,name=role"`
 
-	SKU            string `json:"sku,omitempty"`
-	SpotInstances  bool   `json:"spotInstances,omitempty"`
-	DiskType       string `json:"nodeDiskType,omitempty"`
-	DiskSize       int64  `json:"nodeDiskSize,omitempty"`
-	ExternalIPType IPType `json:"externalIPType,omitempty"`
+	SKU            string `json:"sku,omitempty" protobuf:"bytes,2,opt,name=sku"`
+	SpotInstances  bool   `json:"spotInstances,omitempty" protobuf:"varint,3,opt,name=spotInstances"`
+	DiskType       string `json:"nodeDiskType,omitempty" protobuf:"bytes,4,opt,name=nodeDiskType"`
+	DiskSize       int64  `json:"nodeDiskSize,omitempty" protobuf:"varint,5,opt,name=nodeDiskSize"`
+	ExternalIPType IPType `json:"externalIPType,omitempty" protobuf:"bytes,6,opt,name=externalIPType,casttype=IPType"`
 }
 
 // Deprecated
 type NodeStatus struct {
-	Phase NodePhase
+	Phase NodePhase `protobuf:"bytes,1,opt,name=phase,casttype=NodePhase"`
 
-	Name          string
-	ExternalID    string
-	PublicIP      string
-	PrivateIP     string
-	ExternalPhase string
-	DiskId        string `json:"diskID,omitempty"`
+	Name          string `protobuf:"bytes,2,opt,name=name"`
+	ExternalID    string `protobuf:"bytes,3,opt,name=externalID"`
+	PublicIP      string `protobuf:"bytes,4,opt,name=publicIP"`
+	PrivateIP     string `protobuf:"bytes,5,opt,name=privateIP"`
+	ExternalPhase string `protobuf:"bytes,6,opt,name=externalPhase"`
+	DiskId        string `json:"diskID,omitempty" protobuf:"bytes,7,opt,name=diskID"`
 }
 
 func (n Node) IsMaster() bool {
@@ -186,9 +186,9 @@ const (
 
 type SimpleNode struct {
 	metav1.TypeMeta `json:",inline,omitempty"`
-	Name            string
-	ExternalID      string
-	PublicIP        string
-	PrivateIP       string
-	DiskId          string `json:"diskID,omitempty"`
+	Name            string `protobuf:"bytes,1,opt,name=name"`
+	ExternalID      string `protobuf:"bytes,2,opt,name=externalID"`
+	PublicIP        string `protobuf:"bytes,3,opt,name=publicIP"`
+	PrivateIP       string `protobuf:"bytes,4,opt,name=privateIP"`
+	DiskId          string `json:"diskID,omitempty" protobuf:"bytes,5,opt,name=diskID"`
 }

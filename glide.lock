@@ -1,5 +1,5 @@
-hash: c6d1178e1cc38169d3eefecf174af3153b0d9d6ac9d373ab78d68d36e5281601
-updated: 2017-10-21T19:38:55.634785098-07:00
+hash: 781fa9ebd28db01b25eaf6f164fb2fdda646073c590fde28c8f3f7ee64c03e11
+updated: 2017-10-21T20:08:41.258047768-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -222,7 +222,9 @@ imports:
 - name: github.com/gogo/protobuf
   version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
   subpackages:
+  - gogoproto
   - proto
+  - protoc-gen-gogo/descriptor
   - sortkeys
 - name: github.com/golang/glog
   version: 44145f04b68cf362d9c4df2182967c2275eaefed
@@ -586,6 +588,11 @@ imports:
   - settings/v1alpha1
   - storage/v1
   - storage/v1beta1
+- name: k8s.io/apiextensions-apiserver
+  version: 89b2a556a65053a90552eaed26f810df4a266367
+  subpackages:
+  - pkg/apis/apiextensions
+  - pkg/apis/apiextensions/v1beta1
 - name: k8s.io/apimachinery
   version: 019ae5ada31de202164b118aee88ee2d14075c31
   subpackages:
@@ -683,7 +690,10 @@ imports:
 - name: k8s.io/kube-openapi
   version: 868f2f29720b192240e18284659231b440f9cda5
   subpackages:
+  - pkg/builder
   - pkg/common
+  - pkg/handler
+  - pkg/util
 - name: k8s.io/kubernetes
   version: 0b9efaeb34a2fc51ff8e4d34ad9bc6375459c4a4
   subpackages:
