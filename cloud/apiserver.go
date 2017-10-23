@@ -81,7 +81,7 @@ func NewClientConfig(ctx context.Context, cluster *api.Cluster) (clientcmdapi.Co
 			Colors: true,
 		},
 		Clusters: map[string]*clientcmdapi.Cluster{
-			cluster.Name: {
+			clusterName: {
 				Server: cluster.APIServerURL(),
 				CertificateAuthorityData: cert.EncodeCertPEM(CACert(ctx)),
 			},

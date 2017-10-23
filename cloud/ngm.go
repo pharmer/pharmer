@@ -3,9 +3,11 @@ package cloud
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
+	"github.com/spf13/cobra"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -25,8 +27,8 @@ type GenericNodeGroupManager struct {
 
 var _ NodeGroupManager = &GenericNodeGroupManager{}
 
-func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface) NodeGroupManager {
-	return &GenericNodeGroupManager{ctx: ctx, ng: ng, im: im, kc: kc}
+func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster) NodeGroupManager {
+	return &GenericNodeGroupManager{ctx: ctx, ng: ng, im: im, kc: kc, cluster: cluster}
 }
 
 func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
@@ -105,28 +107,26 @@ func (igm *GenericNodeGroupManager) DeleteNodes(nodes []core.Node) error {
 		DeleteLocalData:    true,
 		GracePeriodSeconds: -1,
 		Timeout:            0,
+		Out:                ioutil.Discard,
+		ErrOut:             ioutil.Discard,
 	}
 	conf, err := NewClientConfig(igm.ctx, igm.cluster)
 	if err != nil {
 		return err
 	}
-	var clientConfig clientcmd.ClientConfig
-	clientConfig = clientcmd.NewDefaultClientConfig(conf, &clientcmd.ConfigOverrides{})
-	factory := cmdutil.NewFactory(clientConfig)
-	do.Factory = factory
-	cmdNamespace, _, err := do.Factory.DefaultNamespace()
-	if err != nil {
-		return err
-	}
+	clientConfig := clientcmd.NewDefaultClientConfig(conf, &clientcmd.ConfigOverrides{})
+	do.Factory = cmdutil.NewFactory(clientConfig)
 	for _, node := range nodes {
-		// TODO: Drain Node
-		do.Factory.NewBuilder(true).
-			NamespaceParam(cmdNamespace).DefaultNamespace().
-			ResourceNames("node", node.Name).
-			Do()
-		do.RunDrain()
-		err := igm.im.DeleteInstanceByProviderID(node.Spec.ProviderID)
-		if err != nil {
+		// Drain Node
+		if err = do.SetupDrain(&cobra.Command{}, []string{node.Name}); err != nil {
+			return err
+		}
+
+		if err = do.RunDrain(); err != nil {
+			return err
+		}
+
+		if err = igm.im.DeleteInstanceByProviderID(node.Spec.ProviderID); err != nil {
 			return err
 		}
 		if igm.kc != nil {
