@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/cert"
 )
 
@@ -59,6 +60,49 @@ func NewAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes.Inter
 		},
 	}
 	return kubernetes.NewForConfig(cfg)
+}
+
+func NewClientConfig(ctx context.Context, cluster *api.Cluster) (clientcmdapi.Config, error) {
+	var konfig clientcmdapi.Config
+	var (
+		clusterName = fmt.Sprintf("%s.pharmer", cluster.Name)
+		userName    = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
+		ctxName     = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
+	)
+
+	adminCert, adminKey, err := CreateAdminCertificate(ctx)
+	if err != nil {
+		return clientcmdapi.Config{}, err
+	}
+	konfig = clientcmdapi.Config{
+		APIVersion: "v1",
+		Kind:       "Config",
+		Preferences: clientcmdapi.Preferences{
+			Colors: true,
+		},
+		Clusters: map[string]*clientcmdapi.Cluster{
+			cluster.Name: {
+				Server: cluster.APIServerURL(),
+				CertificateAuthorityData: cert.EncodeCertPEM(CACert(ctx)),
+			},
+		},
+		AuthInfos: map[string]*clientcmdapi.AuthInfo{
+			userName: {
+				ClientCertificateData: cert.EncodeCertPEM(adminCert),
+				ClientKeyData:         cert.EncodePrivateKeyPEM(adminKey),
+			},
+		},
+		Contexts: map[string]*clientcmdapi.Context{
+			ctxName: {
+				Cluster:  clusterName,
+				AuthInfo: userName,
+			},
+		},
+		CurrentContext: ctxName,
+	}
+	//konfig.Clusters = make(map[string]*clientcmdapi.Cluster)
+	//konfig.Clusters = append(konfig.Clusters, )
+	return konfig, nil
 }
 
 func waitForReadyAPIServer(ctx context.Context, client kubernetes.Interface) error {

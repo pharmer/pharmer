@@ -10,13 +10,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	drain "k8s.io/kubernetes/pkg/kubectl/cmd"
+	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 )
 
 type GenericNodeGroupManager struct {
-	ctx context.Context
-	ng  *api.NodeGroup
-	im  InstanceManager
-	kc  kubernetes.Interface
+	ctx     context.Context
+	ng      *api.NodeGroup
+	im      InstanceManager
+	kc      kubernetes.Interface
+	cluster *api.Cluster
 }
 
 var _ NodeGroupManager = &GenericNodeGroupManager{}
@@ -95,8 +99,32 @@ func (igm *GenericNodeGroupManager) AddNodes(count int64) error {
 }
 
 func (igm *GenericNodeGroupManager) DeleteNodes(nodes []core.Node) error {
+	do := drain.DrainOptions{
+		Force:              true,
+		IgnoreDaemonsets:   true,
+		DeleteLocalData:    true,
+		GracePeriodSeconds: -1,
+		Timeout:            0,
+	}
+	conf, err := NewClientConfig(igm.ctx, igm.cluster)
+	if err != nil {
+		return err
+	}
+	var clientConfig clientcmd.ClientConfig
+	clientConfig = clientcmd.NewDefaultClientConfig(conf, &clientcmd.ConfigOverrides{})
+	factory := cmdutil.NewFactory(clientConfig)
+	do.Factory = factory
+	cmdNamespace, _, err := do.Factory.DefaultNamespace()
+	if err != nil {
+		return err
+	}
 	for _, node := range nodes {
 		// TODO: Drain Node
+		do.Factory.NewBuilder(true).
+			NamespaceParam(cmdNamespace).DefaultNamespace().
+			ResourceNames("node", node.Name).
+			Do()
+		do.RunDrain()
 		err := igm.im.DeleteInstanceByProviderID(node.Spec.ProviderID)
 		if err != nil {
 			return err
