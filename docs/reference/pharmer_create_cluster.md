@@ -25,6 +25,7 @@ pharmer create cluster demo-cluster
   -h, --help                        help for cluster
       --kubeadm-version string      Kubeadm version
       --kubernetes-version string   Kubernetes version
+      --networking string           Networking mode to use. calico(default), flannel (default "calico")
       --nodes stringToInt           Node set configuration (default [])
       --provider string             Provider name
       --zone string                 Cloud provider zone name
