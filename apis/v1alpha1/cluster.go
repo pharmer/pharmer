@@ -267,7 +267,7 @@ type GCEStatus struct {
 
 type CloudStatus struct {
 	AWS *AWSStatus `json:"aws,omitempty" protobuf:"bytes,1,opt,name=aws"`
-	GCE *GCEStatus `json:",omitempty" protobuf:"bytes,2,opt,name=gCE"`
+	GCE *GCEStatus `json:"gce,omitempty" protobuf:"bytes,2,opt,name=gce"`
 }
 
 /*

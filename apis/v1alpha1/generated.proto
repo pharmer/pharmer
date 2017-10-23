@@ -159,7 +159,7 @@ message CloudSpec {
 message CloudStatus {
   optional AWSStatus aws = 1;
 
-  optional GCEStatus gCE = 2;
+  optional GCEStatus gce = 2;
 }
 
 message Cluster {
