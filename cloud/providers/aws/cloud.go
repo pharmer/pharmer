@@ -1003,7 +1003,7 @@ func (conn *cloudConnector) ensurePd(name, diskType string, sizeGb int64) (strin
 			return "", err
 		}
 		volumeId = *r1.VolumeId
-		Logger(conn.ctx).Infof("Master disk with size %vGB, type %v created", conn.cluster.Spec.MasterDiskSize, conn.cluster.Spec.MasterDiskType)
+		Logger(conn.ctx).Infof("Master disk with size %vGB, type %v created", sizeGb, conn.cluster.Spec.MasterDiskType)
 
 		time.Sleep(preTagDelay)
 		err = conn.addTag(volumeId, "Name", name)
@@ -1796,6 +1796,27 @@ func (conn *cloudConnector) deleteMaster() error {
 	err = conn.ec2.WaitUntilInstanceTerminated(instanceInput)
 	Logger(conn.ctx).Infof("Master instance for cluster %v is terminated", conn.cluster.Name)
 	return nil
+}
+
+func (conn *cloudConnector) deleteGroupInstances(ng *api.NodeGroup, instance string) error {
+	if _, err := conn.autoscale.DetachInstances(&autoscaling.DetachInstancesInput{
+		AutoScalingGroupName:           StringP(ng.Name),
+		InstanceIds:                    StringPSlice([]string{instance}),
+		ShouldDecrementDesiredCapacity: BoolP(true),
+	}); err != nil {
+		return err
+	}
+
+	Logger(conn.ctx).Infof("Terminating instance for cluster %v", conn.cluster.Name)
+	if _, err := conn.ec2.TerminateInstances(&_ec2.TerminateInstancesInput{
+		InstanceIds: StringPSlice([]string{instance}),
+	}); err != nil {
+		return err
+	}
+	instanceInput := &_ec2.DescribeInstancesInput{
+		InstanceIds: StringPSlice([]string{instance}),
+	}
+	return conn.ec2.WaitUntilInstanceTerminated(instanceInput)
 }
 
 func (conn *cloudConnector) ensureInstancesDeleted() error {

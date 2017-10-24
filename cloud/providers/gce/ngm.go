@@ -137,7 +137,6 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 }
 
 func (igm *GCENodeGroupManager) deleteNodeWithDrain(ng *api.NodeGroup, size int64) error {
-	fmt.Println(size, "-----------------------")
 	existingInstances, err := igm.conn.listInstances(ng.Name)
 	if err != nil {
 		return err
@@ -148,7 +147,6 @@ func (igm *GCENodeGroupManager) deleteNodeWithDrain(ng *api.NodeGroup, size int6
 		return err
 	}
 	for _, instance := range existingInstances {
-		fmt.Println(instance.Name, "<><><><><><>")
 		nd.Node = instance.Name
 		if err = nd.Apply(); err != nil {
 			return err

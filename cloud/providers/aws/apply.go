@@ -2,7 +2,6 @@ package aws
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/appscode/go/errors"
@@ -432,35 +431,10 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		}
 		acts = append(acts, a2...)
 	}
-	if !dryRun {
-		time.Sleep(1 * time.Minute)
 
-		for _, ng := range nodeGroups {
-			if ng.IsMaster() {
-				continue
-			}
-			providerInstances, _ := cm.conn.listInstances(ng.Name)
+	Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	Store(cm.ctx).Clusters().Update(cm.cluster)
 
-			runningInstance := make(map[string]*api.SimpleNode)
-			for _, node := range providerInstances {
-				host := "ip-" + strings.Replace(node.PrivateIP, ".", "-", -1)
-				fmt.Println(node.Name, host)
-				runningInstance[host] = node
-			}
-
-			clusterInstance, _ := GetClusterIstance2(kc, ng.Name)
-			for _, node := range clusterInstance {
-				if _, found := runningInstance[node]; !found {
-					if err = DeleteClusterInstance2(kc, node); err != nil {
-						return
-					}
-
-				}
-			}
-		}
-		Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		Store(cm.ctx).Clusters().Update(cm.cluster)
-	}
 	return
 }
 
@@ -503,64 +477,139 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	if err = cm.conn.deleteMaster(); err != nil {
-		return
+	acts = append(acts, api.Action{
+		Action:   api.ActionDelete,
+		Resource: "Master Instance",
+		Message:  "master instance(s) will be deleted",
+	})
+	if !dryRun {
+		if err = cm.conn.deleteMaster(); err != nil {
+			return
+		}
+
+		if err = cm.conn.ensureInstancesDeleted(); err != nil {
+			//return
+		}
 	}
-	if err = cm.conn.ensureInstancesDeleted(); err != nil {
-		//return
-	}
-	if err = cm.conn.deleteVolume(); err != nil {
-		return
+	acts = append(acts, api.Action{
+		Action:   api.ActionDelete,
+		Resource: "Master Instance volume",
+		Message:  "master instance(s) volume will be deleted",
+	})
+	if !dryRun {
+		if err = cm.conn.deleteVolume(); err != nil {
+			return
+		}
 	}
 
 	if masterNG.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
 		for _, addr := range masterInstance.Status.Addresses {
 			if addr.Type == core.NodeExternalIP {
-				err = cm.conn.releaseReservedIP(addr.Address)
-				if err != nil {
-					return
+				acts = append(acts, api.Action{
+					Action:   api.ActionDelete,
+					Resource: "Reserved IP",
+					Message:  "Reserved IP will be released",
+				})
+				if !dryRun {
+					if err = cm.conn.releaseReservedIP(addr.Address); err != nil {
+						return
+					}
 				}
 			}
 		}
 	}
 
-	if err = cm.conn.deleteSecurityGroup(); err != nil {
-		return
+	acts = append(acts, api.Action{
+		Action:   api.ActionDelete,
+		Resource: "Security Group",
+		Message:  "Security Group will be deleted",
+	})
+	if !dryRun {
+		if err = cm.conn.deleteSecurityGroup(); err != nil {
+			return
+		}
 	}
 
-	if err = cm.conn.deleteSecurityGroup(); err != nil {
-		return
+	acts = append(acts, api.Action{
+		Action:   api.ActionDelete,
+		Resource: "Internet Gateway",
+		Message:  "Internet gateway will be deleted",
+	})
+	if !dryRun {
+		if err = cm.conn.deleteInternetGateway(); err != nil {
+			return
+		}
 	}
 
-	if err = cm.conn.deleteInternetGateway(); err != nil {
-		return
+	acts = append(acts, api.Action{
+		Action:   api.ActionDelete,
+		Resource: "DHCP Option",
+		Message:  "DHCP option will be deleted",
+	})
+	if !dryRun {
+		if err = cm.conn.deleteDHCPOption(); err != nil {
+			return
+		}
 	}
 
-	if err = cm.conn.deleteDHCPOption(); err != nil {
-		return
+	acts = append(acts, api.Action{
+		Action:   api.ActionDelete,
+		Resource: "Route Table",
+		Message:  "master instance(s) volume will be deleted",
+	})
+	if !dryRun {
+		if err = cm.conn.deleteRouteTable(); err != nil {
+			return
+		}
 	}
 
-	if err = cm.conn.deleteRouteTable(); err != nil {
-		return
+	acts = append(acts, api.Action{
+		Action:   api.ActionDelete,
+		Resource: "Subnet ID",
+		Message:  "Subnet id will be deleted",
+	})
+	if !dryRun {
+		if err = cm.conn.deleteSubnetId(); err != nil {
+			return
+		}
 	}
 
-	if err = cm.conn.deleteSubnetId(); err != nil {
-		return
+	acts = append(acts, api.Action{
+		Action:   api.ActionDelete,
+		Resource: "VPC",
+		Message:  "VPC will be deleted",
+	})
+	if !dryRun {
+		if err = cm.conn.deleteVpc(); err != nil {
+			return
+		}
 	}
 
-	if err = cm.conn.deleteVpc(); err != nil {
-		return
+	acts = append(acts, api.Action{
+		Action:   api.ActionDelete,
+		Resource: "SSH Key",
+		Message:  "SSH key will be deleted",
+	})
+	if !dryRun {
+		if err = cm.conn.deleteSSHKey(); err != nil {
+			return
+		}
 	}
 
-	if err = cm.conn.deleteSSHKey(); err != nil {
-		return
+	acts = append(acts, api.Action{
+		Action:   api.ActionDelete,
+		Resource: "ARecord",
+		Message:  "A Record will be deleted",
+	})
+	if !dryRun {
+		if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
+			return
+		}
 	}
-
-	if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
-		return
+	if !dryRun {
+		cm.cluster.Status.Phase = api.ClusterDeleted
+		Store(cm.ctx).Clusters().Update(cm.cluster)
 	}
-	cm.cluster.Status.Phase = api.ClusterDeleted
-	Store(cm.ctx).Clusters().Update(cm.cluster)
 
 	return
 }
