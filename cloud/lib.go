@@ -128,11 +128,8 @@ func DeleteNG(ctx context.Context, nodeGroupName, clusterName string) error {
 	return nil
 }
 
-func GetAdminConfig(ctx context.Context, name string) (*clientcmd.Config, error) {
-	cluster, err := Store(ctx).Clusters().Get(name)
-	if err != nil {
-		return nil, err
-	}
+func GetAdminConfig(ctx context.Context, cluster *api.Cluster) (*clientcmd.Config, error) {
+	var err error
 	ctx, err = LoadCACertificates(ctx, cluster)
 	if err != nil {
 		return nil, err

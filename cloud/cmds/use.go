@@ -93,7 +93,11 @@ func NewCmdUse() *cobra.Command {
 				}
 				ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-				c2, err := cloud.GetAdminConfig(ctx, name)
+				cluster, err := cloud.Store(ctx).Clusters().Get(name)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				c2, err := cloud.GetAdminConfig(ctx, cluster)
 				if err != nil {
 					log.Fatalln(err)
 				}

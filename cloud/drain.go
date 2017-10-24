@@ -9,8 +9,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmd_api "k8s.io/client-go/tools/clientcmd/api"
+	clientcmd_v1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	drain "k8s.io/kubernetes/pkg/kubectl/cmd"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
+	// clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 type NodeDrain struct {
@@ -30,11 +34,21 @@ func NewNodeDrain(ctx context.Context, kc kubernetes.Interface, cluster *api.Clu
 		Out:                ioutil.Discard,
 		ErrOut:             ioutil.Discard,
 	}
-	conf, err := NewClientConfig(ctx, cluster)
+
+	c1, err := GetAdminConfig(ctx, cluster)
 	if err != nil {
 		return NodeDrain{}, err
 	}
-	clientConfig := clientcmd.NewDefaultClientConfig(conf, &clientcmd.ConfigOverrides{})
+	err = clientcmd_v1.AddToScheme(scheme.Scheme)
+	if err != nil {
+		return NodeDrain{}, err
+	}
+	out := &clientcmd_api.Config{}
+	err = scheme.Scheme.Convert(c1, out, nil)
+	if err != nil {
+		return NodeDrain{}, err
+	}
+	clientConfig := clientcmd.NewDefaultClientConfig(*out, &clientcmd.ConfigOverrides{})
 	do.Factory = cmdutil.NewFactory(clientConfig)
 
 	return NodeDrain{o: do, ctx: ctx, kc: kc}, nil
