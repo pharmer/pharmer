@@ -26,39 +26,40 @@ import (
 type ItemList struct {
 	Items []map[string]interface{} `json:"items,omitempty"`
 }
-type backupReq struct {
-	sanitize  bool
-	backupDir string
+
+type backupOptions struct {
 	cluster   string
+	backupDir string
+	sanitize  bool
 }
 
 func NewCmdBackup() *cobra.Command {
-	req := backupReq{}
+	var opts backupOptions
 	cmd := &cobra.Command{
 		Use:               "backup",
 		Short:             "Takes backup of YAML files of cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.EnsureRequiredFlags(cmd, "cluster", "backup-dir")
-			restConfig, err := searchLocalKubeConfig(req.cluster)
+			restConfig, err := searchLocalKubeConfig(opts.cluster)
 			if err != nil || restConfig == nil {
 				var clientConfigReq proto.ClusterClientConfigRequest
-				clientConfigReq.Name = req.cluster
+				clientConfigReq.Name = opts.cluster
 				c := config.ClientOrDie()
 				resp, err := c.Kubernetes().V1beta1().Cluster().ClientConfig(c.Context(), &clientConfigReq)
 				util.PrintStatus(err)
 				restConfig, err = getConfigFromResp(resp)
 				util.PrintStatus(err)
 			}
-			if err = ensureDirectory(req.backupDir); err != nil {
+			if err = ensureDirectory(opts.backupDir); err != nil {
 				term.Fatalln(err)
 			}
-			req.getAndWriteAllObjectsFromCluster(restConfig)
+			opts.getAndWriteAllObjectsFromCluster(restConfig)
 		},
 	}
-	cmd.Flags().BoolVar(&req.sanitize, "sanitize", false, " Sanitize fields in YAML")
-	cmd.Flags().StringVar(&req.backupDir, "backup-dir", "", "Directory where yaml files will be saved")
-	cmd.Flags().StringVar(&req.cluster, "cluster", "", "Name of cluster or Kube config context")
+	cmd.Flags().StringVarP(&opts.cluster, "cluster", "k", "", "Name of cluster or Kube config context")
+	cmd.Flags().BoolVar(&opts.sanitize, "sanitize", false, " Sanitize fields in YAML")
+	cmd.Flags().StringVar(&opts.backupDir, "backup-dir", "", "Directory where yaml files will be saved")
 	return cmd
 }
 
@@ -106,7 +107,7 @@ func searchLocalKubeConfig(clusterName string) (*rest.Config, error) {
 	return clientcmd.NewDefaultClientConfig(*apiConfig, overrides).ClientConfig()
 }
 
-func (backup backupReq) getAndWriteAllObjectsFromCluster(kubeConfig *rest.Config) {
+func (backup backupOptions) getAndWriteAllObjectsFromCluster(kubeConfig *rest.Config) {
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(kubeConfig)
 	rs, err := discoveryClient.ServerResources()
 	if err != nil {

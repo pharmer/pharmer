@@ -9,7 +9,7 @@ import (
 	"github.com/appscode/appctl/pkg/config"
 	"github.com/appscode/appctl/pkg/util"
 	"github.com/appscode/client/cli"
-	term "github.com/appscode/go-term"
+	"github.com/appscode/go-term"
 	"github.com/mgutz/str"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
