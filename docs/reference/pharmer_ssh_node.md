@@ -1,20 +1,27 @@
-## pharmer ssh
+## pharmer ssh node
 
-
+SSH into a Kubernetes cluster instance
 
 ### Synopsis
 
 
-
+SSH into a cluster instance.
 
 ```
-pharmer ssh [flags]
+pharmer ssh node [flags]
+```
+
+### Examples
+
+```
+pharmer ssh node -k cluster-name node-name
 ```
 
 ### Options
 
 ```
-  -h, --help   help for ssh
+  -k, --cluster string   Name of cluster
+  -h, --help             help for node
 ```
 
 ### Options inherited from parent commands
@@ -33,6 +40,5 @@ pharmer ssh [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer ssh node](pharmer_ssh_node.md)	 - SSH into a Kubernetes cluster instance
+* [pharmer ssh](pharmer_ssh.md)	 - 
 

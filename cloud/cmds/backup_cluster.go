@@ -26,8 +26,8 @@ func NewCmdBackup() *cobra.Command {
 		sanitize    bool
 	)
 	cmd := &cobra.Command{
-		Use:               "backup",
-		Short:             "Takes backup of YAML files of cluster",
+		Use:               "cluster",
+		Short:             "Backup cluster objects",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.EnsureRequiredFlags(cmd, "cluster", "backup-dir")

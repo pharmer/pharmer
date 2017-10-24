@@ -25,9 +25,9 @@ func NewCmdUse() *cobra.Command {
 		overwrite bool
 	)
 	cmd := &cobra.Command{
-		Use:               "use",
-		Short:             "Retrieve Kubeconfig for a Kubernetes cluster and change kubectl context",
-		Example:           `pharmer cluster use <name>`,
+		Use:               "cluster",
+		Short:             "Sets `kubectl` context to given cluster",
+		Example:           `pharmer use cluster <name>`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {

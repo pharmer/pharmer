@@ -24,10 +24,10 @@ func NewCmdSSH() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:               "ssh",
+		Use:               "node",
 		Short:             "SSH into a Kubernetes cluster instance",
 		Long:              `SSH into a cluster instance.`,
-		Example:           `appctl cluster ssh -c cluster-name node-name`,
+		Example:           `pharmer ssh node -k cluster-name node-name`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			flags.EnsureRequiredFlags(cmd, "cluster")

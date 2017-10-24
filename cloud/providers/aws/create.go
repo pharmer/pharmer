@@ -176,5 +176,7 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 }
 
 func (cm *ClusterManager) AssignSSHConfig(cluster *api.Cluster, node *core.Node, cfg *api.SSHConfig) error {
-	return UnsupportedOperation
+	cfg.User = "ubuntu"
+	cfg.InstancePort = int32(22)
+	return nil
 }

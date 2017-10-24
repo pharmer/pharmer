@@ -1,27 +1,20 @@
 ## pharmer use
 
-Retrieve Kubeconfig for a Kubernetes cluster and change kubectl context
+
 
 ### Synopsis
 
 
-Retrieve Kubeconfig for a Kubernetes cluster and change kubectl context
+
 
 ```
 pharmer use [flags]
 ```
 
-### Examples
-
-```
-pharmer cluster use <name>
-```
-
 ### Options
 
 ```
-  -h, --help        help for use
-      --overwrite   Overwrite context if found. (default true)
+  -h, --help   help for use
 ```
 
 ### Options inherited from parent commands
@@ -41,4 +34,5 @@ pharmer cluster use <name>
 
 ### SEE ALSO
 * [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer use cluster](pharmer_use_cluster.md)	 - Sets `kubectl` context to given cluster
 
