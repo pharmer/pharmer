@@ -13,7 +13,6 @@ import (
 	clientcmd_v1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	drain "k8s.io/kubernetes/pkg/kubectl/cmd"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	// clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
