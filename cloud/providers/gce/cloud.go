@@ -847,7 +847,7 @@ func (conn *cloudConnector) deleteGroupInstances(ng *api.NodeGroup, instance str
 	if err != nil {
 		return err
 	}
-	if err = conn.waitForZoneOperation(r.ClientOperationId); err != nil {
+	if err = conn.waitForZoneOperation(r.Name); err != nil {
 		return err
 	}
 

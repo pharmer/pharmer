@@ -111,7 +111,7 @@ func (igm *GenericNodeGroupManager) DeleteNodes(nodes []core.Node) error {
 		if err = igm.im.DeleteInstanceByProviderID(node.Spec.ProviderID); err != nil {
 			return err
 		}
-		if err = nd.Delete(); err != nil {
+		if err = nd.DeleteNode(); err != nil {
 			return err
 		}
 	}
