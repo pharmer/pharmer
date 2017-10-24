@@ -190,5 +190,7 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 }
 
 func (cm *ClusterManager) AssignSSHConfig(cluster *api.Cluster, node *core.Node, cfg *api.SSHConfig) error {
-	return UnsupportedOperation
+	n := namer{cluster: cluster}
+	cfg.User = n.AdminUsername()
+	return nil
 }

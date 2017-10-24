@@ -14,7 +14,7 @@ import (
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
-	"github.com/mgutz/str"
+	"golang.org/x/crypto/ssh"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 	rupdate "google.golang.org/api/replicapoolupdater/v1beta1"
@@ -430,6 +430,9 @@ func (conn *cloudConnector) createMasterIntance(ng *api.NodeGroup) (string, erro
 	pdSrc := fmt.Sprintf("projects/%v/zones/%v/disks/%v", conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, conn.namer.MasterPDName())
 	srcImage := fmt.Sprintf("projects/%v/global/images/%v", conn.cluster.Spec.Cloud.InstanceImageProject, conn.cluster.Spec.Cloud.InstanceImage)
 
+	pubKey := string(SSHKey(conn.ctx).PublicKey)
+	value := fmt.Sprintf("%v:%v %v", conn.namer.AdminUsername(), pubKey, conn.namer.AdminUsername())
+
 	instance := &compute.Instance{
 		Name:        conn.namer.MasterName(),
 		Zone:        zone,
@@ -460,6 +463,10 @@ func (conn *cloudConnector) createMasterIntance(ng *api.NodeGroup) (string, erro
 				{
 					Key:   "startup-script",
 					Value: &startupScript,
+				},
+				{
+					Key:   "ssh-keys",
+					Value: &value,
 				},
 			},
 		},
@@ -527,6 +534,7 @@ func (conn *cloudConnector) createMasterIntance(ng *api.NodeGroup) (string, erro
 		return r1.Name, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	Logger(conn.ctx).Infof("Master instance of type %v in zone %v using persistent disk %v created", machineType, zone, pdSrc)
+
 	return r1.Name, nil
 }
 
@@ -679,6 +687,9 @@ func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup) (strin
 		return "", err
 	}
 
+	pubKey := string(SSHKey(conn.ctx).PublicKey)
+	value := fmt.Sprintf("%v:%v %v", conn.namer.AdminUsername(), pubKey, conn.namer.AdminUsername())
+
 	image := fmt.Sprintf("projects/%v/global/images/%v", conn.cluster.Spec.Cloud.InstanceImageProject, conn.cluster.Spec.Cloud.InstanceImage)
 
 	network := fmt.Sprintf("projects/%v/global/networks/%v", conn.cluster.Spec.Cloud.Project, defaultNetwork)
@@ -697,8 +708,8 @@ func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup) (strin
 					AutoDelete: true,
 					Boot:       true,
 					InitializeParams: &compute.AttachedDiskInitializeParams{
-						DiskType:    conn.cluster.Spec.NodeDiskType,
-						DiskSizeGb:  conn.cluster.Spec.NodeDiskSize,
+						DiskType:    ng.Spec.Template.Spec.DiskType,
+						DiskSizeGb:  ng.Spec.Template.Spec.DiskSize,
 						SourceImage: image,
 					},
 				},
@@ -733,6 +744,10 @@ func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup) (strin
 					{
 						Key:   "startup-script",
 						Value: &startupScript,
+					},
+					{
+						Key:   "ssh-keys",
+						Value: &value,
 					},
 				},
 			},
@@ -1087,15 +1102,15 @@ func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *core.Nod
 		return "", fmt.Errorf("No ip found for ssh")
 	}
 
-	project, zone, name, err := splitProviderID(instance.Spec.ProviderID)
-	if err != nil {
-		return "", err
+	keySigner, _ := ssh.ParsePrivateKey(SSHKey(conn.ctx).PrivateKey)
+	config := &ssh.ClientConfig{
+		User: conn.namer.AdminUsername(),
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(keySigner),
+		},
 	}
-	connect := fmt.Sprintf(`compute --project "%v" ssh --zone "%v" "%v"`, project, zone, name)
-	arg := str.ToArgv(connect)
+	// login as ubuntu user but command needs to run as root
+	command = fmt.Sprintf("sudo %v", command)
 
-	stdIn := NewStringReader([]string{
-		fmt.Sprintf("sudo %v", command),
-	})
-	return ExecuteSSHCommand("gcloud", arg, stdIn)
+	return ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", ip, 22), config)
 }
