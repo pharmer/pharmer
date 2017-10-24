@@ -36,7 +36,7 @@ func NewCmdUse() *cobra.Command {
 			if len(args) > 1 {
 				log.Fatalln("Multiple cluster name provided.")
 			}
-			name := args[0]
+			clusterName := args[0]
 
 			var konfig clientcmd.Config
 			if _, err := os.Stat(KubeConfigPath()); err == nil {
@@ -70,11 +70,11 @@ func NewCmdUse() *cobra.Command {
 				}
 			}
 
-			ctxName := fmt.Sprintf("cluster-admin@%s.pharmer", name)
+			ctxName := fmt.Sprintf("cluster-admin@%s.pharmer", clusterName)
 
 			if !overwrite {
 				if konfig.CurrentContext == ctxName {
-					term.Infoln(fmt.Sprintf("Cluster `%s` is already current context.", name))
+					term.Infoln(fmt.Sprintf("Cluster `%s` is already current context.", clusterName))
 					os.Exit(0)
 				}
 			}
@@ -93,7 +93,11 @@ func NewCmdUse() *cobra.Command {
 				}
 				ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-				c2, err := cloud.GetAdminConfig(ctx, name)
+				cluster, err := cloud.Store(ctx).Clusters().Get(clusterName)
+				if err != nil {
+					term.Fatalln(err)
+				}
+				c2, err := cloud.GetAdminConfig(ctx, cluster)
 				if err != nil {
 					log.Fatalln(err)
 				}
@@ -153,7 +157,7 @@ func NewCmdUse() *cobra.Command {
 			if err != nil {
 				log.Fatalln(err)
 			}
-			term.Successln(fmt.Sprintf("kubectl context set to cluster `%s`.", name))
+			term.Successln(fmt.Sprintf("kubectl context set to cluster `%s`.", clusterName))
 		},
 	}
 

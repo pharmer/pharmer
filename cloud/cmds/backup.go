@@ -41,7 +41,11 @@ func NewCmdBackup() *cobra.Command {
 				}
 				ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-				c2, err := cloud.GetAdminConfig(ctx, clusterName)
+				cluster, err := cloud.Store(ctx).Clusters().Get(clusterName)
+				if err != nil {
+					term.Fatalln(err)
+				}
+				c2, err := cloud.GetAdminConfig(ctx, cluster)
 				if err != nil {
 					term.Fatalln(err)
 				}
@@ -63,7 +67,7 @@ func NewCmdBackup() *cobra.Command {
 			term.Successln("Backup completed successfully!")
 		},
 	}
-	cmd.Flags().StringVarP(&clusterName, "cluster", "k", "", "Name of cluster or Kube config context")
+	cmd.Flags().StringVarP(&clusterName, "cluster", "k", "", "Name of cluster")
 	cmd.Flags().BoolVar(&sanitize, "sanitize", false, " Sanitize fields in YAML")
 	cmd.Flags().StringVar(&backupDir, "backup-dir", "", "Directory where yaml files will be saved")
 	return cmd

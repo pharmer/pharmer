@@ -1,38 +1,11 @@
-hash: ad0b09a7d91f94d7c0811d769dcc68591effdaa9e778c1fcc613bd26019e49c7
-updated: 2017-10-24T14:17:29.191485665-07:00
+hash: 04a93984e4db226b796091f3fb73a4d4efd25fe2bdf546c8c01fd539fef17177
+updated: 2017-10-24T15:19:36.427161436-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
   subpackages:
   - compute/metadata
   - internal
-- name: github.com/appscode/api
-  version: 934ee7e989e7b806071b82ba2922438d73806d11
-  subpackages:
-  - attic/v1beta1
-  - auth/v1beta1
-  - certificate/v1beta1
-  - ci/v1beta1
-  - credential/v1beta1
-  - dtypes
-  - health
-  - kubernetes/v1beta1
-  - mailinglist/v1beta1
-  - namespace/v1beta1
-  - operation/v1beta1
-  - ssh/v1beta1
-  - version
-- name: github.com/appscode/appctl
-  version: 08e351b0cbf207d4526b7abd8932e5f11fd2d171
-  subpackages:
-  - pkg/config
-  - pkg/util
-- name: github.com/appscode/client
-  version: 0223eab3f6f0acbfb13b6bdc901bba92d656344a
-  subpackages:
-  - cli
-  - credential
-  - util
 - name: github.com/appscode/data
   version: f4f29933a76479d990f6adbd70157f8cbfbaefc7
   subpackages:
@@ -74,8 +47,6 @@ imports:
   version: 2862c36e840d98476edf9f1826717d354547be6f
 - name: github.com/appscode/go-term
   version: d0c677f2d84034b1357d3f69ffd29c5fb81f662f
-- name: github.com/appscode/go-tracer
-  version: 01dab6fa8d48a96bf54d07ee082b60bad8b44449
 - name: github.com/appscode/kutil
   version: f285e7ec40eabb87501872402235d38378ec5a02
 - name: github.com/appscode/log
@@ -141,8 +112,6 @@ imports:
   - autorest/date
   - autorest/to
   - autorest/validation
-- name: github.com/bndr/gojenkins
-  version: 2869ec456dc299340fd5456bd321c586aa3f0ad7
 - name: github.com/cenkalti/backoff
   version: 61153c768f31ee5f130071d08fc82b85208528de
 - name: github.com/cloudflare/cloudflare-go
@@ -231,13 +200,10 @@ imports:
 - name: github.com/golang/protobuf
   version: 6e4cc92cc905d5f4a73041c1b8228ea08f4c6147
   subpackages:
-  - jsonpb
   - proto
-  - protoc-gen-go/descriptor
   - ptypes
   - ptypes/any
   - ptypes/duration
-  - ptypes/struct
   - ptypes/timestamp
 - name: github.com/google/btree
   version: 7d79101e329e5a3adf994758c578dab82b90c017
@@ -284,11 +250,6 @@ imports:
   version: 42a2d1c4991e79a4a8318984e5c81031b21f3c76
   repo: https://github.com/appscode/grpc-gateway.git
   vcs: git
-  subpackages:
-  - runtime
-  - runtime/internal
-  - third_party/appscodeapis/appscode/api
-  - utilities
 - name: github.com/hashicorp/go-version
   version: ac737305c16432f4c660c6fc68cdcda4b5a0b5ae
   repo: https://github.com/appscode/go-version.git
@@ -327,8 +288,6 @@ imports:
   version: 968bf66e3da857419e4f6e71b2d5c9ae95682dc4
 - name: github.com/miekg/dns
   version: 5d001d020961ae1c184f9f8152fdc73810481677
-- name: github.com/mitchellh/go-homedir
-  version: b8bc1bf767474819792c23f32d8286a45736f1c6
 - name: github.com/moul/anonuuid
   version: 609b752a95effbbef26d134ac18ed6f57e01b98e
 - name: github.com/moul/gotty-client
@@ -401,14 +360,6 @@ imports:
   version: 37e84520dcf74488f67654f9c775b9752c232dc1
   subpackages:
   - dns
-- name: github.com/vaughan0/go-ini
-  version: a98ad7ee00ec53921f08832bc06ecf7fd600e6a1
-- name: github.com/xeipuuv/gojsonpointer
-  version: e0fe6f68307607d540ed8eac07a342c33fa1b54a
-- name: github.com/xeipuuv/gojsonreference
-  version: e02fc20de94c78484cd5ffb007f8af96be030a45
-- name: github.com/xeipuuv/gojsonschema
-  version: 93e72a773fade158921402d6a24c819b48aba29d
 - name: github.com/xenolf/lego
   version: 8a62215d047836bc4da6f32f4c3cf7662e3e76bd
   repo: https://github.com/appscode/lego.git
@@ -435,10 +386,8 @@ imports:
   - http2
   - http2/hpack
   - idna
-  - internal/timeseries
   - lex/httplex
   - publicsuffix
-  - trace
 - name: golang.org/x/oauth2
   version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
   subpackages:
@@ -504,27 +453,8 @@ imports:
   - internal/remote_api
   - internal/urlfetch
   - urlfetch
-- name: google.golang.org/genproto
-  version: 09f6ed296fc66555a25fe4ce95173148778dfa85
-  subpackages:
-  - googleapis/api/annotations
-  - googleapis/rpc/status
 - name: google.golang.org/grpc
   version: d2e1b51f33ff8c5e4a15560ff049d200e83726c5
-  subpackages:
-  - codes
-  - credentials
-  - grpclb/grpc_lb_v1
-  - grpclog
-  - internal
-  - keepalive
-  - metadata
-  - naming
-  - peer
-  - stats
-  - status
-  - tap
-  - transport
 - name: gopkg.in/AlecAivazis/survey.v1
   version: 18a4dbb1d9d05349aea1a2bf9c84028c36817c10
   subpackages:
