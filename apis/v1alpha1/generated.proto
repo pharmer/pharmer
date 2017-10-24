@@ -545,6 +545,18 @@ message S3Spec {
   optional string prefix = 3;
 }
 
+message SSHConfig {
+  optional bytes privateKey = 1;
+
+  optional string instanceAddress = 2;
+
+  optional int32 instancePort = 3;
+
+  optional string user = 4;
+
+  optional string command = 5;
+}
+
 message SimpleNode {
   optional string name = 1;
 

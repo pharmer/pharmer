@@ -1,11 +1,11 @@
 ## pharmer backup
 
-Takes backup of YAML files of cluster
+
 
 ### Synopsis
 
 
-Takes backup of YAML files of cluster
+
 
 ```
 pharmer backup [flags]
@@ -14,10 +14,7 @@ pharmer backup [flags]
 ### Options
 
 ```
-      --backup-dir string   Directory where yaml files will be saved
-      --cluster string      Name of cluster or Kube config context
-  -h, --help                help for backup
-      --sanitize             Sanitize fields in YAML
+  -h, --help   help for backup
 ```
 
 ### Options inherited from parent commands
@@ -37,4 +34,5 @@ pharmer backup [flags]
 
 ### SEE ALSO
 * [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer backup cluster](pharmer_backup_cluster.md)	 - Backup cluster objects
 

@@ -9,6 +9,7 @@ import (
 	"github.com/appscode/pharmer/data/files"
 	"github.com/appscode/pharmer/phid"
 	semver "github.com/hashicorp/go-version"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
@@ -155,4 +156,10 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, UnsupportedOperation
+}
+
+func (cm *ClusterManager) AssignSSHConfig(cluster *api.Cluster, node *core.Node, cfg *api.SSHConfig) error {
+	cfg.User = "root"
+	cfg.InstancePort = int32(22)
+	return nil
 }

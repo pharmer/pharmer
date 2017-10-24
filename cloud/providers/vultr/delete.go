@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
@@ -13,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
+func (cm *ClusterManager) Delete(req *api.ClusterDeleteRequest) error {
 	if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
 	}

@@ -3,9 +3,9 @@ package fake
 import (
 	"context"
 
-	proto "github.com/appscode/api/kubernetes/v1beta1"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
+	core "k8s.io/api/core/v1"
 )
 
 type ClusterManager struct {
@@ -46,26 +46,6 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, UnsupportedOperation
 }
 
-func (cm *ClusterManager) Create(req *proto.ClusterCreateRequest) error {
-	cm.runFakeJob("cluster create")
-	return nil
-}
-
-func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
-	cm.runFakeJob("cluster scale")
-	return nil
-}
-
-func (cm *ClusterManager) Delete(req *proto.ClusterDeleteRequest) error {
-	cm.runFakeJob("cluster delete")
-	return nil
-}
-
-func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
-	cm.runFakeJob("cluster set version")
-	return nil
-}
-
 func (cm *ClusterManager) UploadStartupConfig() error {
 	return nil
 }
@@ -84,4 +64,8 @@ func (cm *ClusterManager) runFakeJob(requestType string) {
 	//	c.Logger().Info(fmt.Sprint("Job completed: ", i*10, "%"))
 	//	time.Sleep(time.Second * 3)
 	//}
+}
+
+func (cm *ClusterManager) AssignSSHConfig(cluster *api.Cluster, node *core.Node, cfg *api.SSHConfig) error {
+	return UnsupportedOperation
 }
