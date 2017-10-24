@@ -36,6 +36,10 @@ func (n namer) MasterPDName() string {
 	return n.MasterName() + "-pd"
 }
 
+func (n namer) AdminUsername() string {
+	return "pharmer"
+}
+
 func (n namer) InstanceTemplateName(sku string) string {
 	return stringutil.DomainForm(n.cluster.Name + "-" + sku + "-V" + strconv.FormatInt(n.cluster.Generation, 10))
 }
