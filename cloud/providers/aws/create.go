@@ -82,7 +82,6 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	cluster.Spec.Cloud.AWS.VpcCIDR = "172.20.0.0/16"
 	cluster.Spec.Cloud.AWS.SubnetCIDR = "172.20.0.0/24"
 	cluster.Spec.Networking.MasterSubnet = "10.246.0.0/24"
-	cluster.Spec.Token = GetKubeadmToken()
 	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	cluster.Spec.KubernetesMasterName = n.MasterName()

@@ -420,7 +420,7 @@ func (conn *cloudConnector) createMasterIntance(ng *api.NodeGroup) (string, erro
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
 	// startupScript := conn.RenderStartupScript(conn.cluster, conn.cluster.Spec.MasterSKU, api.RoleKubernetesMaster)
-	startupScript, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleMaster, ng.Name, false)
+	startupScript, err := RenderStartupScript(conn.ctx, conn.cluster, "", api.RoleMaster, ng.Name, false)
 	if err != nil {
 		return "", err
 	}
@@ -647,7 +647,7 @@ func (conn *cloudConnector) createNodeFirewallRule() (string, error) {
 	return r1.Name, nil
 }
 
-func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup) (string, error) {
+func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup, token string) (string, error) {
 	templateName := conn.namer.InstanceTemplateName(ng.Spec.Template.Spec.SKU)
 
 	Logger(conn.ctx).Infof("Retrieving node template %v", templateName)
@@ -665,7 +665,7 @@ func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup) (strin
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
 	//  }
 
-	configScript, err := KubeConfigScript(conn.cluster)
+	configScript, err := KubeConfigScript(token)
 	if err != nil {
 		return "", err
 	}
@@ -674,7 +674,7 @@ func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup) (strin
 		return "", err
 	}
 
-	startupScript, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleNode, ng.Name, false)
+	startupScript, err := RenderStartupScript(conn.ctx, conn.cluster, token, api.RoleNode, ng.Name, false)
 	if err != nil {
 		return "", err
 	}
@@ -774,7 +774,7 @@ func (conn *cloudConnector) createNodeGroup(ng *api.NodeGroup) (string, error) {
 }
 
 // Not used since Kube 1.3
-func (conn *cloudConnector) createAutoscaler(ng *api.NodeGroup) (string, error) {
+/*func (conn *cloudConnector) createAutoscaler(ng *api.NodeGroup) (string, error) {
 	target := fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%v/zones/%v/instanceGroupManagers/%v", conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, ng.Name)
 
 	Logger(conn.ctx).Infof("Creating auto scaler %v for instance group %v", ng.Name, target)
@@ -792,7 +792,7 @@ func (conn *cloudConnector) createAutoscaler(ng *api.NodeGroup) (string, error) 
 	}
 	Logger(conn.ctx).Infof("Auto scaler %v for instance group %v created", ng.Name, target)
 	return r1.Name, nil
-}
+}*/
 
 func (conn *cloudConnector) GetInstance(md *api.NodeStatus) (*api.SimpleNode, error) {
 	r2, err := conn.computeService.Instances.Get(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, md.Name).Do()
@@ -824,17 +824,6 @@ func (conn *cloudConnector) deleteOnlyNodeGroup(instanceGroupName, template stri
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	Logger(conn.ctx).Infof("Instance template %v is deleted", template)
-	Logger(conn.ctx).Infof("Autoscaler is deleting for %v", instanceGroupName)
-	r3, err := conn.computeService.Autoscalers.Delete(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
-	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	err = conn.waitForZoneOperation(r3.Name)
-	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	Logger(conn.ctx).Infof("Autoscaler is deleted for %v", instanceGroupName)
-
 	return nil
 }
 
@@ -847,35 +836,26 @@ func (conn *cloudConnector) deleteInstanceTemplate(template string) error {
 	return conn.waitForGlobalOperation(op.Name)
 }
 
-func (conn *cloudConnector) updateNodeGroup(ng *api.NodeGroup, size int64) error {
-	r1, err := conn.computeService.Autoscalers.Get(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, ng.Name).Do()
+func (conn *cloudConnector) deleteGroupInstances(ng *api.NodeGroup, instance string) error {
+	req := &compute.InstanceGroupManagersDeleteInstancesRequest{
+		Instances: []string{
+			fmt.Sprintf("zones/%v/instances/%v", conn.cluster.Spec.Cloud.Zone, instance),
+		},
+	}
+	r, err := conn.computeService.InstanceGroupManagers.DeleteInstances(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, ng.Name, req).Do()
+	fmt.Println(r, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return err
 	}
-	max := r1.AutoscalingPolicy.MaxNumReplicas
-	min := r1.AutoscalingPolicy.MinNumReplicas
-	Logger(conn.ctx).Infof("current autoscaller  Max %v and Min %v num of replicas", max, min)
+	if err = conn.waitForZoneOperation(r.ClientOperationId); err != nil {
+		return err
+	}
 
-	Logger(conn.ctx).Infof("Updating autoscaller with Max %v and Min %v num of replicas", size, size)
-	if size > max || size < min {
-		r2, err := conn.computeService.Autoscalers.Patch(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, &compute.Autoscaler{
-			Name: r1.Name,
-			AutoscalingPolicy: &compute.AutoscalingPolicy{
-				MaxNumReplicas: size,
-				MinNumReplicas: size,
-			},
-			Target: r1.Target,
-		}).Autoscaler(ng.Name).Do()
-		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
-		}
-		err = conn.waitForZoneOperation(r2.Name)
-		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
-		}
-	}
-	Logger(conn.ctx).Infof("Autoscalling group %v updated", ng.Name)
-	_, err = conn.computeService.InstanceGroupManagers.ListManagedInstances(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, ng.Name).Do()
+	return nil
+}
+
+func (conn *cloudConnector) addNodeIntoGroup(ng *api.NodeGroup, size int64) error {
+	_, err := conn.computeService.InstanceGroupManagers.ListManagedInstances(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, ng.Name).Do()
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
@@ -1008,8 +988,8 @@ func (conn *cloudConnector) getExistingInstanceTemplate(ng *api.NodeGroup) (stri
 }
 
 //Node template update
-func (conn *cloudConnector) updateNodeGroupTemplate(ng *api.NodeGroup) error {
-	op, err := conn.createNodeInstanceTemplate(ng)
+func (conn *cloudConnector) updateNodeGroupTemplate(ng *api.NodeGroup, token string) error {
+	op, err := conn.createNodeInstanceTemplate(ng, token)
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}

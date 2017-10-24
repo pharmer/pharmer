@@ -2,7 +2,6 @@ package gce
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/appscode/go/errors"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
@@ -326,6 +325,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		return
 	}
 
+	var token string
 	var kc kubernetes.Interface
 	if cm.cluster.Status.Phase != api.ClusterPending {
 		kc, err = cm.GetAdminClient()
@@ -333,10 +333,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 			return
 		}
 		if !dryRun {
-			if cm.cluster.Spec.Token, err = GetExistingKubeadmToken(kc); err != nil {
-				return
-			}
-			if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
+			if token, err = GetExistingKubeadmToken(kc); err != nil {
 				return
 			}
 		}
@@ -375,7 +372,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		if node.IsMaster() {
 			continue
 		}
-		igm := NewGCENodeGroupManager(cm.ctx, cm.conn, cm.namer, node, kc)
+		igm := NewGCENodeGroupManager(cm.ctx, cm.conn, cm.namer, node, kc, token)
 		var a2 []api.Action
 		a2, err = igm.Apply(dryRun)
 		if err != nil {
@@ -384,34 +381,9 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		acts = append(acts, a2...)
 	}
 
-	if !dryRun && cm.cluster.Status.Phase == api.ClusterReady {
-		time.Sleep(1 * time.Minute)
+	Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	Store(cm.ctx).Clusters().Update(cm.cluster)
 
-		for _, ng := range nodeGroups {
-			if ng.IsMaster() {
-				continue
-			}
-			providerInstances, _ := cm.conn.listInstances(ng.Name)
-			fmt.Println(providerInstances)
-			runningInstance := make(map[string]*api.SimpleNode)
-			for _, node := range providerInstances {
-				runningInstance[node.Name] = node
-			}
-
-			clusterInstance, _ := GetClusterIstance2(kc, ng.Name)
-			fmt.Println(clusterInstance)
-			for _, node := range clusterInstance {
-				if _, found := runningInstance[node]; !found {
-					if err = DeleteClusterInstance2(kc, node); err != nil {
-						return
-					}
-
-				}
-			}
-		}
-		Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		Store(cm.ctx).Clusters().Update(cm.cluster)
-	}
 	return
 }
 
@@ -539,8 +511,9 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 		return
 	}
 
+	var token string
 	if !dryRun {
-		if cm.cluster.Spec.Token, err = GetExistingKubeadmToken(kc); err != nil {
+		if token, err = GetExistingKubeadmToken(kc); err != nil {
 			return
 		}
 		if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
@@ -556,7 +529,7 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 				Message:  fmt.Sprintf("Instance template of %v will be updated to %v", ng.Name, cm.namer.InstanceTemplateName(ng.Spec.Template.Spec.SKU)),
 			})
 			if !dryRun {
-				if err = cm.conn.updateNodeGroupTemplate(ng); err != nil {
+				if err = cm.conn.updateNodeGroupTemplate(ng, token); err != nil {
 					return
 				}
 			}

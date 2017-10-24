@@ -62,7 +62,7 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 }
 
 func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
-	startupScript, err := RenderStartupScript(im.ctx, im.cluster, role, sku, false)
+	startupScript, err := RenderStartupScript(im.ctx, im.cluster, "", role, sku, false)
 	if err != nil {
 		im.cluster.Status.Reason = err.Error()
 		return 0, errors.FromErr(err).WithContext(im.ctx).Err()

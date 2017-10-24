@@ -145,7 +145,7 @@ type ClusterSpec struct {
 	DoNotDelete        bool     `json:"doNotDelete,omitempty" protobuf:"varint,8,opt,name=doNotDelete"`
 	AuthorizationModes []string `json:"authorizationModes,omitempty" protobuf:"bytes,9,rep,name=authorizationModes"`
 
-	Token string `json:"token" protobuf:"bytes,10,opt,name=token"`
+	//Token string `json:"token" protobuf:"bytes,10,opt,name=token"`
 	//TokenTTL metav1.Duration `json:"tokenTTL"`
 
 	// APIServerCertSANs sets extra Subject Alternative Names for the API Server signing cert

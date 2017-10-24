@@ -189,8 +189,6 @@ message ClusterSpec {
 
   repeated string authorizationModes = 9;
 
-  optional string token = 10;
-
   // APIServerCertSANs sets extra Subject Alternative Names for the API Server signing cert
   repeated string apiServerCertSANs = 11;
 

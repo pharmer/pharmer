@@ -1073,7 +1073,7 @@ func (conn *cloudConnector) createReserveIP(masterNG *api.NodeGroup) (string, er
 }
 
 func (conn *cloudConnector) createMasterInstance(name string, ng *api.NodeGroup) (string, error) {
-	kubeStarter, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleMaster, ng.Name, false)
+	kubeStarter, err := RenderStartupScript(conn.ctx, conn.cluster, "", api.RoleMaster, ng.Name, false)
 	if err != nil {
 		return "", err
 	}
@@ -1284,9 +1284,9 @@ func (conn *cloudConnector) assignIPToInstance(reservedIP, instanceID string) er
 	return nil
 }
 
-func (conn *cloudConnector) createLaunchConfiguration(name string, ng *api.NodeGroup) error {
+func (conn *cloudConnector) createLaunchConfiguration(name, token string, ng *api.NodeGroup) error {
 	// script := conn.RenderStartupScript(conn.cluster, sku, api.RoleKubernetesPool)
-	configScript, err := KubeConfigScript(conn.cluster)
+	configScript, err := KubeConfigScript(token)
 	if err != nil {
 		return err
 	}
@@ -1295,7 +1295,7 @@ func (conn *cloudConnector) createLaunchConfiguration(name string, ng *api.NodeG
 		return err
 	}
 
-	script, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleNode, ng.Name, false)
+	script, err := RenderStartupScript(conn.ctx, conn.cluster, token, api.RoleNode, ng.Name, false)
 	if err != nil {
 		return err
 	}
@@ -1900,10 +1900,10 @@ func (conn *cloudConnector) getExistingLaunchConfigurationTemplate(ng *api.NodeG
 }
 
 //Launch configuration template update
-func (conn *cloudConnector) updateLaunchConfigurationTemplate(ng *api.NodeGroup) error {
+func (conn *cloudConnector) updateLaunchConfigurationTemplate(ng *api.NodeGroup, token string) error {
 	newConfigurationTemplate := conn.namer.LaunchConfigName(ng.Spec.Template.Spec.SKU)
 
-	if err := conn.createLaunchConfiguration(newConfigurationTemplate, ng); err != nil {
+	if err := conn.createLaunchConfiguration(newConfigurationTemplate, token, ng); err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	oldConfigurationTemplate, err := conn.getExistingLaunchConfigurationTemplate(ng)

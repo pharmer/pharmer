@@ -69,7 +69,6 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 
 	// Init spec
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
-	cluster.Spec.Token = GetKubeadmToken()
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	cluster.Spec.Cloud.InstanceImage = "ubuntu-16-04-x64"
 

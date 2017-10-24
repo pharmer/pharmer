@@ -18,10 +18,11 @@ type GCENodeGroupManager struct {
 	namer namer
 	ng    *api.NodeGroup
 	kc    kubernetes.Interface
+	token string
 }
 
-func NewGCENodeGroupManager(ctx context.Context, conn *cloudConnector, namer namer, ng *api.NodeGroup, kc kubernetes.Interface) *GCENodeGroupManager {
-	return &GCENodeGroupManager{ctx: ctx, conn: conn, namer: namer, ng: ng, kc: kc}
+func NewGCENodeGroupManager(ctx context.Context, conn *cloudConnector, namer namer, ng *api.NodeGroup, kc kubernetes.Interface, token string) *GCENodeGroupManager {
+	return &GCENodeGroupManager{ctx: ctx, conn: conn, namer: namer, ng: ng, kc: kc, token: token}
 }
 
 func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
@@ -55,8 +56,29 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Node group %v  with instance template %v will be delete", igm.ng.Name, instanceTemplate),
 		})
 		if !dryRun {
+			var existingInstances []*api.SimpleNode
+			existingInstances, err = igm.conn.listInstances(igm.ng.Name)
+			if err != nil {
+				return
+			}
+			var nd NodeDrain
+			if nd, err = NewNodeDrain(igm.ctx, igm.kc, igm.conn.cluster); err != nil {
+				return
+			}
+			for _, instance := range existingInstances {
+				nd.Node = instance.Name
+				if err = nd.Apply(); err != nil {
+					return
+				}
+			}
 			if err = igm.conn.deleteOnlyNodeGroup(igm.ng.Name, instanceTemplate); err != nil {
 				return
+			}
+			for _, instance := range existingInstances {
+				nd.Node = instance.Name
+				if err = nd.Delete(); err != nil {
+					return
+				}
 			}
 			Store(igm.ctx).NodeGroups(igm.ng.ClusterName).Delete(igm.ng.Name)
 		}
@@ -76,7 +98,7 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 		})
 		if !dryRun {
 			var op2 string
-			if op2, err = igm.conn.createNodeInstanceTemplate(igm.ng); err != nil {
+			if op2, err = igm.conn.createNodeInstanceTemplate(igm.ng, igm.token); err != nil {
 				return
 			} else {
 				if err = igm.conn.waitForGlobalOperation(op2); err != nil {
@@ -99,27 +121,45 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 				}
 			}
 		}
-
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Autoscaler",
-			Message:  fmt.Sprintf("Autoscaler %v will be created", igm.ng.Name),
-		})
-		if !dryRun {
-			var op4 string
-			if op4, err = igm.conn.createAutoscaler(igm.ng); err != nil {
-				return
-			} else {
-				if err = igm.conn.waitForZoneOperation(op4); err != nil {
-					return
-				}
-			}
-		}
 	} else {
-		if err = igm.conn.updateNodeGroup(igm.ng, igm.ng.Spec.Nodes); err != nil {
-			return
+		if adjust > 0 {
+			if err = igm.conn.addNodeIntoGroup(igm.ng, igm.ng.Spec.Nodes); err != nil {
+				return
+			}
+		} else if adjust < 0 {
+			if err = igm.deleteNodeWithDrain(igm.ng, -adjust); err != nil {
+				return
+			}
 		}
 	}
 
 	return
+}
+
+func (igm *GCENodeGroupManager) deleteNodeWithDrain(ng *api.NodeGroup, size int64) error {
+	fmt.Println(size, "-----------------------")
+	existingInstances, err := igm.conn.listInstances(ng.Name)
+	if err != nil {
+		return err
+	}
+	existingInstances = existingInstances[size:]
+	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.conn.cluster)
+	if err != nil {
+		return err
+	}
+	for _, instance := range existingInstances {
+		fmt.Println(instance.Name, "<><><><><><>")
+		nd.Node = instance.Name
+		if err = nd.Apply(); err != nil {
+			return err
+		}
+		if err = igm.conn.deleteGroupInstances(igm.ng, instance.Name); err != nil {
+			return err
+		}
+		if err = nd.Delete(); err != nil {
+			return err
+		}
+
+	}
+	return nil
 }

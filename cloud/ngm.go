@@ -3,18 +3,13 @@ package cloud
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/spf13/cobra"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	drain "k8s.io/kubernetes/pkg/kubectl/cmd"
-	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 )
 
 type GenericNodeGroupManager struct {
@@ -23,12 +18,13 @@ type GenericNodeGroupManager struct {
 	im      InstanceManager
 	kc      kubernetes.Interface
 	cluster *api.Cluster
+	token   string
 }
 
 var _ NodeGroupManager = &GenericNodeGroupManager{}
 
-func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster) NodeGroupManager {
-	return &GenericNodeGroupManager{ctx: ctx, ng: ng, im: im, kc: kc, cluster: cluster}
+func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster, token string) NodeGroupManager {
+	return &GenericNodeGroupManager{ctx: ctx, ng: ng, im: im, kc: kc, cluster: cluster, token: token}
 }
 
 func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
@@ -92,7 +88,7 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 
 func (igm *GenericNodeGroupManager) AddNodes(count int64) error {
 	for i := int64(0); i < count; i++ {
-		_, err := igm.im.CreateInstance(rand.WithUniqSuffix(igm.ng.Name), igm.ng)
+		_, err := igm.im.CreateInstance(rand.WithUniqSuffix(igm.ng.Name), igm.token, igm.ng)
 		if err != nil {
 			return err
 		}
@@ -101,41 +97,23 @@ func (igm *GenericNodeGroupManager) AddNodes(count int64) error {
 }
 
 func (igm *GenericNodeGroupManager) DeleteNodes(nodes []core.Node) error {
-	do := drain.DrainOptions{
-		Force:              true,
-		IgnoreDaemonsets:   true,
-		DeleteLocalData:    true,
-		GracePeriodSeconds: -1,
-		Timeout:            0,
-		Out:                ioutil.Discard,
-		ErrOut:             ioutil.Discard,
-	}
-	conf, err := NewClientConfig(igm.ctx, igm.cluster)
+	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.cluster)
 	if err != nil {
 		return err
 	}
-	clientConfig := clientcmd.NewDefaultClientConfig(conf, &clientcmd.ConfigOverrides{})
-	do.Factory = cmdutil.NewFactory(clientConfig)
 	for _, node := range nodes {
 		// Drain Node
-		if err = do.SetupDrain(&cobra.Command{}, []string{node.Name}); err != nil {
-			return err
-		}
-
-		if err = do.RunDrain(); err != nil {
+		nd.Node = node.Name
+		if err = nd.Apply(); err != nil {
 			return err
 		}
 
 		if err = igm.im.DeleteInstanceByProviderID(node.Spec.ProviderID); err != nil {
 			return err
 		}
-		if igm.kc != nil {
-			err := igm.kc.CoreV1().Nodes().Delete(node.Name, &metav1.DeleteOptions{})
-			if err != nil {
-				return err
-			}
+		if err = nd.Delete(); err != nil {
+			return err
 		}
-		return nil
 	}
 	return nil
 }

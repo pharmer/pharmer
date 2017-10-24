@@ -402,6 +402,8 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 	if err != nil {
 		return
 	}
+
+	var token string
 	var kc kubernetes.Interface
 	if cm.cluster.Status.Phase != api.ClusterPending {
 		kc, err = cm.GetAdminClient()
@@ -409,7 +411,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 			return
 		}
 		if !dryRun {
-			if cm.cluster.Spec.Token, err = GetExistingKubeadmToken(kc); err != nil {
+			if token, err = GetExistingKubeadmToken(kc); err != nil {
 				return
 			}
 			if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
@@ -422,7 +424,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		if node.IsMaster() {
 			continue
 		}
-		igm := NewAWSNodeGroupManager(cm.ctx, cm.conn, cm.namer, node, kc)
+		igm := NewAWSNodeGroupManager(cm.ctx, cm.conn, cm.namer, node, kc, token)
 		var a2 []api.Action
 		a2, err = igm.Apply(dryRun)
 		if err != nil {
@@ -584,8 +586,10 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 		return
 	}
 
+	var token string
+
 	if !dryRun {
-		if cm.cluster.Spec.Token, err = GetExistingKubeadmToken(kc); err != nil {
+		if token, err = GetExistingKubeadmToken(kc); err != nil {
 			return
 		}
 		if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
@@ -601,7 +605,7 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 				Message:  fmt.Sprintf("Instance template of %v will be updated to %v", ng.Name, cm.namer.LaunchConfigName(ng.Spec.Template.Spec.SKU)),
 			})
 			if !dryRun {
-				if err = cm.conn.updateLaunchConfigurationTemplate(ng); err != nil {
+				if err = cm.conn.updateLaunchConfigurationTemplate(ng, token); err != nil {
 					return
 				}
 			}

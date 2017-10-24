@@ -21,10 +21,11 @@ type AWSNodeGroupManager struct {
 	namer namer
 	ng    *api.NodeGroup
 	kc    kubernetes.Interface
+	token string
 }
 
-func NewAWSNodeGroupManager(ctx context.Context, conn *cloudConnector, namer namer, ng *api.NodeGroup, kc kubernetes.Interface) *AWSNodeGroupManager {
-	return &AWSNodeGroupManager{ctx: ctx, conn: conn, namer: namer, ng: ng, kc: kc}
+func NewAWSNodeGroupManager(ctx context.Context, conn *cloudConnector, namer namer, ng *api.NodeGroup, kc kubernetes.Interface, token string) *AWSNodeGroupManager {
+	return &AWSNodeGroupManager{ctx: ctx, conn: conn, namer: namer, ng: ng, kc: kc, token: token}
 }
 
 func (igm *AWSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
@@ -123,7 +124,7 @@ func (igm *AWSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 func (igm *AWSNodeGroupManager) createNodeGroup(ng *api.NodeGroup) error {
 	launchConfig := igm.namer.LaunchConfigName(ng.Spec.Template.Spec.SKU)
 
-	if err := igm.conn.createLaunchConfiguration(launchConfig, ng); err != nil {
+	if err := igm.conn.createLaunchConfiguration(launchConfig, igm.token, ng); err != nil {
 		return errors.FromErr(err).WithContext(igm.ctx).Err()
 	}
 	if err := igm.conn.createAutoScalingGroup(ng.Name, launchConfig, ng.Spec.Nodes); err != nil {
