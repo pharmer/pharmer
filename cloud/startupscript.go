@@ -37,11 +37,11 @@ type TemplateData struct {
 	ConfigurationBucket string
 }
 
-func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string, externalProvider bool) TemplateData {
+func GetTemplateData(ctx context.Context, cluster *api.Cluster, token, nodeGroup string, externalProvider bool) TemplateData {
 	td := TemplateData{
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		KubeadmVersion:    cluster.Spec.MasterKubeadmVersion,
-		KubeadmToken:      cluster.Spec.Token,
+		KubeadmToken:      token,
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
 		APIServerAddress:  cluster.APIServerAddress(),
@@ -90,7 +90,7 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		CloudProvider:     cluster.Spec.Cloud.CloudProvider,
 		// AuthorizationModes:
-		Token: cluster.Spec.Token,
+		//Token: token,
 		//	TokenTTL:                   cluster.Spec.TokenTTL,
 		APIServerExtraArgs:         map[string]string{},
 		ControllerManagerExtraArgs: map[string]string{},
@@ -149,11 +149,11 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, nodeGroup string
 	return td
 }
 
-func KubeConfigScript(cluster *api.Cluster) (string, error) {
+func KubeConfigScript(kubeadmToken string) (string, error) {
 	var buf bytes.Buffer
 	var token = struct {
 		Token string
-	}{Token: cluster.Spec.Token}
+	}{Token: kubeadmToken}
 	if err := kubConfigScriptTemplate.ExecuteTemplate(&buf, "config", token); err != nil {
 		return "", err
 	}
@@ -166,9 +166,9 @@ var (
 	`))
 )
 
-func RenderStartupScript(ctx context.Context, cluster *api.Cluster, role, nodeGroup string, externalProvider bool) (string, error) {
+func RenderStartupScript(ctx context.Context, cluster *api.Cluster, token, role, nodeGroup string, externalProvider bool) (string, error) {
 	var buf bytes.Buffer
-	if err := StartupScriptTemplate.ExecuteTemplate(&buf, role, GetTemplateData(ctx, cluster, nodeGroup, externalProvider)); err != nil {
+	if err := StartupScriptTemplate.ExecuteTemplate(&buf, role, GetTemplateData(ctx, cluster, token, nodeGroup, externalProvider)); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
@@ -254,7 +254,6 @@ EOF
 pre-k merge master-config \
 	--config=/etc/kubernetes/kubeadm/config.yaml \
 	--apiserver-bind-port={{ .APIBindPort }} \
-	--token={{ .KubeadmToken }} \
 	--apiserver-advertise-address=$(pre-k get public-ips --all=false) \
 	--apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
 	--apiserver-cert-extra-sans=$(pre-k get private-ips) \

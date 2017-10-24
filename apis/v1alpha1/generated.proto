@@ -170,6 +170,19 @@ message Cluster {
   optional ClusterStatus status = 3;
 }
 
+// Deprecated
+message ClusterDeleteRequest {
+  optional string name = 1;
+
+  optional bool release_reserved_ip = 2;
+
+  optional bool force = 3;
+
+  optional bool keep_lodabalancers = 4;
+
+  optional bool delete_dynamic_volumes = 5;
+}
+
 message ClusterSpec {
   optional CloudSpec cloud = 1;
 
@@ -188,8 +201,6 @@ message ClusterSpec {
   optional bool doNotDelete = 8;
 
   repeated string authorizationModes = 9;
-
-  optional string token = 10;
 
   // APIServerCertSANs sets extra Subject Alternative Names for the API Server signing cert
   repeated string apiServerCertSANs = 11;

@@ -338,7 +338,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 		if !dryRun {
 			var masterScript string
-			if masterScript, err = RenderStartupScript(cm.ctx, cm.cluster, api.RoleMaster, masterNG.Name, false); err != nil {
+			if masterScript, err = RenderStartupScript(cm.ctx, cm.cluster, "", api.RoleMaster, masterNG.Name, false); err != nil {
 				return
 			}
 			fmt.Println("----------------------------")
@@ -404,6 +404,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 	if err != nil {
 		return
 	}
+	var token string
 	var kc kubernetes.Interface
 	if cm.cluster.Status.Phase != api.ClusterPending {
 		kc, err = cm.GetAdminClient()
@@ -411,7 +412,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 			return
 		}
 		if !dryRun {
-			if cm.cluster.Spec.Token, err = GetExistingKubeadmToken(kc); err != nil {
+			if token, err = GetExistingKubeadmToken(kc); err != nil {
 				return
 			}
 			if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
@@ -424,7 +425,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		if ng.IsMaster() {
 			continue
 		}
-		igm := NewNodeGroupManager(cm.ctx, ng, cm.conn, kc)
+		igm := NewNodeGroupManager(cm.ctx, ng, cm.conn, kc, cm.cluster, token)
 		var a2 []api.Action
 		a2, err = igm.Apply(dryRun)
 		if err != nil {

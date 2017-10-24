@@ -74,7 +74,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	if cluster.Spec.Cloud.Azure == nil {
 		cluster.Spec.Cloud.Azure = &api.AzureSpec{}
 	}
-	cluster.Spec.Token = GetKubeadmToken()
+
 	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
 	cluster.Spec.KubernetesMasterName = n.MasterName()
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort

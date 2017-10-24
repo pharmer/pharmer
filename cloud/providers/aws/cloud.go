@@ -1003,7 +1003,7 @@ func (conn *cloudConnector) ensurePd(name, diskType string, sizeGb int64) (strin
 			return "", err
 		}
 		volumeId = *r1.VolumeId
-		Logger(conn.ctx).Infof("Master disk with size %vGB, type %v created", conn.cluster.Spec.MasterDiskSize, conn.cluster.Spec.MasterDiskType)
+		Logger(conn.ctx).Infof("Master disk with size %vGB, type %v created", sizeGb, conn.cluster.Spec.MasterDiskType)
 
 		time.Sleep(preTagDelay)
 		err = conn.addTag(volumeId, "Name", name)
@@ -1073,7 +1073,7 @@ func (conn *cloudConnector) createReserveIP(masterNG *api.NodeGroup) (string, er
 }
 
 func (conn *cloudConnector) createMasterInstance(name string, ng *api.NodeGroup) (string, error) {
-	kubeStarter, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleMaster, ng.Name, false)
+	kubeStarter, err := RenderStartupScript(conn.ctx, conn.cluster, "", api.RoleMaster, ng.Name, false)
 	if err != nil {
 		return "", err
 	}
@@ -1284,9 +1284,9 @@ func (conn *cloudConnector) assignIPToInstance(reservedIP, instanceID string) er
 	return nil
 }
 
-func (conn *cloudConnector) createLaunchConfiguration(name string, ng *api.NodeGroup) error {
+func (conn *cloudConnector) createLaunchConfiguration(name, token string, ng *api.NodeGroup) error {
 	// script := conn.RenderStartupScript(conn.cluster, sku, api.RoleKubernetesPool)
-	configScript, err := KubeConfigScript(conn.cluster)
+	configScript, err := KubeConfigScript(token)
 	if err != nil {
 		return err
 	}
@@ -1295,7 +1295,7 @@ func (conn *cloudConnector) createLaunchConfiguration(name string, ng *api.NodeG
 		return err
 	}
 
-	script, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleNode, ng.Name, false)
+	script, err := RenderStartupScript(conn.ctx, conn.cluster, token, api.RoleNode, ng.Name, false)
 	if err != nil {
 		return err
 	}
@@ -1798,6 +1798,27 @@ func (conn *cloudConnector) deleteMaster() error {
 	return nil
 }
 
+func (conn *cloudConnector) deleteGroupInstances(ng *api.NodeGroup, instance string) error {
+	if _, err := conn.autoscale.DetachInstances(&autoscaling.DetachInstancesInput{
+		AutoScalingGroupName:           StringP(ng.Name),
+		InstanceIds:                    StringPSlice([]string{instance}),
+		ShouldDecrementDesiredCapacity: BoolP(true),
+	}); err != nil {
+		return err
+	}
+
+	Logger(conn.ctx).Infof("Terminating instance for cluster %v", conn.cluster.Name)
+	if _, err := conn.ec2.TerminateInstances(&_ec2.TerminateInstancesInput{
+		InstanceIds: StringPSlice([]string{instance}),
+	}); err != nil {
+		return err
+	}
+	instanceInput := &_ec2.DescribeInstancesInput{
+		InstanceIds: StringPSlice([]string{instance}),
+	}
+	return conn.ec2.WaitUntilInstanceTerminated(instanceInput)
+}
+
 func (conn *cloudConnector) ensureInstancesDeleted() error {
 	const desiredState = "terminated"
 
@@ -1900,10 +1921,10 @@ func (conn *cloudConnector) getExistingLaunchConfigurationTemplate(ng *api.NodeG
 }
 
 //Launch configuration template update
-func (conn *cloudConnector) updateLaunchConfigurationTemplate(ng *api.NodeGroup) error {
+func (conn *cloudConnector) updateLaunchConfigurationTemplate(ng *api.NodeGroup, token string) error {
 	newConfigurationTemplate := conn.namer.LaunchConfigName(ng.Spec.Template.Spec.SKU)
 
-	if err := conn.createLaunchConfiguration(newConfigurationTemplate, ng); err != nil {
+	if err := conn.createLaunchConfiguration(newConfigurationTemplate, token, ng); err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	oldConfigurationTemplate, err := conn.getExistingLaunchConfigurationTemplate(ng)

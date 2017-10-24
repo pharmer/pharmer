@@ -13,16 +13,18 @@ import (
 )
 
 type GenericNodeGroupManager struct {
-	ctx context.Context
-	ng  *api.NodeGroup
-	im  InstanceManager
-	kc  kubernetes.Interface
+	ctx     context.Context
+	ng      *api.NodeGroup
+	im      InstanceManager
+	kc      kubernetes.Interface
+	cluster *api.Cluster
+	token   string
 }
 
 var _ NodeGroupManager = &GenericNodeGroupManager{}
 
-func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface) NodeGroupManager {
-	return &GenericNodeGroupManager{ctx: ctx, ng: ng, im: im, kc: kc}
+func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster, token string) NodeGroupManager {
+	return &GenericNodeGroupManager{ctx: ctx, ng: ng, im: im, kc: kc, cluster: cluster, token: token}
 }
 
 func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
@@ -86,7 +88,7 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 
 func (igm *GenericNodeGroupManager) AddNodes(count int64) error {
 	for i := int64(0); i < count; i++ {
-		_, err := igm.im.CreateInstance(rand.WithUniqSuffix(igm.ng.Name), igm.ng)
+		_, err := igm.im.CreateInstance(rand.WithUniqSuffix(igm.ng.Name), igm.token, igm.ng)
 		if err != nil {
 			return err
 		}
@@ -95,19 +97,23 @@ func (igm *GenericNodeGroupManager) AddNodes(count int64) error {
 }
 
 func (igm *GenericNodeGroupManager) DeleteNodes(nodes []core.Node) error {
+	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.cluster)
+	if err != nil {
+		return err
+	}
 	for _, node := range nodes {
-		// TODO: Drain Node
-		err := igm.im.DeleteInstanceByProviderID(node.Spec.ProviderID)
-		if err != nil {
+		// Drain Node
+		nd.Node = node.Name
+		if err = nd.Apply(); err != nil {
 			return err
 		}
-		if igm.kc != nil {
-			err := igm.kc.CoreV1().Nodes().Delete(node.Name, &metav1.DeleteOptions{})
-			if err != nil {
-				return err
-			}
+
+		if err = igm.im.DeleteInstanceByProviderID(node.Spec.ProviderID); err != nil {
+			return err
 		}
-		return nil
+		if err = nd.DeleteNode(); err != nil {
+			return err
+		}
 	}
 	return nil
 }

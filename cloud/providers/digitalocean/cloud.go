@@ -153,8 +153,8 @@ func (conn *cloudConnector) createReserveIP() (string, error) {
 	return fip.IP, nil
 }
 
-func (conn *cloudConnector) CreateInstance(name string, ng *api.NodeGroup) (*api.SimpleNode, error) {
-	startupScript, err := RenderStartupScript(conn.ctx, conn.cluster, ng.Role(), ng.Name, true)
+func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.SimpleNode, error) {
+	startupScript, err := RenderStartupScript(conn.ctx, conn.cluster, token, ng.Role(), ng.Name, true)
 	if err != nil {
 		return nil, err
 	}

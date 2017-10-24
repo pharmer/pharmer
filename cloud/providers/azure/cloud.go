@@ -730,7 +730,7 @@ func (conn *cloudConnector) newKubeInstance(vm compute.VirtualMachine, nic netwo
 	return &i, nil
 }
 
-func (conn *cloudConnector) StartNode(nodeName string, as compute.AvailabilitySet, sg network.SecurityGroup, sn network.Subnet, ng *api.NodeGroup) (*api.SimpleNode, error) {
+func (conn *cloudConnector) StartNode(nodeName, token string, as compute.AvailabilitySet, sg network.SecurityGroup, sn network.Subnet, ng *api.NodeGroup) (*api.SimpleNode, error) {
 	ki := &api.SimpleNode{}
 
 	nodePIP, err := conn.createPublicIP(conn.namer.PublicIPName(nodeName), network.Dynamic)
@@ -748,7 +748,7 @@ func (conn *cloudConnector) StartNode(nodeName string, as compute.AvailabilitySe
 		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 
-	nodeScript, err := RenderStartupScript(conn.ctx, conn.cluster, api.RoleNode, ng.Name, false)
+	nodeScript, err := RenderStartupScript(conn.ctx, conn.cluster, token, api.RoleNode, ng.Name, false)
 	if err != nil {
 		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
@@ -769,7 +769,7 @@ func (conn *cloudConnector) StartNode(nodeName string, as compute.AvailabilitySe
 	return ki, nil
 }
 
-func (conn *cloudConnector) CreateInstance(name string, ng *api.NodeGroup) (*api.SimpleNode, error) {
+func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.SimpleNode, error) {
 	as, err := conn.getAvailablitySet()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -789,7 +789,7 @@ func (conn *cloudConnector) CreateInstance(name string, ng *api.NodeGroup) (*api
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	return conn.StartNode(name, as, sg, sn, ng)
+	return conn.StartNode(name, token, as, sg, sn, ng)
 }
 
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
