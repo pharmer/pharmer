@@ -53,7 +53,7 @@ func NewCmdUpdateCluster() *cobra.Command {
 func runUpdateCluster(ctx context.Context, cmd *cobra.Command, args []string) error {
 	cluster, err := cloud.Get(ctx, args[0])
 	if err != nil {
-		return fmt.Errorf(`Cluster "%v" not found.`, cluster)
+		return fmt.Errorf(`cluster "%v" not found`, cluster)
 	}
 
 	fileName, _ := cmd.Flags().GetString("file")

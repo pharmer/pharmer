@@ -41,7 +41,7 @@ func FindMasterNodeGroup(nodeGroups []*api.NodeGroup) *api.NodeGroup {
 }
 
 // WARNING:
-// Returned KubeClient uses admin bearer token. This should only be used for cluster provisioning operations.
+// Returned KubeClient uses admin client cert. This should only be used for cluster provisioning operations.
 func NewAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes.Interface, error) {
 	adminCert, adminKey, err := CreateAdminCertificate(ctx)
 	if err != nil {

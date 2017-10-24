@@ -1,20 +1,23 @@
-## pharmer ssh
+## pharmer backup cluster
 
-
+Backup cluster objects
 
 ### Synopsis
 
 
-
+Backup cluster objects
 
 ```
-pharmer ssh [flags]
+pharmer backup cluster [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for ssh
+      --backup-dir string   Directory where yaml files will be saved
+  -k, --cluster string      Name of cluster
+  -h, --help                help for cluster
+      --sanitize             Sanitize fields in YAML
 ```
 
 ### Options inherited from parent commands
@@ -33,6 +36,5 @@ pharmer ssh [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer ssh node](pharmer_ssh_node.md)	 - SSH into a Kubernetes cluster instance
+* [pharmer backup](pharmer_backup.md)	 - 
 

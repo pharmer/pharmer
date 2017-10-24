@@ -1,20 +1,27 @@
-## pharmer ssh
+## pharmer use cluster
 
-
+Sets `kubectl` context to given cluster
 
 ### Synopsis
 
 
-
+Sets `kubectl` context to given cluster
 
 ```
-pharmer ssh [flags]
+pharmer use cluster [flags]
+```
+
+### Examples
+
+```
+pharmer use cluster <name>
 ```
 
 ### Options
 
 ```
-  -h, --help   help for ssh
+  -h, --help        help for cluster
+      --overwrite   Overwrite context if found. (default true)
 ```
 
 ### Options inherited from parent commands
@@ -33,6 +40,5 @@ pharmer ssh [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer ssh node](pharmer_ssh_node.md)	 - SSH into a Kubernetes cluster instance
+* [pharmer use](pharmer_use.md)	 - 
 

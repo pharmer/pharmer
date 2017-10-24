@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	proto "github.com/appscode/api/kubernetes/v1beta1"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"k8s.io/client-go/kubernetes"
@@ -30,14 +29,6 @@ func init() {
 
 func New(ctx context.Context) Interface {
 	return &ClusterManager{ctx: ctx}
-}
-
-func (cm *ClusterManager) Scale(req *proto.ClusterReconfigureRequest) error {
-	return UnsupportedOperation
-}
-
-func (cm *ClusterManager) SetVersion(req *proto.ClusterReconfigureRequest) error {
-	return UnsupportedOperation
 }
 
 func (cm *ClusterManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {

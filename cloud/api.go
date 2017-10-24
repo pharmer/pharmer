@@ -16,6 +16,7 @@ type Interface interface {
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
 	Check(cluster *api.Cluster) (string, error)
+	AssignSSHConfig(cluster *api.Cluster, node *core.Node, cfg *api.SSHConfig) error
 
 	// IsValid(cluster *api.Cluster) (bool, error)
 	// Delete(req *proto.ClusterDeleteRequest) error

@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"time"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/cert"
@@ -126,6 +128,43 @@ func DeleteNG(ctx context.Context, nodeGroupName, clusterName string) error {
 	}
 
 	return nil
+}
+
+func GetSSHConfig(ctx context.Context, cluster *api.Cluster, nodeName string) (*api.SSHConfig, error) {
+	client, err := NewAdminClient(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	node, err := client.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	ctx, err = LoadSSHKey(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	sshKey := SSHKey(ctx)
+
+	cfg := &api.SSHConfig{
+		PrivateKey: sshKey.PrivateKey,
+	}
+	for _, addr := range node.Status.Addresses {
+		if addr.Type == core.NodeExternalIP {
+			cfg.InstanceAddress = addr.Address
+		}
+	}
+	if net.ParseIP(cfg.InstanceAddress) == nil {
+		return nil, fmt.Errorf("failed to detect external Ip for node %s of cluster %s", nodeName, cluster.Name)
+	}
+
+	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err = cm.AssignSSHConfig(cluster, node, cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
 
 func GetAdminConfig(ctx context.Context, cluster *api.Cluster) (*clientcmd.Config, error) {

@@ -364,3 +364,12 @@ func (c *Cluster) APIServerAddress() string {
 	}
 	return ""
 }
+
+// Deprecated
+type ClusterDeleteRequest struct {
+	Name                 string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	ReleaseReservedIp    bool   `protobuf:"varint,2,opt,name=release_reserved_ip,json=releaseReservedIp" json:"release_reserved_ip,omitempty"`
+	Force                bool   `protobuf:"varint,3,opt,name=force" json:"force,omitempty"`
+	KeepLodabalancers    bool   `protobuf:"varint,4,opt,name=keep_lodabalancers,json=keepLodabalancers" json:"keep_lodabalancers,omitempty"`
+	DeleteDynamicVolumes bool   `protobuf:"varint,5,opt,name=delete_dynamic_volumes,json=deleteDynamicVolumes" json:"delete_dynamic_volumes,omitempty"`
+}
