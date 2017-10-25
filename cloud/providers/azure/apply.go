@@ -1,6 +1,7 @@
 package azure
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
@@ -337,14 +338,15 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Virtual machine %v will be created", cm.namer.MasterName()),
 		})
 		if !dryRun {
-			var masterScript string
-			if masterScript, err = RenderStartupScript(cm.ctx, cm.cluster, "", api.RoleMaster, masterNG.Name, false); err != nil {
+			var script bytes.Buffer
+			if err = StartupScriptTemplate.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(cm.ctx, cm.cluster, masterNG)); err != nil {
 				return
 			}
+
 			fmt.Println("----------------------------")
-			fmt.Println(masterScript)
+			fmt.Println(script.String())
 			fmt.Println("----------------------------")
-			masterVM, err = cm.conn.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), masterScript, masterNG.Spec.Template.Spec.SKU)
+			masterVM, err = cm.conn.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), script.String(), masterNG.Spec.Template.Spec.SKU)
 			if err != nil {
 				return
 			}

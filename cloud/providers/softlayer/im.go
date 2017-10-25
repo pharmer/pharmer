@@ -62,11 +62,12 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 }
 
 func (im *instanceManager) createInstance(name, role, sku string) (int, error) {
-	startupScript, err := RenderStartupScript(im.ctx, im.cluster, "", role, sku, false)
-	if err != nil {
-		im.cluster.Status.Reason = err.Error()
-		return 0, errors.FromErr(err).WithContext(im.ctx).Err()
-	}
+	startupScript := "" // TODO: FixIt!
+	//startupScript, err := RenderStartupScript(im.ctx, im.cluster, "", role, sku, false)
+	//if err != nil {
+	//	im.cluster.Status.Reason = err.Error()
+	//	return 0, errors.FromErr(err).WithContext(im.ctx).Err()
+	//}
 	instance, err := data.ClusterMachineType(im.cluster.Spec.Cloud.CloudProvider, sku)
 	if err != nil {
 		im.cluster.Status.Reason = err.Error()

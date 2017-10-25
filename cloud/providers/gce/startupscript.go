@@ -3,7 +3,6 @@ package gce
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"text/template"
@@ -17,7 +16,7 @@ import (
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
-func GetTemplateData(ctx context.Context, cluster *api.Cluster, token, nodeGroup string, externalProvider bool) TemplateData {
+func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
 	td := TemplateData{
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		KubeadmVersion:    cluster.Spec.MasterKubeadmVersion,
@@ -28,10 +27,62 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, token, nodeGroup
 		APIBindPort:       6443,
 		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
 		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
-		NodeGroupName:     nodeGroup,
 		Provider:          cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider:  externalProvider,
+		ExternalProvider:  false, // Azure does not use out-of-tree CCM
 	}
+	if cluster.Spec.Cloud.GCE != nil {
+		td.ConfigurationBucket = fmt.Sprintf(`gsutil cat gs://%v/config.sh > /etc/kubernetes/config.sh`, cluster.Status.Cloud.GCE.BucketName)
+	}
+	{
+		extraDomains := []string{}
+		if domain := Extra(ctx).ExternalDomain(cluster.Name); domain != "" {
+			extraDomains = append(extraDomains, domain)
+		}
+		if domain := Extra(ctx).InternalDomain(cluster.Name); domain != "" {
+			extraDomains = append(extraDomains, domain)
+		}
+		td.ExtraDomains = strings.Join(extraDomains, ",")
+	}
+	{
+		td.KubeletExtraArgs = map[string]string{}
+		for k, v := range cluster.Spec.KubeletExtraArgs {
+			td.KubeletExtraArgs[k] = v
+		}
+		for k, v := range ng.Spec.Template.Spec.KubeletExtraArgs {
+			td.KubeletExtraArgs[k] = v
+		}
+		td.KubeletExtraArgs["node-labels"] = fmt.Sprintf("cloud.appscode.com/pool=%s,node-role.kubernetes.io/node=", ng.Name)
+		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
+		td.KubeletExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider // requires --cloud-config
+		if cluster.Spec.Cloud.GCE != nil {
+			// ref: https://github.com/kubernetes/kubernetes/blob/release-1.5/cluster/gce/configure-vm.sh#L846
+			cfg := ini.Empty()
+			err := cfg.Section("global").ReflectFrom(cluster.Spec.Cloud.GCE.CloudConfig)
+			if err != nil {
+				panic(err)
+			}
+			var buf bytes.Buffer
+			_, err = cfg.WriteTo(&buf)
+			if err != nil {
+				panic(err)
+			}
+			td.CloudConfig = buf.String()
+
+			// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L41
+			td.KubeletExtraArgs["cloud-config"] = "/etc/kubernetes/cloud-config"
+
+			// Kubeadm will send cloud-config to kube-apiserver and kube-controller-manager
+			// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L193
+			// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L230
+		}
+	}
+	return td
+}
+
+func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup) TemplateData {
+	td := newNodeTemplateData(ctx, cluster, ng, "")
+	td.KubeletExtraArgs["node-labels"] = fmt.Sprintf("cloud.appscode.com/pool=%s", ng.Name)
+
 	if cluster.Spec.MasterKubeadmVersion != "" {
 		if v, err := version.NewVersion(cluster.Spec.MasterKubeadmVersion); err == nil && v.Prerelease() != "" {
 			td.IsPreReleaseVersion = true
@@ -39,17 +90,6 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, token, nodeGroup
 			if lv, err := GetLatestKubeadmVerson(); err == nil && lv == cluster.Spec.MasterKubeadmVersion {
 				td.KubeadmVersion = ""
 			}
-		}
-	}
-
-	{
-		if cluster.Spec.Cloud.GCE != nil {
-			td.ConfigurationBucket = fmt.Sprintf(`gsutil cat gs://%v/config.sh > /etc/kubernetes/config.sh
-			`, cluster.Status.Cloud.GCE.BucketName)
-		} else if cluster.Spec.Cloud.AWS != nil {
-			td.ConfigurationBucket = fmt.Sprintf(`apt-get install awscli -y
-			aws s3api get-object --bucket %v --key config.sh /etc/kubernetes/config.sh`,
-				cluster.Status.Cloud.AWS.BucketName)
 		}
 	}
 
@@ -67,59 +107,12 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, token, nodeGroup
 			PodSubnet:     cluster.Spec.Networking.PodSubnet,
 			DNSDomain:     cluster.Spec.Networking.DNSDomain,
 		},
-		KubernetesVersion: cluster.Spec.KubernetesVersion,
-		CloudProvider:     cluster.Spec.Cloud.CloudProvider,
-		// AuthorizationModes:
-		//Token: token,
-		//	TokenTTL:                   cluster.Spec.TokenTTL,
-		APIServerExtraArgs:         map[string]string{},
-		ControllerManagerExtraArgs: map[string]string{},
-		SchedulerExtraArgs:         map[string]string{},
+		KubernetesVersion:          cluster.Spec.KubernetesVersion,
+		CloudProvider:              cluster.Spec.Cloud.CloudProvider,
+		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
+		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
+		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          []string{},
-	}
-	if externalProvider {
-		cfg.CloudProvider = "external"
-	}
-
-	{
-		if cluster.Spec.Cloud.GCE != nil {
-			cfg.APIServerExtraArgs["cloud-config"] = cluster.Spec.Cloud.CloudConfigPath
-			td.CloudConfigPath = cluster.Spec.Cloud.CloudConfigPath
-			// ref: https://github.com/kubernetes/kubernetes/blob/release-1.5/cluster/gce/configure-vm.sh#L846
-			cfg := ini.Empty()
-			err := cfg.Section("global").ReflectFrom(cluster.Spec.Cloud.GCE.CloudConfig)
-			if err != nil {
-				panic(err)
-			}
-			var buf bytes.Buffer
-			_, err = cfg.WriteTo(&buf)
-			if err != nil {
-				panic(err)
-			}
-			td.CloudConfig = buf.String()
-		}
-	}
-	{
-		if cluster.Spec.Cloud.Azure != nil {
-			cfg.APIServerExtraArgs["cloud-config"] = cluster.Spec.Cloud.CloudConfigPath
-			td.CloudConfigPath = cluster.Spec.Cloud.CloudConfigPath
-
-			data, err := json.MarshalIndent(cluster.Spec.Cloud.Azure.CloudConfig, "", "  ")
-			if err != nil {
-				panic(err)
-			}
-			td.CloudConfig = string(data)
-		}
-	}
-	{
-		extraDomains := []string{}
-		if domain := Extra(ctx).ExternalDomain(cluster.Name); domain != "" {
-			extraDomains = append(extraDomains, domain)
-		}
-		if domain := Extra(ctx).InternalDomain(cluster.Name); domain != "" {
-			extraDomains = append(extraDomains, domain)
-		}
-		td.ExtraDomains = strings.Join(extraDomains, ",")
 	}
 	td.MasterConfiguration = &cfg
 	return td
@@ -141,11 +134,3 @@ var (
 	declare -x KUBEADM_TOKEN={{ .Token }}
 	`))
 )
-
-func RenderStartupScript(ctx context.Context, cluster *api.Cluster, token, role, nodeGroup string, externalProvider bool) (string, error) {
-	var buf bytes.Buffer
-	if err := StartupScriptTemplate.ExecuteTemplate(&buf, role, GetTemplateData(ctx, cluster, token, nodeGroup, externalProvider)); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}

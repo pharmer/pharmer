@@ -1,6 +1,7 @@
 package azure
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -77,7 +78,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		RouteTableName:    namer.RouteTableName(),
 		//	StorageAccountName: namer.GenStorageAccountName(),
 	}
-	cluster.Spec.Cloud.CloudConfigPath = "/etc/kubernetes/azure.json"
 	cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName = cluster.Spec.Cloud.Azure.StorageAccountName
 
 	/*
@@ -748,11 +748,11 @@ func (conn *cloudConnector) StartNode(nodeName, token string, as compute.Availab
 		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 
-	nodeScript, err := RenderStartupScript(conn.ctx, conn.cluster, token, api.RoleNode, ng.Name, false)
-	if err != nil {
+	var script bytes.Buffer
+	if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
 		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	nodeVM, err := conn.createVirtualMachine(nodeNIC, as, sa, nodeName, nodeScript, ng.Spec.Template.Spec.SKU)
+	nodeVM, err := conn.createVirtualMachine(nodeNIC, as, sa, nodeName, script.String(), ng.Spec.Template.Spec.SKU)
 	if err != nil {
 		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}

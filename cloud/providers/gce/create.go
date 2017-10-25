@@ -163,27 +163,6 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	return cluster, nil
 }
 
-func (cm *ClusterManager) updateContext() error {
-	cm.cluster.Spec.Cloud.GCE.CloudConfig = &api.GCECloudConfig{
-		// TokenURL           :
-		// TokenBody          :
-		ProjectID:          cm.cluster.Spec.Cloud.Project,
-		NetworkName:        "default",
-		NodeTags:           []string{cm.namer.NodePrefix()},
-		NodeInstancePrefix: cm.namer.NodePrefix(),
-		Multizone:          bool(cm.cluster.Spec.Multizone),
-	}
-	cm.cluster.Spec.Cloud.CloudConfigPath = "/etc/gce.conf"
-	cm.cluster.Spec.ClusterExternalDomain = Extra(cm.ctx).ExternalDomain(cm.cluster.Name)
-	cm.cluster.Spec.ClusterInternalDomain = Extra(cm.ctx).InternalDomain(cm.cluster.Name)
-	//if cm.ctx.AppsCodeClusterCreator == "" {
-	//	cm.ctx.AppsCodeClusterCreator = cm.ctx.Auth.User.UserName
-	//}
-	cm.cluster.Spec.EnableWebhookTokenAuthentication = true
-	cm.cluster.Spec.EnableAPIserverBasicAudit = true
-	return nil
-}
-
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, UnsupportedOperation
 }

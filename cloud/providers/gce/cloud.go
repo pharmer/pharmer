@@ -1,6 +1,7 @@
 package gce
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"regexp"
@@ -66,7 +67,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 
 	cluster.Spec.Cloud.Project = typed.ProjectID()
-	cluster.Spec.Cloud.CloudConfigPath = "/etc/gce.conf"
 
 	conf, err := google.JWTConfigFromJSON([]byte(typed.ServiceAccount()),
 		compute.ComputeScope,
@@ -419,9 +419,8 @@ func (conn *cloudConnector) createMasterIntance(ng *api.NodeGroup) (string, erro
 	// MachineType:  "projects/tigerworks-kube/zones/us-central1-b/machineTypes/n1-standard-1",
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
-	// startupScript := conn.RenderStartupScript(conn.cluster, conn.cluster.Spec.MasterSKU, api.RoleKubernetesMaster)
-	startupScript, err := RenderStartupScript(conn.ctx, conn.cluster, "", api.RoleMaster, ng.Name, false)
-	if err != nil {
+	var script bytes.Buffer
+	if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
 		return "", err
 	}
 
@@ -462,7 +461,7 @@ func (conn *cloudConnector) createMasterIntance(ng *api.NodeGroup) (string, erro
 			Items: []*compute.MetadataItems{
 				{
 					Key:   "startup-script",
-					Value: &startupScript,
+					Value: types.StringP(script.String()),
 				},
 				{
 					Key:   "ssh-keys",
@@ -682,8 +681,8 @@ func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup, token 
 		return "", err
 	}
 
-	startupScript, err := RenderStartupScript(conn.ctx, conn.cluster, token, api.RoleNode, ng.Name, false)
-	if err != nil {
+	var script bytes.Buffer
+	if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
 		return "", err
 	}
 
@@ -743,7 +742,7 @@ func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup, token 
 				Items: []*compute.MetadataItems{
 					{
 						Key:   "startup-script",
-						Value: &startupScript,
+						Value: types.StringP(script.String()),
 					},
 					{
 						Key:   "ssh-keys",
