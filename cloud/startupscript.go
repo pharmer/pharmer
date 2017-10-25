@@ -4,6 +4,8 @@ import (
 	"text/template"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
+	"github.com/ghodss/yaml"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
 type TemplateData struct {
@@ -17,7 +19,7 @@ type TemplateData struct {
 	APIBindPort         int32
 	ExtraDomains        string
 	NetworkProvider     string
-	MasterConfiguration string
+	MasterConfiguration *kubeadmapi.MasterConfiguration
 	CloudConfigPath     string
 	CloudConfig         string
 	NodeGroupName       string
@@ -26,6 +28,14 @@ type TemplateData struct {
 	ConfigurationBucket string
 
 	KubeletExtraArgs map[string]string
+}
+
+func (td TemplateData) MasterConfigurationYAML() (string, error) {
+	if td.MasterConfiguration == nil {
+		return "", nil
+	}
+	cb, err := yaml.Marshal(td.MasterConfiguration)
+	return string(cb), err
 }
 
 /*
@@ -238,9 +248,9 @@ EOF
 
 mkdir -p /etc/kubernetes/kubeadm
 
-{{ if .MasterConfiguration }}
+{{ if .MasterConfigurationYAML }}
 cat > /etc/kubernetes/kubeadm/config.yaml <<EOF
-{{ .MasterConfiguration }}
+{{ .MasterConfigurationYAML }}
 EOF
 {{ end }}
 

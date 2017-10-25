@@ -9,7 +9,6 @@ import (
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
-	"github.com/ghodss/yaml"
 	"github.com/hashicorp/go-version"
 	"gopkg.in/ini.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -121,11 +120,7 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, token, nodeGroup
 		}
 		td.ExtraDomains = strings.Join(extraDomains, ",")
 	}
-	cb, err := yaml.Marshal(&cfg)
-	if err != nil {
-		panic(err)
-	}
-	td.MasterConfiguration = string(cb)
+	td.MasterConfiguration = &cfg
 	return td
 }
 
