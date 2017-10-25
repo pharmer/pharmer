@@ -76,10 +76,11 @@ func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Sig
 
 func (im *instanceManager) storeStartupScript(serverIP, sku, role string, signer ssh.Signer) error {
 	Logger(im.ctx).Infof("Storing startup script for server %v", serverIP)
-	startupScript, err := renderStartupScript(im.ctx, im.cluster, role)
-	if err != nil {
-		return err
-	}
+	startupScript := "" // TODO: fixit
+	//startupScript, err := renderStartupScript(im.ctx, im.cluster, role)
+	//if err != nil {
+	//	return err
+	//}
 	fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>", startupScript)
 
 	file := "/var/cache/kubernetes_startupscript.sh"

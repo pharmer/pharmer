@@ -1,10 +1,11 @@
-package hetzner
+package aws
 
 import (
 	"bytes"
 	"context"
 	"fmt"
 	"strings"
+	"text/template"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
@@ -26,7 +27,13 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
 		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
 		Provider:          cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider:  true, // Hetzner uses out-of-tree CCM
+		ExternalProvider:  false, // AWS does not use out-of-tree CCM
+	}
+	if cluster.Spec.Cloud.AWS != nil {
+		td.ConfigurationBucket = fmt.Sprintf(`
+apt-get install awscli -y
+aws s3api get-object --bucket %v --key config.sh /etc/kubernetes/config.sh
+`, cluster.Status.Cloud.AWS.BucketName)
 	}
 	{
 		extraDomains := []string{}
@@ -48,7 +55,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}
 		td.KubeletExtraArgs["node-labels"] = fmt.Sprintf("cloud.appscode.com/pool=%s,node-role.kubernetes.io/node=", ng.Name)
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
-		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
+		td.KubeletExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider // --cloud-config is not needed, since IAM is used.
 	}
 	return td
 }
@@ -82,51 +89,29 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			DNSDomain:     cluster.Spec.Networking.DNSDomain,
 		},
 		KubernetesVersion:          cluster.Spec.KubernetesVersion,
-		CloudProvider:              "external",
-		APIServerExtraArgs:         map[string]string{},
-		ControllerManagerExtraArgs: map[string]string{},
-		SchedulerExtraArgs:         map[string]string{},
+		CloudProvider:              cluster.Spec.Cloud.CloudProvider,
+		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
+		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
+		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          []string{},
 	}
 	td.MasterConfiguration = &cfg
 	return td
 }
 
-var (
-	customTemplate = `
-{{ define "prepare-host" }}
-# http://ask.xmodulo.com/disable-ipv6-linux.html
-/bin/cat >>/etc/sysctl.conf <<EOF
-# to disable IPv6 on all interfaces system wide
-net.ipv6.conf.all.disable_ipv6 = 1
-
-# to disable IPv6 on a specific interface (e.g., eth0, lo)
-net.ipv6.conf.lo.disable_ipv6 = 1
-net.ipv6.conf.eth0.disable_ipv6 = 1
-EOF
-/sbin/sysctl -p /etc/sysctl.conf
-{{ end }}
-`
-)
-
-func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string) (string, error) {
-	tpl, err := StartupScriptTemplate.Clone()
-	if err != nil {
+func KubeConfigScript(kubeadmToken string) (string, error) {
+	var buf bytes.Buffer
+	var token = struct {
+		Token string
+	}{Token: kubeadmToken}
+	if err := kubConfigScriptTemplate.ExecuteTemplate(&buf, "config", token); err != nil {
 		return "", err
 	}
-	tpl, err = tpl.Parse(customTemplate)
-	if err != nil {
-		return "", err
-	}
-	var script bytes.Buffer
-	if ng.Role() == api.RoleMaster {
-		if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
-			return "", err
-		}
-	} else {
-		if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
-			return "", err
-		}
-	}
-	return script.String(), nil
+	return buf.String(), nil
 }
+
+var (
+	kubConfigScriptTemplate = template.Must(template.New("config").Parse(`#!/bin/bash
+	declare -x KUBEADM_TOKEN={{ .Token }}
+	`))
+)

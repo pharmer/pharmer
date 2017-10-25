@@ -154,12 +154,13 @@ func (conn *cloudConnector) createReserveIP() (string, error) {
 }
 
 func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.SimpleNode, error) {
-	startupScript, err := RenderStartupScript(conn.ctx, conn.cluster, token, ng.Role(), ng.Name, true)
+	script, err := conn.renderStartupScript(ng, token)
 	if err != nil {
 		return nil, err
 	}
+
 	fmt.Println()
-	fmt.Println(startupScript)
+	fmt.Println(script)
 	fmt.Println()
 	req := &godo.DropletCreateRequest{
 		Name:   name,
@@ -176,7 +177,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		},
 		PrivateNetworking: true,
 		IPv6:              false,
-		UserData:          startupScript,
+		UserData:          script,
 	}
 	if Env(conn.ctx).IsPublic() {
 		req.SSHKeys = []godo.DropletCreateSSHKey{

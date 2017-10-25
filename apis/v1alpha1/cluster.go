@@ -102,13 +102,12 @@ type LinodeSpec struct {
 }
 
 type CloudSpec struct {
-	CloudProvider   string `json:"cloudProvider,omitempty" protobuf:"bytes,1,opt,name=cloudProvider"`
-	Project         string `json:"project,omitempty" protobuf:"bytes,2,opt,name=project"`
-	Region          string `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
-	Zone            string `json:"zone,omitempty" protobuf:"bytes,4,opt,name=zone"` // master needs it for ossec
-	OS              string `json:"os,omitempty" protobuf:"bytes,5,opt,name=os"`
-	Kernel          string `json:"kernel,omitempty" protobuf:"bytes,6,opt,name=kernel"` // needed ?
-	CloudConfigPath string `json:"cloudConfig,omitempty" protobuf:"bytes,7,opt,name=cloudConfig"`
+	CloudProvider string `json:"cloudProvider,omitempty" protobuf:"bytes,1,opt,name=cloudProvider"`
+	Project       string `json:"project,omitempty" protobuf:"bytes,2,opt,name=project"`
+	Region        string `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
+	Zone          string `json:"zone,omitempty" protobuf:"bytes,4,opt,name=zone"` // master needs it for ossec
+	OS            string `json:"os,omitempty" protobuf:"bytes,5,opt,name=os"`
+	Kernel        string `json:"kernel,omitempty" protobuf:"bytes,6,opt,name=kernel"` // needed ?
 
 	InstanceImage        string `json:"instanceImage,omitempty" protobuf:"bytes,8,opt,name=instanceImage"`
 	InstanceImageProject string `json:"instanceImageProject,omitempty" protobuf:"bytes,9,opt,name=instanceImageProject"`
@@ -243,6 +242,11 @@ type ClusterSpec struct {
 	NodeDiskType string `json:"nodeDiskType,omitempty" protobuf:"bytes,48,opt,name=nodeDiskType"`
 	// Deprecated
 	NodeDiskSize int64 `json:"nodeDiskSize,omitempty" protobuf:"varint,49,opt,name=nodeDiskSize"`
+
+	KubeletExtraArgs           map[string]string `json:"kubeletExtraArgs,omitempty" protobuf:"bytes,50,rep,name=kubeletExtraArgs"`
+	APIServerExtraArgs         map[string]string `json:"apiServerExtraArgs,omitempty" protobuf:"bytes,51,rep,name=apiServerExtraArgs"`
+	ControllerManagerExtraArgs map[string]string `json:"controllerManagerExtraArgs,omitempty" protobuf:"bytes,52,rep,name=controllerManagerExtraArgs"`
+	SchedulerExtraArgs         map[string]string `json:"schedulerExtraArgs,omitempty" protobuf:"bytes,53,rep,name=schedulerExtraArgs"`
 }
 
 type AWSStatus struct {

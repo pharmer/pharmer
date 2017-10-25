@@ -53,10 +53,12 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 
 func (im *instanceManager) createStartupScript(sku, role string) (int, error) {
 	Logger(im.ctx).Infof("creating StackScript for sku %v role %v", sku, role)
-	script, err := renderStartupScript(im.ctx, im.cluster, role)
-	if err != nil {
-		return 0, err
-	}
+	//script, err := renderStartupScript(im.ctx, im.cluster, role)
+	//if err != nil {
+	//	return 0, err
+	//}
+	// TODO: Fix it: conn.renderStartupScript()
+	script := ""
 	resp, err := im.conn.client.CreateStartupScript(im.namer.StartupScriptName(sku, role), script, "boot")
 	if err != nil {
 		return 0, err

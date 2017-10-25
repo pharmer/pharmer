@@ -154,6 +154,8 @@ type NodeSpec struct {
 	DiskType       string `json:"nodeDiskType,omitempty" protobuf:"bytes,4,opt,name=nodeDiskType"`
 	DiskSize       int64  `json:"nodeDiskSize,omitempty" protobuf:"varint,5,opt,name=nodeDiskSize"`
 	ExternalIPType IPType `json:"externalIPType,omitempty" protobuf:"bytes,6,opt,name=externalIPType,casttype=IPType"`
+
+	KubeletExtraArgs map[string]string `json:"kubeletExtraArgs,omitempty" protobuf:"bytes,7,rep,name=kubeletExtraArgs"`
 }
 
 // Deprecated
