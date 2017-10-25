@@ -26,7 +26,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
 		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
 		Provider:          cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider:  true, // Azure does not use out-of-tree CCM
+		ExternalProvider:  true, // Linode uses out-of-tree CCM
 	}
 	{
 		extraDomains := []string{}

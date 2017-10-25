@@ -28,7 +28,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
 		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
 		Provider:          cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider:  false, // Azure does not use out-of-tree CCM
+		ExternalProvider:  false, // GCE does not use out-of-tree CCM
 	}
 	if cluster.Spec.Cloud.GCE != nil {
 		td.ConfigurationBucket = fmt.Sprintf(`gsutil cat gs://%v/config.sh > /etc/kubernetes/config.sh`, cluster.Status.Cloud.GCE.BucketName)

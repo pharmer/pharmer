@@ -138,7 +138,7 @@ EOF
 
 mkdir -p /etc/kubernetes/kubeadm
 
-{{ if .MasterConfigurationYAML }}
+{{ if .MasterConfiguration }}
 cat > /etc/kubernetes/kubeadm/config.yaml <<EOF
 {{ .MasterConfigurationYAML }}
 EOF
