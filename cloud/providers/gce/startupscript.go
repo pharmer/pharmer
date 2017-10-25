@@ -1,4 +1,4 @@
-package vultr
+package gce
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"text/template"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
@@ -128,6 +129,23 @@ func GetTemplateData(ctx context.Context, cluster *api.Cluster, token, nodeGroup
 	td.MasterConfiguration = string(cb)
 	return td
 }
+
+func KubeConfigScript(kubeadmToken string) (string, error) {
+	var buf bytes.Buffer
+	var token = struct {
+		Token string
+	}{Token: kubeadmToken}
+	if err := kubConfigScriptTemplate.ExecuteTemplate(&buf, "config", token); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+var (
+	kubConfigScriptTemplate = template.Must(template.New("config").Parse(`#!/bin/bash
+	declare -x KUBEADM_TOKEN={{ .Token }}
+	`))
+)
 
 func RenderStartupScript(ctx context.Context, cluster *api.Cluster, token, role, nodeGroup string, externalProvider bool) (string, error) {
 	var buf bytes.Buffer

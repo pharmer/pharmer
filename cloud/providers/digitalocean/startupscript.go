@@ -1,4 +1,4 @@
-package vultr
+package digitalocean
 
 import (
 	"bytes"

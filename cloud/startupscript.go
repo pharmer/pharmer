@@ -1,20 +1,9 @@
 package cloud
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
-	"fmt"
-	"strings"
 	"text/template"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/ghodss/yaml"
-	"github.com/hashicorp/go-version"
-	"gopkg.in/ini.v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/util/cert"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
 type TemplateData struct {
@@ -35,8 +24,11 @@ type TemplateData struct {
 	Provider            string
 	ExternalProvider    bool
 	ConfigurationBucket string
+
+	KubeletExtraArgs map[string]string
 }
 
+/*
 func GetTemplateData(ctx context.Context, cluster *api.Cluster, token, nodeGroup string, externalProvider bool) TemplateData {
 	td := TemplateData{
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
@@ -173,6 +165,7 @@ func RenderStartupScript(ctx context.Context, cluster *api.Cluster, token, role,
 	}
 	return buf.String(), nil
 }
+*/
 
 var (
 	StartupScriptTemplate = template.Must(template.New(api.RoleMaster).Parse(`#!/bin/bash

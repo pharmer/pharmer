@@ -1,4 +1,4 @@
-package vultr
+package softlayer
 
 import (
 	"bytes"

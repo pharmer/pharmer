@@ -243,6 +243,10 @@ type ClusterSpec struct {
 	NodeDiskType string `json:"nodeDiskType,omitempty" protobuf:"bytes,48,opt,name=nodeDiskType"`
 	// Deprecated
 	NodeDiskSize int64 `json:"nodeDiskSize,omitempty" protobuf:"varint,49,opt,name=nodeDiskSize"`
+
+	APIServerExtraArgs         map[string]string `json:"apiServerExtraArgs,omitempty"`
+	ControllerManagerExtraArgs map[string]string `json:"controllerManagerExtraArgs,omitempty"`
+	SchedulerExtraArgs         map[string]string `json:"schedulerExtraArgs,omitempty"`
 }
 
 type AWSStatus struct {
