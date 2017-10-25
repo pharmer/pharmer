@@ -9,7 +9,6 @@ func newCmdUse() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "use",
 		DisableAutoGenTag: true,
-		Run:               func(cmd *cobra.Command, args []string) {},
 	}
 	cmd.AddCommand(cpCmd.NewCmdUse())
 
