@@ -30,7 +30,7 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 	if igm.kc != nil {
 		nodes, err = igm.kc.CoreV1().Nodes().List(metav1.ListOptions{
 			LabelSelector: labels.SelectorFromSet(map[string]string{
-				api.NodeLabelKey_NodeGroup: igm.ng.Name,
+				api.NodePoolKey: igm.ng.Name,
 			}).String(),
 		})
 		if err != nil {

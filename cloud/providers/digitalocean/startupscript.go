@@ -3,7 +3,6 @@ package digitalocean
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
@@ -46,7 +45,10 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		for k, v := range ng.Spec.Template.Spec.KubeletExtraArgs {
 			td.KubeletExtraArgs[k] = v
 		}
-		td.KubeletExtraArgs["node-labels"] = fmt.Sprintf("cloud.appscode.com/pool=%s,node-role.kubernetes.io/node=", ng.Name)
+		td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
+			api.NodePoolKey: ng.Name,
+			api.RoleNodeKey: "",
+		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
 	}
@@ -55,7 +57,9 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 
 func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup) TemplateData {
 	td := newNodeTemplateData(ctx, cluster, ng, "")
-	td.KubeletExtraArgs["node-labels"] = fmt.Sprintf("cloud.appscode.com/pool=%s", ng.Name)
+	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
+		api.NodePoolKey: ng.Name,
+	}.String()
 
 	if cluster.Spec.MasterKubeadmVersion != "" {
 		if v, err := version.NewVersion(cluster.Spec.MasterKubeadmVersion); err == nil && v.Prerelease() != "" {

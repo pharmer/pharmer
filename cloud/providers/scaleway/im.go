@@ -138,7 +138,7 @@ func (im *instanceManager) executeStartupScript(instance *api.Node, signer ssh.S
 func (im *instanceManager) newKubeInstance(id string) (*api.Node, error) {
 	s, err := im.conn.client.GetServer(id)
 	if err != nil {
-		return nil, ErrNodeNotFound
+		return nil, ErrNotFound
 	}
 	return im.newKubeInstanceFromServer(s)
 }

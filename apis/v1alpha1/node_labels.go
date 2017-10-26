@@ -14,11 +14,9 @@ import (
 const (
 	NodeLabelKey_ContextVersion = "kubernetes.appscode.com/context"
 	// ref: https://github.com/kubernetes/apimachinery/blob/master/pkg/apis/meta/v1/well_known_labels.go#L70
-	NodeLabelKey_Role      = "kubernetes.io/role"
-	NodeLabelKey_SKU       = "kubernetes.appscode.com/sku"
-	NodeLabelKey_Checksum  = "meta.appscode.com/checksum"
-	NodeLabelKey_NodeGroup = "cloud.appscode.com/pool"
-	KubeSystem_App         = "k8s-app"
+	NodeLabelKey_Role     = "kubernetes.io/role"
+	NodeLabelKey_SKU      = "kubernetes.appscode.com/sku"
+	NodeLabelKey_Checksum = "meta.appscode.com/checksum"
 )
 
 // MissingChecksumError records an error and the operation and file path that caused it.
@@ -176,13 +174,10 @@ func (n *NodeLabels) Sign(ctx *ClusterContext) error {
 }
 */
 
-func (n *NodeLabels) values(appscodeKeysOnly, skipChecksum bool) string {
-	if *n == nil {
-		return ""
-	}
-	keys := make([]string, len(*n))
+func (n NodeLabels) values(appscodeKeysOnly, skipChecksum bool) string {
+	keys := make([]string, len(n))
 	i := 0
-	for k := range *n {
+	for k := range n {
 		keys[i] = k
 		i++
 	}
@@ -201,12 +196,12 @@ func (n *NodeLabels) values(appscodeKeysOnly, skipChecksum bool) string {
 		}
 		buf.WriteString(k)
 		buf.WriteString("=")
-		buf.WriteString((*n)[k])
+		buf.WriteString(n[k])
 		i++
 	}
 	return buf.String()
 }
 
-func (n *NodeLabels) String() string {
+func (n NodeLabels) String() string {
 	return n.values(false, false)
 }

@@ -1220,7 +1220,7 @@ func (conn *cloudConnector) newKubeInstance(instanceID string) (*api.SimpleNode,
 
 	Logger(conn.ctx).Debug("Retrieved instance ", instance, err)
 	if err != nil {
-		return nil, ErrNodeNotFound
+		return nil, ErrNotFound
 	}
 
 	if *instance.Reservations[0].Instances[0].State.Name != "running" {

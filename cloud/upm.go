@@ -281,7 +281,7 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 	if upm.kc != nil {
 		nodes, err = upm.kc.CoreV1().Nodes().List(metav1.ListOptions{
 			LabelSelector: labels.SelectorFromSet(map[string]string{
-				api.NodeLabelKey_NodeGroup: ng.Spec.Template.Spec.SKU,
+				api.NodePoolKey: ng.Spec.Template.Spec.SKU,
 			}).String(),
 		})
 		if err != nil {

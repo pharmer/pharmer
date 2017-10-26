@@ -1,8 +1,6 @@
 package vultr
 
 import (
-	"strconv"
-
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 )
@@ -15,8 +13,9 @@ func (n namer) MasterName() string {
 	return n.cluster.Name + "-master"
 }
 
-func (n namer) GenNodeName() string {
-	return rand.WithUniqSuffix(n.cluster.Name + "-node")
+// Deprecated
+func (n namer) GenNodeName(ng string) string {
+	return rand.WithUniqSuffix(ng)
 }
 
 func (n namer) GenSSHKeyExternalID() string {
@@ -27,6 +26,6 @@ func (n namer) ReserveIPName() string {
 	return n.cluster.Name + "-master-ip"
 }
 
-func (n namer) StartupScriptName(sku, role string) string {
-	return n.cluster.Name + "-" + sku + "-" + role + "-V" + strconv.FormatInt(n.cluster.Generation, 10)
+func (n namer) StartupScriptName(ng, role string) string {
+	return n.cluster.Name + "-" + ng + "-" + role
 }

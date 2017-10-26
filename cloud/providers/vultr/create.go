@@ -24,7 +24,7 @@ func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.Node
 			UID:               phid.NewNodeGroup(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 			Labels: map[string]string{
-				"node-role.kubernetes.io/master": "true",
+				api.RoleMasterKey: "true",
 			},
 		},
 		Spec: api.NodeGroupSpec{
@@ -63,6 +63,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	}
 	n := namer{cluster: cluster}
 
+	cluster.Spec.Networking.NetworkProvider = "calico"
 	// Init object meta
 	cluster.ObjectMeta.UID = phid.NewKubeCluster()
 	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
@@ -151,6 +152,8 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 			}
 		}
 	}
+	cluster.Spec.KubernetesVersion = "v" + in.Spec.KubernetesVersion
+
 	return cluster, nil
 }
 

@@ -38,24 +38,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	return nil, ErrNotImplemented
 }
 
-func (cm *ClusterManager) Check(in *api.Cluster) (string, error) {
-	return "", ErrNotImplemented
-}
-
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, ErrNotImplemented
 }
 
 func (cm *ClusterManager) UploadStartupConfig() error {
 	return nil
-}
-
-func (cm *ClusterManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
-	return &api.Node{}, nil
-}
-
-func (cm *ClusterManager) MatchInstance(i *api.Node, md *api.NodeStatus) bool {
-	return true
 }
 
 func (cm *ClusterManager) runFakeJob(requestType string) {

@@ -19,12 +19,26 @@ type GenericNodeGroupManager struct {
 	kc      kubernetes.Interface
 	cluster *api.Cluster
 	token   string
+	// preHook is run once before a set of nodes are added. This can be used to create or update startup scripts. Since this will be
+	// called, nodes are added, make sure this method can handle create/update scenarios for a NodeGroup.
+	preHook HookFunc
+	// gcHook is used to garbage collect when all nodes of a NodeGroup is deleted. This can be used to delete things like startup script.
+	gcHook HookFunc
 }
 
 var _ NodeGroupManager = &GenericNodeGroupManager{}
 
-func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster, token string) NodeGroupManager {
-	return &GenericNodeGroupManager{ctx: ctx, ng: ng, im: im, kc: kc, cluster: cluster, token: token}
+func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster, token string, initHook HookFunc, gcHook HookFunc) NodeGroupManager {
+	return &GenericNodeGroupManager{
+		ctx:     ctx,
+		ng:      ng,
+		im:      im,
+		kc:      kc,
+		cluster: cluster,
+		token:   token,
+		preHook: initHook,
+		gcHook:  gcHook,
+	}
 }
 
 func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
@@ -32,7 +46,7 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 	if igm.kc != nil {
 		nodes, err = igm.kc.CoreV1().Nodes().List(metav1.ListOptions{
 			LabelSelector: labels.SelectorFromSet(map[string]string{
-				api.NodeLabelKey_NodeGroup: igm.ng.Name,
+				api.NodePoolKey: igm.ng.Name,
 			}).String(),
 		})
 		if err != nil {
@@ -64,6 +78,12 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 			if err != nil {
 				return
 			}
+			if igm.ng.Spec.Nodes == 0 && igm.gcHook != nil {
+				err = igm.gcHook()
+				if err != nil {
+					return
+				}
+			}
 		}
 	} else {
 		acts = append(acts, api.Action{
@@ -72,6 +92,13 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 			Message:  fmt.Sprintf("%v node will be added to %v group", igm.ng.Spec.Nodes-igm.ng.Status.FullyLabeledNodes, igm.ng.Name),
 		})
 		if !dryRun {
+			if igm.preHook != nil {
+				err = igm.preHook()
+				if err != nil {
+					return
+				}
+			}
+
 			err = igm.AddNodes(igm.ng.Spec.Nodes - igm.ng.Status.FullyLabeledNodes)
 			if err != nil {
 				return
