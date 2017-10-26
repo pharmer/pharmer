@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -1970,12 +1971,45 @@ func (conn *cloudConnector) uploadStartupConfig(bucketName, data string) error {
 	return nil
 }
 
+// ref: https://github.com/kubernetes/kubernetes/blob/0b9efaeb34a2fc51ff8e4d34ad9bc6375459c4a4/pkg/cloudprovider/providers/aws/instances.go#L43
+
+// providerId represents the id for an instance in the kubernetes API;
+// the following form
+//  * aws:///<zone>/<awsInstanceId>
+//  * aws:////<awsInstanceId>
+//  * <awsInstanceId>
+
+// splitProviderID extracts the awsInstanceID from the kubernetesInstanceID
 func splitProviderID(providerId string) (string, error) {
-	/////"providerID": "aws:////i-01c7b221cb9f1037a",
-	matches := strings.Split(providerId, ":////")
-	fmt.Println(matches)
-	if len(matches) <= 1 {
-		return "", fmt.Errorf("No provider id found for this instance")
+	if !strings.HasPrefix(providerId, "aws://") {
+		// Assume a bare aws volume id (vol-1234...)
+		// Build a URL with an empty host (AZ)
+		providerId = "aws://" + "/" + "/" + providerId
 	}
-	return matches[1], nil
+	url, err := url.Parse(providerId)
+	if err != nil {
+		return "", fmt.Errorf("invalid instance name (%s): %v", providerId, err)
+	}
+	if url.Scheme != "aws" {
+		return "", fmt.Errorf("invalid scheme for AWS instance (%s)", providerId)
+	}
+
+	awsID := ""
+	tokens := strings.Split(strings.Trim(url.Path, "/"), "/")
+	if len(tokens) == 1 {
+		// instanceId
+		awsID = tokens[0]
+	} else if len(tokens) == 2 {
+		// az/instanceId
+		awsID = tokens[1]
+	}
+
+	// We sanity check the resulting volume; the two known formats are
+	// i-12345678 and i-12345678abcdef01
+	// TODO: Regex match?
+	if awsID == "" || strings.Contains(awsID, "/") || !strings.HasPrefix(awsID, "i-") {
+		return "", fmt.Errorf("Invalid format for AWS instance (%s)", providerId)
+	}
+
+	return awsID, nil
 }

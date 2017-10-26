@@ -1058,7 +1058,7 @@ func (conn *cloudConnector) uploadStartupConfig(bucketName, data string) error {
 
 // splitProviderID splits a provider's id into core components.
 // A providerID is build out of '${ProviderName}://${project-id}/${zone}/${instance-name}'
-// See cloudprovider.GetInstanceProviderID.
+// ref: https://github.com/kubernetes/kubernetes/blob/0b9efaeb34a2fc51ff8e4d34ad9bc6375459c4a4/pkg/cloudprovider/providers/gce/gce_util.go#L156
 func splitProviderID(providerID string) (project, zone, instance string, err error) {
 	matches := providerIdRE.FindStringSubmatch(providerID)
 	if len(matches) != 4 {

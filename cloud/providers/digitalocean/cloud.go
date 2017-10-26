@@ -274,15 +274,7 @@ func (conn *cloudConnector) deleteSSHKey() error {
 }
 
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
-	if providerID == "" {
-		return errors.New("providerID cannot be empty string")
-	}
-
-	parts := strings.SplitN(providerID, "://", 2)
-	if len(parts) != 2 {
-		return fmt.Errorf("skipping deleting node with providerID `%s`", providerID)
-	}
-	dropletID, err := strconv.Atoi(parts[1]) // TODO: FixIt!
+	dropletID, err := dropletIDFromProviderID(providerID)
 	if err != nil {
 		return err
 	}
@@ -292,4 +284,27 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	}
 	Logger(conn.ctx).Infof("Droplet %v deleted", dropletID)
 	return nil
+}
+
+// dropletIDFromProviderID returns a droplet's ID from providerID.
+//
+// The providerID spec should be retrievable from the Kubernetes
+// node object. The expected format is: digitalocean://droplet-id
+// ref: https://github.com/digitalocean/digitalocean-cloud-controller-manager/blob/f9a9856e99c9d382db3777d678f29d85dea25e91/do/droplets.go#L211
+func dropletIDFromProviderID(providerID string) (int, error) {
+	if providerID == "" {
+		return 0, errors.New("providerID cannot be empty string")
+	}
+
+	split := strings.Split(providerID, "/")
+	if len(split) != 3 {
+		return 0, fmt.Errorf("unexpected providerID format: %s, format should be: digitalocean://12345", providerID)
+	}
+
+	// since split[0] is actually "digitalocean:"
+	if strings.TrimSuffix(split[0], ":") != UID {
+		return 0, fmt.Errorf("provider name from providerID should be digitalocean: %s", providerID)
+	}
+
+	return strconv.Atoi(split[2])
 }
