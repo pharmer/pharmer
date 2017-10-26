@@ -1,6 +1,8 @@
 package digitalocean
 
 import (
+	"fmt"
+	"net"
 	"time"
 
 	"github.com/appscode/mergo"
@@ -154,11 +156,22 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
-	return false, UnsupportedOperation
+	return false, ErrNotImplemented
 }
 
-func (cm *ClusterManager) AssignSSHConfig(cluster *api.Cluster, node *core.Node, cfg *api.SSHConfig) error {
-	cfg.User = "root"
-	cfg.InstancePort = int32(22)
-	return nil
+func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
+	cfg := &api.SSHConfig{
+		PrivateKey:   SSHKey(cm.ctx).PrivateKey,
+		User:         "root",
+		InstancePort: int32(22),
+	}
+	for _, addr := range node.Status.Addresses {
+		if addr.Type == core.NodeExternalIP {
+			cfg.InstanceAddress = addr.Address
+		}
+	}
+	if net.ParseIP(cfg.InstanceAddress) == nil {
+		return nil, fmt.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
+	}
+	return cfg, nil
 }

@@ -32,7 +32,7 @@ func New(ctx context.Context) Interface {
 }
 
 func (cm *ClusterManager) UploadStartupConfig() error {
-	return UnsupportedOperation
+	return ErrNotImplemented
 }
 
 func (cm *ClusterManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {

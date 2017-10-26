@@ -571,8 +571,6 @@ message SSHConfig {
   optional int32 instancePort = 3;
 
   optional string user = 4;
-
-  optional string command = 5;
 }
 
 message SimpleNode {
