@@ -13,28 +13,31 @@ import (
 )
 
 type GenericNodeGroupManager struct {
-	ctx      context.Context
-	ng       *api.NodeGroup
-	im       InstanceManager
-	kc       kubernetes.Interface
-	cluster  *api.Cluster
-	token    string
-	initHook HookFunc
-	gcHook   HookFunc
+	ctx     context.Context
+	ng      *api.NodeGroup
+	im      InstanceManager
+	kc      kubernetes.Interface
+	cluster *api.Cluster
+	token   string
+	// preHook is run once before a set of nodes are added. This can be used to create or update startup scripts. Since this will be
+	// called, nodes are added, make sure this method can handle create/update scenarios for a NodeGroup.
+	preHook HookFunc
+	// gcHook is used to garbage collect when all nodes of a NodeGroup is deleted. This can be used to delete things like startup script.
+	gcHook HookFunc
 }
 
 var _ NodeGroupManager = &GenericNodeGroupManager{}
 
 func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster, token string, initHook HookFunc, gcHook HookFunc) NodeGroupManager {
 	return &GenericNodeGroupManager{
-		ctx:      ctx,
-		ng:       ng,
-		im:       im,
-		kc:       kc,
-		cluster:  cluster,
-		token:    token,
-		initHook: initHook,
-		gcHook:   gcHook,
+		ctx:     ctx,
+		ng:      ng,
+		im:      im,
+		kc:      kc,
+		cluster: cluster,
+		token:   token,
+		preHook: initHook,
+		gcHook:  gcHook,
 	}
 }
 
@@ -89,8 +92,8 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 			Message:  fmt.Sprintf("%v node will be added to %v group", igm.ng.Spec.Nodes-igm.ng.Status.FullyLabeledNodes, igm.ng.Name),
 		})
 		if !dryRun {
-			if igm.initHook != nil {
-				err = igm.initHook()
+			if igm.preHook != nil {
+				err = igm.preHook()
 				if err != nil {
 					return
 				}
