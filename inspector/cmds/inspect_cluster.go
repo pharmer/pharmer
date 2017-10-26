@@ -8,9 +8,8 @@ import (
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
-	"github.com/spf13/cobra"
 	"github.com/appscode/pharmer/inspector"
-	"fmt"
+	"github.com/spf13/cobra"
 )
 
 func NewCmdInspectCluster() *cobra.Command {
@@ -31,7 +30,6 @@ func NewCmdInspectCluster() *cobra.Command {
 			}
 
 			clusterName, _ := cmd.Flags().GetString("cluster")
-			fmt.Println(clusterName, args[0], "-------------")
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
 			if err != nil {

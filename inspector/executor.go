@@ -8,12 +8,12 @@ import (
 
 	"github.com/appscode/go/errors"
 	"github.com/appscode/go/log"
+	. "github.com/appscode/pharmer/cloud"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
-	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-	. "github.com/appscode/pharmer/cloud"
 )
 
 type RemoteExecutor interface {
@@ -30,10 +30,10 @@ func (e *RemoteBashExecutor) Execute(config *rest.Config, method string, url *ur
 	stdIn := newStringReader(cmds)
 	DefaultWriter.Flush()
 	err = exec.Stream(remotecommand.StreamOptions{
-		Stdin:              stdIn,
-		Stdout:             DefaultWriter,
-		Stderr:             DefaultWriter,
-		Tty:                false,
+		Stdin:  stdIn,
+		Stdout: DefaultWriter,
+		Stderr: DefaultWriter,
+		Tty:    false,
 	})
 	if err != nil {
 		log.Errorln("Error in exec", err)
@@ -81,7 +81,7 @@ func (p *ExecOptions) Run(retry int) (string, error) {
 		Namespace(pod.Namespace).
 		SubResource("exec").
 		Param("container", p.ContainerName).
-		Param("command", "/bin/bash").
+		Param("command", "/bin/sh").
 		Param("stdin", "true").
 		Param("stdout", "false").
 		Param("stderr", "false").

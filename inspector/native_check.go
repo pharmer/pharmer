@@ -3,12 +3,12 @@ package inspector
 import (
 	"fmt"
 
-	"github.com/appscode/go/errors"
 	term "github.com/appscode/go-term"
+	"github.com/appscode/go/errors"
 	"github.com/cenkalti/backoff"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	apiv1 "k8s.io/api/core/v1"
 )
 
 func (i *Inspector) CheckHelthStatus() error {
@@ -51,45 +51,3 @@ func (i *Inspector) checkRBAC() error {
 	}
 	return nil
 }
-
-/*func (i *Inspector) checkLoadBalancer() error {
-	retry := 5
-	for retry > 0 {
-		if _, err := c.Kube.VoyagerClient.Ingresses("appscode").Get("default-lb", metav1.GetOptions{}); err != nil {
-			term.Errorln("Default load balancer is not set up")
-		} else {
-			term.Successln("Default load balancer is set up")
-			break
-		}
-		time.Sleep(15 * time.Second)
-		fmt.Println("Retrying...")
-		retry--
-	}
-	retry = 5
-	flag := false
-	for retry > 0 {
-		pods, err := c.Kube.Client.CoreV1().Pods("appscode").List(metav1.ListOptions{})
-		if err != nil {
-			term.Errorln("Default load balancer pod is not set up")
-		}
-		for _, p := range pods.Items {
-			if strings.HasPrefix(p.Name, "voyager-default-lb") {
-				flag = true
-				break
-			}
-		}
-		if flag {
-			break
-		}
-		time.Sleep(15 * time.Second)
-		fmt.Println("Retrying...")
-		retry--
-	}
-	if !flag {
-		term.Errorln("Default load balancer pod is not found")
-	} else {
-		term.Successln("Default load balancer pod is found")
-	}
-
-	return nil
-}*/

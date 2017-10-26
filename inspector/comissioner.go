@@ -2,37 +2,26 @@ package inspector
 
 import (
 	"fmt"
-	/*"io/ioutil"
-	"os"
-	"time"*/
-
-	//proto "github.com/appscode/api/kubernetes/v1beta1"
-	//appscodeSSH "github.com/appscode/api/ssh/v1beta1"
-	//"github.com/appscode/client/cli"
 	"github.com/appscode/go/errors"
-	//"github.com/cenkalti/backoff"
 	"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/rest"
-	//"k8s.io/client-go/tools/clientcmd"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	apiv1 "k8s.io/api/core/v1"
-	clientcmd_api "k8s.io/client-go/tools/clientcmd/api"
-	clientcmd_v1 "k8s.io/client-go/tools/clientcmd/api/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	. "github.com/appscode/pharmer/cloud"
+
 	"context"
 	"github.com/appscode/go-term"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
+	. "github.com/appscode/pharmer/cloud"
+	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmd_api "k8s.io/client-go/tools/clientcmd/api"
+	clientcmd_v1 "k8s.io/client-go/tools/clientcmd/api/v1"
 )
 
 type Inspector struct {
 	ctx     context.Context
-	client        kubernetes.Interface
+	client  kubernetes.Interface
 	cluster *api.Cluster
-//	cm Interface
-	config *rest.Config
-	//ssh     SSHExecutor
+	config  *rest.Config
 }
 
 func New(ctx context.Context, cluster *api.Cluster) (*Inspector, error) {
@@ -70,14 +59,8 @@ func New(ctx context.Context, cluster *api.Cluster) (*Inspector, error) {
 		return nil, err
 	}
 
-	/*cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
-	if err != nil {
-		return nil, err
-	}*/
-
-	return  &Inspector{ctx: ctx, client: kc,cluster: cluster, config: restConfig}, nil
+	return &Inspector{ctx: ctx, client: kc, cluster: cluster, config: restConfig}, nil
 }
-
 
 func (i *Inspector) NativeCheck() error {
 	if err := i.CheckHelthStatus(); err != nil {
@@ -86,12 +69,8 @@ func (i *Inspector) NativeCheck() error {
 	if err := i.checkRBAC(); err != nil {
 		return errors.FromErr(err).Err()
 	}
-	/*if err := c.checkLoadBalancer(); err != nil {
-		return errors.FromErr(err).Err()
-	}*/
 	return nil
 }
-
 
 func (i *Inspector) NetworkCheck() error {
 	if err := i.CheckDNSPod(); err != nil {
@@ -116,13 +95,10 @@ func (i *Inspector) NetworkCheck() error {
 		term.Fatalln("Need at least 2 nodes to check")
 		return nil
 	}
-	fmt.Println(masterNode)
 
 	defer func() {
+		i.DeleteNginxService()
 		i.DeleteNginx()
-		//i.DeleteNginxPod(pod2)
-		//i.DeleteNginxService(pod1)
-		//i.DeleteNginxService(pod2)
 	}()
 
 	var pods []apiv1.Pod
@@ -138,78 +114,32 @@ func (i *Inspector) NetworkCheck() error {
 		return errors.FromErr(err).Err()
 	}
 
-	//fmt.Println(i.InstallNginxService())
-
-
-	/*podname1, err := i.InstallNginxPod(pod1, nodeonly[0])
-	if err != nil {
-		return errors.FromErr(err).Err()
-	}
-	podname2, err := i.InstallNginxPod(pod2, nodeonly[1])
-	if err != nil {
+	term.Infoln("Checking from master")
+	if err := i.runMasterExecutor(masterNode, pods[0].Status.PodIP); err != nil {
 		return errors.FromErr(err).Err()
 	}
 
-	svcIp1, err := i.InstallNginxService(pod1)
+	if err := i.runMasterExecutor(masterNode, pods[1].Status.PodIP); err != nil {
+		return errors.FromErr(err).Err()
+	}
+
+	svcIP, err := i.InstallNginxService()
 	if err != nil {
 		return errors.FromErr(err).Err()
 	}
-	svcIp2, err := i.InstallNginxService(pod2)
-	if err != nil {
-		return errors.FromErr(err).Err()
-	}
-	term.Infoln("Checking networks usinng service ip...", svcIp1)
-	if err := i.runNodeExecutor(podname1[0].Name, svcIp2, defaultNamespace, pod1); err != nil {
+
+	term.Infoln("Checking networks usinng service ip...", svcIP)
+	if err := i.runNodeExecutor(pods[0].Name, svcIP, defaultNamespace, pods[0].Spec.Containers[0].Name); err != nil {
 		return errors.FromErr(err).Err()
 	}
 	term.Infoln("Checking networks using service name...")
-	if err := i.runNodeExecutor(podname1[0].Name, pod2+"."+defaultNamespace, defaultNamespace, pod1); err != nil {
+	if err := i.runNodeExecutor(pods[1].Name, svcIP, defaultNamespace, pods[1].Spec.Containers[0].Name); err != nil {
 		return errors.FromErr(err).Err()
 	}
-	term.Infoln("Checking from master")
-	if err := i.runMasterExecutor(masterNode, podname1[0].Status.PodIP); err != nil {
+
+	if err := i.runMasterExecutor(masterNode, svcIP); err != nil {
 		return errors.FromErr(err).Err()
 	}
-	if err := i.runMasterExecutor(masterNode, podname2[0].Status.PodIP); err != nil {
-		return errors.FromErr(err).Err()
-	}
-	if err := i.runMasterExecutor(masterNode, svcIp1); err != nil {
-		return errors.FromErr(err).Err()
-	}
-	if err := i.runMasterExecutor(masterNode, svcIp2); err != nil {
-		return errors.FromErr(err).Err()
-	}*/
 
 	return nil
 }
-
-
-/*
-func (c *Cluster) callClusterConfigApi(req proto.ClusterClientConfigRequest) (*proto.ClusterClientConfigResponse, error) {
-	var resp *proto.ClusterClientConfigResponse
-	err := backoff.Retry(func() error {
-		client, err := cli.Client("")
-		if err != nil {
-			return err
-		}
-		defer client.Close()
-		resp, err = client.Kubernetes().V1beta1().Cluster().ClientConfig(client.Context(), &req)
-		return err
-	}, NewExponentialBackOff())
-	return resp, err
-}
-
-func (c *Cluster) callClusterSSHApi(req appscodeSSH.SSHGetRequest) (*appscodeSSH.SSHGetResponse, error) {
-	var resp *appscodeSSH.SSHGetResponse
-	err := backoff.Retry(func() error {
-		client, err := cli.Client("")
-		if err != nil {
-			return err
-		}
-		defer client.Close()
-		resp, err = client.SSH().Get(client.Context(), &req)
-		return err
-	}, NewExponentialBackOff())
-	return resp, err
-}
-*/
