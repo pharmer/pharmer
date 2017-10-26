@@ -7,7 +7,7 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-var ErrNodeNotFound = errors.New("node not found")
+var ErrNotFound = errors.New("node not found")
 var ErrNotImplemented = errors.New("not implemented")
 
 type Interface interface {
@@ -47,3 +47,5 @@ type UpgradeManager interface {
 	MasterUpgrade() error
 	NodeGroupUpgrade(ng *api.NodeGroup) error
 }
+
+type HookFunc func() error

@@ -50,16 +50,3 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 	cm.ctx = context.WithValue(cm.ctx, paramK8sClient{}, kc)
 	return kc, nil
 }
-
-func (cm *ClusterManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
-	conn, err := NewConnector(cm.ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	im := &instanceManager{conn: conn}
-	return im.GetInstance(md)
-}
-
-func (cm *ClusterManager) MatchInstance(i *api.Node, md *api.NodeStatus) bool {
-	return i.Status.PrivateIP == md.PrivateIP
-}

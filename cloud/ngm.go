@@ -13,18 +13,29 @@ import (
 )
 
 type GenericNodeGroupManager struct {
-	ctx     context.Context
-	ng      *api.NodeGroup
-	im      InstanceManager
-	kc      kubernetes.Interface
-	cluster *api.Cluster
-	token   string
+	ctx      context.Context
+	ng       *api.NodeGroup
+	im       InstanceManager
+	kc       kubernetes.Interface
+	cluster  *api.Cluster
+	token    string
+	initHook HookFunc
+	gcHook   HookFunc
 }
 
 var _ NodeGroupManager = &GenericNodeGroupManager{}
 
-func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster, token string) NodeGroupManager {
-	return &GenericNodeGroupManager{ctx: ctx, ng: ng, im: im, kc: kc, cluster: cluster, token: token}
+func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster, token string, initHook HookFunc, gcHook HookFunc) NodeGroupManager {
+	return &GenericNodeGroupManager{
+		ctx:      ctx,
+		ng:       ng,
+		im:       im,
+		kc:       kc,
+		cluster:  cluster,
+		token:    token,
+		initHook: initHook,
+		gcHook:   gcHook,
+	}
 }
 
 func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
@@ -64,6 +75,12 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 			if err != nil {
 				return
 			}
+			if igm.ng.Spec.Nodes == 0 && igm.gcHook != nil {
+				err = igm.gcHook()
+				if err != nil {
+					return
+				}
+			}
 		}
 	} else {
 		acts = append(acts, api.Action{
@@ -72,6 +89,13 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 			Message:  fmt.Sprintf("%v node will be added to %v group", igm.ng.Spec.Nodes-igm.ng.Status.FullyLabeledNodes, igm.ng.Name),
 		})
 		if !dryRun {
+			if igm.initHook != nil {
+				err = igm.initHook()
+				if err != nil {
+					return
+				}
+			}
+
 			err = igm.AddNodes(igm.ng.Spec.Nodes - igm.ng.Status.FullyLabeledNodes)
 			if err != nil {
 				return

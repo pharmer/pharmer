@@ -103,7 +103,7 @@ func (im *instanceManager) executeStartupScript(serverIP string, signer ssh.Sign
 func (im *instanceManager) newKubeInstance(serverIP string) (*api.Node, error) {
 	s, _, err := im.conn.client.Server.GetServer(serverIP)
 	if err != nil {
-		return nil, ErrNodeNotFound
+		return nil, ErrNotFound
 	}
 	return im.newKubeInstanceFromSummary(&s.ServerSummary)
 }

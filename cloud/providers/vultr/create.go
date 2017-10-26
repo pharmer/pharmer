@@ -72,7 +72,6 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 
 	// Init spec
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
-	cluster.Spec.Token = GetKubeadmToken()
 	cluster.Spec.KubernetesMasterName = n.MasterName()
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 

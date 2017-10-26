@@ -427,7 +427,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		if ng.IsMaster() {
 			continue
 		}
-		igm := NewNodeGroupManager(cm.ctx, ng, cm.conn, kc, cm.cluster, token)
+		igm := NewNodeGroupManager(cm.ctx, ng, cm.conn, kc, cm.cluster, token, nil, nil)
 		var a2 []api.Action
 		a2, err = igm.Apply(dryRun)
 		if err != nil {

@@ -46,8 +46,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 			td.KubeletExtraArgs[k] = v
 		}
 		td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
-			api.NodeLabelKey_NodeGroup: ng.Name,
-			api.RoleNodeKey:            "",
+			api.NodePoolKey: ng.Name,
+			api.RoleNodeKey: "",
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "azure" // requires --cloud-config
@@ -72,7 +72,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup) TemplateData {
 	td := newNodeTemplateData(ctx, cluster, ng, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
-		api.NodeLabelKey_NodeGroup: ng.Name,
+		api.NodePoolKey: ng.Name,
 	}.String()
 
 	if cluster.Spec.MasterKubeadmVersion != "" {

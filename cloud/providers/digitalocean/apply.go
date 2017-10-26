@@ -82,7 +82,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 // Creates network, and creates ready master(s)
 func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
 	var found bool
-	found, err = cm.conn.getPublicKey()
+	found, _, err = cm.conn.getPublicKey()
 	if err != nil {
 		return
 	}
@@ -301,7 +301,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		if ng.IsMaster() {
 			continue
 		}
-		igm := NewNodeGroupManager(cm.ctx, ng, cm.conn, kc, cm.cluster, token)
+		igm := NewNodeGroupManager(cm.ctx, ng, cm.conn, kc, cm.cluster, token, nil, nil)
 		var a2 []api.Action
 		a2, err = igm.Apply(dryRun)
 		if err != nil {
@@ -373,7 +373,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	Logger(cm.ctx).Infof("Deleted droplet by tag %s", tag)
 
 	// Delete SSH key
-	found, err = cm.conn.getPublicKey()
+	found, _, err = cm.conn.getPublicKey()
 	if err != nil {
 		return
 	}

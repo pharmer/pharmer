@@ -21,7 +21,6 @@ type cloudConnector struct {
 	ctx     context.Context
 	cluster *api.Cluster
 	client  *godo.Client
-	namer   namer
 }
 
 var _ InstanceManager = &cloudConnector{}
@@ -79,15 +78,15 @@ func (conn *cloudConnector) WaitForInstance(id int, status string) error {
 	})
 }
 
-func (conn *cloudConnector) getPublicKey() (bool, error) {
-	_, resp, err := conn.client.Keys.GetByFingerprint(context.TODO(), SSHKey(conn.ctx).OpensshFingerprint)
+func (conn *cloudConnector) getPublicKey() (bool, int, error) {
+	key, resp, err := conn.client.Keys.GetByFingerprint(context.TODO(), SSHKey(conn.ctx).OpensshFingerprint)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		return false, nil
+		return false, 0, nil
 	}
 	if err != nil {
-		return false, err
+		return false, 0, err
 	}
-	return true, nil
+	return true, key.ID, nil
 }
 
 func (conn *cloudConnector) importPublicKey() error {
@@ -101,6 +100,18 @@ func (conn *cloudConnector) importPublicKey() error {
 	Logger(conn.ctx).Debugln("DO response", resp, " errors", err)
 	Logger(conn.ctx).Debugf("Created new ssh key with name=%v and id=%v", conn.cluster.Status.SSHKeyExternalID, key.ID)
 	Logger(conn.ctx).Info("SSH public key added")
+	return nil
+}
+
+func (conn *cloudConnector) deleteSSHKey() error {
+	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		_, err := conn.client.Keys.DeleteByFingerprint(context.TODO(), SSHKey(conn.ctx).OpensshFingerprint)
+		return err == nil, nil
+	})
+	if err != nil {
+		return err
+	}
+	Logger(conn.ctx).Infof("SSH key for cluster %v deleted", conn.cluster.Name)
 	return nil
 }
 
@@ -151,6 +162,25 @@ func (conn *cloudConnector) createReserveIP() (string, error) {
 	return fip.IP, nil
 }
 
+func (conn *cloudConnector) assignReservedIP(ip string, dropletID int) error {
+	_, _, err := conn.client.FloatingIPActions.Assign(context.TODO(), ip, dropletID)
+	if err != nil {
+		return errors.FromErr(err).WithContext(conn.ctx).Err()
+	}
+	Logger(conn.ctx).Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
+	return nil
+}
+
+func (conn *cloudConnector) releaseReservedIP(ip string) error {
+	resp, err := conn.client.FloatingIPs.Delete(context.TODO(), ip)
+	Logger(conn.ctx).Debugln("DO response", resp, " errors", err)
+	if err != nil {
+		return errors.FromErr(err).Err()
+	}
+	Logger(conn.ctx).Infof("Floating ip %v deleted", ip)
+	return nil
+}
+
 func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.SimpleNode, error) {
 	script, err := conn.renderStartupScript(ng, token)
 	if err != nil {
@@ -182,33 +212,33 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 			{Fingerprint: SSHKey(conn.ctx).OpensshFingerprint},
 		}
 	}
-	droplet, _, err := conn.client.Droplets.Create(context.TODO(), req)
+	host, _, err := conn.client.Droplets.Create(context.TODO(), req)
 	if err != nil {
 		return nil, err
 	}
-	Logger(conn.ctx).Infof("Droplet %v created", droplet.Name)
+	Logger(conn.ctx).Infof("Droplet %v created", host.Name)
 
-	if err = conn.WaitForInstance(droplet.ID, "active"); err != nil {
+	if err = conn.WaitForInstance(host.ID, "active"); err != nil {
 		return nil, err
 	}
-	if err = conn.applyTag(droplet.ID); err != nil {
+	if err = conn.applyTag(host.ID); err != nil {
 		return nil, err
 	}
 
 	// load again to get IP address assigned
-	droplet, _, err = conn.client.Droplets.Get(context.TODO(), droplet.ID)
+	host, _, err = conn.client.Droplets.Get(context.TODO(), host.ID)
 	if err != nil {
 		return nil, err
 	}
 	node := api.SimpleNode{
-		Name:       droplet.Name,
-		ExternalID: strconv.Itoa(droplet.ID),
+		Name:       host.Name,
+		ExternalID: strconv.Itoa(host.ID),
 	}
-	node.PublicIP, err = droplet.PublicIPv4()
+	node.PublicIP, err = host.PublicIPv4()
 	if err != nil {
 		return nil, err
 	}
-	node.PrivateIP, err = droplet.PrivateIPv4()
+	node.PrivateIP, err = host.PrivateIPv4()
 	if err != nil {
 		return nil, err
 	}
@@ -228,17 +258,6 @@ func (conn *cloudConnector) applyTag(dropletID int) error {
 	return err
 }
 
-func (conn *cloudConnector) assignReservedIP(ip string, dropletID int) error {
-	action, resp, err := conn.client.FloatingIPActions.Assign(context.TODO(), ip, dropletID)
-	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	Logger(conn.ctx).Debugln("do response", resp, " errors", err)
-	Logger(conn.ctx).Debug("Created droplet with name", action.String())
-	Logger(conn.ctx).Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
-	return nil
-}
-
 // reboot does not seem to run /etc/rc.local
 func (conn *cloudConnector) reboot(id int) error {
 	Logger(conn.ctx).Infof("Rebooting instance %v", id)
@@ -248,28 +267,6 @@ func (conn *cloudConnector) reboot(id int) error {
 	}
 	Logger(conn.ctx).Debugf("Instance status %v, %v", action, err)
 	Logger(conn.ctx).Infof("Instance %v reboot status %v", action.ResourceID, action.Status)
-	return nil
-}
-
-func (conn *cloudConnector) releaseReservedIP(ip string) error {
-	resp, err := conn.client.FloatingIPs.Delete(context.TODO(), ip)
-	Logger(conn.ctx).Debugln("DO response", resp, " errors", err)
-	if err != nil {
-		return errors.FromErr(err).Err()
-	}
-	Logger(conn.ctx).Infof("Floating ip %v deleted", ip)
-	return nil
-}
-
-func (conn *cloudConnector) deleteSSHKey() error {
-	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := conn.client.Keys.DeleteByFingerprint(context.TODO(), SSHKey(conn.ctx).OpensshFingerprint)
-		return err == nil, nil
-	})
-	if err != nil {
-		return err
-	}
-	Logger(conn.ctx).Infof("SSH key for cluster %v deleted", conn.cluster.Name)
 	return nil
 }
 

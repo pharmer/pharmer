@@ -1,14 +1,14 @@
 package v1alpha1
 
 const (
-	RoleMaster      = "master"
-	RoleNode        = "node"
-	RoleKeyPrefix   = "node-role.kubernetes.io/"
-	RoleMasterKey   = RoleKeyPrefix + RoleMaster
-	RoleNodeKey     = RoleKeyPrefix + RoleNode
+	RoleMaster    = "master"
+	RoleNode      = "node"
+	RoleKeyPrefix = "node-role.kubernetes.io/"
+	RoleMasterKey = RoleKeyPrefix + RoleMaster
+	RoleNodeKey   = RoleKeyPrefix + RoleNode
 
-	NodePoolKey           = "cloud.appscode.com/pool"
-	KubeSystem_App        = "k8s-app"
+	NodePoolKey    = "cloud.appscode.com/pool"
+	KubeSystem_App = "k8s-app"
 
 	HostnameKey     = "kubernetes.io/hostname"
 	ArchKey         = "beta.kubernetes.io/arch"

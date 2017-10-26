@@ -3,7 +3,6 @@ package softlayer
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
