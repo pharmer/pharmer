@@ -1,31 +1,24 @@
 package inspector
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
-	proto "github.com/appscode/api/kubernetes/v1beta1"
 	"github.com/appscode/go/errors"
-	"github.com/appscode/go-term"
-	"github.com/appscode/go/types"
-	"github.com/appscode/go/log"
-	"github.com/cenkalti/backoff"
-	"github.com/ghodss/yaml"
-	"github.com/mgutz/str"
-	"github.com/vaughan0/go-ini"
-	"golang.org/x/crypto/ssh"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	apiv1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/tools/clientcmd"
+	. "github.com/appscode/pharmer/cloud"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"github.com/appscode/go/wait"
+	"k8s.io/apimachinery/pkg/labels"
+	"github.com/mgutz/str"
+	"github.com/appscode/go-term"
+	"golang.org/x/crypto/ssh"
 )
 
 var comissionarKubeConfigPath = clientcmd.RecommendedHomeFile
@@ -35,168 +28,21 @@ const (
 	AppscodeIcinga   = "appscode-icinga"
 	ENV              = ".env"
 	ENVFILE          = "/srv/appscode/.env"
+	Server			 = "pingserver"
 )
 
-func (c *Cluster) NetworkCheck() error {
-	pod1 := "my-nginx-1"
-	pod2 := "my-nginx-2"
 
-	nodes, err := c.getNodes()
-	if err != nil {
-		return errors.FromErr(err).Err()
-	}
 
-	var nodeonly = make([]string, 0)
-	var masterNode apiv1.Node
-	for _, n := range nodes.Items {
-		fmt.Println(n.Name)
-		if _, ok := n.ObjectMeta.Labels["node-role.kubernetes.io/master"]; !ok {
-			nodeonly = append(nodeonly, n.Name)
-		} else {
-			masterNode = n
-		}
-	}
-	if len(nodeonly) <= 1 {
-		term.Fatalln("Need at least 2 nodes to check")
-		return nil
-	}
-
-	defer func() {
-		c.DeleteNginxPod(pod1)
-		c.DeleteNginxPod(pod2)
-		c.DeleteNginxService(pod1)
-		c.DeleteNginxService(pod2)
-	}()
-
-	podname1, err := c.InstallNginxPod(pod1, nodeonly[0])
-	if err != nil {
-		return errors.FromErr(err).Err()
-	}
-	podname2, err := c.InstallNginxPod(pod2, nodeonly[1])
-	if err != nil {
-		return errors.FromErr(err).Err()
-	}
-
-	term.Infoln("Checking Pod networks...")
-	if err := c.runNodeExecutor(podname1[0].Name, podname2[0].Status.PodIP, defaultNamespace, pod1); err != nil {
-		return errors.FromErr(err).Err()
-	}
-	if err := c.runNodeExecutor(podname2[0].Name, podname1[0].Status.PodIP, defaultNamespace, pod2); err != nil {
-		return errors.FromErr(err).Err()
-	}
-
-	svcIp1, err := c.InstallNginxService(pod1)
-	if err != nil {
-		return errors.FromErr(err).Err()
-	}
-	svcIp2, err := c.InstallNginxService(pod2)
-	if err != nil {
-		return errors.FromErr(err).Err()
-	}
-	term.Infoln("Checking networks usinng service ip...", svcIp1)
-	if err := c.runNodeExecutor(podname1[0].Name, svcIp2, defaultNamespace, pod1); err != nil {
-		return errors.FromErr(err).Err()
-	}
-	term.Infoln("Checking networks using service name...")
-	if err := c.runNodeExecutor(podname1[0].Name, pod2+"."+defaultNamespace, defaultNamespace, pod1); err != nil {
-		return errors.FromErr(err).Err()
-	}
-	term.Infoln("Checking from master")
-	if err := c.runMasterExecutor(masterNode, podname1[0].Status.PodIP); err != nil {
-		return errors.FromErr(err).Err()
-	}
-	if err := c.runMasterExecutor(masterNode, podname2[0].Status.PodIP); err != nil {
-		return errors.FromErr(err).Err()
-	}
-	if err := c.runMasterExecutor(masterNode, svcIp1); err != nil {
-		return errors.FromErr(err).Err()
-	}
-	if err := c.runMasterExecutor(masterNode, svcIp2); err != nil {
-		return errors.FromErr(err).Err()
-	}
-
-	return nil
-}
-
-func (c *Cluster) AddonSetup() error {
-	//	c.LoadKubeClient()
-	nodes, err := c.getNodes()
-	if err != nil {
-		return errors.FromErr(err).Err()
-	}
-	for _, node := range nodes.Items {
-		if node.Name != c.Name+"-master" {
-			writeENVVar("NODE_NAME", node.Name)
-			//fmt.Println(node.Name)
-			break
-		}
-	}
-	c.setupIcinga()
-
-	return nil
-}
-
-func (c *Cluster) getNodes() (*apiv1.NodeList, error) {
+func (i *Inspector) getNodes() (*apiv1.NodeList, error) {
 	nodes := &apiv1.NodeList{}
-	if err := c.Kube.Client.CoreV1().RESTClient().Get().Resource("nodes").Do().Into(nodes); err != nil {
+	if err := i.client.CoreV1().RESTClient().Get().Resource("nodes").Do().Into(nodes); err != nil {
 		return nodes, errors.FromErr(err).Err()
 	}
 	return nodes, nil
 }
 
-func (c *Cluster) setupIcinga() error {
-	svc, err := c.Kube.Client.CoreV1().Services(metav1.NamespaceSystem).Get(AppscodeIcinga, metav1.GetOptions{})
-	if err != nil {
-		return errors.FromErr(err).Err()
-	}
-	if svc.Spec.Type != apiv1.ServiceTypeLoadBalancer {
-		svc.Spec.Type = apiv1.ServiceTypeLoadBalancer
-		svc, err = c.Kube.Client.CoreV1().Services(metav1.NamespaceSystem).Update(svc)
-		time.Sleep(1 * time.Minute)
-	}
-	var ip string = ""
-	for ip == "" {
-		if len(svc.Status.LoadBalancer.Ingress) > 0 {
-			ip = svc.Status.LoadBalancer.Ingress[0].IP
-		} else {
-			svc, _ = c.Kube.Client.CoreV1().Services(metav1.NamespaceSystem).Get(AppscodeIcinga, metav1.GetOptions{})
-		}
-	}
-	fmt.Println(ip)
-	writeENVVar("ICINGA_ADDRESS", ip)
 
-	sec, err := c.Kube.Client.CoreV1().Secrets(metav1.NamespaceSystem).Get(AppscodeIcinga, metav1.GetOptions{})
-	if err != nil {
-		return errors.FromErr(err).Err()
-	}
-
-	if data, found := sec.Data[ENV]; found {
-		dataReader := strings.NewReader(string(data))
-		secretData, err := ini.Load(dataReader)
-		if err != nil {
-			return err
-		}
-		if APIUser, found := secretData.Get("", "ICINGA_API_USER"); found {
-			writeENVVar("ICINGA_API_USER", APIUser)
-		}
-
-		if Password, found := secretData.Get("", "ICINGA_API_PASSWORD"); found {
-			writeENVVar("ICINGA_API_PASS", Password)
-		}
-	}
-
-	return nil
-}
-
-func writeENVVar(key, value string) {
-	f, err := os.OpenFile(ENVFILE, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0777)
-	if err != nil {
-		fmt.Println("FILE ERROR****")
-	}
-	f.WriteString(key + "=" + value + "\n")
-	f.Close()
-}
-func (c *Cluster) runNodeExecutor(podName, podIp, namespace, containerName string) error {
+func (i *Inspector) runNodeExecutor(podName, podIp, namespace, containerName string) error {
 	eo := ExecOptions{
 		Namespace:     namespace,
 		PodName:       podName,
@@ -207,9 +53,10 @@ func (c *Cluster) runNodeExecutor(podName, podIp, namespace, containerName strin
 			"wget http://" + podIp + ":80",
 		},
 		Executor: &RemoteBashExecutor{},
-		Client:   c.Kube.Client,
-		Config:   c.Kube.Config,
+		Client:   i.client,
+		Config:   i.config,
 	}
+	//s := i.cm.
 	retry := 5
 	for retry > 0 {
 		resp, err := eo.Run(2)
@@ -224,7 +71,7 @@ func (c *Cluster) runNodeExecutor(podName, podIp, namespace, containerName strin
 	return errors.New("Network is not ok from", podName, "to", podIp).Err()
 }
 
-func (c *Cluster) runMasterExecutor(masterNode apiv1.Node, podIp string) error {
+func (i *Inspector) runMasterExecutor(masterNode apiv1.Node, podIp string) error {
 	retry := 5
 	command := ""
 	for retry > 0 {
@@ -246,7 +93,7 @@ func (c *Cluster) runMasterExecutor(masterNode apiv1.Node, podIp string) error {
 			output = DefaultWriter.Output()
 
 		} else {
-			keySigner, _ := ssh.ParsePrivateKey(c.SSH.PrivateKey)
+			keySigner, _ := ssh.ParsePrivateKey(SSHKey(i.ctx).PrivateKey)
 			config := &ssh.ClientConfig{
 				User: "root",
 				Auth: []ssh.AuthMethod{
@@ -275,14 +122,15 @@ func (c *Cluster) runMasterExecutor(masterNode apiv1.Node, podIp string) error {
 	return errors.New("Can't connect with master", DefaultWriter.Output()).Err()
 }
 
-func (c *Cluster) InstallNginxService(name string) (string, error) {
-	fmt.Println("Installing nginx service ", name)
+
+func (i *Inspector) InstallNginxService() (string, error) {
+	fmt.Println("Installing nginx service ", Server)
 	svc := &apiv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      Server,
 			Namespace: defaultNamespace,
 			Labels: map[string]string{
-				"app": name,
+				"app": Server,
 			},
 		},
 
@@ -292,32 +140,115 @@ func (c *Cluster) InstallNginxService(name string) (string, error) {
 				{
 					Port:       80,
 					Protocol:   "TCP",
-					TargetPort: intstr.FromInt(80),
+					TargetPort: intstr.FromInt(8080),
 				},
 			},
 			Selector: map[string]string{
-				"app": name,
+				"app": Server,
 			},
 		},
 	}
-	if _, err := c.Kube.Client.CoreV1().Services(defaultNamespace).Create(svc); err != nil {
+	if _, err := i.client.CoreV1().Services(defaultNamespace).Create(svc); err != nil {
 		return "", errors.FromErr(err).Err()
 	}
-	time.Sleep(10 * time.Second)
 	var service *apiv1.Service
-	err := backoff.Retry(func() error {
+	//attempt := 0
+	wait.PollImmediate(RetryInterval, RetryTimeout, func()(bool, error) {
 		var err error
-		service, err = c.Kube.Client.CoreV1().Services(defaultNamespace).Get(name, metav1.GetOptions{})
-		return err
-	}, NewExponentialBackOff())
+		service, err = i.client.CoreV1().Services(defaultNamespace).Get(Server, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	})
 
-	if err != nil {
-		return "", errors.FromErr(err).Err()
-	}
 	return service.Spec.ClusterIP, nil
 }
 
-func (c *Cluster) InstallNginxPod(name, node string) ([]apiv1.Pod, error) {
+func (i *Inspector) InstallNginx() ([]apiv1.Pod, error)  {
+	daemonset := new(extensions.DaemonSet)
+	daemonset.Name = Server
+	container := apiv1.Container{
+		Name:  Server,
+		Image: "nginx",
+		Ports: []apiv1.ContainerPort{
+			{
+				ContainerPort: 80,
+				Protocol:      "TCP",
+			},
+		},
+		ImagePullPolicy: apiv1.PullIfNotPresent,
+	}
+	daemonset.Spec.Template.Labels = map[string]string{
+		"app": Server,
+	}
+	daemonset.Spec.Template.Spec.Containers = []apiv1.Container{container}
+	if _, err := i.client.ExtensionsV1beta1().DaemonSets(defaultNamespace).Create(daemonset); err != nil {
+		return nil, err
+	}
+	var pods *apiv1.PodList
+	attempt := 0
+	err := wait.Poll(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+		var err error
+		pods, err = i.client.CoreV1().Pods(defaultNamespace).List(metav1.ListOptions{
+			LabelSelector: labels.SelectorFromSet(map[string]string{
+				"app": Server,
+			}).String(),
+		})
+		Logger(i.ctx).Infof("Attempt %v: Getting nginx pod ...", attempt)
+		if err != nil {
+			return false, err
+		}
+		if len(pods.Items) ==0 {
+			return false, nil
+		}
+
+		for _, item := range pods.Items {
+			if item.Status.Phase != "Running" {
+				return false, nil
+			}
+		}
+		return true, nil
+	})
+
+	return pods.Items, err
+}
+
+func (i *Inspector) DeleteNginx() error {
+	err := i.client.ExtensionsV1beta1().DaemonSets(defaultNamespace).Delete(Server, &metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (i *Inspector) CheckDNSPod() error  {
+	attempt := 0
+	return wait.Poll(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+		pods, err := i.client.CoreV1().Pods(metav1.NamespaceSystem).List(metav1.ListOptions{
+			LabelSelector: labels.SelectorFromSet(map[string]string{
+				"k8s-app": "kube-dns",
+			}).String(),
+		})
+		Logger(i.ctx).Infof("Attempt %v: Getting DNS pod ...", attempt)
+		if err != nil {
+			return false, err
+		}
+		for _, item := range pods.Items {
+			fmt.Println(item.Name, "  ", item.Status.Phase, "**")
+			if item.Status.Phase != "Running" {
+				return false, nil
+			}
+		}
+		return true, nil
+	})
+}
+
+
+/*
+func (i *Inspector) InstallNginxPod(name, node string) ([]apiv1.Pod, error) {
 	dep := new(extensions.Deployment)
 	dep.Name = name
 	container := apiv1.Container{
@@ -340,7 +271,7 @@ func (c *Cluster) InstallNginxPod(name, node string) ([]apiv1.Pod, error) {
 		"kubernetes.io/hostname": node,
 	}
 
-	if _, err := c.Kube.Client.ExtensionsV1beta1().Deployments(defaultNamespace).Create(dep); err != nil {
+	if _, err := i.client.ExtensionsV1beta1().Deployments(defaultNamespace).Create(dep); err != nil {
 		return nil, errors.FromErr(err).Err()
 	}
 
@@ -373,26 +304,12 @@ func (c *Cluster) InstallNginxPod(name, node string) ([]apiv1.Pod, error) {
 
 }
 
-func (c *Cluster) DeleteNginxPod(name string) error {
-	fmt.Println("Deleting nginx pod", name)
-	trueVar := true
-	dep, err := c.Kube.Client.ExtensionsV1beta1().Deployments(defaultNamespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		errors.FromErr(err).Err()
-	}
-	dep.Spec.Replicas = types.Int32P(0)
-	c.Kube.Client.ExtensionsV1beta1().Deployments(defaultNamespace).Update(dep)
-	time.Sleep(5 * time.Second)
-	return c.Kube.Client.ExtensionsV1beta1().Deployments(defaultNamespace).Delete(name, &metav1.DeleteOptions{
-		OrphanDependents: &trueVar,
-	})
-}
 
-func (c *Cluster) DeleteNginxService(name string) error {
+func (i *Inspector) DeleteNginxService(name string) error {
 	return c.Kube.Client.CoreV1().Services(defaultNamespace).Delete(name, &metav1.DeleteOptions{})
 }
 
-func (c *Cluster) InstallKubeConfig() error {
+func (i *Inspector) InstallKubeConfig() error {
 	req := proto.ClusterClientConfigRequest{
 		Name: c.Name,
 	}
@@ -499,3 +416,4 @@ type KubeConfig struct {
 	Users          []*UserInfo            `json:"users"`
 	Extensions     json.RawMessage        `json:"extensions,omitempty"`
 }
+*/

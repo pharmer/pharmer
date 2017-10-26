@@ -2,8 +2,6 @@ package inspector
 
 import (
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/appscode/go/errors"
 	term "github.com/appscode/go-term"
@@ -13,10 +11,10 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 )
 
-func (c *Cluster) CheckHelthStatus() error {
+func (i *Inspector) CheckHelthStatus() error {
 	term.Println("Checking for component status...")
 	backoff.Retry(func() error {
-		resp, err := c.Kube.Client.CoreV1().ComponentStatuses().List(metav1.ListOptions{
+		resp, err := i.client.CoreV1().ComponentStatuses().List(metav1.ListOptions{
 			LabelSelector: labels.Everything().String(),
 		})
 		if err != nil {
@@ -38,14 +36,14 @@ func (c *Cluster) CheckHelthStatus() error {
 	return nil
 }
 
-func (c *Cluster) checkRBAC() error {
-	if _, err := c.Kube.Client.Discovery().ServerResourcesForGroupVersion("authentication.k8s.io/v1beta1"); err != nil {
+func (i *Inspector) checkRBAC() error {
+	if _, err := i.client.Discovery().ServerResourcesForGroupVersion("authentication.k8s.io/v1beta1"); err != nil {
 		term.Errorln("RBAC authentication is not enabled")
 		return errors.FromErr(err).Err()
 	} else {
 		term.Successln("RBAC authentication is enabled")
 	}
-	if _, err := c.Kube.Client.Discovery().ServerResourcesForGroupVersion("authorization.k8s.io/v1beta1"); err != nil {
+	if _, err := i.client.Discovery().ServerResourcesForGroupVersion("authorization.k8s.io/v1beta1"); err != nil {
 		term.Errorln("RBAC authorization is not enabled")
 		return errors.FromErr(err).Err()
 	} else {
@@ -54,7 +52,7 @@ func (c *Cluster) checkRBAC() error {
 	return nil
 }
 
-func (c *Cluster) checkLoadBalancer() error {
+/*func (i *Inspector) checkLoadBalancer() error {
 	retry := 5
 	for retry > 0 {
 		if _, err := c.Kube.VoyagerClient.Ingresses("appscode").Get("default-lb", metav1.GetOptions{}); err != nil {
@@ -94,4 +92,4 @@ func (c *Cluster) checkLoadBalancer() error {
 	}
 
 	return nil
-}
+}*/

@@ -2,132 +2,189 @@ package inspector
 
 import (
 	"fmt"
-	"io/ioutil"
+	/*"io/ioutil"
 	"os"
-	"time"
+	"time"*/
 
-	proto "github.com/appscode/api/kubernetes/v1beta1"
-	appscodeSSH "github.com/appscode/api/ssh/v1beta1"
-	"github.com/appscode/client/cli"
+	//proto "github.com/appscode/api/kubernetes/v1beta1"
+	//appscodeSSH "github.com/appscode/api/ssh/v1beta1"
+	//"github.com/appscode/client/cli"
 	"github.com/appscode/go/errors"
-	vcs "github.com/appscode/voyager/client/typed/voyager/v1beta1"
-	"github.com/cenkalti/backoff"
-	clientset "k8s.io/client-go/kubernetes"
+	//"github.com/cenkalti/backoff"
+	"k8s.io/client-go/kubernetes"
+	//"k8s.io/client-go/rest"
+	//"k8s.io/client-go/tools/clientcmd"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
+	apiv1 "k8s.io/api/core/v1"
+	clientcmd_api "k8s.io/client-go/tools/clientcmd/api"
+	clientcmd_v1 "k8s.io/client-go/tools/clientcmd/api/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	. "github.com/appscode/pharmer/cloud"
+	"context"
+	"github.com/appscode/go-term"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-type Kube struct {
-	Client        clientset.Interface
-	Config        *rest.Config
-	VoyagerClient vcs.VoyagerV1beta1Interface
+type Inspector struct {
+	ctx     context.Context
+	client        kubernetes.Interface
+	cluster *api.Cluster
+//	cm Interface
+	config *rest.Config
+	//ssh     SSHExecutor
 }
 
-type SSH struct {
-	PublicKey  []byte
-	PrivateKey []byte
-}
-
-type Cluster struct {
-	Name           string
-	Provider       string
-	Namespace      string
-	Credential     map[string]string
-	CredentialPHID string
-	*Kube
-	*SSH
-}
-
-// Default values for ExponentialBackOff.
-const (
-	DefaultInitialInterval     = 50 * time.Millisecond
-	DefaultRandomizationFactor = 0.5
-	DefaultMultiplier          = 1.5
-	DefaultMaxInterval         = 5 * time.Second
-	DefaultMaxElapsedTime      = 5 * time.Minute
-)
-
-// NewExponentialBackOff creates an instance of ExponentialBackOff using default values.
-func NewExponentialBackOff() *backoff.ExponentialBackOff {
-	b := &backoff.ExponentialBackOff{
-		InitialInterval:     DefaultInitialInterval,
-		RandomizationFactor: DefaultRandomizationFactor,
-		Multiplier:          DefaultMultiplier,
-		MaxInterval:         DefaultMaxInterval,
-		MaxElapsedTime:      DefaultMaxElapsedTime,
-		Clock:               backoff.SystemClock,
+func New(ctx context.Context, cluster *api.Cluster) (*Inspector, error) {
+	if cluster.Spec.Cloud.CloudProvider == "" {
+		return nil, fmt.Errorf("cluster %v has no provider", cluster.Name)
 	}
-	if b.RandomizationFactor < 0 {
-		b.RandomizationFactor = 0
-	} else if b.RandomizationFactor > 1 {
-		b.RandomizationFactor = 1
+	var err error
+	if ctx, err = LoadCACertificates(ctx, cluster); err != nil {
+		return nil, err
 	}
-	b.Reset()
-	return b
-}
-
-func New(kubeconfig, cluster string) (*Cluster, error) {
-	c := &Cluster{
-		Name: cluster,
+	if ctx, err = LoadSSHKey(ctx, cluster); err != nil {
+		return nil, err
 	}
-	kc, err := getKubeConfig(kubeconfig)
+	kc, err := NewAdminClient(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}
-	c.Kube = &Kube{
-		Client:        clientset.NewForConfigOrDie(kc),
-		Config:        kc,
-		VoyagerClient: vcs.NewForConfigOrDie(kc),
-	}
 
-	return c, nil
-}
-
-func getKubeConfig(file string) (*rest.Config, error) {
-	if file == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			file = clientcmd.RecommendedHomeFile
-		} else {
-			return nil, errors.New("No kube config file found").Err()
-		}
-	}
-	return clientcmd.BuildConfigFromFlags("", file)
-}
-
-/*func (c *Cluster) LoadKubeClient() error {
-	kc, err := getKubeConfig("")
+	adminConfig, err := GetAdminConfig(ctx, cluster)
 	if err != nil {
-		fmt.Println(err)
-		log.Fatalln("Failed to load Kube Config")
+		return nil, err
+	}
+	err = clientcmd_v1.AddToScheme(scheme.Scheme)
+	if err != nil {
+		return nil, err
+	}
+	out := &clientcmd_api.Config{}
+	err = scheme.Scheme.Convert(adminConfig, out, nil)
+	if err != nil {
+		return nil, err
+	}
+	clientConfig := clientcmd.NewDefaultClientConfig(*out, &clientcmd.ConfigOverrides{})
+	restConfig, err := clientConfig.ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	/*cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+	if err != nil {
+		return nil, err
+	}*/
+
+	return  &Inspector{ctx: ctx, client: kc,cluster: cluster, config: restConfig}, nil
+}
+
+
+func (i *Inspector) NativeCheck() error {
+	if err := i.CheckHelthStatus(); err != nil {
+		return errors.FromErr(err).Err()
+	}
+	if err := i.checkRBAC(); err != nil {
+		return errors.FromErr(err).Err()
+	}
+	/*if err := c.checkLoadBalancer(); err != nil {
+		return errors.FromErr(err).Err()
+	}*/
+	return nil
+}
+
+
+func (i *Inspector) NetworkCheck() error {
+	if err := i.CheckDNSPod(); err != nil {
+		return err
+	}
+
+	nodes, err := i.getNodes()
+	if err != nil {
 		return errors.FromErr(err).Err()
 	}
 
-	c.Kube = &Kube{
-		Client:        clientset.NewForConfigOrDie(kc),
-		Config:        kc,
-		VoyagerClient: vcs.NewForConfigOrDie(kc),
+	var nodeonly = make([]string, 0)
+	var masterNode apiv1.Node
+	for _, n := range nodes.Items {
+		if _, ok := n.ObjectMeta.Labels["node-role.kubernetes.io/master"]; !ok {
+			nodeonly = append(nodeonly, n.Name)
+		} else {
+			masterNode = n
+		}
 	}
+	if len(nodeonly) <= 1 {
+		term.Fatalln("Need at least 2 nodes to check")
+		return nil
+	}
+	fmt.Println(masterNode)
 
-	return nil
-}*/
+	defer func() {
+		i.DeleteNginx()
+		//i.DeleteNginxPod(pod2)
+		//i.DeleteNginxService(pod1)
+		//i.DeleteNginxService(pod2)
+	}()
 
-func (c *Cluster) LoadSSHKey(file string) error {
-	if _, err := os.Stat(file); err != nil {
+	var pods []apiv1.Pod
+	if pods, err = i.InstallNginx(); err != nil {
 		return err
 	}
-	bytes, err := ioutil.ReadFile(file)
+
+	term.Infoln("Checking Pod networks...")
+	if err := i.runNodeExecutor(pods[0].Name, pods[1].Status.PodIP, defaultNamespace, pods[0].Spec.Containers[0].Name); err != nil {
+		return errors.FromErr(err).Err()
+	}
+	if err := i.runNodeExecutor(pods[1].Name, pods[0].Status.PodIP, defaultNamespace, pods[1].Spec.Containers[0].Name); err != nil {
+		return errors.FromErr(err).Err()
+	}
+
+	//fmt.Println(i.InstallNginxService())
+
+
+	/*podname1, err := i.InstallNginxPod(pod1, nodeonly[0])
 	if err != nil {
-		return err
+		return errors.FromErr(err).Err()
 	}
-	fmt.Println(string(bytes))
-	c.SSH = &SSH{
-		PrivateKey: bytes,
+	podname2, err := i.InstallNginxPod(pod2, nodeonly[1])
+	if err != nil {
+		return errors.FromErr(err).Err()
 	}
-	//block, _ := pem.Decode(bytes)
+
+	svcIp1, err := i.InstallNginxService(pod1)
+	if err != nil {
+		return errors.FromErr(err).Err()
+	}
+	svcIp2, err := i.InstallNginxService(pod2)
+	if err != nil {
+		return errors.FromErr(err).Err()
+	}
+	term.Infoln("Checking networks usinng service ip...", svcIp1)
+	if err := i.runNodeExecutor(podname1[0].Name, svcIp2, defaultNamespace, pod1); err != nil {
+		return errors.FromErr(err).Err()
+	}
+	term.Infoln("Checking networks using service name...")
+	if err := i.runNodeExecutor(podname1[0].Name, pod2+"."+defaultNamespace, defaultNamespace, pod1); err != nil {
+		return errors.FromErr(err).Err()
+	}
+	term.Infoln("Checking from master")
+	if err := i.runMasterExecutor(masterNode, podname1[0].Status.PodIP); err != nil {
+		return errors.FromErr(err).Err()
+	}
+	if err := i.runMasterExecutor(masterNode, podname2[0].Status.PodIP); err != nil {
+		return errors.FromErr(err).Err()
+	}
+	if err := i.runMasterExecutor(masterNode, svcIp1); err != nil {
+		return errors.FromErr(err).Err()
+	}
+	if err := i.runMasterExecutor(masterNode, svcIp2); err != nil {
+		return errors.FromErr(err).Err()
+	}*/
 
 	return nil
 }
 
+
+/*
 func (c *Cluster) callClusterConfigApi(req proto.ClusterClientConfigRequest) (*proto.ClusterClientConfigResponse, error) {
 	var resp *proto.ClusterClientConfigResponse
 	err := backoff.Retry(func() error {
@@ -155,3 +212,4 @@ func (c *Cluster) callClusterSSHApi(req appscodeSSH.SSHGetRequest) (*appscodeSSH
 	}, NewExponentialBackOff())
 	return resp, err
 }
+*/

@@ -9,11 +9,11 @@ import (
 	"github.com/appscode/go/errors"
 	"github.com/appscode/go/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	remotecommandserver "k8s.io/apimachinery/pkg/util/remotecommand"
 	clientset "k8s.io/client-go/kubernetes"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
+	. "github.com/appscode/pharmer/cloud"
 )
 
 type RemoteExecutor interface {
@@ -23,14 +23,13 @@ type RemoteExecutor interface {
 type RemoteBashExecutor struct{}
 
 func (e *RemoteBashExecutor) Execute(config *rest.Config, method string, url *url.URL, cmds []string) (string, error) {
-	exec, err := remotecommand.NewExecutor(config, method, url)
+	exec, err := remotecommand.NewSPDYExecutor(config, method, url)
 	if err != nil {
 		return "", errors.FromErr(err).WithMessage("failed to create executor").Err()
 	}
 	stdIn := newStringReader(cmds)
 	DefaultWriter.Flush()
 	err = exec.Stream(remotecommand.StreamOptions{
-		SupportedProtocols: remotecommandserver.SupportedStreamingProtocols,
 		Stdin:              stdIn,
 		Stdout:             DefaultWriter,
 		Stderr:             DefaultWriter,
@@ -88,14 +87,6 @@ func (p *ExecOptions) Run(retry int) (string, error) {
 		Param("stderr", "false").
 		Param("tty", "false")
 
-	/*req.VersionedParams(&apiv1.PodExecOptions{
-		Container: p.ContainerName,
-		Command:   []string{"/bin/bash"},
-		Stdin:     true,
-		Stdout:    true,
-		Stderr:    false,
-		TTY:       false,
-	}, internalversion.ParameterCodec)*/
 	return p.Executor.Execute(p.Config, "POST", req.URL(), p.Command)
 }
 
@@ -110,28 +101,6 @@ func (p *ExecOptions) Validate() error {
 		return errors.New("client, client config, and executor must be provided").Err()
 	}
 	return nil
-}
-
-var DefaultWriter = &StringWriter{
-	data: make([]byte, 0),
-}
-
-type StringWriter struct {
-	data []byte
-}
-
-func (s *StringWriter) Flush() {
-	s.data = make([]byte, 0)
-}
-
-func (s *StringWriter) Output() string {
-	return string(s.data)
-}
-
-func (s *StringWriter) Write(b []byte) (int, error) {
-	//log.Infoln("$ ", string(b))
-	s.data = append(s.data, b...)
-	return len(b), nil
 }
 
 func newStringReader(ss []string) io.Reader {
