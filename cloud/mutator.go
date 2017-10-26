@@ -56,7 +56,7 @@ func GetClusterIstance(ctx context.Context, cluster *api.Cluster, nodeGroup stri
 	existingNodes := make([]string, 0)
 	for _, node := range nodes.Items {
 		nl := api.FromMap(node.GetLabels())
-		if nl.GetString(api.NodeLabelKey_NodeGroup) != nodeGroup {
+		if nl.GetString(api.NodePoolKey) != nodeGroup {
 			continue
 		}
 		existingNodes = append(existingNodes, node.Name)
@@ -68,7 +68,7 @@ func GetClusterIstance(ctx context.Context, cluster *api.Cluster, nodeGroup stri
 func GetClusterIstance2(kc kubernetes.Interface, nodeGroup string) ([]string, error) {
 	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.NodeLabelKey_NodeGroup: nodeGroup,
+			api.NodePoolKey: nodeGroup,
 		}).String(),
 	})
 	if err != nil {
@@ -77,7 +77,7 @@ func GetClusterIstance2(kc kubernetes.Interface, nodeGroup string) ([]string, er
 	existingNodes := make([]string, 0)
 	for _, node := range nodes.Items {
 		nl := api.FromMap(node.GetLabels())
-		if nl.GetString(api.NodeLabelKey_NodeGroup) != nodeGroup {
+		if nl.GetString(api.NodePoolKey) != nodeGroup {
 			continue
 		}
 		existingNodes = append(existingNodes, node.Name)

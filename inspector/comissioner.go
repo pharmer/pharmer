@@ -85,7 +85,7 @@ func (i *Inspector) NetworkCheck() error {
 	var nodeonly = make([]string, 0)
 	var masterNode apiv1.Node
 	for _, n := range nodes.Items {
-		if _, ok := n.ObjectMeta.Labels["node-role.kubernetes.io/master"]; !ok {
+		if _, ok := n.ObjectMeta.Labels[api.RoleMasterKey]; !ok {
 			nodeonly = append(nodeonly, n.Name)
 		} else {
 			masterNode = n
