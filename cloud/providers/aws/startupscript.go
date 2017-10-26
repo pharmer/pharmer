@@ -117,6 +117,6 @@ func KubeConfigScript(kubeadmToken string) (string, error) {
 
 var (
 	kubConfigScriptTemplate = template.Must(template.New("config").Parse(`#!/bin/bash
-	declare -x KUBEADM_TOKEN={{ .Token }}
-	`))
+declare -x KUBEADM_TOKEN={{ .Token }}
+`))
 )
