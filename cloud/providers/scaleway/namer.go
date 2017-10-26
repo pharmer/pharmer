@@ -13,8 +13,9 @@ func (n namer) MasterName() string {
 	return n.cluster.Name + "-master"
 }
 
-func (n namer) GenNodeName() string {
-	return rand.WithUniqSuffix(n.cluster.Name + "-node")
+// Deprecated
+func (n namer) GenNodeName(ng string) string {
+	return rand.WithUniqSuffix(ng)
 }
 
 func (n namer) GenSSHKeyExternalID() string {

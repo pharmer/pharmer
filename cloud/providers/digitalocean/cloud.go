@@ -92,15 +92,14 @@ func (conn *cloudConnector) getPublicKey() (bool, int, error) {
 }
 
 func (conn *cloudConnector) importPublicKey() error {
-	key, resp, err := conn.client.Keys.Create(context.TODO(), &godo.KeyCreateRequest{
+	Logger(conn.ctx).Infof("Adding SSH public key")
+	_, _, err := conn.client.Keys.Create(context.TODO(), &godo.KeyCreateRequest{
 		Name:      conn.cluster.Status.SSHKeyExternalID,
 		PublicKey: string(SSHKey(conn.ctx).PublicKey),
 	})
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Debugln("DO response", resp, " errors", err)
-	Logger(conn.ctx).Debugf("Created new ssh key with name=%v and id=%v", conn.cluster.Status.SSHKeyExternalID, key.ID)
 	Logger(conn.ctx).Info("SSH public key added")
 	return nil
 }
