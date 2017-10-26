@@ -26,7 +26,6 @@ Pharmer by Appscode - Manages farms
 ### SEE ALSO
 * [pharmer apply](pharmer_apply.md)	 - Apply changes
 * [pharmer backup](pharmer_backup.md)	 - 
-* [pharmer check](pharmer_check.md)	 - 
 * [pharmer config](pharmer_config.md)	 - Pharmer configuration
 * [pharmer create](pharmer_create.md)	 - 
 * [pharmer delete](pharmer_delete.md)	 - 
