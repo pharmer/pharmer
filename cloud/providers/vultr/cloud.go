@@ -53,7 +53,7 @@ func (conn *cloudConnector) detectInstanceImage() error {
 		}
 	}
 
-	return errors.New("Can't find Debian 8 image").WithContext(conn.ctx).Err()
+	return errors.New("can't find Debian 8 image").WithContext(conn.ctx).Err()
 }
 
 /*
@@ -78,6 +78,8 @@ func (conn *cloudConnector) waitForActiveInstance(id string) error {
 		return false, nil
 	})
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) getPublicKey() (bool, string, error) {
 	keys, err := conn.client.GetSSHKeys()
