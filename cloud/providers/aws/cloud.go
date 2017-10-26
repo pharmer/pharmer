@@ -1969,3 +1969,13 @@ func (conn *cloudConnector) uploadStartupConfig(bucketName, data string) error {
 	}
 	return nil
 }
+
+func splitProviderID(providerId string) (string, error) {
+	/////"providerID": "aws:////i-01c7b221cb9f1037a",
+	matches := strings.Split(providerId, ":////")
+	fmt.Println(matches)
+	if len(matches) <= 1 {
+		return "", fmt.Errorf("No provider id found for this instance")
+	}
+	return matches[1], nil
+}

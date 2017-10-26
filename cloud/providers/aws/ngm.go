@@ -3,7 +3,6 @@ package aws
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
@@ -54,17 +53,12 @@ func (igm *AWSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Autoscaler %v  will be delete", igm.ng.Name),
 		})
 		if !dryRun {
-			var existingInstances []*api.SimpleNode
-			existingInstances, err = igm.conn.listInstances(igm.ng.Name)
-			if err != nil {
-				return
-			}
 			var nd NodeDrain
 			if nd, err = NewNodeDrain(igm.ctx, igm.kc, igm.conn.cluster); err != nil {
 				return
 			}
-			for _, instance := range existingInstances {
-				nd.Node = "ip-" + strings.Replace(instance.PrivateIP, ".", "-", -1)
+			for _, node := range nodes.Items {
+				nd.Node = node.Name
 				if err = nd.Apply(); err != nil {
 					return
 				}
@@ -72,8 +66,8 @@ func (igm *AWSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 			if err = igm.conn.deleteAutoScalingGroup(igm.ng.Name); err != nil {
 				return
 			}
-			for _, instance := range existingInstances {
-				nd.Node = "ip-" + strings.Replace(instance.PrivateIP, ".", "-", -1)
+			for _, node := range nodes.Items {
+				nd.Node = node.Name
 				if err = nd.DeleteNode(); err != nil {
 					return
 				}
@@ -126,7 +120,7 @@ func (igm *AWSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 				Message:  fmt.Sprintf("%v node will be deleted from %v group", igm.ng.Status.FullyLabeledNodes-igm.ng.Spec.Nodes, igm.ng.Name),
 			})
 			if !dryRun {
-				if err = igm.deleteNodeWithDrain(igm.ng, -adjust); err != nil {
+				if err = igm.deleteNodeWithDrain(nodes.Items[igm.ng.Spec.Nodes:]); err != nil {
 					return
 				}
 			}
@@ -161,23 +155,22 @@ func (igm *AWSNodeGroupManager) createNodeGroup(ng *api.NodeGroup) error {
 	return nil
 }
 
-func (igm *AWSNodeGroupManager) deleteNodeWithDrain(ng *api.NodeGroup, size int64) error {
-	existingInstances, err := igm.conn.listInstances(ng.Name)
-	if err != nil {
-		return err
-	}
-	existingInstances = existingInstances[size:]
+func (igm *AWSNodeGroupManager) deleteNodeWithDrain(nodes []core.Node) error {
 	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.conn.cluster)
 	if err != nil {
 		return err
 	}
 
-	for _, instance := range existingInstances {
-		nd.Node = "ip-" + strings.Replace(instance.PrivateIP, ".", "-", -1)
+	for _, node := range nodes {
+		nd.Node = node.Name
 		if err = nd.Apply(); err != nil {
 			return err
 		}
-		if err = igm.conn.deleteGroupInstances(igm.ng, instance.ExternalID); err != nil {
+		instanceID, err := splitProviderID(node.Spec.ProviderID)
+		if err != nil {
+			return err
+		}
+		if err = igm.conn.deleteGroupInstances(igm.ng, instanceID); err != nil {
 			return err
 		}
 		if err = nd.DeleteNode(); err != nil {

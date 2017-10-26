@@ -33,7 +33,6 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 			err = RunDescribeCluster(ctx, cmd, out, args)
 			term.ExitOnError(err)
 
-			// TODO: Check cluster is in ready state
 			clusterName := args[0]
 			resp, err := cloud.CheckForUpdates(ctx, clusterName)
 			term.ExitOnError(err)
