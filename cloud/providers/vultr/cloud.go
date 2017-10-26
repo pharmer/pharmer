@@ -12,8 +12,6 @@ import (
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
-	"github.com/appscode/pharmer/phid"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -335,56 +333,3 @@ func serverIDFromProviderID(providerID string) (string, error) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-
-func (conn *cloudConnector) getServer(id string) (*gv.Server, error) {
-	server, err := conn.client.GetServer(id)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	return &server, nil
-}
-
-func (conn *cloudConnector) getInstance(name string) (string, error) {
-	servers, err := conn.client.GetServersByTag(conn.cluster.Name)
-	fmt.Println(err, servers)
-	if err != nil {
-		return "", err
-	}
-	for _, server := range servers {
-		fmt.Println(server.Name, "***")
-		if server.Name == name {
-			return server.ID, nil
-		}
-	}
-	return "", nil
-}
-
-func (conn *cloudConnector) newKubeInstance(server *gv.Server) (*api.Node, error) {
-	return &api.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			UID:  phid.NewKubeInstance(),
-			Name: server.Name,
-		},
-		Spec: api.NodeSpec{
-			SKU: strconv.Itoa(server.PlanID), // 512mb // convert to SKU
-		},
-		Status: api.NodeStatus{
-			ExternalID:    server.ID,
-			ExternalPhase: server.Status + "|" + server.PowerStatus,
-			PublicIP:      server.MainIP,
-			PrivateIP:     server.InternalIP,
-			Phase:         api.NodeReady, // active
-		},
-	}, nil
-}
-
-// reboot does not seem to run /etc/rc.local
-func (conn *cloudConnector) reboot(id string) error {
-	return nil
-	Logger(conn.ctx).Infof("Rebooting instance %v", id)
-	err := conn.client.RebootServer(id)
-	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	return nil
-}
