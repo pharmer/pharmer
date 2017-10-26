@@ -32,6 +32,12 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 			err = RunDescribeCluster(ctx, cmd, out, args)
 			term.ExitOnError(err)
+
+			// TODO: Check cluster is in ready state
+			clusterName := args[0]
+			resp, err := cloud.CheckForUpdates(ctx, clusterName)
+			term.ExitOnError(err)
+			term.Println(resp)
 		},
 	}
 

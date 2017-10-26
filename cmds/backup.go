@@ -9,7 +9,6 @@ func newCmdBackup() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "backup",
 		DisableAutoGenTag: true,
-		Run:               func(cmd *cobra.Command, args []string) {},
 	}
 	cmd.AddCommand(cpCmd.NewCmdBackup())
 

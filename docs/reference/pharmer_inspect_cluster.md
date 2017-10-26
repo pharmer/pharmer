@@ -1,26 +1,27 @@
-## pharmer check cluster
+## pharmer inspect cluster
 
-check cluster object
+Inspect cluster object
 
 ### Synopsis
 
 
-check cluster object
+Inspect cluster object
 
 ```
-pharmer check cluster [flags]
+pharmer inspect cluster [flags]
 ```
 
 ### Examples
 
 ```
-pharmer check cluster
+pharmer inspect cluster -k <cluster-name>  <inspect-type>
 ```
 
 ### Options
 
 ```
-  -h, --help   help for cluster
+  -k, --cluster string   Name of the Kubernetes cluster
+  -h, --help             help for cluster
 ```
 
 ### Options inherited from parent commands
@@ -39,5 +40,5 @@ pharmer check cluster
 ```
 
 ### SEE ALSO
-* [pharmer check](pharmer_check.md)	 - 
+* [pharmer inspect](pharmer_inspect.md)	 - Inspect cluster for conformance
 

@@ -7,10 +7,6 @@
 
 
 
-```
-pharmer use [flags]
-```
-
 ### Options
 
 ```

@@ -26,13 +26,13 @@ Pharmer by Appscode - Manages farms
 ### SEE ALSO
 * [pharmer apply](pharmer_apply.md)	 - Apply changes
 * [pharmer backup](pharmer_backup.md)	 - 
-* [pharmer check](pharmer_check.md)	 - 
 * [pharmer config](pharmer_config.md)	 - Pharmer configuration
 * [pharmer create](pharmer_create.md)	 - 
 * [pharmer delete](pharmer_delete.md)	 - 
 * [pharmer describe](pharmer_describe.md)	 - 
 * [pharmer edit](pharmer_edit.md)	 - 
 * [pharmer get](pharmer_get.md)	 - 
+* [pharmer inspect](pharmer_inspect.md)	 - Inspect cluster for conformance
 * [pharmer issue](pharmer_issue.md)	 - 
 * [pharmer ssh](pharmer_ssh.md)	 - 
 * [pharmer update](pharmer_update.md)	 - 

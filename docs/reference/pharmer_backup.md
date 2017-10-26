@@ -7,10 +7,6 @@
 
 
 
-```
-pharmer backup [flags]
-```
-
 ### Options
 
 ```

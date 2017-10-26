@@ -9,7 +9,6 @@ func newCmdSSH() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "ssh",
 		DisableAutoGenTag: true,
-		Run:               func(cmd *cobra.Command, args []string) {},
 	}
 	cmd.AddCommand(cpCmd.NewCmdSSH())
 

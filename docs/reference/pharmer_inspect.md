@@ -1,20 +1,16 @@
-## pharmer check
+## pharmer inspect
 
-
+Inspect cluster for conformance
 
 ### Synopsis
 
 
-
-
-```
-pharmer check [flags]
-```
+Inspect cluster for conformance
 
 ### Options
 
 ```
-  -h, --help   help for check
+  -h, --help   help for inspect
 ```
 
 ### Options inherited from parent commands
@@ -34,5 +30,5 @@ pharmer check [flags]
 
 ### SEE ALSO
 * [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer check cluster](pharmer_check_cluster.md)	 - check cluster object
+* [pharmer inspect cluster](pharmer_inspect_cluster.md)	 - Inspect cluster object
 
