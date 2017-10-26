@@ -7,10 +7,6 @@
 
 
 
-```
-pharmer check [flags]
-```
-
 ### Options
 
 ```

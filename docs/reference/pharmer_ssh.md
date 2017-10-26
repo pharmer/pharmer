@@ -7,10 +7,6 @@
 
 
 
-```
-pharmer ssh [flags]
-```
-
 ### Options
 
 ```
