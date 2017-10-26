@@ -35,15 +35,15 @@ func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.Node
 }
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
-	return nil, UnsupportedOperation
+	return nil, ErrNotImplemented
 }
 
 func (cm *ClusterManager) Check(in *api.Cluster) (string, error) {
-	return "", UnsupportedOperation
+	return "", ErrNotImplemented
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
-	return false, UnsupportedOperation
+	return false, ErrNotImplemented
 }
 
 func (cm *ClusterManager) UploadStartupConfig() error {
@@ -66,6 +66,6 @@ func (cm *ClusterManager) runFakeJob(requestType string) {
 	//}
 }
 
-func (cm *ClusterManager) AssignSSHConfig(cluster *api.Cluster, node *core.Node, cfg *api.SSHConfig) error {
-	return UnsupportedOperation
+func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
+	return nil, ErrNotImplemented
 }

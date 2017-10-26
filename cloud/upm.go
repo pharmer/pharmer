@@ -9,6 +9,7 @@ import (
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	semver "github.com/hashicorp/go-version"
+	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -17,14 +18,14 @@ import (
 
 type GenericUpgradeManager struct {
 	ctx     context.Context
-	ssh     SSHExecutor
+	ssh     SSHGetter
 	kc      kubernetes.Interface
 	cluster *api.Cluster
 }
 
 var _ UpgradeManager = &GenericUpgradeManager{}
 
-func NewUpgradeManager(ctx context.Context, ssh SSHExecutor, kc kubernetes.Interface, cluster *api.Cluster) UpgradeManager {
+func NewUpgradeManager(ctx context.Context, ssh SSHGetter, kc kubernetes.Interface, cluster *api.Cluster) UpgradeManager {
 	return &GenericUpgradeManager{ctx: ctx, ssh: ssh, kc: kc, cluster: cluster}
 }
 
@@ -124,6 +125,24 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]api.Upgrade, error) 
 	}
 
 	return upgrades, nil
+}
+
+func (upm *GenericUpgradeManager) ExecuteSSHCommand(command string, node *core.Node) (string, error) {
+	cfg, err := upm.ssh.GetSSHConfig(upm.cluster, node)
+	if err != nil {
+		return "", err
+	}
+	keySigner, err := ssh.ParsePrivateKey(cfg.PrivateKey)
+	if err != nil {
+		return "", err
+	}
+	config := &ssh.ClientConfig{
+		User: cfg.User,
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(keySigner),
+		},
+	}
+	return ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", cfg.InstanceAddress, cfg.InstancePort), config)
 }
 
 // printAvailableUpgrades prints a UX-friendly overview of what versions are available to upgrade to
@@ -246,12 +265,12 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 	currentVersion, _ := semver.NewVersion(masterInstance.Status.NodeInfo.KubeletVersion)
 
 	if isPatch(desireVersion, currentVersion) {
-		if _, err = upm.ssh.ExecuteSSHCommand("apt-get upgrade kubelet -y", masterInstance); err != nil {
+		if _, err = upm.ExecuteSSHCommand("apt-get upgrade kubelet -y", masterInstance); err != nil {
 			return err
 		}
 	}
 
-	if _, err = upm.ssh.ExecuteSSHCommand(fmt.Sprintf("kubeadm upgrade apply %v -y", upm.cluster.Spec.KubernetesVersion), masterInstance); err != nil {
+	if _, err = upm.ExecuteSSHCommand(fmt.Sprintf("kubeadm upgrade apply %v -y", upm.cluster.Spec.KubernetesVersion), masterInstance); err != nil {
 		return err
 	}
 	return nil
@@ -273,10 +292,10 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 	for _, node := range nodes.Items {
 		currentVersion, _ := semver.NewVersion(node.Status.NodeInfo.KubeletVersion)
 		if isPatch(desireVersion, currentVersion) {
-			if _, err = upm.ssh.ExecuteSSHCommand("apt-get upgrade kubelet -y", &node); err != nil {
+			if _, err = upm.ExecuteSSHCommand("apt-get upgrade kubelet -y", &node); err != nil {
 				return err
 			}
-			if _, err = upm.ssh.ExecuteSSHCommand(fmt.Sprintf("systemctl restart kubelet"), &node); err != nil {
+			if _, err = upm.ExecuteSSHCommand("systemctl restart kubelet", &node); err != nil {
 				return err
 			}
 		}

@@ -79,7 +79,7 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 func (im *instanceManager) newKubeInstance(id string) (*api.Node, error) {
 	s, _, err := im.conn.client.Devices.Get(id)
 	if err != nil {
-		return nil, InstanceNotFound
+		return nil, ErrNodeNotFound
 	}
 	return im.newKubeInstanceFromServer(s)
 }

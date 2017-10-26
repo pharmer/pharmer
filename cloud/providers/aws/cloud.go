@@ -24,7 +24,6 @@ import (
 	_elb "github.com/aws/aws-sdk-go/service/elb"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
 	_s3 "github.com/aws/aws-sdk-go/service/s3"
-	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
 )
 
@@ -1220,7 +1219,7 @@ func (conn *cloudConnector) newKubeInstance(instanceID string) (*api.SimpleNode,
 
 	Logger(conn.ctx).Debug("Retrieved instance ", instance, err)
 	if err != nil {
-		return nil, InstanceNotFound
+		return nil, ErrNodeNotFound
 	}
 
 	if *instance.Reservations[0].Instances[0].State.Name != "running" {
@@ -1969,32 +1968,4 @@ func (conn *cloudConnector) uploadStartupConfig(bucketName, data string) error {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	return nil
-}
-
-func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *core.Node) (string, error) {
-	///"providerID": "aws:////i-01c7b221cb9f1037a",
-	providerID := strings.Split(instance.Spec.ProviderID, ":////")
-	fmt.Println(providerID)
-	if len(providerID) <= 1 {
-		return "", fmt.Errorf("No provider id found for this instance")
-	}
-	ip, err := conn.getInstancePublicDNS(providerID[1])
-	if err != nil {
-		return "", err
-	}
-	if ip == "" {
-		return "", fmt.Errorf("No ip found for ssh")
-	}
-
-	keySigner, _ := ssh.ParsePrivateKey(SSHKey(conn.ctx).PrivateKey)
-	config := &ssh.ClientConfig{
-		User: "ubuntu",
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(keySigner),
-		},
-	}
-	// login as ubuntu user but command needs to run as root
-	command = fmt.Sprintf("sudo %v", command)
-
-	return ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", ip, 22), config)
 }

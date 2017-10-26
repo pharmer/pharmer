@@ -38,7 +38,7 @@ func NewCmdCheckCluster() *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			resp, err := cloud.Check(ctx, clusterName)
+			resp, err := cloud.CheckForUpdates(ctx, clusterName)
 			term.ExitOnError(err)
 			term.Println(resp)
 		},

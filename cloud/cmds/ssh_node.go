@@ -4,14 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 
 	"github.com/appscode/go-term"
 	"github.com/appscode/go/flags"
 	"github.com/appscode/go/log"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
-	"github.com/mgutz/str"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
@@ -55,28 +53,7 @@ func NewCmdSSH() *cobra.Command {
 			if err != nil {
 				log.Fatalln(err)
 			}
-
-			if sshConfig.Command != "" {
-				term.Infoln("Running", sshConfig.Command)
-				arg := str.ToArgv(sshConfig.Command)
-				name, arg := arg[0], arg[1:]
-				cmd := exec.Command(name, arg...)
-				cmd.Stdin = os.Stdin
-				cmd.Stdout = os.Stdout
-				cmd.Stderr = os.Stderr
-
-				err = cmd.Start()
-				if err != nil {
-					term.Fatalln("Failed to execute command", err)
-				}
-				err = cmd.Wait()
-				if err != nil {
-					term.Fatalln("Error waiting for command", err)
-				}
-			} else {
-				openShell(sshConfig.PrivateKey, sshConfig.InstanceAddress, sshConfig.InstancePort, sshConfig.User)
-
-			}
+			openShell(sshConfig.PrivateKey, sshConfig.InstanceAddress, sshConfig.InstancePort, sshConfig.User)
 		},
 	}
 	cmd.Flags().StringVarP(&clusterName, "cluster", "k", "", "Name of cluster")

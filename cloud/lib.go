@@ -4,11 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"time"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/cert"
@@ -143,28 +141,12 @@ func GetSSHConfig(ctx context.Context, cluster *api.Cluster, nodeName string) (*
 	if err != nil {
 		return nil, err
 	}
-	sshKey := SSHKey(ctx)
-
-	cfg := &api.SSHConfig{
-		PrivateKey: sshKey.PrivateKey,
-	}
-	for _, addr := range node.Status.Addresses {
-		if addr.Type == core.NodeExternalIP {
-			cfg.InstanceAddress = addr.Address
-		}
-	}
-	if net.ParseIP(cfg.InstanceAddress) == nil {
-		return nil, fmt.Errorf("failed to detect external Ip for node %s of cluster %s", nodeName, cluster.Name)
-	}
 
 	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err = cm.AssignSSHConfig(cluster, node, cfg); err != nil {
-		return nil, err
-	}
-	return cfg, nil
+	return cm.GetSSHConfig(cluster, node)
 }
 
 func GetAdminConfig(ctx context.Context, cluster *api.Cluster) (*clientcmd.Config, error) {
@@ -239,7 +221,7 @@ func Apply(ctx context.Context, name string, dryRun bool) ([]api.Action, error) 
 	return cm.Apply(cluster, dryRun)
 }
 
-func Check(ctx context.Context, name string) (string, error) {
+func CheckForUpdates(ctx context.Context, name string) (string, error) {
 	if name == "" {
 		return "", errors.New("missing cluster name")
 	}
@@ -248,13 +230,33 @@ func Check(ctx context.Context, name string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
-
+	if cluster.Status.Phase == "" {
+		return "", fmt.Errorf("cluster `%s` is in unknown phase", cluster.Name)
+	}
+	if cluster.Status.Phase == api.ClusterDeleted {
+		return "", nil
+	}
+	if ctx, err = LoadCACertificates(ctx, cluster); err != nil {
+		return "", err
+	}
+	if ctx, err = LoadSSHKey(ctx, cluster); err != nil {
+		return "", err
+	}
+	kc, err := NewAdminClient(ctx, cluster)
+	if err != nil {
+		return "", err
+	}
 	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
 	if err != nil {
 		return "", err
 	}
-
-	return cm.Check(cluster)
+	upm := NewUpgradeManager(ctx, cm, kc, cluster)
+	upgrades, err := upm.GetAvailableUpgrades()
+	if err != nil {
+		return "", err
+	}
+	upm.PrintAvailableUpgrades(upgrades)
+	return "", nil
 }
 
 func Edit(ctx context.Context, name, version string) (*api.Cluster, error) {
