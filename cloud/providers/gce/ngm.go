@@ -56,17 +56,12 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Node group %v  with instance template %v will be delete", igm.ng.Name, instanceTemplate),
 		})
 		if !dryRun {
-			var existingInstances []*api.SimpleNode
-			existingInstances, err = igm.conn.listInstances(igm.ng.Name)
-			if err != nil {
-				return
-			}
 			var nd NodeDrain
 			if nd, err = NewNodeDrain(igm.ctx, igm.kc, igm.conn.cluster); err != nil {
 				return
 			}
-			for _, instance := range existingInstances {
-				nd.Node = instance.Name
+			for _, node := range nodes.Items {
+				nd.Node = node.Name
 				if err = nd.Apply(); err != nil {
 					return
 				}
@@ -74,8 +69,8 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 			if err = igm.conn.deleteOnlyNodeGroup(igm.ng.Name, instanceTemplate); err != nil {
 				return
 			}
-			for _, instance := range existingInstances {
-				nd.Node = instance.Name
+			for _, node := range nodes.Items {
+				nd.Node = node.Name
 				if err = nd.DeleteNode(); err != nil {
 					return
 				}
@@ -127,7 +122,7 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 				return
 			}
 		} else if adjust < 0 {
-			if err = igm.deleteNodeWithDrain(igm.ng, -adjust); err != nil {
+			if err = igm.deleteNodeWithDrain(nodes.Items[igm.ng.Spec.Nodes:]); err != nil {
 				return
 			}
 		}
@@ -136,22 +131,17 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 	return
 }
 
-func (igm *GCENodeGroupManager) deleteNodeWithDrain(ng *api.NodeGroup, size int64) error {
-	existingInstances, err := igm.conn.listInstances(ng.Name)
-	if err != nil {
-		return err
-	}
-	existingInstances = existingInstances[size:]
+func (igm *GCENodeGroupManager) deleteNodeWithDrain(nodes []core.Node) error {
 	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.conn.cluster)
 	if err != nil {
 		return err
 	}
-	for _, instance := range existingInstances {
-		nd.Node = instance.Name
+	for _, node := range nodes {
+		nd.Node = node.Name
 		if err = nd.Apply(); err != nil {
 			return err
 		}
-		if err = igm.conn.deleteGroupInstances(igm.ng, instance.Name); err != nil {
+		if err = igm.conn.deleteGroupInstances(igm.ng, node.Name); err != nil {
 			return err
 		}
 		if err = nd.DeleteNode(); err != nil {

@@ -233,6 +233,9 @@ func CheckForUpdates(ctx context.Context, name string) (string, error) {
 	if cluster.Status.Phase == "" {
 		return "", fmt.Errorf("cluster `%s` is in unknown phase", cluster.Name)
 	}
+	if cluster.Status.Phase != api.ClusterReady {
+		return "", fmt.Errorf("cluster `%s` is not ready", cluster.Name)
+	}
 	if cluster.Status.Phase == api.ClusterDeleted {
 		return "", nil
 	}

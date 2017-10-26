@@ -834,7 +834,7 @@ func (conn *cloudConnector) deleteVirtualMachine(machineName string) error {
 }
 
 // splitProviderID converts a providerID to a NodeName.
-//https://github.com/kubernetes/kubernetes/blob/0f5f82fa44148c36955f704dd4dfc119bad4b03c/pkg/cloudprovider/providers/azure/azure_util.go#L306
+// ref: https://github.com/kubernetes/kubernetes/blob/0f5f82fa44148c36955f704dd4dfc119bad4b03c/pkg/cloudprovider/providers/azure/azure_util.go#L306
 func splitProviderID(providerID string) (string, error) {
 	matches := providerIDRE.FindStringSubmatch(providerID)
 	if len(matches) != 2 {
