@@ -1,6 +1,7 @@
 package gce
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"regexp"
@@ -14,12 +15,10 @@ import (
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
-	"golang.org/x/crypto/ssh"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 	rupdate "google.golang.org/api/replicapoolupdater/v1beta1"
 	gcs "google.golang.org/api/storage/v1"
-	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -66,7 +65,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 
 	cluster.Spec.Cloud.Project = typed.ProjectID()
-	cluster.Spec.Cloud.CloudConfigPath = "/etc/gce.conf"
 
 	conf, err := google.JWTConfigFromJSON([]byte(typed.ServiceAccount()),
 		compute.ComputeScope,
@@ -419,9 +417,8 @@ func (conn *cloudConnector) createMasterIntance(ng *api.NodeGroup) (string, erro
 	// MachineType:  "projects/tigerworks-kube/zones/us-central1-b/machineTypes/n1-standard-1",
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
-	// startupScript := conn.RenderStartupScript(conn.cluster, conn.cluster.Spec.MasterSKU, api.RoleKubernetesMaster)
-	startupScript, err := RenderStartupScript(conn.ctx, conn.cluster, "", api.RoleMaster, ng.Name, false)
-	if err != nil {
+	var script bytes.Buffer
+	if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
 		return "", err
 	}
 
@@ -462,7 +459,7 @@ func (conn *cloudConnector) createMasterIntance(ng *api.NodeGroup) (string, erro
 			Items: []*compute.MetadataItems{
 				{
 					Key:   "startup-script",
-					Value: &startupScript,
+					Value: types.StringP(script.String()),
 				},
 				{
 					Key:   "ssh-keys",
@@ -682,8 +679,8 @@ func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup, token 
 		return "", err
 	}
 
-	startupScript, err := RenderStartupScript(conn.ctx, conn.cluster, token, api.RoleNode, ng.Name, false)
-	if err != nil {
+	var script bytes.Buffer
+	if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
 		return "", err
 	}
 
@@ -743,7 +740,7 @@ func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup, token 
 				Items: []*compute.MetadataItems{
 					{
 						Key:   "startup-script",
-						Value: &startupScript,
+						Value: types.StringP(script.String()),
 					},
 					{
 						Key:   "ssh-keys",
@@ -1068,29 +1065,4 @@ func splitProviderID(providerID string) (project, zone, instance string, err err
 		return "", "", "", errors.New("error splitting providerID")
 	}
 	return matches[1], matches[2], matches[3], nil
-}
-
-func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *core.Node) (string, error) {
-	var ip string = ""
-	for _, addr := range instance.Status.Addresses {
-		if addr.Type == core.NodeExternalIP {
-			ip = addr.Address
-			break
-		}
-	}
-	if ip == "" {
-		return "", fmt.Errorf("No ip found for ssh")
-	}
-
-	keySigner, _ := ssh.ParsePrivateKey(SSHKey(conn.ctx).PrivateKey)
-	config := &ssh.ClientConfig{
-		User: conn.namer.AdminUsername(),
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(keySigner),
-		},
-	}
-	// login as ubuntu user but command needs to run as root
-	command = fmt.Sprintf("sudo %v", command)
-
-	return ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", ip, 22), config)
 }

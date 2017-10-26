@@ -140,9 +140,6 @@ message CloudSpec {
 
   optional string kernel = 6;
 
-  // needed ?
-  optional string cloudConfig = 7;
-
   optional string instanceImage = 8;
 
   optional string instanceImageProject = 9;
@@ -302,6 +299,14 @@ message ClusterSpec {
 
   // Deprecated
   optional int64 nodeDiskSize = 49;
+
+  map<string, string> kubeletExtraArgs = 50;
+
+  map<string, string> apiServerExtraArgs = 51;
+
+  map<string, string> controllerManagerExtraArgs = 52;
+
+  map<string, string> schedulerExtraArgs = 53;
 }
 
 // ClusterState describes the state of certain versions for a cluster
@@ -503,6 +508,8 @@ message NodeSpec {
   optional int64 nodeDiskSize = 5;
 
   optional string externalIPType = 6;
+
+  map<string, string> kubeletExtraArgs = 7;
 }
 
 // Deprecated
@@ -564,8 +571,6 @@ message SSHConfig {
   optional int32 instancePort = 3;
 
   optional string user = 4;
-
-  optional string command = 5;
 }
 
 message SimpleNode {

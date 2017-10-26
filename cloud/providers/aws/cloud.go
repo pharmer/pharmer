@@ -24,7 +24,6 @@ import (
 	_elb "github.com/aws/aws-sdk-go/service/elb"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
 	_s3 "github.com/aws/aws-sdk-go/service/s3"
-	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
 )
 
@@ -1073,10 +1072,11 @@ func (conn *cloudConnector) createReserveIP(masterNG *api.NodeGroup) (string, er
 }
 
 func (conn *cloudConnector) createMasterInstance(name string, ng *api.NodeGroup) (string, error) {
-	kubeStarter, err := RenderStartupScript(conn.ctx, conn.cluster, "", api.RoleMaster, ng.Name, false)
-	if err != nil {
+	var script bytes.Buffer
+	if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
 		return "", err
 	}
+
 	req := &_ec2.RunInstancesInput{
 		ImageId:  StringP(conn.cluster.Spec.Cloud.InstanceImage),
 		MaxCount: Int64P(1),
@@ -1136,7 +1136,7 @@ func (conn *cloudConnector) createMasterInstance(name string, ng *api.NodeGroup)
 				SubnetId: StringP(conn.cluster.Status.Cloud.AWS.SubnetId),
 			},
 		},
-		UserData: StringP(base64.StdEncoding.EncodeToString([]byte(kubeStarter))),
+		UserData: StringP(base64.StdEncoding.EncodeToString(script.Bytes())),
 	}
 	fmt.Println(req)
 	r1, err := conn.ec2.RunInstances(req)
@@ -1219,7 +1219,7 @@ func (conn *cloudConnector) newKubeInstance(instanceID string) (*api.SimpleNode,
 
 	Logger(conn.ctx).Debug("Retrieved instance ", instance, err)
 	if err != nil {
-		return nil, InstanceNotFound
+		return nil, ErrNodeNotFound
 	}
 
 	if *instance.Reservations[0].Instances[0].State.Name != "running" {
@@ -1295,8 +1295,8 @@ func (conn *cloudConnector) createLaunchConfiguration(name, token string, ng *ap
 		return err
 	}
 
-	script, err := RenderStartupScript(conn.ctx, conn.cluster, token, api.RoleNode, ng.Name, false)
-	if err != nil {
+	var script bytes.Buffer
+	if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
 		return err
 	}
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
@@ -1339,7 +1339,7 @@ func (conn *cloudConnector) createLaunchConfiguration(name, token string, ng *ap
 		SecurityGroups: []*string{
 			StringP(conn.cluster.Status.Cloud.AWS.NodeSGId),
 		},
-		UserData: StringP(base64.StdEncoding.EncodeToString([]byte(script))),
+		UserData: StringP(base64.StdEncoding.EncodeToString(script.Bytes())),
 	}
 	r1, err := conn.autoscale.CreateLaunchConfiguration(configuration)
 	Logger(conn.ctx).Debug("Created node configuration", r1, err)
@@ -1968,32 +1968,4 @@ func (conn *cloudConnector) uploadStartupConfig(bucketName, data string) error {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	return nil
-}
-
-func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *core.Node) (string, error) {
-	///"providerID": "aws:////i-01c7b221cb9f1037a",
-	providerID := strings.Split(instance.Spec.ProviderID, ":////")
-	fmt.Println(providerID)
-	if len(providerID) <= 1 {
-		return "", fmt.Errorf("No provider id found for this instance")
-	}
-	ip, err := conn.getInstancePublicDNS(providerID[1])
-	if err != nil {
-		return "", err
-	}
-	if ip == "" {
-		return "", fmt.Errorf("No ip found for ssh")
-	}
-
-	keySigner, _ := ssh.ParsePrivateKey(SSHKey(conn.ctx).PrivateKey)
-	config := &ssh.ClientConfig{
-		User: "ubuntu",
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(keySigner),
-		},
-	}
-	// login as ubuntu user but command needs to run as root
-	command = fmt.Sprintf("sudo %v", command)
-
-	return ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", ip, 22), config)
 }

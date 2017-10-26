@@ -68,10 +68,11 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 }
 
 func (im *instanceManager) createStackScript(sku, role string) (int, error) {
-	startupScript, err := renderStartupScript(im.ctx, im.cluster, role)
-	if err != nil {
-		return 0, err
-	}
+	startupScript := "" // TODO: FixIt!
+	//startupScript, err := renderStartupScript(im.ctx, im.cluster, role)
+	//if err != nil {
+	//	return 0, err
+	//}
 	script, err := im.conn.client.StackScript.Create(im.namer.StartupScriptName(sku, role), im.cluster.Spec.Cloud.InstanceImage, startupScript, map[string]string{
 		"Description": im.cluster.Name,
 	})

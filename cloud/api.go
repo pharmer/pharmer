@@ -7,22 +7,26 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-var InstanceNotFound = errors.New("Instance not found")
-var UnsupportedOperation = errors.New("Unsupported operation")
+var ErrNodeNotFound = errors.New("node not found")
+var ErrNotImplemented = errors.New("not implemented")
 
 type Interface interface {
+	SSHGetter
 	DefaultSpec(cluster *api.Cluster) (*api.Cluster, error)
 	CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error)
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
-	Check(cluster *api.Cluster) (string, error)
-	AssignSSHConfig(cluster *api.Cluster, node *core.Node, cfg *api.SSHConfig) error
+	// GetAdminClient() (kubernetes.Interface, error)
 
 	// IsValid(cluster *api.Cluster) (bool, error)
 	// Delete(req *proto.ClusterDeleteRequest) error
 	// SetVersion(req *proto.ClusterReconfigureRequest) error
 	// Scale(req *proto.ClusterReconfigureRequest) error
 	// GetInstance(md *api.InstanceStatus) (*api.Instance, error)
+}
+
+type SSHGetter interface {
+	GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error)
 }
 
 type NodeGroupManager interface {
@@ -42,8 +46,4 @@ type UpgradeManager interface {
 	Apply(dryRun bool) ([]api.Action, error)
 	MasterUpgrade() error
 	NodeGroupUpgrade(ng *api.NodeGroup) error
-}
-
-type SSHExecutor interface {
-	ExecuteSSHCommand(command string, instance *core.Node) (string, error)
 }

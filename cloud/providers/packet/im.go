@@ -57,10 +57,11 @@ func (im *instanceManager) GetInstance(md *api.NodeStatus) (*api.Node, error) {
 }
 
 func (im *instanceManager) createInstance(name, role, sku string, ipid ...string) (*packngo.Device, error) {
-	startupScript, err := renderStartupScript(im.ctx, im.cluster, role)
-	if err != nil {
-		return nil, err
-	}
+	startupScript := "" // TODO: Fixit
+	//startupScript, err := renderStartupScript(im.ctx, im.cluster, role)
+	//if err != nil {
+	//	return nil, err
+	//}
 	device, _, err := im.conn.client.Devices.Create(&packngo.DeviceCreateRequest{
 		HostName:     name,
 		Plan:         sku,
@@ -78,7 +79,7 @@ func (im *instanceManager) createInstance(name, role, sku string, ipid ...string
 func (im *instanceManager) newKubeInstance(id string) (*api.Node, error) {
 	s, _, err := im.conn.client.Devices.Get(id)
 	if err != nil {
-		return nil, InstanceNotFound
+		return nil, ErrNodeNotFound
 	}
 	return im.newKubeInstanceFromServer(s)
 }

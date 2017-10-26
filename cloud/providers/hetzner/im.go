@@ -76,10 +76,11 @@ func (im *instanceManager) storeConfigFile(serverIP, role string, signer ssh.Sig
 
 func (im *instanceManager) storeStartupScript(serverIP, sku, role string, signer ssh.Signer) error {
 	Logger(im.ctx).Infof("Storing startup script for server %v", serverIP)
-	startupScript, err := renderStartupScript(im.ctx, im.cluster, role)
-	if err != nil {
-		return err
-	}
+	startupScript := "" // TODO: fixit
+	//startupScript, err := renderStartupScript(im.ctx, im.cluster, role)
+	//if err != nil {
+	//	return err
+	//}
 	fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>", startupScript)
 
 	file := "/var/cache/kubernetes_startupscript.sh"
@@ -102,7 +103,7 @@ func (im *instanceManager) executeStartupScript(serverIP string, signer ssh.Sign
 func (im *instanceManager) newKubeInstance(serverIP string) (*api.Node, error) {
 	s, _, err := im.conn.client.Server.GetServer(serverIP)
 	if err != nil {
-		return nil, InstanceNotFound
+		return nil, ErrNodeNotFound
 	}
 	return im.newKubeInstanceFromSummary(&s.ServerSummary)
 }

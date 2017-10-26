@@ -1,6 +1,7 @@
 package azure
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -22,8 +23,6 @@ import (
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
-	"golang.org/x/crypto/ssh"
-	core "k8s.io/api/core/v1"
 )
 
 const (
@@ -77,7 +76,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		RouteTableName:    namer.RouteTableName(),
 		//	StorageAccountName: namer.GenStorageAccountName(),
 	}
-	cluster.Spec.Cloud.CloudConfigPath = "/etc/kubernetes/azure.json"
 	cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName = cluster.Spec.Cloud.Azure.StorageAccountName
 
 	/*
@@ -748,11 +746,11 @@ func (conn *cloudConnector) StartNode(nodeName, token string, as compute.Availab
 		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 
-	nodeScript, err := RenderStartupScript(conn.ctx, conn.cluster, token, api.RoleNode, ng.Name, false)
-	if err != nil {
+	var script bytes.Buffer
+	if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
 		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	nodeVM, err := conn.createVirtualMachine(nodeNIC, as, sa, nodeName, nodeScript, ng.Spec.Template.Spec.SKU)
+	nodeVM, err := conn.createVirtualMachine(nodeNIC, as, sa, nodeName, script.String(), ng.Spec.Template.Spec.SKU)
 	if err != nil {
 		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
@@ -843,29 +841,4 @@ func splitProviderID(providerID string) (string, error) {
 		return "", errors.New("error splitting providerID")
 	}
 	return matches[1], nil
-}
-
-func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *core.Node) (string, error) {
-	pip, err := conn.getPublicIP(conn.namer.PublicIPName(instance.Name))
-	if err != nil {
-		return "", err
-	}
-
-	var ip string = *pip.IPAddress
-	if ip == "" {
-		return "", fmt.Errorf("No ip found for ssh")
-	}
-
-	keySigner, _ := ssh.ParsePrivateKey(SSHKey(conn.ctx).PrivateKey)
-	config := &ssh.ClientConfig{
-		User: conn.namer.AdminUsername(),
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(keySigner),
-		},
-	}
-
-	// login as ubuntu user but command needs to run as root
-	command = fmt.Sprintf("sudo %v", command)
-
-	return ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", ip, 22), config)
 }

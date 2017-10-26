@@ -13,9 +13,7 @@ import (
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	"github.com/digitalocean/godo"
-	"golang.org/x/crypto/ssh"
 	"golang.org/x/oauth2"
-	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -154,12 +152,13 @@ func (conn *cloudConnector) createReserveIP() (string, error) {
 }
 
 func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.SimpleNode, error) {
-	startupScript, err := RenderStartupScript(conn.ctx, conn.cluster, token, ng.Role(), ng.Name, true)
+	script, err := conn.renderStartupScript(ng, token)
 	if err != nil {
 		return nil, err
 	}
+
 	fmt.Println()
-	fmt.Println(startupScript)
+	fmt.Println(script)
 	fmt.Println()
 	req := &godo.DropletCreateRequest{
 		Name:   name,
@@ -176,7 +175,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		},
 		PrivateNetworking: true,
 		IPv6:              false,
-		UserData:          startupScript,
+		UserData:          script,
 	}
 	if Env(conn.ctx).IsPublic() {
 		req.SSHKeys = []godo.DropletCreateSSHKey{
@@ -293,25 +292,4 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	}
 	Logger(conn.ctx).Infof("Droplet %v deleted", dropletID)
 	return nil
-}
-
-func (conn *cloudConnector) ExecuteSSHCommand(command string, instance *core.Node) (string, error) {
-	var ip string = ""
-	for _, addr := range instance.Status.Addresses {
-		if addr.Type == core.NodeExternalIP {
-			ip = addr.Address
-			break
-		}
-	}
-	if ip == "" {
-		return "", fmt.Errorf("no IP found for ssh")
-	}
-	keySigner, _ := ssh.ParsePrivateKey(SSHKey(conn.ctx).PrivateKey)
-	config := &ssh.ClientConfig{
-		User: "root",
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(keySigner),
-		},
-	}
-	return ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", ip, 22), config)
 }
