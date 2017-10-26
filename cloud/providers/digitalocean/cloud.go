@@ -78,6 +78,8 @@ func (conn *cloudConnector) WaitForInstance(id int, status string) error {
 	})
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+
 func (conn *cloudConnector) getPublicKey() (bool, int, error) {
 	key, resp, err := conn.client.Keys.GetByFingerprint(context.TODO(), SSHKey(conn.ctx).OpensshFingerprint)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
@@ -115,6 +117,8 @@ func (conn *cloudConnector) deleteSSHKey() error {
 	return nil
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+
 func (conn *cloudConnector) getTags() (bool, error) {
 	tag := "KubernetesCluster:" + conn.cluster.Name
 	_, resp, err := conn.client.Tags.Get(context.TODO(), tag)
@@ -139,6 +143,21 @@ func (conn *cloudConnector) createTags() error {
 	Logger(conn.ctx).Infof("Tag %v created", tag)
 	return nil
 }
+
+func (conn *cloudConnector) applyTag(dropletID int) error {
+	_, err := conn.client.Tags.TagResources(context.TODO(), "KubernetesCluster:"+conn.cluster.Name, &godo.TagResourcesRequest{
+		Resources: []godo.Resource{
+			{
+				ID:   strconv.Itoa(dropletID),
+				Type: godo.DropletResourceType,
+			},
+		},
+	})
+	Logger(conn.ctx).Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+conn.cluster.Name, dropletID)
+	return err
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) getReserveIP(ip string) (bool, error) {
 	fip, resp, err := conn.client.FloatingIPs.Get(context.TODO(), ip)
@@ -180,6 +199,8 @@ func (conn *cloudConnector) releaseReservedIP(ip string) error {
 	Logger(conn.ctx).Infof("Floating ip %v deleted", ip)
 	return nil
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.SimpleNode, error) {
 	script, err := conn.renderStartupScript(ng, token)
@@ -245,31 +266,6 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	return &node, nil
 }
 
-func (conn *cloudConnector) applyTag(dropletID int) error {
-	_, err := conn.client.Tags.TagResources(context.TODO(), "KubernetesCluster:"+conn.cluster.Name, &godo.TagResourcesRequest{
-		Resources: []godo.Resource{
-			{
-				ID:   strconv.Itoa(dropletID),
-				Type: godo.DropletResourceType,
-			},
-		},
-	})
-	Logger(conn.ctx).Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+conn.cluster.Name, dropletID)
-	return err
-}
-
-// reboot does not seem to run /etc/rc.local
-func (conn *cloudConnector) reboot(id int) error {
-	Logger(conn.ctx).Infof("Rebooting instance %v", id)
-	action, _, err := conn.client.DropletActions.Reboot(context.TODO(), id)
-	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	Logger(conn.ctx).Debugf("Instance status %v, %v", action, err)
-	Logger(conn.ctx).Infof("Instance %v reboot status %v", action.ResourceID, action.Status)
-	return nil
-}
-
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
 	dropletID, err := dropletIDFromProviderID(providerID)
 	if err != nil {
@@ -305,3 +301,5 @@ func dropletIDFromProviderID(providerID string) (int, error) {
 
 	return strconv.Atoi(split[2])
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
