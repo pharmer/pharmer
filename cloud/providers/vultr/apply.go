@@ -33,6 +33,11 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 		return nil, err
 	}
 
+	if err = cm.conn.detectInstanceImage(); err != nil {
+		return nil, err
+	}
+	Logger(cm.ctx).Infof("Found vultr instance image %v", cm.cluster.Spec.Cloud.InstanceImage)
+
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return cm.applyUpgrade(dryRun)
 	}
@@ -114,11 +119,30 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 	masterNG := FindMasterNodeGroup(nodeGroups)
 	if masterNG.Spec.Template.Spec.SKU == "" {
-		masterNG.Spec.Template.Spec.SKU = "2gb"
+		masterNG.Spec.Template.Spec.SKU = "95"
 		masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
 		if err != nil {
 			return
 		}
+	}
+
+	if _, err = cm.conn.getStartupScriptID(masterNG); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Master startup script",
+			Message:  "Startup script will be created for masater instance",
+		})
+		if !dryRun {
+			if _, err = cm.conn.createOrUpdateStartupScript(masterNG, ""); err != nil {
+				return
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Master startup script",
+			Message:  "Startup script for masater instance found",
+		})
 	}
 
 	if masterNG.Status.Nodes < masterNG.Spec.Nodes {

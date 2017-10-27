@@ -152,7 +152,6 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 			}
 		}
 	}
-	cluster.Spec.KubernetesVersion = "v" + in.Spec.KubernetesVersion
 
 	return cluster, nil
 }
