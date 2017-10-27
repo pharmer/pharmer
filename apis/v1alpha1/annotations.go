@@ -7,8 +7,9 @@ const (
 	RoleMasterKey = RoleKeyPrefix + RoleMaster
 	RoleNodeKey   = RoleKeyPrefix + RoleNode
 
-	NodePoolKey    = "cloud.appscode.com/pool"
-	KubeSystem_App = "k8s-app"
+	KubeadmVersionKey = "cloud.appscode.com/kubeadm-version"
+	NodePoolKey       = "cloud.appscode.com/pool"
+	KubeSystem_App    = "k8s-app"
 
 	HostnameKey     = "kubernetes.io/hostname"
 	ArchKey         = "beta.kubernetes.io/arch"
