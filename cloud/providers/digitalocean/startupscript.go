@@ -7,7 +7,6 @@ import (
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
-	"github.com/hashicorp/go-version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
@@ -60,16 +59,6 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: ng.Name,
 	}.String()
-
-	if cluster.Spec.MasterKubeadmVersion != "" {
-		if v, err := version.NewVersion(cluster.Spec.MasterKubeadmVersion); err == nil && v.Prerelease() != "" {
-			td.IsPreReleaseVersion = true
-		} else {
-			if lv, err := GetLatestKubeadmVerson(); err == nil && lv == cluster.Spec.MasterKubeadmVersion {
-				td.KubeadmVersion = ""
-			}
-		}
-	}
 
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
