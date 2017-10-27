@@ -194,35 +194,32 @@ func (conn *cloudConnector) getStartupScriptID(ng *api.NodeGroup) (int, error) {
 
 func (conn *cloudConnector) createOrUpdateStartupScript(ng *api.NodeGroup, token string) (int, error) {
 	scriptName := conn.namer.StartupScriptName(ng.Name, ng.Role())
+	script, err := conn.renderStartupScript(ng, token)
+	if err != nil {
+		return 0, err
+	}
 
 	scripts, err := conn.client.GetStartupScripts()
 	if err != nil {
 		return 0, err
 	}
-	for _, script := range scripts {
-		if script.Name == scriptName {
-			scriptID, err := strconv.Atoi(script.ID)
+	for _, s := range scripts {
+		if s.Name == scriptName {
+			s.Content = script
+			err := conn.client.UpdateStartupScript(s)
 			if err != nil {
 				return 0, err
 			}
-			return scriptID, nil
+			return strconv.Atoi(s.ID)
 		}
 	}
 
 	Logger(conn.ctx).Infof("creating StackScript for NodeGroup %v role %v", ng.Name, ng.Role())
-	script, err := conn.renderStartupScript(ng, token)
-	if err != nil {
-		return 0, err
-	}
 	resp, err := conn.client.CreateStartupScript(scriptName, script, "boot")
 	if err != nil {
 		return 0, err
 	}
-	scriptID, err := strconv.Atoi(resp.ID)
-	if err != nil {
-		return 0, err
-	}
-	return scriptID, nil
+	return strconv.Atoi(resp.ID)
 }
 
 func (conn *cloudConnector) deleteStartupScript(ng *api.NodeGroup) error {
