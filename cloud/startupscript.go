@@ -169,6 +169,10 @@ kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 {{ template "calico" . }}
 {{ end }}
 
+kubectl apply \
+  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/kubeadm-probe/ds.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+
 mkdir -p ~/.kube
 sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
 sudo chown $(id -u):$(id -g) ~/.kube/config
@@ -177,9 +181,6 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 {{ template "ccm" . }}
 {{end}}
 
-kubectl apply \
-  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/kubeadm-probe/ds.yaml \
-  --kubeconfig /etc/kubernetes/admin.conf
 `))
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`#!/bin/bash
@@ -296,8 +297,8 @@ kubectl taint nodes ${NODE_NAME} node.cloudprovider.kubernetes.io/uninitialized=
 systemctl daemon-reload
 systemctl restart kubelet
 
-sleep 10
-reboot
+# sleep 10
+# reboot
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
