@@ -100,6 +100,7 @@ apt-get install -y \
 	nfs-common \
 	cron \
 	glusterfs-client \
+	kubectl \
 	kubelet \
 	{{ if not .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }}{{ end }} \
 	cloud-utils \
@@ -203,6 +204,7 @@ apt-get install -y \
 	cron \
 	glusterfs-client \
 	kubelet \
+	kubectl \
 	{{ if not .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }}{{ end }} \
 	docker.io || true
 
