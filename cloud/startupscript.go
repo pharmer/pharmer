@@ -6,11 +6,11 @@ import (
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/ghodss/yaml"
+	"github.com/hashicorp/go-version"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
 type TemplateData struct {
-	IsPreReleaseVersion bool
 	KubernetesVersion   string
 	KubeadmVersion      string
 	KubeadmToken        string
@@ -35,6 +35,13 @@ func (td TemplateData) MasterConfigurationYAML() (string, error) {
 	}
 	cb, err := yaml.Marshal(td.MasterConfiguration)
 	return string(cb), err
+}
+
+func (td TemplateData) IsPreReleaseVersion() bool {
+	if v, err := version.NewVersion(td.KubeadmVersion); err == nil && v.Prerelease() != "" {
+		return true
+	}
+	return false
 }
 
 func (td TemplateData) KubeletExtraArgsStr() string {
