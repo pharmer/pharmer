@@ -169,6 +169,10 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 {{ if .ExternalProvider }}
 {{ template "ccm" . }}
 {{end}}
+
+kubectl apply \
+  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/kubeadm-probe/ds.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
 `))
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`#!/bin/bash
