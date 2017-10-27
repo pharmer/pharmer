@@ -14,17 +14,15 @@ import (
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
 	td := TemplateData{
-		KubernetesVersion: cluster.Spec.KubernetesVersion,
-		KubeadmVersion:    cluster.Spec.MasterKubeadmVersion,
-		KubeadmToken:      token,
-		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		APIServerAddress:  cluster.APIServerAddress(),
-		APIBindPort:       6443,
-		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
-		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
-		Provider:          cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider:  true, // Packet uses out-of-tree CCM
+		KubeadmVersion:   cluster.Spec.MasterKubeadmVersion,
+		KubeadmToken:     token,
+		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		FrontProxyKey:    string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		APIServerAddress: cluster.APIServerAddress(),
+		ExtraDomains:     cluster.Spec.ClusterExternalDomain,
+		NetworkProvider:  cluster.Spec.Networking.NetworkProvider,
+		Provider:         cluster.Spec.Cloud.CloudProvider,
+		ExternalProvider: true, // Packet uses out-of-tree CCM
 	}
 	{
 		extraDomains := []string{}

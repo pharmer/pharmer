@@ -1,11 +1,9 @@
 package aws
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strings"
-	"text/template"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
@@ -16,22 +14,20 @@ import (
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
 	td := TemplateData{
-		KubernetesVersion: cluster.Spec.KubernetesVersion,
-		KubeadmVersion:    cluster.Spec.MasterKubeadmVersion,
-		KubeadmToken:      token,
-		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		APIServerAddress:  cluster.APIServerAddress(),
-		APIBindPort:       6443,
-		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
-		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
-		Provider:          cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider:  false, // AWS does not use out-of-tree CCM
+		KubeadmVersion:   cluster.Spec.MasterKubeadmVersion,
+		KubeadmToken:     token,
+		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		FrontProxyKey:    string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		APIServerAddress: cluster.APIServerAddress(),
+		ExtraDomains:     cluster.Spec.ClusterExternalDomain,
+		NetworkProvider:  cluster.Spec.Networking.NetworkProvider,
+		Provider:         cluster.Spec.Cloud.CloudProvider,
+		ExternalProvider: false, // AWS does not use out-of-tree CCM
 	}
 	if cluster.Spec.Cloud.AWS != nil {
-		td.ConfigurationBucket = fmt.Sprintf(`
-apt-get install awscli -y
-aws s3api get-object --bucket %v --key config.sh /etc/kubernetes/config.sh
+		td.KubeadmTokenLoader = fmt.Sprintf(`
+/usr/local/bin/aws s3api get-object --bucket %v --key config.sh /etc/kubernetes/kubeadm-token
+source /etc/kubernetes/kubeadm-token
 `, cluster.Status.Cloud.AWS.BucketName)
 	}
 	{
@@ -92,20 +88,3 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 	td.MasterConfiguration = &cfg
 	return td
 }
-
-func KubeConfigScript(kubeadmToken string) (string, error) {
-	var buf bytes.Buffer
-	var token = struct {
-		Token string
-	}{Token: kubeadmToken}
-	if err := kubConfigScriptTemplate.ExecuteTemplate(&buf, "config", token); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
-var (
-	kubConfigScriptTemplate = template.Must(template.New("config").Parse(`#!/bin/bash
-declare -x KUBEADM_TOKEN={{ .Token }}
-`))
-)
