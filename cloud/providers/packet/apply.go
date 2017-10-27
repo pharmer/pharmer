@@ -2,144 +2,331 @@ package packet
 
 import (
 	"fmt"
-	"time"
 
-	"github.com/appscode/go/errors"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
-	"github.com/cenkalti/backoff"
-	"github.com/packethost/packngo"
+	core "k8s.io/api/core/v1"
+	kerr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
 	var err error
+	var acts []api.Action
 
+	if in.Status.Phase == "" {
+		return nil, fmt.Errorf("cluster `%s` is in unknown phase", cm.cluster.Name)
+	}
+	if in.Status.Phase == api.ClusterDeleted {
+		return nil, nil
+	}
 	cm.cluster = in
+	cm.namer = namer{cluster: cm.cluster}
+	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
+		return nil, err
+	}
+	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
+		return nil, err
+	}
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return nil, err
 	}
 
-	//defer func(releaseReservedIp bool) {
-	//	if cm.cluster.Status.Phase == api.ClusterPending {
-	//		cm.cluster.Status.Phase = api.ClusterFailing
-	//	}
-	//	Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-	//	Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
-	//	if cm.cluster.Status.Phase != api.ClusterReady {
-	//		Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
-	//		cm.Delete(&proto.ClusterDeleteRequest{
-	//			Name:              cm.cluster.Name,
-	//			ReleaseReservedIp: releaseReservedIp,
-	//		})
-	//	}
-	//}(cm.cluster.Spec.MasterReservedIP == "auto")
-
-	cm.cluster.Spec.Cloud.InstanceImage = "debian_8"
-
-	err = cm.importPublicKey()
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.cluster.Status.Phase == api.ClusterUpgrading {
+		return cm.applyUpgrade(dryRun)
 	}
 
-	// -------------------------------------------------------------------ASSETS
-	im := &instanceManager{ctx: cm.ctx, cluster: cm.cluster, conn: cm.conn}
-
-	Logger(cm.ctx).Info("Creating master instance")
-	masterDroplet, err := im.createInstance(cm.cluster.Spec.KubernetesMasterName, api.RoleMaster, cm.cluster.Spec.MasterSKU)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	if err = cm.conn.waitForInstance(masterDroplet.ID, "active"); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	// Need to reload te master server Object to get the IP address
-	masterInstance, err := im.newKubeInstance(masterDroplet.ID)
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	masterInstance.Spec.Role = api.RoleMaster
-	cm.cluster.Spec.MasterExternalIP = masterInstance.Status.PublicIP
-	cm.cluster.Spec.MasterInternalIP = masterInstance.Status.PrivateIP
-	fmt.Println("Master EXTERNAL IP ================", cm.cluster.Spec.MasterExternalIP)
-	Store(cm.ctx).Instances(cm.cluster.Name).Create(masterInstance)
-
-	err = EnsureARecord(cm.ctx, cm.cluster, masterInstance) // works for reserved or non-reserved mode
-	if err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	// needed to get master_internal_ip
-	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.cluster.Status.Phase == api.ClusterPending {
+		a, err := cm.applyCreate(dryRun)
+		if err != nil {
+			return nil, err
+		}
+		acts = append(acts, a...)
 	}
 
-	// -------------------------- NODES
-
-	// reboot master to use cert with internal_ip as SANS
-	time.Sleep(60 * time.Second)
-
-	Logger(cm.ctx).Info("Rebooting master instance")
-	if err = im.reboot(masterDroplet.ID); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
-	}
-	Logger(cm.ctx).Info("Rebooted master instance")
-
-	// start nodes
-	//for _, ng := range req.NodeGroups {
-	//	for i := int64(0); i < ng.Count; i++ {
-	//		droplet, err := im.createInstance(cm.namer.GenNodeName(), api.RoleKubernetesPool, ng.Sku)
-	//		if err != nil {
-	//			cm.cluster.Status.Reason = err.Error()
-	//			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
-	//		}
-	//
-	//		// record nodes
-	//		cm.conn.waitForInstance(droplet.ID, "active")
-	//		node, err := im.newKubeInstanceFromServer(droplet)
-	//		if err != nil {
-	//			cm.cluster.Status.Reason = err.Error()
-	//			return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
-	//		}
-	//		node.Spec.Role = api.RoleKubernetesPool
-	//		Store(cm.ctx).Instances(cm.cluster.Name).Create(node)
-	//	}
-	//}
-
-	Logger(cm.ctx).Info("Waiting for cluster initialization")
-
-	// Wait for master A record to propagate
-	if err := EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
+	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
+		nodeGroups, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+		for _, ng := range nodeGroups {
+			ng.Spec.Nodes = 0
+			_, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(ng)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
-	kc, err := cm.GetAdminClient()
-	// wait for nodes to start
-	if err := WaitForReadyMaster(cm.ctx, kc); err != nil {
-		cm.cluster.Status.Reason = err.Error()
-		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
+	{
+		a, err := cm.applyScale(dryRun)
+		if err != nil {
+			return nil, err
+		}
+		acts = append(acts, a...)
 	}
-	cm.cluster.Status.Phase = api.ClusterReady
-	return nil, nil
+
+	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
+		a, err := cm.applyDelete(dryRun)
+		if err != nil {
+			return nil, err
+		}
+		acts = append(acts, a...)
+	}
+	return acts, nil
 }
 
-func (cm *ClusterManager) importPublicKey() error {
-	Logger(cm.ctx).Debugln("Adding SSH public key")
-	backoff.Retry(func() error {
-		sk, _, err := cm.conn.client.SSHKeys.Create(&packngo.SSHKeyCreateRequest{
-			Key:       string(SSHKey(cm.ctx).PublicKey),
-			Label:     cm.cluster.Name,
-			ProjectID: cm.cluster.Spec.Cloud.Project,
+// Creates network, and creates ready master(s)
+func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
+	var found bool
+	found, _, err = cm.conn.getPublicKey()
+	if err != nil {
+		return
+	}
+	if !found {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "PublicKey",
+			Message:  "Public key will be imported",
 		})
-		cm.cluster.Status.SSHKeyExternalID = sk.ID
-		return err
-	}, backoff.NewExponentialBackOff())
-	Logger(cm.ctx).Debugf("Created new ssh key with fingerprint=%v", SSHKey(cm.ctx).OpensshFingerprint)
-	return nil
+		if !dryRun {
+			err = cm.conn.importPublicKey()
+			if err != nil {
+				return
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "PublicKey",
+			Message:  "Public key found",
+		})
+	}
+
+	// FYI: Vultr does not support tagging.
+
+	// -------------------------------------------------------------------ASSETS
+	var nodeGroups []*api.NodeGroup
+	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+	if err != nil {
+		return
+	}
+	masterNG := FindMasterNodeGroup(nodeGroups)
+	if masterNG.Spec.Template.Spec.SKU == "" {
+		masterNG.Spec.Template.Spec.SKU = "2gb"
+		masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
+		if err != nil {
+			return
+		}
+	}
+
+	if masterNG.Status.Nodes < masterNG.Spec.Nodes {
+		Logger(cm.ctx).Info("Creating master instance")
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "MasterInstance",
+			Message:  fmt.Sprintf("Master instance %s will be created", cm.namer.MasterName()),
+		})
+		if !dryRun {
+			var masterServer *api.SimpleNode
+			masterServer, err = cm.conn.CreateInstance(cm.namer.MasterName(), "", masterNG)
+			if err != nil {
+				return
+			}
+			if masterServer.PrivateIP != "" {
+				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
+					Type:    core.NodeInternalIP,
+					Address: masterServer.PrivateIP,
+				})
+			}
+			if masterServer.PublicIP != "" {
+				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
+					Type:    core.NodeExternalIP,
+					Address: masterServer.PublicIP,
+				})
+			}
+
+			var kc kubernetes.Interface
+			kc, err = cm.GetAdminClient()
+			if err != nil {
+				return
+			}
+			// wait for nodes to start
+			if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
+				return
+			}
+
+			masterNG.Status.Nodes = 1
+			masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(masterNG)
+			if err != nil {
+				return
+			}
+
+			err = EnsureARecord2(cm.ctx, cm.cluster, masterServer.PublicIP, masterServer.PrivateIP) // works for reserved or non-reserved mode
+			if err != nil {
+				return
+			}
+			// Wait for master A record to propagate
+			if err = EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
+				return
+			}
+			// needed to get master_internal_ip
+			cm.cluster.Status.Phase = api.ClusterReady
+			if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+				return
+			}
+			// need to run ccm
+			if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
+				return
+			}
+
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "MasterInstance",
+			Message:  "master instance(s) already exist",
+		})
+	}
+
+	return
+}
+
+// Scales up/down regular node groups
+func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
+	var nodeGroups []*api.NodeGroup
+	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+	if err != nil {
+		return
+	}
+	var token string
+	var kc kubernetes.Interface
+	if cm.cluster.Status.Phase != api.ClusterPending {
+		kc, err = cm.GetAdminClient()
+		if err != nil {
+			return
+		}
+		if !dryRun {
+			if token, err = GetExistingKubeadmToken(kc); err != nil {
+				return
+			}
+			if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
+				return
+			}
+		}
+
+	}
+	for _, ng := range nodeGroups {
+		if ng.IsMaster() {
+			continue
+		}
+		igm := NewNodeGroupManager(cm.ctx, ng, cm.conn, kc, cm.cluster, token, nil, nil)
+		var a2 []api.Action
+		a2, err = igm.Apply(dryRun)
+		if err != nil {
+			return
+		}
+		acts = append(acts, a2...)
+	}
+	return
+}
+
+// Deletes master(s) and releases other cloud resources
+func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error) {
+	var found bool
+
+	if cm.cluster.Status.Phase == api.ClusterReady {
+		cm.cluster.Status.Phase = api.ClusterDeleting
+	}
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	if err != nil {
+		return
+	}
+
+	var kc kubernetes.Interface
+	kc, err = cm.GetAdminClient()
+	if err != nil {
+		return
+	}
+	var masterInstance *core.Node
+	masterInstance, err = kc.CoreV1().Nodes().Get(cm.namer.MasterName(), metav1.GetOptions{})
+	if err != nil && !kerr.IsNotFound(err) {
+		return
+	} else if err == nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionDelete,
+			Resource: "MasterInstance",
+			Message:  fmt.Sprintf("Will delete master instance with name %v", cm.cluster.Spec.KubernetesMasterName),
+		})
+		if !dryRun {
+			err = cm.conn.DeleteInstanceByProviderID(masterInstance.Spec.ProviderID)
+			if err != nil {
+				Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", masterInstance.Spec.ProviderID, err)
+			}
+		}
+	}
+
+	// Delete SSH key
+	var sshKeyID string
+	found, sshKeyID, err = cm.conn.getPublicKey()
+	if err != nil {
+		return
+	}
+	if found {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "PublicKey",
+			Message:  "Public key will be deleted",
+		})
+		if !dryRun {
+			err = cm.conn.deleteSSHKey(sshKeyID)
+			if err != nil {
+				return
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "PublicKey",
+			Message:  "Public key not found",
+		})
+	}
+
+	if !dryRun {
+		if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
+			return
+		}
+	}
+
+	// Failed
+	cm.cluster.Status.Phase = api.ClusterDeleted
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	if err != nil {
+		return
+	}
+
+	Logger(cm.ctx).Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
+	return
+}
+
+func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err error) {
+	var kc kubernetes.Interface
+	if kc, err = cm.GetAdminClient(); err != nil {
+		return
+	}
+
+	upm := NewUpgradeManager(cm.ctx, cm, kc, cm.cluster)
+	a, err := upm.Apply(dryRun)
+	if err != nil {
+		return
+	}
+	acts = append(acts, a...)
+	if !dryRun {
+		cm.cluster.Status.Phase = api.ClusterReady
+		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+			return
+		}
+	}
+	return
 }
