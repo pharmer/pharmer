@@ -41,14 +41,6 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if cluster, err = cm.DefaultSpec(cluster); err != nil {
 		return nil, err
 	}
-
-	if cluster.Spec.MasterKubeadmVersion == "" {
-		cluster.Spec.MasterKubeadmVersion, err = GetLatestKubeadmVerson()
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	if cluster, err = Store(ctx).Clusters().Create(cluster); err != nil {
 		return nil, err
 	}
