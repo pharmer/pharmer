@@ -357,9 +357,6 @@ func (c *Cluster) APIServerAddress() string {
 	for _, addr := range c.Status.APIAddresses {
 		m[addr.Type] = fmt.Sprintf("%s:%d", addr.Address, c.Spec.API.BindPort)
 	}
-	if u, found := m[core.NodeExternalIP]; found {
-		return u
-	}
 	if u, found := m[core.NodeInternalIP]; found {
 		return u
 	}

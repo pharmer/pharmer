@@ -26,7 +26,6 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		Provider:          cluster.Spec.Cloud.CloudProvider,
 		ExternalProvider:  true, // Vultr uses out-of-tree CCM
 	}
-	td.KubeadmVersion = ""
 	{
 		extraDomains := []string{}
 		if domain := Extra(ctx).ExternalDomain(cluster.Name); domain != "" {
