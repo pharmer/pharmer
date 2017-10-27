@@ -11,19 +11,17 @@ import (
 )
 
 type TemplateData struct {
-	KubernetesVersion   string
-	KubeadmVersion      string
-	KubeadmToken        string
-	CAKey               string
-	FrontProxyKey       string
-	APIServerAddress    string
-	APIBindPort         int32
-	ExtraDomains        string
-	NetworkProvider     string
-	CloudConfig         string
-	Provider            string
-	ExternalProvider    bool
-	ConfigurationBucket string
+	KubeadmVersion     string
+	KubeadmToken       string
+	CAKey              string
+	FrontProxyKey      string
+	APIServerAddress   string
+	ExtraDomains       string
+	NetworkProvider    string
+	CloudConfig        string
+	Provider           string
+	ExternalProvider   bool
+	KubeadmTokenLoader string
 
 	MasterConfiguration *kubeadmapi.MasterConfiguration
 	KubeletExtraArgs    map[string]string
@@ -154,12 +152,10 @@ EOF
 
 pre-k merge master-config \
 	--config=/etc/kubernetes/kubeadm/config.yaml \
-	--apiserver-bind-port={{ .APIBindPort }} \
 	--apiserver-advertise-address=$(pre-k get public-ips --all=false) \
 	--apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
 	--apiserver-cert-extra-sans=$(pre-k get private-ips) \
 	--apiserver-cert-extra-sans={{ .ExtraDomains }} \
-	--kubernetes-version={{ .KubernetesVersion }} \
 	> /etc/kubernetes/kubeadm/config.yaml
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 
@@ -244,13 +240,9 @@ systemctl daemon-reload
 systemctl restart kubelet
 
 kubeadm reset
-{{ if .ConfigurationBucket }}
- {{ .ConfigurationBucket  }}
- source /etc/kubernetes/config.sh
- kubeadm join --token=${KUBEADM_TOKEN} {{ .APIServerAddress }}
-{{ else }}
- kubeadm join --token={{ .KubeadmToken }} {{ .APIServerAddress }}
-{{ end }}
+{{ .KubeadmTokenLoader  }}
+KUBEADM_TOKEN=${KUBEADM_TOKEN:-{{ .KubeadmToken }}}
+kubeadm join --token=${KUBEADM_TOKEN} {{ .APIServerAddress }}
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("prepare-host").Parse(``))

@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"text/template"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
@@ -17,20 +16,21 @@ import (
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
 	td := TemplateData{
-		KubernetesVersion: cluster.Spec.KubernetesVersion,
-		KubeadmVersion:    cluster.Spec.MasterKubeadmVersion,
-		KubeadmToken:      token,
-		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		APIServerAddress:  cluster.APIServerAddress(),
-		APIBindPort:       6443,
-		ExtraDomains:      cluster.Spec.ClusterExternalDomain,
-		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
-		Provider:          cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider:  false, // GCE does not use out-of-tree CCM
+		KubeadmVersion:   cluster.Spec.MasterKubeadmVersion,
+		KubeadmToken:     token,
+		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		FrontProxyKey:    string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		APIServerAddress: cluster.APIServerAddress(),
+		ExtraDomains:     cluster.Spec.ClusterExternalDomain,
+		NetworkProvider:  cluster.Spec.Networking.NetworkProvider,
+		Provider:         cluster.Spec.Cloud.CloudProvider,
+		ExternalProvider: false, // GCE does not use out-of-tree CCM
 	}
 	if cluster.Spec.Cloud.GCE != nil {
-		td.ConfigurationBucket = fmt.Sprintf(`gsutil cat gs://%v/config.sh > /etc/kubernetes/config.sh`, cluster.Status.Cloud.GCE.BucketName)
+		td.KubeadmTokenLoader = fmt.Sprintf(`
+gsutil cat gs://%s/config.sh > /etc/kubernetes/config.sh
+/etc/kubernetes/kubeadm-token
+`, cluster.Status.Cloud.GCE.BucketName)
 	}
 	{
 		extraDomains := []string{}
@@ -111,20 +111,3 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 	td.MasterConfiguration = &cfg
 	return td
 }
-
-func KubeConfigScript(kubeadmToken string) (string, error) {
-	var buf bytes.Buffer
-	var token = struct {
-		Token string
-	}{Token: kubeadmToken}
-	if err := kubConfigScriptTemplate.ExecuteTemplate(&buf, "config", token); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
-var (
-	kubConfigScriptTemplate = template.Must(template.New("config").Parse(`#!/bin/bash
-	declare -x KUBEADM_TOKEN={{ .Token }}
-	`))
-)

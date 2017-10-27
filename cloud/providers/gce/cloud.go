@@ -670,12 +670,10 @@ func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup, token 
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
 	//  }
 
-	configScript, err := KubeConfigScript(token)
-	if err != nil {
-		return "", err
-	}
-
-	if err = conn.uploadStartupConfig(conn.cluster.Status.Cloud.GCE.BucketName, configScript); err != nil {
+	tokenExporter := fmt.Sprintf(`#!/bin/bash
+declare -x KUBEADM_TOKEN=%s
+`, token)
+	if err := conn.uploadStartupConfig(conn.cluster.Status.Cloud.GCE.BucketName, tokenExporter); err != nil {
 		return "", err
 	}
 

@@ -1286,13 +1286,10 @@ func (conn *cloudConnector) assignIPToInstance(reservedIP, instanceID string) er
 }
 
 func (conn *cloudConnector) createLaunchConfiguration(name, token string, ng *api.NodeGroup) error {
-	// script := conn.RenderStartupScript(conn.cluster, sku, api.RoleKubernetesPool)
-	configScript, err := KubeConfigScript(token)
-	if err != nil {
-		return err
-	}
-
-	if err = conn.uploadStartupConfig(conn.cluster.Status.Cloud.AWS.BucketName, configScript); err != nil {
+	tokenExporter := fmt.Sprintf(`#!/bin/bash
+declare -x KUBEADM_TOKEN=%s
+`, token)
+	if err := conn.uploadStartupConfig(conn.cluster.Status.Cloud.AWS.BucketName, tokenExporter); err != nil {
 		return err
 	}
 
