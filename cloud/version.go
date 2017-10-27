@@ -145,9 +145,33 @@ func (g *KubeVersionGetter) ClusterVersion() (string, *versionutil.Version, erro
 
 // MasterKubeadmVersion gets kubeadm version
 func (g *KubeVersionGetter) KubeadmVersion() (string, *versionutil.Version, error) {
-	kubeadmVersion, err := versionutil.ParseSemantic(g.cluster.Spec.MasterKubeadmVersion)
+	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			{
+				Key:      api.RoleMasterKey,
+				Operator: metav1.LabelSelectorOpExists,
+			},
+		},
+	})
 	if err != nil {
-		return "", nil, fmt.Errorf("Couldn't parse kubeadm version: %v", err)
+		return "", nil, err
+	}
+	nodes, err := g.client.CoreV1().Nodes().List(metav1.ListOptions{
+		LabelSelector: selector.String(),
+	})
+	if err != nil {
+		return "", nil, fmt.Errorf("couldn't list master instances in cluster, Reason: %s", err)
+	}
+	if len(nodes.Items) == 0 {
+		return "", nil, fmt.Errorf("couldn't list master instances in cluster")
+	}
+	verStr, found := nodes.Items[0].Annotations[api.KubeadmVersionKey]
+	if !found {
+		return "", nil, fmt.Errorf("master instance %s is missing annotation %s", nodes.Items[0].Name, api.KubeadmVersionKey)
+	}
+	kubeadmVersion, err := versionutil.ParseSemantic(verStr)
+	if err != nil {
+		return "", nil, fmt.Errorf("couldn't parse kubeadm version: %v", err)
 	}
 	fmt.Println(fmt.Sprintf("[upgrade/versions] kubeadm version: %s", g.cluster.Spec.MasterKubeadmVersion))
 
