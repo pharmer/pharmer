@@ -40,7 +40,6 @@ metadata:
   namespace: kube-system
   labels:
     app: kubeadm-probe
-
 spec:
   template:
     metadata:
