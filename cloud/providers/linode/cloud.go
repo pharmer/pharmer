@@ -11,9 +11,7 @@ import (
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
-	"github.com/appscode/pharmer/phid"
 	"github.com/taoh/linodego"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -321,41 +319,6 @@ func (conn *cloudConnector) bootToGrub2(linodeId, configId int, name string) err
 	_, err = conn.client.Linode.Boot(linodeId, configId)
 	Logger(conn.ctx).Infof("%v booted", name)
 	return err
-}
-
-func (conn *cloudConnector) newKubeInstance(linode *linodego.Linode) (*api.Node, error) {
-	var externalIP, internalIP string
-	ips, err := conn.client.Ip.List(linode.LinodeId, -1)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	for _, ip := range ips.FullIPAddresses {
-		if ip.IsPublic == 1 {
-			externalIP = ip.IPAddress
-		} else {
-			internalIP = ip.IPAddress
-		}
-		if externalIP != "" && internalIP != "" {
-			i := api.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					UID:  phid.NewKubeInstance(),
-					Name: linode.Label.String(),
-				},
-				Spec: api.NodeSpec{
-					SKU: strconv.Itoa(linode.PlanId),
-				},
-				Status: api.NodeStatus{
-					ExternalID:    strconv.Itoa(linode.LinodeId),
-					PublicIP:      externalIP,
-					PrivateIP:     internalIP,
-					Phase:         api.NodeReady,
-					ExternalPhase: statusString(linode.Status),
-				},
-			}
-			return &i, nil
-		}
-	}
-	return nil, errors.New("Failed to detect Public IP").WithContext(conn.ctx).Err()
 }
 
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {

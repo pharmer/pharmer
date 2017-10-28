@@ -128,15 +128,6 @@ type NodeTemplateSpec struct {
 	Spec NodeSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// Deprecated, replace with Kubernetes Node
-type Node struct {
-	metav1.TypeMeta   `json:",inline,omitempty"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-	Spec              NodeSpec   `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
-	Status            NodeStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
-}
-
 type IPType string
 
 const (
@@ -144,11 +135,7 @@ const (
 	IPTypeReserved  IPType = "Reserved"
 )
 
-// Deprecated
 type NodeSpec struct {
-	// Deprecated
-	Role string `protobuf:"bytes,1,opt,name=role"`
-
 	SKU            string `json:"sku,omitempty" protobuf:"bytes,2,opt,name=sku"`
 	SpotInstances  bool   `json:"spotInstances,omitempty" protobuf:"varint,3,opt,name=spotInstances"`
 	DiskType       string `json:"nodeDiskType,omitempty" protobuf:"bytes,4,opt,name=nodeDiskType"`
@@ -157,32 +144,6 @@ type NodeSpec struct {
 
 	KubeletExtraArgs map[string]string `json:"kubeletExtraArgs,omitempty" protobuf:"bytes,7,rep,name=kubeletExtraArgs"`
 }
-
-// Deprecated
-type NodeStatus struct {
-	Phase NodePhase `protobuf:"bytes,1,opt,name=phase,casttype=NodePhase"`
-
-	Name          string `protobuf:"bytes,2,opt,name=name"`
-	ExternalID    string `protobuf:"bytes,3,opt,name=externalID"`
-	PublicIP      string `protobuf:"bytes,4,opt,name=publicIP"`
-	PrivateIP     string `protobuf:"bytes,5,opt,name=privateIP"`
-	ExternalPhase string `protobuf:"bytes,6,opt,name=externalPhase"`
-	DiskId        string `json:"diskID,omitempty" protobuf:"bytes,7,opt,name=diskID"`
-}
-
-func (n Node) IsMaster() bool {
-	_, found := n.Labels[RoleMasterKey]
-	return found
-}
-
-// InstancePhase is a label for the condition of an Instance at the current time.
-// Deprecated
-type NodePhase string
-
-const (
-	NodeReady   NodePhase = "Ready"
-	NodeDeleted NodePhase = "Deleted"
-)
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 

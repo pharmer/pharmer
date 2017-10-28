@@ -804,18 +804,6 @@ func (conn *cloudConnector) createNodeGroup(ng *api.NodeGroup) (string, error) {
 	return r1.Name, nil
 }*/
 
-func (conn *cloudConnector) GetInstance(md *api.NodeStatus) (*api.SimpleNode, error) {
-	r2, err := conn.computeService.Instances.Get(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, md.Name).Do()
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	i, err := conn.newKubeInstance(r2)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	return i, nil
-}
-
 func (conn *cloudConnector) deleteOnlyNodeGroup(instanceGroupName, template string) error {
 	_, err := conn.computeService.InstanceGroupManagers.ListManagedInstances(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {

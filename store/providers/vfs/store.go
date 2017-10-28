@@ -188,10 +188,6 @@ func (s *FileStore) NodeGroups(cluster string) store.NodeGroupStore {
 	return &NodeGroupFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
 }
 
-func (s *FileStore) Instances(cluster string) store.InstanceStore {
-	return &InstanceFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
-}
-
 func (s *FileStore) Certificates(cluster string) store.CertificateStore {
 	return &CertificateFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
 }

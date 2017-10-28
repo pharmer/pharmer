@@ -417,16 +417,6 @@ message Networking {
   optional string masterSubnet = 7;
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// Deprecated, replace with Kubernetes Node
-message Node {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
-  optional NodeSpec spec = 2;
-
-  optional NodeStatus status = 3;
-}
-
 message NodeGroup {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
@@ -494,11 +484,7 @@ message NodeGroupStatus {
   repeated NodeGroupCondition conditions = 6;
 }
 
-// Deprecated
 message NodeSpec {
-  // Deprecated
-  optional string role = 1;
-
   optional string sku = 2;
 
   optional bool spotInstances = 3;
@@ -510,23 +496,6 @@ message NodeSpec {
   optional string externalIPType = 6;
 
   map<string, string> kubeletExtraArgs = 7;
-}
-
-// Deprecated
-message NodeStatus {
-  optional string phase = 1;
-
-  optional string name = 2;
-
-  optional string externalID = 3;
-
-  optional string publicIP = 4;
-
-  optional string privateIP = 5;
-
-  optional string externalPhase = 6;
-
-  optional string diskID = 7;
 }
 
 // PodTemplateSpec describes the data a pod should have when created from a template

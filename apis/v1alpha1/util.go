@@ -32,12 +32,6 @@ func AssignTypeKind(v interface{}) error {
 		}
 		u.Kind = "NodeGroup"
 		return nil
-	case *Node:
-		if u.APIVersion == "" {
-			u.APIVersion = "v1alpha1"
-		}
-		u.Kind = "Instance"
-		return nil
 	}
 	return errors.New("Unknown api object type")
 }

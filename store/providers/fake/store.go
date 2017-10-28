@@ -18,7 +18,6 @@ func init() {
 	store.RegisterProvider(UID, func(ctx context.Context, cfg *api.PharmerConfig) (store.Interface, error) {
 		return &FakeStore{
 			nodeGroups:   map[string]store.NodeGroupStore{},
-			nodes:        map[string]store.InstanceStore{},
 			certificates: map[string]store.CertificateStore{},
 			sshKeys:      map[string]store.SSHKeyStore{},
 		}, nil
@@ -29,7 +28,6 @@ type FakeStore struct {
 	credentials  store.CredentialStore
 	clusters     store.ClusterStore
 	nodeGroups   map[string]store.NodeGroupStore
-	nodes        map[string]store.InstanceStore
 	certificates map[string]store.CertificateStore
 	sshKeys      map[string]store.SSHKeyStore
 
@@ -66,16 +64,6 @@ func (s *FakeStore) NodeGroups(cluster string) store.NodeGroupStore {
 		s.nodeGroups[cluster] = &NodeGroupFileStore{container: map[string]*api.NodeGroup{}, cluster: cluster}
 	}
 	return s.nodeGroups[cluster]
-}
-
-func (s *FakeStore) Instances(cluster string) store.InstanceStore {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-
-	if _, found := s.nodes[cluster]; !found {
-		s.nodes[cluster] = &InstanceFileStore{container: map[string]*api.Node{}, cluster: cluster}
-	}
-	return s.nodes[cluster]
 }
 
 func (s *FakeStore) Certificates(cluster string) store.CertificateStore {
