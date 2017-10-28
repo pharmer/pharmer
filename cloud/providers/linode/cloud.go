@@ -198,7 +198,7 @@ func (conn *cloudConnector) deleteStackScript(ng *api.NodeGroup) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.SimpleNode, error) {
+func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
 	dcId, err := strconv.Atoi(conn.cluster.Spec.Cloud.Zone)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -284,7 +284,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	}
 	host := resp.Linodes[0]
 
-	node := api.SimpleNode{
+	node := api.NodeInfo{
 		Name:       host.Label.String(),
 		ExternalID: strconv.Itoa(host.LinodeId),
 	}

@@ -509,9 +509,9 @@ func (conn *cloudConnector) getNetworkInterface(name string) (network.Interface,
 	return conn.interfacesClient.Get(conn.namer.ResourceGroupName(), name, "")
 }
 
-func (conn *cloudConnector) GetNodeGroup(instanceGroup string) (bool, map[string]*api.SimpleNode, error) {
+func (conn *cloudConnector) GetNodeGroup(instanceGroup string) (bool, map[string]*api.NodeInfo, error) {
 	var flag bool = false
-	existingNGs := make(map[string]*api.SimpleNode)
+	existingNGs := make(map[string]*api.NodeInfo)
 	vm, err := conn.vmClient.List(conn.namer.ResourceGroupName())
 	if err != nil {
 		return false, existingNGs, errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -706,7 +706,7 @@ func (conn *cloudConnector) DeleteVirtualMachine(vmName string) error {
 	return err
 }
 
-func (conn *cloudConnector) newKubeInstance(vm compute.VirtualMachine, nic network.Interface, pip network.PublicIPAddress) (*api.SimpleNode, error) {
+func (conn *cloudConnector) newKubeInstance(vm compute.VirtualMachine, nic network.Interface, pip network.PublicIPAddress) (*api.NodeInfo, error) {
 	// TODO: Load once
 	cred, err := Store(conn.ctx).Credentials().Get(conn.cluster.Spec.CredentialName)
 	if err != nil {
@@ -717,7 +717,7 @@ func (conn *cloudConnector) newKubeInstance(vm compute.VirtualMachine, nic netwo
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", conn.cluster.Spec.CredentialName, err)
 	}
 
-	i := api.SimpleNode{
+	i := api.NodeInfo{
 		Name:       strings.ToLower(*vm.Name),
 		ExternalID: fmt.Sprintf(machineIDTemplate, typed.SubscriptionID(), conn.namer.ResourceGroupName(), *vm.Name),
 		PrivateIP:  *(*nic.IPConfigurations)[0].PrivateIPAddress,
@@ -728,8 +728,8 @@ func (conn *cloudConnector) newKubeInstance(vm compute.VirtualMachine, nic netwo
 	return &i, nil
 }
 
-func (conn *cloudConnector) StartNode(nodeName, token string, as compute.AvailabilitySet, sg network.SecurityGroup, sn network.Subnet, ng *api.NodeGroup) (*api.SimpleNode, error) {
-	ki := &api.SimpleNode{}
+func (conn *cloudConnector) StartNode(nodeName, token string, as compute.AvailabilitySet, sg network.SecurityGroup, sn network.Subnet, ng *api.NodeGroup) (*api.NodeInfo, error) {
+	ki := &api.NodeInfo{}
 
 	nodePIP, err := conn.createPublicIP(conn.namer.PublicIPName(nodeName), network.Dynamic)
 	if err != nil {
@@ -762,12 +762,12 @@ func (conn *cloudConnector) StartNode(nodeName, token string, as compute.Availab
 
 	ki, err = conn.newKubeInstance(nodeVM, nodeNIC, nodePIP)
 	if err != nil {
-		return &api.SimpleNode{}, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return &api.NodeInfo{}, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	return ki, nil
 }
 
-func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.SimpleNode, error) {
+func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
 	as, err := conn.getAvailablitySet()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()

@@ -201,7 +201,7 @@ func (conn *cloudConnector) releaseReservedIP(ip string) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.SimpleNode, error) {
+func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
 	script, err := conn.renderStartupScript(ng, token)
 	if err != nil {
 		return nil, err
@@ -250,7 +250,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	if err != nil {
 		return nil, err
 	}
-	node := api.SimpleNode{
+	node := api.NodeInfo{
 		Name:       host.Name,
 		ExternalID: strconv.Itoa(host.ID),
 	}

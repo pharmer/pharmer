@@ -40,13 +40,13 @@ func (igm *AWSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 			return
 		}
 	}
-	igm.ng.Status.FullyLabeledNodes = int64(len(nodes.Items))
+	igm.ng.Status.Nodes = int64(len(nodes.Items))
 	igm.ng.Status.ObservedGeneration = igm.ng.Generation
 	igm.ng.Spec.Template.Spec.DiskType = "gp2"
 
-	adjust := igm.ng.Spec.Nodes - igm.ng.Status.FullyLabeledNodes
+	adjust := igm.ng.Spec.Nodes - igm.ng.Status.Nodes
 
-	if (igm.ng.DeletionTimestamp != nil || igm.ng.Spec.Nodes == 0) && igm.ng.Status.FullyLabeledNodes > 0 {
+	if (igm.ng.DeletionTimestamp != nil || igm.ng.Spec.Nodes == 0) && igm.ng.Status.Nodes > 0 {
 		acts = append(acts, api.Action{
 			Action:   api.ActionDelete,
 			Resource: "Autoscaler",
@@ -87,7 +87,7 @@ func (igm *AWSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 		if !dryRun {
 			Store(igm.ctx).NodeGroups(igm.ng.ClusterName).Delete(igm.ng.Name)
 		}
-	} else if igm.ng.Spec.Nodes == igm.ng.Status.FullyLabeledNodes {
+	} else if igm.ng.Spec.Nodes == igm.ng.Status.Nodes {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "NodeGroup",
@@ -117,7 +117,7 @@ func (igm *AWSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 			acts = append(acts, api.Action{
 				Action:   api.ActionDelete,
 				Resource: "NodeGroup",
-				Message:  fmt.Sprintf("%v node will be deleted from %v group", igm.ng.Status.FullyLabeledNodes-igm.ng.Spec.Nodes, igm.ng.Name),
+				Message:  fmt.Sprintf("%v node will be deleted from %v group", igm.ng.Status.Nodes-igm.ng.Spec.Nodes, igm.ng.Name),
 			})
 			if !dryRun {
 				if err = igm.deleteNodeWithDrain(nodes.Items[igm.ng.Spec.Nodes:]); err != nil {
@@ -128,7 +128,7 @@ func (igm *AWSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 			acts = append(acts, api.Action{
 				Action:   api.ActionAdd,
 				Resource: "NodeGroup",
-				Message:  fmt.Sprintf("%v node will be added to %v group", igm.ng.Spec.Nodes-igm.ng.Status.FullyLabeledNodes, igm.ng.Name),
+				Message:  fmt.Sprintf("%v node will be added to %v group", igm.ng.Spec.Nodes-igm.ng.Status.Nodes, igm.ng.Name),
 			})
 			if !dryRun {
 				if err = igm.updateNodeGroup(igm.ng, igm.ng.Spec.Nodes); err != nil {

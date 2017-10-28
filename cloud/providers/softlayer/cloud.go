@@ -113,7 +113,7 @@ func (conn *cloudConnector) deleteSSHKey(id int) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.SimpleNode, error) {
+func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
 	script, err := conn.renderStartupScript(ng, token)
 	if err != nil {
 		return nil, err
@@ -183,7 +183,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		return nil, err
 	}
 
-	node := api.SimpleNode{
+	node := api.NodeInfo{
 		Name:       *host.FullyQualifiedDomainName,
 		ExternalID: strconv.Itoa(serverID),
 	}

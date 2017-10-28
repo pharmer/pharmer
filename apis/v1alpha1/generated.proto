@@ -425,27 +425,6 @@ message NodeGroup {
   optional NodeGroupStatus status = 3;
 }
 
-// NodeGroupCondition describes the state of a deployment at a certain point.
-message NodeGroupCondition {
-  // Type of deployment condition.
-  optional string type = 1;
-
-  // Status of the condition, one of True, False, Unknown.
-  optional string status = 2;
-
-  // The last time this condition was updated.
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastUpdateTime = 6;
-
-  // Last time the condition transitioned from one status to another.
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 7;
-
-  // The reason for the condition's last transition.
-  optional string reason = 4;
-
-  // A human readable message indicating details about the transition.
-  optional string message = 5;
-}
-
 message NodeGroupSpec {
   optional int64 nodes = 4;
 
@@ -455,33 +434,24 @@ message NodeGroupSpec {
 
 // NodeGroupStatus is the most recently observed status of the NodeGroup.
 message NodeGroupStatus {
-  // The number of pods that have labels matching the labels of the pod template of the node group.
-  // +optional
-  optional int64 fullyLabeledNodes = 2;
-
   // Nodes is the most recently oberved number of nodes.
-  // Deprecated
   optional int64 nodes = 1;
 
-  // The number of ready nodes for this node group.
-  // +optional
-  // Deprecated
-  optional int64 readyNodes = 4;
-
-  // The number of available nodes (ready for at least minReadySeconds) for this node group.
-  // +optional
-  // Deprecated
-  optional int64 availableNodes = 5;
-
   // ObservedGeneration reflects the generation of the most recently observed node group.
-  // +optiopharmer-linux-amd64nal
-  optional int64 observedGeneration = 3;
-
-  // Represents the latest available observations of a node group's current state.
   // +optional
-  // +patchMergeKey=type
-  // +patchStrategy=merge
-  repeated NodeGroupCondition conditions = 6;
+  optional int64 observedGeneration = 2;
+}
+
+message NodeInfo {
+  optional string name = 1;
+
+  optional string externalID = 2;
+
+  optional string publicIP = 3;
+
+  optional string privateIP = 4;
+
+  optional string diskID = 5;
 }
 
 message NodeSpec {
@@ -540,18 +510,6 @@ message SSHConfig {
   optional int32 instancePort = 3;
 
   optional string user = 4;
-}
-
-message SimpleNode {
-  optional string name = 1;
-
-  optional string externalID = 2;
-
-  optional string publicIP = 3;
-
-  optional string privateIP = 4;
-
-  optional string diskID = 5;
 }
 
 message StorageBackend {

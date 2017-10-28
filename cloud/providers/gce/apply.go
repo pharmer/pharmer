@@ -252,13 +252,13 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 
-			var masterInstance *api.SimpleNode
+			var masterInstance *api.NodeInfo
 			masterInstance, err = cm.conn.getInstance(cm.namer.MasterName())
 			if err != nil {
 				return acts, err
 			}
 
-			err = EnsureARecord2(cm.ctx, cm.cluster, masterInstance.PublicIP, masterInstance.PrivateIP) // works for reserved or non-reserved mode
+			err = EnsureARecord(cm.ctx, cm.cluster, masterInstance.PublicIP, masterInstance.PrivateIP) // works for reserved or non-reserved mode
 			if err != nil {
 				return
 			}

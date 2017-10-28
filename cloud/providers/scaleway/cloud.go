@@ -216,7 +216,7 @@ func (conn *cloudConnector) storeStartupScript(ng *api.NodeGroup, serverID, toke
 // ---------------------------------------------------------------------------------------------------------------------
 
 // func (conn *cloudConnector) createInstance(name, role, sku string, ipid ...string) (string, error) {
-func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.SimpleNode, error) {
+func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
 	publicIPID := ""
 	if ng.Role() == api.RoleMaster && ng.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
 		if len(conn.cluster.Status.ReservedIPs) == 0 {
@@ -284,7 +284,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	}
 	Logger(conn.ctx).Debugln(stdOut, stdErr, code)
 
-	node := api.SimpleNode{
+	node := api.NodeInfo{
 		Name:       host.Name,
 		ExternalID: host.Identifier,
 		PublicIP:   host.PublicAddress.IP,
