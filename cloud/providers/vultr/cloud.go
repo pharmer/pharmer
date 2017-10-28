@@ -238,7 +238,7 @@ func (conn *cloudConnector) deleteStartupScript(ng *api.NodeGroup) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.SimpleNode, error) {
+func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
 	regionID, err := strconv.Atoi(conn.cluster.Spec.Cloud.Zone)
 	if err != nil {
 		return nil, err
@@ -286,7 +286,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	node := api.SimpleNode{
+	node := api.NodeInfo{
 		Name:       host.Name,
 		ExternalID: host.ID,
 		PublicIP:   host.MainIP,

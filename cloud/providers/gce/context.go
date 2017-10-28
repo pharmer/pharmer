@@ -36,10 +36,6 @@ func New(ctx context.Context) Interface {
 	return &ClusterManager{ctx: ctx}
 }
 
-func (cm *ClusterManager) MatchInstance(i *api.Node, md *api.NodeStatus) bool {
-	return i.Name == md.Name
-}
-
 type paramK8sClient struct{}
 
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {

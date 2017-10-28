@@ -36,7 +36,7 @@ type NodeGroupManager interface {
 }
 
 type InstanceManager interface {
-	CreateInstance(name, token string, ng *api.NodeGroup) (*api.SimpleNode, error)
+	CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error)
 	DeleteInstanceByProviderID(providerID string) error
 }
 

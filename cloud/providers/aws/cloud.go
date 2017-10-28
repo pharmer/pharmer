@@ -851,7 +851,7 @@ func (conn *cloudConnector) getMaster() (bool, error) {
 	return true, err
 }
 
-func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.SimpleNode, error) {
+func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.NodeInfo, error) {
 	var err error
 	// TODO: FixIt!
 	masterDiskId, err := conn.ensurePd(conn.namer.MasterPDName(), ng.Spec.Template.Spec.DiskType, ng.Spec.Template.Spec.DiskSize)
@@ -914,7 +914,7 @@ func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.Si
 	if err != nil {
 		return nil, err
 	}
-	node := api.SimpleNode{
+	node := api.NodeInfo{
 		Name:       *r.Reservations[0].Instances[0].PrivateDnsName,
 		ExternalID: masterInstanceID,
 	}
@@ -1179,7 +1179,7 @@ func (conn *cloudConnector) getInstancePublicIP(instanceID string) (string, bool
 	return "", false, nil
 }
 
-func (conn *cloudConnector) listInstances(groupName string) ([]*api.SimpleNode, error) {
+func (conn *cloudConnector) listInstances(groupName string) ([]*api.NodeInfo, error) {
 	r2, err := conn.autoscale.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: []*string{
 			StringP(groupName),
@@ -1188,7 +1188,7 @@ func (conn *cloudConnector) listInstances(groupName string) ([]*api.SimpleNode, 
 	if err != nil {
 		return nil, err
 	}
-	instances := make([]*api.SimpleNode, 0)
+	instances := make([]*api.NodeInfo, 0)
 	for _, group := range r2.AutoScalingGroups {
 		for _, instance := range group.Instances {
 			ki, err := conn.newKubeInstance(*instance.InstanceId)
@@ -1201,7 +1201,7 @@ func (conn *cloudConnector) listInstances(groupName string) ([]*api.SimpleNode, 
 	return instances, nil
 }
 
-func (conn *cloudConnector) newKubeInstance(instanceID string) (*api.SimpleNode, error) {
+func (conn *cloudConnector) newKubeInstance(instanceID string) (*api.NodeInfo, error) {
 	var err error
 	var instance *_ec2.DescribeInstancesOutput
 	attempt := 0
@@ -1224,11 +1224,11 @@ func (conn *cloudConnector) newKubeInstance(instanceID string) (*api.SimpleNode,
 	}
 
 	if *instance.Reservations[0].Instances[0].State.Name != "running" {
-		return &api.SimpleNode{}, nil
+		return &api.NodeInfo{}, nil
 	}
 
 	// Don't reassign internal_ip for AWS to keep the fixed 172.20.0.9 for master_internal_ip
-	i := api.SimpleNode{
+	i := api.NodeInfo{
 		Name:       *instance.Reservations[0].Instances[0].PrivateDnsName,
 		ExternalID: instanceID,
 		PublicIP:   *instance.Reservations[0].Instances[0].PublicIpAddress,

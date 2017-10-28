@@ -536,7 +536,7 @@ func (conn *cloudConnector) createMasterIntance(ng *api.NodeGroup) (string, erro
 }
 
 // Instance
-func (conn *cloudConnector) getInstance(instance string) (*api.SimpleNode, error) {
+func (conn *cloudConnector) getInstance(instance string) (*api.NodeInfo, error) {
 	Logger(conn.ctx).Infof("Retrieving instance %v in zone %v", instance, conn.cluster.Spec.Cloud.Zone)
 	r1, err := conn.computeService.Instances.Get(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, instance).Do()
 	Logger(conn.ctx).Debug("Retrieved instance", r1, err)
@@ -546,9 +546,9 @@ func (conn *cloudConnector) getInstance(instance string) (*api.SimpleNode, error
 	return conn.newKubeInstance(r1)
 }
 
-func (conn *cloudConnector) listInstances(instanceGroup string) ([]*api.SimpleNode, error) {
+func (conn *cloudConnector) listInstances(instanceGroup string) ([]*api.NodeInfo, error) {
 	Logger(conn.ctx).Infof("Retrieving instances in node group %v", instanceGroup)
-	instances := make([]*api.SimpleNode, 0)
+	instances := make([]*api.NodeInfo, 0)
 	r1, err := conn.computeService.InstanceGroups.ListInstances(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, instanceGroup, &compute.InstanceGroupsListInstancesRequest{
 		InstanceState: "ALL",
 	}).Do()
@@ -573,10 +573,10 @@ func (conn *cloudConnector) listInstances(instanceGroup string) ([]*api.SimpleNo
 	return instances, nil
 }
 
-func (conn *cloudConnector) newKubeInstance(r1 *compute.Instance) (*api.SimpleNode, error) {
+func (conn *cloudConnector) newKubeInstance(r1 *compute.Instance) (*api.NodeInfo, error) {
 	for _, accessConfig := range r1.NetworkInterfaces[0].AccessConfigs {
 		if accessConfig.Type == "ONE_TO_ONE_NAT" {
-			i := api.SimpleNode{
+			i := api.NodeInfo{
 				Name:       r1.Name,
 				ExternalID: strconv.FormatUint(r1.Id, 10),
 				PublicIP:   accessConfig.NatIP,
@@ -803,18 +803,6 @@ func (conn *cloudConnector) createNodeGroup(ng *api.NodeGroup) (string, error) {
 	Logger(conn.ctx).Infof("Auto scaler %v for instance group %v created", ng.Name, target)
 	return r1.Name, nil
 }*/
-
-func (conn *cloudConnector) GetInstance(md *api.NodeStatus) (*api.SimpleNode, error) {
-	r2, err := conn.computeService.Instances.Get(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, md.Name).Do()
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	i, err := conn.newKubeInstance(r2)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	return i, nil
-}
 
 func (conn *cloudConnector) deleteOnlyNodeGroup(instanceGroupName, template string) error {
 	_, err := conn.computeService.InstanceGroupManagers.ListManagedInstances(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, instanceGroupName).Do()

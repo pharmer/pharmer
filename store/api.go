@@ -16,8 +16,6 @@ type Interface interface {
 
 	Clusters() ClusterStore
 	NodeGroups(cluster string) NodeGroupStore
-	// Deprecated
-	Instances(cluster string) InstanceStore
 	Certificates(cluster string) CertificateStore
 	SSHKeys(cluster string) SSHKeyStore
 }
@@ -46,16 +44,6 @@ type NodeGroupStore interface {
 	Update(obj *api.NodeGroup) (*api.NodeGroup, error)
 	Delete(name string) error
 	UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error)
-}
-
-// Deprecated
-type InstanceStore interface {
-	List(opts metav1.ListOptions) ([]*api.Node, error)
-	Get(name string) (*api.Node, error)
-	Create(obj *api.Node) (*api.Node, error)
-	Update(obj *api.Node) (*api.Node, error)
-	Delete(name string) error
-	UpdateStatus(obj *api.Node) (*api.Node, error)
 }
 
 type CertificateStore interface {

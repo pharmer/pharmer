@@ -38,12 +38,12 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 		}
 	}
 
-	igm.ng.Status.FullyLabeledNodes = int64(len(nodes.Items))
+	igm.ng.Status.Nodes = int64(len(nodes.Items))
 	igm.ng.Status.ObservedGeneration = igm.ng.Generation
 	igm.ng.Spec.Template.Spec.DiskType = "pd-standard"
-	adjust := igm.ng.Spec.Nodes - igm.ng.Status.FullyLabeledNodes
+	adjust := igm.ng.Spec.Nodes - igm.ng.Status.Nodes
 
-	if (igm.ng.DeletionTimestamp != nil || igm.ng.Spec.Nodes == 0) && igm.ng.Status.FullyLabeledNodes > 0 {
+	if (igm.ng.DeletionTimestamp != nil || igm.ng.Spec.Nodes == 0) && igm.ng.Status.Nodes > 0 {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "Node Group",
@@ -78,7 +78,7 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 			Store(igm.ctx).NodeGroups(igm.ng.ClusterName).Delete(igm.ng.Name)
 		}
 
-	} else if igm.ng.Spec.Nodes == igm.ng.Status.FullyLabeledNodes {
+	} else if igm.ng.Spec.Nodes == igm.ng.Status.Nodes {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "NodeGroup",

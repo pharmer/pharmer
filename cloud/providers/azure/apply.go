@@ -350,7 +350,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			if err != nil {
 				return
 			}
-			var masterInstance *api.SimpleNode
+			var masterInstance *api.NodeInfo
 			if masterInstance, err = cm.conn.newKubeInstance(masterVM, masterNIC, masterPIP); err != nil {
 				return
 			}
@@ -379,7 +379,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 
-			err = EnsureARecord2(cm.ctx, cm.cluster, masterInstance.PublicIP, masterInstance.PrivateIP) // works for reserved or non-reserved mode
+			err = EnsureARecord(cm.ctx, cm.cluster, masterInstance.PublicIP, masterInstance.PrivateIP) // works for reserved or non-reserved mode
 			if err != nil {
 				return
 			}

@@ -130,7 +130,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Master instance %s will be created", cm.namer.MasterName()),
 		})
 		if !dryRun {
-			var masterServer *api.SimpleNode
+			var masterServer *api.NodeInfo
 			masterServer, err = cm.conn.CreateInstance(cm.namer.MasterName(), "", masterNG)
 			if err != nil {
 				return
@@ -164,7 +164,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 
-			err = EnsureARecord2(cm.ctx, cm.cluster, masterServer.PublicIP, masterServer.PrivateIP) // works for reserved or non-reserved mode
+			err = EnsureARecord(cm.ctx, cm.cluster, masterServer.PublicIP, masterServer.PrivateIP) // works for reserved or non-reserved mode
 			if err != nil {
 				return
 			}

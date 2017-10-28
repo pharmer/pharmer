@@ -11,29 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-func EnsureARecord(ctx context.Context, cluster *api.Cluster, master *api.Node) error {
-	clusterDomain := Extra(ctx).Domain(cluster.Name)
-	// TODO: FixIT!
-	//for _, ip := range system.Config.Compass.IPs {
-	//	if err := DNSProvider(ctx).EnsureARecord(clusterDomain, ip); err != nil {
-	//		return err
-	//	}
-	//}
-	Logger(ctx).Infof("Cluster apps A record %v added", clusterDomain)
-	externalDomain := Extra(ctx).ExternalDomain(cluster.Name)
-	if err := DNSProvider(ctx).EnsureARecord(externalDomain, master.Status.PublicIP); err != nil {
-		return err
-	}
-	Logger(ctx).Infof("External A record %v added", externalDomain)
-	internalDomain := Extra(ctx).InternalDomain(cluster.Name)
-	if err := DNSProvider(ctx).EnsureARecord(internalDomain, master.Status.PrivateIP); err != nil {
-		return err
-	}
-	Logger(ctx).Infof("Internal A record %v added", internalDomain)
-	return nil
-}
-
-func EnsureARecord2(ctx context.Context, cluster *api.Cluster, publicIP, privateIP string) error {
+func EnsureARecord(ctx context.Context, cluster *api.Cluster, publicIP, privateIP string) error {
 	clusterDomain := Extra(ctx).Domain(cluster.Name)
 	// TODO: FixIT!
 	//for _, ip := range system.Config.Compass.IPs {

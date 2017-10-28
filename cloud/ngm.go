@@ -53,21 +53,21 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 			return
 		}
 	}
-	igm.ng.Status.FullyLabeledNodes = int64(len(nodes.Items))
+	igm.ng.Status.Nodes = int64(len(nodes.Items))
 	igm.ng.Status.ObservedGeneration = igm.ng.Generation
 
-	if igm.ng.Spec.Nodes == igm.ng.Status.FullyLabeledNodes {
+	if igm.ng.Spec.Nodes == igm.ng.Status.Nodes {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "NodeGroup",
 			Message:  fmt.Sprintf("No changed required for node group %s", igm.ng.Name),
 		})
 		return
-	} else if igm.ng.Spec.Nodes < igm.ng.Status.FullyLabeledNodes {
+	} else if igm.ng.Spec.Nodes < igm.ng.Status.Nodes {
 		acts = append(acts, api.Action{
 			Action:   api.ActionDelete,
 			Resource: "NodeGroup",
-			Message:  fmt.Sprintf("%v node will be deleted from %v group", igm.ng.Status.FullyLabeledNodes-igm.ng.Spec.Nodes, igm.ng.Name),
+			Message:  fmt.Sprintf("%v node will be deleted from %v group", igm.ng.Status.Nodes-igm.ng.Spec.Nodes, igm.ng.Name),
 		})
 		if !dryRun {
 			err = igm.DeleteNodes(nodes.Items[igm.ng.Spec.Nodes:])
@@ -89,7 +89,7 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "NodeGroup",
-			Message:  fmt.Sprintf("%v node will be added to %v group", igm.ng.Spec.Nodes-igm.ng.Status.FullyLabeledNodes, igm.ng.Name),
+			Message:  fmt.Sprintf("%v node will be added to %v group", igm.ng.Spec.Nodes-igm.ng.Status.Nodes, igm.ng.Name),
 		})
 		if !dryRun {
 			if igm.preHook != nil {
@@ -99,7 +99,7 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 				}
 			}
 
-			err = igm.AddNodes(igm.ng.Spec.Nodes - igm.ng.Status.FullyLabeledNodes)
+			err = igm.AddNodes(igm.ng.Spec.Nodes - igm.ng.Status.Nodes)
 			if err != nil {
 				return
 			}
