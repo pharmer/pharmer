@@ -305,7 +305,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "Master network interface",
-			Message:  fmt.Sprintf("Masater network interface %v found", cm.namer.NetworkInterfaceName(cm.cluster.Spec.KubernetesMasterName)),
+			Message:  fmt.Sprintf("Masater network interface %v found", cm.namer.NetworkInterfaceName(cm.namer.MasterName())),
 		})
 	}
 
@@ -393,7 +393,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "Master Instance",
-			Message:  fmt.Sprintf("Found master instance with name %v", cm.cluster.Spec.KubernetesMasterName),
+			Message:  fmt.Sprintf("Found master instance with name %v", cm.namer.MasterName()),
 		})
 	}
 

@@ -352,7 +352,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionDelete,
 			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("Will delete master instance with name %v", cm.cluster.Spec.KubernetesMasterName),
+			Message:  fmt.Sprintf("Will delete master instance with name %v", cm.namer.MasterName()),
 		})
 		if !dryRun {
 			err = cm.conn.DeleteInstanceByProviderID(masterInstance.Spec.ProviderID)

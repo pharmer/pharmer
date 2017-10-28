@@ -87,7 +87,6 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	cluster.Spec.Networking.MasterSubnet = "10.246.0.0/24"
 	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
-	cluster.Spec.KubernetesMasterName = n.MasterName()
 
 	// Init status
 	cluster.Status = api.ClusterStatus{
@@ -98,76 +97,6 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 				BucketName: rand.WithUniqSuffix("pharmer-config"),
 			},
 		},
-	}
-
-	// Fix the stuff below ----------------------------------------------------
-
-	// TODO: FixIt!
-	//cluster.Spec.AppsCodeApiGrpcEndpoint = system.PublicAPIGrpcEndpoint()
-	//cluster.Spec.AppsCodeApiHttpEndpoint = system.PublicAPIHttpEndpoint()
-	//cluster.Spec.AppsCodeClusterRootDomain = system.ClusterBaseDomain()
-
-	if cluster.Spec.EnableWebhookTokenAuthentication {
-		cluster.Spec.AppscodeAuthnURL = "" // TODO: FixIt system.KuberntesWebhookAuthenticationURL()
-	}
-	if cluster.Spec.EnableWebhookTokenAuthorization {
-		cluster.Spec.AppscodeAuthzURL = "" // TODO: FixIt system.KuberntesWebhookAuthorizationURL()
-	}
-
-	// TODO: FixIT!
-	//cluster.Spec.ClusterExternalDomain = Extra(ctx).ExternalDomain(cluster.Name)
-	//cluster.Spec.ClusterInternalDomain = Extra(ctx).InternalDomain(cluster.Name)
-	//cluster.Status.Phase = api.ClusterPhasePending
-
-	//-------------------------- ctx.MasterSKU = "94" // 2 cpu
-
-	// Using custom image with memory controller enabled
-	// -------------------------ctx.InstanceImage = "16604964" // "container-os-20160402" // Debian 8.4 x64
-
-	version, err := semver.NewVersion(cluster.Spec.KubernetesVersion)
-	if err != nil {
-		version, err = semver.NewVersion(cluster.Spec.KubernetesVersion)
-		if err != nil {
-			return nil, err
-		}
-	}
-	version = version.ToMutator().ResetPrerelease().ResetMetadata().Done()
-
-	v_1_4, _ := semver.NewConstraint(">= 1.4")
-	if v_1_4.Check(version) {
-		// Enable ScheduledJobs: http://kubernetes.io/docs/user-guide/scheduled-jobs/#prerequisites
-		/*if cluster.Spec.EnableScheduledJobResource {
-			if cluster.Spec.RuntimeConfig == "" {
-				cluster.Spec.RuntimeConfig = "batch/v2alpha1"
-			} else {
-				cluster.Spec.RuntimeConfig += ",batch/v2alpha1"
-			}
-		}*/
-
-		// http://kubernetes.io/docs/admin/authentication/
-		if cluster.Spec.EnableWebhookTokenAuthentication {
-			if cluster.Spec.RuntimeConfig == "" {
-				cluster.Spec.RuntimeConfig = "authentication.k8s.io/v1beta1=true"
-			} else {
-				cluster.Spec.RuntimeConfig += ",authentication.k8s.io/v1beta1=true"
-			}
-		}
-
-		// http://kubernetes.io/docs/admin/authorization/
-		if cluster.Spec.EnableWebhookTokenAuthorization {
-			if cluster.Spec.RuntimeConfig == "" {
-				cluster.Spec.RuntimeConfig = "authorization.k8s.io/v1beta1=true"
-			} else {
-				cluster.Spec.RuntimeConfig += ",authorization.k8s.io/v1beta1=true"
-			}
-		}
-		if cluster.Spec.EnableRBACAuthorization {
-			if cluster.Spec.RuntimeConfig == "" {
-				cluster.Spec.RuntimeConfig = "rbac.authorization.k8s.io/v1alpha1=true"
-			} else {
-				cluster.Spec.RuntimeConfig += ",rbac.authorization.k8s.io/v1alpha1=true"
-			}
-		}
 	}
 	return cluster, nil
 }

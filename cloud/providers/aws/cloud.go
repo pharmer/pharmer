@@ -825,7 +825,7 @@ func (conn *cloudConnector) getMaster() (bool, error) {
 		Filters: []*_ec2.Filter{
 			{
 				Name:   StringP("tag:Name"),
-				Values: StringPSlice([]string{conn.cluster.Spec.KubernetesMasterName}),
+				Values: StringPSlice([]string{conn.namer.MasterName()}),
 			},
 			{
 				Name:   StringP("tag:Role"),
@@ -1149,7 +1149,7 @@ func (conn *cloudConnector) createMasterInstance(name string, ng *api.NodeGroup)
 	instanceID := *r1.Instances[0].InstanceId
 	time.Sleep(preTagDelay)
 
-	err = conn.addTag(instanceID, "Name", conn.cluster.Spec.KubernetesMasterName)
+	err = conn.addTag(instanceID, "Name", conn.namer.MasterName())
 	if err != nil {
 		return instanceID, err
 	}
@@ -1299,7 +1299,7 @@ declare -x KUBEADM_TOKEN=%s
 	}
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
 		LaunchConfigurationName:  StringP(name),
-		AssociatePublicIpAddress: BoolP(conn.cluster.Spec.EnableNodePublicIP),
+		AssociatePublicIpAddress: TrueP(), // BoolP(conn.cluster.Spec.EnableNodePublicIP),
 		// http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-device-mapping-concepts.html
 		BlockDeviceMappings: []*autoscaling.BlockDeviceMapping{
 			// NODE_BLOCK_DEVICE_MAPPINGS
@@ -1389,7 +1389,7 @@ func (conn *cloudConnector) createAutoScalingGroup(name, launchConfig string, co
 }
 
 func (conn *cloudConnector) detectMaster() error {
-	masterID, err := conn.getInstanceIDFromName(conn.cluster.Spec.KubernetesMasterName)
+	masterID, err := conn.getInstanceIDFromName(conn.namer.MasterName())
 	if masterID == "" {
 		Logger(conn.ctx).Info("Could not detect Kubernetes master node.  Make sure you've launched a cluster with appctl.")
 		//os.Exit(0)
@@ -1403,7 +1403,7 @@ func (conn *cloudConnector) detectMaster() error {
 		Logger(conn.ctx).Info("Could not detect Kubernetes master node IP.  Make sure you've launched a cluster with appctl")
 		os.Exit(0)
 	}
-	Logger(conn.ctx).Infof("Using master: %v (external IP: %v)", conn.cluster.Spec.KubernetesMasterName, masterIP)
+	Logger(conn.ctx).Infof("Using master: %v (external IP: %v)", conn.namer.MasterName(), masterIP)
 	if err != nil {
 		return err
 	}

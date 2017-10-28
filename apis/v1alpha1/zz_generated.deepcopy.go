@@ -460,11 +460,6 @@ func (in *ClusterSpec) DeepCopyInto(out *ClusterSpec) {
 	in.Cloud.DeepCopyInto(&out.Cloud)
 	out.API = in.API
 	out.Networking = in.Networking
-	if in.AuthorizationModes != nil {
-		in, out := &in.AuthorizationModes, &out.AuthorizationModes
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
 	if in.APIServerCertSANs != nil {
 		in, out := &in.APIServerCertSANs, &out.APIServerCertSANs
 		*out = make([]string, len(*in))

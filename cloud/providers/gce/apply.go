@@ -217,7 +217,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			acts = append(acts, api.Action{
 				Action:   api.ActionNOP,
 				Resource: "Reserve IP",
-				Message:  fmt.Sprintf("Found, MasterReservedIP = ", cm.cluster.Spec.MasterReservedIP),
+				Message:  fmt.Sprintf("Found, MasterReservedIP = %s", reservedIP),
 			})
 		}
 	}
@@ -234,7 +234,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Master Instance",
-			Message:  fmt.Sprintf("Master instance with name %v will be created", cm.cluster.Spec.KubernetesMasterName),
+			Message:  fmt.Sprintf("Master instance with name %v will be created", cm.namer.MasterName()),
 		})
 
 		acts = append(acts, api.Action{
@@ -422,7 +422,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	acts = append(acts, api.Action{
 		Action:   api.ActionNOP,
 		Resource: "Master Instance",
-		Message:  fmt.Sprintf("Found master instance with name %v", cm.cluster.Spec.KubernetesMasterName),
+		Message:  fmt.Sprintf("Found master instance with name %v", cm.namer.MasterName()),
 	})
 	if !dryRun {
 		if err = cm.conn.deleteMaster(); err != nil {

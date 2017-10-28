@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	. "github.com/appscode/go/encoding/json/types"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -129,23 +128,14 @@ type ClusterSpec struct {
 	Cloud CloudSpec `json:"cloud" protobuf:"bytes,1,opt,name=cloud"`
 
 	API API `json:"api" protobuf:"bytes,2,opt,name=api"`
-	// move to api ?
-	// 	KubeAPIserverRequestTimeout string `json:"kubeAPIserverRequestTimeout,omitempty"`
-	// TerminatedPodGcThreshold    string `json:"terminatedPodGCThreshold,omitempty"`
 
 	// Etcd       kubeadm.Etcd `json:"etcd" protobuf:"bytes,3,opt,name=etcd"`
 	Networking Networking `json:"networking" protobuf:"bytes,4,opt,name=networking"`
 
-	Multizone            StrToBool `json:"multizone,omitempty" protobuf:"varint,5,opt,name=multizone,casttype=github.com/appscode/go/encoding/json/types.StrToBool"`
-	KubernetesVersion    string    `json:"kubernetesVersion,omitempty" protobuf:"bytes,6,opt,name=kubernetesVersion"`
-	MasterKubeadmVersion string    `json:"masterKubeadmVersion,omitempty" protobuf:"bytes,7,opt,name=masterKubeadmVersion"`
-
+	KubernetesVersion    string `json:"kubernetesVersion,omitempty" protobuf:"bytes,6,opt,name=kubernetesVersion"`
+	MasterKubeadmVersion string `json:"masterKubeadmVersion,omitempty" protobuf:"bytes,7,opt,name=masterKubeadmVersion"`
 	// request data. This is needed to give consistent access to these values for all commands.
-	DoNotDelete        bool     `json:"doNotDelete,omitempty" protobuf:"varint,8,opt,name=doNotDelete"`
-	AuthorizationModes []string `json:"authorizationModes,omitempty" protobuf:"bytes,9,rep,name=authorizationModes"`
-
-	//Token string `json:"token" protobuf:"bytes,10,opt,name=token"`
-	//TokenTTL metav1.Duration `json:"tokenTTL"`
+	DoNotDelete bool `json:"doNotDelete,omitempty" protobuf:"varint,8,opt,name=doNotDelete"`
 
 	// APIServerCertSANs sets extra Subject Alternative Names for the API Server signing cert
 	APIServerCertSANs     []string `json:"apiServerCertSANs,omitempty" protobuf:"bytes,11,rep,name=apiServerCertSANs"`
@@ -158,64 +148,6 @@ type ClusterSpec struct {
 	FrontProxyCACertName string `json:"frontProxyCaCertPHID,omitempty" protobuf:"bytes,15,opt,name=frontProxyCaCertPHID"`
 	CredentialName       string `json:"credentialName,omitempty" protobuf:"bytes,16,opt,name=credentialName"`
 
-	// Cloud Config
-
-	AllocateNodeCIDRs            bool   `json:"allocateNodeCidrs,omitempty" protobuf:"varint,17,opt,name=allocateNodeCidrs"`
-	LoggingDestination           string `json:"loggingDestination,omitempty" protobuf:"bytes,18,opt,name=loggingDestination"`
-	ElasticsearchLoggingReplicas int64  `json:"elasticsearchLoggingReplicas,omitempty" protobuf:"varint,19,opt,name=elasticsearchLoggingReplicas"`
-	AdmissionControl             string `json:"admissionControl,omitempty" protobuf:"bytes,20,opt,name=admissionControl"`
-	RuntimeConfig                string `json:"runtimeConfig,omitempty" protobuf:"bytes,21,opt,name=runtimeConfig"`
-
-	// Kube 1.3
-	AppscodeAuthnURL string `json:"appscodeAuthnURL,omitempty" protobuf:"bytes,22,opt,name=appscodeAuthnURL"`
-	AppscodeAuthzURL string `json:"appscodeAuthzURL,omitempty" protobuf:"bytes,23,opt,name=appscodeAuthzURL"`
-
-	// Kube 1.5.4
-
-	// config
-	// Some of these parameters might be useful to expose to users to configure as they please.
-	// For now, use the default value used by the Kubernetes project as the default value.
-
-	// TODO: Download the kube binaries from GCS bucket and ignore EU data locality issues for now.
-
-	// common
-
-	// GCE: Use Root Field for this in GCE
-
-	// MASTER_TAG="clusterName-master"
-	// NODE_TAG="clusterName-node"
-
-	// aws
-	// NODE_SCOPES=""
-
-	// NEW
-	// enable various v1beta1 features
-
-	AutoscalerMinNodes    int64   `json:"autoscalerMinNodes,omitempty" protobuf:"varint,24,opt,name=autoscalerMinNodes"`
-	AutoscalerMaxNodes    int64   `json:"autoscalerMaxNodes,omitempty" protobuf:"varint,25,opt,name=autoscalerMaxNodes"`
-	TargetNodeUtilization float64 `json:"targetNodeUtilization,omitempty" protobuf:"fixed64,26,opt,name=targetNodeUtilization"`
-
-	// only aws
-
-	EnableClusterMonitoring string `json:"enableClusterMonitoring,omitempty" protobuf:"bytes,27,opt,name=enableClusterMonitoring"`
-	EnableClusterLogging    bool   `json:"enableClusterLogging,omitempty" protobuf:"varint,28,opt,name=enableClusterLogging"`
-	EnableNodeLogging       bool   `json:"enableNodeLogging,omitempty" protobuf:"varint,29,opt,name=enableNodeLogging"`
-	EnableCustomMetrics     string `json:"enableCustomMetrics,omitempty" protobuf:"bytes,30,opt,name=enableCustomMetrics"`
-	// NEW
-	EnableAPIserverBasicAudit bool   `json:"enableAPIserverBasicAudit,omitempty" protobuf:"varint,31,opt,name=enableAPIserverBasicAudit"`
-	EnableClusterAlert        string `json:"enableClusterAlert,omitempty" protobuf:"bytes,32,opt,name=enableClusterAlert"`
-	EnableNodeProblemDetector bool   `json:"enableNodeProblemDetector,omitempty" protobuf:"varint,33,opt,name=enableNodeProblemDetector"`
-	// Kub1 1.4
-	EnableRescheduler                bool `json:"enableRescheduler,omitempty" protobuf:"varint,34,opt,name=enableRescheduler"`
-	EnableWebhookTokenAuthentication bool `json:"enableWebhookTokenAuthn,omitempty" protobuf:"varint,35,opt,name=enableWebhookTokenAuthn"`
-	EnableWebhookTokenAuthorization  bool `json:"enableWebhookTokenAuthz,omitempty" protobuf:"varint,36,opt,name=enableWebhookTokenAuthz"`
-	EnableRBACAuthorization          bool `json:"enableRbacAuthz,omitempty" protobuf:"varint,37,opt,name=enableRbacAuthz"`
-	EnableNodePublicIP               bool `json:"enableNodePublicIP,omitempty" protobuf:"varint,38,opt,name=enableNodePublicIP"`
-	EnableNodeAutoscaler             bool `json:"enableNodeAutoscaler,omitempty" protobuf:"varint,39,opt,name=enableNodeAutoscaler"`
-
-	// Consolidate DNS / Master name options
-	// Deprecated
-	KubernetesMasterName string `json:"kubernetesMasterName,omitempty" protobuf:"bytes,40,opt,name=kubernetesMasterName"`
 	// Deprecated
 	MasterInternalIP string `json:"masterInternalIp,omitempty" protobuf:"bytes,41,opt,name=masterInternalIp"`
 	// the master root ebs volume size (typically does not need to be very large)
@@ -225,24 +157,11 @@ type ClusterSpec struct {
 	// Delete since moved to NodeGroup / Instance
 	// Deprecated
 	MasterDiskType string `json:"masterDiskType,omitempty" protobuf:"bytes,43,opt,name=masterDiskType"`
-	// Deprecated
-	MasterDiskSize int64 `json:"masterDiskSize,omitempty" protobuf:"varint,44,opt,name=masterDiskSize"`
-	// Deprecated
-	MasterSKU string `json:"masterSku,omitempty" protobuf:"bytes,45,opt,name=masterSku"`
 	// If set to Elasticsearch IP, master instance will be associated with this IP.
 	// If set to auto, a new Elasticsearch IP will be acquired
 	// Otherwise amazon-given public ip will be used (it'll change with reboot).
 	// Deprecated
-	MasterReservedIP string `json:"masterReservedIp,omitempty" protobuf:"bytes,46,opt,name=masterReservedIp"`
-	// Deprecated
-	MasterExternalIP string `json:"masterExternalIp,omitempty" protobuf:"bytes,47,opt,name=masterExternalIp"`
-
-	// the node root ebs volume size (used to house docker images)
-	// Deprecated
-	NodeDiskType string `json:"nodeDiskType,omitempty" protobuf:"bytes,48,opt,name=nodeDiskType"`
-	// Deprecated
-	NodeDiskSize int64 `json:"nodeDiskSize,omitempty" protobuf:"varint,49,opt,name=nodeDiskSize"`
-
+	MasterReservedIP           string            `json:"masterReservedIp,omitempty" protobuf:"bytes,46,opt,name=masterReservedIp"`
 	KubeletExtraArgs           map[string]string `json:"kubeletExtraArgs,omitempty" protobuf:"bytes,50,rep,name=kubeletExtraArgs"`
 	APIServerExtraArgs         map[string]string `json:"apiServerExtraArgs,omitempty" protobuf:"bytes,51,rep,name=apiServerExtraArgs"`
 	ControllerManagerExtraArgs map[string]string `json:"controllerManagerExtraArgs,omitempty" protobuf:"bytes,52,rep,name=controllerManagerExtraArgs"`

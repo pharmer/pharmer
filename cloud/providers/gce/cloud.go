@@ -60,7 +60,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 			NetworkName:        "default",
 			NodeTags:           []string{namer.NodePrefix()},
 			NodeInstancePrefix: namer.NodePrefix(),
-			Multizone:          bool(cluster.Spec.Multizone),
+			Multizone:          false,
 		},
 	}
 
@@ -748,14 +748,14 @@ declare -x KUBEADM_TOKEN=%s
 			},
 		},
 	}
-	if conn.cluster.Spec.EnableNodePublicIP {
-		tpl.Properties.NetworkInterfaces[0].AccessConfigs = []*compute.AccessConfig{
-			{
-				Name: "Node External IP",
-				Type: "ONE_TO_ONE_NAT",
-			},
-		}
+	// if conn.cluster.Spec.EnableNodePublicIP {
+	tpl.Properties.NetworkInterfaces[0].AccessConfigs = []*compute.AccessConfig{
+		{
+			Name: "Node External IP",
+			Type: "ONE_TO_ONE_NAT",
+		},
 	}
+	// }
 	r1, err := conn.computeService.InstanceTemplates.Insert(conn.cluster.Spec.Cloud.Project, tpl).Do()
 	Logger(conn.ctx).Debug("Create instance template called", r1, err)
 	if err != nil {
