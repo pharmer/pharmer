@@ -88,7 +88,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 
 	cluster.Spec.Cloud.Azure.StorageAccountName = n.GenStorageAccountName()
 	cluster.Spec.Cloud.Azure.SubnetCIDR = "10.240.0.0/16"
-	cluster.Spec.Cloud.Azure.InstanceRootPassword = rand.GeneratePassword()
+	cluster.Spec.Cloud.Azure.RootPassword = rand.GeneratePassword()
 
 	return cluster, nil
 }

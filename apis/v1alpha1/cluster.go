@@ -91,13 +91,14 @@ type AzureSpec struct {
 	//only Azure
 	InstanceImageVersion string            `json:"instanceImageVersion,omitempty" protobuf:"bytes,2,opt,name=instanceImageVersion"`
 	CloudConfig          *AzureCloudConfig `json:"azureCloudConfig,omitempty" protobuf:"bytes,3,opt,name=azureCloudConfig"`
-	InstanceRootPassword string            `json:"instanceRootPassword,omitempty" protobuf:"bytes,4,opt,name=instanceRootPassword"`
+	RootPassword         string            `json:"rootPassword,omitempty" protobuf:"bytes,4,opt,name=rootPassword"`
 	SubnetCIDR           string            `json:"subnetCidr,omitempty" protobuf:"bytes,5,opt,name=subnetCidr"`
 }
 
 type LinodeSpec struct {
 	// Azure, Linode
-	InstanceRootPassword string `json:"instanceRootPassword,omitempty" protobuf:"bytes,1,opt,name=instanceRootPassword"`
+	RootPassword string `json:"rootPassword,omitempty" protobuf:"bytes,1,opt,name=rootPassword"`
+	KernelId     int64  `json:"kernelId,omitempty" protobuf:"varint,2,opt,name=kernelId"`
 }
 
 type CloudSpec struct {
@@ -106,7 +107,6 @@ type CloudSpec struct {
 	Region        string `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
 	Zone          string `json:"zone,omitempty" protobuf:"bytes,4,opt,name=zone"` // master needs it for ossec
 	OS            string `json:"os,omitempty" protobuf:"bytes,5,opt,name=os"`
-	Kernel        string `json:"kernel,omitempty" protobuf:"bytes,6,opt,name=kernel"` // needed ?
 
 	InstanceImage        string `json:"instanceImage,omitempty" protobuf:"bytes,8,opt,name=instanceImage"`
 	InstanceImageProject string `json:"instanceImageProject,omitempty" protobuf:"bytes,9,opt,name=instanceImageProject"`

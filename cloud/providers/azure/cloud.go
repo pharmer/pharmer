@@ -598,7 +598,7 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, as compu
 			},
 			OsProfile: &compute.OSProfile{
 				ComputerName:  StringP(vmName),
-				AdminPassword: StringP(conn.cluster.Spec.Cloud.Azure.InstanceRootPassword),
+				AdminPassword: StringP(conn.cluster.Spec.Cloud.Azure.RootPassword),
 				AdminUsername: StringP(conn.namer.AdminUsername()),
 				CustomData:    StringP(base64.StdEncoding.EncodeToString([]byte(data))),
 				LinuxConfiguration: &compute.LinuxConfiguration{
@@ -643,7 +643,7 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, as compu
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
-	Logger(conn.ctx).Infof("Virtual machine with disk %v password %v created", conn.namer.BootDiskURI(sa, vmName), conn.cluster.Spec.Cloud.Azure.InstanceRootPassword)
+	Logger(conn.ctx).Infof("Virtual machine with disk %v password %v created", conn.namer.BootDiskURI(sa, vmName), conn.cluster.Spec.Cloud.Azure.RootPassword)
 	// https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-linux-extensions-customscript?toc=%2fazure%2fvirtual-machines%2flinux%2ftoc.json
 	// https://github.com/Azure/custom-script-extension-linux
 	// old: https://github.com/Azure/azure-linux-extensions/tree/master/CustomScript

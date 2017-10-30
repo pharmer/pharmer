@@ -32,16 +32,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return nil, err
 	}
-	err = cm.conn.detectInstanceImage()
-	if err != nil {
+	if cm.cluster.Spec.Cloud.InstanceImage, err = cm.conn.DetectInstanceImage(); err != nil {
 		return nil, err
 	}
 	Logger(cm.ctx).Debugln("Linode instance image", cm.cluster.Spec.Cloud.InstanceImage)
-	err = cm.conn.detectKernel()
-	if err != nil {
+	if cm.cluster.Spec.Cloud.Linode.KernelId, err = cm.conn.DetectKernel(); err != nil {
 		return nil, err
 	}
-	Logger(cm.ctx).Infof("Linode kernel %v found", cm.cluster.Spec.Cloud.Kernel)
+	Logger(cm.ctx).Infof("Linode kernel %v found", cm.cluster.Spec.Cloud.Linode.KernelId)
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return cm.applyUpgrade(dryRun)
