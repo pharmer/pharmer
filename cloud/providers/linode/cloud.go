@@ -2,12 +2,12 @@ package linode
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/appscode/data"
-	"github.com/appscode/go/errors"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
@@ -29,7 +29,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.Linode{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, fmt.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 	return &cloudConnector{
 		ctx:     ctx,
@@ -39,35 +39,31 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}, nil
 }
 
-func (conn *cloudConnector) detectInstanceImage() error {
+func (conn *cloudConnector) DetectInstanceImage() (string, error) {
 	resp, err := conn.client.Avail.Distributions()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", err
 	}
-	Logger(conn.ctx).Infof("Checking for instance image")
 	for _, d := range resp.Distributions {
-		if d.Is64Bit == 1 && d.Label.String() == "Debian 8" {
-			conn.cluster.Spec.Cloud.InstanceImage = strconv.Itoa(d.DistributionId)
-			Logger(conn.ctx).Infof("Instance image %v with id %v found", d.Label.String(), conn.cluster.Spec.Cloud.InstanceImage)
-			return nil
+		if d.Is64Bit == 1 && d.Label.String() == "Ubuntu 16.04 LTS" {
+			return strconv.Itoa(d.DistributionId), nil
 		}
 	}
-	return errors.New("Can't find Debian 8 image").WithContext(conn.ctx).Err()
+	return "", errors.New("can't find `Ubuntu 16.04 LTS` image")
 }
 
-func (conn *cloudConnector) detectKernel() error {
+func (conn *cloudConnector) DetectKernel() (int64, error) {
 	resp, err := conn.client.Avail.Kernels(map[string]string{
 		"isKVM": "true",
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return 0, err
 	}
 	kernelId := -1
 	for _, d := range resp.Kernels {
 		if d.IsPVOPS == 1 {
 			if strings.HasPrefix(d.Label.String(), "Latest 64 bit") {
-				conn.cluster.Spec.Cloud.Kernel = strconv.Itoa(d.KernelId)
-				return nil
+				return int64(d.KernelId), nil
 			}
 			if strings.Contains(d.Label.String(), "x86_64") && d.KernelId > kernelId {
 				kernelId = d.KernelId
@@ -75,10 +71,9 @@ func (conn *cloudConnector) detectKernel() error {
 		}
 	}
 	if kernelId >= 0 {
-		conn.cluster.Spec.Cloud.Kernel = strconv.Itoa(kernelId)
-		return nil
+		return int64(kernelId), nil
 	}
-	return errors.New("Can't find Kernel").WithContext(conn.ctx).Err()
+	return 0, errors.New("can't find Kernel")
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -96,7 +91,7 @@ func (conn *cloudConnector) waitForStatus(id, status int) error {
 			return false, nil
 		}
 		server := resp.Linodes[0]
-		Logger(conn.ctx).Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, id, server.Status)
+		Logger(conn.ctx).Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, id, statusString(server.Status))
 		if server.Status == status {
 			return true, nil
 		}
@@ -198,100 +193,35 @@ func (conn *cloudConnector) deleteStackScript(ng *api.NodeGroup) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
+func (conn *cloudConnector) CreateInstance(n2, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
 	dcId, err := strconv.Atoi(conn.cluster.Spec.Cloud.Zone)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, err
 	}
 	planId, err := strconv.Atoi(ng.Spec.Template.Spec.SKU)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, err
 	}
 	server, err := conn.client.Linode.Create(dcId, planId, 0)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, err
 	}
 	linodeId := server.LinodeId.LinodeId
-
 	_, err = conn.client.Ip.AddPrivate(linodeId)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, err
 	}
-
-	scriptId, err := conn.getStartupScriptID(ng)
+	err = conn.waitForStatus(linodeId, LinodeStatus_BrandNew)
 	if err != nil {
 		return nil, err
 	}
-
-	stackScriptUDFResponses := fmt.Sprintf(`{
-  "cluster": "%v",
-  "instance": "%v",
-  "stack_script_id": "%v"
-}`, conn.cluster.Name, name, scriptId)
-	args := map[string]string{
-		"rootSSHKey": string(SSHKey(conn.ctx).PublicKey),
-	}
-
-	mt, err := data.ClusterMachineType("linode", ng.Spec.Template.Spec.SKU)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	distributionID, err := strconv.Atoi(conn.cluster.Spec.Cloud.InstanceImage)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	swapDiskSize := 512                // MB
-	rootDiskSize := mt.Disk*1024 - 512 // MB
-	rootDisk, err := conn.client.Disk.CreateFromStackscript(scriptId, linodeId, name, stackScriptUDFResponses, distributionID, rootDiskSize, conn.cluster.Spec.Cloud.Linode.InstanceRootPassword, args)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	swapDisk, err := conn.client.Disk.Create(linodeId, "swap", "swap-disk", swapDiskSize, nil)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-
-	kernelId, err := strconv.Atoi(conn.cluster.Spec.Cloud.Kernel)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	args = map[string]string{
-		"RootDeviceNum": "1",
-		"DiskList":      fmt.Sprintf("%d,%d", rootDisk.DiskJob.DiskId, swapDisk.DiskJob.DiskId),
-	}
-	config, err := conn.client.Config.Create(linodeId, kernelId, name, args)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-
-	jobResp, err := conn.client.Linode.Boot(linodeId, config.LinodeConfigId.LinodeConfigId)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	Logger(conn.ctx).Info("Running linode boot job %v", jobResp.JobId.JobId)
-	Logger(conn.ctx).Infof("Linode %v created", name)
-
-	// return linodeId, config.LinodeConfigId.LinodeConfigId, err
-
-	err = conn.waitForStatus(linodeId, LinodeStatus_Running)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := conn.client.Linode.List(linodeId)
-	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	host := resp.Linodes[0]
 
 	node := api.NodeInfo{
-		Name:       host.Label.String(),
-		ExternalID: strconv.Itoa(host.LinodeId),
+		ExternalID: strconv.Itoa(linodeId),
 	}
-
 	ips, err := conn.client.Ip.List(linodeId, -1)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, err
 	}
 	for _, ip := range ips.FullIPAddresses {
 		if ip.IsPublic == 1 {
@@ -300,6 +230,63 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 			node.PrivateIP = ip.IPAddress
 		}
 	}
+	parts := strings.SplitN(node.PublicIP, ".", 4)
+	node.Name = fmt.Sprintf("%s-%03s-%03s-%03s-%03s", conn.cluster.Name, parts[0], parts[1], parts[2], parts[3])
+
+	_, err = conn.client.Linode.Update(linodeId, map[string]interface{}{
+		"Label": node.Name,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	scriptId, err := conn.getStartupScriptID(ng)
+	if err != nil {
+		return nil, err
+	}
+
+	stackScriptUDFResponses := fmt.Sprintf(`{"hostname": "%s"}`, node.Name)
+	mt, err := data.ClusterMachineType("linode", ng.Spec.Template.Spec.SKU)
+	if err != nil {
+		return nil, err
+	}
+	distributionID, err := strconv.Atoi(conn.cluster.Spec.Cloud.InstanceImage)
+	if err != nil {
+		return nil, err
+	}
+	swapDiskSize := 512                // MB
+	rootDiskSize := mt.Disk*1024 - 512 // MB
+	rootDisk, err := conn.client.Disk.CreateFromStackscript(
+		scriptId,
+		linodeId,
+		node.Name,
+		stackScriptUDFResponses,
+		distributionID,
+		rootDiskSize,
+		conn.cluster.Spec.Cloud.Linode.RootPassword,
+		map[string]string{
+			"rootSSHKey": string(SSHKey(conn.ctx).PublicKey),
+		})
+	if err != nil {
+		return nil, err
+	}
+	swapDisk, err := conn.client.Disk.Create(linodeId, "swap", "swap-disk", swapDiskSize, nil)
+	if err != nil {
+		return nil, err
+	}
+	config, err := conn.client.Config.Create(linodeId, int(conn.cluster.Spec.Cloud.Linode.KernelId), node.Name, map[string]string{
+		"RootDeviceNum": "1",
+		"DiskList":      fmt.Sprintf("%d,%d", rootDisk.DiskJob.DiskId, swapDisk.DiskJob.DiskId),
+	})
+	if err != nil {
+		return nil, err
+	}
+	jobResp, err := conn.client.Linode.Boot(linodeId, config.LinodeConfigId.LinodeConfigId)
+	if err != nil {
+		return nil, err
+	}
+	Logger(conn.ctx).Info("Running linode boot job %v", jobResp.JobId.JobId)
+
 	return &node, nil
 }
 

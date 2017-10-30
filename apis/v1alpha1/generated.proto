@@ -115,7 +115,7 @@ message AzureSpec {
 
   optional AzureCloudConfig azureCloudConfig = 3;
 
-  optional string instanceRootPassword = 4;
+  optional string rootPassword = 4;
 
   optional string subnetCidr = 5;
 }
@@ -137,8 +137,6 @@ message CloudSpec {
 
   // master needs it for ossec
   optional string os = 5;
-
-  optional string kernel = 6;
 
   optional string instanceImage = 8;
 
@@ -319,7 +317,9 @@ message GoogleSpec {
 
 message LinodeSpec {
   // Azure, Linode
-  optional string instanceRootPassword = 1;
+  optional string rootPassword = 1;
+
+  optional int64 kernelId = 2;
 }
 
 message LocalSpec {
