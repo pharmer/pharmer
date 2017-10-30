@@ -87,7 +87,7 @@ func (td TemplateData) PackageList() string {
 		"socat",
 	}
 	if !td.IsPreReleaseVersion() {
-		if td.KubeadmVersion != "" {
+		if td.KubeadmVersion == "" {
 			pkgs = append(pkgs, "kubeadm")
 		} else {
 			pkgs = append(pkgs, "kubeadm="+td.KubeadmVersion)
