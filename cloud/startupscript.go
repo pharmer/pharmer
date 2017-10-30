@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"bytes"
+	"strings"
 	"text/template"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
@@ -72,6 +73,32 @@ func (td TemplateData) KubeletExtraArgsWithoutCloudProviderStr() string {
 	return buf.String()
 }
 
+func (td TemplateData) PackageList() string {
+	pkgs := []string{
+		"cron",
+		"docker.io",
+		"ebtables",
+		"git",
+		"glusterfs-client",
+		"haveged",
+		"kubectl",
+		"kubelet",
+		"nfs-common",
+		"socat",
+	}
+	if !td.IsPreReleaseVersion() {
+		if td.KubeadmVersion != "" {
+			pkgs = append(pkgs, "kubeadm")
+		} else {
+			pkgs = append(pkgs, "kubeadm="+td.KubeadmVersion)
+		}
+	}
+	if td.Provider != "gce" && td.Provider != "gke" {
+		pkgs = append(pkgs, "ntp")
+	}
+	return strings.Join(pkgs, " ")
+}
+
 var (
 	StartupScriptTemplate = template.Must(template.New(api.RoleMaster).Parse(`#!/bin/bash
 set -x
@@ -97,20 +124,7 @@ echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.l
 add-apt-repository -y ppa:gluster/glusterfs-3.10
 
 apt-get update -y
-apt-get install -y \
-	socat \
-	ebtables \
-	git \
-	haveged \
-	nfs-common \
-	cron \
-	glusterfs-client \
-	kubectl \
-	kubelet \
-	{{ if not .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }}{{ end }} \
-	cloud-utils \
-	docker.io || true
-
+apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
 curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
     && chmod +x kubeadm \
@@ -203,19 +217,7 @@ echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.l
 add-apt-repository -y ppa:gluster/glusterfs-3.10
 
 apt-get update -y
-apt-get install -y \
-	socat \
-	ebtables \
-	git \
-	haveged \
-	nfs-common \
-	cron \
-	glusterfs-client \
-	kubelet \
-	kubectl \
-	{{ if not .IsPreReleaseVersion }}kubeadm{{ if .KubeadmVersion }}={{ .KubeadmVersion }}{{ end }}{{ end }} \
-	docker.io || true
-
+apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
 curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
     && chmod +x kubeadm \
