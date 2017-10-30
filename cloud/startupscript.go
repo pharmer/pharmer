@@ -75,17 +75,16 @@ func (td TemplateData) KubeletExtraArgsWithoutCloudProviderStr() string {
 
 func (td TemplateData) PackageList() string {
 	pkgs := []string{
-		"socat",
+		"cron",
+		"docker.io",
 		"ebtables",
 		"git",
-		"haveged",
-		"nfs-common",
-		"cron",
 		"glusterfs-client",
+		"haveged",
 		"kubectl",
 		"kubelet",
-		"cloud-utils",
-		"docker.io",
+		"nfs-common",
+		"socat",
 	}
 	if !td.IsPreReleaseVersion() {
 		if td.KubeadmVersion != "" {
