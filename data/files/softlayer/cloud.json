@@ -824,7 +824,7 @@
         {
           "envconfig": "SOFTLAYER_API_KEY",
           "form": "softlayer_api_key",
-          "json": "api_key",
+          "json": "apiKey",
           "label": "API Key",
           "input": "password"
         }
