@@ -77,6 +77,22 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	// REGISTER_MASTER_KUBELET = false // always false, keep master lightweight
 	// PREEMPTIBLE_NODE = false // Removed Support
 
+	cluster.Spec.Cloud.InstanceImageProject = "ubuntu-os-cloud"
+	cluster.Spec.Cloud.InstanceImage = "ubuntu-1604-xenial-v20170721"
+	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
+	cluster.Spec.Networking.PodSubnet = "10.244.0.0/16"
+	if len(cluster.Spec.AuthorizationModes) == 0 {
+		cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
+	}
+	{
+		if domain := Extra(cm.ctx).ExternalDomain(cluster.Name); domain != "" {
+			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
+		}
+		if domain := Extra(cm.ctx).InternalDomain(cluster.Name); domain != "" {
+			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
+		}
+	}
+
 	// Init status
 	cluster.Status = api.ClusterStatus{
 		Phase:            api.ClusterPending,
@@ -87,11 +103,6 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 			},
 		},
 	}
-	cluster.Spec.Cloud.InstanceImageProject = "ubuntu-os-cloud"
-	cluster.Spec.Cloud.InstanceImage = "ubuntu-1604-xenial-v20170721"
-	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
-	cluster.Spec.Networking.PodSubnet = "10.244.0.0/16"
-
 	return cluster, nil
 }
 

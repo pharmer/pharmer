@@ -188,17 +188,10 @@ message ClusterSpec {
 
   optional string kubernetesVersion = 6;
 
-  optional string masterKubeadmVersion = 7;
+  optional string binaryVersion = 7;
 
   // request data. This is needed to give consistent access to these values for all commands.
   optional bool doNotDelete = 8;
-
-  // APIServerCertSANs sets extra Subject Alternative Names for the API Server signing cert
-  repeated string apiServerCertSANs = 11;
-
-  optional string clusterExternalDomain = 12;
-
-  optional string clusterInternalDomain = 13;
 
   // Auto Set
   // https://github.com/kubernetes/kubernetes/blob/master/cluster/gce/util.sh#L538
@@ -232,6 +225,11 @@ message ClusterSpec {
   map<string, string> controllerManagerExtraArgs = 52;
 
   map<string, string> schedulerExtraArgs = 53;
+
+  repeated string authorizationModes = 54;
+
+  // APIServerCertSANs sets extra Subject Alternative Names for the API Server signing cert
+  repeated string apiServerCertSANs = 11;
 }
 
 // ClusterState describes the state of certain versions for a cluster
@@ -327,6 +325,9 @@ message LocalSpec {
 }
 
 message Networking {
+  optional string networkProvider = 4;
+
+  // kubenet, flannel, calico, opencontrail
   optional string podSubnet = 1;
 
   optional string serviceSubnet = 2;
@@ -334,8 +335,6 @@ message Networking {
   optional string dnsDomain = 3;
 
   // NEW
-  optional string networkProvider = 4;
-
   // Replacing API_SERVERS https://github.com/kubernetes/kubernetes/blob/62898319dff291843e53b7839c6cde14ee5d2aa4/cluster/aws/util.sh#L1004
   optional string dnsServerIP = 5;
 

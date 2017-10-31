@@ -66,12 +66,11 @@ subjects:
   namespace: kube-system
 ---
 apiVersion: extensions/v1beta1
-kind: Deployment
+kind: DaemonSet
 metadata:
-  name: digitalocean-cloud-controller-manager
+  name: cloud-controller-manager
   namespace: kube-system
 spec:
-  replicas: 1
   template:
     metadata:
       labels:
@@ -79,6 +78,9 @@ spec:
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      hostNetwork: true
       dnsPolicy: Default
       tolerations:
         # this taint is set by all kubelets running `--cloud-provider=external`
@@ -91,24 +93,21 @@ spec:
         # cloud controller manages should be able to run on masters
         - key: "node-role.kubernetes.io/master"
           effect: NoSchedule
+      serviceAccountName: cloud-controller-manager
       containers:
       - image: digitalocean/digitalocean-cloud-controller-manager:v0.1.2
-        name: digitalocean-cloud-controller-manager
+        name: ccm
         command:
           - "/bin/digitalocean-cloud-controller-manager"
           - "--cloud-provider=digitalocean"
           - "--leader-elect=false"
-          - "--kubeconfig=/etc/kubernetes/admin.conf"
-        volumeMounts:
-        - mountPath: /etc/kubernetes
-          name: k8s
+        resources:
+          requests:
+            cpu: 100m
+            memory: 50Mi
         env:
           - name: DO_ACCESS_TOKEN
             valueFrom:
               secretKeyRef:
                 name: digitalocean
                 key: token
-      volumes:
-      - name: k8s
-        hostPath:
-          path: /etc/kubernetes
