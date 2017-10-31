@@ -82,8 +82,8 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 
 var (
 	customTemplate = `
-{{ define "prepare-host" }}
-# Avoid using Linode's Ubuntu archive
+{{ define "init-os" }}
+# Avoid using Linode's Ubuntu mirror
 curl -Lo /etc/apt/sources.list https://raw.githubusercontent.com/appscode/pharmer/master/addons/ubuntu/16.04/sources.list
 
 # http://ask.xmodulo.com/disable-ipv6-linux.html
@@ -97,7 +97,9 @@ net.ipv6.conf.eth0.disable_ipv6 = 1
 EOF
 /sbin/sysctl -p /etc/sysctl.conf
 /bin/sed -i 's/^#AddressFamily any/AddressFamily inet/' /etc/ssh/sshd_config
+{{ end }}
 
+{{ define "prepare-host" }}
 HOSTNAME=$(pre-k get linode-hostname -k {{ .ClusterName }})
 hostnamectl set-hostname $HOSTNAME
 {{ end }}

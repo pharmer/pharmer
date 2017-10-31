@@ -82,7 +82,8 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 
 var (
 	customTemplate = `
-{{ define "prepare-host" }}
+{{ define "init-os" }}
+# Avoid using Packet's Ubuntu mirror
 curl -Lo /etc/apt/sources.list https://raw.githubusercontent.com/appscode/pharmer/master/addons/ubuntu/16.04/sources.list
 {{ end }}
 `

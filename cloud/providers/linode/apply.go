@@ -97,7 +97,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 	masterNG := FindMasterNodeGroup(nodeGroups)
 	if masterNG.Spec.Template.Spec.SKU == "" {
-		masterNG.Spec.Template.Spec.SKU = "2"
+		masterNG.Spec.Template.Spec.SKU = "3"
 		masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
 		if err != nil {
 			return
