@@ -261,6 +261,10 @@ do
 done
 
 kubectl apply \
+  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/rbac.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+
+kubectl apply \
   -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/{{ .CloudProvider }}/installer.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 
