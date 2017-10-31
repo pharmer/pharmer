@@ -10,25 +10,41 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - events
+  verbs:
+  - create
+  - patch
+  - update
+- apiGroups:
+  - ""
+  resources:
   - nodes
   verbs:
-  - "*"
+  - '*'
 - apiGroups:
   - ""
   resources:
   - services
   verbs:
   - list
-  - watch
   - patch
+  - update
+  - watch
 - apiGroups:
   - ""
   resources:
-  - events
+  - serviceaccounts
   verbs:
   - create
-  - patch
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumes
+  verbs:
+  - get
+  - list
   - update
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -39,12 +55,6 @@ rules:
   - list
   - watch
   - update
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - create
 ---
 apiVersion: v1
 kind: ServiceAccount
