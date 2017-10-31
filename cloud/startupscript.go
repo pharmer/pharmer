@@ -316,7 +316,7 @@ systemctl restart kubelet
 
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 kubectl apply \
-  -f https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml \
+  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/calico/2.6/calico.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 
