@@ -113,6 +113,11 @@ kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 
 apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common
+curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.8/pre-k-linux-amd64 \
+	&& chmod +x pre-k \
+	&& mv pre-k /usr/bin/
+{{ template "prepare-host" . }}
+
 curl -fSsL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
 add-apt-repository -y ppa:gluster/glusterfs-3.10
@@ -123,11 +128,6 @@ curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64
     && chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
 {{ end }}
-curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.8/pre-k-linux-amd64 \
-	&& chmod +x pre-k \
-	&& mv pre-k /usr/bin/
-
-{{ template "prepare-host" . }}
 
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
@@ -199,6 +199,11 @@ kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 
 apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common
+curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.8/pre-k-linux-amd64 \
+	&& chmod +x pre-k \
+	&& mv pre-k /usr/bin/
+{{ template "prepare-host" . }}
+
 curl -fSsL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
 add-apt-repository -y ppa:gluster/glusterfs-3.10
@@ -209,8 +214,6 @@ curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64
     && chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
 {{ end }}
-
-{{ template "prepare-host" . }}
 
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
