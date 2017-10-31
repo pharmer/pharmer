@@ -55,7 +55,7 @@ func (td TemplateData) KubeletExtraArgsStr() string {
 	return buf.String()
 }
 
-func (td TemplateData) KubeletExtraArgsWithoutCloudProviderStr() string {
+func (td TemplateData) KubeletExtraArgsEmptyCloudProviderStr() string {
 	var buf bytes.Buffer
 	for k, v := range td.KubeletExtraArgs {
 		if k == "cloud-config" {
@@ -133,16 +133,10 @@ curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.7/pre-k-linux
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
-systemctl enable docker
-systemctl start docker
-
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
-Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
+Environment="KUBELET_EXTRA_ARGS={{ if .ExternalProvider }}{{ .KubeletExtraArgsEmptyCloudProviderStr }}{{ else }}{{ .KubeletExtraArgsStr }}{{ end }}"
 EOF
-
-systemctl daemon-reload
-systemctl restart kubelet
 
 kubeadm reset
 
@@ -264,8 +258,26 @@ chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 
 	_ = template.Must(StartupScriptTemplate.New("ccm").Parse(`
 kubectl apply \
-	-f https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/digitalocean/cloud-control-manager.yaml \
-	--kubeconfig /etc/kubernetes/admin.conf
+  -f https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/digitalocean/cloud-control-manager.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+
+until [ $(kubectl get pods -n kube-system -l app=cloud-controller-manager -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
+do
+   echo '.'
+   sleep 5
+done
+
+kubectl taint nodes $(uname -n) node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
+
+cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
+[Service]
+Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
+EOF
+systemctl daemon-reload
+systemctl restart kubelet
+
+# systemctl enable docker
+# systemctl start docker
 
 # until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
 # do
@@ -287,7 +299,7 @@ kubectl apply \
 # EOF
 # 
 # NODE_NAME=$(uname -n)
-# kubectl taint nodes ${NODE_NAME} node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
+# kubectl taint nodes $(uname -n) node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
 # 
 # systemctl daemon-reload
 # systemctl restart kubelet
