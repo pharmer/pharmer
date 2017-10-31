@@ -83,6 +83,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 var (
 	customTemplate = `
 {{ define "prepare-host" }}
+# Avoid using Linode's Ubuntu archive
 curl -Lo /etc/apt/sources.list https://raw.githubusercontent.com/appscode/pharmer/master/addons/ubuntu/16.04/sources.list
 
 # http://ask.xmodulo.com/disable-ipv6-linux.html
