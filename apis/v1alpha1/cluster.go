@@ -7,6 +7,7 @@ import (
 
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
 const (
@@ -52,17 +53,35 @@ type Cluster struct {
 }
 
 type Networking struct {
-	PodSubnet     string `json:"podSubnet,omitempty" protobuf:"bytes,1,opt,name=podSubnet"`
+	NetworkProvider string `json:"networkProvider,omitempty" protobuf:"bytes,4,opt,name=networkProvider"` // kubenet, flannel, calico, opencontrail
+	PodSubnet       string `json:"podSubnet,omitempty" protobuf:"bytes,1,opt,name=podSubnet"`
+
 	ServiceSubnet string `json:"serviceSubnet,omitempty" protobuf:"bytes,2,opt,name=serviceSubnet"`
 	DNSDomain     string `json:"dnsDomain,omitempty" protobuf:"bytes,3,opt,name=dnsDomain"`
 
 	// NEW
-	NetworkProvider string `json:"networkProvider,omitempty" protobuf:"bytes,4,opt,name=networkProvider"` // kubenet, flannel, calico, opencontrail
 	// Replacing API_SERVERS https://github.com/kubernetes/kubernetes/blob/62898319dff291843e53b7839c6cde14ee5d2aa4/cluster/aws/util.sh#L1004
 	DNSServerIP       string `json:"dnsServerIP,omitempty" protobuf:"bytes,5,opt,name=dnsServerIP"`
 	NonMasqueradeCIDR string `json:"nonMasqueradeCIDR,omitempty" protobuf:"bytes,6,opt,name=nonMasqueradeCIDR"`
+	MasterSubnet      string `json:"masterSubnet,omitempty" protobuf:"bytes,7,opt,name=masterSubnet"` // delete ?
+}
 
-	MasterSubnet string `json:"masterSubnet,omitempty" protobuf:"bytes,7,opt,name=masterSubnet"` // delete ?
+func (n *Networking) SetDefaults() {
+	if n.ServiceSubnet == "" {
+		n.ServiceSubnet = kubeadmapi.DefaultServicesSubnet
+	}
+	if n.DNSDomain == "" {
+		n.DNSDomain = kubeadmapi.DefaultServiceDNSDomain
+	}
+	if n.PodSubnet == "" {
+		// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#pod-network
+		switch n.NetworkProvider {
+		case "calico":
+			n.PodSubnet = "192.168.0.0/16"
+		case "flannel":
+			n.PodSubnet = "10.244.0.0/16"
+		}
+	}
 }
 
 type AWSSpec struct {
@@ -132,15 +151,10 @@ type ClusterSpec struct {
 	// Etcd       kubeadm.Etcd `json:"etcd" protobuf:"bytes,3,opt,name=etcd"`
 	Networking Networking `json:"networking" protobuf:"bytes,4,opt,name=networking"`
 
-	KubernetesVersion    string `json:"kubernetesVersion,omitempty" protobuf:"bytes,6,opt,name=kubernetesVersion"`
-	MasterKubeadmVersion string `json:"masterKubeadmVersion,omitempty" protobuf:"bytes,7,opt,name=masterKubeadmVersion"`
+	KubernetesVersion string `json:"kubernetesVersion,omitempty" protobuf:"bytes,6,opt,name=kubernetesVersion"`
+	BinaryVersion     string `json:"binaryVersion,omitempty" protobuf:"bytes,7,opt,name=binaryVersion"`
 	// request data. This is needed to give consistent access to these values for all commands.
 	DoNotDelete bool `json:"doNotDelete,omitempty" protobuf:"varint,8,opt,name=doNotDelete"`
-
-	// APIServerCertSANs sets extra Subject Alternative Names for the API Server signing cert
-	APIServerCertSANs     []string `json:"apiServerCertSANs,omitempty" protobuf:"bytes,11,rep,name=apiServerCertSANs"`
-	ClusterExternalDomain string   `json:"clusterExternalDomain,omitempty" protobuf:"bytes,12,opt,name=clusterExternalDomain"`
-	ClusterInternalDomain string   `json:"clusterInternalDomain,omitempty" protobuf:"bytes,13,opt,name=clusterInternalDomain"`
 
 	// Auto Set
 	// https://github.com/kubernetes/kubernetes/blob/master/cluster/gce/util.sh#L538
@@ -161,11 +175,15 @@ type ClusterSpec struct {
 	// If set to auto, a new Elasticsearch IP will be acquired
 	// Otherwise amazon-given public ip will be used (it'll change with reboot).
 	// Deprecated
-	MasterReservedIP           string            `json:"masterReservedIp,omitempty" protobuf:"bytes,46,opt,name=masterReservedIp"`
+	MasterReservedIP string `json:"masterReservedIp,omitempty" protobuf:"bytes,46,opt,name=masterReservedIp"`
+
 	KubeletExtraArgs           map[string]string `json:"kubeletExtraArgs,omitempty" protobuf:"bytes,50,rep,name=kubeletExtraArgs"`
 	APIServerExtraArgs         map[string]string `json:"apiServerExtraArgs,omitempty" protobuf:"bytes,51,rep,name=apiServerExtraArgs"`
 	ControllerManagerExtraArgs map[string]string `json:"controllerManagerExtraArgs,omitempty" protobuf:"bytes,52,rep,name=controllerManagerExtraArgs"`
 	SchedulerExtraArgs         map[string]string `json:"schedulerExtraArgs,omitempty" protobuf:"bytes,53,rep,name=schedulerExtraArgs"`
+	AuthorizationModes         []string          `json:"authorizationModes,omitempty" protobuf:"bytes,54,rep,name=authorizationModes"`
+	// APIServerCertSANs sets extra Subject Alternative Names for the API Server signing cert
+	APIServerCertSANs []string `json:"apiServerCertSANs,omitempty" protobuf:"bytes,11,rep,name=apiServerCertSANs"`
 }
 
 type AWSStatus struct {

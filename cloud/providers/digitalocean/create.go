@@ -3,6 +3,7 @@ package digitalocean
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/appscode/mergo"
@@ -74,7 +75,18 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	cluster.Spec.Cloud.InstanceImage = "ubuntu-16-04-x64"
-
+	cluster.Spec.Networking.SetDefaults()
+	if len(cluster.Spec.AuthorizationModes) == 0 {
+		cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
+	}
+	{
+		if domain := Extra(cm.ctx).ExternalDomain(cluster.Name); domain != "" {
+			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
+		}
+		if domain := Extra(cm.ctx).InternalDomain(cluster.Name); domain != "" {
+			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
+		}
+	}
 	// Init status
 	cluster.Status = api.ClusterStatus{
 		Phase:            api.ClusterPending,

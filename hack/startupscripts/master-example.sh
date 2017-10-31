@@ -22,23 +22,10 @@ echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.l
 add-apt-repository -y ppa:gluster/glusterfs-3.10
 
 apt-get update -y
-apt-get install -y \
-	socat \
-	ebtables \
-	git \
-	haveged \
-	nfs-common \
-	cron \
-	glusterfs-client \
-	kubectl \
-	kubelet \
-	kubeadm \
-	cloud-utils \
-	docker.io || true
+apt-get install -y cron docker.io ebtables git glusterfs-client haveged kubectl kubelet nfs-common socat kubeadm ntp || true
 
 
-
-curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.5/pre-k-linux-amd64 \
+curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.6/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
@@ -47,7 +34,7 @@ systemctl start docker
 
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
-Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool=master --cloud-provider= "
+Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool=master --cloud-provider=external "
 EOF
 
 systemctl daemon-reload
@@ -60,31 +47,31 @@ mkdir -p /etc/kubernetes/pki
 
 cat > /etc/kubernetes/pki/ca.key <<EOF
 -----BEGIN RSA PRIVATE KEY-----
-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
+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
 -----END RSA PRIVATE KEY-----
 
 EOF
@@ -92,31 +79,31 @@ pre-k get cacert --common-name=ca < /etc/kubernetes/pki/ca.key > /etc/kubernetes
 
 cat > /etc/kubernetes/pki/front-proxy-ca.key <<EOF
 -----BEGIN RSA PRIVATE KEY-----
-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
+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
 -----END RSA PRIVATE KEY-----
 
 EOF
@@ -130,13 +117,15 @@ chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 mkdir -p /etc/kubernetes/kubeadm
 
 
-cat > /etc/kubernetes/kubeadm/config.yaml <<EOF
+cat > /etc/kubernetes/kubeadm/base.yaml <<EOF
 api:
   advertiseAddress: ""
   bindPort: 6443
+apiServerExtraArgs:
+  kubelet-preferred-address-types: InternalIP,ExternalIP
 apiVersion: kubeadm.k8s.io/v1alpha1
 certificatesDir: ""
-cloudProvider: external
+cloudProvider: ""
 etcd:
   caFile: ""
   certFile: ""
@@ -148,9 +137,9 @@ imageRepository: ""
 kind: MasterConfiguration
 kubernetesVersion: 1.8.0
 networking:
-  dnsDomain: ""
-  podSubnet: ""
-  serviceSubnet: ""
+  dnsDomain: cluster.local
+  podSubnet: 192.168.0.0/16
+  serviceSubnet: 10.96.0.0/12
 nodeName: ""
 token: ""
 tokenTTL: 0s
@@ -160,20 +149,18 @@ EOF
 
 
 pre-k merge master-config \
-	--config=/etc/kubernetes/kubeadm/config.yaml \
-	--apiserver-bind-port=6443 \
+	--config=/etc/kubernetes/kubeadm/base.yaml \
 	--apiserver-advertise-address=$(pre-k get public-ips --all=false) \
 	--apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
 	--apiserver-cert-extra-sans=$(pre-k get private-ips) \
 	--apiserver-cert-extra-sans= \
-	--kubernetes-version=1.8.0 \
 	> /etc/kubernetes/kubeadm/config.yaml
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 
 
 
 kubectl apply \
-  -f http://docs.projectcalico.org/v2.3/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml \
+  -f https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 
 
@@ -188,30 +175,30 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 
 
 
-until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
-do
-   echo '.'
-   sleep 5
-done
+# kubectl taint nodes ${NODE_NAME} node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
+kubectl apply -f "https://raw.githubusercontent.com/appscode/pharmer/ccm-fix/cloud/providers/digitalocean/cloud-control-manager.yaml" --kubeconfig /etc/kubernetes/admin.conf
 
-kubectl apply -f "https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/digitalocean/cloud-control-manager.yaml" --kubeconfig /etc/kubernetes/admin.conf
+#until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
+#do
+#   echo '.'
+#   sleep 5
+#done
 
-until [ $(kubectl get pods -n kube-system -l app=cloud-controller-manager -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
-do
-   echo '.'
-   sleep 5
-done
+#until [ $(kubectl get pods -n kube-system -l app=cloud-controller-manager -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
+#do
+#   echo '.'
+#   sleep 5
+#done
 
-cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
-[Service]
-Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool=master --cloud-provider=external "
-EOF
+#cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
+#[Service]
+#Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool=master --cloud-provider=external "
+#EOF
 
-NODE_NAME=$(uname -n)
-kubectl taint nodes ${NODE_NAME} node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
+#NODE_NAME=$(uname -n)
 
-systemctl daemon-reload
-systemctl restart kubelet
+#systemctl daemon-reload
+#systemctl restart kubelet
 
 # sleep 10
 # reboot

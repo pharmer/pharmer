@@ -460,11 +460,6 @@ func (in *ClusterSpec) DeepCopyInto(out *ClusterSpec) {
 	in.Cloud.DeepCopyInto(&out.Cloud)
 	out.API = in.API
 	out.Networking = in.Networking
-	if in.APIServerCertSANs != nil {
-		in, out := &in.APIServerCertSANs, &out.APIServerCertSANs
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
 	if in.KubeletExtraArgs != nil {
 		in, out := &in.KubeletExtraArgs, &out.KubeletExtraArgs
 		*out = make(map[string]string, len(*in))
@@ -492,6 +487,16 @@ func (in *ClusterSpec) DeepCopyInto(out *ClusterSpec) {
 		for key, val := range *in {
 			(*out)[key] = val
 		}
+	}
+	if in.AuthorizationModes != nil {
+		in, out := &in.AuthorizationModes, &out.AuthorizationModes
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.APIServerCertSANs != nil {
+		in, out := &in.APIServerCertSANs, &out.APIServerCertSANs
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	return
 }

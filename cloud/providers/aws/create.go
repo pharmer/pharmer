@@ -3,6 +3,7 @@ package aws
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/appscode/go/crypto/rand"
@@ -87,6 +88,17 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	cluster.Spec.Networking.MasterSubnet = "10.246.0.0/24"
 	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
+	if len(cluster.Spec.AuthorizationModes) == 0 {
+		cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
+	}
+	{
+		if domain := Extra(cm.ctx).ExternalDomain(cluster.Name); domain != "" {
+			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
+		}
+		if domain := Extra(cm.ctx).InternalDomain(cluster.Name); domain != "" {
+			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
+		}
+	}
 
 	// Init status
 	cluster.Status = api.ClusterStatus{

@@ -12,7 +12,7 @@ import (
 )
 
 type TemplateData struct {
-	KubeadmVersion     string
+	BinaryVersion      string
 	KubeadmToken       string
 	CAKey              string
 	FrontProxyKey      string
@@ -37,7 +37,7 @@ func (td TemplateData) MasterConfigurationYAML() (string, error) {
 }
 
 func (td TemplateData) IsPreReleaseVersion() bool {
-	if v, err := version.NewVersion(td.KubeadmVersion); err == nil && v.Prerelease() != "" {
+	if v, err := version.NewVersion(td.BinaryVersion); err == nil && v.Prerelease() != "" {
 		return true
 	}
 	return false
@@ -81,16 +81,14 @@ func (td TemplateData) PackageList() string {
 		"git",
 		"glusterfs-client",
 		"haveged",
-		"kubectl",
-		"kubelet",
 		"nfs-common",
 		"socat",
 	}
 	if !td.IsPreReleaseVersion() {
-		if td.KubeadmVersion == "" {
-			pkgs = append(pkgs, "kubeadm")
+		if td.BinaryVersion == "" {
+			pkgs = append(pkgs, "kubeadm", "kubelet", "kubectl")
 		} else {
-			pkgs = append(pkgs, "kubeadm="+td.KubeadmVersion)
+			pkgs = append(pkgs, "kubeadm="+td.BinaryVersion, "kubelet="+td.BinaryVersion, "kubectl="+td.BinaryVersion)
 		}
 	}
 	if td.Provider != "gce" && td.Provider != "gke" {
@@ -131,7 +129,7 @@ curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64
 	&& mv kubeadm /usr/bin/
 {{ end }}
 
-curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.5/pre-k-linux-amd64 \
+curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.7/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
@@ -140,7 +138,7 @@ systemctl start docker
 
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
-Environment="KUBELET_EXTRA_ARGS={{ if .ExternalProvider }}{{ .KubeletExtraArgsWithoutCloudProviderStr }}{{ else }}{{ .KubeletExtraArgsStr }}{{ end }}"
+Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
 EOF
 
 systemctl daemon-reload
@@ -159,13 +157,13 @@ EOF
 mkdir -p /etc/kubernetes/kubeadm
 
 {{ if .MasterConfiguration }}
-cat > /etc/kubernetes/kubeadm/config.yaml <<EOF
+cat > /etc/kubernetes/kubeadm/base.yaml <<EOF
 {{ .MasterConfigurationYAML }}
 EOF
 {{ end }}
 
 pre-k merge master-config \
-	--config=/etc/kubernetes/kubeadm/config.yaml \
+	--config=/etc/kubernetes/kubeadm/base.yaml \
 	--apiserver-advertise-address=$(pre-k get public-ips --all=false) \
 	--apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
 	--apiserver-cert-extra-sans=$(pre-k get private-ips) \
@@ -261,35 +259,38 @@ cat > /etc/kubernetes/pki/front-proxy-ca.key <<EOF
 {{ .FrontProxyKey }}
 EOF
 pre-k get cacert --common-name=front-proxy-ca < /etc/kubernetes/pki/front-proxy-ca.key > /etc/kubernetes/pki/front-proxy-ca.crt
-
 chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("ccm").Parse(`
-until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
-do
-   echo '.'
-   sleep 5
-done
+kubectl apply \
+	-f https://raw.githubusercontent.com/appscode/pharmer/ccm-fix/cloud/providers/digitalocean/cloud-control-manager.yaml \
+	--kubeconfig /etc/kubernetes/admin.conf
 
-kubectl apply -f "https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/{{ .Provider }}/cloud-control-manager.yaml" --kubeconfig /etc/kubernetes/admin.conf
-
-until [ $(kubectl get pods -n kube-system -l app=cloud-controller-manager -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
-do
-   echo '.'
-   sleep 5
-done
-
-cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
-[Service]
-Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
-EOF
-
-NODE_NAME=$(uname -n)
-kubectl taint nodes ${NODE_NAME} node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
-
-systemctl daemon-reload
-systemctl restart kubelet
+# until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
+# do
+#    echo '.'
+#    sleep 5
+# done
+# 
+# kubectl apply -f "https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/{{ .Provider }}/cloud-control-manager.yaml" --kubeconfig /etc/kubernetes/admin.conf
+# 
+# until [ $(kubectl get pods -n kube-system -l app=cloud-controller-manager -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
+# do
+#    echo '.'
+#    sleep 5
+# done
+# 
+# cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
+# [Service]
+# Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
+# EOF
+# 
+# NODE_NAME=$(uname -n)
+# kubectl taint nodes ${NODE_NAME} node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
+# 
+# systemctl daemon-reload
+# systemctl restart kubelet
 
 # sleep 10
 # reboot
@@ -297,7 +298,7 @@ systemctl restart kubelet
 
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 kubectl apply \
-  -f http://docs.projectcalico.org/v2.3/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml \
+  -f https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 
