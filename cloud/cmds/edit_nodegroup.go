@@ -22,24 +22,24 @@ import (
 	kyaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
+func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use: api.ResourceNameCluster,
+		Use: api.ResourceNameNodeGroup,
 		Aliases: []string{
-			api.ResourceTypeCluster,
-			api.ResourceKindCluster,
+			api.ResourceTypeNodeGroup,
+			api.ResourceKindNodeGroup,
 		},
-		Short:             "Edit cluster object",
-		Example:           `pharmer edit cluster <cluster-name>`,
+		Short:             "Edit a Kubernetes cluster NodeGroup",
+		Example:           `pharmer edit nodegroup -k <cluster_name>`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
-				term.Fatalln("Missing cluster name")
+				term.Fatalln("Missing nodegroup name")
 			}
 			if len(args) > 1 {
-				term.Fatalln("Multiple cluster name provided.")
+				term.Fatalln("Multiple nodegroup name provided.")
 			}
-			clusterName := args[0]
+			nodeGroupName := args[0]
 
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
@@ -48,24 +48,30 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := RunEditCluster(ctx, cmd, out, outErr, clusterName); err != nil {
+			if err := RunEditNodeGroup(ctx, cmd, out, outErr, nodeGroupName); err != nil {
 				term.Fatalln(err)
 			}
 		},
 	}
 
+	cmd.Flags().StringP("cluster", "k", "", "Name of the Kubernetes cluster")
 	cmd.Flags().StringP("output", "o", "yaml", "Output format. One of: yaml|json.")
 	return cmd
 }
 
-func RunEditCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writer, clusterName string) error {
+func RunEditNodeGroup(ctx context.Context, cmd *cobra.Command, out, errOut io.Writer, nodeGroupName string) error {
 
 	o, err := printer.NewEditPrinter(cmd)
 	if err != nil {
 		return err
 	}
 
-	cluster, err := cloud.Store(ctx).Clusters().Get(clusterName)
+	clusterName, err := cmd.Flags().GetString("cluster")
+	if err != nil {
+		return err
+	}
+
+	nodeGroup, err := cloud.Store(ctx).NodeGroups(clusterName).Get(nodeGroupName)
 	if err != nil {
 		return err
 	}
@@ -84,7 +90,7 @@ func RunEditCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writ
 
 		for {
 
-			originalObj := cluster
+			originalObj := nodeGroup
 			objToEdit := originalObj
 
 			buf := &bytes.Buffer{}
@@ -127,8 +133,8 @@ func RunEditCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writ
 				return nil
 			}
 
-			var updatedCluster *api.Cluster
-			err = yaml.Unmarshal(editor.StripComments(edited), &updatedCluster)
+			var updatedNodeGroup *api.NodeGroup
+			err = yaml.Unmarshal(editor.StripComments(edited), &updatedNodeGroup)
 			if err != nil {
 				containsError = true
 				results.Header.Reasons = append(results.Header.Reasons, editor.EditReason{Head: fmt.Sprintf("The edited file had a syntax error: %v", err)})
@@ -137,7 +143,7 @@ func RunEditCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writ
 
 			containsError = false
 
-			originalByte, err := yaml.Marshal(cluster)
+			originalByte, err := yaml.Marshal(nodeGroup)
 			if err != nil {
 				return editor.PreservedFile(err, results.File, errOut)
 			}
@@ -149,7 +155,7 @@ func RunEditCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writ
 			editedJS := editor.StripComments(edited)
 
 			preconditions := utils.GetPreconditionFunc("")
-			patch, err := strategicpatch.CreateTwoWayMergePatch(originalJS, editedJS, updatedCluster, preconditions...)
+			patch, err := strategicpatch.CreateTwoWayMergePatch(originalJS, editedJS, updatedNodeGroup, preconditions...)
 			if err != nil {
 				if mergepatch.IsPreconditionFailed(err) {
 					return editor.PreconditionFailedError()
@@ -157,22 +163,22 @@ func RunEditCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writ
 				return err
 			}
 
-			conditionalPreconditions := utils.GetConditionalPreconditionFunc(api.ResourceKindCluster)
+			conditionalPreconditions := utils.GetConditionalPreconditionFunc(api.ResourceKindNodeGroup)
 			err = utils.CheckConditionalPrecondition(patch, conditionalPreconditions...)
 			if err != nil {
 				if utils.IsPreconditionFailed(err) {
-					return editor.ConditionalPreconditionFailedError(api.ResourceKindCluster)
+					return editor.ConditionalPreconditionFailedError(api.ResourceKindNodeGroup)
 				}
 				return err
 			}
 
-			_, err = cloud.Store(ctx).Clusters().Update(updatedCluster)
+			_, err = cloud.Store(ctx).NodeGroups(clusterName).Update(updatedNodeGroup)
 			if err != nil {
 				return editor.PreservedFile(err, results.File, errOut)
 			}
 
 			os.Remove(file)
-			term.Printf(`cluster "%s" edited\n`, clusterName)
+			term.Printf(`nodegroup "%s" edited\n`, nodeGroupName)
 			return nil
 		}
 	}

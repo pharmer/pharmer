@@ -22,24 +22,24 @@ import (
 	kyaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
+func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use: api.ResourceNameCluster,
+		Use: api.ResourceNameCredential,
 		Aliases: []string{
-			api.ResourceTypeCluster,
-			api.ResourceKindCluster,
+			api.ResourceTypeCredential,
+			api.ResourceKindCredential,
 		},
-		Short:             "Edit cluster object",
-		Example:           `pharmer edit cluster <cluster-name>`,
+		Short:             "Edit a cloud Credentials",
+		Example:           `pharmer edit credential <credential_name>`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
-				term.Fatalln("Missing cluster name")
+				term.Fatalln("Missing credential name")
 			}
 			if len(args) > 1 {
-				term.Fatalln("Multiple cluster name provided.")
+				term.Fatalln("Multiple credential name provided.")
 			}
-			clusterName := args[0]
+			credentialName := args[0]
 
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
@@ -48,7 +48,7 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := RunEditCluster(ctx, cmd, out, outErr, clusterName); err != nil {
+			if err := RunEditCredential(ctx, cmd, out, outErr, credentialName); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -58,14 +58,14 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunEditCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writer, clusterName string) error {
+func RunEditCredential(ctx context.Context, cmd *cobra.Command, out, errOut io.Writer, credentialName string) error {
 
 	o, err := printer.NewEditPrinter(cmd)
 	if err != nil {
 		return err
 	}
 
-	cluster, err := cloud.Store(ctx).Clusters().Get(clusterName)
+	credential, err := cloud.Store(ctx).Credentials().Get(credentialName)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func RunEditCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writ
 
 		for {
 
-			originalObj := cluster
+			originalObj := credential
 			objToEdit := originalObj
 
 			buf := &bytes.Buffer{}
@@ -127,8 +127,8 @@ func RunEditCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writ
 				return nil
 			}
 
-			var updatedCluster *api.Cluster
-			err = yaml.Unmarshal(editor.StripComments(edited), &updatedCluster)
+			var updatedCredential *api.Credential
+			err = yaml.Unmarshal(editor.StripComments(edited), &updatedCredential)
 			if err != nil {
 				containsError = true
 				results.Header.Reasons = append(results.Header.Reasons, editor.EditReason{Head: fmt.Sprintf("The edited file had a syntax error: %v", err)})
@@ -137,7 +137,7 @@ func RunEditCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writ
 
 			containsError = false
 
-			originalByte, err := yaml.Marshal(cluster)
+			originalByte, err := yaml.Marshal(credential)
 			if err != nil {
 				return editor.PreservedFile(err, results.File, errOut)
 			}
@@ -149,7 +149,7 @@ func RunEditCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writ
 			editedJS := editor.StripComments(edited)
 
 			preconditions := utils.GetPreconditionFunc("")
-			patch, err := strategicpatch.CreateTwoWayMergePatch(originalJS, editedJS, updatedCluster, preconditions...)
+			patch, err := strategicpatch.CreateTwoWayMergePatch(originalJS, editedJS, updatedCredential, preconditions...)
 			if err != nil {
 				if mergepatch.IsPreconditionFailed(err) {
 					return editor.PreconditionFailedError()
@@ -157,22 +157,22 @@ func RunEditCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writ
 				return err
 			}
 
-			conditionalPreconditions := utils.GetConditionalPreconditionFunc(api.ResourceKindCluster)
+			conditionalPreconditions := utils.GetConditionalPreconditionFunc(api.ResourceKindCredential)
 			err = utils.CheckConditionalPrecondition(patch, conditionalPreconditions...)
 			if err != nil {
 				if utils.IsPreconditionFailed(err) {
-					return editor.ConditionalPreconditionFailedError(api.ResourceKindCluster)
+					return editor.ConditionalPreconditionFailedError(api.ResourceKindCredential)
 				}
 				return err
 			}
 
-			_, err = cloud.Store(ctx).Clusters().Update(updatedCluster)
+			_, err = cloud.Store(ctx).Credentials().Update(updatedCredential)
 			if err != nil {
 				return editor.PreservedFile(err, results.File, errOut)
 			}
 
 			os.Remove(file)
-			term.Printf(`cluster "%s" edited\n`, clusterName)
+			term.Printf(`credential "%s" edited\n`, credentialName)
 			return nil
 		}
 	}
