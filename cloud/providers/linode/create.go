@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/mergo"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
@@ -84,6 +85,9 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 		if domain := Extra(cm.ctx).InternalDomain(cluster.Name); domain != "" {
 			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
 		}
+	}
+	cluster.Spec.Cloud.Linode = &api.LinodeSpec{
+		RootPassword: rand.GeneratePassword(),
 	}
 
 	// Init status

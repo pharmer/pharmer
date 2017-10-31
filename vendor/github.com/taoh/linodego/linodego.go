@@ -126,7 +126,7 @@ func (c *Client) request(params *url.Values, v *Response) error {
 
 	response, err := c.HTTPClient.Do(request)
 	if err != nil {
-		log.Errorf("Failed to get API response: ", err)
+		log.Errorf("Failed to get API response: %s", err)
 		return err
 	}
 

@@ -116,7 +116,7 @@ type AzureSpec struct {
 }
 
 type LinodeSpec struct {
-	// Azure, Linode
+	// Linode
 	RootPassword string `json:"rootPassword,omitempty" protobuf:"bytes,1,opt,name=rootPassword"`
 	KernelId     int64  `json:"kernelId,omitempty" protobuf:"varint,2,opt,name=kernelId"`
 }

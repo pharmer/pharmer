@@ -12,6 +12,7 @@ import (
 )
 
 type TemplateData struct {
+	ClusterName        string
 	BinaryVersion      string
 	KubeadmToken       string
 	CAKey              string
@@ -99,10 +100,9 @@ func (td TemplateData) PackageList() string {
 
 var (
 	StartupScriptTemplate = template.Must(template.New(api.RoleMaster).Parse(`#!/bin/bash
-set -x
-set -o errexit
-set -o nounset
-set -o pipefail
+set -euxo pipefail
+export DEBIAN_FRONTEND=noninteractive
+export DEBCONF_NONINTERACTIVE_SEEN=true
 
 # log to /var/log/startup-script.log
 exec > >(tee -a /var/log/startup-script.log)
@@ -111,16 +111,11 @@ exec 2>&1
 # kill apt processes (E: Unable to lock directory /var/lib/apt/lists/)
 kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 
-{{ template "prepare-host" . }}
-
 apt-get update -y
-apt-get install -y apt-transport-https curl ca-certificates
-
+apt-get install -y apt-transport-https curl ca-certificates software-properties-common
 curl -fSsL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
-
 add-apt-repository -y ppa:gluster/glusterfs-3.10
-
 apt-get update -y
 apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
@@ -128,10 +123,11 @@ curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64
     && chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
 {{ end }}
-
-curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.7/pre-k-linux-amd64 \
+curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.8/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
+
+{{ template "prepare-host" . }}
 
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
@@ -190,10 +186,9 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 `))
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`#!/bin/bash
-set -x
-set -o errexit
-set -o nounset
-set -o pipefail
+set -euxo pipefail
+export DEBIAN_FRONTEND=noninteractive
+export DEBCONF_NONINTERACTIVE_SEEN=true
 
 # log to /var/log/startup-script.log
 exec > >(tee -a /var/log/startup-script.log)
@@ -202,16 +197,11 @@ exec 2>&1
 # kill apt processes (E: Unable to lock directory /var/lib/apt/lists/)
 kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 
-{{ template "prepare-host" . }}
-
 apt-get update -y
-apt-get install -y apt-transport-https curl ca-certificates
-
+apt-get install -y apt-transport-https curl ca-certificates software-properties-common
 curl -fSsL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
-
 add-apt-repository -y ppa:gluster/glusterfs-3.10
-
 apt-get update -y
 apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
@@ -219,6 +209,8 @@ curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64
     && chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
 {{ end }}
+
+{{ template "prepare-host" . }}
 
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
@@ -265,7 +257,7 @@ kubectl apply \
   --kubeconfig /etc/kubernetes/admin.conf
 
 kubectl apply \
-  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/{{ .CloudProvider }}/installer.yaml \
+  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/{{ .Provider }}/installer.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 
 until [ $(kubectl get pods -n kube-system -l app=cloud-controller-manager -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]

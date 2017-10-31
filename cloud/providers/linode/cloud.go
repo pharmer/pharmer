@@ -31,11 +31,13 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	if ok, err := typed.IsValid(); !ok {
 		return nil, fmt.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
+	c := linodego.NewClient(typed.APIToken(), nil)
+	c.UsePost = true
 	return &cloudConnector{
 		ctx:     ctx,
 		cluster: cluster,
 		namer:   namer{cluster: cluster},
-		client:  linodego.NewClient(typed.APIToken(), nil),
+		client:  c,
 	}, nil
 }
 
@@ -193,7 +195,7 @@ func (conn *cloudConnector) deleteStackScript(ng *api.NodeGroup) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) CreateInstance(n2, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
+func (conn *cloudConnector) CreateInstance(_, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
 	dcId, err := strconv.Atoi(conn.cluster.Spec.Cloud.Zone)
 	if err != nil {
 		return nil, err
@@ -254,8 +256,9 @@ func (conn *cloudConnector) CreateInstance(n2, token string, ng *api.NodeGroup) 
 	if err != nil {
 		return nil, err
 	}
-	swapDiskSize := 512                // MB
-	rootDiskSize := mt.Disk*1024 - 512 // MB
+	// swapDiskSize := 512                      // MB
+	swapDiskSize := 0                           // https://github.com/kubernetes/kubernetes/issues/53533#issuecomment-335219173
+	rootDiskSize := mt.Disk*1024 - swapDiskSize // MB
 	rootDisk, err := conn.client.Disk.CreateFromStackscript(
 		scriptId,
 		linodeId,
@@ -270,13 +273,14 @@ func (conn *cloudConnector) CreateInstance(n2, token string, ng *api.NodeGroup) 
 	if err != nil {
 		return nil, err
 	}
-	swapDisk, err := conn.client.Disk.Create(linodeId, "swap", "swap-disk", swapDiskSize, nil)
-	if err != nil {
-		return nil, err
-	}
+	//swapDisk, err := conn.client.Disk.Create(linodeId, "swap", "swap-disk", swapDiskSize, nil)
+	//if err != nil {
+	//	return nil, err
+	//}
 	config, err := conn.client.Config.Create(linodeId, int(conn.cluster.Spec.Cloud.Linode.KernelId), node.Name, map[string]string{
 		"RootDeviceNum": "1",
-		"DiskList":      fmt.Sprintf("%d,%d", rootDisk.DiskJob.DiskId, swapDisk.DiskJob.DiskId),
+		"DiskList":      strconv.Itoa(rootDisk.DiskJob.DiskId),
+		// "DiskList":   fmt.Sprintf("%d,%d", rootDisk.DiskJob.DiskId, swapDisk.DiskJob.DiskId),
 	})
 	if err != nil {
 		return nil, err
@@ -285,7 +289,7 @@ func (conn *cloudConnector) CreateInstance(n2, token string, ng *api.NodeGroup) 
 	if err != nil {
 		return nil, err
 	}
-	Logger(conn.ctx).Info("Running linode boot job %v", jobResp.JobId.JobId)
+	Logger(conn.ctx).Infof("Running linode boot job %v", jobResp.JobId.JobId)
 
 	return &node, nil
 }
