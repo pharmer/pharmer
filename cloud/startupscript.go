@@ -257,6 +257,12 @@ chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("ccm").Parse(`
+until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
+do
+   echo '.'
+   sleep 5
+done
+
 kubectl apply \
   -f https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/digitalocean/cloud-control-manager.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
