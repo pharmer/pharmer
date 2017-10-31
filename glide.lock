@@ -1,5 +1,5 @@
 hash: 04a93984e4db226b796091f3fb73a4d4efd25fe2bdf546c8c01fd539fef17177
-updated: 2017-10-26T03:05:43.812163597-07:00
+updated: 2017-10-31T04:42:27.467832811-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -20,7 +20,6 @@ imports:
   - context
   - crypto/rand
   - crypto/ssh
-  - encoding/json/types
   - encoding/yaml
   - env
   - errors
@@ -146,7 +145,7 @@ imports:
 - name: github.com/dgrijalva/jwt-go
   version: 01aeca54ebda6e0fbfafd0a524d234159c05ec20
 - name: github.com/digitalocean/godo
-  version: 801cee9569723107654606a8e00d79b56470072e
+  version: 573489fbea177d54a0d853370715c11c63982114
   subpackages:
   - context
 - name: github.com/docker/distribution
@@ -309,7 +308,7 @@ imports:
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/JamesClonk/vultr
-  version: 2fd0705ce648e602e6c9c57329a174270a4f6688
+  version: e5dad9a80e61623e1da10706f486596f77469049
   subpackages:
   - lib
 - name: github.com/jmespath/go-jmespath
@@ -424,7 +423,7 @@ imports:
   subpackages:
   - open
 - name: github.com/softlayer/softlayer-go
-  version: 95095b3def2dcb558b9c141da1041ded4c61acd9
+  version: 17470076bfd71eee8ed8e592c72a8b305826f809
   subpackages:
   - config
   - datatypes
@@ -432,7 +431,7 @@ imports:
   - session
   - sl
 - name: github.com/spf13/cobra
-  version: 7b2c5ac9fc04fc5efafb60700713d4fa609b777b
+  version: b3426bbac13d7110c4d8fce456ea0012f79f3b8b
   subpackages:
   - doc
 - name: github.com/spf13/pflag
@@ -588,7 +587,7 @@ imports:
   - storage/v1
   - storage/v1beta1
 - name: k8s.io/apiextensions-apiserver
-  version: 89b2a556a65053a90552eaed26f810df4a266367
+  version: 5bc0d8f05a92b3a09bcf1a9db442a29c0b7a514d
   subpackages:
   - pkg/apis/apiextensions
   - pkg/apis/apiextensions/v1beta1
@@ -653,7 +652,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: f9b476d61dbdf6474e3d42cc5e854d0d8b7f759e
+  version: 9707c008294d447053c0e2737c256ee23f99e5b4
   subpackages:
   - pkg/admission
   - pkg/admission/initializer
