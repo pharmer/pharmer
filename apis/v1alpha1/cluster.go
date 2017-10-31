@@ -17,6 +17,10 @@ const (
 	ResourceTypeCluster = "clusters"
 )
 
+type VultrCloudConfig struct {
+	Token string `json:"token,omitempty" protobuf:"bytes,1,opt,name=token"`
+}
+
 // ref: https://github.com/kubernetes/kubernetes/blob/8b9f0ea5de2083589f3b9b289b90273556bc09c4/pkg/cloudprovider/providers/azure/azure.go#L56
 type AzureCloudConfig struct {
 	TenantID           string `json:"tenantId,omitempty" protobuf:"bytes,1,opt,name=tenantId"`
@@ -120,6 +124,10 @@ type LinodeSpec struct {
 	KernelId     int64  `json:"kernelId,omitempty" protobuf:"varint,2,opt,name=kernelId"`
 }
 
+type VultrSpec struct {
+	CloudConfig *VultrCloudConfig `json:"vultrCloudConfig,omitempty" protobuf:"bytes,1,opt,name=vultrCloudConfig"`
+}
+
 type CloudSpec struct {
 	CloudProvider string `json:"cloudProvider,omitempty" protobuf:"bytes,1,opt,name=cloudProvider"`
 	Project       string `json:"project,omitempty" protobuf:"bytes,2,opt,name=project"`
@@ -134,6 +142,7 @@ type CloudSpec struct {
 	GCE    *GoogleSpec `json:"gce,omitempty" protobuf:"bytes,11,opt,name=gce"`
 	Azure  *AzureSpec  `json:"azure,omitempty" protobuf:"bytes,12,opt,name=azure"`
 	Linode *LinodeSpec `json:"linode,omitempty" protobuf:"bytes,13,opt,name=linode"`
+	Vultr  *VultrSpec  `json:"vultr,omitempty" protobuf:"bytes,14,opt,name=vultr"`
 }
 
 type API struct {
@@ -293,6 +302,9 @@ func (c *Cluster) APIServerAddress() string {
 	m := map[core.NodeAddressType]string{}
 	for _, addr := range c.Status.APIAddresses {
 		m[addr.Type] = fmt.Sprintf("%s:%d", addr.Address, c.Spec.API.BindPort)
+	}
+	if u, found := m[core.NodeExternalIP]; found {
+		return u
 	}
 	if u, found := m[core.NodeInternalIP]; found {
 		return u

@@ -149,6 +149,8 @@ message CloudSpec {
   optional AzureSpec azure = 12;
 
   optional LinodeSpec linode = 13;
+
+  optional VultrSpec vultr = 14;
 }
 
 message CloudStatus {
@@ -465,5 +467,13 @@ message Upgrade {
   optional ClusterState before = 2;
 
   optional ClusterState after = 3;
+}
+
+message VultrCloudConfig {
+  optional string token = 1;
+}
+
+message VultrSpec {
+  optional VultrCloudConfig vultrCloudConfig = 1;
 }
 

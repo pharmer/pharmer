@@ -138,6 +138,9 @@ cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 Environment="KUBELET_EXTRA_ARGS={{ if .ExternalProvider }}{{ .KubeletExtraArgsEmptyCloudProviderStr }}{{ else }}{{ .KubeletExtraArgsStr }}{{ end }}"
 EOF
 
+systemctl enable docker
+systemctl start docker
+
 kubeadm reset
 
 {{ template "setup-certs" . }}
@@ -264,7 +267,7 @@ do
 done
 
 kubectl apply \
-  -f https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/digitalocean/cloud-control-manager.yaml \
+  -f https://raw.githubusercontent.com/appscode/pharm-controller-manager/21a397e834ea5596ec74d7599a3f8205913ab306/hack/deploy/vultr.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 
 until [ $(kubectl get pods -n kube-system -l app=cloud-controller-manager -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
