@@ -96,11 +96,11 @@ PRIVATE_ADDRESS=$(/usr/bin/curl http://169.254.169.254/v1/interfaces/1/ipv4/addr
 PRIVATE_NETMASK=$(/usr/bin/curl http://169.254.169.254/v1/interfaces/1/ipv4/netmask 2> /dev/null)
 /bin/cat >>/etc/network/interfaces <<EOF
 
-auto eth1
-iface eth1 inet static
+auto ens7
+iface ens7 inet static
     address $PRIVATE_ADDRESS
     netmask $PRIVATE_NETMASK
-            mtu 1450
+    mtu 1450
 EOF
 {{ end }}
 `

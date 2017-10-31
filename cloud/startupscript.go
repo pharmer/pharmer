@@ -112,6 +112,11 @@ exec 2>&1
 kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 
 {{ template "init-os" . }}
+
+# https://major.io/2016/05/05/preventing-ubuntu-16-04-starting-daemons-package-installed/
+echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
+chmod +x /usr/sbin/policy-rc.d
+
 apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common
 curl -fSsL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
@@ -134,9 +139,9 @@ cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 Environment="KUBELET_EXTRA_ARGS={{ if .ExternalProvider }}{{ .KubeletExtraArgsEmptyCloudProviderStr }}{{ else }}{{ .KubeletExtraArgsStr }}{{ end }}"
 EOF
 systemctl daemon-reload
-
-# systemctl enable docker
-# systemctl start docker
+rm -rf /usr/sbin/policy-rc.d
+systemctl enable docker kubelet
+systemctl start docker kubelet
 
 kubeadm reset
 
@@ -198,6 +203,11 @@ exec 2>&1
 kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 
 {{ template "init-os" . }}
+
+# https://major.io/2016/05/05/preventing-ubuntu-16-04-starting-daemons-package-installed/
+echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
+chmod +x /usr/sbin/policy-rc.d
+
 apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common
 curl -fSsL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
@@ -220,10 +230,9 @@ cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
 EOF
 systemctl daemon-reload
-
-# systemctl enable docker
-# systemctl start docker
-# systemctl restart kubelet
+rm -rf /usr/sbin/policy-rc.d
+systemctl enable docker kubelet
+systemctl start docker kubelet
 
 kubeadm reset
 {{ .KubeadmTokenLoader  }}
