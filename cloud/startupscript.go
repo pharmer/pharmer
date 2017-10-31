@@ -176,7 +176,7 @@ kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 {{ end }}
 
 kubectl apply \
-  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/kubeadm-probe/ds.yaml \
+  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/kubeadm-probe/installer.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 
 mkdir -p ~/.kube
@@ -261,7 +261,7 @@ do
 done
 
 kubectl apply \
-  -f https://raw.githubusercontent.com/appscode/pharm-controller-manager/21a397e834ea5596ec74d7599a3f8205913ab306/hack/deploy/vultr.yaml \
+  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/{{ .CloudProvider }}/installer.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 
 until [ $(kubectl get pods -n kube-system -l app=cloud-controller-manager -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
