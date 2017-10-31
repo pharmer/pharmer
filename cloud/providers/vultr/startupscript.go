@@ -3,6 +3,7 @@ package vultr
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
@@ -38,6 +39,13 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
+		if cluster.Status.Cloud.Vultr != nil && cluster.Status.Cloud.Vultr.CloudConfig != nil {
+			data, err := json.Marshal(cluster.Status.Cloud.Vultr.CloudConfig)
+			if err != nil {
+				panic(err)
+			}
+			td.CloudConfig = string(data)
+		}
 	}
 	return td
 }

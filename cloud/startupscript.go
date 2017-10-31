@@ -137,6 +137,10 @@ cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
 Environment="KUBELET_EXTRA_ARGS={{ if .ExternalProvider }}{{ .KubeletExtraArgsEmptyCloudProviderStr }}{{ else }}{{ .KubeletExtraArgsStr }}{{ end }}"
 EOF
+systemctl daemon-reload
+
+# systemctl enable docker
+# systemctl start docker
 
 kubeadm reset
 
@@ -172,7 +176,7 @@ kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 {{ end }}
 
 kubectl apply \
-  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/kubeadm-probe/ds.yaml \
+  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/kubeadm-probe/installer.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 
 mkdir -p ~/.kube
@@ -216,22 +220,15 @@ curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64
 	&& mv kubeadm /usr/bin/
 {{ end }}
 
-systemctl enable docker
-systemctl start docker
-
-{{ if .CloudConfig }}
-cat > /etc/kubernetes/cloud-config <<EOF
-{{ .CloudConfig }}
-EOF
-{{ end }}
-
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
 Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
 EOF
-
 systemctl daemon-reload
-systemctl restart kubelet
+
+# systemctl enable docker
+# systemctl start docker
+# systemctl restart kubelet
 
 kubeadm reset
 {{ .KubeadmTokenLoader  }}
@@ -264,7 +261,11 @@ do
 done
 
 kubectl apply \
-  -f https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/digitalocean/cloud-control-manager.yaml \
+  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/rbac.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+
+kubectl apply \
+  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/{{ .CloudProvider }}/installer.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 
 until [ $(kubectl get pods -n kube-system -l app=cloud-controller-manager -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]

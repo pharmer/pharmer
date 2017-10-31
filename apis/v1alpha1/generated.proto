@@ -113,11 +113,13 @@ message AzureSpec {
   // only Azure
   optional string instanceImageVersion = 2;
 
-  optional AzureCloudConfig azureCloudConfig = 3;
-
   optional string rootPassword = 4;
 
   optional string subnetCidr = 5;
+}
+
+message AzureStatus {
+  optional AzureCloudConfig azureCloudConfig = 3;
 }
 
 message AzureStorageSpec {
@@ -155,6 +157,10 @@ message CloudStatus {
   optional AWSStatus aws = 1;
 
   optional GCEStatus gce = 2;
+
+  optional AzureStatus azure = 3;
+
+  optional VultrStatus vultr = 4;
 }
 
 message Cluster {
@@ -296,6 +302,9 @@ message GCECloudConfig {
 
 message GCEStatus {
   optional string bucketName = 1;
+
+  // instance means either master or node
+  optional GCECloudConfig gceCloudConfig = 2;
 }
 
 message GCSSpec {
@@ -308,9 +317,6 @@ message GoogleSpec {
   // gce
   // NODE_SCOPES="${NODE_SCOPES:-compute-rw,monitoring,logging-write,storage-ro}"
   repeated string nodeScopes = 1;
-
-  // instance means either master or node
-  optional GCECloudConfig gceCloudConfig = 2;
 }
 
 message LinodeSpec {
@@ -465,5 +471,13 @@ message Upgrade {
   optional ClusterState before = 2;
 
   optional ClusterState after = 3;
+}
+
+message VultrCloudConfig {
+  optional string token = 1;
+}
+
+message VultrStatus {
+  optional VultrCloudConfig vultrCloudConfig = 1;
 }
 

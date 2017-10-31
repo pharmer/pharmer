@@ -17,6 +17,10 @@ const (
 	ResourceTypeCluster = "clusters"
 )
 
+type VultrCloudConfig struct {
+	Token string `json:"token,omitempty" protobuf:"bytes,1,opt,name=token"`
+}
+
 // ref: https://github.com/kubernetes/kubernetes/blob/8b9f0ea5de2083589f3b9b289b90273556bc09c4/pkg/cloudprovider/providers/azure/azure.go#L56
 type AzureCloudConfig struct {
 	TenantID           string `json:"tenantId,omitempty" protobuf:"bytes,1,opt,name=tenantId"`
@@ -101,17 +105,14 @@ type GoogleSpec struct {
 	// gce
 	// NODE_SCOPES="${NODE_SCOPES:-compute-rw,monitoring,logging-write,storage-ro}"
 	NodeScopes []string `json:"nodeScopes,omitempty" protobuf:"bytes,1,rep,name=nodeScopes"`
-	// instance means either master or node
-	CloudConfig *GCECloudConfig `json:"gceCloudConfig,omitempty" protobuf:"bytes,2,opt,name=gceCloudConfig"`
 }
 
 type AzureSpec struct {
 	StorageAccountName string `json:"azureStorageAccountName,omitempty" protobuf:"bytes,1,opt,name=azureStorageAccountName"`
 	//only Azure
-	InstanceImageVersion string            `json:"instanceImageVersion,omitempty" protobuf:"bytes,2,opt,name=instanceImageVersion"`
-	CloudConfig          *AzureCloudConfig `json:"azureCloudConfig,omitempty" protobuf:"bytes,3,opt,name=azureCloudConfig"`
-	RootPassword         string            `json:"rootPassword,omitempty" protobuf:"bytes,4,opt,name=rootPassword"`
-	SubnetCIDR           string            `json:"subnetCidr,omitempty" protobuf:"bytes,5,opt,name=subnetCidr"`
+	InstanceImageVersion string `json:"instanceImageVersion,omitempty" protobuf:"bytes,2,opt,name=instanceImageVersion"`
+	RootPassword         string `json:"rootPassword,omitempty" protobuf:"bytes,4,opt,name=rootPassword"`
+	SubnetCIDR           string `json:"subnetCidr,omitempty" protobuf:"bytes,5,opt,name=subnetCidr"`
 }
 
 type LinodeSpec struct {
@@ -204,11 +205,23 @@ type AWSStatus struct {
 
 type GCEStatus struct {
 	BucketName string `json:"bucketName,omitempty" protobuf:"bytes,1,opt,name=bucketName"`
+	// instance means either master or node
+	CloudConfig *GCECloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,2,opt,name=gceCloudConfig"`
+}
+
+type AzureStatus struct {
+	CloudConfig *AzureCloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,3,opt,name=azureCloudConfig"`
+}
+
+type VultrStatus struct {
+	CloudConfig *VultrCloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,1,opt,name=vultrCloudConfig"`
 }
 
 type CloudStatus struct {
-	AWS *AWSStatus `json:"aws,omitempty" protobuf:"bytes,1,opt,name=aws"`
-	GCE *GCEStatus `json:"gce,omitempty" protobuf:"bytes,2,opt,name=gce"`
+	AWS   *AWSStatus   `json:"aws,omitempty" protobuf:"bytes,1,opt,name=aws"`
+	GCE   *GCEStatus   `json:"gce,omitempty" protobuf:"bytes,2,opt,name=gce"`
+	Azure *AzureStatus `json:"azure,omitempty" protobuf:"bytes,3,opt,name=azure"`
+	Vultr *VultrStatus `json:"vultr,omitempty" protobuf:"bytes,4,opt,name=vultr"`
 }
 
 /*
@@ -293,6 +306,9 @@ func (c *Cluster) APIServerAddress() string {
 	m := map[core.NodeAddressType]string{}
 	for _, addr := range c.Status.APIAddresses {
 		m[addr.Type] = fmt.Sprintf("%s:%d", addr.Address, c.Spec.API.BindPort)
+	}
+	if u, found := m[core.NodeExternalIP]; found {
+		return u
 	}
 	if u, found := m[core.NodeInternalIP]; found {
 		return u
