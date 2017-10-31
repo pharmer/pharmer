@@ -39,8 +39,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
-		if cluster.Spec.Cloud.Vultr != nil {
-			data, err := json.Marshal(cluster.Spec.Cloud.Vultr.CloudConfig)
+		if cluster.Status.Cloud.Vultr != nil && cluster.Status.Cloud.Vultr.CloudConfig != nil {
+			data, err := json.Marshal(cluster.Status.Cloud.Vultr.CloudConfig)
 			if err != nil {
 				panic(err)
 			}

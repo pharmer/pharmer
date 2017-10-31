@@ -137,9 +137,10 @@ cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
 Environment="KUBELET_EXTRA_ARGS={{ if .ExternalProvider }}{{ .KubeletExtraArgsEmptyCloudProviderStr }}{{ else }}{{ .KubeletExtraArgsStr }}{{ end }}"
 EOF
+systemctl daemon-reload
 
-systemctl enable docker
-systemctl start docker
+# systemctl enable docker
+# systemctl start docker
 
 kubeadm reset
 
@@ -219,22 +220,15 @@ curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64
 	&& mv kubeadm /usr/bin/
 {{ end }}
 
-systemctl enable docker
-systemctl start docker
-
-{{ if .CloudConfig }}
-cat > /etc/kubernetes/cloud-config <<EOF
-{{ .CloudConfig }}
-EOF
-{{ end }}
-
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
 Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
 EOF
-
 systemctl daemon-reload
-systemctl restart kubelet
+
+# systemctl enable docker
+# systemctl start docker
+# systemctl restart kubelet
 
 kubeadm reset
 {{ .KubeadmTokenLoader  }}

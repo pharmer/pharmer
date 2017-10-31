@@ -33,7 +33,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	if ok, err := typed.IsValid(); !ok {
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
-	cluster.Spec.Cloud.Vultr = &api.VultrSpec{
+	cluster.Status.Cloud.Vultr = &api.VultrStatus{
 		CloudConfig: &api.VultrCloudConfig{
 			Token: typed.Token(),
 		},
