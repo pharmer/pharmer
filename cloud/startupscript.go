@@ -281,37 +281,7 @@ Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
 EOF
 systemctl daemon-reload
 systemctl restart kubelet
-
-# systemctl enable docker
-# systemctl start docker
-
-# until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
-# do
-#    echo '.'
-#    sleep 5
-# done
-# 
-# kubectl apply -f "https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/{{ .Provider }}/cloud-control-manager.yaml" --kubeconfig /etc/kubernetes/admin.conf
-# 
-# until [ $(kubectl get pods -n kube-system -l app=cloud-controller-manager -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
-# do
-#    echo '.'
-#    sleep 5
-# done
-# 
-# cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
-# [Service]
-# Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
-# EOF
-# 
-# NODE_NAME=$(uname -n)
-# kubectl taint nodes $(uname -n) node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
-# 
-# systemctl daemon-reload
-# systemctl restart kubelet
-
-# sleep 10
-# reboot
+systemctl restart docker
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
