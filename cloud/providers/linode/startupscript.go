@@ -112,11 +112,11 @@ func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string)
 	}
 	var script bytes.Buffer
 	if ng.Role() == api.RoleMaster {
-		if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
 			return "", err
 		}
 	} else {
-		if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
 			return "", err
 		}
 	}
