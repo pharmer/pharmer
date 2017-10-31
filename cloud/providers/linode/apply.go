@@ -97,13 +97,23 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 	masterNG := FindMasterNodeGroup(nodeGroups)
 	if masterNG.Spec.Template.Spec.SKU == "" {
-		masterNG.Spec.Template.Spec.SKU = "2gb"
+		masterNG.Spec.Template.Spec.SKU = "2"
 		masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
 		if err != nil {
 			return
 		}
 	}
 
+	acts = append(acts, api.Action{
+		Action:   api.ActionAdd,
+		Resource: "Master startup script",
+		Message:  "Startup script will be created/updated for master instance",
+	})
+	if !dryRun {
+		if _, err = cm.conn.createOrUpdateStackScript(masterNG, ""); err != nil {
+			return
+		}
+	}
 	if masterNG.Status.Nodes < masterNG.Spec.Nodes {
 		Logger(cm.ctx).Info("Creating master instance")
 		acts = append(acts, api.Action{

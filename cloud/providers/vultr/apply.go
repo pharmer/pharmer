@@ -126,25 +126,16 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		}
 	}
 
-	if _, err = cm.conn.getStartupScriptID(masterNG); err != nil {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Master startup script",
-			Message:  "Startup script will be created for masater instance",
-		})
-		if !dryRun {
-			if _, err = cm.conn.createOrUpdateStartupScript(masterNG, ""); err != nil {
-				return
-			}
+	acts = append(acts, api.Action{
+		Action:   api.ActionAdd,
+		Resource: "Master startup script",
+		Message:  "Startup script will be created/updated for master instance",
+	})
+	if !dryRun {
+		if _, err = cm.conn.createOrUpdateStartupScript(masterNG, ""); err != nil {
+			return
 		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Master startup script",
-			Message:  "Startup script for masater instance found",
-		})
 	}
-
 	if masterNG.Status.Nodes < masterNG.Spec.Nodes {
 		Logger(cm.ctx).Info("Creating master instance")
 		acts = append(acts, api.Action{

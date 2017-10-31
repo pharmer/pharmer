@@ -19,7 +19,7 @@ import (
 
 const (
 	RetryInterval = 5 * time.Second
-	RetryTimeout  = 5 * time.Minute
+	RetryTimeout  = 15 * time.Minute
 )
 
 func NodeCount(nodeGroups []*api.NodeGroup) int64 {
