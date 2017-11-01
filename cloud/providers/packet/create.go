@@ -86,6 +86,9 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
 		}
 	}
+	cluster.Spec.KubeletExtraArgs = map[string]string{
+		"fail-swap-on": "false",
+	}
 
 	// Init status
 	cluster.Status = api.ClusterStatus{
