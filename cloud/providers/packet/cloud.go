@@ -3,6 +3,7 @@ package packet
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/appscode/go/errors"
@@ -31,8 +32,9 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	// TODO: FixIt Project ID
 	cluster.Spec.Cloud.Project = typed.ProjectID()
 	return &cloudConnector{
-		ctx:    ctx,
-		client: packngo.NewClient("", typed.APIKey(), nil),
+		ctx:     ctx,
+		cluster: cluster,
+		client:  packngo.NewClient("", typed.APIKey(), nil),
 	}, nil
 }
 
@@ -56,7 +58,10 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) getPublicKey() (bool, string, error) {
-	k, _, err := conn.client.SSHKeys.Get(conn.cluster.Status.SSHKeyExternalID)
+	k, resp, err := conn.client.SSHKeys.Get(conn.cluster.Status.SSHKeyExternalID)
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
+		return false, "", nil
+	}
 	if err != nil {
 		return false, "", err
 	}
