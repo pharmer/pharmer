@@ -142,8 +142,8 @@ Environment="KUBELET_EXTRA_ARGS={{ if .ExternalProvider }}{{ .KubeletExtraArgsEm
 EOF
 systemctl daemon-reload
 rm -rf /usr/sbin/policy-rc.d
-systemctl enable docker kubelet
-systemctl start docker kubelet
+systemctl enable docker kubelet nfs-utils
+systemctl start docker kubelet nfs-utils
 
 kubeadm reset
 
@@ -235,8 +235,8 @@ Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
 EOF
 systemctl daemon-reload
 rm -rf /usr/sbin/policy-rc.d
-systemctl enable docker kubelet
-systemctl start docker kubelet
+systemctl enable docker kubelet nfs-utils
+systemctl start docker kubelet nfs-utils
 
 kubeadm reset
 {{ .KubeadmTokenLoader  }}
