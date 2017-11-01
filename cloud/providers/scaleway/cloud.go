@@ -200,20 +200,9 @@ func (conn *cloudConnector) storeStartupScript(ng *api.NodeGroup, serverID, toke
 	if err != nil {
 		return err
 	}
-	key := "kubernetes_startupscript.sh"
+	key := "kubeadm.sh"
 	return conn.client.PatchUserdata(serverID, key, []byte(script), false)
 }
-
-//func (conn *cloudConnector) executeStartupScript(instance *api.Node, signer ssh.Signer) error {
-//	Logger(conn.ctx).Infof("SSH executing start command %v", instance.Status.PublicIP+":22")
-//
-//	stdOut, stdErr, code, err := sshtools.Exec(`/usr/bin/curl 169.254.42.42/user_data/kubernetes_startupscript.sh --local-port 1-1024 2> /dev/null | bash`, "root", instance.Status.PublicIP+":22", signer)
-//	Logger(conn.ctx).Infoln(stdOut, stdErr, code)
-//	if err != nil {
-//		return errors.FromErr(err).WithContext(conn.ctx).Err()
-//	}
-//	return nil
-//}
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -279,7 +268,17 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	}
 
 	Logger(conn.ctx).Infof("SSH executing start command %v", host.PublicAddress.IP+":22")
-	stdOut, stdErr, code, err := sshtools.Exec(`/usr/bin/curl 169.254.42.42/user_data/kubernetes_startupscript.sh --local-port 1-1024 2> /dev/null | bash`, "root", host.PublicAddress.IP+":22", signer)
+
+	// ref: https://stackoverflow.com/a/2831449/244009
+	steps := []string{
+		"cd /tmp",
+		"/usr/bin/curl -Lo kubeadm.sh 169.254.42.42/user_data/kubeadm.sh --local-port 1-1024 2> /dev/null",
+		"chmod +x kubeadm.sh",
+		"nohup ./kubeadm.sh > /dev/null 2>&1 &",
+	}
+	command := fmt.Sprintf("sh -c '%s'", strings.Join(steps, "; "))
+	Logger(conn.ctx).Infof("Booting server %s using `%s`", name, command)
+	stdOut, stdErr, code, err := sshtools.Exec(command, "root", host.PublicAddress.IP+":22", signer)
 	if err != nil {
 		return nil, err
 	}
