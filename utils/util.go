@@ -7,6 +7,7 @@ import (
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/mergepatch"
+	"github.com/spf13/cobra"
 )
 
 func GetPreconditionFunc(kind string) []mergepatch.PreconditionFunc {
@@ -103,4 +104,14 @@ func (err errPreconditionFailed) Error() string {
 func IsPreconditionFailed(err error) bool {
 	_, ok := err.(errPreconditionFailed)
 	return ok
+}
+
+func CheckAlterableFlags(cmd *cobra.Command, name ...string) bool {
+	for _, n := range name {
+		flag := cmd.Flag(n)
+		if flag.Changed == true {
+			return true
+		}
+	}
+	return false
 }
