@@ -11,7 +11,6 @@ import (
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
 	scw "github.com/scaleway/scaleway-cli/pkg/api"
-	"github.com/tamalsaha/go-oneliners"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -53,7 +52,6 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 		if img.Name == "Ubuntu Xenial" {
 			for _, v := range img.Versions {
 				for _, img := range v.LocalImages {
-					oneliners.FILE(img.Arch, img.Zone, img.ID)
 					if img.Arch == "x86_64" && img.Zone == conn.cluster.Spec.Cloud.Zone {
 						return img.ID, nil
 					}
