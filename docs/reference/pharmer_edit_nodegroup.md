@@ -1,28 +1,30 @@
-## pharmer update nodegroup
+## pharmer edit nodegroup
 
-Update Kubernetes cluster NodeGroup
+Edit a Kubernetes cluster NodeGroup
 
 ### Synopsis
 
 
-Update Kubernetes cluster NodeGroup
+Edit a Kubernetes cluster NodeGroup
 
 ```
-pharmer update nodegroup [flags]
+pharmer edit nodegroup [flags]
 ```
 
 ### Examples
 
 ```
-pharmer update nodegroup -k <cluster_name>
+pharmer edit nodegroup
 ```
 
 ### Options
 
 ```
   -k, --cluster string   Name of the Kubernetes cluster
+      --do-not-delete    Set do not delete flag
   -f, --file string      Load nodegroup data from file
   -h, --help             help for nodegroup
+  -o, --output string    Output format. One of: yaml|json. (default "yaml")
 ```
 
 ### Options inherited from parent commands
@@ -41,5 +43,5 @@ pharmer update nodegroup -k <cluster_name>
 ```
 
 ### SEE ALSO
-* [pharmer update](pharmer_update.md)	 - 
+* [pharmer edit](pharmer_edit.md)	 - 
 

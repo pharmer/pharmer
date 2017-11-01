@@ -1,5 +1,5 @@
 hash: 04a93984e4db226b796091f3fb73a4d4efd25fe2bdf546c8c01fd539fef17177
-updated: 2017-10-31T04:42:27.467832811-07:00
+updated: 2017-11-01T00:21:15.569018119-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -439,7 +439,7 @@ imports:
   repo: https://github.com/appscode/pflag.git
   vcs: git
 - name: github.com/taoh/linodego
-  version: 7e90047cfdce66fc9df2763f18ca0fde32dbb345
+  version: 53e0016231c0625e3049e64d3071ba3021e6da7c
   repo: https://github.com/appscode/linodego.git
   vcs: git
 - name: github.com/tent/http-link-go

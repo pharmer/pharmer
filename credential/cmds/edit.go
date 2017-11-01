@@ -23,15 +23,15 @@ import (
 	kyaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
+func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
-		Use: api.ResourceNameCluster,
+		Use: api.ResourceNameCredential,
 		Aliases: []string{
-			api.ResourceTypeCluster,
-			api.ResourceKindCluster,
+			api.ResourceTypeCredential,
+			api.ResourceKindCredential,
 		},
-		Short:             "Edit cluster object",
-		Example:           `pharmer edit cluster`,
+		Short:             "Edit a cloud Credential",
+		Example:           `pharmer edit credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -41,91 +41,82 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := runUpdateCluster(ctx, cmd, out, outErr, args); err != nil {
+			if err := runUpdateCredential(ctx, cmd, out, outErr, args); err != nil {
 				term.Fatalln(err)
 			}
 		},
 	}
 
-	cmd.Flags().StringP("file", "f", "", "Load cluster data from file")
-	//TODO: Add necessary flags that will be used for update
+	cmd.Flags().StringP("file", "f", "", "Load credential data from file")
 	cmd.Flags().BoolP("do-not-delete", "", false, "Set do not delete flag")
 	cmd.Flags().StringP("output", "o", "yaml", "Output format. One of: yaml|json.")
 	return cmd
 }
 
-func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writer, args []string) error {
+func runUpdateCredential(ctx context.Context, cmd *cobra.Command, out, errOut io.Writer, args []string) error {
+
 	// If file is provided
 	if cmd.Flags().Changed("file") {
 		fileName, err := cmd.Flags().GetString("file")
 		if err != nil {
 			return err
 		}
-		var local *api.Cluster
+		var local *api.Credential
 		if err := cloud.ReadFileAs(fileName, &local); err != nil {
 			return err
 		}
 
-		updated, err := cloud.Store(ctx).Clusters().Get(local.Name)
+		updated, err := cloud.Store(ctx).Credentials().Get(local.Name)
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = local.ObjectMeta
 		updated.Spec = local.Spec
 
-		original, err := cloud.Store(ctx).Clusters().Get(updated.Name)
+		original, err := cloud.Store(ctx).Credentials().Get(updated.Name)
 		if err != nil {
 			return err
 		}
-		if err := updateCluster(ctx, original, updated); err != nil {
+		if err := updateCredential(ctx, original, updated); err != nil {
 			return err
 		}
-		term.Println(fmt.Sprintf(`cluster "%s" replaced`, original.Name))
+		term.Println(fmt.Sprintf(`credential "%s" replaced`, original.Name))
 		return nil
 	}
 
 	if len(args) == 0 {
-		return errors.New("Missing cluster name")
+		return errors.New("Missing credential name")
 	}
 	if len(args) > 1 {
-		return errors.New("Multiple cluster name provided.")
+		return errors.New("Multiple credential name provided.")
 	}
-	clusterName := args[0]
+	credential := args[0]
 
-	original, err := cloud.Store(ctx).Clusters().Get(clusterName)
+	original, err := cloud.Store(ctx).Credentials().Get(credential)
 	if err != nil {
 		return err
 	}
 
 	// Check if flags are provided to update
-	// TODO: Provide list of flag names. If any of them is provided, update
 	if utils.CheckAlterableFlags(cmd, "do-not-delete") {
-		updated, err := cloud.Store(ctx).Clusters().Get(clusterName)
+		updated, err := cloud.Store(ctx).Credentials().Get(credential)
 		if err != nil {
 			return err
 		}
 
-		if cmd.Flags().Changed("do-not-delete") {
-			doNotDelete, err := cmd.Flags().GetBool("do-not-delete")
-			if err != nil {
-				return err
-			}
-			updated.Spec.DoNotDelete = doNotDelete
-		}
+		// Set flag values in updated object
 
-		//TODO: Check provided flags, and set value
-
-		if err := updateCluster(ctx, original, updated); err != nil {
+		if err := updateCredential(ctx, original, updated); err != nil {
 			return err
 		}
-		term.Println(fmt.Sprintf(`cluster "%s" updated`, original.Name))
+		term.Println(fmt.Sprintf(`credential "%s" updated`, original.Name))
 		return nil
 	}
 
-	return editCluster(ctx, cmd, original, errOut)
+	return editCredential(ctx, cmd, original, errOut)
 }
 
-func editCluster(ctx context.Context, cmd *cobra.Command, original *api.Cluster, errOut io.Writer) error {
+func editCredential(ctx context.Context, cmd *cobra.Command, original *api.Credential, errOut io.Writer) error {
 
 	o, err := printer.NewEditPrinter(cmd)
 	if err != nil {
@@ -187,7 +178,7 @@ func editCluster(ctx context.Context, cmd *cobra.Command, original *api.Cluster,
 				return nil
 			}
 
-			var updated *api.Cluster
+			var updated *api.Credential
 			err = yaml.Unmarshal(editor.StripComments(edited), &updated)
 			if err != nil {
 				containsError = true
@@ -197,12 +188,12 @@ func editCluster(ctx context.Context, cmd *cobra.Command, original *api.Cluster,
 
 			containsError = false
 
-			if err := updateCluster(ctx, original, updated); err != nil {
+			if err := updateCredential(ctx, original, updated); err != nil {
 				return err
 			}
 
 			os.Remove(file)
-			term.Println(fmt.Sprintf(`cluster "%s" edited`, original.Name))
+			term.Println(fmt.Sprintf(`credential "%s" edited`, original.Name))
 			return nil
 		}
 	}
@@ -210,7 +201,7 @@ func editCluster(ctx context.Context, cmd *cobra.Command, original *api.Cluster,
 	return editFn()
 }
 
-func updateCluster(ctx context.Context, original, updated *api.Cluster) error {
+func updateCredential(ctx context.Context, original, updated *api.Credential) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
@@ -243,16 +234,16 @@ func updateCluster(ctx context.Context, original, updated *api.Cluster) error {
 		return err
 	}
 
-	conditionalPreconditions := utils.GetConditionalPreconditionFunc(api.ResourceKindCluster)
+	conditionalPreconditions := utils.GetConditionalPreconditionFunc(api.ResourceKindCredential)
 	err = utils.CheckConditionalPrecondition(patch, conditionalPreconditions...)
 	if err != nil {
 		if utils.IsPreconditionFailed(err) {
-			return editor.ConditionalPreconditionFailedError(api.ResourceKindCluster)
+			return editor.ConditionalPreconditionFailedError(api.ResourceKindCredential)
 		}
 		return err
 	}
 
-	_, err = cloud.Store(ctx).Clusters().Update(updated)
+	_, err = cloud.Store(ctx).Credentials().Update(updated)
 	if err != nil {
 		return err
 	}

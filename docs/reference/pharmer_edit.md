@@ -35,4 +35,6 @@ pharmer edit [flags]
 ### SEE ALSO
 * [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
 * [pharmer edit cluster](pharmer_edit_cluster.md)	 - Edit cluster object
+* [pharmer edit credential](pharmer_edit_credential.md)	 - Edit a cloud Credential
+* [pharmer edit nodegroup](pharmer_edit_nodegroup.md)	 - Edit a Kubernetes cluster NodeGroup
 

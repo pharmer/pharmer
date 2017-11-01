@@ -8,7 +8,7 @@ import (
 	"github.com/appscode/go-term"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/cloud/describer"
+	"github.com/appscode/pharmer/utils/describer"
 	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"
 	"k8s.io/kubernetes/pkg/printers"

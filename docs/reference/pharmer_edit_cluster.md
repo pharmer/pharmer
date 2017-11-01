@@ -14,14 +14,16 @@ pharmer edit cluster [flags]
 ### Examples
 
 ```
-pharmer edit cluster <cluster-name> --kubernetes-version=v1.8.0 
+pharmer edit cluster
 ```
 
 ### Options
 
 ```
-  -h, --help                        help for cluster
-      --kubernetes-version string   Kubernetes version
+      --do-not-delete   Set do not delete flag
+  -f, --file string     Load cluster data from file
+  -h, --help            help for cluster
+  -o, --output string   Output format. One of: yaml|json. (default "yaml")
 ```
 
 ### Options inherited from parent commands

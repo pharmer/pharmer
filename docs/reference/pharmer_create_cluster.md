@@ -20,10 +20,10 @@ pharmer create cluster demo-cluster
 ### Options
 
 ```
+      --binary-version string       Kubeadm/kubelet/kubectl binary version
       --credential-uid string       Use preconfigured cloud credential uid
       --do-not-delete               Set do not delete flag
   -h, --help                        help for cluster
-      --kubeadm-version string      Kubeadm version
       --kubernetes-version string   Kubernetes version
       --networking string           Networking mode to use. calico(default), flannel (default "calico")
       --nodes stringToInt           Node set configuration (default [])
