@@ -21,6 +21,11 @@ type VultrCloudConfig struct {
 	Token string `json:"token,omitempty" protobuf:"bytes,1,opt,name=token"`
 }
 
+type LinodeCloudConfig struct {
+	Token string `json:"token,omitempty" protobuf:"bytes,1,opt,name=token"`
+	Zone  string `json:"zone,omitempty" protobuf:"bytes,2,opt,name=zone"`
+}
+
 // ref: https://github.com/kubernetes/kubernetes/blob/8b9f0ea5de2083589f3b9b289b90273556bc09c4/pkg/cloudprovider/providers/azure/azure.go#L56
 type AzureCloudConfig struct {
 	TenantID           string `json:"tenantId,omitempty" protobuf:"bytes,1,opt,name=tenantId"`
@@ -217,11 +222,16 @@ type VultrStatus struct {
 	CloudConfig *VultrCloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,1,opt,name=vultrCloudConfig"`
 }
 
+type LinodeStatus struct {
+	CloudConfig *LinodeCloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,1,opt,name=linodeCloudConfig"`
+}
+
 type CloudStatus struct {
-	AWS   *AWSStatus   `json:"aws,omitempty" protobuf:"bytes,1,opt,name=aws"`
-	GCE   *GCEStatus   `json:"gce,omitempty" protobuf:"bytes,2,opt,name=gce"`
-	Azure *AzureStatus `json:"azure,omitempty" protobuf:"bytes,3,opt,name=azure"`
-	Vultr *VultrStatus `json:"vultr,omitempty" protobuf:"bytes,4,opt,name=vultr"`
+	AWS    *AWSStatus    `json:"aws,omitempty" protobuf:"bytes,1,opt,name=aws"`
+	GCE    *GCEStatus    `json:"gce,omitempty" protobuf:"bytes,2,opt,name=gce"`
+	Azure  *AzureStatus  `json:"azure,omitempty" protobuf:"bytes,3,opt,name=azure"`
+	Vultr  *VultrStatus  `json:"vultr,omitempty" protobuf:"bytes,4,opt,name=vultr"`
+	Linode *LinodeStatus `json:"linode,omitempty" protobuf:"bytes,5,opt,name=linode"`
 }
 
 /*

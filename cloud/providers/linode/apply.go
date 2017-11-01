@@ -8,6 +8,7 @@ import (
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -260,8 +261,19 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if err != nil {
 		return
 	}
-	var masterInstance *core.Node
-	masterInstance, err = kc.CoreV1().Nodes().Get(cm.namer.MasterName(), metav1.GetOptions{})
+	var nodeGroups []*api.NodeGroup
+	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+	if err != nil {
+		return
+	}
+	masterNG := FindMasterNodeGroup(nodeGroups)
+
+	masterNodes := &core.NodeList{}
+	masterNodes, err = kc.CoreV1().Nodes().List(metav1.ListOptions{
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			api.NodePoolKey: masterNG.Name,
+		}).String(),
+	})
 	if err != nil && !kerr.IsNotFound(err) {
 		return
 	} else if err == nil {
@@ -271,9 +283,11 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Will delete master instance with name %v", cm.namer.MasterName()),
 		})
 		if !dryRun {
-			err = cm.conn.DeleteInstanceByProviderID(masterInstance.Spec.ProviderID)
-			if err != nil {
-				Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", masterInstance.Spec.ProviderID, err)
+			for _, masterInstance := range masterNodes.Items {
+				err = cm.conn.DeleteInstanceByProviderID(masterInstance.Spec.ProviderID)
+				if err != nil {
+					Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", masterInstance.Spec.ProviderID, err)
+				}
 			}
 		}
 	}
