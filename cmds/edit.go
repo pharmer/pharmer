@@ -1,10 +1,11 @@
 package cmds
 
 import (
+	"io"
+
 	cpCmd "github.com/appscode/pharmer/cloud/cmds"
 	credCmd "github.com/appscode/pharmer/credential/cmds"
 	"github.com/spf13/cobra"
-	"io"
 )
 
 func newCmdEdit(out, outErr io.Writer) *cobra.Command {

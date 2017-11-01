@@ -73,6 +73,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	// Init spec
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
+	cluster.Spec.Cloud.InstanceImage = "ubuntu_16_04" // 1b9b78e3-de68-466e-ba00-f2123e89c112
 	cluster.Spec.Networking.SetDefaults()
 	if len(cluster.Spec.AuthorizationModes) == 0 {
 		cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")

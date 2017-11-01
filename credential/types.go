@@ -79,7 +79,7 @@ func (c CommonSpec) IsValid() (bool, error) {
 	if cf, ok := files.GetCredentialFormat(c.Provider); ok {
 		for _, f := range cf.Fields {
 			if _, found := c.Data[f.JSON]; !found {
-				return false, fmt.Errorf("Missing key: %s", f.JSON)
+				return false, fmt.Errorf("missing key: %s", f.JSON)
 			}
 		}
 	}
