@@ -93,8 +93,8 @@ var (
 	customTemplate = `
 {{ define "init-os" }}
 # https://www.vultr.com/docs/configuring-private-network
-PRIVATE_ADDRESS=$(/usr/bin/curl http://169.254.169.254/v1/interfaces/1/ipv4/address 2> /dev/null)
-PRIVATE_NETMASK=$(/usr/bin/curl http://169.254.169.254/v1/interfaces/1/ipv4/netmask 2> /dev/null)
+PRIVATE_ADDRESS=$(/usr/bin/curl -fsSL --retry 5 http://169.254.169.254/v1/interfaces/1/ipv4/address 2> /dev/null)
+PRIVATE_NETMASK=$(/usr/bin/curl -fsSL --retry 5 http://169.254.169.254/v1/interfaces/1/ipv4/netmask 2> /dev/null)
 /bin/cat >>/etc/network/interfaces <<EOF
 
 auto ens7
