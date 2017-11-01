@@ -7,11 +7,11 @@ import (
 
 	sshtools "github.com/appscode/go/crypto/ssh"
 	"github.com/appscode/go/errors"
-	. "github.com/appscode/go/types"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
-	sapi "github.com/scaleway/scaleway-cli/pkg/api"
+	scw "github.com/scaleway/scaleway-cli/pkg/api"
+	"github.com/tamalsaha/go-oneliners"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -19,7 +19,7 @@ import (
 type cloudConnector struct {
 	ctx          context.Context
 	cluster      *api.Cluster
-	client       *sapi.ScalewayAPI
+	client       *scw.ScalewayAPI
 	bootscriptID string
 }
 
@@ -33,13 +33,14 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
-	client, err := sapi.NewScalewayAPI(typed.Organization(), typed.Token(), "pharmer", cluster.Spec.Cloud.Zone)
+	client, err := scw.NewScalewayAPI(typed.Organization(), typed.Token(), "pharmer", cluster.Spec.Cloud.Zone)
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
 	}
 	return &cloudConnector{
-		ctx:    ctx,
-		client: client,
+		ctx:     ctx,
+		cluster: cluster,
+		client:  client,
 	}, nil
 }
 
@@ -51,15 +52,16 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 	for _, img := range imgs.Images {
 		if img.Name == "Ubuntu Xenial" {
 			for _, v := range img.Versions {
-				for _, li := range v.LocalImages {
-					if li.Arch == "x86_64" && li.Zone == conn.cluster.Spec.Cloud.Zone {
-						return li.ID, nil
+				for _, img := range v.LocalImages {
+					oneliners.FILE(img.Arch, img.Zone, img.ID)
+					if img.Arch == "x86_64" && img.Zone == conn.cluster.Spec.Cloud.Zone {
+						return img.ID, nil
 					}
 				}
 			}
 		}
 	}
-	return "", errors.New("Debian Jessie not found for Scaleway").WithContext(conn.ctx).Err()
+	return "", errors.New("Ubuntu Xenial not found for Scaleway").WithContext(conn.ctx).Err()
 }
 
 // http://devhub.scaleway.com/#/bootscripts
@@ -117,14 +119,14 @@ func (conn *cloudConnector) importPublicKey() error {
 		if err != nil {
 			return false, nil // retry
 		}
-		sshPubKeys := make([]sapi.ScalewayKeyDefinition, len(user.SSHPublicKeys)+1)
+		sshPubKeys := make([]scw.ScalewayKeyDefinition, len(user.SSHPublicKeys)+1)
 		for i, k := range user.SSHPublicKeys {
-			sshPubKeys[i] = sapi.ScalewayKeyDefinition{Key: k.Key}
+			sshPubKeys[i] = scw.ScalewayKeyDefinition{Key: k.Key}
 		}
-		sshPubKeys[len(user.SSHPublicKeys)] = sapi.ScalewayKeyDefinition{
+		sshPubKeys[len(user.SSHPublicKeys)] = scw.ScalewayKeyDefinition{
 			Key: string(SSHKey(conn.ctx).PublicKey),
 		}
-		err = conn.client.PatchUserSSHKey(user.ID, sapi.ScalewayUserPatchSSHKeyDefinition{
+		err = conn.client.PatchUserSSHKey(user.ID, scw.ScalewayUserPatchSSHKeyDefinition{
 			SSHPublicKeys: sshPubKeys,
 		})
 		return err == nil, nil
@@ -143,13 +145,13 @@ func (conn *cloudConnector) deleteSSHKey(key string) error {
 		if err != nil {
 			return false, nil // retry
 		}
-		sshPubKeys := make([]sapi.ScalewayKeyDefinition, 0, len(user.SSHPublicKeys))
+		sshPubKeys := make([]scw.ScalewayKeyDefinition, 0, len(user.SSHPublicKeys))
 		for _, k := range user.SSHPublicKeys {
 			if k.Key != key {
-				sshPubKeys = append(sshPubKeys, sapi.ScalewayKeyDefinition{Key: k.Key})
+				sshPubKeys = append(sshPubKeys, scw.ScalewayKeyDefinition{Key: k.Key})
 			}
 		}
-		err = conn.client.PatchUserSSHKey(user.ID, sapi.ScalewayUserPatchSSHKeyDefinition{
+		err = conn.client.PatchUserSSHKey(user.ID, scw.ScalewayUserPatchSSHKeyDefinition{
 			SSHPublicKeys: sshPubKeys,
 		})
 		return err == nil, nil
@@ -235,20 +237,19 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		}
 	}
 
-	req := sapi.ScalewayServerDefinition{
-		Name:              name,
-		Image:             StringP(conn.cluster.Spec.Cloud.InstanceImage),
-		DynamicIPRequired: TrueP(),
-		Bootscript:        StringP(conn.bootscriptID),
-		Tags:              []string{"KubernetesCluster:" + conn.cluster.Name},
+	// https://github.com/scaleway/scaleway-cli/commit/c925277696a8b8f1798f80d032736691546c6bda
+	serverID, err := scw.CreateServer(conn.client, &scw.ConfigCreateServer{
+		Name:       name,
+		ImageName:  conn.cluster.Spec.Cloud.InstanceImage,
+		Bootscript: conn.bootscriptID,
+		// https://github.com/scaleway/scaleway-cli/blob/11bf0b65021acaf39ba101a2085c51772aca0dab/pkg/api/helpers.go#L387
+		Env: "KubernetesCluster:" + conn.cluster.Name,
+		// AdditionalVolumes : "",
+		IP:                publicIPID,
 		CommercialType:    ng.Spec.Template.Spec.SKU,
-		PublicIP:          publicIPID,
-		// Organization:   organization,
-		//Volumes map[string]string `json:"volumes,omitempty"`
-		//EnableIPV6 bool `json:"enable_ipv6,omitempty"`
-		//SecurityGroup string `json:"security_group,omitempty"`
-	}
-	serverID, err := conn.client.PostServer(req)
+		DynamicIPRequired: true,
+		EnableIPV6:        false,
+	})
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
