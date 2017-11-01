@@ -49,7 +49,10 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 
 	cmd.Flags().StringP("file", "f", "", "Load cluster data from file")
 	//TODO: Add necessary flags that will be used for update
-	cmd.Flags().BoolP("do-not-delete", "", false, "Set do not delete flag")
+	cmd.Flags().String("kubernetes-version", "", "Kubernetes version")
+	cmd.Flags().String("kubelet-version", "", "kubelet/kubectl version")
+	cmd.Flags().String("kubeadm-version", "", "Kubeadm version")
+	cmd.Flags().Bool("do-not-delete", false, "Set do not delete flag")
 	cmd.Flags().StringP("output", "o", "yaml", "Output format. One of: yaml|json.")
 	return cmd
 }
@@ -57,6 +60,10 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writer, args []string) error {
 	// If file is provided
 	if cmd.Flags().Changed("file") {
+		if len(args) != 0 {
+			return errors.New("no argument can be provided when --file flag is used")
+		}
+
 		fileName, err := cmd.Flags().GetString("file")
 		if err != nil {
 			return err
@@ -85,10 +92,10 @@ func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Wr
 	}
 
 	if len(args) == 0 {
-		return errors.New("Missing cluster name")
+		return errors.New("missing cluster name")
 	}
 	if len(args) > 1 {
-		return errors.New("Multiple cluster name provided.")
+		return errors.New("multiple cluster name provided")
 	}
 	clusterName := args[0]
 
@@ -105,6 +112,7 @@ func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Wr
 			return err
 		}
 
+		//TODO: Check provided flags, and set value
 		if cmd.Flags().Changed("do-not-delete") {
 			doNotDelete, err := cmd.Flags().GetBool("do-not-delete")
 			if err != nil {
@@ -112,8 +120,30 @@ func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Wr
 			}
 			updated.Spec.DoNotDelete = doNotDelete
 		}
-
-		//TODO: Check provided flags, and set value
+		if cmd.Flags().Changed("kubernetes-version") {
+			updated.Spec.KubernetesVersion, _ = cmd.Flags().GetString("kubernetes-version")
+			if cmd.Flags().Changed("kubelet-version") {
+				updated.Spec.KubeletVersion, _ = cmd.Flags().GetString("kubelet-version")
+			} else if original.Spec.KubernetesVersion != updated.Spec.KubernetesVersion {
+				// User changed kubernetes version but did not provide kubelet version.
+				// So, kubelet version is cleared so that the latest version can be picked.
+				updated.Spec.KubeletVersion = ""
+			}
+			if cmd.Flags().Changed("kubeadm-version") {
+				updated.Spec.KubeadmVersion, _ = cmd.Flags().GetString("kubeadm-version")
+			} else if original.Spec.KubernetesVersion != updated.Spec.KubernetesVersion {
+				// User changed kubernetes version but did not provide kubeadm version.
+				// So, kubeadm version is cleared so that the latest version can be picked.
+				updated.Spec.KubeadmVersion = ""
+			}
+		} else {
+			if cmd.Flags().Changed("kubelet-version") {
+				updated.Spec.KubeletVersion, _ = cmd.Flags().GetString("kubelet-version")
+			}
+			if cmd.Flags().Changed("kubeadm-version") {
+				updated.Spec.KubeadmVersion, _ = cmd.Flags().GetString("kubeadm-version")
+			}
+		}
 
 		if err := updateCluster(ctx, original, updated); err != nil {
 			return err
@@ -126,7 +156,6 @@ func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Wr
 }
 
 func editCluster(ctx context.Context, cmd *cobra.Command, original *api.Cluster, errOut io.Writer) error {
-
 	o, err := printer.NewEditPrinter(cmd)
 	if err != nil {
 		return err
@@ -231,7 +260,7 @@ func updateCluster(ctx context.Context, original, updated *api.Cluster) error {
 
 	// Compare content without comments
 	if bytes.Equal(editor.StripComments(originalByte), editor.StripComments(updatedByte)) {
-		return errors.New("No changes made.")
+		return errors.New("no changes made")
 	}
 
 	preconditions := utils.GetPreconditionFunc("")
@@ -252,7 +281,7 @@ func updateCluster(ctx context.Context, original, updated *api.Cluster) error {
 		return err
 	}
 
-	_, err = cloud.Store(ctx).Clusters().Update(updated)
+	_, err = cloud.UpdateSpec(ctx, updated)
 	if err != nil {
 		return err
 	}

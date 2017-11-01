@@ -20,10 +20,13 @@ pharmer edit cluster
 ### Options
 
 ```
-      --do-not-delete   Set do not delete flag
-  -f, --file string     Load cluster data from file
-  -h, --help            help for cluster
-  -o, --output string   Output format. One of: yaml|json. (default "yaml")
+      --do-not-delete               Set do not delete flag
+  -f, --file string                 Load cluster data from file
+  -h, --help                        help for cluster
+      --kubeadm-version string      Kubeadm version
+      --kubelet-version string      kubelet/kubectl version
+      --kubernetes-version string   Kubernetes version
+  -o, --output string               Output format. One of: yaml|json. (default "yaml")
 ```
 
 ### Options inherited from parent commands

@@ -194,9 +194,10 @@ message ClusterSpec {
 
   optional string kubernetesVersion = 6;
 
-  optional string binaryVersion = 7;
+  optional string kubeletVersion = 55;
 
-  // request data. This is needed to give consistent access to these values for all commands.
+  optional string kubeadmVersion = 56;
+
   optional bool doNotDelete = 8;
 
   // Auto Set
@@ -320,7 +321,7 @@ message GoogleSpec {
 }
 
 message LinodeSpec {
-  // Azure, Linode
+  // Linode
   optional string rootPassword = 1;
 
   optional int64 kernelId = 2;

@@ -60,25 +60,6 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	return cluster, nil
 }
 
-func Update(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
-	if cluster == nil {
-		return nil, errors.New("missing cluster")
-	} else if cluster.Name == "" {
-		return nil, errors.New("missing cluster name")
-	} else if cluster.Spec.KubernetesVersion == "" {
-		return nil, errors.New("missing cluster version")
-	}
-
-	existing, err := Store(ctx).Clusters().Get(cluster.Name)
-	if err != nil {
-		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", cluster.Name, err)
-	}
-	cluster.Status = existing.Status
-	cluster.Generation = time.Now().UnixNano()
-
-	return Store(ctx).Clusters().Update(cluster)
-}
-
 func Delete(ctx context.Context, name string) (*api.Cluster, error) {
 	if name == "" {
 		return nil, errors.New("missing cluster name")
@@ -254,19 +235,21 @@ func CheckForUpdates(ctx context.Context, name string) (string, error) {
 	return "", nil
 }
 
-func Edit(ctx context.Context, name, version string) (*api.Cluster, error) {
-	if name == "" {
+func UpdateSpec(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
+	if cluster == nil {
+		return nil, errors.New("missing cluster")
+	} else if cluster.Name == "" {
 		return nil, errors.New("missing cluster name")
+	} else if cluster.Spec.KubernetesVersion == "" {
+		return nil, errors.New("missing cluster version")
 	}
 
-	cluster, err := Store(ctx).Clusters().Get(name)
+	existing, err := Store(ctx).Clusters().Get(cluster.Name)
 	if err != nil {
-		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
+		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", cluster.Name, err)
 	}
-	if cluster.Spec.KubernetesVersion != version {
-		cluster.Spec.KubernetesVersion = version
-		cluster.Generation = time.Now().UnixNano()
-		cluster.Status.Phase = api.ClusterUpgrading
-	}
+	cluster.Status = existing.Status
+	cluster.Generation = time.Now().UnixNano()
+
 	return Store(ctx).Clusters().Update(cluster)
 }

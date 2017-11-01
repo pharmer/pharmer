@@ -17,7 +17,8 @@ import (
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
 	td := TemplateData{
 		ClusterName:      cluster.Name,
-		BinaryVersion:    cluster.Spec.BinaryVersion,
+		KubeletVersion:   cluster.Spec.KubeletVersion,
+		KubeadmVersion:   cluster.Spec.KubeletVersion,
 		KubeadmToken:     token,
 		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:    string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
