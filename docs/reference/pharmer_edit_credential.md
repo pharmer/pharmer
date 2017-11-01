@@ -1,20 +1,29 @@
-## pharmer update
+## pharmer edit credential
 
-
+Edit a cloud Credential
 
 ### Synopsis
 
 
-
+Edit a cloud Credential
 
 ```
-pharmer update [flags]
+pharmer edit credential [flags]
+```
+
+### Examples
+
+```
+pharmer edit credential
 ```
 
 ### Options
 
 ```
-  -h, --help   help for update
+      --do-not-delete   Set do not delete flag
+  -f, --file string     Load credential data from file
+  -h, --help            help for credential
+  -o, --output string   Output format. One of: yaml|json. (default "yaml")
 ```
 
 ### Options inherited from parent commands
@@ -33,7 +42,5 @@ pharmer update [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer update cluster](pharmer_update_cluster.md)	 - Update cluster object
-* [pharmer update nodegroup](pharmer_update_nodegroup.md)	 - Update Kubernetes cluster NodeGroup
+* [pharmer edit](pharmer_edit.md)	 - 
 
