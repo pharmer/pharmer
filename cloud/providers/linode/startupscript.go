@@ -14,6 +14,7 @@ import (
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
 	td := TemplateData{
+		ClusterName:      cluster.Name,
 		BinaryVersion:    cluster.Spec.BinaryVersion,
 		KubeadmToken:     token,
 		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
@@ -81,7 +82,10 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 
 var (
 	customTemplate = `
-{{ define "prepare-host" }}
+{{ define "init-os" }}
+# Avoid using Linode's Ubuntu mirror
+curl -Lo /etc/apt/sources.list https://raw.githubusercontent.com/appscode/pharmer/master/addons/ubuntu/16.04/sources.list
+
 # http://ask.xmodulo.com/disable-ipv6-linux.html
 /bin/cat >>/etc/sysctl.conf <<EOF
 # to disable IPv6 on all interfaces system wide
@@ -93,12 +97,11 @@ net.ipv6.conf.eth0.disable_ipv6 = 1
 EOF
 /sbin/sysctl -p /etc/sysctl.conf
 /bin/sed -i 's/^#AddressFamily any/AddressFamily inet/' /etc/ssh/sshd_config
+{{ end }}
 
-export DEBIAN_FRONTEND=noninteractive
-export DEBCONF_NONINTERACTIVE_SEEN=true
-/usr/bin/apt-get update
-/usr/bin/apt-get install -y --no-install-recommends --force-yes linux-image-amd64 grub2
-
+{{ define "prepare-host" }}
+HOSTNAME=$(pre-k get linode-hostname -k {{ .ClusterName }})
+hostnamectl set-hostname $HOSTNAME
 {{ end }}
 `
 )
@@ -114,11 +117,11 @@ func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string)
 	}
 	var script bytes.Buffer
 	if ng.Role() == api.RoleMaster {
-		if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
 			return "", err
 		}
 	} else {
-		if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
 			return "", err
 		}
 	}

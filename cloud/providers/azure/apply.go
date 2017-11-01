@@ -157,7 +157,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Storage account",
-			Message:  fmt.Sprintf("Storage account %v will be created", cm.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName),
+			Message:  fmt.Sprintf("Storage account %v will be created", cm.cluster.Status.Cloud.Azure.CloudConfig.StorageAccountName),
 		})
 		if !dryRun {
 			if sa, err = cm.conn.createStorageAccount(); err != nil {
@@ -168,7 +168,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "Storage account",
-			Message:  fmt.Sprintf("Storage account %v found", cm.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName),
+			Message:  fmt.Sprintf("Storage account %v found", cm.cluster.Status.Cloud.Azure.CloudConfig.StorageAccountName),
 		})
 	}
 

@@ -33,6 +33,12 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	if ok, err := typed.IsValid(); !ok {
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
+	cluster.Status.Cloud.Vultr = &api.VultrStatus{
+		CloudConfig: &api.VultrCloudConfig{
+			Token: typed.Token(),
+		},
+	}
+
 	return &cloudConnector{
 		ctx:     ctx,
 		cluster: cluster,
@@ -198,6 +204,7 @@ func (conn *cloudConnector) createOrUpdateStartupScript(ng *api.NodeGroup, token
 	if err != nil {
 		return 0, err
 	}
+	fmt.Println(script)
 
 	scripts, err := conn.client.GetStartupScripts()
 	if err != nil {

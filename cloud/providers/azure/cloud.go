@@ -63,7 +63,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 
 	namer := namer{cluster: cluster}
 
-	cluster.Spec.Cloud.Azure.CloudConfig = &api.AzureCloudConfig{
+	cluster.Status.Cloud.Azure.CloudConfig = &api.AzureCloudConfig{
 		TenantID:          typed.TenantID(),
 		SubscriptionID:    typed.SubscriptionID(),
 		AadClientID:       typed.ClientID(),
@@ -76,7 +76,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		RouteTableName:    namer.RouteTableName(),
 		//	StorageAccountName: namer.GenStorageAccountName(),
 	}
-	cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName = cluster.Spec.Cloud.Azure.StorageAccountName
+	cluster.Status.Cloud.Azure.CloudConfig.StorageAccountName = cluster.Spec.Cloud.Azure.StorageAccountName
 
 	/*
 		if az.Cloud == "" {
@@ -442,12 +442,12 @@ func (conn *cloudConnector) createNetworkSecurityRule(sg *network.SecurityGroup)
 }
 
 func (conn *cloudConnector) getStorageAccount() (armstorage.Account, error) {
-	storageName := conn.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName
+	storageName := conn.cluster.Status.Cloud.Azure.CloudConfig.StorageAccountName
 	return conn.storageClient.GetProperties(conn.namer.ResourceGroupName(), storageName)
 }
 
 func (conn *cloudConnector) createStorageAccount() (armstorage.Account, error) {
-	storageName := conn.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName
+	storageName := conn.cluster.Status.Cloud.Azure.CloudConfig.StorageAccountName
 	req := armstorage.AccountCreateParameters{
 		Location: StringP(conn.cluster.Spec.Cloud.Zone),
 		Sku: &armstorage.Sku{
@@ -691,7 +691,7 @@ func (conn *cloudConnector) DeleteVirtualMachine(vmName string) error {
 	if err != nil {
 		return err
 	}
-	storageName := conn.cluster.Spec.Cloud.Azure.CloudConfig.StorageAccountName
+	storageName := conn.cluster.Status.Cloud.Azure.CloudConfig.StorageAccountName
 	keys, err := conn.storageClient.ListKeys(conn.namer.ResourceGroupName(), storageName)
 	if err != nil {
 		return err

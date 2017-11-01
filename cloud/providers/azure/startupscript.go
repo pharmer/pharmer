@@ -14,6 +14,7 @@ import (
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
 	td := TemplateData{
+		ClusterName:      cluster.Name,
 		BinaryVersion:    cluster.Spec.BinaryVersion,
 		KubeadmToken:     token,
 		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
@@ -38,8 +39,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "azure" // requires --cloud-config
-		if cluster.Spec.Cloud.Azure != nil {
-			data, err := json.MarshalIndent(cluster.Spec.Cloud.Azure.CloudConfig, "", "  ")
+		if cluster.Status.Cloud.Azure != nil && cluster.Status.Cloud.Azure.CloudConfig != nil {
+			data, err := json.MarshalIndent(cluster.Status.Cloud.Azure.CloudConfig, "", "  ")
 			if err != nil {
 				panic(err)
 			}

@@ -3,6 +3,7 @@ package vultr
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
@@ -14,6 +15,7 @@ import (
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
 	td := TemplateData{
+		ClusterName:      cluster.Name,
 		BinaryVersion:    cluster.Spec.BinaryVersion,
 		KubeadmToken:     token,
 		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
@@ -38,6 +40,13 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
+		if cluster.Status.Cloud.Vultr != nil && cluster.Status.Cloud.Vultr.CloudConfig != nil {
+			data, err := json.Marshal(cluster.Status.Cloud.Vultr.CloudConfig)
+			if err != nil {
+				panic(err)
+			}
+			td.CloudConfig = string(data)
+		}
 	}
 	return td
 }
@@ -81,18 +90,19 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 
 var (
 	customTemplate = `
-{{ define "prepare-host" }}
+{{ define "init-os" }}
 # https://www.vultr.com/docs/configuring-private-network
 PRIVATE_ADDRESS=$(/usr/bin/curl http://169.254.169.254/v1/interfaces/1/ipv4/address 2> /dev/null)
 PRIVATE_NETMASK=$(/usr/bin/curl http://169.254.169.254/v1/interfaces/1/ipv4/netmask 2> /dev/null)
 /bin/cat >>/etc/network/interfaces <<EOF
 
-auto eth1
-iface eth1 inet static
+auto ens7
+iface ens7 inet static
     address $PRIVATE_ADDRESS
     netmask $PRIVATE_NETMASK
-            mtu 1450
+    mtu 1450
 EOF
+ifup ens7
 {{ end }}
 `
 )

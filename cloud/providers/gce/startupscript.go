@@ -16,6 +16,7 @@ import (
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
 	td := TemplateData{
+		ClusterName:      cluster.Name,
 		BinaryVersion:    cluster.Spec.BinaryVersion,
 		KubeadmToken:     token,
 		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
@@ -46,10 +47,10 @@ gsutil cat gs://%s/config.sh > /etc/kubernetes/config.sh
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider // requires --cloud-config
-		if cluster.Spec.Cloud.GCE != nil {
+		if cluster.Status.Cloud.GCE != nil && cluster.Status.Cloud.GCE.CloudConfig != nil {
 			// ref: https://github.com/kubernetes/kubernetes/blob/release-1.5/cluster/gce/configure-vm.sh#L846
 			cfg := ini.Empty()
-			err := cfg.Section("global").ReflectFrom(cluster.Spec.Cloud.GCE.CloudConfig)
+			err := cfg.Section("global").ReflectFrom(cluster.Status.Cloud.GCE.CloudConfig)
 			if err != nil {
 				panic(err)
 			}
