@@ -151,6 +151,8 @@ message CloudSpec {
   optional AzureSpec azure = 12;
 
   optional LinodeSpec linode = 13;
+
+  optional SoftlayerSpec softlayer = 14;
 }
 
 message CloudStatus {
@@ -455,6 +457,18 @@ message SSHConfig {
   optional int32 instancePort = 3;
 
   optional string user = 4;
+}
+
+message SoftlayerCloudConfig {
+  optional string username = 1;
+
+  optional string apiKey = 2;
+
+  optional string zone = 3;
+}
+
+message SoftlayerSpec {
+  optional SoftlayerCloudConfig softlayerCloudConfig = 1;
 }
 
 message StorageBackend {

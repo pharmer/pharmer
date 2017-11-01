@@ -2,7 +2,6 @@ package softlayer
 
 import (
 	"fmt"
-	"strconv"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
@@ -37,17 +36,19 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return nil, fmt.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
 	}
-	var kc kubernetes.Interface
-	kc, err = cm.GetAdminClient()
-	if err != nil {
-		return nil, err
-	}
-	if upgrade, err := NewKubeVersionGetter(kc, cm.cluster).IsUpgradeRequested(); err != nil {
-		return nil, err
-	} else if upgrade {
-		cm.cluster.Status.Phase = api.ClusterUpgrading
-		Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-		return cm.applyUpgrade(dryRun)
+	if cm.cluster.Status.Phase == api.ClusterReady {
+		var kc kubernetes.Interface
+		kc, err = cm.GetAdminClient()
+		if err != nil {
+			return nil, err
+		}
+		if upgrade, err := NewKubeVersionGetter(kc, cm.cluster).IsUpgradeRequested(); err != nil {
+			return nil, err
+		} else if upgrade {
+			cm.cluster.Status.Phase = api.ClusterUpgrading
+			Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+			return cm.applyUpgrade(dryRun)
+		}
 	}
 
 	if cm.cluster.Status.Phase == api.ClusterPending {
@@ -127,7 +128,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 	masterNG := FindMasterNodeGroup(nodeGroups)
 	if masterNG.Spec.Template.Spec.SKU == "" {
-		masterNG.Spec.Template.Spec.SKU = "2gb"
+		masterNG.Spec.Template.Spec.SKU = "2c2m"
 		masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
 		if err != nil {
 			return
@@ -279,17 +280,30 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	}
 
 	// Delete SSH key
-	acts = append(acts, api.Action{
-		Action:   api.ActionAdd,
-		Resource: "PublicKey",
-		Message:  "Public key will be deleted",
-	})
-	if !dryRun {
-		keyID, _ := strconv.Atoi(cm.cluster.Status.SSHKeyExternalID)
-		err = cm.conn.deleteSSHKey(keyID)
-		if err != nil {
-			return
+	var sshID int
+	var found bool
+	found, sshID, err = cm.conn.getPublicKey()
+	if err != nil {
+		return
+	}
+	if found {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "PublicKey",
+			Message:  "Public key will be deleted",
+		})
+		if !dryRun {
+			err = cm.conn.deleteSSHKey(sshID)
+			if err != nil {
+				return
+			}
 		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "PublicKey",
+			Message:  "Public key not found",
+		})
 	}
 
 	if !dryRun {

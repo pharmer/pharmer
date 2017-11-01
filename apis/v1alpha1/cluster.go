@@ -26,6 +26,12 @@ type LinodeCloudConfig struct {
 	Zone  string `json:"zone,omitempty" protobuf:"bytes,2,opt,name=zone"`
 }
 
+type SoftlayerCloudConfig struct {
+	UserName string `json:"username,omitempty" protobuf:"bytes,1,opt,name=username"`
+	ApiKey   string `json:"apiKey,omitempty" protobuf:"bytes,2,opt,name=apiKey"`
+	Zone     string `json:"zone,omitempty" protobuf:"bytes,3,opt,name=zone"`
+}
+
 // ref: https://github.com/kubernetes/kubernetes/blob/8b9f0ea5de2083589f3b9b289b90273556bc09c4/pkg/cloudprovider/providers/azure/azure.go#L56
 type AzureCloudConfig struct {
 	TenantID           string `json:"tenantId,omitempty" protobuf:"bytes,1,opt,name=tenantId"`
@@ -126,20 +132,25 @@ type LinodeSpec struct {
 	KernelId     int64  `json:"kernelId,omitempty" protobuf:"varint,2,opt,name=kernelId"`
 }
 
+type SoftlayerSpec struct {
+	CloudConfig *SoftlayerCloudConfig `json:"softlayerCloudConfig,omitempty" protobuf:"bytes,1,opt,name=softlayerCloudConfig"`
+}
+
 type CloudSpec struct {
 	CloudProvider string `json:"cloudProvider,omitempty" protobuf:"bytes,1,opt,name=cloudProvider"`
 	Project       string `json:"project,omitempty" protobuf:"bytes,2,opt,name=project"`
 	Region        string `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
 	Zone          string `json:"zone,omitempty" protobuf:"bytes,4,opt,name=zone"` // master needs it for ossec
-	OS            string `json:"os,omitempty" protobuf:"bytes,5,opt,name=os"`
-
-	InstanceImage        string `json:"instanceImage,omitempty" protobuf:"bytes,8,opt,name=instanceImage"`
+	InstanceImage string `json:"instanceImage,omitempty" protobuf:"bytes,8,opt,name=instanceImage"`
+	// Deprecated
+	OS                   string `json:"os,omitempty" protobuf:"bytes,5,opt,name=os"`
 	InstanceImageProject string `json:"instanceImageProject,omitempty" protobuf:"bytes,9,opt,name=instanceImageProject"`
 
-	AWS    *AWSSpec    `json:"aws,omitempty" protobuf:"bytes,10,opt,name=aws"`
-	GCE    *GoogleSpec `json:"gce,omitempty" protobuf:"bytes,11,opt,name=gce"`
-	Azure  *AzureSpec  `json:"azure,omitempty" protobuf:"bytes,12,opt,name=azure"`
-	Linode *LinodeSpec `json:"linode,omitempty" protobuf:"bytes,13,opt,name=linode"`
+	AWS       *AWSSpec       `json:"aws,omitempty" protobuf:"bytes,10,opt,name=aws"`
+	GCE       *GoogleSpec    `json:"gce,omitempty" protobuf:"bytes,11,opt,name=gce"`
+	Azure     *AzureSpec     `json:"azure,omitempty" protobuf:"bytes,12,opt,name=azure"`
+	Linode    *LinodeSpec    `json:"linode,omitempty" protobuf:"bytes,13,opt,name=linode"`
+	Softlayer *SoftlayerSpec `json:"softlayer,omitempty" protobuf:"bytes,14,opt,name=softlayer"`
 }
 
 type API struct {

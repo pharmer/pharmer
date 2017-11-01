@@ -11,7 +11,7 @@ $ pharmer create cluster linode \
 	--nodes=1=0 \
 	--credential-uid=l2 \
 	--kubernetes-version=1.8.0 \
-	--binary-version='1.8.0*'
+	--kubelet-version='1.8.0*' --kubeadm-version='1.8.0*'
 
 $ pharmer apply linode --v=3
 ```

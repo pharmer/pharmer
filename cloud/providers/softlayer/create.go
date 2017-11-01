@@ -74,6 +74,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone[:len(cluster.Spec.Cloud.Zone)-2]
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	cluster.Spec.Networking.SetDefaults()
+	cluster.Spec.Cloud.InstanceImage = "UBUNTU_16_64"
 	if len(cluster.Spec.AuthorizationModes) == 0 {
 		cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
 	}
@@ -84,6 +85,12 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 		if domain := Extra(cm.ctx).InternalDomain(cluster.Name); domain != "" {
 			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
 		}
+	}
+	// kubelet log: error: failed to run Kubelet: Running with swap on is not supported, please disable swap! or set --fail-swap-on flag to false.
+	// https://github.com/kubernetes/kubernetes/issues/50373
+	// https://github.com/kubernetes/kubernetes/issues/53533#issuecomment-335219173
+	cluster.Spec.KubeletExtraArgs = map[string]string{
+		"fail-swap-on": "false",
 	}
 
 	// Init status

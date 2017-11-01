@@ -92,10 +92,10 @@ func (td TemplateData) PackageList() string {
 		} else {
 			pkgs = append(pkgs, "kubelet="+td.KubeletVersion, "kubectl="+td.KubeletVersion)
 		}
-		if td.KubeadmToken == "" {
+		if td.KubeadmVersion == "" {
 			pkgs = append(pkgs, "kubeadm")
 		} else {
-			pkgs = append(pkgs, "kubeadm="+td.KubeadmToken)
+			pkgs = append(pkgs, "kubeadm="+td.KubeadmVersion)
 		}
 	}
 	if td.Provider != "gce" && td.Provider != "gke" {
@@ -107,12 +107,12 @@ func (td TemplateData) PackageList() string {
 var (
 	StartupScriptTemplate = template.Must(template.New(api.RoleMaster).Parse(`#!/bin/bash
 set -euxo pipefail
-export DEBIAN_FRONTEND=noninteractive
-export DEBCONF_NONINTERACTIVE_SEEN=true
-
 # log to /var/log/startup-script.log
 exec > >(tee -a /var/log/startup-script.log)
 exec 2>&1
+
+export DEBIAN_FRONTEND=noninteractive
+export DEBCONF_NONINTERACTIVE_SEEN=true
 
 # kill apt processes (E: Unable to lock directory /var/lib/apt/lists/)
 kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
@@ -200,12 +200,12 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`#!/bin/bash
 set -euxo pipefail
-export DEBIAN_FRONTEND=noninteractive
-export DEBCONF_NONINTERACTIVE_SEEN=true
-
 # log to /var/log/startup-script.log
 exec > >(tee -a /var/log/startup-script.log)
 exec 2>&1
+
+export DEBIAN_FRONTEND=noninteractive
+export DEBCONF_NONINTERACTIVE_SEEN=true
 
 # kill apt processes (E: Unable to lock directory /var/lib/apt/lists/)
 kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true

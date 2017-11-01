@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/appscode/data"
 	"github.com/appscode/go/errors"
@@ -37,6 +36,13 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
+	cluster.Spec.Cloud.Softlayer = &api.SoftlayerSpec{
+		CloudConfig: &api.SoftlayerCloudConfig{
+			UserName: typed.Username(),
+			ApiKey:   typed.APIKey(),
+			Zone:     cluster.Spec.Cloud.Zone,
+		},
+	}
 	sess := session.New(typed.Username(), typed.APIKey())
 	sess.Debug = true
 	return &cloudConnector{
@@ -48,31 +54,72 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}, nil
 }
 
-func (conn *cloudConnector) waitForInstance(id int) {
+func (conn *cloudConnector) waitForInstance(id int) error {
 	service := conn.virtualServiceClient.Id(id)
+	attempt := 0
 
-	// Delay to allow transactions to be registered
-	for transactions, _ := service.GetActiveTransactions(); len(transactions) > 0; {
-		fmt.Print(".")
-		time.Sleep(30 * time.Second)
-		transactions, _ = service.GetActiveTransactions()
+	// wait for public IP
+	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+
+		yes, e2 := service.IsPingable()
+		if e2 != nil {
+			Logger(conn.ctx).Infof("Attempt %v: Instance `%v` is not pingable. Reason: `%s`", attempt, id, e2)
+		}
+		return yes, nil
+	})
+	if err != nil {
+		return err
 	}
-	for yes, _ := service.IsPingable(); !yes; {
-		fmt.Print(".")
-		time.Sleep(15 * time.Second)
-		yes, _ = service.IsPingable()
+
+	// wait for private IP
+	err = wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+
+		yes, e2 := service.IsBackendPingable()
+		if e2 != nil {
+			Logger(conn.ctx).Infof("Attempt %v: Instance `%v` backend is not pingable. Reason: `%s`", attempt, id, e2)
+		}
+		return yes, nil
+	})
+	if err != nil {
+		return err
 	}
-	for yes, _ := service.IsBackendPingable(); !yes; {
-		fmt.Print(".")
-		time.Sleep(15 * time.Second)
-		yes, _ = service.IsBackendPingable()
-	}
+
+	// wait for transactions to end
+	err = wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+
+		txs, e2 := service.GetActiveTransactions()
+		if e2 != nil {
+			Logger(conn.ctx).Infof("Attempt %v: Instance `%v` has pending transactions. Reason: `%s`", attempt, id, e2)
+		}
+		return len(txs) == 0, nil
+	})
+	return err
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) getPublicKey() (bool, string, error) {
-	return false, "", nil
+func (conn *cloudConnector) getPublicKey() (bool, int, error) {
+	sshKeys, err := conn.accountServiceClient.GetSshKeys()
+	if err != nil {
+		return false, -1, err
+	}
+	if id, err := strconv.Atoi(conn.cluster.Status.SSHKeyExternalID); err == nil {
+		for _, sk := range sshKeys {
+			if *sk.Id == id {
+				return true, id, nil
+			}
+		}
+	} else {
+		for _, sk := range sshKeys {
+			if *sk.Label == conn.cluster.Name {
+				return true, *sk.Id, nil
+			}
+		}
+	}
+	return false, -1, nil
 }
 
 func (conn *cloudConnector) importPublicKey() error {
@@ -100,7 +147,6 @@ func (conn *cloudConnector) importPublicKey() error {
 func (conn *cloudConnector) deleteSSHKey(id int) error {
 	Logger(conn.ctx).Infof("Deleting SSH key for cluster", conn.cluster.Name)
 	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		// id, _ := strconv.Atoi(conn.cluster.Status.SSHKeyExternalID)
 		_, e2 := conn.securityServiceClient.Id(id).DeleteObject()
 		return e2 == nil, nil
 	})
@@ -119,6 +165,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		return nil, err
 	}
 
+	fmt.Println(script)
 	instance, err := data.ClusterMachineType(conn.cluster.Spec.Cloud.CloudProvider, ng.Spec.Template.Spec.SKU)
 	if err != nil {
 		return nil, err
@@ -134,17 +181,19 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		return nil, fmt.Errorf("failed to parse memory metadata for sku %v", ng.Spec.Template.Spec.SKU)
 	}
 
-	sshid, err := strconv.Atoi(conn.cluster.Status.SSHKeyExternalID)
+	_, sshid, err := conn.getPublicKey()
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(Extra(conn.ctx).ExternalDomain(conn.cluster.Name), ",.,.,.,.,.,.,.,.,.")
+	domain := fmt.Sprintf("%v.pharmer.local", conn.cluster.Name)
 	vGuestTemplate := datatypes.Virtual_Guest{
 		Hostname:                     StringP(name),
-		Domain:                       StringP(Extra(conn.ctx).ExternalDomain(conn.cluster.Name)),
+		Domain:                       StringP(domain),
 		MaxMemory:                    IntP(ram),
 		StartCpus:                    IntP(cpu),
 		Datacenter:                   &datatypes.Location{Name: StringP(conn.cluster.Spec.Cloud.Zone)},
-		OperatingSystemReferenceCode: StringP(conn.cluster.Spec.Cloud.OS),
+		OperatingSystemReferenceCode: StringP(conn.cluster.Spec.Cloud.InstanceImage),
 		LocalDiskFlag:                TrueP(),
 		HourlyBillingFlag:            TrueP(),
 		SshKeys: []datatypes.Security_Ssh_Key{
@@ -163,7 +212,10 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 				Value: StringP(script),
 			},
 		},
-		PostInstallScriptUri: StringP("https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/softlayer/startupscript.sh"),
+		SupplementalCreateObjectOptions: &datatypes.Virtual_Guest_SupplementalCreateObjectOptions{
+			ImmediateApprovalOnlyFlag: TrueP(),
+			PostInstallScriptUri:      StringP("https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/softlayer/startupscript.sh"),
+		},
 	}
 
 	vGuest, err := conn.virtualServiceClient.Mask("id;domain").CreateObject(&vGuestTemplate)

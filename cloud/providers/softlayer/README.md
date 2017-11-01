@@ -2,16 +2,16 @@
 ## Example Commands
 
 ```console
-$ pharmer create credential d2
+$ pharmer create credential sl
 
-$ pharmer create cluster c1 \
+$ pharmer create cluster softlayer \
 	--v=5 \
-	--provider=digitalocean \
-	--zone=nyc3 \
-	--nodes=2gb=0 \
-	--credential-uid=d2 \
+	--provider=softlayer \
+	--zone=dal05 \
+	--nodes=2c2m=0 \
+	--credential-uid=sl \
 	--kubernetes-version=1.8.0 \
-	--binary-version='1.8.0*'
+	--kubelet-version='1.8.0*' --kubeadm-version='1.8.0*'
 
-$ pharmer apply c1 --v=3
+$ pharmer apply softlayer --v=3
 ```
