@@ -235,7 +235,7 @@ func CheckForUpdates(ctx context.Context, name string) (string, error) {
 	return "", nil
 }
 
-func Update(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
+func UpdateSpec(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if cluster == nil {
 		return nil, errors.New("missing cluster")
 	} else if cluster.Name == "" {

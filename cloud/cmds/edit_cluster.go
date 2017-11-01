@@ -281,7 +281,7 @@ func updateCluster(ctx context.Context, original, updated *api.Cluster) error {
 		return err
 	}
 
-	_, err = cloud.Update(ctx, updated)
+	_, err = cloud.UpdateSpec(ctx, updated)
 	if err != nil {
 		return err
 	}

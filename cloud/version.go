@@ -102,6 +102,8 @@ func FetchFromURL(url string) (string, error) {
 
 // Easy to implement a fake variant of this interface for unit testing
 type VersionGetter interface {
+	// IsUpgradeRequested returns true if cluster.spec.kubernetesVersion is different from version reported from cluster.
+	IsUpgradeRequested() (bool, error)
 	// ClusterVersion should return the version of the cluster i.e. the API Server version
 	ClusterVersion() (string, *versionutil.Version, error)
 	// MasterKubeadmVersion should return the version of the kubeadm CLI
@@ -126,6 +128,18 @@ func NewKubeVersionGetter(client kubernetes.Interface, cluster *api.Cluster) Ver
 		client:  client,
 		cluster: cluster,
 	}
+}
+
+// IsUpgradeRequested returns true if cluster.spec.kubernetesVersion is different from version reported from cluster.
+func (g *KubeVersionGetter) IsUpgradeRequested() (bool, error) {
+	if g.cluster.Status.Phase == api.ClusterReady {
+		cur, _, err := g.ClusterVersion()
+		if err != nil {
+			return false, err
+		}
+		return cur != g.cluster.Spec.KubernetesVersion, nil
+	}
+	return false, nil
 }
 
 // ClusterVersion gets API server version

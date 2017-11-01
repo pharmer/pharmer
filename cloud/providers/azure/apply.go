@@ -45,6 +45,18 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
+		return nil, fmt.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
+	}
+	var kc kubernetes.Interface
+	kc, err = cm.GetAdminClient()
+	if err != nil {
+		return nil, err
+	}
+	if upgrade, err := NewKubeVersionGetter(kc, cm.cluster).IsUpgradeRequested(); err != nil {
+		return nil, err
+	} else if upgrade {
+		cm.cluster.Status.Phase = api.ClusterUpgrading
+		Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 		return cm.applyUpgrade(dryRun)
 	}
 
