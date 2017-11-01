@@ -1,5 +1,5 @@
 hash: 04a93984e4db226b796091f3fb73a4d4efd25fe2bdf546c8c01fd539fef17177
-updated: 2017-11-01T10:40:48.354999287+06:00
+updated: 2017-11-01T00:21:15.569018119-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -198,7 +198,7 @@ imports:
   subpackages:
   - spdy
 - name: github.com/dustin/go-humanize
-  version: 77ed807830b4df581417e7f89eb81d4872832b72
+  version: f3565c9525600a911af3bd34f8b535ea81b2a9e0
 - name: github.com/emicklei/go-restful
   version: ff4f55a206334ef123e4f79bbf348980da81ca46
   subpackages:
@@ -214,7 +214,7 @@ imports:
 - name: github.com/fatih/camelcase
   version: f6a740d52f961c60348ebb109adde9f4635d7540
 - name: github.com/fatih/color
-  version: 5df930a27be2502f99b292b7cc09ebad4d0891f4
+  version: 9aae6aaa22315390f03959adca2c4d395b02fcef
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
 - name: github.com/go-ini/ini
@@ -235,7 +235,7 @@ imports:
   - protoc-gen-gogo/descriptor
   - sortkeys
 - name: github.com/golang/glog
-  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+  version: 44145f04b68cf362d9c4df2182967c2275eaefed
 - name: github.com/golang/groupcache
   version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
   subpackages:
@@ -330,11 +330,9 @@ imports:
 - name: github.com/MakeNowJust/heredoc
   version: 1d91351acdc1cb2f2c995864674b754134b86ca7
 - name: github.com/mattn/go-colorable
-  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
-  repo: https://github.com/mattn/go-colorable
+  version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
 - name: github.com/mattn/go-isatty
-  version: 57fdcb988a5c543893cc61bce354a6e24ab70022
-  repo: https://github.com/mattn/go-isatty
+  version: 56b76bdf51f7708750eac80fa38b952bb9f32639
 - name: github.com/matttproud/golang_protobuf_extensions
   version: fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a
   subpackages:
@@ -348,7 +346,7 @@ imports:
 - name: github.com/mitchellh/go-wordwrap
   version: ad45545899c7b13c020ea92b2072220eefad42b8
 - name: github.com/moul/anonuuid
-  version: ebb9b023e8eede7d469a89f0d58f3155e78100b5
+  version: 609b752a95effbbef26d134ac18ed6f57e01b98e
 - name: github.com/moul/gotty-client
   version: 990fa23220655da4599785d2821e9e3f7488fd52
   repo: https://github.com/tamalsaha/gotty-client.git
@@ -486,7 +484,7 @@ imports:
   - jws
   - jwt
 - name: golang.org/x/sync
-  version: 8e0aa688b654ef28caa72506fa5ec8dba9fc7690
+  version: 316e794f7b5e3df4e95175a45a5fb8b12f85cb4f
   subpackages:
   - errgroup
 - name: golang.org/x/sys
@@ -532,7 +530,7 @@ imports:
   - replicapoolupdater/v1beta1
   - storage/v1
 - name: google.golang.org/appengine
-  version: 9d8544a6b2c7df9cff240fcf92d7b2f59bc13416
+  version: 4f7eeb5305a4ba1966344836ba4af9996b7b4e05
   subpackages:
   - internal
   - internal/app_identity
@@ -977,7 +975,7 @@ imports:
   - plugin/pkg/scheduler/util
   - staging/src/k8s.io/apimachinery/pkg/util/rand
 - name: k8s.io/metrics
-  version: 57c465e2a974054e05a96b787009f81bc010092a
+  version: b0f5364407d443bf5ddcbf955ed046129aaa8842
   subpackages:
   - pkg/apis/metrics
   - pkg/apis/metrics/v1alpha1
@@ -1035,6 +1033,6 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: f6abca593680b2315d2075e0f5e2a9751e3f431a
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
   - assert
