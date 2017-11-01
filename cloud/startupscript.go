@@ -132,6 +132,8 @@ curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64
 curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.8/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
+
+timedatectl set-timezone Etc/UTC
 {{ template "prepare-host" . }}
 
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
@@ -223,6 +225,8 @@ curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64
 curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.8/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
+
+timedatectl set-timezone Etc/UTC
 {{ template "prepare-host" . }}
 
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
