@@ -21,6 +21,7 @@ func GetPreconditionFunc(kind string) []mergepatch.PreconditionFunc {
 	return preconditions
 }
 
+//TODO: Add restricted field
 var PreconditionSpecField = map[string][]string{
 	api.ResourceKindCluster: {
 		"metadata",
