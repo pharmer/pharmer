@@ -7,7 +7,7 @@ $ pharmer create credential sc
 $ pharmer create cluster scaleway \
 	--v=5 \
 	--provider=scaleway \
-	--zone=par1 \
+	--zone=ams1 \
 	--nodes=VC1S=0 \
 	--credential-uid=sc \
 	--kubernetes-version=1.8.0 \
