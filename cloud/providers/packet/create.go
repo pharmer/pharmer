@@ -86,6 +86,9 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
 		}
 	}
+	// kubelet log: error: failed to run Kubelet: Running with swap on is not supported, please disable swap! or set --fail-swap-on flag to false.
+	// https://github.com/kubernetes/kubernetes/issues/50373
+	// https://github.com/kubernetes/kubernetes/issues/53533#issuecomment-335219173
 	cluster.Spec.KubeletExtraArgs = map[string]string{
 		"fail-swap-on": "false",
 	}

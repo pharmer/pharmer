@@ -815,10 +815,10 @@
       },
       "fields": [
         {
-          "envconfig": "SOFTLAYER_USERNAME",
-          "form": "softlayer_username",
+          "envconfig": "SOFTLAYER_API_USERNAME",
+          "form": "softlayer_api_username",
           "json": "username",
-          "label": "Username",
+          "label": "API Username",
           "input": "text"
         },
         {

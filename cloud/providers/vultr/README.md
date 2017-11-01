@@ -11,7 +11,7 @@ $ pharmer create cluster vultr \
 	--nodes=94=0 \
 	--credential-uid=v2 \
 	--kubernetes-version=1.8.0 \
-	--binary-version='1.8.0*'
+	--kubelet-version='1.8.0*' --kubeadm-version='1.8.0*'
 
 $ pharmer apply vultr --v=3
 ```
