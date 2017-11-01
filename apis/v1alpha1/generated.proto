@@ -161,6 +161,8 @@ message CloudStatus {
   optional AzureStatus azure = 3;
 
   optional VultrStatus vultr = 4;
+
+  optional LinodeStatus linode = 5;
 }
 
 message Cluster {
@@ -320,11 +322,21 @@ message GoogleSpec {
   repeated string nodeScopes = 1;
 }
 
+message LinodeCloudConfig {
+  optional string token = 1;
+
+  optional string zone = 2;
+}
+
 message LinodeSpec {
   // Linode
   optional string rootPassword = 1;
 
   optional int64 kernelId = 2;
+}
+
+message LinodeStatus {
+  optional LinodeCloudConfig linodeCloudConfig = 1;
 }
 
 message LocalSpec {

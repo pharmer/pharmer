@@ -3,6 +3,7 @@ package linode
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
@@ -40,6 +41,13 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
+		if cluster.Status.Cloud.Linode != nil && cluster.Status.Cloud.Linode.CloudConfig != nil {
+			data, err := json.Marshal(cluster.Status.Cloud.Linode.CloudConfig)
+			if err != nil {
+				panic(err)
+			}
+			td.CloudConfig = string(data)
+		}
 	}
 	return td
 }

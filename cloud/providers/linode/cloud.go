@@ -31,6 +31,14 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	if ok, err := typed.IsValid(); !ok {
 		return nil, fmt.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
+
+	cluster.Status.Cloud.Linode = &api.LinodeStatus{
+		CloudConfig: &api.LinodeCloudConfig{
+			Token: typed.APIToken(),
+			Zone:  cluster.Spec.Cloud.Zone,
+		},
+	}
+
 	c := linodego.NewClient(typed.APIToken(), nil)
 	c.UsePost = true
 	return &cloudConnector{
