@@ -270,7 +270,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	// ref: https://stackoverflow.com/a/2831449/244009
 	steps := []string{
 		"cd /tmp",
-		"/usr/bin/curl -Lo kubeadm.sh 169.254.42.42/user_data/kubeadm.sh --local-port 1-1024 2> /dev/null",
+		"/usr/bin/curl -fsSL --retry 5 -o kubeadm.sh 169.254.42.42/user_data/kubeadm.sh --local-port 1-1024 2> /dev/null",
 		"chmod +x kubeadm.sh",
 		"nohup ./kubeadm.sh > /dev/null 2>&1 &",
 	}

@@ -125,17 +125,17 @@ chmod +x /usr/sbin/policy-rc.d
 
 apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common
-curl -fSsL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
 add-apt-repository -y ppa:gluster/glusterfs-3.10
 apt-get update -y
 apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
-curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
+curl -fsSL --retry 5 -o kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
     && chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
 {{ end }}
-curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.8/pre-k-linux-amd64 \
+curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.8/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
@@ -218,17 +218,17 @@ chmod +x /usr/sbin/policy-rc.d
 
 apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common
-curl -fSsL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
 add-apt-repository -y ppa:gluster/glusterfs-3.10
 apt-get update -y
 apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
-curl -Lo kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
+curl -fsSL --retry 5 -o kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
     && chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
 {{ end }}
-curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.8/pre-k-linux-amd64 \
+curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.8/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
