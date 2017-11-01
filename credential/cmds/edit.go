@@ -61,10 +61,17 @@ func runUpdateCredential(ctx context.Context, cmd *cobra.Command, out, errOut io
 		if err != nil {
 			return err
 		}
-		var updated *api.Credential
-		if err := cloud.ReadFileAs(fileName, &updated); err != nil {
+		var local *api.Credential
+		if err := cloud.ReadFileAs(fileName, &local); err != nil {
 			return err
 		}
+
+		updated, err := cloud.Store(ctx).Credentials().Get(local.Name)
+		if err != nil {
+			return err
+		}
+		updated.ObjectMeta = local.ObjectMeta
+		updated.Spec = local.Spec
 
 		original, err := cloud.Store(ctx).Credentials().Get(updated.Name)
 		if err != nil {

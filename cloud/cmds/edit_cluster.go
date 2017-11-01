@@ -61,10 +61,17 @@ func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Wr
 		if err != nil {
 			return err
 		}
-		var updated *api.Cluster
-		if err := cloud.ReadFileAs(fileName, &updated); err != nil {
+		var local *api.Cluster
+		if err := cloud.ReadFileAs(fileName, &local); err != nil {
 			return err
 		}
+
+		updated, err := cloud.Store(ctx).Clusters().Get(local.Name)
+		if err != nil {
+			return err
+		}
+		updated.ObjectMeta = local.ObjectMeta
+		updated.Spec = local.Spec
 
 		original, err := cloud.Store(ctx).Clusters().Get(updated.Name)
 		if err != nil {
