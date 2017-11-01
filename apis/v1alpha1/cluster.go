@@ -153,9 +153,9 @@ type ClusterSpec struct {
 	Networking Networking `json:"networking" protobuf:"bytes,4,opt,name=networking"`
 
 	KubernetesVersion string `json:"kubernetesVersion,omitempty" protobuf:"bytes,6,opt,name=kubernetesVersion"`
-	BinaryVersion     string `json:"binaryVersion,omitempty" protobuf:"bytes,7,opt,name=binaryVersion"`
-	// request data. This is needed to give consistent access to these values for all commands.
-	DoNotDelete bool `json:"doNotDelete,omitempty" protobuf:"varint,8,opt,name=doNotDelete"`
+	KubeletVersion    string `json:"kubeletVersion,omitempty" protobuf:"bytes,55,opt,name=kubeletVersion"`
+	KubeadmVersion    string `json:"kubeadmVersion,omitempty" protobuf:"bytes,56,opt,name=kubeadmVersion"`
+	DoNotDelete       bool   `json:"doNotDelete,omitempty" protobuf:"varint,8,opt,name=doNotDelete"`
 
 	// Auto Set
 	// https://github.com/kubernetes/kubernetes/blob/master/cluster/gce/util.sh#L538

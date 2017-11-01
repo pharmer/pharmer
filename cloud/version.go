@@ -173,9 +173,9 @@ func (g *KubeVersionGetter) KubeadmVersion() (string, *versionutil.Version, erro
 	if err != nil {
 		return "", nil, fmt.Errorf("couldn't parse kubeadm version: %v", err)
 	}
-	fmt.Println(fmt.Sprintf("[upgrade/versions] kubeadm version: %s", g.cluster.Spec.BinaryVersion))
+	fmt.Println(fmt.Sprintf("[upgrade/versions] kubeadm version: %s", verStr))
 
-	return g.cluster.Spec.BinaryVersion, kubeadmVersion, nil
+	return verStr, kubeadmVersion, nil
 }
 
 //k8s.io/kubernetes/cmd/kubeadm/app/phases/addons/dns/versions.go
