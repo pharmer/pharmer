@@ -102,6 +102,7 @@ iface ens7 inet static
     netmask $PRIVATE_NETMASK
     mtu 1450
 EOF
+ifup ens7
 {{ end }}
 `
 )

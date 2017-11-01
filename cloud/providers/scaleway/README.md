@@ -2,16 +2,16 @@
 ## Example Commands
 
 ```console
-$ pharmer create credential d2
+$ pharmer create credential sc
 
-$ pharmer create cluster c1 \
+$ pharmer create cluster scaleway \
 	--v=5 \
-	--provider=digitalocean \
-	--zone=nyc3 \
-	--nodes=2gb=0 \
-	--credential-uid=d2 \
+	--provider=scaleway \
+	--zone=par1 \
+	--nodes=VC1S=0 \
+	--credential-uid=sc \
 	--kubernetes-version=1.8.0 \
 	--binary-version='1.8.0*'
 
-$ pharmer apply c1 --v=3
+$ pharmer apply scaleway --v=3
 ```
