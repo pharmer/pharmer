@@ -118,6 +118,7 @@ export DEBCONF_NONINTERACTIVE_SEEN=true
 kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 
 {{ template "init-os" . }}
+{{ template "init-script" }}
 
 # https://major.io/2016/05/05/preventing-ubuntu-16-04-starting-daemons-package-installed/
 echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
@@ -127,7 +128,7 @@ apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common tzdata
 curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
-add-apt-repository -y ppa:gluster/glusterfs-3.10
+add-repo gluster/glusterfs-3.10
 apt-get update -y
 apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
@@ -212,6 +213,7 @@ export DEBCONF_NONINTERACTIVE_SEEN=true
 kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 
 {{ template "init-os" . }}
+{{ template "init-script" }}
 
 # https://major.io/2016/05/05/preventing-ubuntu-16-04-starting-daemons-package-installed/
 echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
@@ -221,7 +223,7 @@ apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common tzdata
 curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
-add-apt-repository -y ppa:gluster/glusterfs-3.10
+add-repo gluster/glusterfs-3.10
 apt-get update -y
 apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
@@ -252,6 +254,16 @@ kubeadm join --token=${KUBEADM_TOKEN} {{ .APIServerAddress }}
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("init-os").Parse(``))
+
+	_ = template.Must(StartupScriptTemplate.New("init-script").Parse(`
+function add-repo() {
+	add-apt-repository -y ppa:$1
+	while [ $? -ne 0 ]; do
+		sleep 2
+		add-apt-repository -y ppa:gluster/$1
+	done
+}
+`))
 
 	_ = template.Must(StartupScriptTemplate.New("prepare-host").Parse(``))
 
