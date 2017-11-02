@@ -86,6 +86,13 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
 		}
 	}
+	cluster.Spec.APIServerExtraArgs = map[string]string{
+		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
+		"kubelet-preferred-address-types": strings.Join([]string{
+			string(core.NodeInternalIP),
+			string(core.NodeExternalIP),
+		}, ","),
+	}
 	cluster.Spec.Cloud.Linode = &api.LinodeSpec{
 		RootPassword: rand.GeneratePassword(),
 	}

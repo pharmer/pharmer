@@ -86,6 +86,13 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
 		}
 	}
+	cluster.Spec.APIServerExtraArgs = map[string]string{
+		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
+		"kubelet-preferred-address-types": strings.Join([]string{
+			string(core.NodeInternalIP),
+			string(core.NodeExternalIP),
+		}, ","),
+	}
 	// kubelet log: error: failed to run Kubelet: Running with swap on is not supported, please disable swap! or set --fail-swap-on flag to false.
 	// https://github.com/kubernetes/kubernetes/issues/50373
 	// https://github.com/kubernetes/kubernetes/issues/53533#issuecomment-335219173
