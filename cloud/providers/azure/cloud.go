@@ -1,7 +1,6 @@
 package azure
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -746,11 +745,12 @@ func (conn *cloudConnector) StartNode(nodeName, token string, as compute.Availab
 		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 
-	var script bytes.Buffer
-	if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
-		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
+	script, err := conn.renderStartupScript(ng, token)
+	if err != nil {
+		return ki, err
 	}
-	nodeVM, err := conn.createVirtualMachine(nodeNIC, as, sa, nodeName, script.String(), ng.Spec.Template.Spec.SKU)
+
+	nodeVM, err := conn.createVirtualMachine(nodeNIC, as, sa, nodeName, script, ng.Spec.Template.Spec.SKU)
 	if err != nil {
 		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}

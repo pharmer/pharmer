@@ -1073,8 +1073,8 @@ func (conn *cloudConnector) createReserveIP(masterNG *api.NodeGroup) (string, er
 }
 
 func (conn *cloudConnector) createMasterInstance(name string, ng *api.NodeGroup) (string, error) {
-	var script bytes.Buffer
-	if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
+	script, err := conn.renderStartupScript(ng, "")
+	if err != nil {
 		return "", err
 	}
 
@@ -1137,7 +1137,7 @@ func (conn *cloudConnector) createMasterInstance(name string, ng *api.NodeGroup)
 				SubnetId: StringP(conn.cluster.Status.Cloud.AWS.SubnetId),
 			},
 		},
-		UserData: StringP(base64.StdEncoding.EncodeToString(script.Bytes())),
+		UserData: StringP(base64.StdEncoding.EncodeToString([]byte(script))),
 	}
 	fmt.Println(req)
 	r1, err := conn.ec2.RunInstances(req)
@@ -1293,8 +1293,8 @@ declare -x KUBEADM_TOKEN=%s
 		return err
 	}
 
-	var script bytes.Buffer
-	if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
+	script, err := conn.renderStartupScript(ng, token)
+	if err != nil {
 		return err
 	}
 	configuration := &autoscaling.CreateLaunchConfigurationInput{
@@ -1337,7 +1337,7 @@ declare -x KUBEADM_TOKEN=%s
 		SecurityGroups: []*string{
 			StringP(conn.cluster.Status.Cloud.AWS.NodeSGId),
 		},
-		UserData: StringP(base64.StdEncoding.EncodeToString(script.Bytes())),
+		UserData: StringP(base64.StdEncoding.EncodeToString([]byte(script))),
 	}
 	r1, err := conn.autoscale.CreateLaunchConfiguration(configuration)
 	Logger(conn.ctx).Debug("Created node configuration", r1, err)

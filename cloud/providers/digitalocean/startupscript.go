@@ -82,14 +82,44 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 	return td
 }
 
+var (
+	customTemplate = `
+# We rely on DNS for a lot, and it's just not worth doing a whole lot of startup work if this isn't ready yet.
+# ref: https://github.com/kubernetes/kubernetes/blob/443908193d564736d02efdca4c9ba25caf1e96fb/cluster/gce/configure-vm.sh#L24
+function ensure-basic-networking() {
+  until getent hosts $(hostname -f || echo _error_) &>/dev/null; do
+    echo 'Waiting for functional DNS (trying to resolve my own FQDN)...'
+    sleep 3
+  done
+  until getent hosts $(hostname -i || echo _error_) &>/dev/null; do
+    echo 'Waiting for functional DNS (trying to resolve my own IP)...'
+    sleep 3
+  done
+
+  echo "Networking functional on $(hostname) ($(hostname -i))"
+}
+
+ensure-basic-networking
+`
+)
+
 func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string) (string, error) {
+	tpl, err := StartupScriptTemplate.Clone()
+	if err != nil {
+		return "", err
+	}
+	tpl, err = tpl.Parse(customTemplate)
+	if err != nil {
+		return "", err
+	}
+
 	var script bytes.Buffer
 	if ng.Role() == api.RoleMaster {
-		if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
 			return "", err
 		}
 	} else {
-		if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
 			return "", err
 		}
 	}
