@@ -2,16 +2,16 @@
 ## Example Commands
 
 ```console
-$ pharmer create credential l2
+$ pharmer create credential d2
 
-$ pharmer create cluster linode \
+$ pharmer create cluster c1 \
 	--v=5 \
-	--provider=linode \
-	--zone=3 \
-	--nodes=1=0 \
-	--credential-uid=l2 \
+	--provider=digitalocean \
+	--zone=nyc3 \
+	--nodes=2gb=0 \
+	--credential-uid=d2 \
 	--kubernetes-version=1.8.0 \
 	--kubelet-version='1.8.0*' --kubeadm-version='1.8.0*'
 
-$ pharmer apply linode --v=3
+$ pharmer apply c1 --v=3
 ```
