@@ -73,11 +73,6 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          []string{},
 	}
-	if cfg.APIServerExtraArgs == nil {
-		cfg.APIServerExtraArgs = map[string]string{}
-	}
-	cfg.APIServerExtraArgs["kubelet-preferred-address-types"] = "InternalIP,ExternalIP"
-
 	td.MasterConfiguration = &cfg
 	return td
 }

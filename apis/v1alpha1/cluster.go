@@ -328,17 +328,26 @@ func (c *Cluster) APIServerAddress() string {
 	for _, addr := range c.Status.APIAddresses {
 		m[addr.Type] = fmt.Sprintf("%s:%d", addr.Address, c.Spec.API.BindPort)
 	}
-	if u, found := m[core.NodeExternalIP]; found {
-		return u
+
+	// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
+	addrTypes := []core.NodeAddressType{
+		core.NodeInternalDNS,
+		core.NodeInternalIP,
+		core.NodeExternalDNS,
+		core.NodeExternalIP,
 	}
-	if u, found := m[core.NodeInternalIP]; found {
-		return u
+	if pat, found := c.Spec.APIServerExtraArgs["kubelet-preferred-address-types"]; found {
+		ats := strings.Split(pat, ",")
+		addrTypes = make([]core.NodeAddressType, len(ats))
+		for i, at := range ats {
+			addrTypes[i] = core.NodeAddressType(at)
+		}
 	}
-	if u, found := m[core.NodeHostName]; found {
-		return u
-	}
-	if u, found := m[core.NodeInternalDNS]; found {
-		return u
+
+	for _, at := range addrTypes {
+		if u, found := m[at]; found {
+			return u
+		}
 	}
 	return ""
 }
