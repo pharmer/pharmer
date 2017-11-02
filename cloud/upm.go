@@ -267,18 +267,18 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 
 	// ref: https://stackoverflow.com/a/2831449/244009
 	steps := []string{
-		`echo "#!/bin/bash" > /tmp/pharmer.sh`,
-		`echo "set -xeou pipefail" >> /tmp/pharmer.sh`,
-		`echo "" >> /tmp/pharmer.sh`,
-		`echo "apt-get update" >> /tmp/pharmer.sh`,
+		`echo "#!/bin/bash" > /usr/bin/pharmer.sh`,
+		`echo "set -xeou pipefail" >> /usr/bin/pharmer.sh`,
+		`echo "" >> /usr/bin/pharmer.sh`,
+		`echo "apt-get update" >> /usr/bin/pharmer.sh`,
 	}
 	if isPatch(desireVersion, currentVersion) {
-		steps = append(steps, `echo "apt-get upgrade -y kubelet kubectl" >> /tmp/pharmer.sh`)
+		steps = append(steps, `echo "apt-get upgrade -y kubelet kubectl" >> /usr/bin/pharmer.sh`)
 	}
 	steps = append(steps,
-		fmt.Sprintf(`echo "kubeadm upgrade apply %v -y" >> /tmp/pharmer.sh`, upm.cluster.Spec.KubernetesVersion),
+		fmt.Sprintf(`echo "kubeadm upgrade apply %v -y" >> /usr/bin/pharmer.sh`, upm.cluster.Spec.KubernetesVersion),
 		`chmod +x /usr/bin/pharmer.sh`,
-		`nohup /usr/bin/pharmer.sh > /var/log/pharmer.log 2>&1 &`,
+		`nohup /usr/bin/pharmer.sh >> /var/log/pharmer.log 2>&1 &`,
 	)
 	cmd := fmt.Sprintf("sh -c '%s'", strings.Join(steps, "; "))
 	Logger(upm.ctx).Infof("Upgrading server %s using `%s`", masterInstance.Name, cmd)
@@ -307,14 +307,14 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 		if isPatch(desireVersion, currentVersion) {
 			// ref: https://stackoverflow.com/a/2831449/244009
 			steps := []string{
-				`echo "#!/bin/bash" > /tmp/pharmer.sh`,
-				`echo "set -xeou pipefail" >> /tmp/pharmer.sh`,
-				`echo "" >> /tmp/pharmer.sh`,
-				`echo "apt-get update" >> /tmp/pharmer.sh`,
-				`echo "apt-get upgrade -y kubelet kubectl" >> /tmp/pharmer.sh`,
-				`echo "systemctl restart kubelet" >> /tmp/pharmer.sh`,
+				`echo "#!/bin/bash" > /usr/bin/pharmer.sh`,
+				`echo "set -xeou pipefail" >> /usr/bin/pharmer.sh`,
+				`echo "" >> /usr/bin/pharmer.sh`,
+				`echo "apt-get update" >> /usr/bin/pharmer.sh`,
+				`echo "apt-get upgrade -y kubelet kubectl" >> /usr/bin/pharmer.sh`,
+				`echo "systemctl restart kubelet" >> /usr/bin/pharmer.sh`,
 				`chmod +x /usr/bin/pharmer.sh`,
-				`nohup /usr/bin/pharmer.sh > /var/log/pharmer.log 2>&1 &`,
+				`nohup /usr/bin/pharmer.sh >> /var/log/pharmer.log 2>&1 &`,
 			}
 			cmd := fmt.Sprintf("sh -c '%s'", strings.Join(steps, "; "))
 			Logger(upm.ctx).Infof("Upgrading server %s using `%s`", node.Name, cmd)
