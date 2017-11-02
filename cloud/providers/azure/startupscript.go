@@ -84,7 +84,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
-		APIServerCertSANs:          []string{},
+		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
 	}
 	td.MasterConfiguration = &cfg
 	return td
