@@ -196,6 +196,7 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 {{ template "ccm" . }}
 {{end}}
 
+{{ template "prepare-cluster" . }}
 `))
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`#!/bin/bash
@@ -253,6 +254,8 @@ kubeadm join --token=${KUBEADM_TOKEN} {{ .APIServerAddress }}
 	_ = template.Must(StartupScriptTemplate.New("init-os").Parse(``))
 
 	_ = template.Must(StartupScriptTemplate.New("prepare-host").Parse(``))
+
+	_ = template.Must(StartupScriptTemplate.New("prepare-cluster").Parse(``))
 
 	_ = template.Must(StartupScriptTemplate.New("setup-certs").Parse(`
 mkdir -p /etc/kubernetes/pki
