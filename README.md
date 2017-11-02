@@ -1,5 +1,5 @@
 # pharmer
-Kubernetes Cluster Manager over [Kubeadm](https://github.com/kubernetes/kubeadm). Think `kops using kubadm`!
+Kubernetes Cluster Manager for [Kubeadm](https://github.com/kubernetes/kubeadm). Think `kops using kubadm`!
 
 This project is spread over 3 repositories:
 
