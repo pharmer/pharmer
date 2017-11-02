@@ -323,6 +323,7 @@ func (c Cluster) APIServerURL() string {
 	return ""
 }
 
+// ref: https://github.com/digitalocean/digitalocean-cloud-controller-manager#kubernetes-node-names-must-match-the-droplet-name
 func (c *Cluster) APIServerAddress() string {
 	m := map[core.NodeAddressType]string{}
 	for _, addr := range c.Status.APIAddresses {
