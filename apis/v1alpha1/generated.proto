@@ -138,9 +138,10 @@ message CloudSpec {
   optional string zone = 4;
 
   // master needs it for ossec
-  optional string os = 5;
-
   optional string instanceImage = 8;
+
+  // Deprecated
+  optional string os = 5;
 
   optional string instanceImageProject = 9;
 
@@ -165,6 +166,8 @@ message CloudStatus {
   optional VultrStatus vultr = 4;
 
   optional LinodeStatus linode = 5;
+
+  optional ScalewayStatus scaleway = 6;
 }
 
 message Cluster {
@@ -457,6 +460,18 @@ message SSHConfig {
   optional int32 instancePort = 3;
 
   optional string user = 4;
+}
+
+message ScalewayCloudConfig {
+  optional string organization = 1;
+
+  optional string token = 2;
+
+  optional string region = 3;
+}
+
+message ScalewayStatus {
+  optional ScalewayCloudConfig scalewayCloudConfig = 1;
 }
 
 message SoftlayerCloudConfig {

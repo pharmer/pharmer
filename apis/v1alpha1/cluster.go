@@ -26,6 +26,12 @@ type LinodeCloudConfig struct {
 	Zone  string `json:"zone,omitempty" protobuf:"bytes,2,opt,name=zone"`
 }
 
+type ScalewayCloudConfig struct {
+	Organization string `json:"organization,omitempty" protobuf:"bytes,1,opt,name=organization"`
+	Token        string `json:"token,omitempty" protobuf:"bytes,2,opt,name=token"`
+	Region       string `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
+}
+
 type SoftlayerCloudConfig struct {
 	UserName string `json:"username,omitempty" protobuf:"bytes,1,opt,name=username"`
 	ApiKey   string `json:"apiKey,omitempty" protobuf:"bytes,2,opt,name=apiKey"`
@@ -237,12 +243,17 @@ type LinodeStatus struct {
 	CloudConfig *LinodeCloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,1,opt,name=linodeCloudConfig"`
 }
 
+type ScalewayStatus struct {
+	CloudConfig *ScalewayCloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,1,opt,name=scalewayCloudConfig"`
+}
+
 type CloudStatus struct {
-	AWS    *AWSStatus    `json:"aws,omitempty" protobuf:"bytes,1,opt,name=aws"`
-	GCE    *GCEStatus    `json:"gce,omitempty" protobuf:"bytes,2,opt,name=gce"`
-	Azure  *AzureStatus  `json:"azure,omitempty" protobuf:"bytes,3,opt,name=azure"`
-	Vultr  *VultrStatus  `json:"vultr,omitempty" protobuf:"bytes,4,opt,name=vultr"`
-	Linode *LinodeStatus `json:"linode,omitempty" protobuf:"bytes,5,opt,name=linode"`
+	AWS      *AWSStatus      `json:"aws,omitempty" protobuf:"bytes,1,opt,name=aws"`
+	GCE      *GCEStatus      `json:"gce,omitempty" protobuf:"bytes,2,opt,name=gce"`
+	Azure    *AzureStatus    `json:"azure,omitempty" protobuf:"bytes,3,opt,name=azure"`
+	Vultr    *VultrStatus    `json:"vultr,omitempty" protobuf:"bytes,4,opt,name=vultr"`
+	Linode   *LinodeStatus   `json:"linode,omitempty" protobuf:"bytes,5,opt,name=linode"`
+	Scaleway *ScalewayStatus `json:"scaleway,omitempty" protobuf:"bytes,6,opt,name=scaleway"`
 }
 
 /*
