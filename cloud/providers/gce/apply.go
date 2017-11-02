@@ -347,7 +347,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 			return
 		}
 		if !dryRun {
-			if token, err = GetExistingKubeadmToken(kc); err != nil {
+			if token, err = GetExistingKubeadmToken(kc, api.TokenDuration_10yr); err != nil {
 				return
 			}
 		}
@@ -527,7 +527,7 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 
 	var token string
 	if !dryRun {
-		if token, err = GetExistingKubeadmToken(kc); err != nil {
+		if token, err = GetExistingKubeadmToken(kc, api.TokenDuration_10yr); err != nil {
 			return
 		}
 		if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {

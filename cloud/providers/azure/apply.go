@@ -13,6 +13,7 @@ import (
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
@@ -427,7 +428,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 			return
 		}
 		if !dryRun {
-			if token, err = GetExistingKubeadmToken(kc); err != nil {
+			if token, err = GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration); err != nil {
 				return
 			}
 			if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {

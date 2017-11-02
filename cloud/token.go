@@ -15,7 +15,7 @@ import (
 
 const tokenCreateRetries = 5
 
-func GetExistingKubeadmToken(kc kubernetes.Interface) (string, error) {
+func GetExistingKubeadmToken(kc kubernetes.Interface, duration time.Duration) (string, error) {
 	for i := 0; i < tokenCreateRetries; i++ {
 		secrets, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).List(metav1.ListOptions{
 			FieldSelector: fields.SelectorFromSet(map[string]string{
@@ -36,10 +36,10 @@ func GetExistingKubeadmToken(kc kubernetes.Interface) (string, error) {
 		}
 		time.Sleep(15 * time.Second)
 	}
-	return CreateValidKubeadmToken(kc)
+	return CreateValidKubeadmToken(kc, duration)
 }
 
-func CreateValidKubeadmToken(kc kubernetes.Interface) (string, error) {
+func CreateValidKubeadmToken(kc kubernetes.Interface, duration time.Duration) (string, error) {
 	token := GetKubeadmToken()
 	tokenID, tokenSecret, err := ParseToken(token)
 	if err != nil {
@@ -53,7 +53,7 @@ func CreateValidKubeadmToken(kc kubernetes.Interface) (string, error) {
 			Name: secretName,
 		},
 		Type: bootstrapapi.SecretTypeBootstrapToken,
-		Data: encodeTokenSecretData(tokenID, tokenSecret, kubeadmconsts.DefaultTokenDuration, kubeadmconsts.DefaultTokenUsages, extraGroups, description),
+		Data: encodeTokenSecretData(tokenID, tokenSecret, duration, kubeadmconsts.DefaultTokenUsages, extraGroups, description),
 	}
 
 	if _, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret); err != nil {
