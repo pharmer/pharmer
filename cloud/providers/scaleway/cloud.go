@@ -198,7 +198,7 @@ func (conn *cloudConnector) storeStartupScript(ng *api.NodeGroup, serverID, toke
 	if err != nil {
 		return err
 	}
-	key := "kubeadm.sh"
+	key := "pharmer.sh"
 	return conn.client.PatchUserdata(serverID, key, []byte(script), false)
 }
 
@@ -270,9 +270,9 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	// ref: https://stackoverflow.com/a/2831449/244009
 	steps := []string{
 		"cd /tmp",
-		"/usr/bin/curl -fsSL --retry 5 -o kubeadm.sh 169.254.42.42/user_data/kubeadm.sh --local-port 1-1024 2> /dev/null",
-		"chmod +x kubeadm.sh",
-		"nohup ./kubeadm.sh > /dev/null 2>&1 &",
+		"/usr/bin/curl -fsSL --retry 5 -o pharmer.sh 169.254.42.42/user_data/pharmer.sh --local-port 1-1024 2> /dev/null",
+		"chmod +x pharmer.sh",
+		"nohup ./pharmer.sh > /dev/null 2>&1 &",
 	}
 	command := fmt.Sprintf("sh -c '%s'", strings.Join(steps, "; "))
 	Logger(conn.ctx).Infof("Booting server %s using `%s`", name, command)
