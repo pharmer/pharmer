@@ -1,5 +1,7 @@
 package v1alpha1
 
+import "time"
+
 const (
 	RoleMaster    = "master"
 	RoleNode      = "node"
@@ -17,4 +19,6 @@ const (
 	OSKey           = "beta.kubernetes.io/os"
 	RegionKey       = "failure-domain.beta.kubernetes.io/region"
 	ZoneKey         = "failure-domain.beta.kubernetes.io/zone"
+
+	TokenDuration_10yr = 10 * 365 * 24 * time.Hour
 )
