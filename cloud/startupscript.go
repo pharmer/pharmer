@@ -124,7 +124,7 @@ echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
 chmod +x /usr/sbin/policy-rc.d
 
 apt-get update -y
-apt-get install -y apt-transport-https curl ca-certificates software-properties-common
+apt-get install -y apt-transport-https curl ca-certificates software-properties-common tzdata
 curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
 add-apt-repository -y ppa:gluster/glusterfs-3.10
@@ -218,7 +218,7 @@ echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
 chmod +x /usr/sbin/policy-rc.d
 
 apt-get update -y
-apt-get install -y apt-transport-https curl ca-certificates software-properties-common
+apt-get install -y apt-transport-https curl ca-certificates software-properties-common tzdata
 curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
 add-apt-repository -y ppa:gluster/glusterfs-3.10
