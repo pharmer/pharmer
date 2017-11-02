@@ -135,7 +135,7 @@ curl -fsSL --retry 5 -o kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/
     && chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
 {{ end }}
-curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.8/pre-k-linux-amd64 \
+curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.9/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
@@ -263,12 +263,12 @@ mkdir -p /etc/kubernetes/pki
 cat > /etc/kubernetes/pki/ca.key <<EOF
 {{ .CAKey }}
 EOF
-pre-k get cacert --common-name=ca < /etc/kubernetes/pki/ca.key > /etc/kubernetes/pki/ca.crt
+pre-k get ca-cert --common-name=ca < /etc/kubernetes/pki/ca.key > /etc/kubernetes/pki/ca.crt
 
 cat > /etc/kubernetes/pki/front-proxy-ca.key <<EOF
 {{ .FrontProxyKey }}
 EOF
-pre-k get cacert --common-name=front-proxy-ca < /etc/kubernetes/pki/front-proxy-ca.key > /etc/kubernetes/pki/front-proxy-ca.crt
+pre-k get ca-cert --common-name=front-proxy-ca < /etc/kubernetes/pki/front-proxy-ca.key > /etc/kubernetes/pki/front-proxy-ca.crt
 chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 `))
 
