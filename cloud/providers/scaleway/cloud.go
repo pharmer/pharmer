@@ -269,14 +269,13 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 
 	// ref: https://stackoverflow.com/a/2831449/244009
 	steps := []string{
-		"cd /tmp",
-		"/usr/bin/curl -fsSL --retry 5 -o pharmer.sh 169.254.42.42/user_data/pharmer.sh --local-port 1-1024 2> /dev/null",
-		"chmod +x pharmer.sh",
-		"nohup ./pharmer.sh > /dev/null 2>&1 &",
+		"/usr/bin/curl -fsSL --retry 5 -o /usr/bin/pharmer.sh 169.254.42.42/user_data/pharmer.sh --local-port 1-1024 2> /dev/null",
+		"chmod +x /usr/bin/pharmer.sh",
+		"nohup /usr/bin/pharmer.sh > /dev/null 2>&1 &",
 	}
-	command := fmt.Sprintf("sh -c '%s'", strings.Join(steps, "; "))
-	Logger(conn.ctx).Infof("Booting server %s using `%s`", name, command)
-	stdOut, stdErr, code, err := sshtools.Exec(command, "root", host.PublicAddress.IP+":22", signer)
+	cmd := fmt.Sprintf("sh -c '%s'", strings.Join(steps, "; "))
+	Logger(conn.ctx).Infof("Booting server %s using `%s`", name, cmd)
+	stdOut, stdErr, code, err := sshtools.Exec(cmd, "root", host.PublicAddress.IP+":22", signer)
 	if err != nil {
 		return nil, err
 	}

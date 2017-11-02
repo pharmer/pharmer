@@ -107,8 +107,8 @@ func (td TemplateData) PackageList() string {
 var (
 	StartupScriptTemplate = template.Must(template.New(api.RoleMaster).Parse(`#!/bin/bash
 set -euxo pipefail
-# log to /var/log/startup-script.log
-exec > >(tee -a /var/log/startup-script.log)
+# log to /var/log/pharmer.log
+exec > >(tee -a /var/log/pharmer.log)
 exec 2>&1
 
 export DEBIAN_FRONTEND=noninteractive
@@ -200,8 +200,8 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`#!/bin/bash
 set -euxo pipefail
-# log to /var/log/startup-script.log
-exec > >(tee -a /var/log/startup-script.log)
+# log to /var/log/pharmer.log
+exec > >(tee -a /var/log/pharmer.log)
 exec 2>&1
 
 export DEBIAN_FRONTEND=noninteractive

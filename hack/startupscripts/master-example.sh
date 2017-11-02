@@ -4,8 +4,8 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# log to /var/log/startup-script.log
-exec > >(tee -a /var/log/startup-script.log)
+# log to /var/log/pharmer.log
+exec > >(tee -a /var/log/pharmer.log)
 exec 2>&1
 
 # kill apt processes (E: Unable to lock directory /var/lib/apt/lists/)
