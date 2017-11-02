@@ -1,7 +1,6 @@
 package gce
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"regexp"
@@ -415,8 +414,8 @@ func (conn *cloudConnector) createMasterIntance(ng *api.NodeGroup) (string, erro
 	// MachineType:  "projects/tigerworks-kube/zones/us-central1-b/machineTypes/n1-standard-1",
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
-	var script bytes.Buffer
-	if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
+	script, err := conn.renderStartupScript(ng, "")
+	if err != nil {
 		return "", err
 	}
 
@@ -457,7 +456,7 @@ func (conn *cloudConnector) createMasterIntance(ng *api.NodeGroup) (string, erro
 			Items: []*compute.MetadataItems{
 				{
 					Key:   "startup-script",
-					Value: types.StringP(script.String()),
+					Value: types.StringP(script),
 				},
 				{
 					Key:   "ssh-keys",
@@ -675,16 +674,13 @@ declare -x KUBEADM_TOKEN=%s
 		return "", err
 	}
 
-	var script bytes.Buffer
-	if err := StartupScriptTemplate.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
+	script, err := conn.renderStartupScript(ng, token)
+	if err != nil {
 		return "", err
 	}
-
 	pubKey := string(SSHKey(conn.ctx).PublicKey)
 	value := fmt.Sprintf("%v:%v %v", conn.namer.AdminUsername(), pubKey, conn.namer.AdminUsername())
-
 	image := fmt.Sprintf("projects/%v/global/images/%v", conn.cluster.Spec.Cloud.InstanceImageProject, conn.cluster.Spec.Cloud.InstanceImage)
-
 	network := fmt.Sprintf("projects/%v/global/networks/%v", conn.cluster.Spec.Cloud.Project, defaultNetwork)
 
 	Logger(conn.ctx).Infof("Create instance template %v", templateName)
@@ -736,7 +732,7 @@ declare -x KUBEADM_TOKEN=%s
 				Items: []*compute.MetadataItems{
 					{
 						Key:   "startup-script",
-						Value: types.StringP(script.String()),
+						Value: types.StringP(script),
 					},
 					{
 						Key:   "ssh-keys",

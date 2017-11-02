@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -79,4 +80,32 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 	}
 	td.MasterConfiguration = &cfg
 	return td
+}
+
+var (
+	customTemplate = `
+`
+)
+
+func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string) (string, error) {
+	tpl, err := StartupScriptTemplate.Clone()
+	if err != nil {
+		return "", err
+	}
+	tpl, err = tpl.Parse(customTemplate)
+	if err != nil {
+		return "", err
+	}
+
+	var script bytes.Buffer
+	if ng.Role() == api.RoleMaster {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
+			return "", err
+		}
+	} else {
+		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
+			return "", err
+		}
+	}
+	return script.String(), nil
 }
