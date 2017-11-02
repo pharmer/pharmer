@@ -39,7 +39,7 @@ func (td TemplateData) MasterConfigurationYAML() (string, error) {
 }
 
 func (td TemplateData) IsPreReleaseVersion() bool {
-	if v, err := version.NewVersion(td.KubeletVersion); err == nil && v.Prerelease() != "" {
+	if v, err := version.NewVersion(td.KubeadmVersion); err == nil && v.Prerelease() != "" {
 		return true
 	}
 	return false
@@ -90,12 +90,12 @@ func (td TemplateData) PackageList() string {
 		if td.KubeletVersion == "" {
 			pkgs = append(pkgs, "kubelet", "kubectl")
 		} else {
-			pkgs = append(pkgs, "kubelet="+td.KubeletVersion, "kubectl="+td.KubeletVersion)
+			pkgs = append(pkgs, "kubelet="+td.KubeletVersion+"*", "kubectl="+td.KubeletVersion+"*")
 		}
 		if td.KubeadmVersion == "" {
 			pkgs = append(pkgs, "kubeadm")
 		} else {
-			pkgs = append(pkgs, "kubeadm="+td.KubeadmVersion)
+			pkgs = append(pkgs, "kubeadm="+td.KubeadmVersion+"*")
 		}
 	}
 	if td.Provider != "gce" && td.Provider != "gke" {

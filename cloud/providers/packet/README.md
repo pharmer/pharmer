@@ -11,7 +11,7 @@ $ pharmer create cluster packet \
 	--nodes=baremetal_0=0 \
 	--credential-uid=p2 \
 	--kubernetes-version=1.8.0 \
-	--kubelet-version='1.8.0*' --kubeadm-version='1.8.0*'
+	--kubelet-version='1.8.0' --kubeadm-version='1.8.0'
 
 $ pharmer apply packet --v=3
 ```
