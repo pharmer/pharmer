@@ -168,6 +168,8 @@ message CloudStatus {
   optional LinodeStatus linode = 5;
 
   optional ScalewayStatus scaleway = 6;
+
+  optional PacketStatus packet = 7;
 }
 
 message Cluster {
@@ -424,6 +426,18 @@ message NodeTemplateSpec {
   // More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
   // +optional
   optional NodeSpec spec = 2;
+}
+
+message PacketCloudConfig {
+  optional string project = 1;
+
+  optional string apiKey = 2;
+
+  optional string zone = 3;
+}
+
+message PacketStatus {
+  optional PacketCloudConfig packetCloudConfig = 1;
 }
 
 message PharmerConfig {

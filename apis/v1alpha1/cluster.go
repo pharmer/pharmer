@@ -31,6 +31,11 @@ type ScalewayCloudConfig struct {
 	Token        string `json:"token,omitempty" protobuf:"bytes,2,opt,name=token"`
 	Region       string `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
 }
+type PacketCloudConfig struct {
+	Project string `json:"project,omitempty" protobuf:"bytes,1,opt,name=project"`
+	ApiKey  string `json:"apiKey,omitempty" protobuf:"bytes,2,opt,name=apiKey"`
+	Zone    string `json:"zone,omitempty" protobuf:"bytes,3,opt,name=zone"`
+}
 
 type SoftlayerCloudConfig struct {
 	UserName string `json:"username,omitempty" protobuf:"bytes,1,opt,name=username"`
@@ -247,6 +252,10 @@ type ScalewayStatus struct {
 	CloudConfig *ScalewayCloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,1,opt,name=scalewayCloudConfig"`
 }
 
+type PacketStatus struct {
+	CloudConfig *PacketCloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,1,opt,name=packetCloudConfig"`
+}
+
 type CloudStatus struct {
 	AWS      *AWSStatus      `json:"aws,omitempty" protobuf:"bytes,1,opt,name=aws"`
 	GCE      *GCEStatus      `json:"gce,omitempty" protobuf:"bytes,2,opt,name=gce"`
@@ -254,6 +263,7 @@ type CloudStatus struct {
 	Vultr    *VultrStatus    `json:"vultr,omitempty" protobuf:"bytes,4,opt,name=vultr"`
 	Linode   *LinodeStatus   `json:"linode,omitempty" protobuf:"bytes,5,opt,name=linode"`
 	Scaleway *ScalewayStatus `json:"scaleway,omitempty" protobuf:"bytes,6,opt,name=scaleway"`
+	Packet   *PacketStatus   `json:"packet,omitempty" protobuf:"bytes,7,opt,name=packet"`
 }
 
 /*
