@@ -23,4 +23,4 @@ This project is spread over 3 repositories:
   - softlayer
   - vultr
 
-__This is pre-alpha. If you are interested to learn more, talk to us in our [slack channel](https://slack.appscode.com/).__
+__This is alpha. If you are interested to learn more, talk to us in our [slack channel](https://slack.appscode.com/).__
