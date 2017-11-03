@@ -7,12 +7,9 @@ import (
 	"time"
 
 	"github.com/appscode/go/crypto/rand"
-	"github.com/appscode/mergo"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/data/files"
 	"github.com/appscode/pharmer/phid"
-	semver "github.com/hashicorp/go-version"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
@@ -26,7 +23,7 @@ func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.Node
 			UID:               phid.NewNodeGroup(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 			Labels: map[string]string{
-				api.RoleMasterKey: "true",
+				api.RoleMasterKey: "",
 			},
 		},
 		Spec: api.NodeGroupSpec{
@@ -44,25 +41,7 @@ func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.Node
 	return Store(cm.ctx).NodeGroups(cluster.Name).Create(&ig)
 }
 
-func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
-	// Load default spec from data files
-	kv, err := semver.NewVersion(in.Spec.KubernetesVersion)
-	if err != nil {
-		return nil, err
-	}
-	defaultSpec, err := files.GetDefaultClusterSpec(in.Spec.Cloud.CloudProvider, kv)
-	if err != nil {
-		return nil, err
-	}
-	cluster := &api.Cluster{
-		Spec: *defaultSpec,
-	}
-
-	// Copy default spec into return value
-	err = mergo.MergeWithOverwrite(cluster, in)
-	if err != nil {
-		return nil, err
-	}
+func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	n := namer{cluster: cluster}
 
 	// Init object meta
@@ -104,7 +83,7 @@ func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
 	}
 	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
 
-	return cluster, nil
+	return nil
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {

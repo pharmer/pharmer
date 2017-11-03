@@ -2,7 +2,6 @@ package data
 
 import (
 	_env "github.com/appscode/go/env"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/hashicorp/go-version"
 )
 
@@ -60,9 +59,8 @@ type CredentialFormat struct {
 }
 
 type KubernetesVersion struct {
-	Version     *version.Version `json:"version"`
-	DefaultSpec *api.ClusterSpec `json:"defaultSpec"`
-	Env         map[string]bool  `json:"env,omitempty"`
+	Version *version.Version `json:"version"`
+	Env     map[string]bool  `json:"env,omitempty"`
 }
 
 func (v KubernetesVersion) Released(env _env.Environment) bool {

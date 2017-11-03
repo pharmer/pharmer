@@ -52,7 +52,7 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 	cmd.Flags().String("kubernetes-version", "", "Kubernetes version")
 	cmd.Flags().String("kubelet-version", "", "kubelet/kubectl version")
 	cmd.Flags().String("kubeadm-version", "", "Kubeadm version")
-	cmd.Flags().Bool("do-not-delete", false, "Set do not delete flag")
+	cmd.Flags().Bool("locked", false, "If true, locks cluster from deletion")
 	cmd.Flags().StringP("output", "o", "yaml", "Output format. One of: yaml|json.")
 	return cmd
 }
@@ -106,19 +106,19 @@ func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Wr
 
 	// Check if flags are provided to update
 	// TODO: Provide list of flag names. If any of them is provided, update
-	if utils.CheckAlterableFlags(cmd, "do-not-delete") {
+	if utils.CheckAlterableFlags(cmd, "locked") {
 		updated, err := cloud.Store(ctx).Clusters().Get(clusterName)
 		if err != nil {
 			return err
 		}
 
 		//TODO: Check provided flags, and set value
-		if cmd.Flags().Changed("do-not-delete") {
-			doNotDelete, err := cmd.Flags().GetBool("do-not-delete")
+		if cmd.Flags().Changed("locked") {
+			locked, err := cmd.Flags().GetBool("locked")
 			if err != nil {
 				return err
 			}
-			updated.Spec.DoNotDelete = doNotDelete
+			updated.Spec.Locked = locked
 		}
 		if cmd.Flags().Changed("kubernetes-version") {
 			updated.Spec.KubernetesVersion, _ = cmd.Flags().GetString("kubernetes-version")

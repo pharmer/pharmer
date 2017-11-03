@@ -12,7 +12,7 @@ var ErrNotImplemented = errors.New("not implemented")
 
 type Interface interface {
 	SSHGetter
-	DefaultSpec(cluster *api.Cluster) (*api.Cluster, error)
+	SetDefaults(in *api.Cluster) error
 	CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error)
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)

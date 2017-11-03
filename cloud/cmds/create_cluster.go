@@ -55,7 +55,6 @@ func NewCmdCreateCluster() *cobra.Command {
 	cmd.Flags().StringVar(&cluster.Spec.KubernetesVersion, "kubernetes-version", "", "Kubernetes version")
 	cmd.Flags().StringVar(&cluster.Spec.KubeletVersion, "kubelet-version", "", "kubelet/kubectl version")
 	cmd.Flags().StringVar(&cluster.Spec.KubeadmVersion, "kubeadm-version", "", "Kubeadm version")
-	cmd.Flags().BoolVar(&cluster.Spec.DoNotDelete, "do-not-delete", false, "Set do not delete flag")
 	cmd.Flags().StringVar(&cluster.Spec.Networking.NetworkProvider, "networking", "calico", "Networking mode to use. calico(default), flannel")
 
 	cmd.Flags().StringToIntVar(&nodes, "nodes", map[string]int{}, "Node set configuration")

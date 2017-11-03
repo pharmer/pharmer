@@ -207,7 +207,7 @@ message ClusterSpec {
 
   optional string kubeadmVersion = 56;
 
-  optional bool doNotDelete = 8;
+  optional bool locked = 57;
 
   // Auto Set
   // https://github.com/kubernetes/kubernetes/blob/master/cluster/gce/util.sh#L538

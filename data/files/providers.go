@@ -7,7 +7,6 @@ import (
 
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/data"
 	"github.com/appscode/pharmer/data/files/aws"
 	"github.com/appscode/pharmer/data/files/azure"
@@ -18,7 +17,6 @@ import (
 	"github.com/appscode/pharmer/data/files/scaleway"
 	"github.com/appscode/pharmer/data/files/softlayer"
 	"github.com/appscode/pharmer/data/files/vultr"
-	"github.com/hashicorp/go-version"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -147,41 +145,6 @@ func Load(env _env.Environment) error {
 		}
 	}
 	return nil
-}
-
-func GetDefaultClusterSpec(provider string, x *version.Version) (*api.ClusterSpec, error) {
-	p, found := clouds[provider]
-	if !found {
-		return nil, fmt.Errorf("can't find cluster provider %v", provider)
-	}
-	firstPatch := x.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().Done() // x.y.0
-	sanitizedX := x.Clone().ToMutator().ResetPrerelease().ResetMetadata().Done()              // x.y.z
-
-	xGE, err := version.NewConstraint(fmt.Sprintf(">= %s", firstPatch.String()))
-	if err != nil {
-		return nil, err
-	}
-	xWB, err := version.NewConstraint(fmt.Sprintf(">= %s, <= %s", firstPatch.String(), sanitizedX.String()))
-	if err != nil {
-		return nil, err
-	}
-
-	// ref: https://golang.org/pkg/sort/#Search
-	pos := sort.Search(len(p.Versions), func(i int) bool { return xGE.Check(p.Versions[i].Version) })
-	if pos < len(p.Versions) && xWB.Check(p.Versions[pos].Version) {
-		// perform deep copy so that cache is not modified
-		var result api.ClusterSpec
-		b, err := json.Marshal(p.Versions[pos].DefaultSpec)
-		if err != nil {
-			return nil, err
-		}
-		err = json.Unmarshal(b, &result)
-		if err != nil {
-			return nil, err
-		}
-		return &result, nil
-	}
-	return nil, fmt.Errorf("can't find default spec for Kubernetes version %v for provider %v", x, provider)
 }
 
 func GetInstanceType(provider, sku string) (*data.InstanceType, error) {
