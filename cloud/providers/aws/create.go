@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appscode/go/crypto/rand"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/phid"
@@ -92,9 +91,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 		Phase:            api.ClusterPending,
 		SSHKeyExternalID: n.GenSSHKeyExternalID(),
 		Cloud: api.CloudStatus{
-			AWS: &api.AWSStatus{
-				BucketName: rand.WithUniqSuffix("pharmer-config"),
-			},
+			AWS: &api.AWSStatus{},
 		},
 	}
 	return nil

@@ -3,7 +3,6 @@ package aws
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
@@ -27,12 +26,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		ExternalProvider: false, // AWS does not use out-of-tree CCM
 		ExtraDomains:     strings.Join(cluster.Spec.APIServerCertSANs, ","),
 	}
-	if cluster.Spec.Cloud.AWS != nil {
-		td.KubeadmTokenLoader = fmt.Sprintf(`
-/usr/local/bin/aws s3api get-object --bucket %v --key config.sh /etc/kubernetes/kubeadm-token
-source /etc/kubernetes/kubeadm-token
-`, cluster.Status.Cloud.AWS.BucketName)
-	}
+
 	{
 		td.KubeletExtraArgs = map[string]string{}
 		for k, v := range cluster.Spec.KubeletExtraArgs {
@@ -46,7 +40,7 @@ source /etc/kubernetes/kubeadm-token
 			api.RoleNodeKey: "",
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
-		td.KubeletExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider // --cloud-config is not needed, since IAM is used.
+		td.KubeletExtraArgs["cloud-provider"] = "" //cluster.Spec.Cloud.CloudProvider // --cloud-config is not needed, since IAM is used. //with provider not working
 	}
 	return td
 }
@@ -72,7 +66,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			DNSDomain:     cluster.Spec.Networking.DNSDomain,
 		},
 		KubernetesVersion:          cluster.Spec.KubernetesVersion,
-		CloudProvider:              cluster.Spec.Cloud.CloudProvider,
+		CloudProvider:              "", //cluster.Spec.Cloud.CloudProvider, //TODO: need to enable it
 		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,

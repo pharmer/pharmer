@@ -1,7 +1,6 @@
 package aws
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -1286,13 +1285,6 @@ func (conn *cloudConnector) assignIPToInstance(reservedIP, instanceID string) er
 }
 
 func (conn *cloudConnector) createLaunchConfiguration(name, token string, ng *api.NodeGroup) error {
-	tokenExporter := fmt.Sprintf(`#!/bin/bash
-declare -x KUBEADM_TOKEN=%s
-`, token)
-	if err := conn.uploadStartupConfig(conn.cluster.Status.Cloud.AWS.BucketName, tokenExporter); err != nil {
-		return err
-	}
-
 	script, err := conn.renderStartupScript(ng, token)
 	if err != nil {
 		return err
@@ -1941,28 +1933,6 @@ func (conn *cloudConnector) updateLaunchConfigurationTemplate(ng *api.NodeGroup,
 
 	err = conn.deleteLaunchConfiguration(oldConfigurationTemplate)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
-	return nil
-}
-
-func (conn *cloudConnector) uploadStartupConfig(bucketName, data string) error {
-	_, err := conn.s3.GetBucketLocation(&_s3.GetBucketLocationInput{Bucket: StringP(bucketName)})
-	if err != nil {
-		_, err = conn.s3.CreateBucket(&_s3.CreateBucketInput{Bucket: StringP(bucketName)})
-		if err != nil {
-			Logger(conn.ctx).Infof("Bucket name is no unique")
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
-		}
-	}
-
-	params := &_s3.PutObjectInput{
-		Bucket: StringP(bucketName),
-		Key:    StringP("config.sh"),
-		ACL:    StringP("authenticated-read"),
-		Body:   bytes.NewReader([]byte(data)),
-	}
-	if _, err = conn.s3.PutObject(params); err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 	return nil

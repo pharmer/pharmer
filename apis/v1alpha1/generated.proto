@@ -70,8 +70,6 @@ message AWSStatus {
   optional string dhcpOptionsID = 7;
 
   optional string volumeID = 8;
-
-  optional string bucketName = 9;
 }
 
 message Action {
@@ -311,8 +309,6 @@ message GCECloudConfig {
 }
 
 message GCEStatus {
-  optional string bucketName = 1;
-
   // instance means either master or node
   optional GCECloudConfig gceCloudConfig = 2;
 }

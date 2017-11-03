@@ -667,13 +667,6 @@ func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup, token 
 	//	  preemptible_nodes = "--preemptible --maintenance-policy TERMINATE"
 	//  }
 
-	tokenExporter := fmt.Sprintf(`#!/bin/bash
-declare -x KUBEADM_TOKEN=%s
-`, token)
-	if err := conn.uploadStartupConfig(conn.cluster.Status.Cloud.GCE.BucketName, tokenExporter); err != nil {
-		return "", err
-	}
-
 	script, err := conn.renderStartupScript(ng, token)
 	if err != nil {
 		return "", err
@@ -1010,29 +1003,6 @@ func (conn *cloudConnector) updateNodeGroupTemplate(ng *api.NodeGroup, token str
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
 
-	return nil
-}
-
-func (conn *cloudConnector) uploadStartupConfig(bucketName, data string) error {
-	if _, err := conn.storageService.Buckets.Get(bucketName).Do(); err != nil {
-		_, err := conn.storageService.Buckets.Insert(conn.cluster.Spec.Cloud.Project, &gcs.Bucket{
-			Name: bucketName,
-		}).Do()
-		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
-		}
-		Logger(conn.ctx).Infof("Created bucket %s", bucketName)
-	} else {
-		Logger(conn.ctx).Infof("Bucket %s already exists", bucketName)
-	}
-	fileName := &gcs.Object{
-		Name: "config.sh",
-	}
-
-	_, err := conn.storageService.Objects.Insert(bucketName, fileName).Media(strings.NewReader(data)).Do()
-	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
-	}
 	return nil
 }
 
