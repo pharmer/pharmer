@@ -12,19 +12,18 @@ import (
 )
 
 type TemplateData struct {
-	ClusterName        string
-	KubeletVersion     string
-	KubeadmVersion     string
-	KubeadmToken       string
-	CAKey              string
-	FrontProxyKey      string
-	APIServerAddress   string
-	ExtraDomains       string
-	NetworkProvider    string
-	CloudConfig        string
-	Provider           string
-	ExternalProvider   bool
-	KubeadmTokenLoader string
+	ClusterName      string
+	KubeletVersion   string
+	KubeadmVersion   string
+	KubeadmToken     string
+	CAKey            string
+	FrontProxyKey    string
+	APIServerAddress string
+	ExtraDomains     string
+	NetworkProvider  string
+	CloudConfig      string
+	Provider         string
+	ExternalProvider bool
 
 	MasterConfiguration *kubeadmapi.MasterConfiguration
 	KubeletExtraArgs    map[string]string
@@ -248,9 +247,7 @@ systemctl enable docker kubelet nfs-utils
 systemctl start docker kubelet nfs-utils
 
 kubeadm reset
-{{ .KubeadmTokenLoader  }}
-KUBEADM_TOKEN=${KUBEADM_TOKEN:-{{ .KubeadmToken }}}
-kubeadm join --token=${KUBEADM_TOKEN} {{ .APIServerAddress }}
+kubeadm join --token={{ .KubeadmToken }} {{ .APIServerAddress }}
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("init-os").Parse(``))

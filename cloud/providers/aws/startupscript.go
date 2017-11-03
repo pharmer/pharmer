@@ -3,7 +3,6 @@ package aws
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
@@ -27,12 +26,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		ExternalProvider: false, // AWS does not use out-of-tree CCM
 		ExtraDomains:     strings.Join(cluster.Spec.APIServerCertSANs, ","),
 	}
-	if cluster.Spec.Cloud.AWS != nil {
-		td.KubeadmTokenLoader = fmt.Sprintf(`
-/usr/local/bin/aws s3api get-object --bucket %v --key config.sh /etc/kubernetes/kubeadm-token
-source /etc/kubernetes/kubeadm-token
-`, cluster.Status.Cloud.AWS.BucketName)
-	}
+
 	{
 		td.KubeletExtraArgs = map[string]string{}
 		for k, v := range cluster.Spec.KubeletExtraArgs {

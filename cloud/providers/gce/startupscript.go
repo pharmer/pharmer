@@ -3,7 +3,6 @@ package gce
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
@@ -28,12 +27,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		ExternalProvider: false, // GCE does not use out-of-tree CCM
 		ExtraDomains:     strings.Join(cluster.Spec.APIServerCertSANs, ","),
 	}
-	if cluster.Spec.Cloud.GCE != nil {
-		td.KubeadmTokenLoader = fmt.Sprintf(`
-gsutil cat gs://%s/config.sh > /etc/kubernetes/config.sh
-/etc/kubernetes/kubeadm-token
-`, cluster.Status.Cloud.GCE.BucketName)
-	}
+
 	{
 		td.KubeletExtraArgs = map[string]string{}
 		for k, v := range cluster.Spec.KubeletExtraArgs {

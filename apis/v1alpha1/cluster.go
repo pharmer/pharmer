@@ -224,14 +224,12 @@ type AWSStatus struct {
 	IGWId         string `json:"igwID,omitempty" protobuf:"bytes,6,opt,name=igwID"`
 	DHCPOptionsId string `json:"dhcpOptionsID,omitempty" protobuf:"bytes,7,opt,name=dhcpOptionsID"`
 	VolumeId      string `json:"volumeID,omitempty" protobuf:"bytes,8,opt,name=volumeID"`
-	BucketName    string `json:"bucketName,omitempty" protobuf:"bytes,9,opt,name=bucketName"`
 
 	// only aws
 	RootDeviceName string `json:"-"`
 }
 
 type GCEStatus struct {
-	BucketName string `json:"bucketName,omitempty" protobuf:"bytes,1,opt,name=bucketName"`
 	// instance means either master or node
 	CloudConfig *GCECloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,2,opt,name=gceCloudConfig"`
 }
