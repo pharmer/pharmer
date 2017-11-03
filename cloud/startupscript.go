@@ -246,6 +246,14 @@ rm -rf /usr/sbin/policy-rc.d
 systemctl enable docker kubelet nfs-utils
 systemctl start docker kubelet nfs-utils
 
+{{ if not .ExternalProvider }}
+{{ if .CloudConfig }}
+cat > /etc/kubernetes/cloud-config <<EOF
+{{ .CloudConfig }}
+EOF
+{{ end }}
+{{ end }}
+
 kubeadm reset
 kubeadm join --token={{ .KubeadmToken }} {{ .APIServerAddress }}
 `))

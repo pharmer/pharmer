@@ -86,6 +86,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 		Phase:            api.ClusterPending,
 		SSHKeyExternalID: n.GenSSHKeyExternalID(),
 		Cloud: api.CloudStatus{
+			GCE: &api.GCEStatus{},
 		},
 	}
 	return nil
