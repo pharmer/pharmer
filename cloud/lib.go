@@ -38,7 +38,7 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if err != nil {
 		return nil, err
 	}
-	if cluster, err = cm.DefaultSpec(cluster); err != nil {
+	if err = cm.SetDefaults(cluster); err != nil {
 		return nil, err
 	}
 	if cluster, err = Store(ctx).Clusters().Create(cluster); err != nil {

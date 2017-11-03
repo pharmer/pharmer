@@ -182,7 +182,7 @@ type ClusterSpec struct {
 	KubernetesVersion string `json:"kubernetesVersion,omitempty" protobuf:"bytes,6,opt,name=kubernetesVersion"`
 	KubeletVersion    string `json:"kubeletVersion,omitempty" protobuf:"bytes,55,opt,name=kubeletVersion"`
 	KubeadmVersion    string `json:"kubeadmVersion,omitempty" protobuf:"bytes,56,opt,name=kubeadmVersion"`
-	DoNotDelete       bool   `json:"doNotDelete,omitempty" protobuf:"varint,8,opt,name=doNotDelete"`
+	Locked            bool   `json:"locked,omitempty" protobuf:"varint,57,opt,name=locked"`
 
 	// Auto Set
 	// https://github.com/kubernetes/kubernetes/blob/master/cluster/gce/util.sh#L538

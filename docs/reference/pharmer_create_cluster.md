@@ -21,7 +21,6 @@ pharmer create cluster demo-cluster
 
 ```
       --credential-uid string       Use preconfigured cloud credential uid
-      --do-not-delete               Set do not delete flag
   -h, --help                        help for cluster
       --kubeadm-version string      Kubeadm version
       --kubelet-version string      kubelet/kubectl version

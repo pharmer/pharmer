@@ -26,8 +26,8 @@ func New(ctx context.Context) Interface {
 	return &ClusterManager{}
 }
 
-func (cm *ClusterManager) DefaultSpec(in *api.Cluster) (*api.Cluster, error) {
-	return in, nil
+func (cm *ClusterManager) SetDefaults(in *api.Cluster) error {
+	return nil
 }
 
 func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error) {
