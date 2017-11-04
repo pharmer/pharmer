@@ -60,11 +60,11 @@ func NewCmdBackup() *cobra.Command {
 			}
 
 			mgr := kutil.NewBackupManager(clusterName, restConfig, sanitize)
-			err = mgr.BackupToTar(backupDir)
+			filename, err := mgr.BackupToTar(backupDir)
 			if err != nil {
 				term.Fatalln(err)
 			}
-			term.Successln("Backup completed successfully!")
+			term.Successln(fmt.Sprintf("Cluster objects are stored in %s", filename))
 		},
 	}
 	cmd.Flags().StringVarP(&clusterName, "cluster", "k", "", "Name of cluster")
