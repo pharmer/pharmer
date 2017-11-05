@@ -7,8 +7,11 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-var ErrNotFound = errors.New("node not found")
-var ErrNotImplemented = errors.New("not implemented")
+var (
+	ErrNotFound       = errors.New("node not found")
+	ErrNotImplemented = errors.New("not implemented")
+	ErrNoMasterNG     = errors.New("cluster has no master NodeGroup")
+)
 
 type Interface interface {
 	SSHGetter

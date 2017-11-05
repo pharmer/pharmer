@@ -30,10 +30,10 @@ func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.Node
 			Nodes: 1,
 			Template: api.NodeTemplateSpec{
 				Spec: api.NodeSpec{
-					SKU:           "", // assign at the time of apply
+					SKU:           "Standard_D2_v2",
 					SpotInstances: false,
-					DiskType:      "gp2",
-					DiskSize:      128,
+					// DiskType:      "gp2",
+					// DiskSize:      128,
 				},
 			},
 		},

@@ -149,15 +149,11 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	if err != nil {
 		return
 	}
-	masterNG := FindMasterNodeGroup(nodeGroups)
-	if masterNG.Spec.Template.Spec.SKU == "" {
-		masterNG.Spec.Template.Spec.SKU = "2gb"
-		masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
-		if err != nil {
-			return
-		}
+	var masterNG *api.NodeGroup
+	masterNG, err = FindMasterNodeGroup(nodeGroups)
+	if err != nil {
+		return
 	}
-
 	if masterNG.Status.Nodes < masterNG.Spec.Nodes {
 		Logger(cm.ctx).Info("Creating master instance")
 		acts = append(acts, api.Action{
@@ -344,8 +340,11 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if err != nil {
 		return
 	}
-	masterNG := FindMasterNodeGroup(nodeGroups)
-
+	var masterNG *api.NodeGroup
+	masterNG, err = FindMasterNodeGroup(nodeGroups)
+	if err != nil {
+		return
+	}
 	var kc kubernetes.Interface
 	kc, err = cm.GetAdminClient()
 	if err != nil {
