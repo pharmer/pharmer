@@ -1,5 +1,5 @@
-hash: 9bf86aecf89ddf107c897d763c107aa49d1a5d1ec4d7c3d63de8c27cdda4476f
-updated: 2017-11-04T17:47:17.5650477-07:00
+hash: a1dadc25ddf9e49f4c41ae09c002811b920af4af3971ba1ebe8ca96aef46a2d6
+updated: 2017-11-04T22:45:43.781128813-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -560,7 +560,7 @@ imports:
 - name: gopkg.in/yaml.v2
   version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: k8s.io/api
-  version: fe29995db37613b9c5b2a647544cf627bfa8d299
+  version: 4df58c811fe2e65feb879227b2b245e4dc26e7ad
   subpackages:
   - admissionregistration/v1alpha1
   - apps/v1beta1
@@ -727,7 +727,7 @@ imports:
   - plugin/pkg/authenticator/token/webhook
   - plugin/pkg/authorizer/webhook
 - name: k8s.io/client-go
-  version: 35874c597fed17ca62cd197e516d7d5ff9a2958c
+  version: 60bf397d7966ab2285d3ba7701ead2cc376111d4
   subpackages:
   - discovery
   - dynamic
