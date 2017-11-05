@@ -1,5 +1,5 @@
-hash: 04a93984e4db226b796091f3fb73a4d4efd25fe2bdf546c8c01fd539fef17177
-updated: 2017-11-04T12:36:49.448798469-07:00
+hash: 9bf86aecf89ddf107c897d763c107aa49d1a5d1ec4d7c3d63de8c27cdda4476f
+updated: 2017-11-04T17:47:17.5650477-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -803,7 +803,9 @@ imports:
   - pkg/handler
   - pkg/util
 - name: k8s.io/kubernetes
-  version: 0b9efaeb34a2fc51ff8e4d34ad9bc6375459c4a4
+  version: bd3f06169027dbe485a1791860b3768d54b199dd
+  repo: https://github.com/appscode/kubernetes.git
+  vcs: git
   subpackages:
   - cmd/kubeadm/app/apis/kubeadm
   - cmd/kubeadm/app/apis/kubeadm/v1alpha1
