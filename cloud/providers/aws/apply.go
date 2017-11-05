@@ -317,7 +317,10 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		err = errors.FromErr(err).WithContext(cm.ctx).Err()
 		return
 	}
-	masterNG := FindMasterNodeGroup(nodeGroups)
+	masterNG, err := FindMasterNodeGroup(nodeGroups)
+	if err != nil {
+		return
+	}
 	if masterNG.Spec.Template.Spec.SKU == "" {
 		totalNodes := NodeCount(nodeGroups)
 		// https://github.com/kubernetes/kubernetes/blob/8eb75a5810cba92ccad845ca360cf924f2385881/cluster/aws/config-default.sh#L33
@@ -468,7 +471,11 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if err != nil {
 		return
 	}
-	masterNG := FindMasterNodeGroup(nodeGroups)
+	var masterNG *api.NodeGroup
+	masterNG, err = FindMasterNodeGroup(nodeGroups)
+	if err != nil {
+		return
+	}
 
 	var kc kubernetes.Interface
 	kc, err = cm.GetAdminClient()

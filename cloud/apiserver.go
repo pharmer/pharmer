@@ -30,13 +30,13 @@ func NodeCount(nodeGroups []*api.NodeGroup) int64 {
 	return count
 }
 
-func FindMasterNodeGroup(nodeGroups []*api.NodeGroup) *api.NodeGroup {
+func FindMasterNodeGroup(nodeGroups []*api.NodeGroup) (*api.NodeGroup, error) {
 	for _, ng := range nodeGroups {
 		if ng.IsMaster() {
-			return ng
+			return ng, nil
 		}
 	}
-	return nil
+	return nil, ErrNoMasterNG
 }
 
 // WARNING:

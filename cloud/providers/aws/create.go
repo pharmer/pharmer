@@ -32,7 +32,7 @@ func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.Node
 					SKU:           "", // assign at the time of apply
 					SpotInstances: false,
 					DiskType:      "gp2",
-					DiskSize:      128,
+					DiskSize:      100,
 				},
 			},
 		},

@@ -40,7 +40,7 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 
 	igm.ng.Status.Nodes = int64(len(nodes.Items))
 	igm.ng.Status.ObservedGeneration = igm.ng.Generation
-	igm.ng.Spec.Template.Spec.DiskType = "pd-standard"
+	// igm.ng.Spec.Template.Spec.DiskType = "pd-standard"
 	adjust := igm.ng.Spec.Nodes - igm.ng.Status.Nodes
 
 	if (igm.ng.DeletionTimestamp != nil || igm.ng.Spec.Nodes == 0) && igm.ng.Status.Nodes > 0 {

@@ -111,15 +111,11 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	if err != nil {
 		return
 	}
-	masterNG := FindMasterNodeGroup(nodeGroups)
-	if masterNG.Spec.Template.Spec.SKU == "" {
-		masterNG.Spec.Template.Spec.SKU = "3"
-		masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
-		if err != nil {
-			return
-		}
+	var masterNG *api.NodeGroup
+	masterNG, err = FindMasterNodeGroup(nodeGroups)
+	if err != nil {
+		return
 	}
-
 	acts = append(acts, api.Action{
 		Action:   api.ActionAdd,
 		Resource: "Master startup script",
@@ -269,8 +265,11 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if err != nil {
 		return
 	}
-	masterNG := FindMasterNodeGroup(nodeGroups)
-
+	var masterNG *api.NodeGroup
+	masterNG, err = FindMasterNodeGroup(nodeGroups)
+	if err != nil {
+		return
+	}
 	masterNodes := &core.NodeList{}
 	masterNodes, err = kc.CoreV1().Nodes().List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{

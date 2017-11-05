@@ -252,13 +252,9 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	var masterNG *api.NodeGroup
-	masterNG = FindMasterNodeGroup(nodeGroups)
-	if masterNG.Spec.Template.Spec.SKU == "" {
-		masterNG.Spec.Template.Spec.SKU = "Standard_D2_v2"
-		masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
-		if err != nil {
-			return
-		}
+	masterNG, err = FindMasterNodeGroup(nodeGroups)
+	if err != nil {
+		return
 	}
 
 	//Creating Master
