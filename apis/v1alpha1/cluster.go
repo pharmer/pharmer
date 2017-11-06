@@ -156,6 +156,7 @@ type CloudSpec struct {
 	// Deprecated
 	OS                   string `json:"os,omitempty" protobuf:"bytes,5,opt,name=os"`
 	InstanceImageProject string `json:"instanceImageProject,omitempty" protobuf:"bytes,9,opt,name=instanceImageProject"`
+	CCMCredentialName string `json:"ccmCredentialName,omitempty"`
 
 	AWS       *AWSSpec       `json:"aws,omitempty" protobuf:"bytes,10,opt,name=aws"`
 	GCE       *GoogleSpec    `json:"gce,omitempty" protobuf:"bytes,11,opt,name=gce"`
@@ -230,38 +231,22 @@ type AWSStatus struct {
 }
 
 type GCEStatus struct {
-	// instance means either master or node
-	CloudConfig *GCECloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,2,opt,name=gceCloudConfig"`
+	NetworkName        string   `gcfg:"network-name" ini:"network-name,omitempty" protobuf:"bytes,4,opt,name=networkName"`
+	NodeTags           []string `gcfg:"node-tags" ini:"node-tags,omitempty,omitempty" protobuf:"bytes,5,rep,name=nodeTags"`
 }
 
 type AzureStatus struct {
-	CloudConfig *AzureCloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,3,opt,name=azureCloudConfig"`
-}
-
-type VultrStatus struct {
-	CloudConfig *VultrCloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,1,opt,name=vultrCloudConfig"`
-}
-
-type LinodeStatus struct {
-	CloudConfig *LinodeCloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,1,opt,name=linodeCloudConfig"`
-}
-
-type ScalewayStatus struct {
-	CloudConfig *ScalewayCloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,1,opt,name=scalewayCloudConfig"`
-}
-
-type PacketStatus struct {
-	CloudConfig *PacketCloudConfig `json:"cloudConfig,omitempty" protobuf:"bytes,1,opt,name=packetCloudConfig"`
+	SubnetName         string `json:"subnetName,omitempty" protobuf:"bytes,7,opt,name=subnetName"`
+	SecurityGroupName  string `json:"securityGroupName,omitempty" protobuf:"bytes,8,opt,name=securityGroupName"`
+	VnetName           string `json:"vnetName,omitempty" protobuf:"bytes,9,opt,name=vnetName"`
+	RouteTableName     string `json:"routeTableName,omitempty" protobuf:"bytes,10,opt,name=routeTableName"`
+	StorageAccountName string `json:"storageAccountName,omitempty" protobuf:"bytes,11,opt,name=storageAccountName"`
 }
 
 type CloudStatus struct {
 	AWS      *AWSStatus      `json:"aws,omitempty" protobuf:"bytes,1,opt,name=aws"`
 	GCE      *GCEStatus      `json:"gce,omitempty" protobuf:"bytes,2,opt,name=gce"`
 	Azure    *AzureStatus    `json:"azure,omitempty" protobuf:"bytes,3,opt,name=azure"`
-	Vultr    *VultrStatus    `json:"vultr,omitempty" protobuf:"bytes,4,opt,name=vultr"`
-	Linode   *LinodeStatus   `json:"linode,omitempty" protobuf:"bytes,5,opt,name=linode"`
-	Scaleway *ScalewayStatus `json:"scaleway,omitempty" protobuf:"bytes,6,opt,name=scaleway"`
-	Packet   *PacketStatus   `json:"packet,omitempty" protobuf:"bytes,7,opt,name=packet"`
 }
 
 /*
