@@ -32,13 +32,8 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	// TODO: FixIt Project ID
 	cluster.Spec.Cloud.Project = typed.ProjectID()
 
-	cluster.Status.Cloud.Packet = &api.PacketStatus{
-		CloudConfig: &api.PacketCloudConfig{
-			Project: typed.ProjectID(),
-			ApiKey:  typed.APIKey(),
-			Zone:    cluster.Spec.Cloud.Zone,
-		},
-	}
+	cluster.Spec.Cloud.CCMCredentialName = cred.Name
+
 	return &cloudConnector{
 		ctx:     ctx,
 		cluster: cluster,

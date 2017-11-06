@@ -156,7 +156,7 @@ type CloudSpec struct {
 	// Deprecated
 	OS                   string `json:"os,omitempty" protobuf:"bytes,5,opt,name=os"`
 	InstanceImageProject string `json:"instanceImageProject,omitempty" protobuf:"bytes,9,opt,name=instanceImageProject"`
-	CCMCredentialName string `json:"ccmCredentialName,omitempty"`
+	CCMCredentialName    string `json:"ccmCredentialName,omitempty" protobuf:"bytes,15,opt,name=ccmCredentialName"`
 
 	AWS       *AWSSpec       `json:"aws,omitempty" protobuf:"bytes,10,opt,name=aws"`
 	GCE       *GoogleSpec    `json:"gce,omitempty" protobuf:"bytes,11,opt,name=gce"`
@@ -231,22 +231,21 @@ type AWSStatus struct {
 }
 
 type GCEStatus struct {
-	NetworkName        string   `gcfg:"network-name" ini:"network-name,omitempty" protobuf:"bytes,4,opt,name=networkName"`
-	NodeTags           []string `gcfg:"node-tags" ini:"node-tags,omitempty,omitempty" protobuf:"bytes,5,rep,name=nodeTags"`
+	NetworkName string   `gcfg:"network-name" ini:"network-name,omitempty" protobuf:"bytes,4,opt,name=networkName"`
+	NodeTags    []string `gcfg:"node-tags" ini:"node-tags,omitempty,omitempty" protobuf:"bytes,5,rep,name=nodeTags"`
 }
 
 type AzureStatus struct {
-	SubnetName         string `json:"subnetName,omitempty" protobuf:"bytes,7,opt,name=subnetName"`
-	SecurityGroupName  string `json:"securityGroupName,omitempty" protobuf:"bytes,8,opt,name=securityGroupName"`
-	VnetName           string `json:"vnetName,omitempty" protobuf:"bytes,9,opt,name=vnetName"`
-	RouteTableName     string `json:"routeTableName,omitempty" protobuf:"bytes,10,opt,name=routeTableName"`
-	StorageAccountName string `json:"storageAccountName,omitempty" protobuf:"bytes,11,opt,name=storageAccountName"`
+	SubnetName        string `json:"subnetName,omitempty" protobuf:"bytes,7,opt,name=subnetName"`
+	SecurityGroupName string `json:"securityGroupName,omitempty" protobuf:"bytes,8,opt,name=securityGroupName"`
+	VnetName          string `json:"vnetName,omitempty" protobuf:"bytes,9,opt,name=vnetName"`
+	RouteTableName    string `json:"routeTableName,omitempty" protobuf:"bytes,10,opt,name=routeTableName"`
 }
 
 type CloudStatus struct {
-	AWS      *AWSStatus      `json:"aws,omitempty" protobuf:"bytes,1,opt,name=aws"`
-	GCE      *GCEStatus      `json:"gce,omitempty" protobuf:"bytes,2,opt,name=gce"`
-	Azure    *AzureStatus    `json:"azure,omitempty" protobuf:"bytes,3,opt,name=azure"`
+	AWS   *AWSStatus   `json:"aws,omitempty" protobuf:"bytes,1,opt,name=aws"`
+	GCE   *GCEStatus   `json:"gce,omitempty" protobuf:"bytes,2,opt,name=gce"`
+	Azure *AzureStatus `json:"azure,omitempty" protobuf:"bytes,3,opt,name=azure"`
 }
 
 /*

@@ -49,19 +49,9 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
-	// TODO: FixIt cluster.Spec.Cloud.Project
-	namer := namer{cluster: cluster}
-	cluster.Status.Cloud.GCE.CloudConfig = &api.GCECloudConfig{
-		// TokenURL           :
-		// TokenBody          :
-		ProjectID:          cluster.Spec.Cloud.Project,
-		NetworkName:        "default",
-		NodeTags:           []string{namer.NodePrefix()},
-		NodeInstancePrefix: namer.NodePrefix(),
-		Multizone:          false,
-	}
-
 	cluster.Spec.Cloud.Project = typed.ProjectID()
+
+	cluster.Spec.Cloud.CCMCredentialName = cred.Name
 
 	conf, err := google.JWTConfigFromJSON([]byte(typed.ServiceAccount()),
 		compute.ComputeScope,

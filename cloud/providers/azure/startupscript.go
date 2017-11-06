@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/credential"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
@@ -41,20 +43,45 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "azure" // requires --cloud-config
-		if cluster.Status.Cloud.Azure != nil && cluster.Status.Cloud.Azure.CloudConfig != nil {
-			data, err := json.MarshalIndent(cluster.Status.Cloud.Azure.CloudConfig, "", "  ")
-			if err != nil {
-				panic(err)
-			}
-			td.CloudConfig = string(data)
-
-			// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L41
-			td.KubeletExtraArgs["cloud-config"] = "/etc/kubernetes/cloud-config"
-
-			// Kubeadm will send cloud-config to kube-apiserver and kube-controller-manager
-			// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L193
-			// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L230
+		if cluster.Spec.Cloud.CCMCredentialName == "" {
+			panic(errors.New("no cloud controller manager credential found"))
 		}
+
+		cred, err := Store(ctx).Credentials().Get(cluster.Spec.Cloud.CCMCredentialName)
+		if err != nil {
+			panic(err)
+		}
+		typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
+		if ok, err := typed.IsValid(); !ok {
+			panic(err)
+		}
+		cloudConfig := api.AzureCloudConfig{
+			TenantID:           typed.TenantID(),
+			SubscriptionID:     typed.SubscriptionID(),
+			AadClientID:        typed.ClientID(),
+			AadClientSecret:    typed.ClientSecret(),
+			ResourceGroup:      cluster.Name,
+			Location:           cluster.Spec.Cloud.Zone,
+			SubnetName:         cluster.Status.Cloud.Azure.SubnetName,
+			SecurityGroupName:  cluster.Status.Cloud.Azure.SecurityGroupName,
+			VnetName:           cluster.Status.Cloud.Azure.VnetName,
+			RouteTableName:     cluster.Status.Cloud.Azure.RouteTableName,
+			StorageAccountName: cluster.Spec.Cloud.Azure.StorageAccountName,
+		}
+
+		data, err := json.MarshalIndent(cloudConfig, "", "  ")
+		if err != nil {
+			panic(err)
+		}
+		td.CloudConfig = string(data)
+
+		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L41
+		td.KubeletExtraArgs["cloud-config"] = "/etc/kubernetes/cloud-config"
+
+		// Kubeadm will send cloud-config to kube-apiserver and kube-controller-manager
+		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L193
+		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L230
+
 	}
 	return td
 }

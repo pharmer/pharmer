@@ -3,6 +3,7 @@ package gce
 import (
 	"bytes"
 	"context"
+	"errors"
 	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
@@ -42,10 +43,23 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider // requires --cloud-config
-		if cluster.Status.Cloud.GCE != nil && cluster.Status.Cloud.GCE.CloudConfig != nil {
+		if cluster.Status.Cloud.GCE != nil {
 			// ref: https://github.com/kubernetes/kubernetes/blob/release-1.5/cluster/gce/configure-vm.sh#L846
+			if cluster.Spec.Cloud.CCMCredentialName == "" {
+				panic(errors.New("no cloud controller manager credential found"))
+			}
+			namer := namer{cluster}
+
+			cloudConfig := api.GCECloudConfig{
+				ProjectID:          cluster.Spec.Cloud.Project,
+				NetworkName:        "default",
+				NodeTags:           []string{namer.NodePrefix()},
+				NodeInstancePrefix: namer.NodePrefix(),
+				Multizone:          false,
+			}
+
 			cfg := ini.Empty()
-			err := cfg.Section("global").ReflectFrom(cluster.Status.Cloud.GCE.CloudConfig)
+			err := cfg.Section("global").ReflectFrom(cloudConfig)
 			if err != nil {
 				panic(err)
 			}

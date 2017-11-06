@@ -59,34 +59,8 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	if ok, err := typed.IsValid(); !ok {
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
+	cluster.Spec.Cloud.CCMCredentialName = cred.Name
 
-	namer := namer{cluster: cluster}
-
-	cluster.Status.Cloud.Azure.CloudConfig = &api.AzureCloudConfig{
-		TenantID:          typed.TenantID(),
-		SubscriptionID:    typed.SubscriptionID(),
-		AadClientID:       typed.ClientID(),
-		AadClientSecret:   typed.ClientSecret(),
-		ResourceGroup:     namer.ResourceGroupName(),
-		Location:          cluster.Spec.Cloud.Zone,
-		SubnetName:        namer.SubnetName(),
-		SecurityGroupName: namer.NetworkSecurityGroupName(),
-		VnetName:          namer.VirtualNetworkName(),
-		RouteTableName:    namer.RouteTableName(),
-		//	StorageAccountName: namer.GenStorageAccountName(),
-	}
-	cluster.Status.Cloud.Azure.CloudConfig.StorageAccountName = cluster.Spec.Cloud.Azure.StorageAccountName
-
-	/*
-		if az.Cloud == "" {
-			az.Environment = azure.PublicCloud
-		} else {
-			az.Environment, err = azure.EnvironmentFromName(az.Cloud)
-			if err != nil {
-				return nil, err
-			}
-		}
-	*/
 	baseURI := azure.PublicCloud.ResourceManagerEndpoint
 
 	config, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, typed.TenantID())
@@ -441,12 +415,12 @@ func (conn *cloudConnector) createNetworkSecurityRule(sg *network.SecurityGroup)
 }
 
 func (conn *cloudConnector) getStorageAccount() (armstorage.Account, error) {
-	storageName := conn.cluster.Status.Cloud.Azure.CloudConfig.StorageAccountName
+	storageName := conn.cluster.Spec.Cloud.Azure.StorageAccountName
 	return conn.storageClient.GetProperties(conn.namer.ResourceGroupName(), storageName)
 }
 
 func (conn *cloudConnector) createStorageAccount() (armstorage.Account, error) {
-	storageName := conn.cluster.Status.Cloud.Azure.CloudConfig.StorageAccountName
+	storageName := conn.cluster.Spec.Cloud.Azure.StorageAccountName
 	req := armstorage.AccountCreateParameters{
 		Location: StringP(conn.cluster.Spec.Cloud.Zone),
 		Sku: &armstorage.Sku{
@@ -690,7 +664,7 @@ func (conn *cloudConnector) DeleteVirtualMachine(vmName string) error {
 	if err != nil {
 		return err
 	}
-	storageName := conn.cluster.Status.Cloud.Azure.CloudConfig.StorageAccountName
+	storageName := conn.cluster.Spec.Cloud.Azure.StorageAccountName
 	keys, err := conn.storageClient.ListKeys(conn.namer.ResourceGroupName(), storageName)
 	if err != nil {
 		return err
