@@ -100,11 +100,28 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			DNSDomain:     cluster.Spec.Networking.DNSDomain,
 		},
 		KubernetesVersion:          cluster.Spec.KubernetesVersion,
-		CloudProvider:              "", //cluster.Spec.Cloud.CloudProvider,  //TODO: need to enable it
+		CloudProvider:              cluster.Spec.Cloud.CloudProvider,  //TODO: need to enable it
 		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
+	}
+	if cluster.Status.Cloud.GCE != nil && cluster.Status.Cloud.GCE.CloudConfig != nil {
+		cfg.APIServerExtraVolumes = []kubeadmapi.HostPathMount{
+			{
+				Name:      "cloud-config",
+				HostPath:  "/etc/kubernetes/cloud-config",
+				MountPath: "/etc/kubernetes/cloud-config",
+			},
+		}
+
+		cfg.ControllerManagerExtraVolumes = []kubeadmapi.HostPathMount{
+			{
+				Name:      "cloud-config",
+				HostPath:  "/etc/kubernetes/cloud-config",
+				MountPath: "/etc/kubernetes/cloud-config",
+			},
+		}
 	}
 	td.MasterConfiguration = &cfg
 	return td
