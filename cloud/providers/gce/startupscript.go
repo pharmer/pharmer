@@ -85,6 +85,12 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		api.NodePoolKey: ng.Name,
 	}.String()
 
+	hostPath := kubeadmapi.HostPathMount{
+		Name:      "cloud-config",
+		HostPath:  "/etc/kubernetes",
+		MountPath: "/etc/kubernetes",
+	}
+
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "kubeadm.k8s.io/v1alpha1",
@@ -94,34 +100,19 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			AdvertiseAddress: cluster.Spec.API.AdvertiseAddress,
 			BindPort:         cluster.Spec.API.BindPort,
 		},
+		APIServerExtraVolumes:         []kubeadmapi.HostPathMount{hostPath},
+		ControllerManagerExtraVolumes: []kubeadmapi.HostPathMount{hostPath},
 		Networking: kubeadmapi.Networking{
 			ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
 			PodSubnet:     cluster.Spec.Networking.PodSubnet,
 			DNSDomain:     cluster.Spec.Networking.DNSDomain,
 		},
 		KubernetesVersion:          cluster.Spec.KubernetesVersion,
-		CloudProvider:              cluster.Spec.Cloud.CloudProvider,  //TODO: need to enable it
+		CloudProvider:              cluster.Spec.Cloud.CloudProvider, //TODO: need to enable it
 		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
-	}
-	if cluster.Status.Cloud.GCE != nil && cluster.Status.Cloud.GCE.CloudConfig != nil {
-		cfg.APIServerExtraVolumes = []kubeadmapi.HostPathMount{
-			{
-				Name:      "cloud-config",
-				HostPath:  "/etc/kubernetes/cloud-config",
-				MountPath: "/etc/kubernetes/cloud-config",
-			},
-		}
-
-		cfg.ControllerManagerExtraVolumes = []kubeadmapi.HostPathMount{
-			{
-				Name:      "cloud-config",
-				HostPath:  "/etc/kubernetes/cloud-config",
-				MountPath: "/etc/kubernetes/cloud-config",
-			},
-		}
 	}
 	td.MasterConfiguration = &cfg
 	return td
