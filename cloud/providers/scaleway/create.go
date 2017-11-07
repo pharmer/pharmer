@@ -51,6 +51,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 
 	// Init spec
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
+	cluster.Spec.Cloud.CCMCredentialName = cluster.Spec.CredentialName
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	cluster.Spec.Networking.SetDefaults()
 	if len(cluster.Spec.AuthorizationModes) == 0 {

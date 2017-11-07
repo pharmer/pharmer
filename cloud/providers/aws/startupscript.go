@@ -73,7 +73,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			DNSDomain:     cluster.Spec.Networking.DNSDomain,
 		},
 		KubernetesVersion:          cluster.Spec.KubernetesVersion,
-		CloudProvider:              "", //cluster.Spec.Cloud.CloudProvider, //TODO: need to enable it
+		CloudProvider:              cluster.Spec.Cloud.CloudProvider,
 		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,

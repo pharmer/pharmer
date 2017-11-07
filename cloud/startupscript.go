@@ -127,7 +127,7 @@ apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common tzdata
 curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
-add-repo gluster/glusterfs-3.10
+exec-until-success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
 apt-get update -y
 apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
@@ -149,7 +149,7 @@ timedatectl set-timezone Etc/UTC
 
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
-Environment="KUBELET_EXTRA_ARGS={{ if .ExternalProvider }}{{ .KubeletExtraArgsEmptyCloudProviderStr }}{{ else }}{{ .KubeletExtraArgsStr }}{{ end }}"
+Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
 EOF
 systemctl daemon-reload
 rm -rf /usr/sbin/policy-rc.d
@@ -227,7 +227,7 @@ apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common tzdata
 curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
-add-repo gluster/glusterfs-3.10
+exec-until-success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
 apt-get update -y
 apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
@@ -270,11 +270,11 @@ kubeadm join --token={{ .KubeadmToken }} {{ .APIServerAddress }}
 	_ = template.Must(StartupScriptTemplate.New("init-os").Parse(``))
 
 	_ = template.Must(StartupScriptTemplate.New("init-script").Parse(`
-function add-repo() {
-	add-apt-repository -y ppa:$1
+function exec-until-success() {
+	$1
 	while [ $? -ne 0 ]; do
 		sleep 2
-		add-apt-repository -y ppa:gluster/$1
+		$1
 	done
 }
 `))
@@ -299,37 +299,30 @@ chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("ccm").Parse(`
+# Deploy CCM RBAC
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/rbac.yaml'
+exec-until-success "$cmd"
+
+# Deploy CCM DaemonSet
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/{{ .Provider }}/installer.yaml'
+exec-until-success "$cmd"
+
 until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
 do
    echo '.'
    sleep 5
 done
 
-kubectl apply \
-  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/rbac.yaml \
-  --kubeconfig /etc/kubernetes/admin.conf
-
-kubectl apply \
-  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/{{ .Provider }}/installer.yaml \
-  --kubeconfig /etc/kubernetes/admin.conf
-
-until [ $(kubectl get pods -n kube-system -l app=cloud-controller-manager -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
-do
-   echo '.'
-   sleep 5
-done
-
-kubectl taint nodes $(uname -n) node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
-
-cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
-[Service]
-Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
-EOF
-systemctl daemon-reload
-systemctl restart kubelet
-systemctl restart docker
+# kubectl taint nodes $(uname -n) node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
+#
+# cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
+# [Service]
+# Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
+# EOF
+# systemctl daemon-reload
+# systemctl restart kubelet
+# systemctl restart docker
 `))
-
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 kubectl apply \
   -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/calico/2.6/calico.yaml \
