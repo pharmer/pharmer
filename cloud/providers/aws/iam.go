@@ -5,16 +5,39 @@ const (
 {
   "Version": "2012-10-17",
   "Statement": [
-    {
+	{
       "Effect": "Allow",
-      "Action": ["ec2:*"],
+      "Action": [
+		  "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:GetRepositoryPolicy",
+          "ecr:DescribeRepositories",
+          "ecr:ListImages",
+          "ecr:BatchGetImage"
+	  ],
       "Resource": ["*"]
     },
+	{
+	  "Effect": "Allow",
+      "Action": ["ec2:*"],
+      "Resource": ["*"]
+	},
     {
       "Effect": "Allow",
       "Action": ["elasticloadbalancing:*"],
       "Resource": ["*"]
     },
+	{
+	  "Effect": "Allow",
+	  "Action": [
+	      "autoscaling:DescribeAutoScalingGroups",
+		  "autoscaling:DescribeAutoScalingInstances",
+		  "autoscaling:SetDesiredCapacity",
+		  "autoscaling:TerminateInstanceInAutoScalingGroup"
+	  ],
+	  "Resource": ["*"]
+	},
     {
       "Effect": "Allow",
       "Action": ["route53:*"],
@@ -58,6 +81,19 @@ const (
       "Action": "ec2:Describe*",
       "Resource": "*"
     },
+	{
+      "Effect": "Allow",
+      "Action": [
+		  "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:GetRepositoryPolicy",
+          "ecr:DescribeRepositories",
+          "ecr:ListImages",
+          "ecr:BatchGetImage"
+	  ],
+      "Resource": ["*"]
+    },
     {
       "Effect": "Allow",
       "Action": "ec2:AttachVolume",
@@ -89,8 +125,7 @@ const (
   ]
 }`
 
-	IAMNodeRole = `
-{
+	IAMNodeRole = `{
   "Version": "2012-10-17",
   "Statement": [
     {

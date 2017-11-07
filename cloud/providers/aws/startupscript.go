@@ -85,6 +85,9 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 
 var (
 	customTemplate = `
+{{ define "prepare-host" }}
+NODE_NAME=$(curl http://169.254.169.254/2007-01-19/meta-data/local-hostname)
+{{ end }}
 `
 )
 
