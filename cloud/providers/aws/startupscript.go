@@ -40,7 +40,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 			api.RoleNodeKey: "",
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
-		td.KubeletExtraArgs["cloud-provider"] = "" //cluster.Spec.Cloud.CloudProvider // --cloud-config is not needed, since IAM is used. //with provider not working
+		td.KubeletExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider // --cloud-config is not needed, since IAM is used. //with provider not working
 	}
 	return td
 }
@@ -53,8 +53,8 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 
 	hostPath := kubeadmapi.HostPathMount{
 		Name:      "cloud-config",
-		HostPath:  "/etc/kubernetes",
-		MountPath: "/etc/kubernetes",
+		HostPath:  "/etc/kubernetes/pharmer",
+		MountPath: "/etc/kubernetes/pharmer",
 	}
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{

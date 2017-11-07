@@ -54,7 +54,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		if ok, err := typed.IsValid(); !ok {
 			panic(err)
 		}
-		cloudConfig := api.ScalewayCloudConfig{
+		cloudConfig := &api.ScalewayCloudConfig{
 			Organization: typed.Organization(),
 			Token:        typed.Token(),
 			Region:       cluster.Spec.Cloud.Zone,

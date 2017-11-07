@@ -55,7 +55,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		if ok, err := typed.IsValid(); !ok {
 			panic(err)
 		}
-		cloudConfig := api.LinodeCloudConfig{
+		cloudConfig := &api.LinodeCloudConfig{
 			Token: typed.APIToken(),
 			Zone:  cluster.Spec.Cloud.Zone,
 		}

@@ -32,7 +32,7 @@ spec:
         name: ccm
         args:
           - up
-          - --cloud-config=/etc/kubernetes/cloud-config
+          - --cloud-config=/etc/kubernetes/pharmer/cloud-config
           - --cloud-provider=scaleway
           - --v=3
         resources:
@@ -40,9 +40,9 @@ spec:
             cpu: 100m
             memory: 50Mi
         volumeMounts:
-        - mountPath: /etc/kubernetes/cloud-config
+        - mountPath: /etc/kubernetes/pharmer
           name: cloud-config
       volumes:
       - name: cloud-config
         hostPath:
-          path: /etc/kubernetes/cloud-config
+          path: /etc/kubernetes/pharmer
