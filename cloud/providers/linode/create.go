@@ -72,6 +72,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 			string(core.NodeExternalIP),
 		}, ","),
 	}
+	cluster.Spec.Cloud.CCMCredentialName = cluster.Spec.CredentialName
 	cluster.Spec.Cloud.Linode = &api.LinodeSpec{
 		RootPassword: rand.GeneratePassword(),
 	}

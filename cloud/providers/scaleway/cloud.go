@@ -37,14 +37,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
 	}
 
-	cluster.Status.Cloud.Scaleway = &api.ScalewayStatus{
-		CloudConfig: &api.ScalewayCloudConfig{
-			Organization: typed.Organization(),
-			Token:        typed.Token(),
-			Region:       cluster.Spec.Cloud.Zone,
-		},
-	}
-
 	return &cloudConnector{
 		ctx:     ctx,
 		cluster: cluster,

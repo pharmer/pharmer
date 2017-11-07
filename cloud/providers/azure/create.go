@@ -80,15 +80,23 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 		}, ","),
 	}
 
+	cluster.Spec.Cloud.CCMCredentialName = cluster.Spec.CredentialName
+	cluster.Spec.Cloud.Azure = &api.AzureSpec{
+		ResourceGroup:      n.ResourceGroupName(),
+		SubnetName:         n.SubnetName(),
+		SecurityGroupName:  n.NetworkSecurityGroupName(),
+		VnetName:           n.VirtualNetworkName(),
+		RouteTableName:     n.RouteTableName(),
+		StorageAccountName: n.GenStorageAccountName(),
+		SubnetCIDR:         "10.240.0.0/16",
+		RootPassword:       rand.GeneratePassword(),
+	}
+
 	// Init status
 	cluster.Status = api.ClusterStatus{
 		Phase:            api.ClusterPending,
 		SSHKeyExternalID: n.GenSSHKeyExternalID(),
 	}
-
-	cluster.Spec.Cloud.Azure.StorageAccountName = n.GenStorageAccountName()
-	cluster.Spec.Cloud.Azure.SubnetCIDR = "10.240.0.0/16"
-	cluster.Spec.Cloud.Azure.RootPassword = rand.GeneratePassword()
 
 	return nil
 }

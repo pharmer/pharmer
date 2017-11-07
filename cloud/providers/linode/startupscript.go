@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/credential"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
@@ -41,13 +43,28 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
-		if cluster.Status.Cloud.Linode != nil && cluster.Status.Cloud.Linode.CloudConfig != nil {
-			data, err := json.Marshal(cluster.Status.Cloud.Linode.CloudConfig)
-			if err != nil {
-				panic(err)
-			}
-			td.CloudConfig = string(data)
+		if cluster.Spec.Cloud.CCMCredentialName == "" {
+			panic(errors.New("no cloud controller manager credential found"))
 		}
+
+		cred, err := Store(ctx).Credentials().Get(cluster.Spec.Cloud.CCMCredentialName)
+		if err != nil {
+			panic(err)
+		}
+		typed := credential.Linode{CommonSpec: credential.CommonSpec(cred.Spec)}
+		if ok, err := typed.IsValid(); !ok {
+			panic(err)
+		}
+		cloudConfig := api.LinodeCloudConfig{
+			Token: typed.APIToken(),
+			Zone:  cluster.Spec.Cloud.Zone,
+		}
+		data, err := json.Marshal(cloudConfig)
+		if err != nil {
+			panic(err)
+		}
+		td.CloudConfig = string(data)
+
 	}
 	return td
 }

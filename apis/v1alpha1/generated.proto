@@ -106,18 +106,23 @@ message AzureCloudConfig {
 }
 
 message AzureSpec {
-  optional string azureStorageAccountName = 1;
+  optional string instanceImageVersion = 1;
 
-  // only Azure
-  optional string instanceImageVersion = 2;
+  optional string rootPassword = 2;
 
-  optional string rootPassword = 4;
+  optional string subnetCidr = 3;
 
-  optional string subnetCidr = 5;
-}
+  optional string resourceGroup = 4;
 
-message AzureStatus {
-  optional AzureCloudConfig azureCloudConfig = 3;
+  optional string subnetName = 5;
+
+  optional string securityGroupName = 6;
+
+  optional string vnetName = 7;
+
+  optional string routeTableName = 8;
+
+  optional string azureStorageAccountName = 9;
 }
 
 message AzureStorageSpec {
@@ -143,6 +148,8 @@ message CloudSpec {
 
   optional string instanceImageProject = 9;
 
+  optional string ccmCredentialName = 15;
+
   optional AWSSpec aws = 10;
 
   optional GoogleSpec gce = 11;
@@ -150,24 +157,10 @@ message CloudSpec {
   optional AzureSpec azure = 12;
 
   optional LinodeSpec linode = 13;
-
-  optional SoftlayerSpec softlayer = 14;
 }
 
 message CloudStatus {
   optional AWSStatus aws = 1;
-
-  optional GCEStatus gce = 2;
-
-  optional AzureStatus azure = 3;
-
-  optional VultrStatus vultr = 4;
-
-  optional LinodeStatus linode = 5;
-
-  optional ScalewayStatus scaleway = 6;
-
-  optional PacketStatus packet = 7;
 }
 
 message Cluster {
@@ -308,11 +301,6 @@ message GCECloudConfig {
   optional bool multizone = 7;
 }
 
-message GCEStatus {
-  // instance means either master or node
-  optional GCECloudConfig gceCloudConfig = 2;
-}
-
 message GCSSpec {
   optional string bucket = 1;
 
@@ -320,6 +308,10 @@ message GCSSpec {
 }
 
 message GoogleSpec {
+  optional string networkName = 4;
+
+  repeated string nodeTags = 5;
+
   // gce
   // NODE_SCOPES="${NODE_SCOPES:-compute-rw,monitoring,logging-write,storage-ro}"
   repeated string nodeScopes = 1;
@@ -336,10 +328,6 @@ message LinodeSpec {
   optional string rootPassword = 1;
 
   optional int64 kernelId = 2;
-}
-
-message LinodeStatus {
-  optional LinodeCloudConfig linodeCloudConfig = 1;
 }
 
 message LocalSpec {
@@ -432,10 +420,6 @@ message PacketCloudConfig {
   optional string zone = 3;
 }
 
-message PacketStatus {
-  optional PacketCloudConfig packetCloudConfig = 1;
-}
-
 message PharmerConfig {
   optional string context = 1;
 
@@ -480,20 +464,12 @@ message ScalewayCloudConfig {
   optional string region = 3;
 }
 
-message ScalewayStatus {
-  optional ScalewayCloudConfig scalewayCloudConfig = 1;
-}
-
 message SoftlayerCloudConfig {
   optional string username = 1;
 
   optional string apiKey = 2;
 
   optional string zone = 3;
-}
-
-message SoftlayerSpec {
-  optional SoftlayerCloudConfig softlayerCloudConfig = 1;
 }
 
 message StorageBackend {
@@ -527,9 +503,5 @@ message Upgrade {
 
 message VultrCloudConfig {
   optional string token = 1;
-}
-
-message VultrStatus {
-  optional VultrCloudConfig vultrCloudConfig = 1;
 }
 
