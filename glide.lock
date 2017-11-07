@@ -1,15 +1,11 @@
 hash: a1dadc25ddf9e49f4c41ae09c002811b920af4af3971ba1ebe8ca96aef46a2d6
-updated: 2017-11-06T19:05:29.197724527-08:00
+updated: 2017-11-07T15:30:08.87769613-08:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
   subpackages:
   - compute/metadata
   - internal
-- name: github.com/appscode/data
-  version: f4f29933a76479d990f6adbd70157f8cbfbaefc7
-  subpackages:
-  - files
 - name: github.com/appscode/envconfig
   version: 183bbe643a2875eaa69c85627ac6b25813983203
 - name: github.com/appscode/errors

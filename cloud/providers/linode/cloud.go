@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/appscode/data"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
+	"github.com/appscode/pharmer/data/files"
 	"github.com/taoh/linodego"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -250,7 +250,7 @@ func (conn *cloudConnector) CreateInstance(_, token string, ng *api.NodeGroup) (
 	}
 
 	stackScriptUDFResponses := fmt.Sprintf(`{"hostname": "%s"}`, node.Name)
-	mt, err := data.ClusterMachineType("linode", ng.Spec.Template.Spec.SKU)
+	mt, err := files.GetInstanceType("linode", ng.Spec.Template.Spec.SKU)
 	if err != nil {
 		return nil, err
 	}
