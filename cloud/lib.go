@@ -71,7 +71,6 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string
 	if err != nil {
 		return err
 	}
-	spec.SpotInstances = false
 
 	ig := api.NodeGroup{
 		ObjectMeta: metav1.ObjectMeta{
