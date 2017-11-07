@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/appscode/data"
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
+	"github.com/appscode/pharmer/data/files"
 	"github.com/softlayer/softlayer-go/datatypes"
 	"github.com/softlayer/softlayer-go/services"
 	"github.com/softlayer/softlayer-go/session"
@@ -159,7 +159,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	}
 
 	fmt.Println(script)
-	instance, err := data.ClusterMachineType(conn.cluster.Spec.Cloud.CloudProvider, ng.Spec.Template.Spec.SKU)
+	instance, err := files.GetInstanceType(conn.cluster.Spec.Cloud.CloudProvider, ng.Spec.Template.Spec.SKU)
 	if err != nil {
 		return nil, err
 	}
