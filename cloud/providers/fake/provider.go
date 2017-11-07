@@ -30,8 +30,8 @@ func (cm *ClusterManager) SetDefaults(in *api.Cluster) error {
 	return nil
 }
 
-func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error) {
-	return nil, nil
+func (cm *ClusterManager) GetDefaultNodeSpec(sku string) (api.NodeSpec, error) {
+	return api.NodeSpec{}, nil
 }
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {

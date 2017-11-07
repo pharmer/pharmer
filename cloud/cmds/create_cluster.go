@@ -45,7 +45,7 @@ func NewCmdCreateCluster() *cobra.Command {
 			if err != nil {
 				term.Fatalln(err)
 			}
-			CreateNodeGroup(ctx, cluster, nodes)
+			CreateNodeGroups(ctx, cluster, nodes)
 		},
 	}
 
