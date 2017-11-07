@@ -87,8 +87,8 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 
 	hostPath := kubeadmapi.HostPathMount{
 		Name:      "cloud-config",
-		HostPath:  "/etc/kubernetes/pharmer",
-		MountPath: "/etc/kubernetes/pharmer",
+		HostPath:  "/etc/kubernetes/ccm",
+		MountPath: "/etc/kubernetes/ccm",
 	}
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{

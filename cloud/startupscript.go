@@ -160,9 +160,9 @@ kubeadm reset
 
 {{ template "setup-certs" . }}
 
-mkdir -p /etc/kubernetes/pharmer
+mkdir -p /etc/kubernetes/ccm
 {{ if .CloudConfig }}
-cat > /etc/kubernetes/pharmer/cloud-config <<EOF
+cat > /etc/kubernetes/ccm/cloud-config <<EOF
 {{ .CloudConfig }}
 EOF
 {{ end }}
