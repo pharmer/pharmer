@@ -2,17 +2,13 @@ package cmds
 
 import (
 	"context"
-	"strings"
-	"time"
 
 	"github.com/appscode/go-term"
 	"github.com/appscode/go/flags"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
-	"github.com/appscode/pharmer/phid"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func NewCmdCreateNodeGroup() *cobra.Command {
@@ -41,7 +37,7 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 			clusterName, _ := cmd.Flags().GetString("cluster")
 			cluster, err := cloud.Get(ctx, clusterName)
 			term.ExitOnError(err)
-			CreateNodeGroup(ctx, cluster, nodes)
+			CreateNodeGroups(ctx, cluster, nodes)
 
 		},
 	}
@@ -52,31 +48,9 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 	return cmd
 }
 
-func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, nodes map[string]int) {
+func CreateNodeGroups(ctx context.Context, cluster *api.Cluster, nodes map[string]int) {
 	for sku, count := range nodes {
-		ig := api.NodeGroup{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              strings.Replace(sku, "_", "-", -1) + "-pool",
-				ClusterName:       cluster.Name,
-				UID:               phid.NewNodeGroup(),
-				CreationTimestamp: metav1.Time{Time: time.Now()},
-				Labels: map[string]string{
-					api.RoleNodeKey: "",
-				},
-			},
-			Spec: api.NodeGroupSpec{
-				Nodes: int64(count),
-				Template: api.NodeTemplateSpec{
-					Spec: api.NodeSpec{
-						SKU:           sku,
-						SpotInstances: false,
-						DiskType:      "pd-standard",
-						DiskSize:      100,
-					},
-				},
-			},
-		}
-		_, err := cloud.Store(ctx).NodeGroups(cluster.Name).Create(&ig)
+		err := cloud.CreateNodeGroup(ctx, cluster, api.RoleNode, sku, count)
 		term.ExitOnError(err)
 	}
 }

@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
+	"github.com/appscode/pharmer/phid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/cert"
@@ -51,13 +53,53 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
 		return nil, err
 	}
-	if _, err = cm.CreateMasterNodeGroup(cluster); err != nil {
+	if err = CreateNodeGroup(ctx, cluster, api.RoleMaster, "", 0); err != nil {
 		return nil, err
 	}
 	if _, err = Store(ctx).Clusters().Update(cluster); err != nil {
 		return nil, err
 	}
 	return cluster, nil
+}
+
+func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string, count int) error {
+	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+	if err != nil {
+		return err
+	}
+	spec, err := cm.GetDefaultNodeSpec(sku)
+	if err != nil {
+		return err
+	}
+
+	ig := api.NodeGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			ClusterName:       cluster.Name,
+			UID:               phid.NewNodeGroup(),
+			CreationTimestamp: metav1.Time{Time: time.Now()},
+		},
+		Spec: api.NodeGroupSpec{
+			Nodes: int64(count),
+			Template: api.NodeTemplateSpec{
+				Spec: spec,
+			},
+		},
+	}
+	if role == api.RoleMaster {
+		ig.ObjectMeta.Name = "master"
+		ig.ObjectMeta.Labels = map[string]string{
+			api.RoleMasterKey: "",
+		}
+	} else {
+		ig.ObjectMeta.Name = strings.Replace(sku, "_", "-", -1) + "-pool"
+		ig.ObjectMeta.Labels = map[string]string{
+			api.RoleNodeKey: "",
+		}
+	}
+
+	_, err = Store(ctx).NodeGroups(cluster.Name).Create(&ig)
+
+	return err
 }
 
 func Delete(ctx context.Context, name string) (*api.Cluster, error) {

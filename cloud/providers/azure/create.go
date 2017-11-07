@@ -15,30 +15,15 @@ import (
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
-func (cm *ClusterManager) CreateMasterNodeGroup(cluster *api.Cluster) (*api.NodeGroup, error) {
-	ig := api.NodeGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "master",
-			ClusterName:       cluster.Name,
-			UID:               phid.NewNodeGroup(),
-			CreationTimestamp: metav1.Time{Time: time.Now()},
-			Labels: map[string]string{
-				api.RoleMasterKey: "",
-			},
-		},
-		Spec: api.NodeGroupSpec{
-			Nodes: 1,
-			Template: api.NodeTemplateSpec{
-				Spec: api.NodeSpec{
-					SKU:           "Standard_D2_v2",
-					SpotInstances: false,
-					// DiskType:      "gp2",
-					// DiskSize:      128,
-				},
-			},
-		},
+func (cm *ClusterManager) GetDefaultNodeSpec(sku string) (api.NodeSpec, error) {
+	if sku == "" {
+		sku = "Standard_D2_v2"
 	}
-	return Store(cm.ctx).NodeGroups(cluster.Name).Create(&ig)
+	return api.NodeSpec{
+		SKU: sku,
+		//	DiskType:      "",
+		//	DiskSize:      100,
+	}, nil
 }
 
 func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
