@@ -84,6 +84,10 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 			string(core.NodeExternalDNS),
 			string(core.NodeExternalIP),
 		}, ","),
+		"cloud-config": "/etc/kubernetes/ccm/cloud-config",
+	}
+	cluster.Spec.ControllerManagerExtraArgs = map[string]string{
+		"cloud-config": "/etc/kubernetes/ccm/cloud-config",
 	}
 
 	// Init status

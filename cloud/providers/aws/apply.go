@@ -139,7 +139,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  "IAM profile will be created",
 		})
 		if !dryRun {
-			if cm.conn.ensureIAMProfile(); err != nil {
+			if err = cm.conn.ensureIAMProfile(); err != nil {
 				return
 			}
 		}

@@ -42,7 +42,7 @@ func (igm *AWSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 	}
 	igm.ng.Status.Nodes = int64(len(nodes.Items))
 	igm.ng.Status.ObservedGeneration = igm.ng.Generation
-	// igm.ng.Spec.Template.Spec.DiskType = "gp2"
+	//igm.ng.Spec.Template.Spec.DiskType = "gp2"
 
 	adjust := igm.ng.Spec.Nodes - igm.ng.Status.Nodes
 

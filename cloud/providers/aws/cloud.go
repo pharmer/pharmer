@@ -145,7 +145,7 @@ func (conn *cloudConnector) getIAMProfile() (bool, error) {
 func (conn *cloudConnector) ensureIAMProfile() error {
 	r1, _ := conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &conn.cluster.Spec.Cloud.AWS.IAMProfileMaster})
 	if r1.InstanceProfile == nil {
-		err := conn.createIAMProfile(conn.cluster.Spec.Cloud.AWS.IAMProfileMaster)
+		err := conn.createIAMProfile(api.RoleMaster, conn.cluster.Spec.Cloud.AWS.IAMProfileMaster)
 		if err != nil {
 			return err
 		}
@@ -153,7 +153,7 @@ func (conn *cloudConnector) ensureIAMProfile() error {
 	}
 	r2, _ := conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &conn.cluster.Spec.Cloud.AWS.IAMProfileNode})
 	if r2.InstanceProfile == nil {
-		err := conn.createIAMProfile(conn.cluster.Spec.Cloud.AWS.IAMProfileNode)
+		err := conn.createIAMProfile(api.RoleNode, conn.cluster.Spec.Cloud.AWS.IAMProfileNode)
 		if err != nil {
 			return err
 		}
@@ -162,12 +162,12 @@ func (conn *cloudConnector) ensureIAMProfile() error {
 	return nil
 }
 
-func (conn *cloudConnector) createIAMProfile(key string) error {
+func (conn *cloudConnector) createIAMProfile(role, key string) error {
 	reqRole := &_iam.CreateRoleInput{RoleName: &key}
-	if key == api.RoleMaster {
-		reqRole.AssumeRolePolicyDocument = StringP(IAMMasterRole)
+	if role == api.RoleMaster {
+		reqRole.AssumeRolePolicyDocument = StringP(strings.TrimSpace(IAMMasterRole))
 	} else {
-		reqRole.AssumeRolePolicyDocument = StringP(IAMNodeRole)
+		reqRole.AssumeRolePolicyDocument = StringP(strings.TrimSpace(IAMNodeRole))
 	}
 	r1, err := conn.iam.CreateRole(reqRole)
 	Logger(conn.ctx).Debug("Created IAM role", r1, err)
@@ -180,10 +180,10 @@ func (conn *cloudConnector) createIAMProfile(key string) error {
 		RoleName:   &key,
 		PolicyName: &key,
 	}
-	if key == api.RoleMaster {
-		reqPolicy.PolicyDocument = StringP(IAMMasterPolicy)
+	if role == api.RoleMaster {
+		reqPolicy.PolicyDocument = StringP(strings.TrimSpace(IAMMasterPolicy))
 	} else {
-		reqPolicy.PolicyDocument = StringP(IAMNodePolicy)
+		reqPolicy.PolicyDocument = StringP(strings.TrimSpace(IAMNodePolicy))
 	}
 	r2, err := conn.iam.PutRolePolicy(reqPolicy)
 	Logger(conn.ctx).Debug("Created IAM role-policy", r2, err)
@@ -351,16 +351,13 @@ func (conn *cloudConnector) addTag(id string, key string, value string) error {
 }
 
 func (conn cloudConnector) getDHCPOptionSet() (bool, error) {
-	optionSetDomain := fmt.Sprintf("%v.compute.internal", conn.cluster.Spec.Cloud.Region)
 	r1, err := conn.ec2.DescribeDhcpOptions(&_ec2.DescribeDhcpOptionsInput{
 		Filters: []*_ec2.Filter{
 			{
-				Name:   StringP("key"),
-				Values: []*string{StringP("domain-name")},
-			},
-			{
-				Name:   StringP("value"),
-				Values: []*string{StringP(optionSetDomain)},
+				Name: StringP("tag:KubernetesCluster"),
+				Values: []*string{
+					StringP(conn.cluster.Name), // Tag by Name or PHID?
+				},
 			},
 		},
 	})
@@ -394,6 +391,7 @@ func (conn *cloudConnector) createDHCPOptionSet() error {
 	if err != nil {
 		return err
 	}
+
 	Logger(conn.ctx).Infof("DHCP options created with id %v", *r1.DhcpOptions.DhcpOptionsId)
 	conn.cluster.Status.Cloud.AWS.DHCPOptionsId = *r1.DhcpOptions.DhcpOptionsId
 

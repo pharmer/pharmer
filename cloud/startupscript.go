@@ -134,8 +134,13 @@ apt-get install -y {{ .PackageList }} || true
 curl -fsSL --retry 5 -o kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
     && chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
+{{ else if not .ExternalProvider }}
+curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/download/v1.8.3/kubeadm \
+	&& chmod +x kubeadm \
+	&& mv kubeadm /usr/bin/
 {{ end }}
-curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.9/pre-k-linux-amd64 \
+
+curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.10/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
@@ -155,8 +160,9 @@ kubeadm reset
 
 {{ template "setup-certs" . }}
 
+mkdir -p /etc/kubernetes/ccm
 {{ if .CloudConfig }}
-cat > /etc/kubernetes/cloud-config <<EOF
+cat > /etc/kubernetes/ccm/cloud-config <<EOF
 {{ .CloudConfig }}
 EOF
 {{ end }}
@@ -175,6 +181,7 @@ pre-k merge master-config \
 	--apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
 	--apiserver-cert-extra-sans=$(pre-k get private-ips) \
 	--apiserver-cert-extra-sans={{ .ExtraDomains }} \
+	--node-name=${NODE_NAME} \
 	> /etc/kubernetes/kubeadm/config.yaml
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 
@@ -229,8 +236,12 @@ apt-get install -y {{ .PackageList }} || true
 curl -fsSL --retry 5 -o kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
     && chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
+{{ else if not .ExternalProvider }}
+curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/download/v1.8.3/kubeadm \
+	&& chmod +x kubeadm \
+	&& mv kubeadm /usr/bin/
 {{ end }}
-curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.8/pre-k-linux-amd64 \
+curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.10/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
