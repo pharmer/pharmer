@@ -36,14 +36,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
-	cluster.Spec.Cloud.CCMCredentialName = cred.Name
-	cluster.Spec.Cloud.Softlayer = &api.SoftlayerSpec{
-		CloudConfig: &api.SoftlayerCloudConfig{
-			UserName: typed.Username(),
-			ApiKey:   typed.APIKey(),
-			Zone:     cluster.Spec.Cloud.Zone,
-		},
-	}
 	sess := session.New(typed.Username(), typed.APIKey())
 	sess.Debug = true
 	return &cloudConnector{

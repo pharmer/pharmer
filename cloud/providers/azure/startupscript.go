@@ -60,12 +60,12 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 			SubscriptionID:     typed.SubscriptionID(),
 			AadClientID:        typed.ClientID(),
 			AadClientSecret:    typed.ClientSecret(),
-			ResourceGroup:      cluster.Name,
+			ResourceGroup:      cluster.Spec.Cloud.Azure.ResourceGroup,
 			Location:           cluster.Spec.Cloud.Zone,
-			SubnetName:         cluster.Status.Cloud.Azure.SubnetName,
-			SecurityGroupName:  cluster.Status.Cloud.Azure.SecurityGroupName,
-			VnetName:           cluster.Status.Cloud.Azure.VnetName,
-			RouteTableName:     cluster.Status.Cloud.Azure.RouteTableName,
+			SubnetName:         cluster.Spec.Cloud.Azure.SubnetName,
+			SecurityGroupName:  cluster.Spec.Cloud.Azure.SecurityGroupName,
+			VnetName:           cluster.Spec.Cloud.Azure.VnetName,
+			RouteTableName:     cluster.Spec.Cloud.Azure.RouteTableName,
 			StorageAccountName: cluster.Spec.Cloud.Azure.StorageAccountName,
 		}
 

@@ -43,40 +43,38 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider // requires --cloud-config
-		if cluster.Status.Cloud.GCE != nil {
-			// ref: https://github.com/kubernetes/kubernetes/blob/release-1.5/cluster/gce/configure-vm.sh#L846
-			if cluster.Spec.Cloud.CCMCredentialName == "" {
-				panic(errors.New("no cloud controller manager credential found"))
-			}
-			namer := namer{cluster}
-
-			cloudConfig := api.GCECloudConfig{
-				ProjectID:          cluster.Spec.Cloud.Project,
-				NetworkName:        "default",
-				NodeTags:           []string{namer.NodePrefix()},
-				NodeInstancePrefix: namer.NodePrefix(),
-				Multizone:          false,
-			}
-
-			cfg := ini.Empty()
-			err := cfg.Section("global").ReflectFrom(cloudConfig)
-			if err != nil {
-				panic(err)
-			}
-			var buf bytes.Buffer
-			_, err = cfg.WriteTo(&buf)
-			if err != nil {
-				panic(err)
-			}
-			td.CloudConfig = buf.String()
-
-			// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L41
-			td.KubeletExtraArgs["cloud-config"] = "/etc/kubernetes/cloud-config"
-
-			// Kubeadm will send cloud-config to kube-apiserver and kube-controller-manager
-			// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L193
-			// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L230
+		// ref: https://github.com/kubernetes/kubernetes/blob/release-1.5/cluster/gce/configure-vm.sh#L846
+		if cluster.Spec.Cloud.CCMCredentialName == "" {
+			panic(errors.New("no cloud controller manager credential found"))
 		}
+		n := namer{cluster}
+
+		cloudConfig := api.GCECloudConfig{
+			ProjectID:          cluster.Spec.Cloud.Project,
+			NetworkName:        cluster.Spec.Cloud.GCE.NetworkName,
+			NodeTags:           cluster.Spec.Cloud.GCE.NodeTags,
+			NodeInstancePrefix: n.NodePrefix(),
+			Multizone:          false,
+		}
+
+		cfg := ini.Empty()
+		err := cfg.Section("global").ReflectFrom(cloudConfig)
+		if err != nil {
+			panic(err)
+		}
+		var buf bytes.Buffer
+		_, err = cfg.WriteTo(&buf)
+		if err != nil {
+			panic(err)
+		}
+		td.CloudConfig = buf.String()
+
+		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L41
+		td.KubeletExtraArgs["cloud-config"] = "/etc/kubernetes/cloud-config"
+
+		// Kubeadm will send cloud-config to kube-apiserver and kube-controller-manager
+		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L193
+		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L230
 	}
 	return td
 }

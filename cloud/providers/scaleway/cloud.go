@@ -37,8 +37,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
 	}
 
-	cluster.Spec.Cloud.CCMCredentialName = cred.Name
-
 	return &cloudConnector{
 		ctx:     ctx,
 		cluster: cluster,

@@ -54,7 +54,6 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		if ok, err := typed.IsValid(); !ok {
 			panic(err)
 		}
-		cluster.Spec.Cloud.CCMCredentialName = cred.Name
 		cloudConfig := &api.VultrCloudConfig{
 			Token: typed.Token(),
 		}

@@ -106,24 +106,23 @@ message AzureCloudConfig {
 }
 
 message AzureSpec {
-  optional string azureStorageAccountName = 1;
+  optional string instanceImageVersion = 1;
 
-  // only Azure
-  optional string instanceImageVersion = 2;
+  optional string rootPassword = 2;
 
-  optional string rootPassword = 4;
+  optional string subnetCidr = 3;
 
-  optional string subnetCidr = 5;
-}
+  optional string resourceGroup = 4;
 
-message AzureStatus {
-  optional string subnetName = 7;
+  optional string subnetName = 5;
 
-  optional string securityGroupName = 8;
+  optional string securityGroupName = 6;
 
-  optional string vnetName = 9;
+  optional string vnetName = 7;
 
-  optional string routeTableName = 10;
+  optional string routeTableName = 8;
+
+  optional string azureStorageAccountName = 9;
 }
 
 message AzureStorageSpec {
@@ -158,16 +157,10 @@ message CloudSpec {
   optional AzureSpec azure = 12;
 
   optional LinodeSpec linode = 13;
-
-  optional SoftlayerSpec softlayer = 14;
 }
 
 message CloudStatus {
   optional AWSStatus aws = 1;
-
-  optional GCEStatus gce = 2;
-
-  optional AzureStatus azure = 3;
 }
 
 message Cluster {
@@ -308,12 +301,6 @@ message GCECloudConfig {
   optional bool multizone = 7;
 }
 
-message GCEStatus {
-  optional string networkName = 4;
-
-  repeated string nodeTags = 5;
-}
-
 message GCSSpec {
   optional string bucket = 1;
 
@@ -321,6 +308,10 @@ message GCSSpec {
 }
 
 message GoogleSpec {
+  optional string networkName = 4;
+
+  repeated string nodeTags = 5;
+
   // gce
   // NODE_SCOPES="${NODE_SCOPES:-compute-rw,monitoring,logging-write,storage-ro}"
   repeated string nodeScopes = 1;
@@ -479,10 +470,6 @@ message SoftlayerCloudConfig {
   optional string apiKey = 2;
 
   optional string zone = 3;
-}
-
-message SoftlayerSpec {
-  optional SoftlayerCloudConfig softlayerCloudConfig = 1;
 }
 
 message StorageBackend {

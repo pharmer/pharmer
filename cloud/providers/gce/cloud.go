@@ -50,9 +50,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 
 	cluster.Spec.Cloud.Project = typed.ProjectID()
-
-	cluster.Spec.Cloud.CCMCredentialName = cred.Name
-
 	conf, err := google.JWTConfigFromJSON([]byte(typed.ServiceAccount()),
 		compute.ComputeScope,
 		compute.DevstorageReadWriteScope,

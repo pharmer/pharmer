@@ -33,8 +33,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 
 	namer := namer{cluster: cluster}
-	cluster.Spec.Cloud.CCMCredentialName = cred.Name
-
 	c := linodego.NewClient(typed.APIToken(), nil)
 	c.UsePost = true
 	return &cloudConnector{

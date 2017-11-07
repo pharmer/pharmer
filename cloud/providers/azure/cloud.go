@@ -59,10 +59,8 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	if ok, err := typed.IsValid(); !ok {
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
-	cluster.Spec.Cloud.CCMCredentialName = cred.Name
 
 	baseURI := azure.PublicCloud.ResourceManagerEndpoint
-
 	config, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, typed.TenantID())
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(ctx).Err()
