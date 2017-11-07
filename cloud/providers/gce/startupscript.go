@@ -87,10 +87,9 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 
 	hostPath := kubeadmapi.HostPathMount{
 		Name:      "cloud-config",
-		HostPath:  "/etc/kubernetes",
-		MountPath: "/etc/kubernetes",
+		HostPath:  "/etc/kubernetes/cloud-config",
+		MountPath: "/etc/kubernetes/cloud-config",
 	}
-
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "kubeadm.k8s.io/v1alpha1",
@@ -108,7 +107,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			DNSDomain:     cluster.Spec.Networking.DNSDomain,
 		},
 		KubernetesVersion:          cluster.Spec.KubernetesVersion,
-		CloudProvider:              cluster.Spec.Cloud.CloudProvider, //TODO: need to enable it
+		CloudProvider:              cluster.Spec.Cloud.CloudProvider,
 		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,

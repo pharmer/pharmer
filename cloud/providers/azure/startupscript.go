@@ -68,7 +68,6 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 			RouteTableName:     cluster.Spec.Cloud.Azure.RouteTableName,
 			StorageAccountName: cluster.Spec.Cloud.Azure.StorageAccountName,
 		}
-
 		data, err := json.MarshalIndent(cloudConfig, "", "  ")
 		if err != nil {
 			panic(err)
@@ -94,8 +93,8 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 
 	hostPath := kubeadmapi.HostPathMount{
 		Name:      "cloud-config",
-		HostPath:  "/etc/kubernetes",
-		MountPath: "/etc/kubernetes",
+		HostPath:  "/etc/kubernetes/cloud-config",
+		MountPath: "/etc/kubernetes/cloud-config",
 	}
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
