@@ -43,12 +43,12 @@ func (s *SSHKeyFileStore) Get(name string) ([]byte, []byte, error) {
 
 	pubKey, pubOK := s.container[s.pubKeyID(name)]
 	if !pubOK {
-		return nil, nil, fmt.Errorf("SSH `id_%s.pub` does not exist.", name)
+		return nil, nil, fmt.Errorf("SSH `id_%s.pub` does not exist", name)
 	}
 
 	privKey, privOK := s.container[s.pubKeyID(name)]
 	if !privOK {
-		return nil, nil, fmt.Errorf("SSH key `id_%s` does not exist.", name)
+		return nil, nil, fmt.Errorf("SSH key `id_%s` does not exist", name)
 	}
 	return pubKey, privKey, nil
 }
@@ -58,9 +58,9 @@ func (s *SSHKeyFileStore) Create(name string, pubKey, privKey []byte) error {
 		return errors.New("missing cluster name")
 	}
 	if len(pubKey) == 0 {
-		return errors.New("Empty ssh public key")
+		return errors.New("empty ssh public key")
 	} else if len(privKey) == 0 {
-		return errors.New("Empty ssh private key")
+		return errors.New("empty ssh private key")
 	}
 
 	s.mux.Lock()

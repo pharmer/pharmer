@@ -46,12 +46,12 @@ func (s *CertificateFileStore) Get(name string) (*x509.Certificate, *rsa.Private
 
 	crt, certOK := s.certs[s.certID(name)]
 	if !certOK {
-		return nil, nil, fmt.Errorf("Certificate `%s.crt` does not exist.", name)
+		return nil, nil, fmt.Errorf("certificate `%s.crt` does not exist", name)
 	}
 
 	key, keyOK := s.keys[s.keyID(name)]
 	if !keyOK {
-		return nil, nil, fmt.Errorf("Certificate key `%s.key` does not exist.", name)
+		return nil, nil, fmt.Errorf("certificate key `%s.key` does not exist", name)
 	}
 	return crt, key, nil
 }

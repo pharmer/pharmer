@@ -48,7 +48,7 @@ func (s *ClusterFileStore) Get(name string) (*api.Cluster, error) {
 
 	existing, ok := s.container[s.resourceID(name)]
 	if !ok {
-		return nil, fmt.Errorf("Cluster `%s` does not exist.", name)
+		return nil, fmt.Errorf("cluster `%s` does not exist", name)
 	}
 	return existing, nil
 }
@@ -69,7 +69,7 @@ func (s *ClusterFileStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 
 	id := s.resourceID(obj.Name)
 	if _, ok := s.container[id]; ok {
-		return nil, fmt.Errorf("Cluster `%s` already exists", obj.Name)
+		return nil, fmt.Errorf("cluster `%s` already exists", obj.Name)
 	}
 	s.container[id] = obj
 	return obj, err
@@ -91,7 +91,7 @@ func (s *ClusterFileStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 
 	id := s.resourceID(obj.Name)
 	if _, ok := s.container[id]; !ok {
-		return nil, fmt.Errorf("Cluster `%s` does not exist.", obj.Name)
+		return nil, fmt.Errorf("cluster `%s` does not exist", obj.Name)
 	}
 	s.container[id] = obj
 	return obj, err
@@ -126,7 +126,7 @@ func (s *ClusterFileStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 	id := s.resourceID(obj.Name)
 	existing, ok := s.container[id]
 	if !ok {
-		return nil, fmt.Errorf("Cluster `%s` does not exist.", obj.Name)
+		return nil, fmt.Errorf("cluster `%s` does not exist", obj.Name)
 	}
 	existing.Status = obj.Status
 	s.container[id] = existing

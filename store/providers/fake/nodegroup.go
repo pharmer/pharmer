@@ -52,7 +52,7 @@ func (s *NodeGroupFileStore) Get(name string) (*api.NodeGroup, error) {
 
 	item, itemOK := s.container[s.resourceID(name)]
 	if !itemOK {
-		return nil, fmt.Errorf("NodeGroup `%s` does not exist.", name)
+		return nil, fmt.Errorf("NodeGroup `%s` does not exist", name)
 	}
 	return item, nil
 }
@@ -136,7 +136,7 @@ func (s *NodeGroupFileStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, e
 	id := s.resourceID(obj.Name)
 	existing, itemOK := s.container[id]
 	if !itemOK {
-		return nil, fmt.Errorf("NodeGroup `%s` does not exist.", obj.Name)
+		return nil, fmt.Errorf("NodeGroup `%s` does not exist", obj.Name)
 	}
 	existing.Status = obj.Status
 	s.container[id] = existing

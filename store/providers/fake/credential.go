@@ -48,7 +48,7 @@ func (s *CredentialFileStore) Get(name string) (*api.Credential, error) {
 
 	existing, ok := s.container[s.resourceID(name)]
 	if !ok {
-		return nil, fmt.Errorf("Credential `%s` does not exist.", name)
+		return nil, fmt.Errorf("credential `%s` does not exist", name)
 	}
 	return existing, nil
 }
@@ -69,7 +69,7 @@ func (s *CredentialFileStore) Create(obj *api.Credential) (*api.Credential, erro
 
 	id := s.resourceID(obj.Name)
 	if _, ok := s.container[id]; ok {
-		return nil, fmt.Errorf("Credential `%s` already exists", obj.Name)
+		return nil, fmt.Errorf("credential `%s` already exists", obj.Name)
 	}
 	s.container[id] = obj
 	return obj, err
@@ -91,7 +91,7 @@ func (s *CredentialFileStore) Update(obj *api.Credential) (*api.Credential, erro
 
 	id := s.resourceID(obj.Name)
 	if _, ok := s.container[id]; !ok {
-		return nil, fmt.Errorf("Credential `%s` does not exist.", obj.Name)
+		return nil, fmt.Errorf("credential `%s` does not exist", obj.Name)
 	}
 	s.container[id] = obj
 	return obj, err
