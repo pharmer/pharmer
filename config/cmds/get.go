@@ -25,7 +25,7 @@ func newCmdGet() *cobra.Command {
 
 			w := new(tabwriter.Writer)
 			w.Init(os.Stdout, 0, 8, 0, '\t', 0)
-			fmt.Fprintln(w, "NAME\tStore\tDNS")
+			fmt.Fprintln(w, "NAME\tStore")
 			files, err := ioutil.ReadDir(config.ConfigDir(cmd.Flags()))
 			if err != nil {
 				return err
@@ -35,7 +35,7 @@ func newCmdGet() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\n", cfg.Context, cfg.GetStoreType(), cfg.GetDNSProviderType())
+				fmt.Fprintf(w, "%s\t%s\n", cfg.Context, cfg.GetStoreType())
 			}
 			return w.Flush()
 		},

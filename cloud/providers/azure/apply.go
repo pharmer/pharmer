@@ -389,11 +389,6 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 
-			err = EnsureARecord(cm.ctx, cm.cluster, masterInstance.PublicIP, masterInstance.PrivateIP) // works for reserved or non-reserved mode
-			if err != nil {
-				return
-			}
-
 			cm.cluster.Status.Phase = api.ClusterReady
 			if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 				return
@@ -456,9 +451,6 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	})
 	if !dryRun {
 		if err = cm.conn.deleteResourceGroup(); err != nil {
-			return
-		}
-		if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
 			return
 		}
 		// Failed

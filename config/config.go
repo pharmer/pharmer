@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/appscode/go-dns"
-	dns_provider "github.com/appscode/go-dns/provider"
 	yc "github.com/appscode/go/encoding/yaml"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
@@ -99,15 +97,4 @@ func NewStoreProvider(ctx context.Context, cfg *api.PharmerConfig) store.Interfa
 		return store
 	}
 	return &fake.FakeStore{}
-}
-
-func NewDNSProvider(cfg *api.PharmerConfig) dns_provider.Provider {
-	if cfg.DNS != nil {
-		if cred, err := cfg.GetCredential(cfg.DNS.CredentialName); err == nil {
-			if dp, err := dns.Default(cred.Spec.Provider); err == nil {
-				return dp
-			}
-		}
-	}
-	return &api.FakeDNSProvider{}
 }
