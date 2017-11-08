@@ -25,6 +25,10 @@ type NodeGroup struct {
 	DeletionTimestamp *time.Time `xorm:"bigint deleted 'deletionTimestamp'"`
 }
 
+func (NodeGroup) TableName() string {
+	return `"pharmer"."nodegroup"`
+}
+
 func encodeNodeGroup(in *api.NodeGroup) (*NodeGroup, error) {
 	return nil, store.ErrNotImplemented
 }

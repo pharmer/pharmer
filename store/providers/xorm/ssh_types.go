@@ -17,6 +17,10 @@ type SSHKey struct {
 	DeletionTimestamp *time.Time `xorm:"bigint deleted 'deletionTimestamp'"`
 }
 
+func (SSHKey) TableName() string {
+	return `"pharmer"."sshKey"`
+}
+
 func encodeSSHKey(pub, priv []byte) (*SSHKey, error) {
 	return nil, store.ErrNotImplemented
 }

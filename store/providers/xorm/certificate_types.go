@@ -20,6 +20,10 @@ type Certificate struct {
 	DeletionTimestamp *time.Time `xorm:"bigint deleted 'deletionTimestamp'"`
 }
 
+func (Certificate) TableName() string {
+	return `"pharmer"."certificate"`
+}
+
 func encodeCertificate(*x509.Certificate, *rsa.PrivateKey, error) (*Certificate, error) {
 	return nil, store.ErrNotImplemented
 }

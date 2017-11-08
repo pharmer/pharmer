@@ -25,6 +25,10 @@ type Credential struct {
 	DeletionTimestamp *time.Time `xorm:"bigint deleted 'deletionTimestamp'"`
 }
 
+func (Credential) TableName() string {
+	return `"pharmer"."credential"`
+}
+
 func encodeCredential(in *api.Credential) (*Credential, error) {
 	return nil, store.ErrNotImplemented
 }

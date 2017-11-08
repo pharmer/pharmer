@@ -25,6 +25,10 @@ type Cluster struct {
 	DeletionTimestamp *time.Time `xorm:"bigint deleted 'deletionTimestamp'"`
 }
 
+func (Cluster) TableName() string {
+	return `"pharmer"."cluster"`
+}
+
 func encodeCluster(in *api.Cluster) (*Cluster, error) {
 	return nil, store.ErrNotImplemented
 }
