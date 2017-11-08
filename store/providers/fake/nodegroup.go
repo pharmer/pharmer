@@ -41,10 +41,10 @@ func (s *NodeGroupFileStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, er
 
 func (s *NodeGroupFileStore) Get(name string) (*api.NodeGroup, error) {
 	if s.cluster == "" {
-		return nil, errors.New("Missing cluster name")
+		return nil, errors.New("missing cluster name")
 	}
 	if name == "" {
-		return nil, errors.New("Missing node group name")
+		return nil, errors.New("missing node group name")
 	}
 
 	s.mux.Lock()
@@ -59,12 +59,12 @@ func (s *NodeGroupFileStore) Get(name string) (*api.NodeGroup, error) {
 
 func (s *NodeGroupFileStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
-		return nil, errors.New("Missing cluster name")
+		return nil, errors.New("missing cluster name")
 	}
 	if obj == nil {
-		return nil, errors.New("Missing node group")
+		return nil, errors.New("missing node group")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing node group name")
+		return nil, errors.New("missing node group name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -85,12 +85,12 @@ func (s *NodeGroupFileStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) 
 
 func (s *NodeGroupFileStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
-		return nil, errors.New("Missing cluster name")
+		return nil, errors.New("missing cluster name")
 	}
 	if obj == nil {
-		return nil, errors.New("Missing node group")
+		return nil, errors.New("missing node group")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing node group name")
+		return nil, errors.New("missing node group name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -107,10 +107,10 @@ func (s *NodeGroupFileStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) 
 
 func (s *NodeGroupFileStore) Delete(name string) error {
 	if s.cluster == "" {
-		return errors.New("Missing cluster name")
+		return errors.New("missing cluster name")
 	}
 	if name == "" {
-		return errors.New("Missing node group name")
+		return errors.New("missing node group name")
 	}
 	delete(s.container, s.resourceID(name))
 	return nil
@@ -118,12 +118,12 @@ func (s *NodeGroupFileStore) Delete(name string) error {
 
 func (s *NodeGroupFileStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
-		return nil, errors.New("Missing cluster name")
+		return nil, errors.New("missing cluster name")
 	}
 	if obj == nil {
-		return nil, errors.New("Missing node group")
+		return nil, errors.New("missing node group")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing node group name")
+		return nil, errors.New("missing node group name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {

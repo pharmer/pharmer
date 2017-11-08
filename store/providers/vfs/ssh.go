@@ -33,10 +33,10 @@ func (s *SSHKeyFileStore) privKeyID(name string) string {
 
 func (s *SSHKeyFileStore) Get(name string) ([]byte, []byte, error) {
 	if s.cluster == "" {
-		return nil, nil, errors.New("Missing cluster name")
+		return nil, nil, errors.New("missing cluster name")
 	}
 	if name == "" {
-		return nil, nil, errors.New("Missing ssh key name")
+		return nil, nil, errors.New("missing ssh key name")
 	}
 
 	pub, err := s.container.Item(s.pubKeyID(name))
@@ -71,32 +71,32 @@ func (s *SSHKeyFileStore) Get(name string) ([]byte, []byte, error) {
 
 func (s *SSHKeyFileStore) Create(name string, pubKey, privKey []byte) error {
 	if s.cluster == "" {
-		return errors.New("Missing cluster name")
+		return errors.New("missing cluster name")
 	}
 	if len(pubKey) == 0 {
-		return errors.New("Empty ssh public key")
+		return errors.New("empty ssh public key")
 	} else if len(privKey) == 0 {
-		return errors.New("Empty ssh private key")
+		return errors.New("empty ssh private key")
 	}
 
 	id := s.pubKeyID(name)
 	_, err := s.container.Item(id)
 	if err == nil {
-		return fmt.Errorf("SSH `id_%s.pub` already exists. Reason: %v.", name, err)
+		return fmt.Errorf("SSH `id_%s.pub` already exists. Reason: %v", name, err)
 	}
 	_, err = s.container.Put(id, bytes.NewBuffer(pubKey), int64(len(pubKey)), nil)
 	if err != nil {
-		return fmt.Errorf("Failed to store ssh public key `id_%s.pub`. Reason: %v.", name, err)
+		return fmt.Errorf("failed to store ssh public key `id_%s.pub`. Reason: %v", name, err)
 	}
 
 	id = s.privKeyID(name)
 	_, err = s.container.Item(id)
 	if err == nil {
-		return fmt.Errorf("SSH `id_%s` already exists. Reason: %v.", name, err)
+		return fmt.Errorf("SSH `id_%s` already exists. Reason: %v", name, err)
 	}
 	_, err = s.container.Put(id, bytes.NewBuffer(privKey), int64(len(privKey)), nil)
 	if err != nil {
-		return fmt.Errorf("Failed to store ssh private key `id_%s`. Reason: %v.", name, err)
+		return fmt.Errorf("failed to store ssh private key `id_%s`. Reason: %v", name, err)
 	}
 
 	return nil
@@ -104,19 +104,19 @@ func (s *SSHKeyFileStore) Create(name string, pubKey, privKey []byte) error {
 
 func (s *SSHKeyFileStore) Delete(name string) error {
 	if s.cluster == "" {
-		return errors.New("Missing cluster name")
+		return errors.New("missing cluster name")
 	}
 	if name == "" {
-		return errors.New("Missing ssh key name")
+		return errors.New("missing ssh key name")
 	}
 
 	err := s.container.RemoveItem(s.pubKeyID(name))
 	if err != nil {
-		return fmt.Errorf("Failed to delete ssh public key id_%s.pub. Reason: %v", name, err)
+		return fmt.Errorf("failed to delete ssh public key id_%s.pub. Reason: %v", name, err)
 	}
 	err = s.container.RemoveItem(s.privKeyID(name))
 	if err != nil {
-		return fmt.Errorf("Failed to delete ssh private key id_%s. Reason: %v", name, err)
+		return fmt.Errorf("failed to delete ssh private key id_%s. Reason: %v", name, err)
 	}
 	return nil
 }

@@ -32,10 +32,10 @@ func (s *SSHKeyFileStore) privKeyID(name string) string {
 
 func (s *SSHKeyFileStore) Get(name string) ([]byte, []byte, error) {
 	if s.cluster == "" {
-		return nil, nil, errors.New("Missing cluster name")
+		return nil, nil, errors.New("missing cluster name")
 	}
 	if name == "" {
-		return nil, nil, errors.New("Missing ssh key name")
+		return nil, nil, errors.New("missing ssh key name")
 	}
 
 	s.mux.Lock()
@@ -55,7 +55,7 @@ func (s *SSHKeyFileStore) Get(name string) ([]byte, []byte, error) {
 
 func (s *SSHKeyFileStore) Create(name string, pubKey, privKey []byte) error {
 	if s.cluster == "" {
-		return errors.New("Missing cluster name")
+		return errors.New("missing cluster name")
 	}
 	if len(pubKey) == 0 {
 		return errors.New("Empty ssh public key")
@@ -73,10 +73,10 @@ func (s *SSHKeyFileStore) Create(name string, pubKey, privKey []byte) error {
 
 func (s *SSHKeyFileStore) Delete(name string) error {
 	if s.cluster == "" {
-		return errors.New("Missing cluster name")
+		return errors.New("missing cluster name")
 	}
 	if name == "" {
-		return errors.New("Missing ssh key name")
+		return errors.New("missing ssh key name")
 	}
 
 	s.mux.Lock()

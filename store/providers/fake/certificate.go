@@ -35,10 +35,10 @@ func (s *CertificateFileStore) keyID(name string) string {
 
 func (s *CertificateFileStore) Get(name string) (*x509.Certificate, *rsa.PrivateKey, error) {
 	if s.cluster == "" {
-		return nil, nil, errors.New("Missing cluster name")
+		return nil, nil, errors.New("missing cluster name")
 	}
 	if name == "" {
-		return nil, nil, errors.New("Missing certificate name")
+		return nil, nil, errors.New("missing certificate name")
 	}
 
 	s.mux.Lock()
@@ -58,12 +58,12 @@ func (s *CertificateFileStore) Get(name string) (*x509.Certificate, *rsa.Private
 
 func (s *CertificateFileStore) Create(name string, crt *x509.Certificate, key *rsa.PrivateKey) error {
 	if s.cluster == "" {
-		return errors.New("Missing cluster name")
+		return errors.New("missing cluster name")
 	}
 	if crt == nil {
-		return errors.New("Missing certificate")
+		return errors.New("missing certificate")
 	} else if key == nil {
-		return errors.New("Missing certificate key")
+		return errors.New("missing certificate key")
 	}
 
 	s.mux.Lock()
@@ -76,10 +76,10 @@ func (s *CertificateFileStore) Create(name string, crt *x509.Certificate, key *r
 
 func (s *CertificateFileStore) Delete(name string) error {
 	if s.cluster == "" {
-		return errors.New("Missing cluster name")
+		return errors.New("missing cluster name")
 	}
 	if name == "" {
-		return errors.New("Missing certificate name")
+		return errors.New("missing certificate name")
 	}
 
 	s.mux.Lock()
