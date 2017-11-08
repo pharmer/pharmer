@@ -1,67 +1,42 @@
 package xorm
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/store"
 	"github.com/go-xorm/xorm"
-	"github.com/graymeta/stow"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type NodeGroupFileStore struct {
-	engine    *xorm.Engine
-	container stow.Container
-	prefix    string
-	cluster   string
+type NodeGroupXormStore struct {
+	engine  *xorm.Engine
+	prefix  string
+	cluster string
 }
 
-var _ store.NodeGroupStore = &NodeGroupFileStore{}
+var _ store.NodeGroupStore = &NodeGroupXormStore{}
 
-func (s *NodeGroupFileStore) resourceHome() string {
-	return filepath.Join(s.prefix, "clusters", s.cluster, "nodegroups")
-}
-
-func (s *NodeGroupFileStore) resourceID(name string) string {
-	return filepath.Join(s.resourceHome(), name+".json")
-}
-
-func (s *NodeGroupFileStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, error) {
+func (s *NodeGroupXormStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, error) {
 	result := make([]*api.NodeGroup, 0)
-	cursor := stow.CursorStart
-	for {
-		page, err := s.container.Browse(s.resourceHome()+"/", string(os.PathSeparator), cursor, pageSize)
+	var nodeGroups []NodeGroup
+	err := s.engine.Where(`"clusterName" = ?`, s.cluster).Find(nodeGroups)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ng := range nodeGroups {
+		decode, err := decodeNodeGroup(&ng)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list node groups. Reason: %v", err)
 		}
-		for _, item := range page.Items {
-			r, err := item.Open()
-			if err != nil {
-				return nil, fmt.Errorf("failed to list node groups. Reason: %v", err)
-			}
-			var obj api.NodeGroup
-			err = json.NewDecoder(r).Decode(&obj)
-			if err != nil {
-				return nil, fmt.Errorf("failed to list node groups. Reason: %v", err)
-			}
-			result = append(result, &obj)
-			r.Close()
-		}
-		cursor = page.Cursor
-		if stow.IsCursorEnd(cursor) {
-			break
-		}
+		result = append(result, decode)
 	}
 	return result, nil
 }
 
-func (s *NodeGroupFileStore) Get(name string) (*api.NodeGroup, error) {
+func (s *NodeGroupXormStore) Get(name string) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -69,26 +44,19 @@ func (s *NodeGroupFileStore) Get(name string) (*api.NodeGroup, error) {
 		return nil, errors.New("missing node group name")
 	}
 
-	item, err := s.container.Item(s.resourceID(name))
-	if err != nil {
-		return nil, fmt.Errorf("NodeGroup `%s` does not exist. Reason: %v", name, err)
+	ng := &NodeGroup{Name: name, ClusterName: s.cluster}
+	found, err := s.engine.Get(ng)
+	if !found {
+		return nil, fmt.Errorf("credential `%s` already exists", name)
 	}
-
-	r, err := item.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-
-	var existing api.NodeGroup
-	err = json.NewDecoder(r).Decode(&existing)
 	if err != nil {
 		return nil, err
 	}
-	return &existing, nil
+
+	return decodeNodeGroup(ng)
 }
 
-func (s *NodeGroupFileStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) {
+func (s *NodeGroupXormStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -102,21 +70,24 @@ func (s *NodeGroupFileStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) 
 		return nil, err
 	}
 
-	id := s.resourceID(obj.Name)
-	_, err = s.container.Item(id)
-	if err == nil {
-		return nil, fmt.Errorf("NodeGroup `%s` already exists", obj.Name)
+	found, err := s.engine.Get(&NodeGroup{Name: obj.Name, ClusterName: s.cluster})
+	if found {
+		return nil, fmt.Errorf("node group `%s` already exists", obj.Name)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("reason: %v", err)
 	}
 
-	data, err := json.MarshalIndent(obj, "", "  ")
+	nodeGroup, err := encodeNodeGroup(obj)
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
+
+	_, err = s.engine.Insert(nodeGroup)
 	return obj, err
 }
 
-func (s *NodeGroupFileStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) {
+func (s *NodeGroupXormStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -130,32 +101,34 @@ func (s *NodeGroupFileStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) 
 		return nil, err
 	}
 
-	id := s.resourceID(obj.Name)
-
-	_, err = s.container.Item(id)
+	found, err := s.engine.Get(&NodeGroup{Name: obj.Name, ClusterName: s.cluster})
+	if !found {
+		return nil, fmt.Errorf("node group `%s` not found", obj.Name)
+	}
 	if err != nil {
-		return nil, fmt.Errorf("NodeGroup `%s` does not exist. Reason: %v", obj.Name, err)
+		return nil, fmt.Errorf("reason: %v", err)
 	}
 
-	data, err := json.MarshalIndent(obj, "", "  ")
+	ng, err := encodeNodeGroup(obj)
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
+	_, err = s.engine.Where(`name = ? AND "clusterName" = ?`, obj.Name, s.cluster).Update(ng)
 	return obj, err
 }
 
-func (s *NodeGroupFileStore) Delete(name string) error {
+func (s *NodeGroupXormStore) Delete(name string) error {
 	if s.cluster == "" {
 		return errors.New("missing cluster name")
 	}
 	if name == "" {
 		return errors.New("missing node group name")
 	}
-	return s.container.RemoveItem(s.resourceID(name))
+	_, err := s.engine.Delete(&NodeGroup{Name: name, ClusterName: s.cluster})
+	return err
 }
 
-func (s *NodeGroupFileStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error) {
+func (s *NodeGroupXormStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -169,30 +142,17 @@ func (s *NodeGroupFileStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, e
 		return nil, err
 	}
 
-	id := s.resourceID(obj.Name)
-
-	item, err := s.container.Item(id)
+	ng := &NodeGroup{Name: obj.Name, ClusterName: s.cluster}
+	found, err := s.engine.Get(ng)
+	if !found {
+		return nil, fmt.Errorf("node group `%s` not found", obj.Name)
+	}
 	if err != nil {
-		return nil, fmt.Errorf("NodeGroup `%s` does not exist. Reason: %v", obj.Name, err)
+		return nil, fmt.Errorf("reason: %v", err)
 	}
 
-	r, err := item.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
+	ng.Status = obj.Status.String()
+	_, err = s.engine.Where(`name = ? AND "clusterName" = ?`, obj.Name, s.cluster).Update(ng)
 
-	var existing api.NodeGroup
-	err = json.NewDecoder(r).Decode(&existing)
-	if err != nil {
-		return nil, err
-	}
-	existing.Status = obj.Status
-
-	data, err := json.MarshalIndent(existing, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
-	return &existing, err
+	return obj, err
 }

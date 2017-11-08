@@ -1,89 +1,61 @@
 package xorm
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
+	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/store"
 	"github.com/go-xorm/xorm"
-	"github.com/graymeta/stow"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type CredentialFileStore struct {
-	engine    *xorm.Engine
-	container stow.Container
-	prefix    string
+type CredentialXormStore struct {
+	engine *xorm.Engine
+	prefix string
 }
 
-var _ store.CredentialStore = &CredentialFileStore{}
+var _ store.CredentialStore = &CredentialXormStore{}
 
-func (s *CredentialFileStore) resourceHome() string {
-	return filepath.Join(s.prefix, "credentials")
-}
-
-func (s *CredentialFileStore) resourceID(name string) string {
-	return filepath.Join(s.resourceHome(), name+".json")
-}
-
-func (s *CredentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
+func (s *CredentialXormStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
 	result := make([]*api.Credential, 0)
-	cursor := stow.CursorStart
-	for {
-		page, err := s.container.Browse(s.resourceHome()+"/", string(os.PathSeparator), cursor, pageSize)
+	var credentials []Credential
+	err := s.engine.Find(credentials)
+	if err != nil {
+		return nil, err
+	}
+	for _, credential := range credentials {
+		decode, err := decodeCredential(&credential)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list credentials. Reason: %v", err)
 		}
-		for _, item := range page.Items {
-			r, err := item.Open()
-			if err != nil {
-				return nil, fmt.Errorf("failed to list credentials. Reason: %v", err)
-			}
-			var obj api.Credential
-			err = json.NewDecoder(r).Decode(&obj)
-			if err != nil {
-				return nil, fmt.Errorf("failed to list credentials. Reason: %v", err)
-			}
-			result = append(result, &obj)
-			r.Close()
-		}
-		cursor = page.Cursor
-		if stow.IsCursorEnd(cursor) {
-			break
-		}
+		result = append(result, decode)
 	}
+
 	return result, nil
 }
 
-func (s *CredentialFileStore) Get(name string) (*api.Credential, error) {
+func (s *CredentialXormStore) Get(name string) (*api.Credential, error) {
 	if name == "" {
 		return nil, errors.New("missing credential name")
 	}
-	item, err := s.container.Item(s.resourceID(name))
-	if err != nil {
-		return nil, fmt.Errorf("credential `%s` does not exist. Reason: %v", name, err)
+	cred := &Credential{
+		Name: name,
 	}
 
-	r, err := item.Open()
-	if err != nil {
-		return nil, err
+	found, err := s.engine.Get(cred)
+	if !found {
+		return nil, fmt.Errorf("credential %s does not exists", name)
 	}
-	defer r.Close()
+	if err != nil {
+		return nil, fmt.Errorf("reason: %v", err)
+	}
 
-	var existing api.Credential
-	err = json.NewDecoder(r).Decode(&existing)
-	if err != nil {
-		return nil, err
-	}
-	return &existing, nil
+	return decodeCredential(cred)
 }
 
-func (s *CredentialFileStore) Create(obj *api.Credential) (*api.Credential, error) {
+func (s *CredentialXormStore) Create(obj *api.Credential) (*api.Credential, error) {
 	if obj == nil {
 		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {
@@ -93,22 +65,25 @@ func (s *CredentialFileStore) Create(obj *api.Credential) (*api.Credential, erro
 	if err != nil {
 		return nil, err
 	}
-
-	id := s.resourceID(obj.Name)
-	_, err = s.container.Item(id)
-	if err == nil {
+	found, err := s.engine.Get(&Credential{Name: obj.Name})
+	if found {
 		return nil, fmt.Errorf("credential `%s` already exists", obj.Name)
 	}
-
-	data, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("reason: %v", err)
+	}
+	cred, err := encodeCredential(obj)
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
+	cred.UID = string(phid.NewCloudCredential())
+
+	_, err = s.engine.Insert(cred)
+
 	return obj, err
 }
 
-func (s *CredentialFileStore) Update(obj *api.Credential) (*api.Credential, error) {
+func (s *CredentialXormStore) Update(obj *api.Credential) (*api.Credential, error) {
 	if obj == nil {
 		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {
@@ -119,24 +94,26 @@ func (s *CredentialFileStore) Update(obj *api.Credential) (*api.Credential, erro
 		return nil, err
 	}
 
-	id := s.resourceID(obj.Name)
-
-	_, err = s.container.Item(id)
-	if err != nil {
+	found, err := s.engine.Get(&Credential{Name: obj.Name})
+	if !found {
 		return nil, fmt.Errorf("credential `%s` does not exist. Reason: %v", obj.Name, err)
 	}
-
-	data, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
+
+	cred, err := encodeCredential(obj)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.engine.Where(`name = ?`, cred.Name).Update(cred)
 	return obj, err
 }
 
-func (s *CredentialFileStore) Delete(name string) error {
+func (s *CredentialXormStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing credential name")
 	}
-	return s.container.RemoveItem(s.resourceID(name))
+	_, err := s.engine.Delete(&Credential{Name: name})
+	return err
 }

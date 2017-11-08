@@ -2,13 +2,12 @@ package xorm
 
 import (
 	"time"
-
-	"github.com/appscode/pharmer/store"
 )
 
 type SSHKey struct {
 	Id                int64
 	Name              string     `xorm:"text not null 'name'"`
+	ClusterName       string     `xorm:"text not null 'clusterName'"`
 	UID               string     `xorm:"text not null 'uid'"`
 	PublicKey         string     `xorm:"string  not null 'publicKey'"`
 	PrivateKey        string     `xorm:"string  not null 'privateKey'"`
@@ -22,9 +21,14 @@ func (SSHKey) TableName() string {
 }
 
 func encodeSSHKey(pub, priv []byte) (*SSHKey, error) {
-	return nil, store.ErrNotImplemented
+	return &SSHKey{
+		PublicKey:         string(pub),
+		PrivateKey:        string(priv),
+		DateModified:      time.Now(),
+		DeletionTimestamp: nil,
+	}, nil
 }
 
 func decodeSSHKey(in *SSHKey) ([]byte, []byte, error) {
-	return nil, nil, store.ErrNotImplemented
+	return []byte(in.PublicKey), []byte(in.PrivateKey), nil
 }

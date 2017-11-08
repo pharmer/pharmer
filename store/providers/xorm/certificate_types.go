@@ -1,11 +1,12 @@
 package xorm
 
 import (
+	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
 	"time"
 
-	"github.com/appscode/pharmer/store"
+	"k8s.io/client-go/util/cert"
 )
 
 type Certificate struct {
@@ -24,10 +25,27 @@ func (Certificate) TableName() string {
 	return `"pharmer"."certificate"`
 }
 
-func encodeCertificate(*x509.Certificate, *rsa.PrivateKey, error) (*Certificate, error) {
-	return nil, store.ErrNotImplemented
+func encodeCertificate(crt *x509.Certificate, key *rsa.PrivateKey) (*Certificate, error) {
+	bufCert := bytes.NewBuffer(cert.EncodeCertPEM(crt))
+	bufKey := bytes.NewBuffer(cert.EncodePrivateKeyPEM(key))
+
+	return &Certificate{
+		Cert:              bufCert.String(),
+		Key:               bufKey.String(),
+		DateModified:      time.Now(),
+		DeletionTimestamp: nil,
+	}, nil
 }
 
 func decodeCertificate(in *Certificate) (*x509.Certificate, *rsa.PrivateKey, error) {
-	return nil, nil, store.ErrNotImplemented
+	crt, err := cert.ParseCertsPEM([]byte(in.Cert))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	key, err := cert.ParsePrivateKeyPEM([]byte(in.Key))
+	if err != nil {
+		return nil, nil, err
+	}
+	return crt[0], key.(*rsa.PrivateKey), nil
 }

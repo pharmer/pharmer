@@ -5,10 +5,11 @@ import (
 )
 
 const (
-	ResourceCodeCredential = "cred"
-	ResourceKindCredential = "Credential"
-	ResourceNameCredential = "credential"
-	ResourceTypeCredential = "credentials"
+	ResourceCodeCredential     = "cred"
+	ResourceKindCredential     = "Credential"
+	ResourceNameCredential     = "credential"
+	ResourceTypeCredential     = "credentials"
+	ResourceProviderCredential = "provider"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

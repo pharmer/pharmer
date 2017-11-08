@@ -31,6 +31,14 @@ type SwiftSpec struct {
 	Prefix    string `json:"prefix,omitempty" protobuf:"bytes,2,opt,name=prefix"`
 }
 
+type XormSpec struct {
+	Namespace string `json:"ns"`
+	Host      string `json:"host,omitempty"`
+	Port      int    `json:"port,omitempty"`
+	User      string `json:"user,omitempty"`
+	Password  string `json:"password,omitempty"`
+}
+
 type StorageBackend struct {
 	CredentialName string `json:"credentialName,omitempty" protobuf:"bytes,1,opt,name=credentialName"`
 
@@ -39,6 +47,7 @@ type StorageBackend struct {
 	GCS   *GCSSpec          `json:"gcs,omitempty" protobuf:"bytes,4,opt,name=gcs"`
 	Azure *AzureStorageSpec `json:"azure,omitempty" protobuf:"bytes,5,opt,name=azure"`
 	Swift *SwiftSpec        `json:"swift,omitempty" protobuf:"bytes,6,opt,name=swift"`
+	Xorm  *XormSpec         `json:"xorm,omitempty" protobuf:"bytes,6,opt,name=xorm"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -63,6 +72,8 @@ func (pc PharmerConfig) GetStoreType() string {
 		return "Azure"
 	} else if pc.Store.Swift != nil {
 		return "OpenStack Swift"
+	} else if pc.Store.Xorm != nil {
+		return "Xorm"
 	}
 	return "<Unknown>"
 }
