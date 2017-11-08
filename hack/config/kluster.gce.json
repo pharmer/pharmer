@@ -1,7 +1,0 @@
-{
-  "cloud_credential": "/home/tamal/go/src/appscode.com/ark/conf/tigerworks-kube.json",
-  "name": "k-172302",
-  "nodes": "n1-standard-2:1",
-  "provider": "gce",
-  "zone": "us-west1-a"
-}

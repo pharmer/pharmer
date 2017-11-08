@@ -1,7 +1,0 @@
-{
-  "cloud_credential": "/Users/tamal/go/src/appscode.com/ark/conf/azure.json",
-  "name": "k-142250",
-  "nodes": "Standard_D2_v2:1",
-  "provider": "azure",
-  "zone": "eastus2"
-}

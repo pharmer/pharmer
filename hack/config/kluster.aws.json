@@ -1,7 +1,0 @@
-{
-  "cloud_credential": "/home/tamal/go/src/appscode.com/ark/conf/aws.ini",
-  "name": "k-142250",
-  "nodes": "m4.large:2",
-  "provider": "aws",
-  "zone": "us-west-2a"
-}

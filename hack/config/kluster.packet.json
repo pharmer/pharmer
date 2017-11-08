@@ -1,7 +1,0 @@
-{
-  "cloud_credential": "/home/tamal/go/src/appscode.com/ark/conf/packet.json",
-  "name": "k-261316",
-  "nodes": "baremetal_0:1",
-  "provider": "packet",
-  "zone": "ewr1"
-}
