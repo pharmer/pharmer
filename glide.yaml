@@ -96,6 +96,7 @@ import:
   version: v1.2.2-ac
 - package: google.golang.org/grpc
   version: v1.3.0
+- package: github.com/lib/pq
 - package: github.com/go-xorm/builder
 - package: github.com/go-xorm/core
   version: v0.5.6

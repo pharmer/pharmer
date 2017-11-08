@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/appscode/errors"
-	"github.com/appscode/log"
+	"github.com/appscode/go/errors"
+	"github.com/appscode/go/log"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/store"
 	"github.com/go-xorm/core"

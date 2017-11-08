@@ -307,6 +307,10 @@ imports:
   version: 36b14963da70d11297d313183d7e6388c8510e1e
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
+- name: github.com/lib/pq
+  version: b609790bd85edf8e9ab7e0f8912750a786177bcf
+  subpackages:
+  - oid
 - name: github.com/mailru/easyjson
   version: d5b7844b561a7bc640052f1b935f7b800330d7e0
   subpackages:
