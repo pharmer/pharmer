@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"appscode.com/ark/pkg/phid"
 	"github.com/appscode/pharmer/store"
 	"github.com/go-xorm/xorm"
+	"github.com/appscode/pharmer/phid"
 )
 
 type CertificateXormStore struct {
