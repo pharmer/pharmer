@@ -86,6 +86,8 @@ import:
   repo: https://github.com/appscode/kubernetes.git
   version: v1.8.3
   vcs: git
+- package: github.com/gogo/protobuf
+  version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
 - package: github.com/golang/protobuf
   version: 6e4cc92cc905d5f4a73041c1b8228ea08f4c6147
 - package: github.com/grpc-ecosystem/grpc-gateway
@@ -95,6 +97,8 @@ import:
 - package: google.golang.org/grpc
   version: v1.3.0
 testImport:
+- package: github.com/stretchr/testify
+  version: v1.1.4
 - package: github.com/onsi/ginkgo
   version: v1.4.0
 - package: github.com/onsi/gomega

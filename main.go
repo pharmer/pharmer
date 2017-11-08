@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	logs "github.com/appscode/log/golog"
+	logs "github.com/appscode/go/log/golog"
 	_ "github.com/appscode/pharmer/cloud/providers"
 	"github.com/appscode/pharmer/cmds"
 	_ "github.com/appscode/pharmer/store/providers"
