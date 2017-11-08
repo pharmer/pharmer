@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var NotImplemented = errors.New("Not implemented")
+var ErrNotImplemented = errors.New("not implemented")
 
 type Interface interface {
 	Credentials() CredentialStore
