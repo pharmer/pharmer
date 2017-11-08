@@ -40,7 +40,7 @@ func (s *CredentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, 
 
 func (s *CredentialFileStore) Get(name string) (*api.Credential, error) {
 	if name == "" {
-		return nil, errors.New("Missing credential name")
+		return nil, errors.New("missing credential name")
 	}
 
 	s.mux.Lock()
@@ -55,9 +55,9 @@ func (s *CredentialFileStore) Get(name string) (*api.Credential, error) {
 
 func (s *CredentialFileStore) Create(obj *api.Credential) (*api.Credential, error) {
 	if obj == nil {
-		return nil, errors.New("Missing credential")
+		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing credential name")
+		return nil, errors.New("missing credential name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -77,9 +77,9 @@ func (s *CredentialFileStore) Create(obj *api.Credential) (*api.Credential, erro
 
 func (s *CredentialFileStore) Update(obj *api.Credential) (*api.Credential, error) {
 	if obj == nil {
-		return nil, errors.New("Missing credential")
+		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing credential name")
+		return nil, errors.New("missing credential name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -99,7 +99,7 @@ func (s *CredentialFileStore) Update(obj *api.Credential) (*api.Credential, erro
 
 func (s *CredentialFileStore) Delete(name string) error {
 	if name == "" {
-		return errors.New("Missing credential name")
+		return errors.New("missing credential name")
 	}
 
 	s.mux.Lock()

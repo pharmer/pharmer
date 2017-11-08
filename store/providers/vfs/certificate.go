@@ -36,15 +36,15 @@ func (s *CertificateFileStore) keyID(name string) string {
 
 func (s *CertificateFileStore) Get(name string) (*x509.Certificate, *rsa.PrivateKey, error) {
 	if s.cluster == "" {
-		return nil, nil, errors.New("Missing cluster name")
+		return nil, nil, errors.New("missing cluster name")
 	}
 	if name == "" {
-		return nil, nil, errors.New("Missing certificate name")
+		return nil, nil, errors.New("missing certificate name")
 	}
 
 	itemCrt, err := s.container.Item(s.certID(name))
 	if err != nil {
-		return nil, nil, fmt.Errorf("Certificate `%s.crt` does not exist. Reason: %v", name, err)
+		return nil, nil, fmt.Errorf("certificate `%s.crt` does not exist. Reason: %v", name, err)
 	}
 	r, err := itemCrt.Open()
 	if err != nil {
@@ -62,7 +62,7 @@ func (s *CertificateFileStore) Get(name string) (*x509.Certificate, *rsa.Private
 
 	itemKey, err := s.container.Item(s.keyID(name))
 	if err != nil {
-		return nil, nil, fmt.Errorf("Certificate key `%s.key` does not exist. Reason: %v", name, err)
+		return nil, nil, fmt.Errorf("certificate key `%s.key` does not exist. Reason: %v", name, err)
 	}
 	r2, err := itemKey.Open()
 	if err != nil {
@@ -82,34 +82,34 @@ func (s *CertificateFileStore) Get(name string) (*x509.Certificate, *rsa.Private
 
 func (s *CertificateFileStore) Create(name string, crt *x509.Certificate, key *rsa.PrivateKey) error {
 	if s.cluster == "" {
-		return errors.New("Missing cluster name")
+		return errors.New("missing cluster name")
 	}
 	if crt == nil {
-		return errors.New("Missing certificate")
+		return errors.New("missing certificate")
 	} else if key == nil {
-		return errors.New("Missing certificate key")
+		return errors.New("missing certificate key")
 	}
 
 	id := s.certID(name)
 	_, err := s.container.Item(id)
 	if err == nil {
-		return fmt.Errorf("Certificate `%s.crt` already exists. Reason: %v.", name, err)
+		return fmt.Errorf("certificate `%s.crt` already exists. Reason: %v", name, err)
 	}
 	bufCert := bytes.NewBuffer(cert.EncodeCertPEM(crt))
 	_, err = s.container.Put(id, bufCert, int64(bufCert.Len()), nil)
 	if err != nil {
-		return fmt.Errorf("Failed to store certificate `%s.crt`. Reason: %v.", name, err)
+		return fmt.Errorf("failed to store certificate `%s.crt`. Reason: %v", name, err)
 	}
 
 	id = s.keyID(name)
 	_, err = s.container.Item(id)
 	if err == nil {
-		return fmt.Errorf("Certificate `%s.key` already exists. Reason: %v.", name, err)
+		return fmt.Errorf("certificate `%s.key` already exists. Reason: %v", name, err)
 	}
 	bufKey := bytes.NewBuffer(cert.EncodePrivateKeyPEM(key))
 	_, err = s.container.Put(id, bufKey, int64(bufKey.Len()), nil)
 	if err != nil {
-		return fmt.Errorf("Failed to store certificate key `%s.key`. Reason: %v.", name, err)
+		return fmt.Errorf("failed to store certificate key `%s.key`. Reason: %v", name, err)
 	}
 
 	return nil
@@ -117,19 +117,19 @@ func (s *CertificateFileStore) Create(name string, crt *x509.Certificate, key *r
 
 func (s *CertificateFileStore) Delete(name string) error {
 	if s.cluster == "" {
-		return errors.New("Missing cluster name")
+		return errors.New("missing cluster name")
 	}
 	if name == "" {
-		return errors.New("Missing certificate name")
+		return errors.New("missing certificate name")
 	}
 
 	err := s.container.RemoveItem(s.certID(name))
 	if err != nil {
-		return fmt.Errorf("Failed to delete certificate %s.crt. Reason: %v", name, err)
+		return fmt.Errorf("failed to delete certificate %s.crt. Reason: %v", name, err)
 	}
 	err = s.container.RemoveItem(s.keyID(name))
 	if err != nil {
-		return fmt.Errorf("Failed to delete certificate key %s.key. Reason: %v", name, err)
+		return fmt.Errorf("failed to delete certificate key %s.key. Reason: %v", name, err)
 	}
 	return nil
 }

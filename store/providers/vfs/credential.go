@@ -35,17 +35,17 @@ func (s *CredentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, 
 	for {
 		page, err := s.container.Browse(s.resourceHome()+"/", string(os.PathSeparator), cursor, pageSize)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to list credentials. Reason: %v", err)
+			return nil, fmt.Errorf("failed to list credentials. Reason: %v", err)
 		}
 		for _, item := range page.Items {
 			r, err := item.Open()
 			if err != nil {
-				return nil, fmt.Errorf("Failed to list credentials. Reason: %v", err)
+				return nil, fmt.Errorf("failed to list credentials. Reason: %v", err)
 			}
 			var obj api.Credential
 			err = json.NewDecoder(r).Decode(&obj)
 			if err != nil {
-				return nil, fmt.Errorf("Failed to list credentials. Reason: %v", err)
+				return nil, fmt.Errorf("failed to list credentials. Reason: %v", err)
 			}
 			result = append(result, &obj)
 			r.Close()
@@ -60,11 +60,11 @@ func (s *CredentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, 
 
 func (s *CredentialFileStore) Get(name string) (*api.Credential, error) {
 	if name == "" {
-		return nil, errors.New("Missing credential name")
+		return nil, errors.New("missing credential name")
 	}
 	item, err := s.container.Item(s.resourceID(name))
 	if err != nil {
-		return nil, fmt.Errorf("Credential `%s` does not exist. Reason: %v", name, err)
+		return nil, fmt.Errorf("credential `%s` does not exist. Reason: %v", name, err)
 	}
 
 	r, err := item.Open()
@@ -83,9 +83,9 @@ func (s *CredentialFileStore) Get(name string) (*api.Credential, error) {
 
 func (s *CredentialFileStore) Create(obj *api.Credential) (*api.Credential, error) {
 	if obj == nil {
-		return nil, errors.New("Missing credential")
+		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing credential name")
+		return nil, errors.New("missing credential name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -95,7 +95,7 @@ func (s *CredentialFileStore) Create(obj *api.Credential) (*api.Credential, erro
 	id := s.resourceID(obj.Name)
 	_, err = s.container.Item(id)
 	if err == nil {
-		return nil, fmt.Errorf("Credential `%s` already exists", obj.Name)
+		return nil, fmt.Errorf("credential `%s` already exists", obj.Name)
 	}
 
 	data, err := json.MarshalIndent(obj, "", "  ")
@@ -108,9 +108,9 @@ func (s *CredentialFileStore) Create(obj *api.Credential) (*api.Credential, erro
 
 func (s *CredentialFileStore) Update(obj *api.Credential) (*api.Credential, error) {
 	if obj == nil {
-		return nil, errors.New("Missing credential")
+		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing credential name")
+		return nil, errors.New("missing credential name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -121,7 +121,7 @@ func (s *CredentialFileStore) Update(obj *api.Credential) (*api.Credential, erro
 
 	_, err = s.container.Item(id)
 	if err != nil {
-		return nil, fmt.Errorf("Credential `%s` does not exist. Reason: %v", obj.Name, err)
+		return nil, fmt.Errorf("credential `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
 	data, err := json.MarshalIndent(obj, "", "  ")
@@ -134,7 +134,7 @@ func (s *CredentialFileStore) Update(obj *api.Credential) (*api.Credential, erro
 
 func (s *CredentialFileStore) Delete(name string) error {
 	if name == "" {
-		return errors.New("Missing credential name")
+		return errors.New("missing credential name")
 	}
 	return s.container.RemoveItem(s.resourceID(name))
 }

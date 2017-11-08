@@ -40,7 +40,7 @@ func (s *ClusterFileStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 
 func (s *ClusterFileStore) Get(name string) (*api.Cluster, error) {
 	if name == "" {
-		return nil, errors.New("Missing cluster name")
+		return nil, errors.New("missing cluster name")
 	}
 
 	s.mux.Lock()
@@ -55,9 +55,9 @@ func (s *ClusterFileStore) Get(name string) (*api.Cluster, error) {
 
 func (s *ClusterFileStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 	if obj == nil {
-		return nil, errors.New("Missing cluster")
+		return nil, errors.New("missing cluster")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing cluster name")
+		return nil, errors.New("missing cluster name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -77,9 +77,9 @@ func (s *ClusterFileStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 
 func (s *ClusterFileStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 	if obj == nil {
-		return nil, errors.New("Missing cluster")
+		return nil, errors.New("missing cluster")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing cluster name")
+		return nil, errors.New("missing cluster name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
@@ -99,7 +99,7 @@ func (s *ClusterFileStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 
 func (s *ClusterFileStore) Delete(name string) error {
 	if name == "" {
-		return errors.New("Missing cluster name")
+		return errors.New("missing cluster name")
 	}
 
 	s.mux.Lock()
@@ -111,9 +111,9 @@ func (s *ClusterFileStore) Delete(name string) error {
 
 func (s *ClusterFileStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) {
 	if obj == nil {
-		return nil, errors.New("Missing cluster")
+		return nil, errors.New("missing cluster")
 	} else if obj.Name == "" {
-		return nil, errors.New("Missing cluster name")
+		return nil, errors.New("missing cluster name")
 	}
 	err := api.AssignTypeKind(obj)
 	if err != nil {
