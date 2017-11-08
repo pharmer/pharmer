@@ -54,7 +54,7 @@ func encodeCluster(in *api.Cluster) (*Cluster, error) {
 }
 
 func decodeCluster(in *Cluster) (*api.Cluster, error) {
-	var obj api.ClusterSpec
+	var obj api.Cluster
 	if err := json.Unmarshal([]byte(in.Data), &obj); err != nil {
 		return nil, err
 	}

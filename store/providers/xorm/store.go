@@ -16,7 +16,6 @@ import (
 
 const (
 	UID      = "xorm"
-	pageSize = 50
 	Database = "pharmer"
 )
 
@@ -29,7 +28,7 @@ func init() {
 			if err != nil {
 				return nil, fmt.Errorf("failed to connect xorm storage. Reason %v", err)
 			}
-			return &XormStore{engine: engine, prefix: ""}, nil
+			return &XormStore{engine: engine}, nil
 		}
 
 		return nil, errors.New("missing store configuration")
@@ -38,29 +37,28 @@ func init() {
 
 type XormStore struct {
 	engine *xorm.Engine
-	prefix string
 }
 
 var _ store.Interface = &XormStore{}
 
 func (s *XormStore) Credentials() store.CredentialStore {
-	return &CredentialXormStore{engine: s.engine, prefix: s.prefix}
+	return &credentialXormStore{engine: s.engine}
 }
 
 func (s *XormStore) Clusters() store.ClusterStore {
-	return &ClusterXormStore{engine: s.engine, prefix: s.prefix}
+	return &clusterXormStore{engine: s.engine}
 }
 
 func (s *XormStore) NodeGroups(cluster string) store.NodeGroupStore {
-	return &NodeGroupXormStore{engine: s.engine, prefix: s.prefix, cluster: cluster}
+	return &nodeGroupXormStore{engine: s.engine, cluster: cluster}
 }
 
 func (s *XormStore) Certificates(cluster string) store.CertificateStore {
-	return &CertificateXormStore{engine: s.engine, prefix: s.prefix, cluster: cluster}
+	return &certificateXormStore{engine: s.engine, cluster: cluster}
 }
 
 func (s *XormStore) SSHKeys(cluster string) store.SSHKeyStore {
-	return &SSHKeyXormStore{engine: s.engine, prefix: s.prefix, cluster: cluster}
+	return &sshKeyXormStore{engine: s.engine, cluster: cluster}
 }
 
 // Connects to any databse using provided credentials

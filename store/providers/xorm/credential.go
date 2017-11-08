@@ -11,14 +11,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type CredentialXormStore struct {
+type credentialXormStore struct {
 	engine *xorm.Engine
-	prefix string
 }
 
-var _ store.CredentialStore = &CredentialXormStore{}
+var _ store.CredentialStore = &credentialXormStore{}
 
-func (s *CredentialXormStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
+func (s *credentialXormStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
 	result := make([]*api.Credential, 0)
 	var credentials []Credential
 	err := s.engine.Find(credentials)
@@ -36,7 +35,7 @@ func (s *CredentialXormStore) List(opts metav1.ListOptions) ([]*api.Credential, 
 	return result, nil
 }
 
-func (s *CredentialXormStore) Get(name string) (*api.Credential, error) {
+func (s *credentialXormStore) Get(name string) (*api.Credential, error) {
 	if name == "" {
 		return nil, errors.New("missing credential name")
 	}
@@ -55,7 +54,7 @@ func (s *CredentialXormStore) Get(name string) (*api.Credential, error) {
 	return decodeCredential(cred)
 }
 
-func (s *CredentialXormStore) Create(obj *api.Credential) (*api.Credential, error) {
+func (s *credentialXormStore) Create(obj *api.Credential) (*api.Credential, error) {
 	if obj == nil {
 		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {
@@ -83,7 +82,7 @@ func (s *CredentialXormStore) Create(obj *api.Credential) (*api.Credential, erro
 	return obj, err
 }
 
-func (s *CredentialXormStore) Update(obj *api.Credential) (*api.Credential, error) {
+func (s *credentialXormStore) Update(obj *api.Credential) (*api.Credential, error) {
 	if obj == nil {
 		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {
@@ -110,7 +109,7 @@ func (s *CredentialXormStore) Update(obj *api.Credential) (*api.Credential, erro
 	return obj, err
 }
 
-func (s *CredentialXormStore) Delete(name string) error {
+func (s *credentialXormStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing credential name")
 	}

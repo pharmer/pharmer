@@ -10,15 +10,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type NodeGroupXormStore struct {
+type nodeGroupXormStore struct {
 	engine  *xorm.Engine
-	prefix  string
 	cluster string
 }
 
-var _ store.NodeGroupStore = &NodeGroupXormStore{}
+var _ store.NodeGroupStore = &nodeGroupXormStore{}
 
-func (s *NodeGroupXormStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, error) {
+func (s *nodeGroupXormStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, error) {
 	result := make([]*api.NodeGroup, 0)
 	var nodeGroups []NodeGroup
 	err := s.engine.Where(`"clusterName" = ?`, s.cluster).Find(nodeGroups)
@@ -36,7 +35,7 @@ func (s *NodeGroupXormStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, er
 	return result, nil
 }
 
-func (s *NodeGroupXormStore) Get(name string) (*api.NodeGroup, error) {
+func (s *nodeGroupXormStore) Get(name string) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -56,7 +55,7 @@ func (s *NodeGroupXormStore) Get(name string) (*api.NodeGroup, error) {
 	return decodeNodeGroup(ng)
 }
 
-func (s *NodeGroupXormStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) {
+func (s *nodeGroupXormStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -87,7 +86,7 @@ func (s *NodeGroupXormStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) 
 	return obj, err
 }
 
-func (s *NodeGroupXormStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) {
+func (s *nodeGroupXormStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -117,7 +116,7 @@ func (s *NodeGroupXormStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) 
 	return obj, err
 }
 
-func (s *NodeGroupXormStore) Delete(name string) error {
+func (s *nodeGroupXormStore) Delete(name string) error {
 	if s.cluster == "" {
 		return errors.New("missing cluster name")
 	}
@@ -128,7 +127,7 @@ func (s *NodeGroupXormStore) Delete(name string) error {
 	return err
 }
 
-func (s *NodeGroupXormStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error) {
+func (s *nodeGroupXormStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -144,15 +143,23 @@ func (s *NodeGroupXormStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, e
 
 	ng := &NodeGroup{Name: obj.Name, ClusterName: s.cluster}
 	found, err := s.engine.Get(ng)
-	if !found {
-		return nil, fmt.Errorf("node group `%s` not found", obj.Name)
-	}
 	if err != nil {
-		return nil, fmt.Errorf("reason: %v", err)
+		return nil, fmt.Errorf("NodeGroup `%s` does not exist. Reason: %v", obj.Name, err)
+	}
+	if !found {
+		return nil, fmt.Errorf("NodeGroup `%s` does not exist", obj.Name)
 	}
 
-	ng.Status = obj.Status.String()
-	_, err = s.engine.Where(`name = ? AND "clusterName" = ?`, obj.Name, s.cluster).Update(ng)
+	existing, err := decodeNodeGroup(ng)
+	if err != nil {
+		return nil, err
+	}
+	existing.Status = obj.Status
 
-	return obj, err
+	updated, err := encodeNodeGroup(existing)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.engine.Where(`name = ? AND "clusterName" = ?`, obj.Name, s.cluster).Update(updated)
+	return existing, err
 }

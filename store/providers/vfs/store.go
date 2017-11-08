@@ -42,7 +42,7 @@ func init() {
 					return nil, fmt.Errorf("failed to open storage container `%s`. Reason: %v", name, err)
 				}
 			}
-			return &FileStore{container: container, prefix: ""}, nil
+			return New(container, ""), nil
 		} else if cfg.Store.S3 != nil {
 			cred, err := cfg.GetCredential(cfg.Store.CredentialName)
 			if err != nil {
@@ -69,7 +69,7 @@ func init() {
 					return nil, fmt.Errorf("failed to open storage container `%s`. Reason: %v", name, err)
 				}
 			}
-			return &FileStore{container: container, prefix: cfg.Store.S3.Prefix}, nil
+			return New(container, cfg.Store.S3.Prefix), nil
 		} else if cfg.Store.GCS != nil {
 			cred, err := cfg.GetCredential(cfg.Store.CredentialName)
 			if err != nil {
@@ -87,7 +87,7 @@ func init() {
 			if err != nil {
 				return nil, fmt.Errorf("failed to open storage container `%s`. Reason: %v", cfg.Store.GCS.Bucket, err)
 			}
-			return &FileStore{container: container, prefix: cfg.Store.GCS.Prefix}, nil
+			return New(container, cfg.Store.GCS.Prefix), nil
 		} else if cfg.Store.Azure != nil {
 			cred, err := cfg.GetCredential(cfg.Store.CredentialName)
 			if err != nil {
@@ -109,7 +109,7 @@ func init() {
 					return nil, fmt.Errorf("failed to open storage container `%s`. Reason: %v", name, err)
 				}
 			}
-			return &FileStore{container: container, prefix: cfg.Store.Azure.Prefix}, nil
+			return New(container, cfg.Store.Azure.Prefix), nil
 		} else if cfg.Store.Swift != nil {
 			cred, err := cfg.GetCredential(cfg.Store.CredentialName)
 			if err != nil {
@@ -163,7 +163,7 @@ func init() {
 					return nil, fmt.Errorf("failed to open storage container `%s`. Reason: %v", name, err)
 				}
 			}
-			return &FileStore{container: container, prefix: cfg.Store.Swift.Prefix}, nil
+			return New(container, cfg.Store.Swift.Prefix), nil
 		}
 		return nil, errors.New("missing store configuration")
 	})
@@ -176,22 +176,26 @@ type FileStore struct {
 
 var _ store.Interface = &FileStore{}
 
+func New(container stow.Container, prefix string) store.Interface {
+	return &FileStore{container: container, prefix: prefix}
+}
+
 func (s *FileStore) Credentials() store.CredentialStore {
-	return &CredentialFileStore{container: s.container, prefix: s.prefix}
+	return &credentialFileStore{container: s.container, prefix: s.prefix}
 }
 
 func (s *FileStore) Clusters() store.ClusterStore {
-	return &ClusterFileStore{container: s.container, prefix: s.prefix}
+	return &clusterFileStore{container: s.container, prefix: s.prefix}
 }
 
 func (s *FileStore) NodeGroups(cluster string) store.NodeGroupStore {
-	return &NodeGroupFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
+	return &nodeGroupFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
 }
 
 func (s *FileStore) Certificates(cluster string) store.CertificateStore {
-	return &CertificateFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
+	return &certificateFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
 }
 
 func (s *FileStore) SSHKeys(cluster string) store.SSHKeyStore {
-	return &SSHKeyFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
+	return &sshKeyFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
 }

@@ -11,27 +11,27 @@ import (
 	"github.com/graymeta/stow"
 )
 
-type SSHKeyFileStore struct {
+type sshKeyFileStore struct {
 	container stow.Container
 	prefix    string
 	cluster   string
 }
 
-var _ store.SSHKeyStore = &SSHKeyFileStore{}
+var _ store.SSHKeyStore = &sshKeyFileStore{}
 
-func (s *SSHKeyFileStore) resourceHome() string {
+func (s *sshKeyFileStore) resourceHome() string {
 	return filepath.Join(s.prefix, "clusters", s.cluster, "ssh")
 }
 
-func (s *SSHKeyFileStore) pubKeyID(name string) string {
+func (s *sshKeyFileStore) pubKeyID(name string) string {
 	return filepath.Join(s.resourceHome(), "id_"+name+".pub")
 }
 
-func (s *SSHKeyFileStore) privKeyID(name string) string {
+func (s *sshKeyFileStore) privKeyID(name string) string {
 	return filepath.Join(s.resourceHome(), "id_"+name)
 }
 
-func (s *SSHKeyFileStore) Get(name string) ([]byte, []byte, error) {
+func (s *sshKeyFileStore) Get(name string) ([]byte, []byte, error) {
 	if s.cluster == "" {
 		return nil, nil, errors.New("missing cluster name")
 	}
@@ -69,7 +69,7 @@ func (s *SSHKeyFileStore) Get(name string) ([]byte, []byte, error) {
 	return pubKey, privKey, nil
 }
 
-func (s *SSHKeyFileStore) Create(name string, pubKey, privKey []byte) error {
+func (s *sshKeyFileStore) Create(name string, pubKey, privKey []byte) error {
 	if s.cluster == "" {
 		return errors.New("missing cluster name")
 	}
@@ -102,7 +102,7 @@ func (s *SSHKeyFileStore) Create(name string, pubKey, privKey []byte) error {
 	return nil
 }
 
-func (s *SSHKeyFileStore) Delete(name string) error {
+func (s *sshKeyFileStore) Delete(name string) error {
 	if s.cluster == "" {
 		return errors.New("missing cluster name")
 	}

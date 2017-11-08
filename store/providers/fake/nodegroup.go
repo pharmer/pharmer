@@ -11,24 +11,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type NodeGroupFileStore struct {
+type nodeGroupFileStore struct {
 	container map[string]*api.NodeGroup
 	cluster   string
 
 	mux sync.Mutex
 }
 
-var _ store.NodeGroupStore = &NodeGroupFileStore{}
+var _ store.NodeGroupStore = &nodeGroupFileStore{}
 
-func (s *NodeGroupFileStore) resourceHome() string {
+func (s *nodeGroupFileStore) resourceHome() string {
 	return filepath.Join("clusters", s.cluster, "nodeGroups")
 }
 
-func (s *NodeGroupFileStore) resourceID(name string) string {
+func (s *nodeGroupFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *NodeGroupFileStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, error) {
+func (s *nodeGroupFileStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
@@ -39,7 +39,7 @@ func (s *NodeGroupFileStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, er
 	return result, nil
 }
 
-func (s *NodeGroupFileStore) Get(name string) (*api.NodeGroup, error) {
+func (s *nodeGroupFileStore) Get(name string) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -57,7 +57,7 @@ func (s *NodeGroupFileStore) Get(name string) (*api.NodeGroup, error) {
 	return item, nil
 }
 
-func (s *NodeGroupFileStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) {
+func (s *nodeGroupFileStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -83,7 +83,7 @@ func (s *NodeGroupFileStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) 
 	return obj, err
 }
 
-func (s *NodeGroupFileStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) {
+func (s *nodeGroupFileStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -105,7 +105,7 @@ func (s *NodeGroupFileStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) 
 	return obj, err
 }
 
-func (s *NodeGroupFileStore) Delete(name string) error {
+func (s *nodeGroupFileStore) Delete(name string) error {
 	if s.cluster == "" {
 		return errors.New("missing cluster name")
 	}
@@ -116,7 +116,7 @@ func (s *NodeGroupFileStore) Delete(name string) error {
 	return nil
 }
 
-func (s *NodeGroupFileStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error) {
+func (s *nodeGroupFileStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}

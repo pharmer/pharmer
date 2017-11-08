@@ -12,15 +12,14 @@ import (
 	"github.com/go-xorm/xorm"
 )
 
-type CertificateXormStore struct {
+type certificateXormStore struct {
 	engine  *xorm.Engine
-	prefix  string
 	cluster string
 }
 
-var _ store.CertificateStore = &CertificateXormStore{}
+var _ store.CertificateStore = &certificateXormStore{}
 
-func (s *CertificateXormStore) Get(name string) (*x509.Certificate, *rsa.PrivateKey, error) {
+func (s *certificateXormStore) Get(name string) (*x509.Certificate, *rsa.PrivateKey, error) {
 	if s.cluster == "" {
 		return nil, nil, errors.New("missing cluster name")
 	}
@@ -43,7 +42,7 @@ func (s *CertificateXormStore) Get(name string) (*x509.Certificate, *rsa.Private
 	return decodeCertificate(certificate)
 }
 
-func (s *CertificateXormStore) Create(name string, crt *x509.Certificate, key *rsa.PrivateKey) error {
+func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *rsa.PrivateKey) error {
 	if s.cluster == "" {
 		return errors.New("missing cluster name")
 	}
@@ -78,7 +77,7 @@ func (s *CertificateXormStore) Create(name string, crt *x509.Certificate, key *r
 	return err
 }
 
-func (s *CertificateXormStore) Delete(name string) error {
+func (s *certificateXormStore) Delete(name string) error {
 	if s.cluster == "" {
 		return errors.New("missing cluster name")
 	}

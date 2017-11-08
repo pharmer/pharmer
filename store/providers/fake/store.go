@@ -16,11 +16,7 @@ const (
 
 func init() {
 	store.RegisterProvider(UID, func(ctx context.Context, cfg *api.PharmerConfig) (store.Interface, error) {
-		return &FakeStore{
-			nodeGroups:   map[string]store.NodeGroupStore{},
-			certificates: map[string]store.CertificateStore{},
-			sshKeys:      map[string]store.SSHKeyStore{},
-		}, nil
+		return New(), nil
 	})
 }
 
@@ -36,12 +32,20 @@ type FakeStore struct {
 
 var _ store.Interface = &FakeStore{}
 
+func New() store.Interface {
+	return &FakeStore{
+		nodeGroups:   map[string]store.NodeGroupStore{},
+		certificates: map[string]store.CertificateStore{},
+		sshKeys:      map[string]store.SSHKeyStore{},
+	}
+}
+
 func (s *FakeStore) Credentials() store.CredentialStore {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
 	if s.credentials == nil {
-		s.credentials = &CredentialFileStore{container: map[string]*api.Credential{}}
+		s.credentials = &credentialFileStore{container: map[string]*api.Credential{}}
 	}
 	return s.credentials
 }
@@ -51,7 +55,7 @@ func (s *FakeStore) Clusters() store.ClusterStore {
 	defer s.mux.Unlock()
 
 	if s.clusters == nil {
-		s.clusters = &ClusterFileStore{container: map[string]*api.Cluster{}}
+		s.clusters = &clusterFileStore{container: map[string]*api.Cluster{}}
 	}
 	return s.clusters
 }
@@ -61,7 +65,7 @@ func (s *FakeStore) NodeGroups(cluster string) store.NodeGroupStore {
 	defer s.mux.Unlock()
 
 	if _, found := s.nodeGroups[cluster]; !found {
-		s.nodeGroups[cluster] = &NodeGroupFileStore{container: map[string]*api.NodeGroup{}, cluster: cluster}
+		s.nodeGroups[cluster] = &nodeGroupFileStore{container: map[string]*api.NodeGroup{}, cluster: cluster}
 	}
 	return s.nodeGroups[cluster]
 }
@@ -71,7 +75,7 @@ func (s *FakeStore) Certificates(cluster string) store.CertificateStore {
 	defer s.mux.Unlock()
 
 	if _, found := s.certificates[cluster]; !found {
-		s.certificates[cluster] = &CertificateFileStore{certs: map[string]*x509.Certificate{}, keys: map[string]*rsa.PrivateKey{}, cluster: cluster}
+		s.certificates[cluster] = &certificateFileStore{certs: map[string]*x509.Certificate{}, keys: map[string]*rsa.PrivateKey{}, cluster: cluster}
 	}
 	return s.certificates[cluster]
 }
@@ -81,7 +85,7 @@ func (s *FakeStore) SSHKeys(cluster string) store.SSHKeyStore {
 	defer s.mux.Unlock()
 
 	if _, found := s.sshKeys[cluster]; !found {
-		s.sshKeys[cluster] = &SSHKeyFileStore{container: map[string][]byte{}, cluster: cluster}
+		s.sshKeys[cluster] = &sshKeyFileStore{container: map[string][]byte{}, cluster: cluster}
 	}
 	return s.sshKeys[cluster]
 }

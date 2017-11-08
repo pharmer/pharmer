@@ -3,7 +3,6 @@ package xorm
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/store"
@@ -11,22 +10,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ClusterXormStore struct {
+type clusterXormStore struct {
 	engine *xorm.Engine
-	prefix string
 }
 
-var _ store.ClusterStore = &ClusterXormStore{}
+var _ store.ClusterStore = &clusterXormStore{}
 
-func (s *ClusterXormStore) resourceHome() string {
-	return filepath.Join(s.prefix, "clusters")
-}
-
-func (s *ClusterXormStore) resourceID(name string) string {
-	return filepath.Join(s.resourceHome(), name+".json")
-}
-
-func (s *ClusterXormStore) List(opts metav1.ListOptions) ([]*api.Cluster, error) {
+func (s *clusterXormStore) List(opts metav1.ListOptions) ([]*api.Cluster, error) {
 	result := make([]*api.Cluster, 0)
 	var clusters []Cluster
 
@@ -46,7 +36,7 @@ func (s *ClusterXormStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 	return result, nil
 }
 
-func (s *ClusterXormStore) Get(name string) (*api.Cluster, error) {
+func (s *clusterXormStore) Get(name string) (*api.Cluster, error) {
 	if name == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -62,7 +52,7 @@ func (s *ClusterXormStore) Get(name string) (*api.Cluster, error) {
 	return decodeCluster(cluster)
 }
 
-func (s *ClusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
+func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 	if obj == nil {
 		return nil, errors.New("missing cluster")
 	} else if obj.Name == "" {
@@ -89,7 +79,7 @@ func (s *ClusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 	return obj, err
 }
 
-func (s *ClusterXormStore) Update(obj *api.Cluster) (*api.Cluster, error) {
+func (s *clusterXormStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 	if obj == nil {
 		return nil, errors.New("missing cluster")
 	} else if obj.Name == "" {
@@ -117,7 +107,7 @@ func (s *ClusterXormStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 	return obj, err
 }
 
-func (s *ClusterXormStore) Delete(name string) error {
+func (s *clusterXormStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing cluster name")
 	}
@@ -125,7 +115,7 @@ func (s *ClusterXormStore) Delete(name string) error {
 	return err
 }
 
-func (s *ClusterXormStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) {
+func (s *clusterXormStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) {
 	if obj == nil {
 		return nil, errors.New("missing cluster")
 	} else if obj.Name == "" {
@@ -138,14 +128,22 @@ func (s *ClusterXormStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 
 	cluster := &Cluster{Name: obj.Name}
 	found, err := s.engine.Get(cluster)
-	if found {
-		return nil, fmt.Errorf("cluster `%s` already exists", obj.Name)
-	}
 	if err != nil {
-		return nil, fmt.Errorf("reason: %v", err)
+		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", obj.Name, err)
 	}
-	cluster.Status = obj.Status.String()
+	if !found {
+		return nil, fmt.Errorf("cluster `%s` does not exist", obj.Name)
+	}
+	existing, err := decodeCluster(cluster)
+	if err != nil {
+		return nil, err
+	}
+	existing.Status = obj.Status
 
-	_, err = s.engine.Where(`name = ?`, obj.Name).Update(cluster)
-	return obj, err
+	updated, err := encodeCluster(existing)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.engine.Where(`name = ?`, obj.Name).Update(updated)
+	return existing, err
 }

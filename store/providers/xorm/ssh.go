@@ -10,15 +10,14 @@ import (
 	"github.com/go-xorm/xorm"
 )
 
-type SSHKeyXormStore struct {
+type sshKeyXormStore struct {
 	engine  *xorm.Engine
-	prefix  string
 	cluster string
 }
 
-var _ store.SSHKeyStore = &SSHKeyXormStore{}
+var _ store.SSHKeyStore = &sshKeyXormStore{}
 
-func (s *SSHKeyXormStore) Get(name string) ([]byte, []byte, error) {
+func (s *sshKeyXormStore) Get(name string) ([]byte, []byte, error) {
 	if s.cluster == "" {
 		return nil, nil, errors.New("missing cluster name")
 	}
@@ -40,7 +39,7 @@ func (s *SSHKeyXormStore) Get(name string) ([]byte, []byte, error) {
 	return decodeSSHKey(sshKey)
 }
 
-func (s *SSHKeyXormStore) Create(name string, pubKey, privKey []byte) error {
+func (s *sshKeyXormStore) Create(name string, pubKey, privKey []byte) error {
 	if s.cluster == "" {
 		return errors.New("missing cluster name")
 	}
@@ -71,7 +70,7 @@ func (s *SSHKeyXormStore) Create(name string, pubKey, privKey []byte) error {
 	return err
 }
 
-func (s *SSHKeyXormStore) Delete(name string) error {
+func (s *sshKeyXormStore) Delete(name string) error {
 	if s.cluster == "" {
 		return errors.New("missing cluster name")
 	}

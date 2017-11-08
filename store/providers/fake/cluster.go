@@ -11,23 +11,23 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ClusterFileStore struct {
+type clusterFileStore struct {
 	container map[string]*api.Cluster
 
 	mux sync.Mutex
 }
 
-var _ store.ClusterStore = &ClusterFileStore{}
+var _ store.ClusterStore = &clusterFileStore{}
 
-func (s *ClusterFileStore) resourceHome() string {
+func (s *clusterFileStore) resourceHome() string {
 	return "clusters"
 }
 
-func (s *ClusterFileStore) resourceID(name string) string {
+func (s *clusterFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *ClusterFileStore) List(opts metav1.ListOptions) ([]*api.Cluster, error) {
+func (s *clusterFileStore) List(opts metav1.ListOptions) ([]*api.Cluster, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
@@ -38,7 +38,7 @@ func (s *ClusterFileStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 	return result, nil
 }
 
-func (s *ClusterFileStore) Get(name string) (*api.Cluster, error) {
+func (s *clusterFileStore) Get(name string) (*api.Cluster, error) {
 	if name == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -53,7 +53,7 @@ func (s *ClusterFileStore) Get(name string) (*api.Cluster, error) {
 	return existing, nil
 }
 
-func (s *ClusterFileStore) Create(obj *api.Cluster) (*api.Cluster, error) {
+func (s *clusterFileStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 	if obj == nil {
 		return nil, errors.New("missing cluster")
 	} else if obj.Name == "" {
@@ -75,7 +75,7 @@ func (s *ClusterFileStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 	return obj, err
 }
 
-func (s *ClusterFileStore) Update(obj *api.Cluster) (*api.Cluster, error) {
+func (s *clusterFileStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 	if obj == nil {
 		return nil, errors.New("missing cluster")
 	} else if obj.Name == "" {
@@ -97,7 +97,7 @@ func (s *ClusterFileStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 	return obj, err
 }
 
-func (s *ClusterFileStore) Delete(name string) error {
+func (s *clusterFileStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing cluster name")
 	}
@@ -109,7 +109,7 @@ func (s *ClusterFileStore) Delete(name string) error {
 	return nil
 }
 
-func (s *ClusterFileStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) {
+func (s *clusterFileStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) {
 	if obj == nil {
 		return nil, errors.New("missing cluster")
 	} else if obj.Name == "" {
