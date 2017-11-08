@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
@@ -26,7 +25,6 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		NetworkProvider:  cluster.Spec.Networking.NetworkProvider,
 		Provider:         cluster.Spec.Cloud.CloudProvider,
 		ExternalProvider: false, // GCE does not use out-of-tree CCM
-		ExtraDomains:     strings.Join(cluster.Spec.APIServerCertSANs, ","),
 	}
 
 	{

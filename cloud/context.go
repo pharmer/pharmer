@@ -40,8 +40,8 @@ func Logger(ctx context.Context) api.Logger {
 	return ctx.Value(paramLogger{}).(api.Logger)
 }
 
-func Extra(ctx context.Context) api.DomainManager {
-	return ctx.Value(paramExtra{}).(api.DomainManager)
+func Extra(ctx context.Context) api.NameGenerator {
+	return ctx.Value(paramExtra{}).(api.NameGenerator)
 }
 
 func CACert(ctx context.Context) *x509.Certificate {
@@ -65,7 +65,7 @@ func SSHKey(ctx context.Context) *ssh.SSHKey {
 func NewContext(parent context.Context, cfg *api.PharmerConfig, env _env.Environment) context.Context {
 	c := parent
 	c = context.WithValue(c, paramEnv{}, env)
-	c = context.WithValue(c, paramExtra{}, &api.FakeDomainManager{})
+	c = context.WithValue(c, paramExtra{}, &api.NullNameGenerator{})
 	c = context.WithValue(c, paramLogger{}, log.New(c))
 	c = context.WithValue(c, paramStore{}, NewStoreProvider(parent, cfg))
 	return c

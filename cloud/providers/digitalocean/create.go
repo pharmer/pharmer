@@ -40,17 +40,8 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	cluster.Spec.Cloud.InstanceImage = "ubuntu-16-04-x64"
 	cluster.Spec.Networking.SetDefaults()
-	if len(cluster.Spec.AuthorizationModes) == 0 {
-		cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
-	}
-	{
-		if domain := Extra(cm.ctx).ExternalDomain(cluster.Name); domain != "" {
-			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
-		}
-		if domain := Extra(cm.ctx).InternalDomain(cluster.Name); domain != "" {
-			cluster.Spec.APIServerCertSANs = append(cluster.Spec.APIServerCertSANs, domain)
-		}
-	}
+	cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
+	cluster.Spec.APIServerCertSANs = Extra(cm.ctx).ExtraNames(cluster.Name)
 	cluster.Spec.APIServerExtraArgs = map[string]string{
 		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
 		"kubelet-preferred-address-types": strings.Join([]string{
