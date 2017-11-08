@@ -207,6 +207,12 @@ imports:
   version: 6aced65f8501fe1217321abf0749d354824ba2ff
 - name: github.com/go-openapi/swag
   version: 1d0bd113de87027671077d3c71eb3ac5d7dbba72
+- name: github.com/go-xorm/builder
+  version: a4a881a4e552fcb5473f39e8b9f7d9f3457a7fb0
+- name: github.com/go-xorm/core
+  version: 5bf745d7d163f4380e6c2bba8c4afa60534dd087
+- name: github.com/go-xorm/xorm
+  version: 3c8314e91603f0bfa6a228c1a0fea8a9e298f6d9
 - name: github.com/gogo/protobuf
   version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
   subpackages:
