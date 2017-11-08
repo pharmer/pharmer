@@ -19,7 +19,6 @@ type TemplateData struct {
 	CAKey            string
 	FrontProxyKey    string
 	APIServerAddress string
-	ExtraDomains     string
 	NetworkProvider  string
 	CloudConfig      string
 	Provider         string
@@ -180,7 +179,6 @@ pre-k merge master-config \
 	--apiserver-advertise-address=$(pre-k get public-ips --all=false) \
 	--apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
 	--apiserver-cert-extra-sans=$(pre-k get private-ips) \
-	--apiserver-cert-extra-sans={{ .ExtraDomains }} \
 	--node-name=${NODE_NAME} \
 	> /etc/kubernetes/kubeadm/config.yaml
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print

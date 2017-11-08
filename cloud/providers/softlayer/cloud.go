@@ -178,7 +178,6 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(Extra(conn.ctx).ExternalDomain(conn.cluster.Name), ",.,.,.,.,.,.,.,.,.")
 	domain := fmt.Sprintf("%v.pharmer.local", conn.cluster.Name)
 	vGuestTemplate := datatypes.Virtual_Guest{
 		Hostname:                     StringP(name),

@@ -253,12 +253,6 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Resource: "Master Instance",
 			Message:  fmt.Sprintf("Master instance with name %v will be created", cm.namer.MasterName()),
 		})
-
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "A Record",
-			Message:  fmt.Sprintf("Will create cluster apps A record %v, External domain %v and internal domain %v", Extra(cm.ctx).Domain(cm.cluster.Name), Extra(cm.ctx).ExternalDomain(cm.cluster.Name), Extra(cm.ctx).InternalDomain(cm.cluster.Name)),
-		})
 		if !dryRun {
 			var op1 string
 			if op1, err = cm.conn.createMasterIntance(masterNG); err != nil {

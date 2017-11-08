@@ -3,7 +3,6 @@ package digitalocean
 import (
 	"bytes"
 	"context"
-	"strings"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
@@ -24,7 +23,6 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		NetworkProvider:  cluster.Spec.Networking.NetworkProvider,
 		Provider:         cluster.Spec.Cloud.CloudProvider,
 		ExternalProvider: true, // DigitalOcean uses out-of-tree CCM
-		ExtraDomains:     strings.Join(cluster.Spec.APIServerCertSANs, ","),
 	}
 	{
 		td.KubeletExtraArgs = map[string]string{}
