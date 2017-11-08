@@ -184,14 +184,6 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 
-			err = EnsureARecord(cm.ctx, cm.cluster, masterServer.PublicIP, masterServer.PrivateIP) // works for reserved or non-reserved mode
-			if err != nil {
-				return
-			}
-			// Wait for master A record to propagate
-			if err = EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
-				return
-			}
 			// needed to get master_internal_ip
 			cm.cluster.Status.Phase = api.ClusterReady
 			if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
@@ -332,12 +324,6 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 			Resource: "PublicKey",
 			Message:  "Public key not found",
 		})
-	}
-
-	if !dryRun {
-		if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
-			return
-		}
 	}
 
 	// Failed

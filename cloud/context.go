@@ -5,8 +5,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 
-	"github.com/appscode/go-dns"
-	dns_provider "github.com/appscode/go-dns/provider"
 	"github.com/appscode/go/crypto/ssh"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
@@ -17,7 +15,6 @@ import (
 )
 
 type paramEnv struct{}
-type paramDNS struct{}
 type paramExtra struct{}
 type paramLogger struct{}
 type paramStore struct{}
@@ -33,10 +30,6 @@ type paramK8sClient struct{}
 
 func Env(ctx context.Context) _env.Environment {
 	return ctx.Value(paramEnv{}).(_env.Environment)
-}
-
-func DNSProvider(ctx context.Context) dns_provider.Provider {
-	return ctx.Value(paramDNS{}).(dns_provider.Provider)
 }
 
 func Store(ctx context.Context) store.Interface {
@@ -75,7 +68,6 @@ func NewContext(parent context.Context, cfg *api.PharmerConfig, env _env.Environ
 	c = context.WithValue(c, paramExtra{}, &api.FakeDomainManager{})
 	c = context.WithValue(c, paramLogger{}, log.New(c))
 	c = context.WithValue(c, paramStore{}, NewStoreProvider(parent, cfg))
-	c = context.WithValue(c, paramDNS{}, NewDNSProvider(cfg))
 	return c
 }
 
@@ -84,15 +76,4 @@ func NewStoreProvider(ctx context.Context, cfg *api.PharmerConfig) store.Interfa
 		return store
 	}
 	return &fake.FakeStore{}
-}
-
-func NewDNSProvider(cfg *api.PharmerConfig) dns_provider.Provider {
-	if cfg.DNS != nil {
-		if cred, err := cfg.GetCredential(cfg.DNS.CredentialName); err == nil {
-			if dp, err := dns.Default(cred.Spec.Provider); err == nil {
-				return dp
-			}
-		}
-	}
-	return &api.FakeDNSProvider{}
 }

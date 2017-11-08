@@ -275,19 +275,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return acts, err
 			}
 
-			err = EnsureARecord(cm.ctx, cm.cluster, masterInstance.PublicIP, masterInstance.PrivateIP) // works for reserved or non-reserved mode
-			if err != nil {
-				return
-			}
-
 			Logger(cm.ctx).Info("Waiting for cluster initialization")
-
-			// Wait for master A record to propagate
-			if err = EnsureDnsIPLookup(cm.ctx, cm.cluster); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				err = errors.FromErr(err).WithContext(cm.ctx).Err()
-				return acts, err
-			}
 
 			if masterInstance.PrivateIP != "" {
 				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
@@ -489,16 +477,6 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if !dryRun {
 		if err = cm.conn.deleteRoutes(); err != nil {
 			//	return
-		}
-	}
-
-	acts = append(acts, api.Action{
-		Action:   api.ActionNOP,
-		Resource: "A Record",
-		Message:  fmt.Sprintf("Found cluster apps A record %v, External domain %v and internal domain %v", Extra(cm.ctx).Domain(cm.cluster.Name), Extra(cm.ctx).ExternalDomain(cm.cluster.Name), Extra(cm.ctx).InternalDomain(cm.cluster.Name)),
-	})
-	if !dryRun {
-		if err = DeleteARecords(cm.ctx, cm.cluster); err != nil {
 		}
 	}
 

@@ -280,10 +280,6 @@ message CredentialSpec {
   map<string, string> data = 2;
 }
 
-message DNSProvider {
-  optional string credentialName = 1;
-}
-
 // ref: https://github.com/kubernetes/kubernetes/blob/8b9f0ea5de2083589f3b9b289b90273556bc09c4/pkg/cloudprovider/providers/gce/gce.go#L228
 message GCECloudConfig {
   optional string tokenURL = 1;
@@ -426,8 +422,6 @@ message PharmerConfig {
   repeated Credential credentials = 2;
 
   optional StorageBackend store = 3;
-
-  optional DNSProvider dns = 4;
 }
 
 message ReservedIP {

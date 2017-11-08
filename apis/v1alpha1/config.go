@@ -41,10 +41,6 @@ type StorageBackend struct {
 	Swift *SwiftSpec        `json:"swift,omitempty" protobuf:"bytes,6,opt,name=swift"`
 }
 
-type DNSProvider struct {
-	CredentialName string `json:"credentialName,omitempty" protobuf:"bytes,1,opt,name=credentialName"`
-}
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type PharmerConfig struct {
@@ -52,7 +48,6 @@ type PharmerConfig struct {
 	Context         string         `json:"context,omitempty" protobuf:"bytes,1,opt,name=context"`
 	Credentials     []Credential   `json:"credentials,omitempty" protobuf:"bytes,2,rep,name=credentials"`
 	Store           StorageBackend `json:"store,omitempty" protobuf:"bytes,3,opt,name=store"`
-	DNS             *DNSProvider   `json:"dns,omitempty" protobuf:"bytes,4,opt,name=dns"`
 }
 
 func (pc PharmerConfig) GetStoreType() string {
@@ -68,21 +63,6 @@ func (pc PharmerConfig) GetStoreType() string {
 		return "Azure"
 	} else if pc.Store.Swift != nil {
 		return "OpenStack Swift"
-	}
-	return "<Unknown>"
-}
-
-func (pc PharmerConfig) GetDNSProviderType() string {
-	if pc.DNS == nil {
-		return "-"
-	}
-	if pc.DNS.CredentialName == "" {
-		return "-"
-	}
-	for _, c := range pc.Credentials {
-		if c.Name == pc.DNS.CredentialName {
-			return c.Spec.Provider
-		}
 	}
 	return "<Unknown>"
 }
