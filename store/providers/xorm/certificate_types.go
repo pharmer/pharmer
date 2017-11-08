@@ -1,7 +1,6 @@
 package xorm
 
 import (
-	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
 	"time"
@@ -26,12 +25,9 @@ func (Certificate) TableName() string {
 }
 
 func encodeCertificate(crt *x509.Certificate, key *rsa.PrivateKey) (*Certificate, error) {
-	bufCert := bytes.NewBuffer(cert.EncodeCertPEM(crt))
-	bufKey := bytes.NewBuffer(cert.EncodePrivateKeyPEM(key))
-
 	return &Certificate{
-		Cert:              bufCert.String(),
-		Key:               bufKey.String(),
+		Cert:              string(cert.EncodeCertPEM(crt)),
+		Key:               string(cert.EncodePrivateKeyPEM(key)),
 		DateModified:      time.Now(),
 		DeletionTimestamp: nil,
 	}, nil

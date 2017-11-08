@@ -5,7 +5,6 @@ import (
 	"time"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Credential struct {
@@ -17,8 +16,7 @@ type Credential struct {
 	ResourceVersion   string     `xorm:"text not null 'resourceVersion'"`
 	Generation        int64      `xorm:"bigint not null 'generation'"`
 	Labels            string     `xorm:"jsonb not null default '{}' 'labels'"`
-	Metadata          string     `xorm:"metadata not null 'metadata'"`
-	Spec              string     `xorm:"spec not null 'spec'"`
+	Data              string     `xorm:"text not null 'data'"`
 	CreationTimestamp time.Time  `xorm:"bigint created 'creationTimestamp'"`
 	DateModified      time.Time  `xorm:"bigint updated 'dateModified'"`
 	DeletionTimestamp *time.Time `xorm:"bigint deleted 'deletionTimestamp'"`
@@ -35,7 +33,6 @@ func encodeCredential(in *api.Credential) (*Credential, error) {
 		Name:              in.Name,
 		ResourceVersion:   in.ResourceVersion,
 		Generation:        in.Generation,
-		Spec:              in.Spec.String(),
 		CreationTimestamp: in.CreationTimestamp.Time,
 		DateModified:      time.Now(),
 		DeletionTimestamp: nil,
@@ -50,37 +47,19 @@ func encodeCredential(in *api.Credential) (*Credential, error) {
 	}
 	cred.Labels = string(labels)
 
-	metadata, err := json.Marshal(in.Spec.Data)
+	data, err := json.Marshal(in)
 	if err != nil {
 		return nil, err
 	}
-	cred.Metadata = string(metadata)
+	cred.Data = string(data)
 
 	return cred, nil
 }
 
 func decodeCredential(in *Credential) (*api.Credential, error) {
-	var data map[string]string
-	if err := json.Unmarshal([]byte(in.Metadata), data); err != nil {
+	var obj api.Credential
+	if err := json.Unmarshal([]byte(in.Data), &obj); err != nil {
 		return nil, err
 	}
-	var label map[string]string
-	if err := json.Unmarshal([]byte(in.Labels), label); err != nil {
-		return nil, err
-	}
-	return &api.Credential{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       in.Kind,
-			APIVersion: in.APIVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              in.Name,
-			CreationTimestamp: metav1.Time{Time: in.CreationTimestamp},
-		},
-		Spec: api.CredentialSpec{
-			Provider: label[api.ResourceProviderCredential],
-			Data:     data,
-		},
-	}, nil
-
+	return &obj, nil
 }
