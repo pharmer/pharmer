@@ -15,7 +15,7 @@ import (
 )
 
 type paramEnv struct{}
-type paramExtra struct{}
+type paramNameGen struct{}
 type paramLogger struct{}
 type paramStore struct{}
 
@@ -32,16 +32,41 @@ func Env(ctx context.Context) _env.Environment {
 	return ctx.Value(paramEnv{}).(_env.Environment)
 }
 
+func WithEnv(parent context.Context, v _env.Environment) context.Context {
+	return context.WithValue(parent, paramEnv{}, v)
+}
+
 func Store(ctx context.Context) store.Interface {
 	return ctx.Value(paramStore{}).(store.Interface)
+}
+
+func WithStore(parent context.Context, v store.Interface) context.Context {
+	if v == nil {
+		panic("nil store")
+	}
+	return context.WithValue(parent, paramStore{}, v)
 }
 
 func Logger(ctx context.Context) api.Logger {
 	return ctx.Value(paramLogger{}).(api.Logger)
 }
 
-func Extra(ctx context.Context) api.NameGenerator {
-	return ctx.Value(paramExtra{}).(api.NameGenerator)
+func WithLogger(parent context.Context, v api.Logger) context.Context {
+	if v == nil {
+		panic("nil logger")
+	}
+	return context.WithValue(parent, paramLogger{}, v)
+}
+
+func NameGenerator(ctx context.Context) api.NameGenerator {
+	return ctx.Value(paramNameGen{}).(api.NameGenerator)
+}
+
+func WithNameGenerator(parent context.Context, v api.NameGenerator) context.Context {
+	if v == nil {
+		panic("nil name generator")
+	}
+	return context.WithValue(parent, paramNameGen{}, v)
 }
 
 func CACert(ctx context.Context) *x509.Certificate {
@@ -64,10 +89,10 @@ func SSHKey(ctx context.Context) *ssh.SSHKey {
 
 func NewContext(parent context.Context, cfg *api.PharmerConfig, env _env.Environment) context.Context {
 	c := parent
-	c = context.WithValue(c, paramEnv{}, env)
-	c = context.WithValue(c, paramExtra{}, &api.NullNameGenerator{})
-	c = context.WithValue(c, paramLogger{}, log.New(c))
-	c = context.WithValue(c, paramStore{}, NewStoreProvider(parent, cfg))
+	c = WithEnv(c, env)
+	c = WithNameGenerator(c, &api.NullNameGenerator{})
+	c = WithLogger(c, log.New(c))
+	c = WithStore(c, NewStoreProvider(parent, cfg))
 	return c
 }
 
