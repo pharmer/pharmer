@@ -105,7 +105,7 @@ func (s *credentialXormStore) Update(obj *api.Credential) (*api.Credential, erro
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.engine.Id(cred.Id).Update(cred)
+	_, err = s.engine.Where(`name = ?`, cred.Name).Update(cred)
 	return obj, err
 }
 

@@ -28,6 +28,7 @@ func New(configFile string) *Framework {
 type Invocation struct {
 	*rootInvocation
 	Credential *credentialInvocation
+	Cluster *clusterInvocation
 }
 
 func (f *Framework) Invoke() *Invocation {
@@ -37,6 +38,7 @@ func (f *Framework) Invoke() *Invocation {
 	return &Invocation{
 		rootInvocation: r,
 		Credential:     &credentialInvocation{rootInvocation: r},
+		Cluster: &clusterInvocation{rootInvocation: r},
 		//app:       rand.WithUniqSuffix("storage"),
 	}
 }
@@ -46,5 +48,9 @@ type rootInvocation struct {
 }
 
 type credentialInvocation struct {
+	*rootInvocation
+}
+
+type clusterInvocation struct {
 	*rootInvocation
 }

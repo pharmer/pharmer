@@ -7,10 +7,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func (c *credentialInvocation) GetName() string  {
+	return "do"
+}
 func (c *credentialInvocation) GetSkeleton() *api.Credential {
 	cred := &api.Credential{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:              "do",
+			Name:              c.GetName(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
 		Spec: api.CredentialSpec{

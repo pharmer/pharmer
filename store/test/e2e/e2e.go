@@ -13,6 +13,7 @@ import (
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/util/homedir"
+	//logs "github.com/appscode/log/golog"
 )
 
 const (
@@ -30,6 +31,7 @@ func init() {
 }
 
 func RunE2ETestSuit(t *testing.T) {
+	//logs.InitLogs()
 	RegisterFailHandler(Fail)
 	SetDefaultEventuallyTimeout(TestTimeout)
 
@@ -44,5 +46,12 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	By("After suite")
+	By("Deleting credential")
+	err :=root.Storage.Credentials().Delete(root.Invoke().Credential.GetName())
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Deleting cluster")
+	err = root.Storage.Clusters().Delete(root.Invoke().Cluster.GetName())
+	Expect(err).NotTo(HaveOccurred())
+
 })

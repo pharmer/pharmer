@@ -1,8 +1,6 @@
 package e2e
 
 import (
-	"fmt"
-
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/store"
 	"github.com/appscode/pharmer/store/test/framework"
@@ -26,7 +24,7 @@ var _ = Describe("Credential", func() {
 		BeforeEach(func() {
 			cred = f.Credential.GetSkeleton()
 		})
-		By("using credential ")
+		By("using credential object ")
 		It("should create", func() {
 			_, err := f.Storage.Credentials().Create(cred)
 			Expect(err).NotTo(HaveOccurred())
@@ -43,7 +41,7 @@ var _ = Describe("Credential", func() {
 	Describe("retrieve credential", func() {
 		var name string
 		BeforeEach(func() {
-			name = f.Credential.GetSkeleton().Name
+			name = f.Credential.GetName()
 		})
 		By("checking with existing credential name")
 		It("should find", func() {
@@ -64,7 +62,7 @@ var _ = Describe("Credential", func() {
 			err  error
 		)
 		BeforeEach(func() {
-			name := f.Credential.GetSkeleton().Name
+			name := f.Credential.GetName()
 			cred, err = f.Storage.Credentials().Get(name)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -75,5 +73,6 @@ var _ = Describe("Credential", func() {
 		})
 
 	})
+
 
 })

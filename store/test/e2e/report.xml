@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="5" failures="0" time="0.086078996">
-      <testcase name="Credential create credential should create" classname="Storage E2E Suite" time="0.01191047"></testcase>
-      <testcase name="Credential create credential should not create" classname="Storage E2E Suite" time="0.007028518"></testcase>
-      <testcase name="Credential retrieve credential should find" classname="Storage E2E Suite" time="0.00742674"></testcase>
-      <testcase name="Credential retrieve credential should not find" classname="Storage E2E Suite" time="0.005572243"></testcase>
-      <testcase name="Credential update credential should update" classname="Storage E2E Suite" time="0.052881163"></testcase>
+  <testsuite tests="11" failures="1" time="0.09663218">
+      <testcase name="Credential create credential should create" classname="Storage E2E Suite" time="0.007192557"></testcase>
+      <testcase name="Credential create credential should not create" classname="Storage E2E Suite" time="0.004733902"></testcase>
+      <testcase name="Credential retrieve credential should find" classname="Storage E2E Suite" time="0.00531956"></testcase>
+      <testcase name="Credential retrieve credential should not find" classname="Storage E2E Suite" time="0.003430449"></testcase>
+      <testcase name="Credential update credential should update" classname="Storage E2E Suite" time="0.012807792"></testcase>
+      <testcase name="Cluster create cluster should create" classname="Storage E2E Suite" time="0.003984969">
+          <failure type="Failure">/home/sanjid/go/src/github.com/appscode/pharmer/store/test/e2e/cluster.go:32&#xA;Expected error:&#xA;    &lt;*errors.errorString | 0xc4202a5c70&gt;: {&#xA;        s: &#34;cluster `storage-test` already exists&#34;,&#xA;    }&#xA;    cluster `storage-test` already exists&#xA;not to have occurred</failure>
+      </testcase>
+      <testcase name="Cluster create cluster should not create" classname="Storage E2E Suite" time="0.008012039"></testcase>
+      <testcase name="Cluster retrieve cluster should find" classname="Storage E2E Suite" time="0.00513946"></testcase>
+      <testcase name="Cluster retrieve cluster should not find" classname="Storage E2E Suite" time="0.003464051"></testcase>
+      <testcase name="Cluster update cluster should update" classname="Storage E2E Suite" time="0.016340771"></testcase>
+      <testcase name="Cluster update cluster status should update status" classname="Storage E2E Suite" time="0.012472415"></testcase>
   </testsuite>

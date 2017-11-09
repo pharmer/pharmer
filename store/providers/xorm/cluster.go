@@ -43,11 +43,11 @@ func (s *clusterXormStore) Get(name string) (*api.Cluster, error) {
 
 	cluster := &Cluster{Name: name}
 	found, err := s.engine.Get(cluster)
-	if found {
-		return nil, fmt.Errorf("cluster `%s` already exists", name)
-	}
 	if err != nil {
 		return nil, fmt.Errorf("reason: %v", err)
+	}
+	if !found {
+		return nil, fmt.Errorf("cluster `%s` does not exists", name)
 	}
 	return decodeCluster(cluster)
 }
@@ -64,11 +64,11 @@ func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 	}
 
 	found, err := s.engine.Get(&Cluster{Name: obj.Name})
-	if found {
-		return nil, fmt.Errorf("cluster `%s` already exists", obj.Name)
-	}
 	if err != nil {
 		return nil, fmt.Errorf("reason: %v", err)
+	}
+	if found {
+		return nil, fmt.Errorf("cluster `%s` already exists", obj.Name)
 	}
 
 	cluster, err := encodeCluster(obj)
@@ -91,11 +91,11 @@ func (s *clusterXormStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 	}
 
 	found, err := s.engine.Get(&Cluster{Name: obj.Name})
-	if found {
-		return nil, fmt.Errorf("cluster `%s` already exists", obj.Name)
-	}
 	if err != nil {
 		return nil, fmt.Errorf("reason: %v", err)
+	}
+	if !found {
+		return nil, fmt.Errorf("cluster `%s` does not exists", obj.Name)
 	}
 
 	cluster, err := encodeCluster(obj)
@@ -111,7 +111,7 @@ func (s *clusterXormStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing cluster name")
 	}
-	_, err := s.engine.Delete(&NodeGroup{Name: name})
+	_, err := s.engine.Delete(&Cluster{Name: name})
 	return err
 }
 
