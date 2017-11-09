@@ -1,21 +1,22 @@
 package framework
 
 import (
-	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"context"
-	"github.com/appscode/pharmer/cloud"
 	"fmt"
+
 	_env "github.com/appscode/go/env"
+	api "github.com/appscode/pharmer/apis/v1alpha1"
+	"github.com/appscode/pharmer/cloud"
 )
 
-const provider ="digitalocean"
+const provider = "digitalocean"
 
-func (c *clusterInvocation) GetName() string{
+func (c *clusterInvocation) GetName() string {
 	return "storage-test"
 }
 
 func (c *clusterInvocation) GetSkeleton() (*api.Cluster, error) {
-	fmt.Println(c.Config,"************", _env.Dev)
+	fmt.Println(c.Config, "************", _env.Dev)
 	ctx := cloud.NewContext(context.Background(), c.Config, _env.Dev)
 
 	cm, err := cloud.GetCloudManager(provider, ctx)

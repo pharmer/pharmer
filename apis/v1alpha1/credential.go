@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	ResourceCodeCredential     = "cred"
-	ResourceKindCredential     = "Credential"
-	ResourceNameCredential     = "credential"
-	ResourceTypeCredential     = "credentials"
+	ResourceCodeCredential = "cred"
+	ResourceKindCredential = "Credential"
+	ResourceNameCredential = "credential"
+	ResourceTypeCredential = "credentials"
 
 	ResourceProviderCredential = "provider"
 )

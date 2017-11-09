@@ -22,35 +22,8 @@ CREATE TABLE "credential" (
     "dateModified" bigint NOT NULL,
     "deletionTimestamp" bigint,
     PRIMARY KEY ("id"),
-    UNIQUE ("name")
-);
-
-CREATE TABLE "sshKey" (
-    "id" bigserial,
-    "name" text NOT NULL,
-    "clusterName" text NOT NULL,
-    "uid" text NOT NULL,
-    "publicKey" text NOT NULL,
-    "privateKey" bigint NOT NULL,
-    "creationTimestamp" bigint NOT NULL,
-    "dateModified" bigint NOT NULL,
-    "deletionTimestamp" bigint,
-    PRIMARY KEY ("id"),
-    UNIQUE ("name", "clusterName")
-);
-
-CREATE TABLE "certificate" (
-    "id" bigserial,
-    "name" text NOT NULL,
-    "clusterName" text NOT NULL,
-    "uid" text NOT NULL,
-    "cert" text NOT NULL,
-    "key" bigint NOT NULL,
-    "creationTimestamp" bigint NOT NULL,
-    "dateModified" bigint NOT NULL,
-    "deletionTimestamp" bigint,
-    PRIMARY KEY ("id"),
-    UNIQUE ("name", "clusterName")
+    UNIQUE ("name"),
+    UNIQUE ("uid")
 );
 
 CREATE TABLE "cluster" (
@@ -67,7 +40,8 @@ CREATE TABLE "cluster" (
     "dateModified" bigint NOT NULL,
     "deletionTimestamp" bigint,
     PRIMARY KEY ("id"),
-    UNIQUE ("name")
+    UNIQUE ("name"),
+    UNIQUE ("uid")
 );
 
 CREATE TABLE "nodegroup" (
@@ -85,15 +59,46 @@ CREATE TABLE "nodegroup" (
     "dateModified" bigint NOT NULL,
     "deletionTimestamp" bigint,
     PRIMARY KEY ("id"),
-    UNIQUE ("name", "clusterName")
+    UNIQUE ("name", "clusterName"),
+    UNIQUE ("uid")
+);
+
+CREATE TABLE "certificate" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "clusterName" text NOT NULL,
+    "uid" text NOT NULL,
+    "cert" text NOT NULL,
+    "key" bigint NOT NULL,
+    "creationTimestamp" bigint NOT NULL,
+    "dateModified" bigint NOT NULL,
+    "deletionTimestamp" bigint,
+    PRIMARY KEY ("id"),
+    UNIQUE ("name", "clusterName"),
+    UNIQUE ("uid")
+);
+
+CREATE TABLE "sshKey" (
+    "id" bigserial,
+    "name" text NOT NULL,
+    "clusterName" text NOT NULL,
+    "uid" text NOT NULL,
+    "publicKey" text NOT NULL,
+    "privateKey" bigint NOT NULL,
+    "creationTimestamp" bigint NOT NULL,
+    "dateModified" bigint NOT NULL,
+    "deletionTimestamp" bigint,
+    PRIMARY KEY ("id"),
+    UNIQUE ("name", "clusterName"),
+    UNIQUE ("uid")
 );
 
 -- Owner-Alter-Table --
 ALTER TABLE "credential" OWNER TO "{$NS_USER}";
-ALTER TABLE "sshKey" OWNER TO "{$NS_USER}";
-ALTER TABLE "certificate" OWNER TO "{$NS_USER}";
 ALTER TABLE "cluster" OWNER TO "{$NS_USER}";
 ALTER TABLE "nodegroup" OWNER TO "{$NS_USER}";
+ALTER TABLE "certificate" OWNER TO "{$NS_USER}";
+ALTER TABLE "sshKey" OWNER TO "{$NS_USER}";
 
 -- Post-data save --
 COMMIT;

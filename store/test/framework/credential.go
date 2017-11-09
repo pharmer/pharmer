@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (c *credentialInvocation) GetName() string  {
+func (c *credentialInvocation) GetName() string {
 	return "do"
 }
 func (c *credentialInvocation) GetSkeleton() *api.Credential {

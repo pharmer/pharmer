@@ -22,7 +22,7 @@ var _ = Describe("Cluster", func() {
 	Describe("create cluster", func() {
 		var (
 			cluster *api.Cluster
-			err error
+			err     error
 		)
 		BeforeEach(func() {
 			cluster, err = f.Cluster.GetSkeleton()
@@ -63,7 +63,7 @@ var _ = Describe("Cluster", func() {
 	Describe("update cluster", func() {
 		var (
 			cluster *api.Cluster
-			err  error
+			err     error
 		)
 		BeforeEach(func() {
 			name := f.Cluster.GetName()
@@ -80,7 +80,7 @@ var _ = Describe("Cluster", func() {
 	Describe("update cluster status", func() {
 		var (
 			cluster *api.Cluster
-			err  error
+			err     error
 		)
 		BeforeEach(func() {
 			name := f.Cluster.GetName()
@@ -93,6 +93,5 @@ var _ = Describe("Cluster", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
-
 
 })

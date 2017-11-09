@@ -2,11 +2,10 @@ package e2e
 
 import (
 	"flag"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
-
-	"fmt"
 
 	"github.com/appscode/pharmer/store/test/framework"
 	. "github.com/onsi/ginkgo"
@@ -21,8 +20,8 @@ const (
 )
 
 var (
-	root       *framework.Framework
-//	invocation *framework.Invocation
+	root *framework.Framework
+	//	invocation *framework.Invocation
 	configFile string
 )
 
@@ -47,7 +46,7 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("Deleting credential")
-	err :=root.Storage.Credentials().Delete(root.Invoke().Credential.GetName())
+	err := root.Storage.Credentials().Delete(root.Invoke().Credential.GetName())
 	Expect(err).NotTo(HaveOccurred())
 
 	By("Deleting cluster")
