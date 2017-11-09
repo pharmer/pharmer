@@ -20,7 +20,7 @@ type NodeGroup struct {
 	Data              string     `xorm:"text not null 'data'"`
 	CreationTimestamp time.Time  `xorm:"bigint created 'creationTimestamp'"`
 	DateModified      time.Time  `xorm:"bigint updated 'dateModified'"`
-	DeletionTimestamp *time.Time `xorm:"bigint deleted 'deletionTimestamp'"`
+	DeletionTimestamp *time.Time `xorm:"bigint null 'deletionTimestamp'"`
 }
 
 func (NodeGroup) TableName() string {

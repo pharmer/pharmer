@@ -17,7 +17,7 @@ type Certificate struct {
 	Key               string     `xorm:"text NOT NULL 'key'"`
 	CreationTimestamp time.Time  `xorm:"bigint created 'creationTimestamp'"`
 	DateModified      time.Time  `xorm:"bigint updated 'dateModified'"`
-	DeletionTimestamp *time.Time `xorm:"bigint deleted 'deletionTimestamp'"`
+	DeletionTimestamp *time.Time `xorm:"bigint null 'deletionTimestamp'"`
 }
 
 func (Certificate) TableName() string {

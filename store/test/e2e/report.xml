@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite tests="5" failures="0" time="0.086078996">
+      <testcase name="Credential create credential should create" classname="Storage E2E Suite" time="0.01191047"></testcase>
+      <testcase name="Credential create credential should not create" classname="Storage E2E Suite" time="0.007028518"></testcase>
+      <testcase name="Credential retrieve credential should find" classname="Storage E2E Suite" time="0.00742674"></testcase>
+      <testcase name="Credential retrieve credential should not find" classname="Storage E2E Suite" time="0.005572243"></testcase>
+      <testcase name="Credential update credential should update" classname="Storage E2E Suite" time="0.052881163"></testcase>
+  </testsuite>

@@ -12,6 +12,7 @@ import (
 	"github.com/appscode/pharmer/store"
 	"github.com/appscode/pharmer/store/providers/fake"
 	"github.com/appscode/pharmer/store/providers/vfs"
+	"github.com/appscode/pharmer/store/providers/xorm"
 )
 
 type paramEnv struct{}
@@ -97,7 +98,19 @@ func NewContext(parent context.Context, cfg *api.PharmerConfig, env _env.Environ
 }
 
 func NewStoreProvider(ctx context.Context, cfg *api.PharmerConfig) store.Interface {
-	if store, err := store.GetProvider(vfs.UID, ctx, cfg); err == nil {
+	var storeType string
+	if cfg.Store.Local != nil ||
+		cfg.Store.S3 != nil ||
+		cfg.Store.GCS != nil ||
+		cfg.Store.Azure != nil ||
+		cfg.Store.Swift != nil {
+		storeType = vfs.UID
+	} else if cfg.Store.Postgres != nil {
+		storeType = xorm.UID
+	} else {
+
+	}
+	if store, err := store.GetProvider(storeType, ctx, cfg); err == nil {
 		return store
 	}
 	return &fake.FakeStore{}

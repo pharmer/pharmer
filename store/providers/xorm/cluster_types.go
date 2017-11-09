@@ -19,7 +19,7 @@ type Cluster struct {
 	Data              string     `xorm:"text not null 'data'"`
 	CreationTimestamp time.Time  `xorm:"bigint created 'creationTimestamp'"`
 	DateModified      time.Time  `xorm:"bigint updated 'dateModified'"`
-	DeletionTimestamp *time.Time `xorm:"bigint deleted 'deletionTimestamp'"`
+	DeletionTimestamp *time.Time `xorm:"bigint null 'deletionTimestamp'"`
 }
 
 func (Cluster) TableName() string {
@@ -34,9 +34,7 @@ func encodeCluster(in *api.Cluster) (*Cluster, error) {
 		UID:               string(in.UID),
 		ResourceVersion:   in.ResourceVersion,
 		Generation:        in.Generation,
-		CreationTimestamp: in.CreationTimestamp.Time,
-		DateModified:      time.Now(),
-		DeletionTimestamp: &in.DeletionTimestamp.Time,
+		DeletionTimestamp: nil,
 	}
 	labels, err := json.Marshal(in.ObjectMeta.Labels)
 	if err != nil {

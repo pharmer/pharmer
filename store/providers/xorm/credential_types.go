@@ -19,7 +19,7 @@ type Credential struct {
 	Data              string     `xorm:"text not null 'data'"`
 	CreationTimestamp time.Time  `xorm:"bigint created 'creationTimestamp'"`
 	DateModified      time.Time  `xorm:"bigint updated 'dateModified'"`
-	DeletionTimestamp *time.Time `xorm:"bigint deleted 'deletionTimestamp'"`
+	DeletionTimestamp *time.Time `xorm:"bigint null 'deletionTimestamp'"`
 }
 
 func (Credential) TableName() string {
@@ -33,8 +33,6 @@ func encodeCredential(in *api.Credential) (*Credential, error) {
 		Name:              in.Name,
 		ResourceVersion:   in.ResourceVersion,
 		Generation:        in.Generation,
-		CreationTimestamp: in.CreationTimestamp.Time,
-		DateModified:      time.Now(),
 		DeletionTimestamp: nil,
 	}
 	label := map[string]string{

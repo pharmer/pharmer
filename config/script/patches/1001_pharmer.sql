@@ -17,8 +17,7 @@ CREATE TABLE "credential" (
     "resourceVersion" text NOT NULL,
     "generation" bigint NOT NULL,
     "labels" text default '{}',
-    "metadata" text NOT NULL,
-    "spec" text NOT NULL,
+    "data" text NOT NULL,
     "creationTimestamp" bigint NOT NULL,
     "dateModified" bigint NOT NULL,
     "deletionTimestamp" bigint,
@@ -63,9 +62,7 @@ CREATE TABLE "cluster" (
     "resourceVersion" text NOT NULL,
     "generation" bigint NOT NULL,
     "labels" text default '{}',
-    "metadata" text NOT NULL,
-    "spec" text NOT NULL,
-    "status" text NOT NULL,
+    "data" text NOT NULL,
     "creationTimestamp" bigint NOT NULL,
     "dateModified" bigint NOT NULL,
     "deletionTimestamp" bigint,
@@ -83,12 +80,31 @@ CREATE TABLE "nodegroup" (
     "resourceVersion" text NOT NULL,
     "generation" bigint NOT NULL,
     "labels" text default '{}',
-    "metadata" text NOT NULL,
-    "spec" text NOT NULL,
-    "status" text NOT NULL,
+    "data" text NOT NULL,
     "creationTimestamp" bigint NOT NULL,
     "dateModified" bigint NOT NULL,
     "deletionTimestamp" bigint,
     PRIMARY KEY ("id"),
     UNIQUE ("name", "clusterName")
 );
+
+-- Owner-Alter-Table --
+ALTER TABLE "credential" OWNER TO "{$NS_USER}";
+ALTER TABLE "sshKey" OWNER TO "{$NS_USER}";
+ALTER TABLE "certificate" OWNER TO "{$NS_USER}";
+ALTER TABLE "cluster" OWNER TO "{$NS_USER}";
+ALTER TABLE "nodegroup" OWNER TO "{$NS_USER}";
+
+-- Post-data save --
+COMMIT;
+START TRANSACTION;
+
+-- Typecasts --
+
+-- Foreign keys --
+
+-- Sequences --
+
+-- Full Text keys --
+
+COMMIT;

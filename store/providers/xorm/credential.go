@@ -64,7 +64,7 @@ func (s *credentialXormStore) Create(obj *api.Credential) (*api.Credential, erro
 	if err != nil {
 		return nil, err
 	}
-	found, err := s.engine.Get(&Credential{Name: obj.Name})
+	found, err := s.engine.Get(&Credential{Name: obj.Name, DeletionTimestamp: nil})
 	if found {
 		return nil, fmt.Errorf("credential `%s` already exists", obj.Name)
 	}
@@ -105,7 +105,7 @@ func (s *credentialXormStore) Update(obj *api.Credential) (*api.Credential, erro
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.engine.Where(`name = ?`, cred.Name).Update(cred)
+	_, err = s.engine.Id(cred.Id).Update(cred)
 	return obj, err
 }
 
