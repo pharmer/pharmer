@@ -15,22 +15,20 @@ import (
 )
 
 const (
-	UID      = "xorm"
-	Database = "pharmer"
+	UID = "xorm"
 )
 
 func init() {
 	store.RegisterProvider(UID, func(ctx context.Context, cfg *api.PharmerConfig) (store.Interface, error) {
 		if cfg.Store.Xorm != nil {
 			dbCfg := cfg.Store.Xorm
-			log.Debugf("Connecting to %v db on host %v with user %v", Database, dbCfg.Host, dbCfg.User)
-			engine, err := newPGEngine(dbCfg.User, dbCfg.Password, dbCfg.Host, dbCfg.Port, Database)
+			log.Debugf("Connecting to %v db on host %v with user %v", dbCfg.Database, dbCfg.Host, dbCfg.User)
+			engine, err := newPGEngine(dbCfg.User, dbCfg.Password, dbCfg.Host, dbCfg.Port, dbCfg.Database)
 			if err != nil {
 				return nil, fmt.Errorf("failed to connect xorm storage. Reason %v", err)
 			}
-			return &XormStore{engine: engine}, nil
+			return New(engine), nil
 		}
-
 		return nil, errors.New("missing store configuration")
 	})
 }
@@ -40,6 +38,10 @@ type XormStore struct {
 }
 
 var _ store.Interface = &XormStore{}
+
+func New(engine *xorm.Engine) store.Interface {
+	return &XormStore{engine: engine}
+}
 
 func (s *XormStore) Credentials() store.CredentialStore {
 	return &credentialXormStore{engine: s.engine}

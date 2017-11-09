@@ -32,11 +32,11 @@ type SwiftSpec struct {
 }
 
 type XormSpec struct {
-	Namespace string `json:"ns"`
-	Host      string `json:"host,omitempty"`
-	Port      int    `json:"port,omitempty"`
-	User      string `json:"user,omitempty"`
-	Password  string `json:"password,omitempty"`
+	Database string `json:"db"`
+	Host     string `json:"host,omitempty"`
+	Port     int    `json:"port,omitempty"`
+	User     string `json:"user,omitempty"`
+	Password string `json:"password,omitempty"`
 }
 
 type StorageBackend struct {
