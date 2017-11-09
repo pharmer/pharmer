@@ -9,6 +9,7 @@ const (
 	ResourceKindCredential     = "Credential"
 	ResourceNameCredential     = "credential"
 	ResourceTypeCredential     = "credentials"
+
 	ResourceProviderCredential = "provider"
 )
 
