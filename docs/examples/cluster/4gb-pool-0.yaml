@@ -1,0 +1,16 @@
+apiVersion: v1alpha1
+kind: NodeGroup
+metadata:
+  clusterName: d1
+  creationTimestamp: 2017-11-10T11:26:24Z
+  labels:
+    node-role.kubernetes.io/node: ""
+  name: 4gb-pool
+  uid: ACID-K8S-C-bfpyywjyjjolvdjk
+spec:
+  nodes: 2
+  template:
+    spec:
+      sku: 4gb
+status:
+  nodes: 0
