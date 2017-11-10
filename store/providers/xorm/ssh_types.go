@@ -13,7 +13,7 @@ type SSHKey struct {
 	PrivateKey        string     `xorm:"string  not null 'privateKey'"`
 	CreationTimestamp time.Time  `xorm:"bigint created 'creationTimestamp'"`
 	DateModified      time.Time  `xorm:"bigint updated 'dateModified'"`
-	DeletionTimestamp *time.Time `xorm:"bigint deleted 'deletionTimestamp'"`
+	DeletionTimestamp *time.Time `xorm:"bigint null 'deletionTimestamp'"`
 }
 
 func (SSHKey) TableName() string {
@@ -24,7 +24,6 @@ func encodeSSHKey(pub, priv []byte) (*SSHKey, error) {
 	return &SSHKey{
 		PublicKey:         string(pub),
 		PrivateKey:        string(priv),
-		DateModified:      time.Now(),
 		DeletionTimestamp: nil,
 	}, nil
 }

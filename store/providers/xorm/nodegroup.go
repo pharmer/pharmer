@@ -20,7 +20,7 @@ var _ store.NodeGroupStore = &nodeGroupXormStore{}
 func (s *nodeGroupXormStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, error) {
 	result := make([]*api.NodeGroup, 0)
 	var nodeGroups []NodeGroup
-	err := s.engine.Where(`"clusterName" = ?`, s.cluster).Find(nodeGroups)
+	err := s.engine.Where(`"clusterName" = ?`, s.cluster).Find(&nodeGroups)
 	if err != nil {
 		return nil, err
 	}
@@ -45,11 +45,11 @@ func (s *nodeGroupXormStore) Get(name string) (*api.NodeGroup, error) {
 
 	ng := &NodeGroup{Name: name, ClusterName: s.cluster}
 	found, err := s.engine.Get(ng)
-	if !found {
-		return nil, fmt.Errorf("credential `%s` already exists", name)
-	}
 	if err != nil {
 		return nil, err
+	}
+	if !found {
+		return nil, fmt.Errorf("credential `%s` already exists", name)
 	}
 
 	return decodeNodeGroup(ng)
@@ -70,11 +70,11 @@ func (s *nodeGroupXormStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) 
 	}
 
 	found, err := s.engine.Get(&NodeGroup{Name: obj.Name, ClusterName: s.cluster})
-	if found {
-		return nil, fmt.Errorf("node group `%s` already exists", obj.Name)
-	}
 	if err != nil {
 		return nil, fmt.Errorf("reason: %v", err)
+	}
+	if found {
+		return nil, fmt.Errorf("node group `%s` already exists", obj.Name)
 	}
 
 	nodeGroup, err := encodeNodeGroup(obj)

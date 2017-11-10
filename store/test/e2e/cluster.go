@@ -58,6 +58,12 @@ var _ = Describe("Cluster", func() {
 			_, err := f.Storage.Credentials().Get("noc")
 			Expect(err).To(HaveOccurred())
 		})
+
+		By("checking for all cluster list")
+		It("should find", func() {
+			err := f.Cluster.List()
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 
 	Describe("update cluster", func() {

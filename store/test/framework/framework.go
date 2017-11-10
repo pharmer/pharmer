@@ -13,6 +13,8 @@ import (
 type Framework struct {
 	Storage store.Interface
 	Config  *api.PharmerConfig
+
+	ClusterName string
 }
 
 func New(configFile string) *Framework {
@@ -29,6 +31,8 @@ type Invocation struct {
 	*rootInvocation
 	Credential *credentialInvocation
 	Cluster    *clusterInvocation
+	SSH *sshInvocation
+	NG *nodeGroupInvocaton
 }
 
 func (f *Framework) Invoke() *Invocation {
@@ -39,6 +43,8 @@ func (f *Framework) Invoke() *Invocation {
 		rootInvocation: r,
 		Credential:     &credentialInvocation{rootInvocation: r},
 		Cluster:        &clusterInvocation{rootInvocation: r},
+		SSH:        &sshInvocation{rootInvocation: r, clusterName: f.ClusterName},
+		NG:        &nodeGroupInvocaton{rootInvocation: r, clusterName: f.ClusterName},
 		//app:       rand.WithUniqSuffix("storage"),
 	}
 }
@@ -53,4 +59,14 @@ type credentialInvocation struct {
 
 type clusterInvocation struct {
 	*rootInvocation
+}
+
+type sshInvocation struct {
+	*rootInvocation
+	clusterName string
+}
+
+type nodeGroupInvocaton struct {
+	*rootInvocation
+	clusterName string
 }

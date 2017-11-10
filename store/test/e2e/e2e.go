@@ -40,6 +40,7 @@ func RunE2ETestSuit(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	root = framework.New(configFile)
+	root.ClusterName = "storage-test"
 	fmt.Println(root.Config.GetStoreType())
 	By("Using storage provider " + root.Config.GetStoreType())
 })
@@ -51,6 +52,14 @@ var _ = AfterSuite(func() {
 
 	By("Deleting cluster")
 	err = root.Storage.Clusters().Delete(root.Invoke().Cluster.GetName())
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Deleting ssh key")
+	err = root.Storage.SSHKeys(root.ClusterName).Delete(root.Invoke().SSH.GetName())
+	Expect(err).NotTo(HaveOccurred())
+
+	By("Deleting node group")
+	err = root.Storage.NodeGroups(root.ClusterName).Delete(root.Invoke().NG.GetName())
 	Expect(err).NotTo(HaveOccurred())
 
 })

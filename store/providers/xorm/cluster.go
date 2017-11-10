@@ -20,7 +20,7 @@ func (s *clusterXormStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 	result := make([]*api.Cluster, 0)
 	var clusters []Cluster
 
-	err := s.engine.Find(clusters)
+	err := s.engine.Find(&clusters)
 	if err != nil {
 		return nil, err
 	}

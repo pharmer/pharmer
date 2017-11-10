@@ -37,8 +37,7 @@ func encodeNodeGroup(in *api.NodeGroup) (*NodeGroup, error) {
 		ResourceVersion:   in.ResourceVersion,
 		Generation:        in.Generation,
 		CreationTimestamp: in.CreationTimestamp.Time,
-		DateModified:      time.Now(),
-		DeletionTimestamp: &in.DeletionTimestamp.Time,
+		DeletionTimestamp: nil,
 	}
 	labels, err := json.Marshal(in.ObjectMeta.Labels)
 	if err != nil {

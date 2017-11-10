@@ -84,7 +84,7 @@ CREATE TABLE "sshKey" (
     "clusterName" text NOT NULL,
     "uid" text NOT NULL,
     "publicKey" text NOT NULL,
-    "privateKey" bigint NOT NULL,
+    "privateKey" text NOT NULL,
     "creationTimestamp" bigint NOT NULL,
     "dateModified" bigint NOT NULL,
     "deletionTimestamp" bigint,

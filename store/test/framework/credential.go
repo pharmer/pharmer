@@ -5,6 +5,7 @@ import (
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"fmt"
 )
 
 func (c *credentialInvocation) GetName() string {
@@ -35,4 +36,15 @@ func (c *credentialInvocation) Update(cred *api.Credential) error {
 	cred.Spec.Data = data
 	_, err := c.Storage.Credentials().Update(cred)
 	return err
+}
+
+func (c *credentialInvocation) List() error  {
+	clusters, err := c.Storage.Credentials().List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	if len(clusters) <1 {
+		return fmt.Errorf("can't list crdentials")
+	}
+	return nil
 }

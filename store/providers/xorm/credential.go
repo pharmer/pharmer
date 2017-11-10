@@ -20,7 +20,7 @@ var _ store.CredentialStore = &credentialXormStore{}
 func (s *credentialXormStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
 	result := make([]*api.Credential, 0)
 	var credentials []Credential
-	err := s.engine.Find(credentials)
+	err := s.engine.Find(&credentials)
 	if err != nil {
 		return nil, err
 	}

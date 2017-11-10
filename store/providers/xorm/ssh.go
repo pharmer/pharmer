@@ -3,7 +3,6 @@ package xorm
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/store"
@@ -64,7 +63,6 @@ func (s *sshKeyXormStore) Create(name string, pubKey, privKey []byte) error {
 	sshKey.Name = name
 	sshKey.ClusterName = s.cluster
 	sshKey.UID = string(phid.NewSSHKey())
-	sshKey.CreationTimestamp = time.Now()
 
 	_, err = s.engine.Insert(sshKey)
 	return err

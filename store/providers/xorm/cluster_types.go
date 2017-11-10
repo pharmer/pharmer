@@ -36,6 +36,9 @@ func encodeCluster(in *api.Cluster) (*Cluster, error) {
 		Generation:        in.Generation,
 		DeletionTimestamp: nil,
 	}
+	if in.DeletionTimestamp != nil {
+		cluster.DeletionTimestamp = &in.DeletionTimestamp.Time
+	}
 	labels, err := json.Marshal(in.ObjectMeta.Labels)
 	if err != nil {
 		return nil, err

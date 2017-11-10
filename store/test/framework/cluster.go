@@ -6,17 +6,17 @@ import (
 
 	_env "github.com/appscode/go/env"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"github.com/appscode/pharmer/cloud"
 )
 
 const provider = "digitalocean"
 
 func (c *clusterInvocation) GetName() string {
-	return "storage-test"
+	return c.ClusterName
 }
 
 func (c *clusterInvocation) GetSkeleton() (*api.Cluster, error) {
-	fmt.Println(c.Config, "************", _env.Dev)
 	ctx := cloud.NewContext(context.Background(), c.Config, _env.Dev)
 
 	cm, err := cloud.GetCloudManager(provider, ctx)
@@ -43,4 +43,15 @@ func (c *clusterInvocation) UpdateStatus(cluster *api.Cluster) error {
 	cluster.Status.Phase = api.ClusterReady
 	_, err := c.Storage.Clusters().Update(cluster)
 	return err
+}
+
+func (c *clusterInvocation) List() error  {
+	clusters, err := c.Storage.Clusters().List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	if len(clusters) <1 {
+		return fmt.Errorf("can't list clusters")
+	}
+	return nil
 }
