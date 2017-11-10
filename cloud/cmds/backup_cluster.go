@@ -6,7 +6,7 @@ import (
 
 	"github.com/appscode/go-term"
 	"github.com/appscode/go/flags"
-	"github.com/appscode/kutil"
+	"github.com/appscode/kutil/tools/backup"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"
@@ -59,7 +59,7 @@ func NewCmdBackup() *cobra.Command {
 				}
 			}
 
-			mgr := kutil.NewBackupManager(clusterName, restConfig, sanitize)
+			mgr := backup.NewBackupManager(clusterName, restConfig, sanitize)
 			filename, err := mgr.BackupToTar(backupDir)
 			if err != nil {
 				term.Fatalln(err)
