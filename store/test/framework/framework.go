@@ -31,8 +31,8 @@ type Invocation struct {
 	*rootInvocation
 	Credential *credentialInvocation
 	Cluster    *clusterInvocation
-	SSH *sshInvocation
-	NG *nodeGroupInvocaton
+	SSH        *sshInvocation
+	NG         *nodeGroupInvocaton
 }
 
 func (f *Framework) Invoke() *Invocation {
@@ -43,8 +43,8 @@ func (f *Framework) Invoke() *Invocation {
 		rootInvocation: r,
 		Credential:     &credentialInvocation{rootInvocation: r},
 		Cluster:        &clusterInvocation{rootInvocation: r},
-		SSH:        &sshInvocation{rootInvocation: r, clusterName: f.ClusterName},
-		NG:        &nodeGroupInvocaton{rootInvocation: r, clusterName: f.ClusterName},
+		SSH:            &sshInvocation{rootInvocation: r, clusterName: f.ClusterName},
+		NG:             &nodeGroupInvocaton{rootInvocation: r, clusterName: f.ClusterName},
 		//app:       rand.WithUniqSuffix("storage"),
 	}
 }

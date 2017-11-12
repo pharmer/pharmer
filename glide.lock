@@ -178,7 +178,7 @@ imports:
   subpackages:
   - spdy
 - name: github.com/dustin/go-humanize
-  version: 6d15c0ae71e55ed645c21ac4945aaadbc0e9a590
+  version: bb3d318650d48840a39aa21a027c6630e198e626
 - name: github.com/emicklei/go-restful
   version: ff4f55a206334ef123e4f79bbf348980da81ca46
   subpackages:
@@ -308,7 +308,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/lib/pq
-  version: b609790bd85edf8e9ab7e0f8912750a786177bcf
+  version: 69552e54d2a9d4c6a2438926a774930f7bc398ec
   subpackages:
   - oid
 - name: github.com/mailru/easyjson
@@ -345,6 +345,40 @@ imports:
   - flowrate
 - name: github.com/ncw/swift
   version: c95c6e5c2d1a3d37fc44c8c6dc9e231c7500667d
+- name: github.com/onsi/ginkgo
+  version: 9eda700730cba42af70d53180f9dcce9266bc2bc
+  subpackages:
+  - config
+  - internal/codelocation
+  - internal/containernode
+  - internal/failer
+  - internal/leafnodes
+  - internal/remote
+  - internal/spec
+  - internal/spec_iterator
+  - internal/specrunner
+  - internal/suite
+  - internal/testingtproxy
+  - internal/writer
+  - reporters
+  - reporters/stenographer
+  - reporters/stenographer/support/go-colorable
+  - reporters/stenographer/support/go-isatty
+  - types
+- name: github.com/onsi/gomega
+  version: c893efa28eb45626cdaa76c9f653b62488858837
+  subpackages:
+  - format
+  - internal/assertion
+  - internal/asyncassertion
+  - internal/oraclematcher
+  - internal/testingtsupport
+  - matchers
+  - matchers/support/goraph/bipartitegraph
+  - matchers/support/goraph/edge
+  - matchers/support/goraph/node
+  - matchers/support/goraph/util
+  - types
 - name: github.com/opencontainers/go-digest
   version: a6d0ee40d4207ea02364bd3b9e8e77b9159ba1eb
 - name: github.com/opencontainers/image-spec
@@ -967,40 +1001,6 @@ imports:
   subpackages:
   - sortorder
 testImports:
-- name: github.com/onsi/ginkgo
-  version: 9eda700730cba42af70d53180f9dcce9266bc2bc
-  subpackages:
-  - config
-  - internal/codelocation
-  - internal/containernode
-  - internal/failer
-  - internal/leafnodes
-  - internal/remote
-  - internal/spec
-  - internal/spec_iterator
-  - internal/specrunner
-  - internal/suite
-  - internal/testingtproxy
-  - internal/writer
-  - reporters
-  - reporters/stenographer
-  - reporters/stenographer/support/go-colorable
-  - reporters/stenographer/support/go-isatty
-  - types
-- name: github.com/onsi/gomega
-  version: c893efa28eb45626cdaa76c9f653b62488858837
-  subpackages:
-  - format
-  - internal/assertion
-  - internal/asyncassertion
-  - internal/oraclematcher
-  - internal/testingtsupport
-  - matchers
-  - matchers/support/goraph/bipartitegraph
-  - matchers/support/goraph/edge
-  - matchers/support/goraph/node
-  - matchers/support/goraph/util
-  - types
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:

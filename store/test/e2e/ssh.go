@@ -1,9 +1,9 @@
 package e2e
 
 import (
+	"github.com/appscode/go/crypto/ssh"
 	"github.com/appscode/pharmer/store"
 	"github.com/appscode/pharmer/store/test/framework"
-	"github.com/appscode/go/crypto/ssh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -12,7 +12,7 @@ var _ = Describe("SSH", func() {
 	var (
 		f       *framework.Invocation
 		storage store.Interface
-		err error
+		err     error
 	)
 	BeforeEach(func() {
 		f = root.Invoke()
@@ -62,6 +62,5 @@ var _ = Describe("SSH", func() {
 			Expect(err).To(HaveOccurred())
 		})
 	})
-
 
 })

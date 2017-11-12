@@ -6,8 +6,8 @@ import (
 
 	_env "github.com/appscode/go/env"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"github.com/appscode/pharmer/cloud"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const provider = "digitalocean"
@@ -45,12 +45,12 @@ func (c *clusterInvocation) UpdateStatus(cluster *api.Cluster) error {
 	return err
 }
 
-func (c *clusterInvocation) List() error  {
+func (c *clusterInvocation) List() error {
 	clusters, err := c.Storage.Clusters().List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
-	if len(clusters) <1 {
+	if len(clusters) < 1 {
 		return fmt.Errorf("can't list clusters")
 	}
 	return nil

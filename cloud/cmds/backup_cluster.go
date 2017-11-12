@@ -10,7 +10,6 @@ import (
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )

@@ -1,9 +1,9 @@
 package e2e
 
 import (
+	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/store"
 	"github.com/appscode/pharmer/store/test/framework"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -12,7 +12,7 @@ var _ = Describe("Node Group", func() {
 	var (
 		f       *framework.Invocation
 		storage store.Interface
-		err error
+		err     error
 	)
 	BeforeEach(func() {
 		f = root.Invoke()
@@ -52,7 +52,7 @@ var _ = Describe("Node Group", func() {
 
 		By("checking without existing node group name")
 		It("should not find", func() {
-			 _, err := f.Storage.NodeGroups(f.ClusterName).Get("nog")
+			_, err := f.Storage.NodeGroups(f.ClusterName).Get("nog")
 			Expect(err).To(HaveOccurred())
 		})
 
@@ -71,7 +71,7 @@ var _ = Describe("Node Group", func() {
 
 	Describe("update node group", func() {
 		var (
-			ng *api.NodeGroup
+			ng   *api.NodeGroup
 			name string
 		)
 		BeforeEach(func() {
@@ -90,8 +90,5 @@ var _ = Describe("Node Group", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
-
-
-
 
 })

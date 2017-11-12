@@ -1,15 +1,17 @@
 package framework
 
 import (
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"github.com/appscode/pharmer/phid"
-	"time"
 	"fmt"
+	"time"
+
+	api "github.com/appscode/pharmer/apis/v1alpha1"
+	"github.com/appscode/pharmer/phid"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var pool string
-func (c *nodeGroupInvocaton) GetName() string  {
+
+func (c *nodeGroupInvocaton) GetName() string {
 	return pool
 }
 
@@ -37,14 +39,13 @@ func (c *nodeGroupInvocaton) GetSkeleton() (*api.NodeGroup, error) {
 	return ig, nil
 }
 
-func (c *nodeGroupInvocaton) Update(ng *api.NodeGroup) error  {
+func (c *nodeGroupInvocaton) Update(ng *api.NodeGroup) error {
 	ng.Spec.Nodes = int64(2)
 	_, err := c.Storage.NodeGroups(c.clusterName).Update(ng)
 	return err
 }
 
-
-func (c *nodeGroupInvocaton) UpdateStatus(ng *api.NodeGroup) error  {
+func (c *nodeGroupInvocaton) UpdateStatus(ng *api.NodeGroup) error {
 	ng.Status = api.NodeGroupStatus{
 		Nodes: int64(2),
 	}
@@ -52,18 +53,18 @@ func (c *nodeGroupInvocaton) UpdateStatus(ng *api.NodeGroup) error  {
 	return err
 }
 
-func (c *nodeGroupInvocaton) List() error  {
+func (c *nodeGroupInvocaton) List() error {
 	ngs, err := c.Storage.NodeGroups(c.clusterName).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
-	if len(ngs) <1 {
+	if len(ngs) < 1 {
 		return fmt.Errorf("can't list node groups")
 	}
 	return nil
 }
 
-func (c *nodeGroupInvocaton) Create(ng *api.NodeGroup) error  {
+func (c *nodeGroupInvocaton) Create(ng *api.NodeGroup) error {
 	_, err := c.Storage.NodeGroups(c.ClusterName).Create(ng)
 	return err
 }
