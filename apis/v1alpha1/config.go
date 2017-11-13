@@ -32,7 +32,7 @@ type SwiftSpec struct {
 }
 
 type PostgresSpec struct {
-	Database string `json:"database,omitempty" protobuf:"bytes,1,opt,name=db"`
+	DbName   string `json:"dbName,omitempty" protobuf:"bytes,1,opt,name=dbName"`
 	Host     string `json:"host,omitempty" protobuf:"bytes,2,opt,name=host"`
 	Port     int64  `json:"port,omitempty" protobuf:"varint,3,opt,name=port"`
 	User     string `json:"user,omitempty" protobuf:"bytes,4,opt,name=user"`

@@ -53,7 +53,7 @@ func NewCmdSSH() *cobra.Command {
 			if err != nil {
 				log.Fatalln(err)
 			}
-			openShell(sshConfig.PrivateKey, sshConfig.InstanceAddress, sshConfig.InstancePort, sshConfig.User)
+			openShell(sshConfig.PrivateKey, sshConfig.HostIP, sshConfig.HostPort, sshConfig.User)
 		},
 	}
 	cmd.Flags().StringVarP(&clusterName, "cluster", "k", "", "Name of cluster")

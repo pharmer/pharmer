@@ -141,22 +141,21 @@ message CloudSpec {
   optional string zone = 4;
 
   // master needs it for ossec
-  optional string instanceImage = 8;
+  optional string instanceImage = 5;
 
-  // Deprecated
-  optional string os = 5;
+  optional string os = 6;
 
-  optional string instanceImageProject = 9;
+  optional string instanceImageProject = 7;
 
-  optional string ccmCredentialName = 15;
+  optional string ccmCredentialName = 8;
 
-  optional AWSSpec aws = 10;
+  optional AWSSpec aws = 9;
 
-  optional GoogleSpec gce = 11;
+  optional GoogleSpec gce = 10;
 
-  optional AzureSpec azure = 12;
+  optional AzureSpec azure = 11;
 
-  optional LinodeSpec linode = 13;
+  optional LinodeSpec linode = 12;
 }
 
 message CloudStatus {
@@ -171,72 +170,38 @@ message Cluster {
   optional ClusterStatus status = 3;
 }
 
-// Deprecated
-message ClusterDeleteRequest {
-  optional string name = 1;
-
-  optional bool release_reserved_ip = 2;
-
-  optional bool force = 3;
-
-  optional bool keep_lodabalancers = 4;
-
-  optional bool delete_dynamic_volumes = 5;
-}
-
 message ClusterSpec {
   optional CloudSpec cloud = 1;
 
   optional API api = 2;
 
-  // Etcd       kubeadm.Etcd `json:"etcd" protobuf:"bytes,3,opt,name=etcd"`
-  optional Networking networking = 4;
+  optional Networking networking = 3;
 
-  optional string kubernetesVersion = 6;
+  optional string kubernetesVersion = 4;
 
-  optional string kubeletVersion = 55;
+  optional string kubeletVersion = 5;
 
-  optional string kubeadmVersion = 56;
+  optional string kubeadmVersion = 6;
 
-  optional bool locked = 57;
+  optional bool locked = 7;
 
-  // Auto Set
-  // https://github.com/kubernetes/kubernetes/blob/master/cluster/gce/util.sh#L538
-  optional string caCertName = 14;
+  optional string caCertName = 8;
 
-  optional string frontProxyCACertName = 15;
+  optional string frontProxyCACertName = 9;
 
-  optional string credentialName = 16;
+  optional string credentialName = 10;
 
-  // Deprecated
-  optional string masterInternalIp = 41;
+  map<string, string> kubeletExtraArgs = 11;
 
-  // the master root ebs volume size (typically does not need to be very large)
-  // Deprecated
-  optional string masterDiskID = 42;
+  map<string, string> apiServerExtraArgs = 12;
 
-  // Delete since moved to NodeGroup / Instance
-  // Deprecated
-  optional string masterDiskType = 43;
+  map<string, string> controllerManagerExtraArgs = 13;
 
-  // If set to Elasticsearch IP, master instance will be associated with this IP.
-  // If set to auto, a new Elasticsearch IP will be acquired
-  // Otherwise amazon-given public ip will be used (it'll change with reboot).
-  // Deprecated
-  optional string masterReservedIp = 46;
+  map<string, string> schedulerExtraArgs = 14;
 
-  map<string, string> kubeletExtraArgs = 50;
+  repeated string authorizationModes = 15;
 
-  map<string, string> apiServerExtraArgs = 51;
-
-  map<string, string> controllerManagerExtraArgs = 52;
-
-  map<string, string> schedulerExtraArgs = 53;
-
-  repeated string authorizationModes = 54;
-
-  // APIServerCertSANs sets extra Subject Alternative Names for the API Server signing cert
-  repeated string apiServerCertSANs = 11;
+  repeated string apiServerCertSANs = 16;
 }
 
 // ClusterState describes the state of certain versions for a cluster
@@ -245,7 +210,7 @@ message ClusterState {
   optional string kubeVersion = 1;
 
   // DNSVersion describes the version of the kube-dns images used and manifest version
-  optional string dNSVersion = 2;
+  optional string dnsVersion = 2;
 
   // MasterKubeadmVersion describes the version of the kubeadm CLI
   optional string kubeadmVersion = 3;
@@ -304,13 +269,13 @@ message GCSSpec {
 }
 
 message GoogleSpec {
-  optional string networkName = 4;
+  optional string networkName = 1;
 
-  repeated string nodeTags = 5;
+  repeated string nodeTags = 2;
 
   // gce
   // NODE_SCOPES="${NODE_SCOPES:-compute-rw,monitoring,logging-write,storage-ro}"
-  repeated string nodeScopes = 1;
+  repeated string nodeScopes = 3;
 }
 
 message LinodeCloudConfig {
@@ -331,14 +296,14 @@ message LocalSpec {
 }
 
 message Networking {
-  optional string networkProvider = 4;
+  optional string networkProvider = 1;
 
   // kubenet, flannel, calico, opencontrail
-  optional string podSubnet = 1;
+  optional string podSubnet = 2;
 
-  optional string serviceSubnet = 2;
+  optional string serviceSubnet = 3;
 
-  optional string dnsDomain = 3;
+  optional string dnsDomain = 4;
 
   // NEW
   // Replacing API_SERVERS https://github.com/kubernetes/kubernetes/blob/62898319dff291843e53b7839c6cde14ee5d2aa4/cluster/aws/util.sh#L1004
@@ -358,10 +323,10 @@ message NodeGroup {
 }
 
 message NodeGroupSpec {
-  optional int64 nodes = 4;
+  optional int64 nodes = 1;
 
   // Template describes the nodes that will be created.
-  optional NodeTemplateSpec template = 3;
+  optional NodeTemplateSpec template = 2;
 }
 
 // NodeGroupStatus is the most recently observed status of the NodeGroup.
@@ -387,17 +352,17 @@ message NodeInfo {
 }
 
 message NodeSpec {
-  optional string sku = 2;
+  optional string sku = 1;
 
-  optional bool spotInstances = 3;
+  optional bool spotInstances = 2;
 
-  optional string nodeDiskType = 4;
+  optional string nodeDiskType = 3;
 
-  optional int64 nodeDiskSize = 5;
+  optional int64 nodeDiskSize = 4;
 
-  optional string externalIPType = 6;
+  optional string externalIPType = 5;
 
-  map<string, string> kubeletExtraArgs = 7;
+  map<string, string> kubeletExtraArgs = 6;
 }
 
 // PodTemplateSpec describes the data a pod should have when created from a template
@@ -405,7 +370,7 @@ message NodeTemplateSpec {
   // Specification of the desired behavior of the pod.
   // More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
   // +optional
-  optional NodeSpec spec = 2;
+  optional NodeSpec spec = 1;
 }
 
 message PacketCloudConfig {
@@ -425,7 +390,7 @@ message PharmerConfig {
 }
 
 message PostgresSpec {
-  optional string db = 1;
+  optional string dbName = 1;
 
   optional string host = 2;
 
@@ -455,9 +420,9 @@ message S3Spec {
 message SSHConfig {
   optional bytes privateKey = 1;
 
-  optional string instanceAddress = 2;
+  optional string hostIP = 2;
 
-  optional int32 instancePort = 3;
+  optional int32 hostPort = 3;
 
   optional string user = 4;
 }

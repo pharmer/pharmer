@@ -21,17 +21,15 @@ type NodeGroup struct {
 }
 
 type NodeGroupSpec struct {
-	Nodes int64 `json:"nodes" protobuf:"varint,4,opt,name=nodes"`
-
+	Nodes int64 `json:"nodes" protobuf:"varint,1,opt,name=nodes"`
 	// Template describes the nodes that will be created.
-	Template NodeTemplateSpec `json:"template" protobuf:"bytes,3,opt,name=template"`
+	Template NodeTemplateSpec `json:"template" protobuf:"bytes,2,opt,name=template"`
 }
 
 // NodeGroupStatus is the most recently observed status of the NodeGroup.
 type NodeGroupStatus struct {
 	// Nodes is the most recently oberved number of nodes.
 	Nodes int64 `json:"nodes" protobuf:"varint,1,opt,name=nodes"`
-
 	// ObservedGeneration reflects the generation of the most recently observed node group.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,2,opt,name=observedGeneration"`
@@ -59,7 +57,7 @@ type NodeTemplateSpec struct {
 	// Specification of the desired behavior of the pod.
 	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
 	// +optional
-	Spec NodeSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Spec NodeSpec `json:"spec,omitempty" protobuf:"bytes,1,opt,name=spec"`
 }
 
 type IPType string
@@ -70,13 +68,12 @@ const (
 )
 
 type NodeSpec struct {
-	SKU            string `json:"sku,omitempty" protobuf:"bytes,2,opt,name=sku"`
-	SpotInstances  bool   `json:"spotInstances,omitempty" protobuf:"varint,3,opt,name=spotInstances"`
-	DiskType       string `json:"nodeDiskType,omitempty" protobuf:"bytes,4,opt,name=nodeDiskType"`
-	DiskSize       int64  `json:"nodeDiskSize,omitempty" protobuf:"varint,5,opt,name=nodeDiskSize"`
-	ExternalIPType IPType `json:"externalIPType,omitempty" protobuf:"bytes,6,opt,name=externalIPType,casttype=IPType"`
-
-	KubeletExtraArgs map[string]string `json:"kubeletExtraArgs,omitempty" protobuf:"bytes,7,rep,name=kubeletExtraArgs"`
+	SKU              string            `json:"sku,omitempty" protobuf:"bytes,1,opt,name=sku"`
+	SpotInstances    bool              `json:"spotInstances,omitempty" protobuf:"varint,2,opt,name=spotInstances"`
+	DiskType         string            `json:"nodeDiskType,omitempty" protobuf:"bytes,3,opt,name=nodeDiskType"`
+	DiskSize         int64             `json:"nodeDiskSize,omitempty" protobuf:"varint,4,opt,name=nodeDiskSize"`
+	ExternalIPType   IPType            `json:"externalIPType,omitempty" protobuf:"bytes,5,opt,name=externalIPType,casttype=IPType"`
+	KubeletExtraArgs map[string]string `json:"kubeletExtraArgs,omitempty" protobuf:"bytes,6,rep,name=kubeletExtraArgs"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
