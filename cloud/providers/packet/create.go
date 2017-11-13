@@ -72,16 +72,16 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
 	cfg := &api.SSHConfig{
-		PrivateKey:   SSHKey(cm.ctx).PrivateKey,
-		User:         "root",
-		InstancePort: int32(22),
+		PrivateKey: SSHKey(cm.ctx).PrivateKey,
+		User:       "root",
+		HostPort:   int32(22),
 	}
 	for _, addr := range node.Status.Addresses {
 		if addr.Type == core.NodeExternalIP {
-			cfg.InstanceAddress = addr.Address
+			cfg.HostIP = addr.Address
 		}
 	}
-	if net.ParseIP(cfg.InstanceAddress) == nil {
+	if net.ParseIP(cfg.HostIP) == nil {
 		return nil, fmt.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
 	}
 	return cfg, nil

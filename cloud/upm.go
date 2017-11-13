@@ -143,7 +143,7 @@ func (upm *GenericUpgradeManager) ExecuteSSHCommand(command string, node *core.N
 			ssh.PublicKeys(keySigner),
 		},
 	}
-	return ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", cfg.InstanceAddress, cfg.InstancePort), config)
+	return ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", cfg.HostIP, cfg.HostPort), config)
 }
 
 // printAvailableUpgrades prints a UX-friendly overview of what versions are available to upgrade to

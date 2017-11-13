@@ -74,7 +74,7 @@ func (i *Inspector) runMasterExecutor(masterNode apiv1.Node, podIp string) error
 
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		DefaultWriter.Flush()
-		resp, err := ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", sshCfg.InstanceAddress, sshCfg.InstancePort), config)
+		resp, err := ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", sshCfg.HostIP, sshCfg.HostPort), config)
 		if err == nil && strings.Contains(resp, "200") {
 			term.Successln("Network is ok from master to ", podIp)
 			return true, nil
