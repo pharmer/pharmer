@@ -12,7 +12,6 @@ import (
 	//	"time"
 	//	api "github.com/appscode/pharmer/apis/v1alpha1"
 	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"github.com/appscode/pharmer/phid"
 	"encoding/json"
 	"regexp"
 

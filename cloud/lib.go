@@ -8,8 +8,8 @@ import (
 	"time"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/phid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/cert"
 )
@@ -75,7 +75,7 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string
 	ig := api.NodeGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			ClusterName:       cluster.Name,
-			UID:               phid.NewNodeGroup(),
+			UID:               uuid.NewUUID(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
 		Spec: api.NodeGroupSpec{

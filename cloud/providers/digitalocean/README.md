@@ -119,14 +119,14 @@ spec:
   authorizationModes:
   - Node
   - RBAC
-  caCertPHID: ca
+  caCertName: ca
   cloud:
     cloudProvider: digitalocean
     instanceImage: ubuntu-16-04-x64
     region: nyc3
     zone: nyc3
   credentialName: do
-  frontProxyCaCertPHID: front-proxy-ca
+  frontProxyCACertName: front-proxy-ca
   kubernetesVersion: v1.8.0
   networking:
     dnsDomain: cluster.local
@@ -203,14 +203,14 @@ spec:
   api:
     advertiseAddress: ""
     bindPort: 6443
-  caCertPHID: ca
+  caCertName: ca
   cloud:
     cloudProvider: digitalocean
     instanceImage: ubuntu-16-04-x64
     region: nyc3
     zone: nyc3
   credentialName: do
-  frontProxyCaCertPHID: front-proxy-ca
+  frontProxyCACertName: front-proxy-ca
   kubernetesVersion: v1.8.0
   networking:
     networkProvider: calico
@@ -353,14 +353,14 @@ spec:
   api:
     advertiseAddress: ""
     bindPort: 6443
-  caCertPHID: ca
+  caCertName: ca
   cloud:
     cloudProvider: digitalocean
     instanceImage: ubuntu-16-04-x64
     region: nyc3
     zone: nyc3
   credentialName: do
-  frontProxyCaCertPHID: front-proxy-ca
+  frontProxyCACertName: front-proxy-ca
   kubernetesVersion: v1.8.1
   networking:
     networkProvider: calico
@@ -401,14 +401,14 @@ spec:
   api:
     advertiseAddress: ""
     bindPort: 6443
-  caCertPHID: ca
+  caCertName: ca
   cloud:
     cloudProvider: digitalocean
     instanceImage: ubuntu-16-04-x64
     region: nyc3
     zone: nyc3
   credentialName: do
-  frontProxyCaCertPHID: front-proxy-ca
+  frontProxyCACertName: front-proxy-ca
   kubernetesVersion: v1.8.1
   networking:
     networkProvider: calico

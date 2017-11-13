@@ -202,9 +202,9 @@ message ClusterSpec {
 
   // Auto Set
   // https://github.com/kubernetes/kubernetes/blob/master/cluster/gce/util.sh#L538
-  optional string caCertPHID = 14;
+  optional string caCertName = 14;
 
-  optional string frontProxyCaCertPHID = 15;
+  optional string frontProxyCACertName = 15;
 
   optional string credentialName = 16;
 

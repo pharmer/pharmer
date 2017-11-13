@@ -5,14 +5,14 @@ import (
 	"time"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/phid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
 var pool string
 
 func (c *nodeGroupInvocaton) GetName() string {
-	return  "2gb-pool"
+	return "2gb-pool"
 }
 
 func (c *nodeGroupInvocaton) GetSkeleton() (*api.NodeGroup, error) {
@@ -20,7 +20,7 @@ func (c *nodeGroupInvocaton) GetSkeleton() (*api.NodeGroup, error) {
 	ig := &api.NodeGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			ClusterName:       c.ClusterName,
-			UID:               phid.NewNodeGroup(),
+			UID:               uuid.NewUUID(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
 		Spec: api.NodeGroupSpec{
