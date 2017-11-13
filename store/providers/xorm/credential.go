@@ -44,11 +44,11 @@ func (s *credentialXormStore) Get(name string) (*api.Credential, error) {
 	}
 
 	found, err := s.engine.Get(cred)
-	if !found {
-		return nil, fmt.Errorf("credential %s does not exists", name)
-	}
 	if err != nil {
 		return nil, fmt.Errorf("reason: %v", err)
+	}
+	if !found {
+		return nil, fmt.Errorf("credential %s does not exists", name)
 	}
 
 	return decodeCredential(cred)
@@ -65,11 +65,11 @@ func (s *credentialXormStore) Create(obj *api.Credential) (*api.Credential, erro
 		return nil, err
 	}
 	found, err := s.engine.Get(&Credential{Name: obj.Name, DeletionTimestamp: nil})
-	if found {
-		return nil, fmt.Errorf("credential `%s` already exists", obj.Name)
-	}
 	if err != nil {
 		return nil, fmt.Errorf("reason: %v", err)
+	}
+	if found {
+		return nil, fmt.Errorf("credential `%s` already exists", obj.Name)
 	}
 	cred, err := encodeCredential(obj)
 	if err != nil {
@@ -94,11 +94,11 @@ func (s *credentialXormStore) Update(obj *api.Credential) (*api.Credential, erro
 	}
 
 	found, err := s.engine.Get(&Credential{Name: obj.Name})
-	if !found {
-		return nil, fmt.Errorf("credential `%s` does not exist. Reason: %v", obj.Name, err)
-	}
 	if err != nil {
 		return nil, err
+	}
+	if !found {
+		return nil, fmt.Errorf("credential `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
 	cred, err := encodeCredential(obj)

@@ -101,11 +101,11 @@ func (s *nodeGroupXormStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) 
 	}
 
 	found, err := s.engine.Get(&NodeGroup{Name: obj.Name, ClusterName: s.cluster})
-	if !found {
-		return nil, fmt.Errorf("node group `%s` not found", obj.Name)
-	}
 	if err != nil {
 		return nil, fmt.Errorf("reason: %v", err)
+	}
+	if !found {
+		return nil, fmt.Errorf("node group `%s` not found", obj.Name)
 	}
 
 	ng, err := encodeNodeGroup(obj)
