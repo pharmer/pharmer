@@ -32,31 +32,31 @@ type SwiftSpec struct {
 }
 
 type PostgresSpec struct {
-	DbName   string `json:"dbName,omitempty"`
-	Host     string `json:"host,omitempty"`
-	Port     int64  `json:"port,omitempty"`
-	User     string `json:"user,omitempty"`
-	Password string `json:"password,omitempty"`
+	DbName   string `json:"dbName,omitempty" protobuf:"bytes,1,opt,name=dbName"`
+	Host     string `json:"host,omitempty" protobuf:"bytes,2,opt,name=host"`
+	Port     int64  `json:"port,omitempty" protobuf:"varint,3,opt,name=port"`
+	User     string `json:"user,omitempty" protobuf:"bytes,4,opt,name=user"`
+	Password string `json:"password,omitempty" protobuf:"bytes,5,opt,name=password"`
 }
 
 type StorageBackend struct {
 	CredentialName string `json:"credentialName,omitempty" protobuf:"bytes,1,opt,name=credentialName"`
 
-	Local    *LocalSpec        `json:"local,omitempty"`
-	S3       *S3Spec           `json:"s3,omitempty"`
-	GCS      *GCSSpec          `json:"gcs,omitempty"`
-	Azure    *AzureStorageSpec `json:"azure,omitempty"`
-	Swift    *SwiftSpec        `json:"swift,omitempty"`
-	Postgres *PostgresSpec     `json:"postgres,omitempty"`
+	Local    *LocalSpec        `json:"local,omitempty" protobuf:"bytes,2,opt,name=local"`
+	S3       *S3Spec           `json:"s3,omitempty" protobuf:"bytes,3,opt,name=s3"`
+	GCS      *GCSSpec          `json:"gcs,omitempty" protobuf:"bytes,4,opt,name=gcs"`
+	Azure    *AzureStorageSpec `json:"azure,omitempty" protobuf:"bytes,5,opt,name=azure"`
+	Swift    *SwiftSpec        `json:"swift,omitempty" protobuf:"bytes,6,opt,name=swift"`
+	Postgres *PostgresSpec     `json:"postgres,omitempty" protobuf:"bytes,7,opt,name=postgres"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type PharmerConfig struct {
 	metav1.TypeMeta `json:",inline,omitempty,omitempty"`
-	Context         string         `json:"context,omitempty"`
-	Credentials     []Credential   `json:"credentials,omitempty"`
-	Store           StorageBackend `json:"store,omitempty"`
+	Context         string         `json:"context,omitempty" protobuf:"bytes,1,opt,name=context"`
+	Credentials     []Credential   `json:"credentials,omitempty" protobuf:"bytes,2,rep,name=credentials"`
+	Store           StorageBackend `json:"store,omitempty" protobuf:"bytes,3,opt,name=store"`
 }
 
 func (pc PharmerConfig) GetStoreType() string {

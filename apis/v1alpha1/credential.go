@@ -17,11 +17,11 @@ const (
 
 type Credential struct {
 	metav1.TypeMeta   `json:",inline,omitempty"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              CredentialSpec `json:"spec,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	Spec              CredentialSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
 }
 
 type CredentialSpec struct {
-	Provider string            `json:"provider"`
-	Data     map[string]string `json:"data"`
+	Provider string            `json:"provider" protobuf:"bytes,1,opt,name=provider"`
+	Data     map[string]string `json:"data" protobuf:"bytes,2,rep,name=data"`
 }

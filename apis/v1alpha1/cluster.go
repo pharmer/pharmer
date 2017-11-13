@@ -80,15 +80,15 @@ type Cluster struct {
 }
 
 type Networking struct {
-	NetworkProvider string `json:"networkProvider,omitempty"` // kubenet, flannel, calico, opencontrail
-	PodSubnet       string `json:"podSubnet,omitempty"`
-	ServiceSubnet   string `json:"serviceSubnet,omitempty"`
-	DNSDomain       string `json:"dnsDomain,omitempty"`
+	NetworkProvider string `json:"networkProvider,omitempty" protobuf:"bytes,1,opt,name=networkProvider"` // kubenet, flannel, calico, opencontrail
+	PodSubnet       string `json:"podSubnet,omitempty" protobuf:"bytes,2,opt,name=podSubnet"`
+	ServiceSubnet   string `json:"serviceSubnet,omitempty" protobuf:"bytes,3,opt,name=serviceSubnet"`
+	DNSDomain       string `json:"dnsDomain,omitempty" protobuf:"bytes,4,opt,name=dnsDomain"`
 	// NEW
 	// Replacing API_SERVERS https://github.com/kubernetes/kubernetes/blob/62898319dff291843e53b7839c6cde14ee5d2aa4/cluster/aws/util.sh#L1004
-	DNSServerIP       string `json:"dnsServerIP,omitempty"`
-	NonMasqueradeCIDR string `json:"nonMasqueradeCIDR,omitempty"`
-	MasterSubnet      string `json:"masterSubnet,omitempty"` // delete ?
+	DNSServerIP       string `json:"dnsServerIP,omitempty" protobuf:"bytes,5,opt,name=dnsServerIP"`
+	NonMasqueradeCIDR string `json:"nonMasqueradeCIDR,omitempty" protobuf:"bytes,6,opt,name=nonMasqueradeCIDR"`
+	MasterSubnet      string `json:"masterSubnet,omitempty" protobuf:"bytes,7,opt,name=masterSubnet"` // delete ?
 }
 
 func (n *Networking) SetDefaults() {
@@ -122,11 +122,11 @@ type AWSSpec struct {
 }
 
 type GoogleSpec struct {
-	NetworkName string   `gcfg:"network-name" ini:"network-name,omitempty"`
-	NodeTags    []string `gcfg:"node-tags" ini:"node-tags,omitempty,omitempty"`
+	NetworkName string   `gcfg:"network-name" ini:"network-name,omitempty" protobuf:"bytes,1,opt,name=networkName"`
+	NodeTags    []string `gcfg:"node-tags" ini:"node-tags,omitempty,omitempty" protobuf:"bytes,2,rep,name=nodeTags"`
 	// gce
 	// NODE_SCOPES="${NODE_SCOPES:-compute-rw,monitoring,logging-write,storage-ro}"
-	NodeScopes []string `json:"nodeScopes,omitempty"`
+	NodeScopes []string `json:"nodeScopes,omitempty" protobuf:"bytes,3,rep,name=nodeScopes"`
 }
 
 type AzureSpec struct {
@@ -148,18 +148,18 @@ type LinodeSpec struct {
 }
 
 type CloudSpec struct {
-	CloudProvider        string      `json:"cloudProvider,omitempty"`
-	Project              string      `json:"project,omitempty"`
-	Region               string      `json:"region,omitempty"`
-	Zone                 string      `json:"zone,omitempty"` // master needs it for ossec
-	InstanceImage        string      `json:"instanceImage,omitempty"`
-	OS                   string      `json:"os,omitempty"`
-	InstanceImageProject string      `json:"instanceImageProject,omitempty"`
-	CCMCredentialName    string      `json:"ccmCredentialName,omitempty"`
-	AWS                  *AWSSpec    `json:"aws,omitempty"`
-	GCE                  *GoogleSpec `json:"gce,omitempty"`
-	Azure                *AzureSpec  `json:"azure,omitempty"`
-	Linode               *LinodeSpec `json:"linode,omitempty"`
+	CloudProvider        string      `json:"cloudProvider,omitempty" protobuf:"bytes,1,opt,name=cloudProvider"`
+	Project              string      `json:"project,omitempty" protobuf:"bytes,2,opt,name=project"`
+	Region               string      `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
+	Zone                 string      `json:"zone,omitempty" protobuf:"bytes,4,opt,name=zone"` // master needs it for ossec
+	InstanceImage        string      `json:"instanceImage,omitempty" protobuf:"bytes,5,opt,name=instanceImage"`
+	OS                   string      `json:"os,omitempty" protobuf:"bytes,6,opt,name=os"`
+	InstanceImageProject string      `json:"instanceImageProject,omitempty" protobuf:"bytes,7,opt,name=instanceImageProject"`
+	CCMCredentialName    string      `json:"ccmCredentialName,omitempty" protobuf:"bytes,8,opt,name=ccmCredentialName"`
+	AWS                  *AWSSpec    `json:"aws,omitempty" protobuf:"bytes,9,opt,name=aws"`
+	GCE                  *GoogleSpec `json:"gce,omitempty" protobuf:"bytes,10,opt,name=gce"`
+	Azure                *AzureSpec  `json:"azure,omitempty" protobuf:"bytes,11,opt,name=azure"`
+	Linode               *LinodeSpec `json:"linode,omitempty" protobuf:"bytes,12,opt,name=linode"`
 }
 
 type API struct {
@@ -170,22 +170,22 @@ type API struct {
 }
 
 type ClusterSpec struct {
-	Cloud                      CloudSpec         `json:"cloud"`
-	API                        API               `json:"api"`
-	Networking                 Networking        `json:"networking"`
-	KubernetesVersion          string            `json:"kubernetesVersion,omitempty"`
-	KubeletVersion             string            `json:"kubeletVersion,omitempty"`
-	KubeadmVersion             string            `json:"kubeadmVersion,omitempty"`
-	Locked                     bool              `json:"locked,omitempty"`
-	CACertName                 string            `json:"caCertName,omitempty"`
-	FrontProxyCACertName       string            `json:"frontProxyCACertName,omitempty"`
-	CredentialName             string            `json:"credentialName,omitempty"`
-	KubeletExtraArgs           map[string]string `json:"kubeletExtraArgs,omitempty"`
-	APIServerExtraArgs         map[string]string `json:"apiServerExtraArgs,omitempty"`
-	ControllerManagerExtraArgs map[string]string `json:"controllerManagerExtraArgs,omitempty"`
-	SchedulerExtraArgs         map[string]string `json:"schedulerExtraArgs,omitempty"`
-	AuthorizationModes         []string          `json:"authorizationModes,omitempty"`
-	APIServerCertSANs          []string          `json:"apiServerCertSANs,omitempty"`
+	Cloud                      CloudSpec         `json:"cloud" protobuf:"bytes,1,opt,name=cloud"`
+	API                        API               `json:"api" protobuf:"bytes,2,opt,name=api"`
+	Networking                 Networking        `json:"networking" protobuf:"bytes,3,opt,name=networking"`
+	KubernetesVersion          string            `json:"kubernetesVersion,omitempty" protobuf:"bytes,4,opt,name=kubernetesVersion"`
+	KubeletVersion             string            `json:"kubeletVersion,omitempty" protobuf:"bytes,5,opt,name=kubeletVersion"`
+	KubeadmVersion             string            `json:"kubeadmVersion,omitempty" protobuf:"bytes,6,opt,name=kubeadmVersion"`
+	Locked                     bool              `json:"locked,omitempty" protobuf:"varint,7,opt,name=locked"`
+	CACertName                 string            `json:"caCertName,omitempty" protobuf:"bytes,8,opt,name=caCertName"`
+	FrontProxyCACertName       string            `json:"frontProxyCACertName,omitempty" protobuf:"bytes,9,opt,name=frontProxyCACertName"`
+	CredentialName             string            `json:"credentialName,omitempty" protobuf:"bytes,10,opt,name=credentialName"`
+	KubeletExtraArgs           map[string]string `json:"kubeletExtraArgs,omitempty" protobuf:"bytes,11,rep,name=kubeletExtraArgs"`
+	APIServerExtraArgs         map[string]string `json:"apiServerExtraArgs,omitempty" protobuf:"bytes,12,rep,name=apiServerExtraArgs"`
+	ControllerManagerExtraArgs map[string]string `json:"controllerManagerExtraArgs,omitempty" protobuf:"bytes,13,rep,name=controllerManagerExtraArgs"`
+	SchedulerExtraArgs         map[string]string `json:"schedulerExtraArgs,omitempty" protobuf:"bytes,14,rep,name=schedulerExtraArgs"`
+	AuthorizationModes         []string          `json:"authorizationModes,omitempty" protobuf:"bytes,15,rep,name=authorizationModes"`
+	APIServerCertSANs          []string          `json:"apiServerCertSANs,omitempty" protobuf:"bytes,16,rep,name=apiServerCertSANs"`
 
 	// Deprecated
 	MasterInternalIP string `json:"-"`
@@ -204,15 +204,15 @@ type ClusterSpec struct {
 }
 
 type AWSStatus struct {
-	MasterSGId string `json:"masterSGID,omitempty"`
-	NodeSGId   string `json:"nodeSGID,omitempty"`
+	MasterSGId string `json:"masterSGID,omitempty" protobuf:"bytes,1,opt,name=masterSGID"`
+	NodeSGId   string `json:"nodeSGID,omitempty" protobuf:"bytes,2,opt,name=nodeSGID"`
 
-	VpcId         string `json:"vpcID,omitempty"`
-	SubnetId      string `json:"subnetID,omitempty"`
-	RouteTableId  string `json:"routeTableID,omitempty"`
-	IGWId         string `json:"igwID,omitempty"`
-	DHCPOptionsId string `json:"dhcpOptionsID,omitempty"`
-	VolumeId      string `json:"volumeID,omitempty"`
+	VpcId         string `json:"vpcID,omitempty" protobuf:"bytes,3,opt,name=vpcID"`
+	SubnetId      string `json:"subnetID,omitempty" protobuf:"bytes,4,opt,name=subnetID"`
+	RouteTableId  string `json:"routeTableID,omitempty" protobuf:"bytes,5,opt,name=routeTableID"`
+	IGWId         string `json:"igwID,omitempty" protobuf:"bytes,6,opt,name=igwID"`
+	DHCPOptionsId string `json:"dhcpOptionsID,omitempty" protobuf:"bytes,7,opt,name=dhcpOptionsID"`
+	VolumeId      string `json:"volumeID,omitempty" protobuf:"bytes,8,opt,name=volumeID"`
 
 	// Deprecated
 	RootDeviceName string `json:"-"`
@@ -260,18 +260,18 @@ const (
 )
 
 type ClusterStatus struct {
-	Phase            ClusterPhase       `json:"phase,omitempty,omitempty"`
-	Reason           string             `json:"reason,omitempty,omitempty"`
-	SSHKeyExternalID string             `json:"sshKeyExternalID,omitempty"`
-	Cloud            CloudStatus        `json:"cloud,omitempty"`
-	APIAddresses     []core.NodeAddress `json:"apiServer,omitempty"`
-	ReservedIPs      []ReservedIP       `json:"reservedIP,omitempty"`
+	Phase            ClusterPhase       `json:"phase,omitempty,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=ClusterPhase"`
+	Reason           string             `json:"reason,omitempty,omitempty" protobuf:"bytes,2,opt,name=reason"`
+	SSHKeyExternalID string             `json:"sshKeyExternalID,omitempty" protobuf:"bytes,3,opt,name=sshKeyExternalID"`
+	Cloud            CloudStatus        `json:"cloud,omitempty" protobuf:"bytes,4,opt,name=cloud"`
+	APIAddresses     []core.NodeAddress `json:"apiServer,omitempty" protobuf:"bytes,5,rep,name=apiServer"`
+	ReservedIPs      []ReservedIP       `json:"reservedIP,omitempty" protobuf:"bytes,6,rep,name=reservedIP"`
 }
 
 type ReservedIP struct {
-	IP   string `json:"ip,omitempty"`
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name,omitempty"`
+	IP   string `json:"ip,omitempty" protobuf:"bytes,1,opt,name=ip"`
+	ID   string `json:"id,omitempty" protobuf:"bytes,2,opt,name=id"`
+	Name string `json:"name,omitempty" protobuf:"bytes,3,opt,name=name"`
 }
 
 func (c *Cluster) clusterIP(seq int64) string {
