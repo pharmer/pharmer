@@ -12,11 +12,11 @@ import (
 var pool string
 
 func (c *nodeGroupInvocaton) GetName() string {
-	return pool
+	return  "2gb-pool"
 }
 
 func (c *nodeGroupInvocaton) GetSkeleton() (*api.NodeGroup, error) {
-	pool = "2gb-pool"
+	pool = c.GetName()
 	ig := &api.NodeGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			ClusterName:       c.ClusterName,
@@ -45,12 +45,26 @@ func (c *nodeGroupInvocaton) Update(ng *api.NodeGroup) error {
 	return err
 }
 
+func (c *nodeGroupInvocaton) CheckUpdate(ng *api.NodeGroup) error {
+	if ng.Spec.Nodes == int64(2) {
+		return nil
+	}
+	return fmt.Errorf("node group was not updated")
+}
+
 func (c *nodeGroupInvocaton) UpdateStatus(ng *api.NodeGroup) error {
 	ng.Status = api.NodeGroupStatus{
 		Nodes: int64(2),
 	}
 	_, err := c.Storage.NodeGroups(c.clusterName).UpdateStatus(ng)
 	return err
+}
+
+func (c *nodeGroupInvocaton) CheckUpdateStatus(ng *api.NodeGroup) error {
+	if ng.Status.Nodes == int64(2) {
+		return nil
+	}
+	return fmt.Errorf("node group status was not updated")
 }
 
 func (c *nodeGroupInvocaton) List() error {

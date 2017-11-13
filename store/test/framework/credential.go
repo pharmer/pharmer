@@ -9,7 +9,7 @@ import (
 )
 
 func (c *credentialInvocation) GetName() string {
-	return "do"
+	return "test-do"
 }
 func (c *credentialInvocation) GetSkeleton() *api.Credential {
 	cred := &api.Credential{
@@ -36,6 +36,16 @@ func (c *credentialInvocation) Update(cred *api.Credential) error {
 	cred.Spec.Data = data
 	_, err := c.Storage.Credentials().Update(cred)
 	return err
+}
+
+func (c *credentialInvocation) CheckUpdate(cred *api.Credential) error {
+	data := cred.Spec.Data
+	if token, ok := data["token"]; ok {
+		if token == "22222222222222222" {
+			return nil
+		}
+	}
+	return fmt.Errorf("credential was not updated")
 }
 
 func (c *credentialInvocation) List() error {

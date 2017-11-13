@@ -46,20 +46,5 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	By("Deleting credential")
-	err := root.Storage.Credentials().Delete(root.Invoke().Credential.GetName())
-	Expect(err).NotTo(HaveOccurred())
-
-	By("Deleting cluster")
-	err = root.Storage.Clusters().Delete(root.Invoke().Cluster.GetName())
-	Expect(err).NotTo(HaveOccurred())
-
-	By("Deleting ssh key")
-	err = root.Storage.SSHKeys(root.ClusterName).Delete(root.Invoke().SSH.GetName())
-	Expect(err).NotTo(HaveOccurred())
-
-	By("Deleting node group")
-	err = root.Storage.NodeGroups(root.ClusterName).Delete(root.Invoke().NG.GetName())
-	Expect(err).NotTo(HaveOccurred())
 
 })

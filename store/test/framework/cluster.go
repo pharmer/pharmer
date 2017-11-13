@@ -35,8 +35,16 @@ func (c *clusterInvocation) GetSkeleton() (*api.Cluster, error) {
 }
 
 func (c *clusterInvocation) Update(cluster *api.Cluster) error {
+	cluster.Spec.KubernetesVersion = "v1.8.1"
 	_, err := c.Storage.Clusters().Update(cluster)
 	return err
+}
+
+func (c *clusterInvocation) CheckUpdate(cluster *api.Cluster) error {
+	if cluster.Spec.KubernetesVersion == "v1.8.1" {
+		return nil
+	}
+	return fmt.Errorf("cluster was not updated")
 }
 
 func (c *clusterInvocation) UpdateStatus(cluster *api.Cluster) error {
@@ -45,6 +53,12 @@ func (c *clusterInvocation) UpdateStatus(cluster *api.Cluster) error {
 	return err
 }
 
+func (c *clusterInvocation) CheckUpdateStatus(cluster *api.Cluster) error {
+	if cluster.Status.Phase == api.ClusterReady {
+		return nil
+	}
+	return fmt.Errorf("cluster status was not updated")
+}
 func (c *clusterInvocation) List() error {
 	clusters, err := c.Storage.Clusters().List(metav1.ListOptions{})
 	if err != nil {

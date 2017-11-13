@@ -25,53 +25,43 @@ var _ = Describe("Credential", func() {
 			cred = f.Credential.GetSkeleton()
 		})
 		By("using credential object ")
-		It("should create", func() {
-			_, err := f.Storage.Credentials().Create(cred)
-			Expect(err).NotTo(HaveOccurred())
-
-		})
-
-		It("should not create", func() {
-			_, err := f.Storage.Credentials().Create(cred)
+		It("should check", func() {
+			By("should not find" + cred.Name)
+			_, err := f.Storage.Credentials().Get(cred.Name)
 			Expect(err).To(HaveOccurred())
-		})
 
-	})
-
-	Describe("retrieve credential", func() {
-		var name string
-		BeforeEach(func() {
-			name = f.Credential.GetName()
-		})
-		By("checking with existing credential name")
-		It("should find", func() {
-			_, err := f.Storage.Credentials().Get(name)
+			By("should create")
+			_, err = f.Storage.Credentials().Create(cred)
 			Expect(err).NotTo(HaveOccurred())
-		})
 
-		By("checking without existing credential name")
-		It("should not find", func() {
-			_, err := f.Storage.Credentials().Get("nof")
+			By("should find")
+			_, err = f.Storage.Credentials().Get(cred.Name)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should not create")
+			_, err = f.Storage.Credentials().Create(cred)
 			Expect(err).To(HaveOccurred())
+
+			By("should update")
+			err = f.Credential.Update(cred)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should check update")
+			err = f.Credential.CheckUpdate(cred)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should list")
+			err = f.Credential.List()
+			Expect(err).NotTo(HaveOccurred())
+
+			By("delete")
+			err = f.Storage.Credentials().Delete(cred.Name)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should not find")
+			_, err = f.Storage.Credentials().Get(cred.Name)
+			Expect(err).To(HaveOccurred())
+
 		})
 	})
-
-	Describe("update credential", func() {
-		var (
-			cred *api.Credential
-			err  error
-		)
-		BeforeEach(func() {
-			name := f.Credential.GetName()
-			cred, err = f.Storage.Credentials().Get(name)
-			Expect(err).NotTo(HaveOccurred())
-		})
-		By("using existing credential")
-		It("should update", func() {
-			err := f.Credential.Update(cred)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-	})
-
 })

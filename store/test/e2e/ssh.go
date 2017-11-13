@@ -20,47 +20,39 @@ var _ = Describe("SSH", func() {
 		By("Receive storage " + f.Config.GetStoreType())
 	})
 	Describe("create ssh", func() {
-		var ssh *ssh.SSHKey
+		var (
+			ssh  *ssh.SSHKey
+			name string
+		)
 		BeforeEach(func() {
 			ssh, err = f.SSH.GetSkeleton()
 			Expect(err).NotTo(HaveOccurred())
-		})
-		By("using ssh object ")
-		It("should create", func() {
-			err := f.SSH.Create(ssh)
-			Expect(err).NotTo(HaveOccurred())
-
-		})
-
-		It("should not create", func() {
-			err := f.SSH.Create(ssh)
-			Expect(err).To(HaveOccurred())
-		})
-
-	})
-
-	Describe("retrieve key", func() {
-		var name string
-		BeforeEach(func() {
 			name = f.SSH.GetName()
 		})
-		By("checking with existing ssh key name")
-		It("should find", func() {
+		By("using ssh object ")
+		It("should check ", func() {
+			By("should not find")
 			_, _, err := f.Storage.SSHKeys(f.ClusterName).Get(name)
+			Expect(err).To(HaveOccurred())
+
+			By("should create")
+			err = f.SSH.Create(ssh)
 			Expect(err).NotTo(HaveOccurred())
+
+			By("should find")
+			_, _, err = f.Storage.SSHKeys(f.ClusterName).Get(name)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should delete")
+			err = f.Storage.SSHKeys(f.ClusterName).Delete(name)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should not find")
+			_, _, err = f.Storage.SSHKeys(f.ClusterName).Get(name)
+			Expect(err).To(HaveOccurred())
+
 		})
 
-		By("checking without existing ssh key name")
-		It("should not find", func() {
-			_, _, err := f.Storage.SSHKeys(f.ClusterName).Get("nos")
-			Expect(err).To(HaveOccurred())
-		})
-
-		By("checking without existing cluster name")
-		It("should not find", func() {
-			_, _, err := f.Storage.SSHKeys("noc").Get(name)
-			Expect(err).To(HaveOccurred())
-		})
 	})
 
 })

@@ -29,75 +29,53 @@ var _ = Describe("Cluster", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 		By("using cluster object ")
-		It("should create", func() {
-			_, err := f.Storage.Clusters().Create(cluster)
-			Expect(err).NotTo(HaveOccurred())
-
-		})
-
-		It("should not create", func() {
-			_, err := f.Storage.Clusters().Create(cluster)
+		It("should check", func() {
+			By("should not find" + cluster.Name)
+			_, err := f.Storage.Credentials().Get(cluster.Name)
 			Expect(err).To(HaveOccurred())
-		})
 
-	})
-
-	Describe("retrieve cluster", func() {
-		var name string
-		BeforeEach(func() {
-			name = f.Cluster.GetName()
-		})
-		By("checking with existing cluster name")
-		It("should find", func() {
-			_, err := f.Storage.Clusters().Get(name)
+			By("should create")
+			_, err = f.Storage.Clusters().Create(cluster)
 			Expect(err).NotTo(HaveOccurred())
-		})
 
-		By("checking without existing cluster name")
-		It("should not find", func() {
-			_, err := f.Storage.Credentials().Get("noc")
+			By("should find")
+			_, err = f.Storage.Clusters().Get(cluster.Name)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should not create")
+			_, err = f.Storage.Clusters().Create(cluster)
 			Expect(err).To(HaveOccurred())
+
+			By("should update")
+			err = f.Cluster.Update(cluster)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should check updated")
+			err = f.Cluster.CheckUpdate(cluster)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should update status")
+			err = f.Cluster.UpdateStatus(cluster)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should check status updated")
+			err = f.Cluster.CheckUpdateStatus(cluster)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should list")
+			err = f.Cluster.List()
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should delete")
+			err = f.Storage.Clusters().Delete(cluster.Name)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should not find")
+			_, err = f.Storage.Credentials().Get(cluster.Name)
+			Expect(err).To(HaveOccurred())
+
 		})
 
-		By("checking for all cluster list")
-		It("should find", func() {
-			err := f.Cluster.List()
-			Expect(err).NotTo(HaveOccurred())
-		})
-	})
-
-	Describe("update cluster", func() {
-		var (
-			cluster *api.Cluster
-			err     error
-		)
-		BeforeEach(func() {
-			name := f.Cluster.GetName()
-			cluster, err = f.Storage.Clusters().Get(name)
-			Expect(err).NotTo(HaveOccurred())
-		})
-		By("using existing cluster")
-		It("should update", func() {
-			err := f.Cluster.Update(cluster)
-			Expect(err).NotTo(HaveOccurred())
-		})
-	})
-
-	Describe("update cluster status", func() {
-		var (
-			cluster *api.Cluster
-			err     error
-		)
-		BeforeEach(func() {
-			name := f.Cluster.GetName()
-			cluster, err = f.Storage.Clusters().Get(name)
-			Expect(err).NotTo(HaveOccurred())
-		})
-		By("using existing cluster")
-		It("should update status", func() {
-			err := f.Cluster.UpdateStatus(cluster)
-			Expect(err).NotTo(HaveOccurred())
-		})
 	})
 
 })

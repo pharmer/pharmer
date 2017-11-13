@@ -26,69 +26,49 @@ var _ = Describe("Node Group", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 		By("using node group object ")
-		It("should create", func() {
-			err := f.NG.Create(ng)
-			Expect(err).NotTo(HaveOccurred())
-
-		})
-
-		It("should not create", func() {
-			err := f.NG.Create(ng)
+		It("should check", func() {
+			By("should not find")
+			_, err := f.Storage.NodeGroups(f.ClusterName).Get(ng.Name)
 			Expect(err).To(HaveOccurred())
-		})
 
-	})
-
-	Describe("retrieve node group", func() {
-		var name string
-		BeforeEach(func() {
-			name = f.NG.GetName()
-		})
-		By("checking with existing node group name")
-		It("should find", func() {
-			_, err := f.Storage.NodeGroups(f.ClusterName).Get(name)
+			By("should create")
+			err = f.NG.Create(ng)
 			Expect(err).NotTo(HaveOccurred())
-		})
 
-		By("checking without existing node group name")
-		It("should not find", func() {
-			_, err := f.Storage.NodeGroups(f.ClusterName).Get("nog")
-			Expect(err).To(HaveOccurred())
-		})
-
-		By("checking without existing cluster name")
-		It("should not find", func() {
-			_, err := f.Storage.NodeGroups("noc").Get(name)
-			Expect(err).To(HaveOccurred())
-		})
-
-		By("checking for all node group list")
-		It("should find", func() {
-			err = f.NG.List()
+			By("should find")
+			_, err = f.Storage.NodeGroups(f.ClusterName).Get(ng.Name)
 			Expect(err).NotTo(HaveOccurred())
-		})
-	})
 
-	Describe("update node group", func() {
-		var (
-			ng   *api.NodeGroup
-			name string
-		)
-		BeforeEach(func() {
-			name = f.NG.GetName()
-			ng, err = f.Storage.NodeGroups(f.ClusterName).Get(name)
-			Expect(err).NotTo(HaveOccurred())
-		})
-		By("checking with existing node group")
-		It("should update", func() {
+			By("should update")
 			err = f.NG.Update(ng)
 			Expect(err).NotTo(HaveOccurred())
-		})
 
-		It("should update status", func() {
+			By("should check update")
+			err = f.NG.CheckUpdate(ng)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should update status")
 			err = f.NG.UpdateStatus(ng)
 			Expect(err).NotTo(HaveOccurred())
+
+			By("should check status updated")
+			err = f.NG.CheckUpdateStatus(ng)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should list")
+			err = f.NG.List()
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should delete")
+			err = f.Storage.NodeGroups(f.ClusterName).Delete(ng.Name)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("should not find")
+			_, err = f.Storage.NodeGroups(f.ClusterName).Get(ng.Name)
+			Expect(err).To(HaveOccurred())
+
 		})
+
 	})
 
 })
