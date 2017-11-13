@@ -16,6 +16,7 @@ type TemplateData struct {
 	KubeletVersion   string
 	KubeadmVersion   string
 	KubeadmToken     string
+	CAHash           string
 	CAKey            string
 	FrontProxyKey    string
 	APIServerAddress string
@@ -264,7 +265,7 @@ EOF
 {{ end }}
 
 kubeadm reset
-kubeadm join --token={{ .KubeadmToken }} {{ .APIServerAddress }}
+kubeadm join --token={{ .KubeadmToken }} --discovery-token-ca-cert-hash={{ .CAHash }} {{ .APIServerAddress }}
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("init-os").Parse(``))
