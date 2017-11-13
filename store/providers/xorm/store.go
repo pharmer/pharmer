@@ -71,7 +71,6 @@ func newPGEngine(user, password, host string, port int64, dbName string) (*xorm.
 	if err != nil {
 		return nil, errors.FromErr(err).Err()
 	}
-	// engine.SetMaxOpenConns(2); don't set it causes deadlock.
 	engine.SetMaxIdleConns(0)
 	engine.DB().SetConnMaxLifetime(10 * time.Minute)
 	// engine.ShowSQL(system.Env() == system.DevEnvironment)
