@@ -11,7 +11,7 @@ import (
 	"github.com/appscode/pharmer/store"
 )
 
-type CertificateFileStore struct {
+type certificateFileStore struct {
 	certs   map[string]*x509.Certificate
 	keys    map[string]*rsa.PrivateKey
 	cluster string
@@ -19,21 +19,21 @@ type CertificateFileStore struct {
 	mux sync.Mutex
 }
 
-var _ store.CertificateStore = &CertificateFileStore{}
+var _ store.CertificateStore = &certificateFileStore{}
 
-func (s *CertificateFileStore) resourceHome() string {
+func (s *certificateFileStore) resourceHome() string {
 	return filepath.Join("clusters", s.cluster, "pki")
 }
 
-func (s *CertificateFileStore) certID(name string) string {
+func (s *certificateFileStore) certID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".crt")
 }
 
-func (s *CertificateFileStore) keyID(name string) string {
+func (s *certificateFileStore) keyID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".key")
 }
 
-func (s *CertificateFileStore) Get(name string) (*x509.Certificate, *rsa.PrivateKey, error) {
+func (s *certificateFileStore) Get(name string) (*x509.Certificate, *rsa.PrivateKey, error) {
 	if s.cluster == "" {
 		return nil, nil, errors.New("missing cluster name")
 	}
@@ -56,7 +56,7 @@ func (s *CertificateFileStore) Get(name string) (*x509.Certificate, *rsa.Private
 	return crt, key, nil
 }
 
-func (s *CertificateFileStore) Create(name string, crt *x509.Certificate, key *rsa.PrivateKey) error {
+func (s *certificateFileStore) Create(name string, crt *x509.Certificate, key *rsa.PrivateKey) error {
 	if s.cluster == "" {
 		return errors.New("missing cluster name")
 	}
@@ -74,7 +74,7 @@ func (s *CertificateFileStore) Create(name string, crt *x509.Certificate, key *r
 	return nil
 }
 
-func (s *CertificateFileStore) Delete(name string) error {
+func (s *certificateFileStore) Delete(name string) error {
 	if s.cluster == "" {
 		return errors.New("missing cluster name")
 	}

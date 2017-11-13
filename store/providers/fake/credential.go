@@ -11,23 +11,23 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type CredentialFileStore struct {
+type credentialFileStore struct {
 	container map[string]*api.Credential
 
 	mux sync.Mutex
 }
 
-var _ store.CredentialStore = &CredentialFileStore{}
+var _ store.CredentialStore = &credentialFileStore{}
 
-func (s *CredentialFileStore) resourceHome() string {
+func (s *credentialFileStore) resourceHome() string {
 	return "credentials"
 }
 
-func (s *CredentialFileStore) resourceID(name string) string {
+func (s *credentialFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *CredentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
+func (s *credentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
@@ -38,7 +38,7 @@ func (s *CredentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, 
 	return result, nil
 }
 
-func (s *CredentialFileStore) Get(name string) (*api.Credential, error) {
+func (s *credentialFileStore) Get(name string) (*api.Credential, error) {
 	if name == "" {
 		return nil, errors.New("missing credential name")
 	}
@@ -53,7 +53,7 @@ func (s *CredentialFileStore) Get(name string) (*api.Credential, error) {
 	return existing, nil
 }
 
-func (s *CredentialFileStore) Create(obj *api.Credential) (*api.Credential, error) {
+func (s *credentialFileStore) Create(obj *api.Credential) (*api.Credential, error) {
 	if obj == nil {
 		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {
@@ -75,7 +75,7 @@ func (s *CredentialFileStore) Create(obj *api.Credential) (*api.Credential, erro
 	return obj, err
 }
 
-func (s *CredentialFileStore) Update(obj *api.Credential) (*api.Credential, error) {
+func (s *credentialFileStore) Update(obj *api.Credential) (*api.Credential, error) {
 	if obj == nil {
 		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {
@@ -97,7 +97,7 @@ func (s *CredentialFileStore) Update(obj *api.Credential) (*api.Credential, erro
 	return obj, err
 }
 
-func (s *CredentialFileStore) Delete(name string) error {
+func (s *credentialFileStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing credential name")
 	}

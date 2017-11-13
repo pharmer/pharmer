@@ -31,14 +31,23 @@ type SwiftSpec struct {
 	Prefix    string `json:"prefix,omitempty" protobuf:"bytes,2,opt,name=prefix"`
 }
 
+type PostgresSpec struct {
+	Database string `json:"database,omitempty" protobuf:"bytes,1,opt,name=db"`
+	Host     string `json:"host,omitempty" protobuf:"bytes,2,opt,name=host"`
+	Port     int64  `json:"port,omitempty" protobuf:"varint,3,opt,name=port"`
+	User     string `json:"user,omitempty" protobuf:"bytes,4,opt,name=user"`
+	Password string `json:"password,omitempty" protobuf:"bytes,5,opt,name=password"`
+}
+
 type StorageBackend struct {
 	CredentialName string `json:"credentialName,omitempty" protobuf:"bytes,1,opt,name=credentialName"`
 
-	Local *LocalSpec        `json:"local,omitempty" protobuf:"bytes,2,opt,name=local"`
-	S3    *S3Spec           `json:"s3,omitempty" protobuf:"bytes,3,opt,name=s3"`
-	GCS   *GCSSpec          `json:"gcs,omitempty" protobuf:"bytes,4,opt,name=gcs"`
-	Azure *AzureStorageSpec `json:"azure,omitempty" protobuf:"bytes,5,opt,name=azure"`
-	Swift *SwiftSpec        `json:"swift,omitempty" protobuf:"bytes,6,opt,name=swift"`
+	Local    *LocalSpec        `json:"local,omitempty" protobuf:"bytes,2,opt,name=local"`
+	S3       *S3Spec           `json:"s3,omitempty" protobuf:"bytes,3,opt,name=s3"`
+	GCS      *GCSSpec          `json:"gcs,omitempty" protobuf:"bytes,4,opt,name=gcs"`
+	Azure    *AzureStorageSpec `json:"azure,omitempty" protobuf:"bytes,5,opt,name=azure"`
+	Swift    *SwiftSpec        `json:"swift,omitempty" protobuf:"bytes,6,opt,name=swift"`
+	Postgres *PostgresSpec     `json:"postgres,omitempty" protobuf:"bytes,7,opt,name=postgres"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -55,14 +64,14 @@ func (pc PharmerConfig) GetStoreType() string {
 		return "Local"
 	} else if pc.Store.S3 != nil {
 		return "S3"
-	} else if pc.Store.S3 != nil {
-		return "S3"
 	} else if pc.Store.GCS != nil {
 		return "GCS"
 	} else if pc.Store.Azure != nil {
 		return "Azure"
 	} else if pc.Store.Swift != nil {
 		return "OpenStack Swift"
+	} else if pc.Store.Postgres != nil {
+		return "Postgres"
 	}
 	return "<Unknown>"
 }
