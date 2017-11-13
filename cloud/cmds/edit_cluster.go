@@ -84,7 +84,7 @@ func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Wr
 		if err != nil {
 			return err
 		}
-		if err := updateCluster(ctx, original, updated); err != nil {
+		if err := UpdateCluster(ctx, original, updated); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`cluster "%s" replaced`, original.Name))
@@ -145,7 +145,7 @@ func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Wr
 			}
 		}
 
-		if err := updateCluster(ctx, original, updated); err != nil {
+		if err := UpdateCluster(ctx, original, updated); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`cluster "%s" updated`, original.Name))
@@ -226,7 +226,7 @@ func editCluster(ctx context.Context, cmd *cobra.Command, original *api.Cluster,
 
 			containsError = false
 
-			if err := updateCluster(ctx, original, updated); err != nil {
+			if err := UpdateCluster(ctx, original, updated); err != nil {
 				return err
 			}
 
@@ -239,7 +239,7 @@ func editCluster(ctx context.Context, cmd *cobra.Command, original *api.Cluster,
 	return editFn()
 }
 
-func updateCluster(ctx context.Context, original, updated *api.Cluster) error {
+func UpdateCluster(ctx context.Context, original, updated *api.Cluster) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
