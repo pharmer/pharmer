@@ -188,8 +188,8 @@ type ClusterSpec struct {
 
 	// Auto Set
 	// https://github.com/kubernetes/kubernetes/blob/master/cluster/gce/util.sh#L538
-	CACertName           string `json:"caCertPHID,omitempty" protobuf:"bytes,14,opt,name=caCertPHID"`
-	FrontProxyCACertName string `json:"frontProxyCaCertPHID,omitempty" protobuf:"bytes,15,opt,name=frontProxyCaCertPHID"`
+	CACertName           string `json:"caCertName,omitempty" protobuf:"bytes,14,opt,name=caCertName"`
+	FrontProxyCACertName string `json:"frontProxyCACertName,omitempty" protobuf:"bytes,15,opt,name=frontProxyCACertName"`
 	CredentialName       string `json:"credentialName,omitempty" protobuf:"bytes,16,opt,name=credentialName"`
 
 	// Deprecated

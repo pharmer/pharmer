@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/store"
 	"github.com/go-xorm/xorm"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
 type credentialXormStore struct {
@@ -75,7 +75,7 @@ func (s *credentialXormStore) Create(obj *api.Credential) (*api.Credential, erro
 	if err != nil {
 		return nil, err
 	}
-	cred.UID = string(phid.NewCloudCredential())
+	cred.UID = string(uuid.NewUUID())
 
 	_, err = s.engine.Insert(cred)
 

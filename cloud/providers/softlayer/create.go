@@ -8,9 +8,9 @@ import (
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/phid"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
@@ -28,7 +28,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	n := namer{cluster: cluster}
 
 	// Init object meta
-	cluster.ObjectMeta.UID = phid.NewKubeCluster()
+	cluster.ObjectMeta.UID = uuid.NewUUID()
 	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
 	cluster.ObjectMeta.Generation = time.Now().UnixNano()
 	api.AssignTypeKind(cluster)

@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/appscode/pharmer/phid"
 	"github.com/appscode/pharmer/store"
 	"github.com/go-xorm/xorm"
+	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
 type sshKeyXormStore struct {
@@ -62,7 +62,7 @@ func (s *sshKeyXormStore) Create(name string, pubKey, privKey []byte) error {
 	sshKey, err = encodeSSHKey(pubKey, privKey)
 	sshKey.Name = name
 	sshKey.ClusterName = s.cluster
-	sshKey.UID = string(phid.NewSSHKey())
+	sshKey.UID = string(uuid.NewUUID())
 
 	_, err = s.engine.Insert(sshKey)
 	return err
