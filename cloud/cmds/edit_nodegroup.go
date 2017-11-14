@@ -85,7 +85,7 @@ func runUpdateNodeGroup(ctx context.Context, cmd *cobra.Command, out, errOut io.
 		if err != nil {
 			return err
 		}
-		if err := updateNodeGroup(ctx, original, updated, clusterName); err != nil {
+		if err := UpdateNodeGroup(ctx, original, updated, clusterName); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`nodegroup "%s" replaced`, original.Name))
@@ -112,7 +112,7 @@ func runUpdateNodeGroup(ctx context.Context, cmd *cobra.Command, out, errOut io.
 			return err
 		}
 
-		if err := updateNodeGroup(ctx, original, updated, clusterName); err != nil {
+		if err := UpdateNodeGroup(ctx, original, updated, clusterName); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`nodegroup "%s" updated`, original.Name))
@@ -194,7 +194,7 @@ func editNodeGroup(ctx context.Context, cmd *cobra.Command, original *api.NodeGr
 
 			containsError = false
 
-			if err := updateNodeGroup(ctx, original, updated, clusterName); err != nil {
+			if err := UpdateNodeGroup(ctx, original, updated, clusterName); err != nil {
 				return err
 			}
 
@@ -207,7 +207,7 @@ func editNodeGroup(ctx context.Context, cmd *cobra.Command, original *api.NodeGr
 	return editFn()
 }
 
-func updateNodeGroup(ctx context.Context, original, updated *api.NodeGroup, clusterName string) error {
+func UpdateNodeGroup(ctx context.Context, original, updated *api.NodeGroup, clusterName string) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
