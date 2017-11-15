@@ -1,5 +1,5 @@
-hash: 926d7e361c0fc1ce3c031afda58a1cb4a959d29d7bebb05a60f1fbcd4e877aaa
-updated: 2017-11-12T22:25:56.747534275-08:00
+hash: f0b04286264d64a886120d4f3b655ea08fcee840672c395aca77fe896f30e7ad
+updated: 2017-11-15T06:31:59.517330466-08:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -33,7 +33,7 @@ imports:
 - name: github.com/appscode/go-term
   version: d0c677f2d84034b1357d3f69ffd29c5fb81f662f
 - name: github.com/appscode/kutil
-  version: 45e137524b677cd540822364a8c4efedf57db119
+  version: c7547d78847930f4b48c4e3b3d6fe1d8b0309bd7
   subpackages:
   - tools/backup
 - name: github.com/appscode/mergo
@@ -229,10 +229,12 @@ imports:
 - name: github.com/golang/protobuf
   version: 6e4cc92cc905d5f4a73041c1b8228ea08f4c6147
   subpackages:
+  - jsonpb
   - proto
   - ptypes
   - ptypes/any
   - ptypes/duration
+  - ptypes/struct
   - ptypes/timestamp
 - name: github.com/google/btree
   version: 7d79101e329e5a3adf994758c578dab82b90c017
@@ -243,7 +245,7 @@ imports:
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/google/uuid
-  version: e367a344cbe8e08149f9951115dc299ebd42b919
+  version: 8c31c18f31ede9fc8eae72290a7e7a8064e9b3e3
 - name: github.com/googleapis/gnostic
   version: 0c5108395e2debce0d731cf0287ddf7242066aba
   subpackages:
@@ -320,7 +322,7 @@ imports:
 - name: github.com/MakeNowJust/heredoc
   version: 1d91351acdc1cb2f2c995864674b754134b86ca7
 - name: github.com/mattn/go-colorable
-  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
+  version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
 - name: github.com/mattn/go-isatty
   version: 57fdcb988a5c543893cc61bce354a6e24ab70022
 - name: github.com/matttproud/golang_protobuf_extensions
@@ -597,7 +599,9 @@ imports:
   - pkg/apis/apiextensions/v1beta1
   - pkg/features
 - name: k8s.io/apimachinery
-  version: 019ae5ada31de202164b118aee88ee2d14075c31
+  version: 1ea04657e64ddf330b7b86849ca22c6fcd8d600a
+  repo: https://github.com/tamalsaha/apimachinery.git
+  vcs: git
   subpackages:
   - pkg/api/equality
   - pkg/api/errors
@@ -1009,3 +1013,5 @@ testImports:
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
   - assert
+- name: github.com/tamalsaha/go-oneliners
+  version: 002ce46cc7896a5399130ec3d8f8dd5cb3e422e4
