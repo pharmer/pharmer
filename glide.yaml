@@ -77,7 +77,9 @@ import:
 - package: k8s.io/api
   version: release-1.8
 - package: k8s.io/apimachinery
+  repo: https://github.com/tamalsaha/apimachinery.git
   version: release-1.8
+  vcs: git
 - package: k8s.io/client-go
   version: kubernetes-1.8.3-beta.0
 - package: k8s.io/apiextensions-apiserver
