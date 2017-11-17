@@ -69,7 +69,7 @@ CREATE TABLE "certificate" (
     "clusterName" text NOT NULL,
     "uid" text NOT NULL,
     "cert" text NOT NULL,
-    "key" bigint NOT NULL,
+    "key" text NOT NULL,
     "creationTimestamp" bigint NOT NULL,
     "dateModified" bigint NOT NULL,
     "deletionTimestamp" bigint,

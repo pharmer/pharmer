@@ -32,7 +32,9 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Co
 
 		ctx = context.WithValue(ctx, paramCACert{}, caCert)
 		ctx = context.WithValue(ctx, paramCAKey{}, caKey)
-		certStore.Create(cluster.Spec.CACertName, caCert, caKey)
+		if err = certStore.Create(cluster.Spec.CACertName, caCert, caKey); err != nil {
+			return ctx, err
+		}
 	}
 
 	// -----------------------------------------------
@@ -49,7 +51,9 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Co
 
 		ctx = context.WithValue(ctx, paramFrontProxyCACert{}, frontProxyCACert)
 		ctx = context.WithValue(ctx, paramFrontProxyCAKey{}, frontProxyCAKey)
-		certStore.Create(cluster.Spec.FrontProxyCACertName, frontProxyCACert, frontProxyCAKey)
+		if err = certStore.Create(cluster.Spec.FrontProxyCACertName, frontProxyCACert, frontProxyCAKey); err != nil {
+			return ctx, err
+		}
 	}
 
 	Logger(ctx).Infoln("CA certificates generated successfully.")
