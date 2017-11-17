@@ -56,7 +56,23 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 	igm.ng.Status.Nodes = int64(len(nodes.Items))
 	igm.ng.Status.ObservedGeneration = igm.ng.Generation
 
-	if igm.ng.Spec.Nodes == igm.ng.Status.Nodes {
+	if igm.ng.DeletionTimestamp != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionDelete,
+			Resource: "NodeGroup",
+			Message:  fmt.Sprintf("%v node will be deleted from %v group", igm.ng.Spec.Nodes, igm.ng.Name),
+		})
+		if !dryRun {
+			err = igm.DeleteNodes(nodes.Items)
+			if err != nil {
+				return
+			}
+			err = Store(igm.ctx).NodeGroups(igm.ng.ClusterName).Delete(igm.ng.Name)
+			if err != nil {
+				return
+			}
+		}
+	} else if igm.ng.Spec.Nodes == igm.ng.Status.Nodes {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "NodeGroup",
