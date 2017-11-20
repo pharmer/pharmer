@@ -9,7 +9,7 @@ import:
 - package: github.com/appscode/go-dns
   version: master
 - package: github.com/appscode/go-hetzner
-- package: github.com/appscode/go-term
+- package: github.com/appscode/go/term
 - package: github.com/appscode/go
 - package: github.com/appscode/kutil
   version: release-5.0

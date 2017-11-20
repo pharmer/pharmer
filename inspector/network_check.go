@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appscode/go-term"
 	"github.com/appscode/go/errors"
+	"github.com/appscode/go/term"
 	"github.com/appscode/go/wait"
 	. "github.com/appscode/pharmer/cloud"
 	"golang.org/x/crypto/ssh"

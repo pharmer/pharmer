@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/appscode/go-term"
 	"github.com/appscode/go/io"
 	"github.com/appscode/go/log"
+	"github.com/appscode/go/term"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 	"github.com/ghodss/yaml"

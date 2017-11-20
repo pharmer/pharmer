@@ -1,15 +1,13 @@
-hash: f0b04286264d64a886120d4f3b655ea08fcee840672c395aca77fe896f30e7ad
-updated: 2017-11-15T06:31:59.517330466-08:00
+hash: 1b366df5065f16e46990648f9a207297c13b2e0cde6c525c9dba19d89ae83b0b
+updated: 2017-11-20T04:55:22.299081894-08:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
   subpackages:
   - compute/metadata
   - internal
-- name: github.com/appscode/errors
-  version: 748883e321a9f99fe901bd2663c7af3fcae43ea4
 - name: github.com/appscode/go
-  version: 6c0d0eba230ad31f74a18b44beee6f865b01bdec
+  version: 1cd97c853ad364376f9c792106deb0bfd197bca0
   subpackages:
   - context
   - crypto/rand
@@ -23,6 +21,7 @@ imports:
   - log/golog
   - runtime
   - strings
+  - term
   - types
   - version
   - wait
@@ -30,8 +29,6 @@ imports:
   version: fb73cc77670ccedf571d05bc6d17336f762fe9cf
 - name: github.com/appscode/go-hetzner
   version: 2862c36e840d98476edf9f1826717d354547be6f
-- name: github.com/appscode/go-term
-  version: d0c677f2d84034b1357d3f69ffd29c5fb81f662f
 - name: github.com/appscode/kutil
   version: c7547d78847930f4b48c4e3b3d6fe1d8b0309bd7
   subpackages:
@@ -221,7 +218,7 @@ imports:
   - protoc-gen-gogo/descriptor
   - sortkeys
 - name: github.com/golang/glog
-  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+  version: 44145f04b68cf362d9c4df2182967c2275eaefed
 - name: github.com/golang/groupcache
   version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
   subpackages:
@@ -310,7 +307,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/lib/pq
-  version: 69552e54d2a9d4c6a2438926a774930f7bc398ec
+  version: 8c6ee72f3e6bcb1542298dd5f76cb74af9742cec
   subpackages:
   - oid
 - name: github.com/mailru/easyjson
@@ -322,7 +319,7 @@ imports:
 - name: github.com/MakeNowJust/heredoc
   version: 1d91351acdc1cb2f2c995864674b754134b86ca7
 - name: github.com/mattn/go-colorable
-  version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
+  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
 - name: github.com/mattn/go-isatty
   version: 57fdcb988a5c543893cc61bce354a6e24ab70022
 - name: github.com/matttproud/golang_protobuf_extensions
@@ -447,7 +444,7 @@ imports:
   subpackages:
   - open
 - name: github.com/softlayer/softlayer-go
-  version: 17470076bfd71eee8ed8e592c72a8b305826f809
+  version: 7fd053690157807b18b2e5b2d306c9ab798531aa
   subpackages:
   - config
   - datatypes
@@ -455,7 +452,7 @@ imports:
   - session
   - sl
 - name: github.com/spf13/cobra
-  version: 2da4a54c5ceefcee7ca5dd0eea1e18a3b6366489
+  version: 19e54c4a2b8a78c9d54b2bed61b1a6c5e1bfcf6f
   subpackages:
   - doc
 - name: github.com/spf13/pflag
@@ -1013,5 +1010,3 @@ testImports:
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
   - assert
-- name: github.com/tamalsaha/go-oneliners
-  version: 002ce46cc7896a5399130ec3d8f8dd5cb3e422e4

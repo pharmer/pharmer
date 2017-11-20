@@ -11,7 +11,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	azdate "github.com/Azure/go-autorest/autorest/date"
-	"github.com/appscode/go-term"
+	"github.com/appscode/go/term"
 	"github.com/appscode/go/types"
 	"github.com/appscode/go/wait"
 	api "github.com/appscode/pharmer/apis/v1alpha1"

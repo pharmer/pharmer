@@ -3,18 +3,18 @@ package inspector
 import (
 	"fmt"
 
-	term "github.com/appscode/go-term"
 	"github.com/appscode/go/errors"
+	term "github.com/appscode/go/term"
+	. "github.com/appscode/pharmer/cloud"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
-	. "github.com/appscode/pharmer/cloud"
 )
 
 func (i *Inspector) CheckHelthStatus() error {
 	term.Println("Checking for component status...")
-	attempt := 0;
+	attempt := 0
 	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		attempt++
 		resp, err := i.client.CoreV1().ComponentStatuses().List(metav1.ListOptions{

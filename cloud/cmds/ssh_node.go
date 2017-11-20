@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/appscode/go-term"
 	"github.com/appscode/go/flags"
 	"github.com/appscode/go/log"
+	"github.com/appscode/go/term"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"
 	"github.com/spf13/cobra"

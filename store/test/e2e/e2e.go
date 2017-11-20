@@ -12,7 +12,7 @@ import (
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/util/homedir"
-	//logs "github.com/appscode/log/golog"
+	//logs "github.com/appscode/go/log/golog"
 )
 
 const (

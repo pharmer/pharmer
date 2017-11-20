@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/appscode/go-term"
 	"github.com/appscode/go/flags"
+	"github.com/appscode/go/term"
 	"github.com/appscode/kutil/tools/backup"
 	"github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/config"

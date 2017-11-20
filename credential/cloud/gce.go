@@ -6,8 +6,8 @@ import (
 	"net"
 	"net/http"
 
-	term "github.com/appscode/go-term"
 	"github.com/appscode/go/log"
+	term "github.com/appscode/go/term"
 	"github.com/skratchdot/open-golang/open"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
