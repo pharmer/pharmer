@@ -13,9 +13,9 @@ import (
 	azdate "github.com/Azure/go-autorest/autorest/date"
 	"github.com/appscode/go-term"
 	"github.com/appscode/go/types"
+	"github.com/appscode/go/wait"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/credential"
-	"github.com/cenkalti/backoff"
 	"github.com/pborman/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -23,6 +23,8 @@ import (
 const (
 	azureNativeApplicationID = "a6fa51f3-f8b6-4eb5-833a-58a706552eae"
 	azureTenantID            = "772268e5-d940-4bf6-be82-1c4a09a67f5d"
+	RetryInterval            = 5 * time.Second
+	RetryTimeout             = 15 * time.Minute
 )
 
 func getSptFromDeviceFlow(oauthConfig adal.OAuthConfig, clientID, resource string) (*adal.ServicePrincipalToken, error) {
@@ -195,7 +197,7 @@ func IssueAzureCredential(name string) (*api.Credential, error) {
 		},
 	}
 
-	backoff.Retry(func() error {
+	wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		roleAssignmentName := uuid.NewRandom().String()
 		_, err := roleAssignClient.Create("subscriptions/"+subscriptionID, roleAssignmentName, aauthz.RoleAssignmentCreateParameters{
 			Properties: &aauthz.RoleAssignmentProperties{
@@ -203,8 +205,11 @@ func IssueAzureCredential(name string) (*api.Credential, error) {
 				RoleDefinitionID: roleID,
 			},
 		})
-		return err
-	}, backoff.NewExponentialBackOff())
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	})
 
 	return &api.Credential{
 		ObjectMeta: metav1.ObjectMeta{

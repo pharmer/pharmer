@@ -8,7 +8,6 @@ import (
 	stringz "github.com/appscode/go/strings"
 	"github.com/appscode/go/wait"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/cenkalti/backoff"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -124,31 +123,30 @@ func HasNoUserApps(client kubernetes.Interface) (bool, error) {
 
 func DeleteLoadBalancers(client kubernetes.Interface) error {
 	// Delete services with type = LoadBalancer
-	backoff.Retry(func() error {
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		svcs, err := client.CoreV1().Services("").List(metav1.ListOptions{})
 		if err != nil {
-			return err
+			return false, nil
 		}
 		for _, svc := range svcs.Items {
 			if svc.Spec.Type == core.ServiceTypeLoadBalancer {
 				trueValue := true
 				err = client.CoreV1().Services(svc.Namespace).Delete(svc.Name, &metav1.DeleteOptions{OrphanDependents: &trueValue})
 				if err != nil {
-					return err
+					return false, nil
 				}
 			}
 		}
-		return nil
-	}, backoff.NewExponentialBackOff())
+		return true, nil
+	})
 
-	return nil
 }
 
 func DeleteDyanamicVolumes(client kubernetes.Interface) error {
-	backoff.Retry(func() error {
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		pvcs, err := client.CoreV1().PersistentVolumeClaims("").List(metav1.ListOptions{})
 		if err != nil {
-			return err
+			return false, nil
 		}
 		for _, pvc := range pvcs.Items {
 			if pvc.Status.Phase == core.ClaimBound {
@@ -158,15 +156,14 @@ func DeleteDyanamicVolumes(client kubernetes.Interface) error {
 						trueValue := true
 						err = client.CoreV1().PersistentVolumeClaims(pvc.Namespace).Delete(pvc.Name, &metav1.DeleteOptions{OrphanDependents: &trueValue})
 						if err != nil {
-							return err
+							return true, nil
 						}
 					}
 				}
 			}
 		}
-		return nil
-	}, backoff.NewExponentialBackOff())
-	return nil
+		return false, nil
+	})
 }
 
 func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cluster *api.Cluster) error {
