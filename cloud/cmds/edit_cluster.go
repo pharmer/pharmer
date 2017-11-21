@@ -106,7 +106,7 @@ func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Wr
 
 	// Check if flags are provided to update
 	// TODO: Provide list of flag names. If any of them is provided, update
-	if utils.CheckAlterableFlags(cmd, "locked") {
+	if utils.CheckAlterableFlags(cmd, "locked", "kubernetes-version", "kubelet-version", "kubeadm-version") {
 		updated, err := cloud.Store(ctx).Clusters().Get(clusterName)
 		if err != nil {
 			return err

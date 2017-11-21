@@ -255,7 +255,6 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	}
 
 	_, sshKeyID, err := conn.getPublicKey()
-	fmt.Println(sshKeyID, "*************")
 	if err != nil {
 		return nil, err
 	}
@@ -277,6 +276,9 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		opts.SSHKey = sshKeyID
 	}
 	resp, err := conn.client.CreateServer(name, regionID, planID, osID, opts)
+	if err != nil {
+		return nil, err
+	}
 	Logger(conn.ctx).Infof("Vultr server %v created", name)
 
 	if err = conn.waitForActiveInstance(resp.ID); err != nil {

@@ -114,17 +114,17 @@ func getColumns(options PrintOptions, t reflect.Type) []string {
 	columns := make([]string, 0)
 	columns = append(columns, "NAME")
 	switch t.String() {
-	case "*api.Cluster":
+	case "*v1alpha1.Cluster":
 		columns = append(columns, "PROVIDER")
 		columns = append(columns, "ZONE")
 		columns = append(columns, "VERSION")
 		columns = append(columns, "RUNNING SINCE")
 		columns = append(columns, "STATUS")
-	case "*api.NodeGroup":
+	case "*v1alpha1.NodeGroup":
 		columns = append(columns, "Cluster")
 		columns = append(columns, "Node")
 		columns = append(columns, "SKU")
-	case "*api.Credential":
+	case "*v1alpha1.Credential":
 		columns = append(columns, "Provider")
 		columns = append(columns, "Data")
 	}
