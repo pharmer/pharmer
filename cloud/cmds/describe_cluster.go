@@ -32,11 +32,6 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 			err = RunDescribeCluster(ctx, cmd, out, args)
 			term.ExitOnError(err)
-
-			clusterName := args[0]
-			resp, err := cloud.CheckForUpdates(ctx, clusterName)
-			term.ExitOnError(err)
-			term.Println(resp)
 		},
 	}
 
@@ -63,6 +58,10 @@ func RunDescribeCluster(ctx context.Context, cmd *cobra.Command, out io.Writer, 
 			fmt.Fprint(out, s)
 		} else {
 			fmt.Fprintf(out, "\n\n%s", s)
+		}
+
+		if resp, err := cloud.CheckForUpdates(ctx, cluster.Name); err == nil {
+			term.Println(resp)
 		}
 	}
 
