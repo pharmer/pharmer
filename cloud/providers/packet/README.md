@@ -1,3 +1,10 @@
+## Running Kubernetes on Packet with Pharmer
+
+[Packet](http://www.packet.net) is a bare metal cloud built for developers.
+
+Pharmer uses the [Packet API](https://www.packet.net/developers/api/) for provisioning.
+
+Before you start, you'll need a project UUID and API key for the `pharmer create credential` command.
 
 ## Example Commands
 
