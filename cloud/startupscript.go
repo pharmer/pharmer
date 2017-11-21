@@ -189,6 +189,8 @@ kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 {{ template "flannel" . }}
 {{ else if eq .NetworkProvider "calico" }}
 {{ template "calico" . }}
+{{ else if eq .NetworkProvider "weavenet" }}
+{{ template "weavenet" . }}
 {{ end }}
 
 kubectl apply \
@@ -325,9 +327,18 @@ done
 # systemctl restart kubelet
 # systemctl restart docker
 `))
+
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 kubectl apply \
   -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/calico/2.6/calico.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+`))
+
+	_ = template.Must(StartupScriptTemplate.New("weavenet").Parse(`
+sysctl net.bridge.bridge-nf-call-iptables=1
+export kubever=$(kubectl version --kubeconfig /etc/kubernetes/admin.conf | base64 | tr -d '\n')
+kubectl apply \
+  -f "https://cloud.weave.works/k8s/net?k8s-version=$kubever" \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 
