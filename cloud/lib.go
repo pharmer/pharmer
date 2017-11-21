@@ -144,6 +144,11 @@ func DeleteNG(ctx context.Context, nodeGroupName, clusterName string) error {
 }
 
 func GetSSHConfig(ctx context.Context, cluster *api.Cluster, nodeName string) (*api.SSHConfig, error) {
+	var err error
+	ctx, err = LoadCACertificates(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
 	client, err := NewAdminClient(ctx, cluster)
 	if err != nil {
 		return nil, err
