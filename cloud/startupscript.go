@@ -82,6 +82,7 @@ func (td TemplateData) PackageList() string {
 		"git",
 		"glusterfs-client",
 		"haveged",
+		"jq",
 		"nfs-common",
 		"socat",
 	}
