@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
@@ -16,6 +18,14 @@ import (
 )
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
+	// Vult node connect with private ip not working
+	apiServerAddress := cluster.APIServerAddress()
+	for _, addr := range cluster.Status.APIAddresses {
+		if addr.Type == core.NodeExternalIP {
+			apiServerAddress = fmt.Sprintf("%s:%d", addr.Address, cluster.Spec.API.BindPort)
+			break
+		}
+	}
 	td := TemplateData{
 		ClusterName:      cluster.Name,
 		KubeletVersion:   cluster.Spec.KubeletVersion,
@@ -24,7 +34,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		CAHash:           pubkeypin.Hash(CACert(ctx)),
 		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:    string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		APIServerAddress: cluster.APIServerAddress(),
+		APIServerAddress: apiServerAddress,
 		NetworkProvider:  cluster.Spec.Networking.NetworkProvider,
 		Provider:         cluster.Spec.Cloud.CloudProvider,
 		ExternalProvider: true, // Vultr uses out-of-tree CCM

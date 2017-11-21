@@ -82,7 +82,6 @@ func RunGetNodeGroup(ctx context.Context, cmd *cobra.Command, out io.Writer, arg
 			}
 		}
 
-		rPrinter.(*printer.HumanReadablePrinter).PrintHeader(true)
 	}
 
 	w.Flush()
