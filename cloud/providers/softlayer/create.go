@@ -48,12 +48,6 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 			string(core.NodeExternalIP),
 		}, ","),
 	}
-	// kubelet log: error: failed to run Kubelet: Running with swap on is not supported, please disable swap! or set --fail-swap-on flag to false.
-	// https://github.com/kubernetes/kubernetes/issues/50373
-	// https://github.com/kubernetes/kubernetes/issues/53533#issuecomment-335219173
-	cluster.Spec.KubeletExtraArgs = map[string]string{
-		"fail-swap-on": "false",
-	}
 
 	// Init status
 	cluster.Status = api.ClusterStatus{

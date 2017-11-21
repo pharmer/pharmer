@@ -82,6 +82,7 @@ func (td TemplateData) PackageList() string {
 		"git",
 		"glusterfs-client",
 		"haveged",
+		"jq",
 		"nfs-common",
 		"socat",
 	}
@@ -140,7 +141,7 @@ curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/
 	&& mv kubeadm /usr/bin/
 {{ end }}
 
-curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.10/pre-k-linux-amd64 \
+curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.11/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
@@ -177,9 +178,9 @@ EOF
 
 pre-k merge master-config \
 	--config=/etc/kubernetes/kubeadm/base.yaml \
-	--apiserver-advertise-address=$(pre-k get public-ips --all=false) \
-	--apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
-	--apiserver-cert-extra-sans=$(pre-k get private-ips) \
+	--apiserver-advertise-address=$(pre-k machine public-ips --all=false) \
+	--apiserver-cert-extra-sans=$(pre-k machine public-ips --routable) \
+	--apiserver-cert-extra-sans=$(pre-k machine private-ips) \
 	--node-name=${NODE_NAME:-} \
 	> /etc/kubernetes/kubeadm/config.yaml
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
@@ -188,6 +189,8 @@ kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 {{ template "flannel" . }}
 {{ else if eq .NetworkProvider "calico" }}
 {{ template "calico" . }}
+{{ else if eq .NetworkProvider "weavenet" }}
+{{ template "weavenet" . }}
 {{ end }}
 
 kubectl apply \
@@ -240,7 +243,7 @@ curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/
 	&& chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
 {{ end }}
-curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.10/pre-k-linux-amd64 \
+curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.11/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
@@ -324,9 +327,18 @@ done
 # systemctl restart kubelet
 # systemctl restart docker
 `))
+
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 kubectl apply \
   -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/calico/2.6/calico.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+`))
+
+	_ = template.Must(StartupScriptTemplate.New("weavenet").Parse(`
+sysctl net.bridge.bridge-nf-call-iptables=1
+export kubever=$(kubectl version --kubeconfig /etc/kubernetes/admin.conf | base64 | tr -d '\n')
+kubectl apply \
+  -f "https://cloud.weave.works/k8s/net?k8s-version=$kubever" \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 

@@ -29,7 +29,6 @@ func (cm *ClusterManager) GetDefaultNodeSpec(sku string) (api.NodeSpec, error) {
 func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	n := namer{cluster: cluster}
 
-	cluster.Spec.Networking.NetworkProvider = "calico"
 	// Init object meta
 	cluster.ObjectMeta.UID = uuid.NewUUID()
 	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}

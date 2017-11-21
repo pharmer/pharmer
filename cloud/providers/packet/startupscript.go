@@ -109,6 +109,9 @@ var (
 # Avoid using Packet's Ubuntu mirror
 curl -fsSL --retry 5 -o /etc/apt/sources.list https://raw.githubusercontent.com/appscode/pharmer/master/addons/ubuntu/16.04/sources.list
 {{ end }}
+{{ define "prepare-host" }}
+pre-k machine swapoff
+{{ end }}
 `
 )
 
