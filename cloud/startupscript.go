@@ -141,7 +141,7 @@ curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/
 	&& mv kubeadm /usr/bin/
 {{ end }}
 
-curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.10/pre-k-linux-amd64 \
+curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.11/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
@@ -178,9 +178,9 @@ EOF
 
 pre-k merge master-config \
 	--config=/etc/kubernetes/kubeadm/base.yaml \
-	--apiserver-advertise-address=$(pre-k get public-ips --all=false) \
-	--apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
-	--apiserver-cert-extra-sans=$(pre-k get private-ips) \
+	--apiserver-advertise-address=$(pre-k machine public-ips --all=false) \
+	--apiserver-cert-extra-sans=$(pre-k machine public-ips --routable) \
+	--apiserver-cert-extra-sans=$(pre-k machine private-ips) \
 	--node-name=${NODE_NAME:-} \
 	> /etc/kubernetes/kubeadm/config.yaml
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
@@ -241,7 +241,7 @@ curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/
 	&& chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
 {{ end }}
-curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.10/pre-k-linux-amd64 \
+curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.11/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 

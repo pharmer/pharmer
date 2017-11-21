@@ -124,6 +124,9 @@ function ensure-basic-networking() {
 
 ensure-basic-networking
 {{ end }}
+{{ define "prepare-host" }}
+pre-k machine swapoff
+{{ end }}
 `
 )
 
