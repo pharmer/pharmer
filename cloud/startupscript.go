@@ -56,24 +56,6 @@ func (td TemplateData) KubeletExtraArgsStr() string {
 	return buf.String()
 }
 
-func (td TemplateData) KubeletExtraArgsEmptyCloudProviderStr() string {
-	var buf bytes.Buffer
-	for k, v := range td.KubeletExtraArgs {
-		if k == "cloud-config" {
-			continue
-		}
-		if k == "cloud-provider" {
-			v = ""
-		}
-		buf.WriteString("--")
-		buf.WriteString(k)
-		buf.WriteRune('=')
-		buf.WriteString(v)
-		buf.WriteRune(' ')
-	}
-	return buf.String()
-}
-
 func (td TemplateData) PackageList() string {
 	pkgs := []string{
 		"cron",
@@ -316,16 +298,6 @@ do
    echo '.'
    sleep 5
 done
-
-# kubectl taint nodes $(uname -n) node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
-#
-# cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
-# [Service]
-# Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
-# EOF
-# systemctl daemon-reload
-# systemctl restart kubelet
-# systemctl restart docker
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
