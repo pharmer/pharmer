@@ -76,7 +76,7 @@ func (conn *cloudConnector) importPublicKey() (string, error) {
 	Logger(conn.ctx).Debugln("Adding SSH public key")
 	sk, _, err := conn.client.SSHKeys.Create(&packngo.SSHKeyCreateRequest{
 		Key:       string(SSHKey(conn.ctx).PublicKey),
-		Label:     conn.cluster.Name,
+		Label:     conn.cluster.Spec.Cloud.SSHKeyName,
 		ProjectID: conn.cluster.Spec.Cloud.Project,
 	})
 	if err != nil {
