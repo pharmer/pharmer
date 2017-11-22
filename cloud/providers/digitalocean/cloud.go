@@ -91,18 +91,17 @@ func (conn *cloudConnector) getPublicKey() (bool, int, error) {
 	return true, key.ID, nil
 }
 
-func (conn *cloudConnector) importPublicKey() error {
+func (conn *cloudConnector) importPublicKey() (string, error) {
 	Logger(conn.ctx).Infof("Adding SSH public key")
 	id, _, err := conn.client.Keys.Create(context.TODO(), &godo.KeyCreateRequest{
 		Name:      conn.cluster.Spec.Cloud.SSHKeyName,
 		PublicKey: string(SSHKey(conn.ctx).PublicKey),
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
-	conn.cluster.Status.Cloud.SShKeyExternalID = strconv.Itoa(id.ID)
 	Logger(conn.ctx).Info("SSH public key added")
-	return nil
+	return strconv.Itoa(id.ID), nil
 }
 
 func (conn *cloudConnector) deleteSSHKey() error {

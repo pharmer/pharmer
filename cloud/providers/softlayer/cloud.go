@@ -95,6 +95,9 @@ func (conn *cloudConnector) waitForInstance(id int) error {
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) getPublicKey() (bool, int, error) {
+	if conn.cluster.Status.Cloud.SShKeyExternalID == "" {
+		return false, -1, nil
+	}
 	sshKeys, err := conn.accountServiceClient.GetSshKeys()
 	if err != nil {
 		return false, -1, err
@@ -115,26 +118,19 @@ func (conn *cloudConnector) getPublicKey() (bool, int, error) {
 	return false, -1, nil
 }
 
-func (conn *cloudConnector) importPublicKey() error {
+func (conn *cloudConnector) importPublicKey() (string, error) {
 	Logger(conn.ctx).Debugln("Adding SSH public key")
 
 	securitySSHTemplate := datatypes.Security_Ssh_Key{
 		Label: StringP(conn.cluster.Name),
 		Key:   StringP(string(SSHKey(conn.ctx).PublicKey)),
 	}
-	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		sk, e2 := conn.securityServiceClient.CreateObject(&securitySSHTemplate)
-		if e2 != nil {
-			return false, nil
-		}
-		conn.cluster.Status.Cloud.SShKeyExternalID = strconv.Itoa(*sk.Id)
-		return true, nil
-	})
+	sk, err := conn.securityServiceClient.CreateObject(&securitySSHTemplate)
 	if err != nil {
-		return nil
+		return "", err
 	}
 	Logger(conn.ctx).Debugf("Created new ssh key with fingerprint=%v", SSHKey(conn.ctx).OpensshFingerprint)
-	return nil
+	return strconv.Itoa(*sk.Id), nil
 }
 
 func (conn *cloudConnector) deleteSSHKey(id int) error {

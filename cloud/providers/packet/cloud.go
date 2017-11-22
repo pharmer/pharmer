@@ -59,6 +59,9 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) getPublicKey() (bool, string, error) {
+	if conn.cluster.Status.Cloud.SShKeyExternalID == "" {
+		return false, "", nil
+	}
 	key, resp, err := conn.client.SSHKeys.Get(conn.cluster.Status.Cloud.SShKeyExternalID)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return false, "", nil
@@ -69,25 +72,18 @@ func (conn *cloudConnector) getPublicKey() (bool, string, error) {
 	return true, key.ID, nil
 }
 
-func (conn *cloudConnector) importPublicKey() error {
+func (conn *cloudConnector) importPublicKey() (string, error) {
 	Logger(conn.ctx).Debugln("Adding SSH public key")
-	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		sk, _, err := conn.client.SSHKeys.Create(&packngo.SSHKeyCreateRequest{
-			Key:       string(SSHKey(conn.ctx).PublicKey),
-			Label:     conn.cluster.Name,
-			ProjectID: conn.cluster.Spec.Cloud.Project,
-		})
-		if err != nil {
-			return false, nil
-		}
-		conn.cluster.Status.Cloud.SShKeyExternalID = sk.ID
-		return true, nil
+	sk, _, err := conn.client.SSHKeys.Create(&packngo.SSHKeyCreateRequest{
+		Key:       string(SSHKey(conn.ctx).PublicKey),
+		Label:     conn.cluster.Name,
+		ProjectID: conn.cluster.Spec.Cloud.Project,
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 	Logger(conn.ctx).Debugf("Created new ssh key with fingerprint=%v", SSHKey(conn.ctx).OpensshFingerprint)
-	return nil
+	return sk.ID, nil
 }
 
 func (conn *cloudConnector) deleteSSHKey(id string) error {
