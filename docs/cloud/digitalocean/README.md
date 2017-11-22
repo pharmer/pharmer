@@ -1,7 +1,7 @@
 
 ## Setting up Kubernetes in DigitalOcean
 
-Following instructions are about to show you how to use `pharmer` to create, delete, upgrade and scale up or down a 
+Following instructions are about to show you how to use `pharmer` to create, delete, upgrade and scale up or down a
 kubernetes cluster in DigitalOcean. Pharmer uses ubuntu 16.04 image as default.
 
 ### Installation
@@ -33,7 +33,7 @@ spec:
   provider: DigitalOcean
 ```
 Here,
- 
+
  * `spec.data.token` is the access token that retrieved from digitalocean.
 
 To modify existing credential you need to run following command
@@ -41,7 +41,7 @@ To modify existing credential you need to run following command
 ```bash
 $ pharmer get credentials
 Name
-do           DigitalOcean   token=***** 
+do           DigitalOcean   token=*****
 $ pharmer edit credential do
 ```
 
@@ -58,7 +58,7 @@ $ pharmer create cluster d1 \
 	--zone=nyc3 \
 	--nodes=2gb=1 \
 	--credential-uid=do \
-	--kubernetes-version=1.8.0 
+	--kubernetes-version=1.8.0
 ```
 If you want to use specific version of `kubelet` and  `kubeadm` then you can pass those flag too.
 ```bash
@@ -77,11 +77,11 @@ If you are using local file system as a storage engine, the directory structure 
         |    |       |__ master.json
         |    |       |
         |    |       |__ 2gb-pool.json
-        |    |       
+        |    |
         |    |--- pki
         |    |     |__ ca.crt
         |    |     |
-        |    |     |__ ca.key 
+        |    |     |__ ca.key
         |    |     |
         |    |     |__ front-proxy-ca.crt
         |    |     |
@@ -137,7 +137,7 @@ status:
   cloud: {}
   phase: Pending
   sshKeyExternalID: d1-ssddan
-```  
+```
 Here,
 
 * `metadata.name` refers the cluster name, which should be unique within your cluster list.
@@ -191,7 +191,7 @@ If everything looks ok you are good to run:
 $ pharmer apply d1 --v=3
 ```
 
-After finishing cluster bootstrap process, the cluster status phase will be `Ready`. 
+After finishing cluster bootstrap process, the cluster status phase will be `Ready`.
 ```yaml
 kind: Cluster
 metadata:
@@ -233,7 +233,7 @@ You can use the cluster from your local machine by running
 
 ```bash
 $ pharmer use cluster d1
-``` 
+```
 
 
 #### Scalling
@@ -241,7 +241,7 @@ $ pharmer use cluster d1
 In terms of scalling a cluster there are two scenarios. Either you can scale up or down existing node groups or you can add a new nodegroup.
 
 ##### Scenario 1:
-   
+
 To update an existing node groups (increment or decrement the number of node) following command will help:
 
 ```yaml
@@ -267,7 +267,7 @@ spec:
       sku: 2gb
 status:
   nodes: 1
-``` 
+```
 
 Here modify the `node` number under `spec` field to update certain node group.
 
@@ -338,7 +338,7 @@ Pharmer can upgrade a cluster(such as, from 1.7 to 1.8) by using following comma
 
 ```bash
 $ pharmer edit cluster d1 --kubernetes-version=v1.8.1
-``` 
+```
 The other way to to upgrade cluster is edit cluster and manually update ta kubernetes version.
 
 ```yaml
@@ -430,4 +430,4 @@ After deleting cluster run:
 
 ```bash
 $ pharmer apply c1 --v=3
-``` 
+```
