@@ -16,11 +16,16 @@ import (
 )
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
+	cred, err := Store(ctx).Credentials().Get(cluster.Spec.Cloud.CCMCredentialName)
+	if err != nil {
+		panic(err)
+	}
 	td := TemplateData{
 		ClusterName:      cluster.Name,
 		KubeletVersion:   cluster.Spec.KubeletVersion,
 		KubeadmVersion:   cluster.Spec.KubeletVersion,
 		KubeadmToken:     token,
+		CloudCredential:  cred.Spec.Data,
 		CAHash:           pubkeypin.Hash(CACert(ctx)),
 		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:    string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
@@ -119,9 +124,12 @@ function ensure-basic-networking() {
 }
 
 ensure-basic-networking
+{{ end }}
 
+{{ define "prepare-host" }}
 # https://www.vultr.com/docs/configuring-private-network
-PRIVATE_ADDRESS=$(/usr/bin/curl -fsSL --retry 5 http://169.254.169.254/v1/interfaces/1/ipv4/address 2> /dev/null)
+INSTANCE_ID=$(/usr/bin/curl -fsSL --retry 5 http://169.254.169.254/v1/instanceid 2> /dev/null)
+PRIVATE_ADDRESS=$(pre-k vultr private-ip --token={{ index .CloudCredential "token" }} --instance-id=$INSTANCE_ID)
 PRIVATE_NETMASK=$(/usr/bin/curl -fsSL --retry 5 http://169.254.169.254/v1/interfaces/1/ipv4/netmask 2> /dev/null)
 /bin/cat >>/etc/network/interfaces <<EOF
 

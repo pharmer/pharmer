@@ -16,6 +16,7 @@ type TemplateData struct {
 	KubeletVersion   string
 	KubeadmVersion   string
 	KubeadmToken     string
+	CloudCredential  map[string]string
 	CAHash           string
 	CAKey            string
 	FrontProxyKey    string
@@ -123,7 +124,7 @@ curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/
 	&& mv kubeadm /usr/bin/
 {{ end }}
 
-curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.11/pre-k-linux-amd64 \
+curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.12/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
@@ -225,7 +226,7 @@ curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/
 	&& chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
 {{ end }}
-curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.11/pre-k-linux-amd64 \
+curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.12/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 

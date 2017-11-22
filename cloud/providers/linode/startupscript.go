@@ -139,7 +139,7 @@ EOF
 {{ end }}
 
 {{ define "prepare-host" }}
-HOSTNAME=$(pre-k get linode-hostname -k {{ .ClusterName }})
+HOSTNAME=$(pre-k linode hostname -k {{ .ClusterName }})
 hostnamectl set-hostname $HOSTNAME
 {{ end }}
 `
