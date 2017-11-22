@@ -26,9 +26,9 @@ This project is spread over 4 repositories:
 - [appscode/swanc](https://github.com/appscode/swanc): StrongSwan based VPN Controller for Kubernetes
 
 ## User Guide
- - [Create & manage a Kubernetes cluster in DigitalOcean](https://github.com/appscode/pharmer/blob/master/cloud/providers/digitalocean/README.md)
- - [Create & manage a Kubernetes cluster in Vultr](https://github.com/appscode/pharmer/blob/master/cloud/providers/vultr/README.md)
- - [Create & manage a Kubernetes cluster in Linode](https://github.com/appscode/pharmer/blob/master/cloud/providers/linode/README.md)
+ - [Create & manage a Kubernetes cluster in DigitalOcean](/docs/cloud/digitalocean/README.md)
+ - [Create & manage a Kubernetes cluster in Vultr](/docs/cloud/vultr/README.md)
+ - [Create & manage a Kubernetes cluster in Linode](/docs/cloud/linode/README.md)
 
 ## Support
 If you have any questions, [file an issue](https://github.com/appscode/pharmer/issues/new) or talk to us on the [Kubernetes Slack team](http://slack.kubernetes.io/) channel `#pharmer`.

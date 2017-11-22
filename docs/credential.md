@@ -4,7 +4,7 @@ For creating cluster `pharmer` needs cloud provider's credential, so that it can
 
 `pharmer` provides an interactive shell to help user to provider credential information.
 
-![credential](../docs/images/credential.png)
+![credential](/docs/images/credential.png)
 
 ### Creating
 
@@ -88,7 +88,7 @@ To show the all credentials available on your storage run the following command
 $ phamer get credentials  
 ```  
 
-![credential-list](../docs/images/credential-list.png)
+![credential-list](/docs/images/credential-list.png)
 
 To update your credentials, run
 ```bash
