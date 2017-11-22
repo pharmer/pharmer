@@ -108,7 +108,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  "Public key will be imported",
 		})
 		if !dryRun {
-			err = cm.conn.importPublicKey()
+			cm.cluster.Status.Cloud.SShKeyExternalID, err = cm.conn.importPublicKey()
 			if err != nil {
 				return
 			}
