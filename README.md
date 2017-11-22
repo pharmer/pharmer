@@ -28,6 +28,7 @@ This project is spread over 4 repositories:
 ## User Guide
  - [Create & manage a Kubernetes cluster in DigitalOcean](https://github.com/appscode/pharmer/blob/master/cloud/providers/digitalocean/README.md)
  - [Create & manage a Kubernetes cluster in Vultr](https://github.com/appscode/pharmer/blob/master/cloud/providers/vultr/README.md)
+ - [Create & manage a Kubernetes cluster in Linode](https://github.com/appscode/pharmer/blob/master/cloud/providers/linode/README.md)
 
 ## Support
 If you have any questions, [file an issue](https://github.com/appscode/pharmer/issues/new) or talk to us on the [Kubernetes Slack team](http://slack.kubernetes.io/) channel `#pharmer`.

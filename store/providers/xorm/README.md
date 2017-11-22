@@ -61,25 +61,26 @@ The table of the xorm storage provider will be look like:
 |id|kind|apiVersion|name|uid|resourceVersion|generation|labels|data|creationTimestamp|dateModified|deletionTimestamp|  
 |--|----|----------|----|---|---------------|----------|------|----|-----------------|------------|-----------------| 
 
-```bash
-~/.pharmer/
-      |--config.d/
-      |      |
-      |      |__ default
-      |   
-      |__ store.d/
-             |
-             |-- clusters/
-             |
-             |__ credentials/
-            
-```
+**credential**
 
-Here,
- - `config.d/default`: is the storage configuration file
- - `store.d/cluster`: stores cluster resources. There is a file with `<cluster-name>.json`, a `nodegroup` directory which contains
- nodegroup files, a `pki` directory having cluster certificates and an `ssh` directory which stores public and private ssh key for the cluster.
- - `store.d/credentials`: stores credential resources
+|id|kind|apiVersion|name|uid|resourceVersion|generation|labels|data|creationTimestamp|dateModified|deletionTimestamp|  
+|--|----|----------|----|---|---------------|----------|------|----|-----------------|------------|-----------------| 
+
+**nodegroup**
+
+|id|kind|apiVersion|name|clusterName|uid|resourceVersion|generation|labels|data|creationTimestamp|dateModified|deletionTimestamp|  
+|--|----|----------|----|-----------|---|---------------|----------|------|----|-----------------|------------|-----------------| 
+
+**certificate**
+
+|id|name|clusterName|uid|cert|key|creationTimestamp|dateModified|deletionTimestamp|  
+|--|----|-----------|---|----|---|-----------------|------------|-----------------| 
+
+**certificate**
+
+|id|name|clusterName|uid|publicKey|privateKey|creationTimestamp|dateModified|deletionTimestamp|  
+|--|----|-----------|---|---------|----------|-----------------|------------|-----------------| 
+
 
 You can view the config using 
 ```yaml
@@ -89,8 +90,13 @@ pharmer config view
 context: default
 kind: PharmerConfig
 store:
-  local:
-    path: /home/sanjid/.pharmer/store.d
+  store:
+    postgres:
+      database: postgres
+      user: postgres
+      password: postgres
+      host: 127.0.0.1
+      port: 5432
 
 ```
 
@@ -98,6 +104,6 @@ To list all available contexts run:
 ```bash
 $ pharmer config get-contexts
 NAME	Store
-default	Local
+default	Postgres
 
 ```
