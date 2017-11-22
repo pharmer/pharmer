@@ -15,8 +15,8 @@ $ go get github.com/appscode/pharmer
 
 To store your cluster  and credential resource, `pharmer` use vfs (virtual file system) as default storage
 provider. There is another provider (postgres database) available for storing resources. The configuration
-details of the storage provider are specified on `~/.pharmer/config.d/default` file. 
- 
+details of the storage provider are specified on `~/.pharmer/config.d/default` file.
+
  * **Vfs:** By default `pharmer` uses this provider. The configuration details of the file are:
  ```yaml
 context: default
@@ -24,17 +24,17 @@ kind: PharmerConfig
 store:
   local:
     path: /home/sanjid/.pharmer/store.d
-```  
+```
   Here store type is `local`, so in `path` a local directory is used to locate where the cluster and credential resources will be stored.
-  
+
   You can also use Amazon's `s3`, `gcs` to use google cloud storage, `azure` or `swift` for storage purpose.
   For using `s3` you have to modify the configuration file with following field
   ```yaml
-  s2:
+  s3:
     endpoint: <aws endpoint>
     bucket: <bucket name>
     prefix: <storage prefix>
-``` 
+```
   To use `gcs` modify with
   ```yaml
   gcs:
@@ -42,8 +42,8 @@ store:
     prefix: <storage prefix>
 ```
   For `azure` and `swift` you need to add `container` field along with `prefix` field.
-    
- 
+
+
  * **Database:** For storing resources on database `pharmer` uses `postgres` database provider. The configuration
  file will be like :
  ```yaml
@@ -56,7 +56,7 @@ store:
     password: <password>
     host: 127.0.0.1
     port: 5432
-```        
+```
 In this document we will use local file system as a storage provider.
 
 The directory tree of the local storage provider will be look like:
@@ -66,13 +66,13 @@ The directory tree of the local storage provider will be look like:
       |--config.d/
       |      |
       |      |__ default (storage configuration file)
-      |   
+      |
       |__ store.d/
              |
              |-- clusters/ (cluster resources)
              |
              |__ credentials/ (credential resources)
-            
+
 ```
 
 ### Credential importing
@@ -84,11 +84,11 @@ under **Account** option. Here you see the `Personal Access Token`, copy that ke
 
 From command line, run the following command and paste the api key.
 ```bash
-$ pharmer create credential vul 
-```  
+$ pharmer create credential vul
+```
 ![vultr-credential](../../../docs/images/vultr/vultr-credential.png)
 
-Here, `vul` is the credential name, which must be unique within your storage.        
+Here, `vul` is the credential name, which must be unique within your storage.
 
 To view credential file you can run:
 ```yaml
@@ -107,7 +107,7 @@ $ pharmer get credentials vul -o yaml
 Here, `spec.data.token` is the access token that you provided which can be edited by following command:
 ```bash
 $ phrmer edit credential vul
-``` 
+```
 
 To see the all credentials you need to run following command.
 
@@ -119,7 +119,7 @@ vultr        Vultr          token=*****
 
 You can also see the stored credential from the following location:
 ```bash
-~/.pharmer/store.d/credentials/vul.json            
+~/.pharmer/store.d/credentials/vul.json
 ```
 
 [//]: # (You can find other credential operations [here](link to credential)
@@ -127,8 +127,8 @@ You can also see the stored credential from the following location:
 ### Cluster provisioning
 
 There are two steps to create a Kubernetes cluster using `pharmer`.
-In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those 
-information to create cluster on specific provider. 
+In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those
+information to create cluster on specific provider.
 
 Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `vultr`
  * **Cluster Creating:** We want to create a cluster with following information:
@@ -139,8 +139,8 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `vultr`
     - Node sku: 94 (2048 MB RAM,45 GB SSD,3.00 TB BW)
     - Kubernetes version: 1.8.0
     - Credential name: [vul](#Credential importing)
-  
- For location code and sku details click [hrere](https://github.com/appscode/pharmer/blob/master/data/files/vultr/cloud.json)   
+
+ For location code and sku details click [hrere](https://github.com/appscode/pharmer/blob/master/data/files/vultr/cloud.json)
  Available options in `pharmer` to create a cluster are:
  ```bash
 $ pharmer create cluster -h
@@ -177,7 +177,7 @@ Global Flags:
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
-```    
+```
 
 So, we need to run following command to create cluster with our information.
 
@@ -187,7 +187,7 @@ $ pharmer create cluster v1 \
 	--zone=6 \
 	--nodes=94=2 \
 	--credential-uid=vul \
-	--kubernetes-version=v1.8.0 
+	--kubernetes-version=v1.8.0
 ```
 If you want to use a specific version of `kubelet` and `kubeadm` for your cluster, you can pass those flags also.
 For example:
@@ -210,11 +210,11 @@ The directory structure of the storage provider will be look like:
         |    |       |__ master.json
         |    |       |
         |    |       |__ 94-pool.json
-        |    |       
+        |    |
         |    |--- pki
         |    |     |__ ca.crt
         |    |     |
-        |    |     |__ ca.key 
+        |    |     |__ ca.key
         |    |     |
         |    |     |__ front-proxy-ca.crt
         |    |     |
@@ -231,7 +231,7 @@ Here,
 
    - `/v1/nodegroups/`: contains the node groups information. [Here](#Cluster scalling) describes node groups operation.You can see the node group list using following command.
    ```bash
-$ pharmer get nodegroups -k v1 
+$ pharmer get nodegroups -k v1
 ```
    - `v1/pki`: contains the cluster certificate information containing `ca` and `front-proxy-ca`.
    - `v1/ssh`: has the ssh credentials on cluster's nodes. With this key you can `ssh` into any node on a cluster
@@ -293,14 +293,14 @@ Here,
 * `spec.authorizationMode` refers the cluster authorization mode
 * `status.phase` may be `Pending`, `Ready`, `Deleting`, `Deleted`, `Upgrading` depending on current cluster status.
 * `status.sshKeyExternalID` shows which ssh key added to cluster instance.
- 
+
 You can modify this configuration by:
 ```bash
 $ pharmer edit cluster v1
 ```
  * **Applying:** If everything looks ok, we can now apply the resources. This actually creates resources on `Vultr`.
  Up to now we've only been working locally.
- 
+
  To apply run:
  ```bash
 $ pharmer apply v1
@@ -350,21 +350,21 @@ status:
   cloud: {}
   phase: Ready
   sshKeyExternalID: v1-jn7bxm
-``` 
+```
 Here,
 
   `status.phase`: is ready. So, you can use your cluster from local machine.
-  
+
 To get the `kubectl` configuration file(kubeconfig) on your local filesystem run the following command.
 ```bash
 $ pharmer use cluster v1
-```   
+```
 If you don't have `kubectl` installed click [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 
 Now you can run `kubectl get nodes` and verify that your kubernetes 1.8.0 is running.
 
 ```bash
-$ kubectl get nodes 
+$ kubectl get nodes
 
 NAME             STATUS    ROLES     AGE       VERSION
 94-pool-hg3pec   Ready     node      22m       v1.8.4
@@ -385,17 +385,17 @@ Scaling a cluster refers following meanings:-
  2. Decrement the number of nodes of a certain node group
  3. Introduce a new node group with a number of nodes
  4. Drop existing node group
- 
+
 To see the current node groups list, you need to run following command:
 ```bash
 $ pharmer get nodegroup -k v1
 NAME      Cluster   Node      SKU
-94-pool   v1        2         94        
-master    v1        1         95 
-```  
+94-pool   v1        2         94
+master    v1        1         95
+```
 
 * **Updating existing NG**
- 
+
 For scenario 1 & 2 we need to update our existing node group. To update existing node group configuration run
 the following command.
 
@@ -422,7 +422,7 @@ spec:
       sku: "94"
 status:
   nodes: 0
-``` 
+```
 Here,
 * `metadata.name` refers the node group name, which is unique within a cluster.
 * `metadata.labels` specifies the label of the nodegroup, which will be add to all nodes of following node group.
@@ -444,8 +444,8 @@ $ pharmer create ng --nodes=95=1 -k v1
 
 $ pharmer get nodegroups -k v1
 NAME      Cluster   Node      SKU
-94-pool   v1        2         94        
-95-pool   v1        1         95        
+94-pool   v1        2         94
+95-pool   v1        1         95
 master    v1        1         95
 
 ```
@@ -494,10 +494,10 @@ spec:
     spec:
       sku: "94"
 status:
-  nodes: 0 
+  nodes: 0
 ```
 Here,
- 
+
  - `metadata.deletionTimestamp`: will appear if node group deleted command was run
 
 After completing your change on the node groups, you need to apply that via `pharmer` so that changes will be applied
@@ -505,14 +505,14 @@ on provider cluster.
 
 ```bash
 $ pharmer apply v1
-``` 
+```
 This command will take care of your actions that you applied on the node groups recently.
 
 ```bash
 $ pharmer get ng -k v1
 NAME      Cluster   Node      SKU
-95-pool   v1        1         95        
-master    v1        1         95 
+95-pool   v1        1         95
+master    v1        1         95
 ```
 
 ### Cluster Upgrading
