@@ -224,7 +224,7 @@ The directory structure of the storage provider will be look like:
 ```
 Here,
 
-   - `/v1/nodegroups/`: contains the node groups information. [Here](#Cluster scalling) describes node groups operation.You can see the node group list using following command.
+   - `/v1/nodegroups/`: contains the node groups information. [Check below](#cluster-scaling) for node group operations.You can see the node group list using following command.
    ```bash
 $ pharmer get nodegroups -k v1
 ```
