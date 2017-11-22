@@ -122,7 +122,7 @@ You can also see the stored credential from the following location:
 ~/.pharmer/store.d/credentials/vul.json
 ```
 
-[//]: # (You can find other credential operations [here](link to credential)
+You can find other credential operations [here](../../../credential/README.md)
 
 ### Cluster provisioning
 
@@ -194,12 +194,7 @@ For example:
 
 `--kubelet-version=1.8.0 --kubeadm-version=1.8.0`
 
-For pod network `pharmer` uses [calico](https://kubernetes.io/docs/concepts/cluster-administration/networking/#project-calico) by default.
-If you want to change the default network provider, you can do that with the help of following flag.
-
-`--networking=flannel`
-
-Currently `pharmer` supports [flannel](https://kubernetes.io/docs/concepts/cluster-administration/networking/#flannel) along with default networking.
+To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](../../networking/README.md)
 
 The directory structure of the storage provider will be look like:
 
@@ -221,9 +216,9 @@ The directory structure of the storage provider will be look like:
         |    |     |__ fron-proxy-ca.key
         |    |
         |    |__ ssh
-        |          |__ id_d1-jn7bxm
+        |          |__ id_v1-jn7bxm
         |          |
-        |          |__ id_f1-jn7bxm.pub
+        |          |__ id_v1-jn7bxm.pub
         |
         |__ v1.json
 ```
