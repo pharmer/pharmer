@@ -11,25 +11,25 @@ $ go get github.com/appscode/pharmer
 
 ### Pharmer storage
 
-To store your cluster  and credential resource, `pharmer` use [vfs](../../../store/providers/vfs/README.md) as default storage
-provider. There is another provider [postgres database](../../../store/providers/xorm/README.md) available for storing resources.
+To store your cluster  and credential resource, `pharmer` use [vfs](/docs/cli/vfs.md) as default storage
+provider. There is another provider [postgres database](/docs/cli/xorm.md) available for storing resources.
 
-To know more click [here](../../../store/README.md)
+To know more click [here](/docs/cli/datastore.md)
 
-In this document we will use local file system ([vfs](../../../store/providers/vfs/README.md)) as a storage provider.
+In this document we will use local file system ([vfs](/docs/cli/vfs.md)) as a storage provider.
 
 ### Credential importing
 
 To get access on [Linode](https://www.linode.com/), `pharmer` needs credentials of `Linode`. To get the api key go to the **API Keys** section
 under **my profile** option. Here you see the `Add an API key`, create and copy that key.
 
-![linode-api-key](../../../docs/images/linode/linode-api-key.jpg)
+![linode-api-key](/docs/images/linode/linode-api-key.jpg)
 
 From command line, run the following command and paste the api key.
 ```bash
 $ pharmer create credential linode 
 ```  
-![linode-credential](../../../docs/images/linode/linode-credential.png)
+![linode-credential](/docs/images/linode/linode-credential.png)
 
 Here, `linode` is the credential name, which must be unique within your storage.        
 
@@ -65,7 +65,7 @@ You can also see the stored credential from the following location:
 ~/.pharmer/store.d/credentials/linode.json            
 ```
 
-You can find other credential operations [here](../../../credential/README.md)
+You can find other credential operations [here](/docs/credential.md)
 
 ### Cluster provisioning
 
@@ -222,7 +222,7 @@ Here,
 * `spec.cloud` specifies the cloud provider information. pharmer uses `ubuntu-16-04-x64` image by default. don't change the instance images, otherwise cluster may not be working.
 * `spec.api.bindPort` is the api server port.
 * `spec.networking` specifies the network information of the cluster
-    * `networkProvider`: by default it is `calico`. To modify it click [here](../../networking/README.md).
+    * `networkProvider`: by default it is `calico`. To modify it click [here](/docs/networking.md).
     * `podSubnet`: in order for network policy to work correctly this field is needed. For flannel it will be `10.244.0.0/16`
 * `spec.kubernetesVersion` is the cluster server version. It can be modified.
 * `spec.credentialName` is the credential name which is provider during cluster creation command.
