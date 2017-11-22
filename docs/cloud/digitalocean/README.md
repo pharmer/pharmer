@@ -236,9 +236,9 @@ $ pharmer use cluster d1
 ```
 
 
-#### Scalling
+#### Scaling
 
-In terms of scalling a cluster there are two scenarios. Either you can scale up or down existing node groups or you can add a new nodegroup.
+In terms of scaling a cluster there are two scenarios. Either you can scale up or down existing node groups or you can add a new nodegroup.
 
 ##### Scenario 1:
 
@@ -326,7 +326,7 @@ status:
 Here,
 * `metadata.deletionTimestamp` will appear if node group deleted command was run
 
-After scalling node groups you need to run:
+After scaling node groups you need to run:
 
 ```bash
 $ pharmer apply d1 --v=3
