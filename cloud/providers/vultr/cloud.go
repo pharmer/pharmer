@@ -88,7 +88,7 @@ func (conn *cloudConnector) getPublicKey() (bool, string, error) {
 		return false, "", err
 	}
 	for _, key := range keys {
-		if key.Name == conn.cluster.Status.SSHKeyExternalID {
+		if key.Name == conn.cluster.Spec.Cloud.SSHKeyName {
 			return true, key.ID, nil
 		}
 	}
@@ -97,12 +97,12 @@ func (conn *cloudConnector) getPublicKey() (bool, string, error) {
 
 func (conn *cloudConnector) importPublicKey() error {
 	Logger(conn.ctx).Infof("Adding SSH public key")
-	resp, err := conn.client.CreateSSHKey(conn.cluster.Status.SSHKeyExternalID, string(SSHKey(conn.ctx).PublicKey))
+	resp, err := conn.client.CreateSSHKey(conn.cluster.Spec.Cloud.SSHKeyName, string(SSHKey(conn.ctx).PublicKey))
 	if err != nil {
 		return errors.FromErr(err).WithContext(conn.ctx).Err()
 	}
-	Logger(conn.ctx).Debugln("DO response", resp, " errors", err)
-	Logger(conn.ctx).Infof("New ssh key with name %v and id %v created", conn.cluster.Status.SSHKeyExternalID, resp.ID)
+	conn.cluster.Status.Cloud.SShKeyExternalID = resp.ID
+	Logger(conn.ctx).Infof("New ssh key with name %v and id %v created", conn.cluster.Spec.Cloud.SSHKeyName, resp.ID)
 	return nil
 }
 

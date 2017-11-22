@@ -99,7 +99,7 @@ func (conn *cloudConnector) getPublicKey() (bool, int, error) {
 	if err != nil {
 		return false, -1, err
 	}
-	if id, err := strconv.Atoi(conn.cluster.Status.SSHKeyExternalID); err == nil {
+	if id, err := strconv.Atoi(conn.cluster.Status.Cloud.SShKeyExternalID); err == nil {
 		for _, sk := range sshKeys {
 			if *sk.Id == id {
 				return true, id, nil
@@ -127,7 +127,7 @@ func (conn *cloudConnector) importPublicKey() error {
 		if e2 != nil {
 			return false, nil
 		}
-		conn.cluster.Status.SSHKeyExternalID = strconv.Itoa(*sk.Id)
+		conn.cluster.Status.Cloud.SShKeyExternalID = strconv.Itoa(*sk.Id)
 		return true, nil
 	})
 	if err != nil {

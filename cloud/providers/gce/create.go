@@ -36,6 +36,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 
 	// Init spec
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone[0:strings.LastIndex(cluster.Spec.Cloud.Zone, "-")]
+	cluster.Spec.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	// REGISTER_MASTER_KUBELET = false // always false, keep master lightweight
 	// PREEMPTIBLE_NODE = false // Removed Support
@@ -68,8 +69,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 
 	// Init status
 	cluster.Status = api.ClusterStatus{
-		Phase:            api.ClusterPending,
-		SSHKeyExternalID: n.GenSSHKeyExternalID(),
+		Phase: api.ClusterPending,
 	}
 	return nil
 }

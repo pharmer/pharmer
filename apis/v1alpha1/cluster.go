@@ -156,10 +156,11 @@ type CloudSpec struct {
 	OS                   string      `json:"os,omitempty" protobuf:"bytes,6,opt,name=os"`
 	InstanceImageProject string      `json:"instanceImageProject,omitempty" protobuf:"bytes,7,opt,name=instanceImageProject"`
 	CCMCredentialName    string      `json:"ccmCredentialName,omitempty" protobuf:"bytes,8,opt,name=ccmCredentialName"`
-	AWS                  *AWSSpec    `json:"aws,omitempty" protobuf:"bytes,9,opt,name=aws"`
-	GCE                  *GoogleSpec `json:"gce,omitempty" protobuf:"bytes,10,opt,name=gce"`
-	Azure                *AzureSpec  `json:"azure,omitempty" protobuf:"bytes,11,opt,name=azure"`
-	Linode               *LinodeSpec `json:"linode,omitempty" protobuf:"bytes,12,opt,name=linode"`
+	SSHKeyName           string      `json:"sshKeyName,omitempty" protobuf:"bytes,9,opt,name=sshKeyName"`
+	AWS                  *AWSSpec    `json:"aws,omitempty" protobuf:"bytes,10,opt,name=aws"`
+	GCE                  *GoogleSpec `json:"gce,omitempty" protobuf:"bytes,11,opt,name=gce"`
+	Azure                *AzureSpec  `json:"azure,omitempty" protobuf:"bytes,12,opt,name=azure"`
+	Linode               *LinodeSpec `json:"linode,omitempty" protobuf:"bytes,13,opt,name=linode"`
 }
 
 type API struct {
@@ -219,7 +220,8 @@ type AWSStatus struct {
 }
 
 type CloudStatus struct {
-	AWS *AWSStatus `json:"aws,omitempty" protobuf:"bytes,1,opt,name=aws"`
+	SShKeyExternalID string     `json:"sshKeyExternalID,omitempty" protobuf:"bytes,3,opt,name=sshKeyExternalID"`
+	AWS              *AWSStatus `json:"aws,omitempty"`
 }
 
 /*
@@ -260,12 +262,11 @@ const (
 )
 
 type ClusterStatus struct {
-	Phase            ClusterPhase       `json:"phase,omitempty,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=ClusterPhase"`
-	Reason           string             `json:"reason,omitempty,omitempty" protobuf:"bytes,2,opt,name=reason"`
-	SSHKeyExternalID string             `json:"sshKeyExternalID,omitempty" protobuf:"bytes,3,opt,name=sshKeyExternalID"`
-	Cloud            CloudStatus        `json:"cloud,omitempty" protobuf:"bytes,4,opt,name=cloud"`
-	APIAddresses     []core.NodeAddress `json:"apiServer,omitempty" protobuf:"bytes,5,rep,name=apiServer"`
-	ReservedIPs      []ReservedIP       `json:"reservedIP,omitempty" protobuf:"bytes,6,rep,name=reservedIP"`
+	Phase        ClusterPhase       `json:"phase,omitempty,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=ClusterPhase"`
+	Reason       string             `json:"reason,omitempty,omitempty" protobuf:"bytes,2,opt,name=reason"`
+	Cloud        CloudStatus        `json:"cloud,omitempty" protobuf:"bytes,4,opt,name=cloud"`
+	APIAddresses []core.NodeAddress `json:"apiServer,omitempty" protobuf:"bytes,5,rep,name=apiServer"`
+	ReservedIPs  []ReservedIP       `json:"reservedIP,omitempty" protobuf:"bytes,6,rep,name=reservedIP"`
 }
 
 type ReservedIP struct {

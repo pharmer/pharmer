@@ -36,6 +36,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 
 	// Init spec
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone[0 : len(cluster.Spec.Cloud.Zone)-1]
+	cluster.Spec.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
 	if cluster.Spec.Cloud.AWS == nil {
 		cluster.Spec.Cloud.AWS = &api.AWSSpec{}
 	}
@@ -64,8 +65,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	}
 	// Init status
 	cluster.Status = api.ClusterStatus{
-		Phase:            api.ClusterPending,
-		SSHKeyExternalID: n.GenSSHKeyExternalID(),
+		Phase: api.ClusterPending,
 		Cloud: api.CloudStatus{
 			AWS: &api.AWSStatus{},
 		},
