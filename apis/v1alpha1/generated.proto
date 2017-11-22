@@ -161,7 +161,9 @@ message CloudSpec {
 }
 
 message CloudStatus {
-  optional AWSStatus aws = 1;
+  optional string sshKeyExternalID = 1;
+
+  optional AWSStatus aws = 2;
 }
 
 message Cluster {
@@ -226,7 +228,6 @@ message ClusterStatus {
 
   optional string reason = 2;
 
-  // SSHKeyName   string             `json:"sshKeyExternalID,omitempty" protobuf:"bytes,3,opt,name=sshKeyExternalID"`
   optional CloudStatus cloud = 4;
 
   repeated k8s.io.api.core.v1.NodeAddress apiServer = 5;

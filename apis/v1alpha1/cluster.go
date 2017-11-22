@@ -220,8 +220,8 @@ type AWSStatus struct {
 }
 
 type CloudStatus struct {
-	SShKeyExternalID string     `json:"sshKeyExternalID,omitempty" protobuf:"bytes,3,opt,name=sshKeyExternalID"`
-	AWS              *AWSStatus `json:"aws,omitempty"`
+	SShKeyExternalID string     `json:"sshKeyExternalID,omitempty" protobuf:"bytes,1,opt,name=sshKeyExternalID"`
+	AWS              *AWSStatus `json:"aws,omitempty" protobuf:"bytes,2,opt,name=aws"`
 }
 
 /*
