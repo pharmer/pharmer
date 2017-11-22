@@ -29,7 +29,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	if err != nil {
 		return nil, err
 	}
-	typed := credential.DigitalOcean{CommonSpec: credential.CommonSpec(cred.Spec)}
+	typed := credential.Vultr{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
 		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
@@ -38,7 +38,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		ctx:     ctx,
 		cluster: cluster,
 		namer:   namer{cluster},
-		client:  gv.NewClient(typed.Token(), &gv.Options{}),
+		client:  gv.NewClient(typed.Token(), nil),
 	}, nil
 }
 
