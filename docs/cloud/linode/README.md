@@ -137,7 +137,7 @@ For example:
 
 `--kubelet-version=1.8.0 --kubeadm-version=1.8.0`
 
-To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](../../networking/README.md)
+To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](/docs/networking.md)
 
 The directory structure of the storage provider will be look like:
 

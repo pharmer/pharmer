@@ -80,13 +80,13 @@ The directory tree of the local storage provider will be look like:
 To get access on `vultr`, `pharmer` needs credentials of `vultr`. To get the api key go to the **API** section
 under **Account** option. Here you see the `Personal Access Token`, copy that key.
 
-![vultr-api-key](../../../docs/images/vultr/vultr-api-key.jpg)
+![vultr-api-key](/docs/images/vultr/vultr-api-key.jpg)
 
 From command line, run the following command and paste the api key.
 ```bash
 $ pharmer create credential vul
 ```
-![vultr-credential](../../../docs/images/vultr/vultr-credential.png)
+![vultr-credential](/docs/images/vultr/vultr-credential.png)
 
 Here, `vul` is the credential name, which must be unique within your storage.
 
@@ -122,7 +122,7 @@ You can also see the stored credential from the following location:
 ~/.pharmer/store.d/credentials/vul.json
 ```
 
-You can find other credential operations [here](../../../credential/README.md)
+You can find other credential operations [here](/docs/credential.md)
 
 ### Cluster provisioning
 
@@ -194,7 +194,7 @@ For example:
 
 `--kubelet-version=1.8.0 --kubeadm-version=1.8.0`
 
-To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](../../networking/README.md)
+To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](/docs/networking.md)
 
 The directory structure of the storage provider will be look like:
 
