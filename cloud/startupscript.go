@@ -317,7 +317,7 @@ kubectl apply \
 
 	_ = template.Must(StartupScriptTemplate.New("flannel").Parse(`
 kubectl apply \
-  -f https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml \
+  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/flannel/v0.9.1/kube-vxlan.yml \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 )

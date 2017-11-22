@@ -57,7 +57,9 @@ data:
       "name": "cbr0",
       "type": "flannel",
       "delegate": {
-        "isDefaultGateway": true
+        "isDefaultGateway": true,
+        "forceAddress": true,
+        "hairpinMode": true
       }
     }
   net-conf.json: |
