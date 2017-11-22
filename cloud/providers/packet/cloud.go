@@ -59,19 +59,14 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) getPublicKey() (bool, string, error) {
-	keys, resp, err := conn.client.SSHKeys.List()
+	key, resp, err := conn.client.SSHKeys.Get(conn.cluster.Status.Cloud.SShKeyExternalID)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return false, "", nil
 	}
 	if err != nil {
 		return false, "", err
 	}
-	for _, k := range keys {
-		if k.Label == conn.cluster.Name {
-			return true, k.ID, nil
-		}
-	}
-	return false, "", nil
+	return true, key.ID, nil
 }
 
 func (conn *cloudConnector) importPublicKey() error {
@@ -85,8 +80,7 @@ func (conn *cloudConnector) importPublicKey() error {
 		if err != nil {
 			return false, nil
 		}
-		Logger(conn.ctx).Debugf("Created new ssh key with id=%v", sk.ID)
-		// conn.cluster.Status.SSHKeyExternalID = sk.ID
+		conn.cluster.Status.Cloud.SShKeyExternalID = sk.ID
 		return true, nil
 	})
 	if err != nil {

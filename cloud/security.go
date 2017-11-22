@@ -104,7 +104,7 @@ func CreateSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, e
 		return ctx, err
 	}
 	ctx = context.WithValue(ctx, paramSSHKey{}, sshKey)
-	err = Store(ctx).SSHKeys(cluster.Name).Create(cluster.Status.SSHKeyExternalID, sshKey.PublicKey, sshKey.PrivateKey)
+	err = Store(ctx).SSHKeys(cluster.Name).Create(cluster.Spec.Cloud.SSHKeyName, sshKey.PublicKey, sshKey.PrivateKey)
 	if err != nil {
 		return ctx, err
 	}
@@ -112,7 +112,7 @@ func CreateSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, e
 }
 
 func LoadSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
-	publicKey, privateKey, err := Store(ctx).SSHKeys(cluster.Name).Get(cluster.Status.SSHKeyExternalID)
+	publicKey, privateKey, err := Store(ctx).SSHKeys(cluster.Name).Get(cluster.Spec.Cloud.SSHKeyName)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to get SSH key. Reason: %v", err)
 	}

@@ -215,7 +215,7 @@ func (conn *cloudConnector) createIAMProfile(role, key string) error {
 
 func (conn *cloudConnector) getPublicKey() (bool, error) {
 	resp, err := conn.ec2.DescribeKeyPairs(&_ec2.DescribeKeyPairsInput{
-		KeyNames: StringPSlice([]string{conn.cluster.Status.SSHKeyExternalID}),
+		KeyNames: StringPSlice([]string{conn.cluster.Spec.Cloud.SSHKeyName}),
 	})
 	if err != nil {
 		return false, err
@@ -228,7 +228,7 @@ func (conn *cloudConnector) getPublicKey() (bool, error) {
 
 func (conn *cloudConnector) importPublicKey() error {
 	resp, err := conn.ec2.ImportKeyPair(&_ec2.ImportKeyPairInput{
-		KeyName:           StringP(conn.cluster.Status.SSHKeyExternalID),
+		KeyName:           StringP(conn.cluster.Spec.Cloud.SSHKeyName),
 		PublicKeyMaterial: SSHKey(conn.ctx).PublicKey,
 	})
 	Logger(conn.ctx).Debug("Imported SSH key", resp, err)
@@ -1113,7 +1113,7 @@ func (conn *cloudConnector) createMasterInstance(name string, ng *api.NodeGroup)
 			Name: StringP(conn.cluster.Spec.Cloud.AWS.IAMProfileMaster),
 		},
 		InstanceType: StringP(ng.Spec.Template.Spec.SKU),
-		KeyName:      StringP(conn.cluster.Status.SSHKeyExternalID),
+		KeyName:      StringP(conn.cluster.Spec.Cloud.SSHKeyName),
 		Monitoring: &_ec2.RunInstancesMonitoringEnabled{
 			Enabled: TrueP(),
 		},
@@ -1323,7 +1323,7 @@ func (conn *cloudConnector) createLaunchConfiguration(name, token string, ng *ap
 		IamInstanceProfile: StringP(conn.cluster.Spec.Cloud.AWS.IAMProfileNode),
 		ImageId:            StringP(conn.cluster.Spec.Cloud.InstanceImage),
 		InstanceType:       StringP(ng.Spec.Template.Spec.SKU),
-		KeyName:            StringP(conn.cluster.Status.SSHKeyExternalID),
+		KeyName:            StringP(conn.cluster.Spec.Cloud.SSHKeyName),
 		SecurityGroups: []*string{
 			StringP(conn.cluster.Status.Cloud.AWS.NodeSGId),
 		},
@@ -1678,7 +1678,7 @@ func (conn *cloudConnector) deleteVolume() error {
 func (conn *cloudConnector) deleteSSHKey() error {
 	var err error
 	_, err = conn.ec2.DeleteKeyPair(&_ec2.DeleteKeyPairInput{
-		KeyName: StringP(conn.cluster.Status.SSHKeyExternalID),
+		KeyName: StringP(conn.cluster.Spec.Cloud.SSHKeyName),
 	})
 	if err != nil {
 		return err

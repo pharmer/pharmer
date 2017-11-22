@@ -149,13 +149,15 @@ message CloudSpec {
 
   optional string ccmCredentialName = 8;
 
-  optional AWSSpec aws = 9;
+  optional string sshKeyName = 9;
 
-  optional GoogleSpec gce = 10;
+  optional AWSSpec aws = 10;
 
-  optional AzureSpec azure = 11;
+  optional GoogleSpec gce = 11;
 
-  optional LinodeSpec linode = 12;
+  optional AzureSpec azure = 12;
+
+  optional LinodeSpec linode = 13;
 }
 
 message CloudStatus {
@@ -224,8 +226,7 @@ message ClusterStatus {
 
   optional string reason = 2;
 
-  optional string sshKeyExternalID = 3;
-
+  // SSHKeyName   string             `json:"sshKeyExternalID,omitempty" protobuf:"bytes,3,opt,name=sshKeyExternalID"`
   optional CloudStatus cloud = 4;
 
   repeated k8s.io.api.core.v1.NodeAddress apiServer = 5;

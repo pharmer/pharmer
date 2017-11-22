@@ -160,7 +160,7 @@ func (conn *cloudConnector) importPublicKey() error {
 	r1, err := conn.computeService.Projects.SetCommonInstanceMetadata(conn.cluster.Spec.Cloud.Project, &compute.Metadata{
 		Items: []*compute.MetadataItems{
 			{
-				Key:   conn.cluster.Status.SSHKeyExternalID,
+				Key:   conn.cluster.Spec.Cloud.SSHKeyName,
 				Value: &pubKey,
 			},
 		},

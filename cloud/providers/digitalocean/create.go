@@ -36,6 +36,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 
 	// Init spec
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
+	cluster.Spec.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	cluster.Spec.Cloud.InstanceImage = "ubuntu-16-04-x64"
 	cluster.Spec.Networking.SetDefaults()
@@ -50,8 +51,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	}
 	// Init status
 	cluster.Status = api.ClusterStatus{
-		Phase:            api.ClusterPending,
-		SSHKeyExternalID: n.GenSSHKeyExternalID(),
+		Phase: api.ClusterPending,
 	}
 
 	return nil
