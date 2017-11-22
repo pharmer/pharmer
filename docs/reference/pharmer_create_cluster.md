@@ -25,7 +25,7 @@ pharmer create cluster demo-cluster
       --kubeadm-version string      Kubeadm version
       --kubelet-version string      kubelet/kubectl version
       --kubernetes-version string   Kubernetes version
-      --networking string           Networking mode to use. calico(default), flannel (default "calico")
+      --network-provider string     Name of CNI plugin. Available options: calico, flannel, kubenet, weavenet (default "calico")
       --nodes stringToInt           Node set configuration (default [])
       --provider string             Provider name
       --zone string                 Cloud provider zone name
