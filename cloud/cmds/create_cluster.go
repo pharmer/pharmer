@@ -12,6 +12,8 @@ import (
 )
 
 func NewCmdCreateCluster() *cobra.Command {
+	var spotInstance bool
+	var spotPriceMax float64
 	cluster := &api.Cluster{}
 	nodes := map[string]int{}
 
@@ -25,7 +27,11 @@ func NewCmdCreateCluster() *cobra.Command {
 		Example:           "pharmer create cluster demo-cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			flags.EnsureRequiredFlags(cmd, "provider", "zone", "nodes", "kubernetes-version")
+			ensureFlags := []string{"provider", "zone", "kubernetes-version"}
+			if spotInstance {
+				ensureFlags = append(ensureFlags, "spot-price-max")
+			}
+			flags.EnsureRequiredFlags(cmd, ensureFlags...)
 
 			if len(args) == 0 {
 				term.Fatalln("Missing cluster name.")
@@ -45,7 +51,9 @@ func NewCmdCreateCluster() *cobra.Command {
 			if err != nil {
 				term.Fatalln(err)
 			}
-			CreateNodeGroups(ctx, cluster, nodes)
+			if len(nodes) > 0 {
+				CreateNodeGroups(ctx, cluster, nodes, spotInstance, spotPriceMax)
+			}
 		},
 	}
 
@@ -56,6 +64,8 @@ func NewCmdCreateCluster() *cobra.Command {
 	cmd.Flags().StringVar(&cluster.Spec.KubeletVersion, "kubelet-version", "", "kubelet/kubectl version")
 	cmd.Flags().StringVar(&cluster.Spec.KubeadmVersion, "kubeadm-version", "", "Kubeadm version")
 	cmd.Flags().StringVar(&cluster.Spec.Networking.NetworkProvider, "network-provider", "calico", "Name of CNI plugin. Available options: calico, flannel, kubenet, weavenet")
+	cmd.Flags().BoolVar(&spotInstance, "spot-instance", false, "Set spot instance flag")
+	cmd.Flags().Float64Var(&spotPriceMax, "spot-price-max", float64(0), "Maximum price of spot instance")
 
 	cmd.Flags().StringToIntVar(&nodes, "nodes", map[string]int{}, "Node set configuration")
 

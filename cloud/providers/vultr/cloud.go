@@ -107,7 +107,7 @@ func (conn *cloudConnector) importPublicKey() error {
 }
 
 func (conn *cloudConnector) deleteSSHKey(id string) error {
-	Logger(conn.ctx).Infof("Deleting SSH key for cluster", conn.cluster.Name)
+	Logger(conn.ctx).Infof("Deleting SSH key for cluster %s", conn.cluster.Name)
 	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		err := conn.client.DeleteSSHKey(id)
 		return err == nil, nil

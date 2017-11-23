@@ -87,7 +87,7 @@ func (conn *cloudConnector) importPublicKey() (string, error) {
 }
 
 func (conn *cloudConnector) deleteSSHKey(id string) error {
-	Logger(conn.ctx).Infof("Deleting SSH key for cluster", conn.cluster.Name)
+	Logger(conn.ctx).Infof("Deleting SSH key for cluster %s", conn.cluster.Name)
 	return wait.PollImmediate(RetryInterval, RetryInterval, func() (bool, error) {
 		_, err := conn.client.SSHKeys.Delete(id)
 		return err == nil, nil
@@ -111,6 +111,8 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		ProjectID:    conn.cluster.Spec.Cloud.Project,
 		UserData:     script,
 		Tags:         []string{conn.cluster.Name},
+		SpotInstance: ng.Spec.Template.Spec.SpotInstances,
+		SpotPriceMax: ng.Spec.Template.Spec.SpotPriceMax,
 	})
 	if err != nil {
 		return nil, err
@@ -147,7 +149,7 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	if err != nil {
 		return err
 	}
-	_, err = conn.client.Devices.Delete(providerID)
+	_, err = conn.client.Devices.Delete(dropletID)
 	if err != nil {
 		return err
 	}
