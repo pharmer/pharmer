@@ -356,17 +356,17 @@ message NodeInfo {
 message NodeSpec {
   optional string sku = 1;
 
-  optional bool spotInstances = 2;
+  optional string nodeDiskType = 2;
+
+  optional int64 nodeDiskSize = 3;
+
+  optional string externalIPType = 4;
+
+  map<string, string> kubeletExtraArgs = 5;
+
+  optional bool spotInstances = 6;
 
   optional double spotPriceMax = 7;
-
-  optional string nodeDiskType = 3;
-
-  optional int64 nodeDiskSize = 4;
-
-  optional string externalIPType = 5;
-
-  map<string, string> kubeletExtraArgs = 6;
 }
 
 // PodTemplateSpec describes the data a pod should have when created from a template
