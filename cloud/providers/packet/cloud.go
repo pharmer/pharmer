@@ -111,6 +111,8 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		ProjectID:    conn.cluster.Spec.Cloud.Project,
 		UserData:     script,
 		Tags:         []string{conn.cluster.Name},
+		SpotInstance: ng.Spec.Template.Spec.SpotInstances,
+		SpotPriceMax: ng.Spec.Template.Spec.SpotPriceMax,
 	})
 	if err != nil {
 		return nil, err

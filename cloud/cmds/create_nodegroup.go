@@ -12,7 +12,8 @@ import (
 )
 
 func NewCmdCreateNodeGroup() *cobra.Command {
-
+	var spotInstance bool
+	var spotPriceMax float64
 	nodes := map[string]int{}
 
 	cmd := &cobra.Command{
@@ -26,7 +27,11 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 		Example:           "pharmer create nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			flags.EnsureRequiredFlags(cmd, "cluster", "nodes")
+			spot_price_max := ""
+			if spotInstance {
+				spot_price_max = "spot-price-max"
+			}
+			flags.EnsureRequiredFlags(cmd, "cluster", "nodes", spot_price_max)
 
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
@@ -37,20 +42,22 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 			clusterName, _ := cmd.Flags().GetString("cluster")
 			cluster, err := cloud.Get(ctx, clusterName)
 			term.ExitOnError(err)
-			CreateNodeGroups(ctx, cluster, nodes)
+			CreateNodeGroups(ctx, cluster, nodes, spotInstance, spotPriceMax)
 
 		},
 	}
 
 	cmd.Flags().StringP("cluster", "k", "", "Name of the Kubernetes cluster")
+	cmd.Flags().BoolVar(&spotInstance, "spot-instance", false, "Set spot instance flag")
+	cmd.Flags().Float64Var(&spotPriceMax, "spot-price-max", float64(0), "Maximum price of spot instance")
 	cmd.Flags().StringToIntVar(&nodes, "nodes", map[string]int{}, "Node set configuration")
 
 	return cmd
 }
 
-func CreateNodeGroups(ctx context.Context, cluster *api.Cluster, nodes map[string]int) {
+func CreateNodeGroups(ctx context.Context, cluster *api.Cluster, nodes map[string]int, spotInstance bool, spotPriceMax float64) {
 	for sku, count := range nodes {
-		err := cloud.CreateNodeGroup(ctx, cluster, api.RoleNode, sku, count)
+		err := cloud.CreateNodeGroup(ctx, cluster, api.RoleNode, sku, count, spotInstance, spotPriceMax)
 		term.ExitOnError(err)
 	}
 }

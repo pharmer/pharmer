@@ -358,6 +358,8 @@ message NodeSpec {
 
   optional bool spotInstances = 2;
 
+  optional double spotPriceMax = 7;
+
   optional string nodeDiskType = 3;
 
   optional int64 nodeDiskSize = 4;
