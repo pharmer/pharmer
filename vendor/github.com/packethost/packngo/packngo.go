@@ -42,6 +42,11 @@ type Response struct {
 	Rate
 }
 
+// Href is an API link
+type Href struct {
+	Href string `json:"href"`
+}
+
 func (r *Response) populateRate() {
 	// parse the rate limit headers and populate Response.Rate
 	if limit := r.Header.Get(headerRateLimit); limit != "" {
@@ -59,13 +64,14 @@ func (r *Response) populateRate() {
 
 // ErrorResponse is the http response used on errrors
 type ErrorResponse struct {
-	Response *http.Response
-	Errors   []string `json:"errors"`
+	Response    *http.Response
+	Errors      []string `json:"errors"`
+	SingleError string   `json:"error"`
 }
 
 func (r *ErrorResponse) Error() string {
-	return fmt.Sprintf("%v %v: %d %v",
-		r.Response.Request.Method, r.Response.Request.URL, r.Response.StatusCode, strings.Join(r.Errors, ", "))
+	return fmt.Sprintf("%v %v: %d %v %v",
+		r.Response.Request.Method, r.Response.Request.URL, r.Response.StatusCode, strings.Join(r.Errors, ", "), r.SingleError)
 }
 
 // Client is the base API Client
@@ -81,17 +87,19 @@ type Client struct {
 	RateLimit Rate
 
 	// Packet Api Objects
-	Plans            PlanService
-	Users            UserService
-	Emails           EmailService
-	SSHKeys          SSHKeyService
-	Devices          DeviceService
-	Projects         ProjectService
-	Facilities       FacilityService
-	OperatingSystems OSService
-	Ips              IPService
-	IpReservations   IPReservationService
-	Volumes          VolumeService
+	Plans             PlanService
+	Users             UserService
+	Emails            EmailService
+	SSHKeys           SSHKeyService
+	Devices           DeviceService
+	Projects          ProjectService
+	Facilities        FacilityService
+	OperatingSystems  OSService
+	DeviceIPs         DeviceIPService
+	ProjectIPs        ProjectIPService
+	Volumes           VolumeService
+	VolumeAttachments VolumeAttachmentService
+	SpotMarket        SpotMarketService
 }
 
 // NewRequest inits a new http request with the proper headers
@@ -163,6 +171,15 @@ func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 	return &response, err
 }
 
+// DoRequest is a convenience method, it calls NewRequest follwed by Do
+func (c *Client) DoRequest(method, path string, body, v interface{}) (*Response, error) {
+	req, err := c.NewRequest(method, path, body)
+	if err != nil {
+		return nil, err
+	}
+	return c.Do(req, v)
+}
+
 // NewClient initializes and returns a Client, use this to get an API Client to operate on
 // N.B.: Packet's API certificate requires Go 1.5+ to successfully parse. If you are using
 // an older version of Go, pass in a custom http.Client with a custom TLS configuration
@@ -171,6 +188,9 @@ func NewClient(consumerToken string, apiKey string, httpClient *http.Client) *Cl
 	client, _ := NewClientWithBaseURL(consumerToken, apiKey, httpClient, baseURL)
 	return client
 }
+
+// NewClientWithBaseURL returns a Client pointing to nonstandard API URL, e.g.
+// for mocking the remote API
 func NewClientWithBaseURL(consumerToken string, apiKey string, httpClient *http.Client, apiBaseURL string) (*Client, error) {
 	if httpClient == nil {
 		// Don't fall back on http.DefaultClient as it's not nice to adjust state
@@ -193,9 +213,11 @@ func NewClientWithBaseURL(consumerToken string, apiKey string, httpClient *http.
 	c.Projects = &ProjectServiceOp{client: c}
 	c.Facilities = &FacilityServiceOp{client: c}
 	c.OperatingSystems = &OSServiceOp{client: c}
-	c.Ips = &IPServiceOp{client: c}
-	c.IpReservations = &IPReservationServiceOp{client: c}
+	c.DeviceIPs = &DeviceIPServiceOp{client: c}
+	c.ProjectIPs = &ProjectIPServiceOp{client: c}
 	c.Volumes = &VolumeServiceOp{client: c}
+	c.VolumeAttachments = &VolumeAttachmentServiceOp{client: c}
+	c.SpotMarket = &SpotMarketServiceOp{client: c}
 
 	return c, nil
 }

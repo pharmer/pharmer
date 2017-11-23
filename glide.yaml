@@ -42,7 +42,7 @@ import:
 - package: github.com/mgutz/str
   version: master
 - package: github.com/packethost/packngo
-  version: v0.1.0
+  version: master
 - package: github.com/pborman/uuid
   version: v1.1
 - package: github.com/pkg/errors
