@@ -298,7 +298,7 @@ Here,
 
 To get the `kubectl` configuration file(kubeconfig) on your local filesystem run the following command.
 ```bash
-$ pharmer use cluster v1
+$ pharmer use cluster l1
 ```
 If you don't have `kubectl` installed click [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 
@@ -449,7 +449,7 @@ $ pharmer apply l1
 This command will take care of your actions that you applied on the node groups recently.
 
 ```bash
-$ pharmer get ng -k v1
+$ pharmer get ng -k l1
 NAME      Cluster   Node      SKU       
 2-pool    l1        1         2         
 master    l1        1         3 
