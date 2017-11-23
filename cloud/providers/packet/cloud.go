@@ -103,7 +103,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	}
 
 	server, _, err := conn.client.Devices.Create(&packngo.DeviceCreateRequest{
-		HostName:     name,
+		Hostname:     name,
 		Plan:         ng.Spec.Template.Spec.SKU,
 		Facility:     conn.cluster.Spec.Cloud.Zone,
 		OS:           conn.cluster.Spec.Cloud.InstanceImage,
