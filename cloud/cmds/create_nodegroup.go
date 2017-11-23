@@ -27,11 +27,11 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 		Example:           "pharmer create nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			spot_price_max := ""
+			ensureFlags := []string{"cluster", "nodes"}
 			if spotInstance {
-				spot_price_max = "spot-price-max"
+				ensureFlags = append(ensureFlags, "spot-price-max")
 			}
-			flags.EnsureRequiredFlags(cmd, "cluster", "nodes", spot_price_max)
+			flags.EnsureRequiredFlags(cmd, ensureFlags...)
 
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)

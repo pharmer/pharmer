@@ -149,7 +149,7 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	if err != nil {
 		return err
 	}
-	_, err = conn.client.Devices.Delete(providerID)
+	_, err = conn.client.Devices.Delete(dropletID)
 	if err != nil {
 		return err
 	}

@@ -27,11 +27,11 @@ func NewCmdCreateCluster() *cobra.Command {
 		Example:           "pharmer create cluster demo-cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			spot_price_max := ""
+			ensureFlags := []string{"provider", "zone", "kubernetes-version"}
 			if spotInstance {
-				spot_price_max = "spot-price-max"
+				ensureFlags = append(ensureFlags, "spot-price-max")
 			}
-			flags.EnsureRequiredFlags(cmd, "provider", "zone", "kubernetes-version", spot_price_max)
+			flags.EnsureRequiredFlags(cmd, ensureFlags...)
 
 			if len(args) == 0 {
 				term.Fatalln("Missing cluster name.")
