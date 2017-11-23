@@ -225,18 +225,26 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		}
 	}
 
-	// https://github.com/scaleway/scaleway-cli/commit/c925277696a8b8f1798f80d032736691546c6bda
-	serverID, err := scw.CreateServer(conn.client, &scw.ConfigCreateServer{
-		Name:       name,
-		ImageName:  conn.cluster.Spec.Cloud.InstanceImage,
-		Bootscript: conn.bootscriptID,
-		// https://github.com/scaleway/scaleway-cli/blob/11bf0b65021acaf39ba101a2085c51772aca0dab/pkg/api/helpers.go#L387
-		Env: "KubernetesCluster " + conn.cluster.Name,
-		// AdditionalVolumes : "",
-		IP:                publicIPID,
-		CommercialType:    ng.Spec.Template.Spec.SKU,
-		DynamicIPRequired: true,
-		EnableIPV6:        false,
+	var err error
+	var serverID string
+	err = wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		// https://github.com/scaleway/scaleway-cli/commit/c925277696a8b8f1798f80d032736691546c6bda
+		serverID, err = scw.CreateServer(conn.client, &scw.ConfigCreateServer{
+			Name:       name,
+			ImageName:  conn.cluster.Spec.Cloud.InstanceImage,
+			Bootscript: conn.bootscriptID,
+			// https://github.com/scaleway/scaleway-cli/blob/11bf0b65021acaf39ba101a2085c51772aca0dab/pkg/api/helpers.go#L387
+			Env: "KubernetesCluster " + conn.cluster.Name,
+			// AdditionalVolumes : "",
+			IP:                publicIPID,
+			CommercialType:    ng.Spec.Template.Spec.SKU,
+			DynamicIPRequired: true,
+			EnableIPV6:        false,
+		})
+		if err != nil {
+			return false, nil
+		}
+		return true, nil
 	})
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
@@ -276,11 +284,17 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	}
 	cmd := fmt.Sprintf("sh -c '%s'", strings.Join(steps, "; "))
 	Logger(conn.ctx).Infof("Booting server %s using `%s`", name, cmd)
-	stdOut, stdErr, code, err := sshtools.Exec(cmd, "root", host.PublicAddress.IP+":22", signer)
+	err = wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		stdOut, stdErr, code, err := sshtools.Exec(cmd, "root", host.PublicAddress.IP+":22", signer)
+		if err != nil {
+			return false, nil
+		}
+		Logger(conn.ctx).Debugln(stdOut, stdErr, code)
+		return true, nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	Logger(conn.ctx).Debugln(stdOut, stdErr, code)
 
 	node := api.NodeInfo{
 		Name:       host.Name,
