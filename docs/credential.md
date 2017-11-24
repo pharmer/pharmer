@@ -1,3 +1,19 @@
+---
+title: Credential | Pharmer
+description: Credential of Pharmer
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: credential-pharmer
+    name: Credential
+    parent: getting-started
+    weight: 20
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: getting-started
+aliases:
+  - /products/pharmer/0.1.0-alpha.0/
+---
+
 #Credential
 
 For creating cluster `pharmer` needs cloud provider's credential, so that it can create cluster resources on that provider.

@@ -1,3 +1,17 @@
+---
+title: Release | Pharmer
+description: Pharmer Release
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: release    
+    name: Release
+    parent: developer-guide
+    weight: 15
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: developer-guide
+---
+
 # Release Process
 
 The following steps must be done from a Linux x64 bit machine.

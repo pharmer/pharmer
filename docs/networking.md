@@ -1,3 +1,17 @@
+---
+title: Networking | Pharmer
+description: Networking of Pharmer
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: networking-pharmer
+    name: Networking
+    parent: getting-started
+    weight: 30
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: getting-started
+---
+
 # Pod Networking
 
 Available network provider support in `pharmer`
