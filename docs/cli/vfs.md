@@ -5,7 +5,7 @@ Stores data on File (local/remote) using  [stow](https://github.com/appscode/sto
 
 ### Introduction
 
-```bash
+```console
 $  pharmer config -h
   Pharmer configuration
   
@@ -69,7 +69,7 @@ For `azure` and `swift` you need to add `container` field along with `prefix` fi
 
 The directory tree of the local storage provider will be look like:
 
-```bash
+```console
 ~/.pharmer/
       |--config.d/
       |      |
@@ -103,7 +103,7 @@ store:
 ```
 
 To list all available contexts run:
-```bash
+```console
 $ pharmer config get-contexts
 NAME	Store
 default	Local

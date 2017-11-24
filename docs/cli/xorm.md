@@ -5,7 +5,7 @@ Stores data in PostgresSQL using [xorm](https://github.com/go-xorm/xorm)
 
 ### Introduction
 
-```bash
+```console
 $  pharmer config -h
   Pharmer configuration
   
@@ -101,7 +101,7 @@ store:
 ```
 
 To list all available contexts run:
-```bash
+```console
 $ pharmer config get-contexts
 NAME	Store
 default	Postgres

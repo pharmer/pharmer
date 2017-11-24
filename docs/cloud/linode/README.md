@@ -5,7 +5,7 @@ Following example will use `pharmer ` to create a Kubernetes cluster with 2 work
 ### Before you start
 
 As a prerequisite, you need to have `pharmer` installed.  To install `pharmer` run the following command.
-```bash
+```console
 $ go get github.com/appscode/pharmer
 ```
 
@@ -26,7 +26,7 @@ under **my profile** option. Here you see the `Add an API key`, create and copy 
 ![linode-api-key](/docs/images/linode/linode-api-key.jpg)
 
 From command line, run the following command and paste the api key.
-```bash
+```console
 $ pharmer create credential linode 
 ```  
 ![linode-credential](/docs/images/linode/linode-credential.png)
@@ -48,20 +48,20 @@ spec:
 
 ```
 Here, `spec.data.token` is the access token that you provided which can be edited by following command:
-```bash
+```console
 $ phrmer edit credential linode
 ``` 
 
 To see the all credentials you need to run following command.
 
-```bash
+```console
 $ pharmer get credentials
 NAME         Provider       Data
 linode       Linode         token=*****
 ```
 
 You can also see the stored credential from the following location:
-```bash
+```console
 ~/.pharmer/store.d/credentials/linode.json            
 ```
 
@@ -81,11 +81,11 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `linode`
     - Number of nodes: 2
     - Node sku: 1 (Linode 1024)
     - Kubernetes version: 1.8.0
-    - Credential name: [linode](#Credential importing)
+    - Credential name: [linode](#credential-importing)
 
 For location code and sku details click [hrere](https://github.com/appscode/pharmer/blob/master/data/files/linode/cloud.json)   
  Available options in `pharmer` to create a cluster are:
-  ```bash
+  ```console
  $ pharmer create cluster -h
  Create a Kubernetes cluster for a given cloud provider
  
@@ -124,7 +124,7 @@ For location code and sku details click [hrere](https://github.com/appscode/phar
  
  So, we need to run following command to create cluster with our information.
  
- ```bash
+ ```console
 $ pharmer create cluster l1 \
 	--provider=linode \
 	--zone=3 \
@@ -141,7 +141,7 @@ To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-adminis
 
 The directory structure of the storage provider will be look like:
 
-```bash
+```console
 ~/.pharmer/store.d/clusters/
         |-- v1
         |    |__ nodegroups
@@ -168,7 +168,7 @@ The directory structure of the storage provider will be look like:
 Here,
 
    - `/v1/nodegroups/`: contains the node groups information. [This](#Cluster scalling) describes node groups operation.You can see the node group list using following command.
-   ```bash
+   ```console
 $ pharmer get nodegroups -k v1
 ```
    - `v1/pki`: contains the cluster certificate information containing `ca` and `front-proxy-ca`.
@@ -232,14 +232,14 @@ Here,
 * `status.sshKeyExternalID` shows which ssh key added to cluster instance.
 
 You can modify this configuration by:
-```bash
+```console
 $ pharmer edit cluster l1
 ```
 * **Applying:** If everything looks ok, we can now apply the resources. This actually creates resources on `Linode`.
  Up to now we've only been working locally.
 
  To apply run:
- ```bash
+ ```console
 $ pharmer apply l1
 ```
  Now, `pharmer` will apply that configuration, thus create a Kubernetes cluster. After completing task the configuration file of
@@ -297,14 +297,14 @@ Here,
   `status.phase`: is ready. So, you can use your cluster from local machine.
 
 To get the `kubectl` configuration file(kubeconfig) on your local filesystem run the following command.
-```bash
+```console
 $ pharmer use cluster l1
 ```
 If you don't have `kubectl` installed click [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 
 Now you can run `kubectl get nodes` and verify that your kubernetes 1.8.0 is running.
 
-```bash
+```console
 $ kubectl get nodes
 
 NAME                 STATUS    ROLES     AGE       VERSION
@@ -314,7 +314,7 @@ l1-198-074-051-221   Ready     master    6m        v1.8.4
 ```
 
 If you want to `ssh` into your instance run the following command
-```bash
+```console
 $ pharmer ssh  node l1-198-074-051-221  -k l1
 ```
 
@@ -327,7 +327,7 @@ Scaling a cluster refers following meanings:-
  4. Drop existing node group
 
 To see the current node groups list, you need to run following command:
-```bash
+```console
 $ pharmer get nodegroup -k l1
 NAME      Cluster   Node      SKU
 1-pool    l1        2         1         
@@ -379,7 +379,7 @@ To update number of nodes for this nodegroup modify the `node` number under `spe
 
 To add a new node group for an existing cluster you need to run
 
-```bash
+```console
 $ pharmer create ng --nodes=2=1 -k l1
 
 $ pharmer get nodegroups -k l1
@@ -443,12 +443,12 @@ Here,
 After completing your change on the node groups, you need to apply that via `pharmer` so that changes will be applied
 on provider cluster.
 
-```bash
+```console
 $ pharmer apply l1
 ```
 This command will take care of your actions that you applied on the node groups recently.
 
-```bash
+```console
 $ pharmer get ng -k l1
 NAME      Cluster   Node      SKU       
 2-pool    l1        1         2         
@@ -459,7 +459,7 @@ master    l1        1         3
 
 To upgrade your cluster firstly you need to check if there any update available for your cluster and latest kubernetes version.
 To check run:
-```bash
+```console
 $ pharmer describe cluster l1
 Name:		l1
 Version:	v1.8.0
@@ -489,12 +489,12 @@ _____________________________________________________________________
 ```
 
 Then, if you decided to upgrade you cluster run the command that are showing on describe command.
-```bash
+```console
 $ pharmer edit cluster l1 --kubernetes-version=v1.8.4
 cluster "l1" updated
 ```
 You can verify your changes by checking the yaml of the cluster.
-```bash
+```console
 $ pharmer get cluster l1 -o yaml
 apiVersion: v1alpha1
 kind: Cluster
@@ -544,11 +544,11 @@ status:
 Here, `spec.kubernetesVersion` is changed to `v1.8.4` from `v1.8.0`
 
 If everything looks ok, then run:
-```bash
+```console
 $ pharmer apply v1
 ```
 You can check your cluster upgraded or not by running following command on your cluster.
-```bash
+```console
 $ kubectl version
 Client Version: version.Info{Major:"1", Minor:"8", GitVersion:"v1.8.4", GitCommit:"9befc2b8928a9426501d3bf62f72849d5cbcd5a3", GitTreeState:"clean", BuildDate:"2017-11-20T05:28:34Z", GoVersion:"go1.8.3", Compiler:"gc", Platform:"linux/amd64"}
 Server Version: version.Info{Major:"1", Minor:"8", GitVersion:"v1.8.4", GitCommit:"9befc2b8928a9426501d3bf62f72849d5cbcd5a3", GitTreeState:"clean", BuildDate:"2017-11-20T05:17:43Z", GoVersion:"go1.8.3", Compiler:"gc", Platform:"linux/amd64"}
@@ -556,7 +556,7 @@ Server Version: version.Info{Major:"1", Minor:"8", GitVersion:"v1.8.4", GitCommi
 ## Cluster Deleting
 
 To delete your cluster run
-```bash
+```console
 $ pharmer delete cluster l1
 ```
 Then, the yaml file looks like
@@ -615,7 +615,7 @@ Here,
 - `metadata.deletionTimestamp`: is set when cluster deletion command was applied.
 
 Now, to apply delete on provider cluster run
-```bash
+```console
 $ pharmer apply l1
 ```
 

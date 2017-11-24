@@ -8,7 +8,7 @@ For creating cluster `pharmer` needs cloud provider's credential, so that it can
 
 ### Creating
 
-```bash
+```console
 $ pharmer create credential -h
 Create  credential object
 
@@ -42,14 +42,14 @@ Global Flags:
 
 
 To import a cloud provider credential run the following command
-```bash
+```console
 $ pharmer create credential <credential-name>
 ```
 This command will show you an interactive shell through which you can import your credentials easily.
 
 if your want to import the credential from a file(e.g. for google cloud provider), then you need to run
 
-```bash
+```console
 $ pharmer create credential <credential-name> --config=<path-to-your-credential-file>
 ```
 
@@ -74,7 +74,7 @@ Here,
  - `spsc.provider` is your cloud provider name
 
 If you use local storage can also see the stored credential from the following location:
-```bash
+```console
 $ cd ~/.pharmer/store.d/credentials/
 ```
 
@@ -84,14 +84,14 @@ Using `pharmer` you can update your existing credentials.
 
 
 To show the all credentials available on your storage run the following command
-```bash
+```console
 $ phamer get credentials  
 ```  
 
 ![credential-list](/docs/images/credential-list.png)
 
 To update your credentials, run
-```bash
+```console
 $ pharmer edit credentials <credential-name>
 ```
 **N.B:** Here you can only modify the data section.
@@ -100,7 +100,7 @@ $ pharmer edit credentials <credential-name>
 
 If you want to delete your existing credentials, then you need to run
 
-```bash
+```console
 $ pharmer delete credentials <credential-name>
 ```  
 
