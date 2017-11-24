@@ -364,7 +364,7 @@ message NodeSpec {
 
   map<string, string> kubeletExtraArgs = 5;
 
-  optional bool spotInstances = 6;
+  optional string type = 6;
 
   optional double spotPriceMax = 7;
 }
