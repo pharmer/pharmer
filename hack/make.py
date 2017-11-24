@@ -94,8 +94,8 @@ def version():
 
 def fmt():
     libbuild.ungroup_go_imports('*.go', 'apis', 'cloud', 'cmds', 'config', 'credential', 'data', 'store')
-    die(call('goimports -w *.go apis cloud cmds config credential data store'))
-    call('gofmt -s -w *.go apis cloud cmds config credential data store')
+    die(call('goimports -w *.go apis cloud cmds config credential data store utils'))
+    call('gofmt -s -w *.go apis cloud cmds config credential data store utils')
 
 
 def vet():

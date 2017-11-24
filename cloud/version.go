@@ -239,7 +239,6 @@ func (g *KubeVersionGetter) KubeletVersions() (map[string]uint32, error) {
 		return nil, fmt.Errorf("couldn't list all nodes in cluster")
 	}
 	return computeKubeletVersions(nodes.Items), nil
-	return nil, fmt.Errorf("couldn't list all nodes in cluster")
 }
 
 // computeKubeletVersions returns a string-int map that describes how many nodes are of a specific version

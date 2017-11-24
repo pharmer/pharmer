@@ -1787,7 +1787,7 @@ func (conn *cloudConnector) deleteMaster() error {
 	}
 	err = conn.ec2.WaitUntilInstanceTerminated(instanceInput)
 	Logger(conn.ctx).Infof("Master instance for cluster %v is terminated", conn.cluster.Name)
-	return nil
+	return err
 }
 
 func (conn *cloudConnector) deleteGroupInstances(ng *api.NodeGroup, instance string) error {

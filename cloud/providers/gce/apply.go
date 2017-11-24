@@ -177,7 +177,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	if !found {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
-			Resource: "Master persistant disk",
+			Resource: "Master persistent disk",
 			Message:  fmt.Sprintf("Not found, will be added with disk type %v, size %v and name %v", masterNG.Spec.Template.Spec.DiskType, masterNG.Spec.Template.Spec.DiskSize, cm.namer.MasterPDName()),
 		})
 		if !dryRun {
@@ -189,8 +189,8 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	} else {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
-			Resource: "Master persistant disk",
-			Message:  fmt.Sprintf("Found master persistant disk with disk type %v, size %v and name %v", masterNG.Spec.Template.Spec.DiskType, masterNG.Spec.Template.Spec.DiskSize, cm.namer.MasterPDName()),
+			Resource: "Master persistent disk",
+			Message:  fmt.Sprintf("Found master persistent disk with disk type %v, size %v and name %v", masterNG.Spec.Template.Spec.DiskType, masterNG.Spec.Template.Spec.DiskSize, cm.namer.MasterPDName()),
 		})
 
 	}
@@ -453,8 +453,8 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 
 	acts = append(acts, api.Action{
 		Action:   api.ActionDelete,
-		Resource: "Master persistant disk",
-		Message:  fmt.Sprintf("Will delete master persistant with name %v", cm.namer.MasterPDName()),
+		Resource: "Master persistent disk",
+		Message:  fmt.Sprintf("Will delete master persistent with name %v", cm.namer.MasterPDName()),
 	})
 
 	if !dryRun {

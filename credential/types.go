@@ -9,7 +9,6 @@ import (
 
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/data/files"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -149,5 +148,4 @@ func LoadCredentialDataFromJson(provider string, fileName string) (CommonSpec, e
 		}
 		return commonSpec, nil
 	}
-	return CommonSpec{}, errors.New("Unknown Cloud provider")
 }
