@@ -81,7 +81,7 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `linode`
     - Number of nodes: 2
     - Node sku: 1 (Linode 1024)
     - Kubernetes version: 1.8.0
-    - Credential name: [linode](#Credential importing)
+    - Credential name: [linode](#credential-importing)
 
 For location code and sku details click [hrere](https://github.com/appscode/pharmer/blob/master/data/files/linode/cloud.json)   
  Available options in `pharmer` to create a cluster are:

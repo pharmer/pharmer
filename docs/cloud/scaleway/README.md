@@ -84,7 +84,7 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `scalewa
     - Number of nodes: 2
     - Node sku: VC1S (2 x86 64bit Cores, 2GB memory)
     - Kubernetes version: 1.8.0
-    - Credential name: [scaleway](#Credential importing)
+    - Credential name: [scaleway](#credential-importing)
 
 For location code and sku details click [hrere](https://github.com/appscode/pharmer/blob/master/data/files/scaleway/cloud.json)   
  Available options in `pharmer` to create a cluster are:

@@ -29,6 +29,7 @@ This project is spread over 4 repositories:
  - [Create & manage a Kubernetes cluster in DigitalOcean](/docs/cloud/digitalocean/README.md)
  - [Create & manage a Kubernetes cluster in Vultr](/docs/cloud/vultr/README.md)
  - [Create & manage a Kubernetes cluster in Linode](/docs/cloud/linode/README.md)
+ - [Create & manage a Kubernetes cluster in Scaleway](/docs/cloud/scaleway/README.md)
 
 ## Support
 If you have any questions, [file an issue](https://github.com/appscode/pharmer/issues/new) or talk to us on the [Kubernetes Slack team](http://slack.kubernetes.io/) channel `#pharmer`.
