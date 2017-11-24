@@ -1330,7 +1330,7 @@ func (conn *cloudConnector) createLaunchConfiguration(name, token string, ng *ap
 		},
 		UserData: StringP(base64.StdEncoding.EncodeToString([]byte(script))),
 	}
-	if ng.Spec.Template.Spec.SpotInstances {
+	if ng.Spec.Template.Spec.Type == api.NodeTypeSpot {
 		configuration.SpotPrice = StringP(strconv.FormatFloat(ng.Spec.Template.Spec.SpotPriceMax, 'f', -1, 64))
 	}
 	r1, err := conn.autoscale.CreateLaunchConfiguration(configuration)
