@@ -310,7 +310,7 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 
 func (conn *cloudConnector) getMasterPDDisk(name string) (bool, error) {
 	if r, err := conn.computeService.Disks.Get(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, name).Do(); err != nil {
-		Logger(conn.ctx).Debug("Retrieved master persistant disk", r, err)
+		Logger(conn.ctx).Debug("Retrieved master persistent disk", r, err)
 		return false, err
 	}
 	conn.cluster.Spec.MasterDiskId = name

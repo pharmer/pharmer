@@ -2,7 +2,6 @@ package e2e
 
 import (
 	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/store"
 	"github.com/appscode/pharmer/store/test/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -10,13 +9,10 @@ import (
 
 var _ = Describe("Credential", func() {
 	var (
-		f       *framework.Invocation
-		storage store.Interface
+		f *framework.Invocation
 	)
 	BeforeEach(func() {
 		f = root.Invoke()
-		storage = f.Storage
-
 		By("Receive storage " + f.Config.GetStoreType())
 	})
 	Describe("create credential", func() {

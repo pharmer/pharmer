@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"github.com/appscode/go/crypto/ssh"
-	"github.com/appscode/pharmer/store"
 	"github.com/appscode/pharmer/store/test/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -10,13 +9,11 @@ import (
 
 var _ = Describe("SSH", func() {
 	var (
-		f       *framework.Invocation
-		storage store.Interface
-		err     error
+		f   *framework.Invocation
+		err error
 	)
 	BeforeEach(func() {
 		f = root.Invoke()
-		storage = f.Storage
 		By("Receive storage " + f.Config.GetStoreType())
 	})
 	Describe("create ssh", func() {

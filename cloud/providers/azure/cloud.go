@@ -203,12 +203,12 @@ func (conn *cloudConnector) ensureResourceGroup() (resources.Group, error) {
 	return conn.groupsClient.CreateOrUpdate(conn.namer.ResourceGroupName(), req)
 }
 
-func (conn *cloudConnector) getAvailablitySet() (compute.AvailabilitySet, error) {
-	return conn.availabilitySetsClient.Get(conn.namer.ResourceGroupName(), conn.namer.AvailablitySetName())
+func (conn *cloudConnector) getAvailabilitySet() (compute.AvailabilitySet, error) {
+	return conn.availabilitySetsClient.Get(conn.namer.ResourceGroupName(), conn.namer.AvailabilitySetName())
 }
 
-func (conn *cloudConnector) ensureAvailablitySet() (compute.AvailabilitySet, error) {
-	name := conn.namer.AvailablitySetName()
+func (conn *cloudConnector) ensureAvailabilitySet() (compute.AvailabilitySet, error) {
+	name := conn.namer.AvailabilitySetName()
 	req := compute.AvailabilitySet{
 		Name:     StringP(name),
 		Location: StringP(conn.cluster.Spec.Cloud.Zone),
@@ -468,7 +468,7 @@ func (conn *cloudConnector) createPublicIP(name string, alloc network.IPAllocati
 	if err != nil {
 		return network.PublicIPAddress{}, err
 	}
-	Logger(conn.ctx).Infof("Public ip addres %v created", name)
+	Logger(conn.ctx).Infof("Public ip address %v created", name)
 	return conn.publicIPAddressesClient.Get(conn.namer.ResourceGroupName(), name, "")
 }
 
@@ -740,7 +740,7 @@ func (conn *cloudConnector) StartNode(nodeName, token string, as compute.Availab
 }
 
 func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
-	as, err := conn.getAvailablitySet()
+	as, err := conn.getAvailabilitySet()
 	if err != nil {
 		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
 	}

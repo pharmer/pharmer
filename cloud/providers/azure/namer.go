@@ -37,7 +37,7 @@ func (n namer) ResourceGroupName() string {
 	return n.cluster.Name
 }
 
-func (n namer) AvailablitySetName() string {
+func (n namer) AvailabilitySetName() string {
 	return n.cluster.Name + "-as"
 }
 

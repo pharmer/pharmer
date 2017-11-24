@@ -153,13 +153,12 @@ type EditHeader struct {
 }
 
 type EditResults struct {
-	Header   EditHeader
-	File     string
+	Header EditHeader
+	File   string
 }
 
-
 // writeTo outputs the current header information into a stream
-func (h *EditHeader) WriteTo(w io.Writer) error {
+func (h *EditHeader) WriteTo(w io.Writer) (int64, error) {
 	fmt.Fprint(w, `# Please edit the object below. Lines beginning with a '#' will be ignored,
 # and an empty file will abort the edit. If an error occurs while saving this file will be
 # reopened with the relevant failures.
@@ -176,7 +175,7 @@ func (h *EditHeader) WriteTo(w io.Writer) error {
 		}
 		fmt.Fprintln(w, "#")
 	}
-	return nil
+	return 0, nil
 }
 
 func PreservedFile(err error, path string, out io.Writer) error {
