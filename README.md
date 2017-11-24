@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/appscode/pharmer)](https://goreportcard.com/report/github.com/appscode/pharmer)
+
 # pharmer
 Kubernetes Cluster Manager for [Kubeadm](https://github.com/kubernetes/kubeadm). Think `kops using kubadm`!
 
