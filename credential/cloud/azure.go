@@ -13,11 +13,11 @@ import (
 	azdate "github.com/Azure/go-autorest/autorest/date"
 	"github.com/appscode/go/term"
 	"github.com/appscode/go/types"
-	"github.com/appscode/go/wait"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/appscode/pharmer/credential"
 	"github.com/pborman/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
