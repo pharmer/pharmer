@@ -7,7 +7,6 @@ import (
 
 	"github.com/appscode/go/errors"
 	"github.com/appscode/go/term"
-	"github.com/appscode/go/wait"
 	. "github.com/appscode/pharmer/cloud"
 	"golang.org/x/crypto/ssh"
 	apiv1 "k8s.io/api/core/v1"
@@ -15,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (

@@ -1,5 +1,5 @@
-hash: 77a2f612b5e2b02fc948d7542352eef6f56ca09843e7de1b454717bb9bdec784
-updated: 2017-11-23T01:26:14.472359483-08:00
+hash: 3fb1e9e4e9a5748d5e0652a67e9a82ecf7c4b95c33669ac39567f6d2c991393a
+updated: 2017-11-25T10:43:57.658802033-08:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -36,7 +36,7 @@ imports:
 - name: github.com/appscode/mergo
   version: e3000cb3d28c72b837601cac94debd91032d19fe
 - name: github.com/aws/aws-sdk-go
-  version: f4b2120243b92fc47d6a4af71b854b8d5f4de8b5
+  version: cd721c97ef6fcfcb76b4feb14fcfead57fb01e5e
   subpackages:
   - aws
   - aws/awserr
@@ -54,18 +54,21 @@ imports:
   - aws/request
   - aws/session
   - aws/signer/v4
+  - internal/shareddefaults
   - private/protocol
   - private/protocol/ec2query
+  - private/protocol/json/jsonutil
+  - private/protocol/jsonrpc
   - private/protocol/query
   - private/protocol/query/queryutil
   - private/protocol/rest
   - private/protocol/restxml
   - private/protocol/xml/xmlutil
-  - private/waiter
   - service/autoscaling
   - service/ec2
   - service/elb
   - service/iam
+  - service/lightsail
   - service/s3
   - service/s3/s3iface
   - service/s3/s3manager
@@ -386,7 +389,7 @@ imports:
   - specs-go
   - specs-go/v1
 - name: github.com/packethost/packngo
-  version: d9cd4d3e66a06ff2ef8c61abb7fda472d62f49a5
+  version: 02bc5b5de23cdea7ba059b061ba509293858058e
 - name: github.com/pborman/uuid
   version: e790cca94e6cc75c7064b1332e63811d4aae1a53
 - name: github.com/peterbourgon/diskv
