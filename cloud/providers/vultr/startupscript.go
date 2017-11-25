@@ -128,8 +128,7 @@ ensure-basic-networking
 
 {{ define "prepare-host" }}
 # https://www.vultr.com/docs/configuring-private-network
-INSTANCE_ID=$(/usr/bin/curl -fsSL --retry 5 http://169.254.169.254/v1/instanceid 2> /dev/null)
-PRIVATE_ADDRESS=$(pre-k vultr private-ip --token={{ index .CloudCredential "token" }} --instance-id=$INSTANCE_ID)
+PRIVATE_ADDRESS=$(/usr/bin/curl -fsSL --retry 5 http://169.254.169.254/v1/interfaces/1/ipv4/address 2> /dev/null)
 PRIVATE_NETMASK=$(/usr/bin/curl -fsSL --retry 5 http://169.254.169.254/v1/interfaces/1/ipv4/netmask 2> /dev/null)
 /bin/cat >>/etc/network/interfaces <<EOF
 
@@ -142,6 +141,9 @@ EOF
 ifup ens7
 {{ end }}
 `
+
+// INSTANCE_ID=$(/usr/bin/curl -fsSL --retry 5 http://169.254.169.254/v1/instanceid 2> /dev/null)
+// PRIVATE_ADDRESS=$(pre-k vultr private-ip --token={{ index .CloudCredential "token" }} --instance-id=$INSTANCE_ID)
 )
 
 func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string) (string, error) {
