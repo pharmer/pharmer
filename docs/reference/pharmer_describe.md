@@ -1,12 +1,12 @@
 ---
 title: Pharmer Describe
 menu:
-  product_pharmer_0.1.0-alpha.0:
+  product_pharmer_0.1.0-alpha.1:
     identifier: pharmer-describe
     name: Pharmer Describe
     parent: reference
 product_name: pharmer
-left_menu: product_pharmer_0.1.0-alpha.0
+left_menu: product_pharmer_0.1.0-alpha.1
 section_menu_id: reference
 ---
 ## pharmer describe
