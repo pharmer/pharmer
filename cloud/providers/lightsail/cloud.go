@@ -230,6 +230,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	if err != nil {
 		return nil, err
 	}
+
 	return &api.NodeInfo{
 		Name:       name,
 		ExternalID: *host.Instance.Arn,

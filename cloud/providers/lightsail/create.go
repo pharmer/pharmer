@@ -49,6 +49,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 			string(core.NodeExternalIP),
 		}, ","),
 	}
+	cluster.Spec.Cloud.CCMCredentialName = cluster.Spec.CredentialName
 	// Init status
 	cluster.Status = api.ClusterStatus{
 		Phase: api.ClusterPending,

@@ -110,7 +110,7 @@ var (
 {{ define "init-os" }}
 # We rely on DNS for a lot, and it's just not worth doing a whole lot of startup work if this isn't ready yet.
 # ref: https://github.com/kubernetes/kubernetes/blob/443908193d564736d02efdca4c9ba25caf1e96fb/cluster/gce/configure-vm.sh#L24
-function ensure-basic-networking() {
+ensure_basic_networking() {
   until getent hosts $(hostname -f || echo _error_) &>/dev/null; do
     echo 'Waiting for functional DNS (trying to resolve my own FQDN)...'
     sleep 3
@@ -123,7 +123,7 @@ function ensure-basic-networking() {
   echo "Networking functional on $(hostname) ($(hostname -i))"
 }
 
-ensure-basic-networking
+ensure_basic_networking
 {{ end }}
 
 {{ define "prepare-host" }}

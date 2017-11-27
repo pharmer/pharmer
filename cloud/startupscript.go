@@ -104,7 +104,7 @@ apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common tzdata
 curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
-exec-until-success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
+exec_until_success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
 apt-get update -y
 apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
@@ -200,7 +200,7 @@ apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common tzdata
 curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
-exec-until-success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
+exec_until_success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
 apt-get update -y
 apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
@@ -249,7 +249,7 @@ exec 2>&1
 export DEBIAN_FRONTEND=noninteractive
 export DEBCONF_NONINTERACTIVE_SEEN=true
 
-function exec-until-success() {
+exec_until_success() {
 	$1
 	while [ $? -ne 0 ]; do
 		sleep 2
@@ -282,11 +282,11 @@ chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 	_ = template.Must(StartupScriptTemplate.New("ccm").Parse(`
 # Deploy CCM RBAC
 cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/rbac.yaml'
-exec-until-success "$cmd"
+exec_until_success "$cmd"
 
 # Deploy CCM DaemonSet
 cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/{{ .Provider }}/installer.yaml'
-exec-until-success "$cmd"
+exec_until_success "$cmd"
 
 until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
 do
