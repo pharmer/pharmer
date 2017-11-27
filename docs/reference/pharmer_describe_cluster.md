@@ -1,3 +1,14 @@
+---
+title: Pharmer Describe Cluster
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-describe-cluster
+    name: Pharmer Describe Cluster
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer describe cluster
 
 Describe a Kubernetes cluster
@@ -39,5 +50,5 @@ pharmer describe cluster <cluster_name>
 ```
 
 ### SEE ALSO
-* [pharmer describe](pharmer_describe.md)	 - 
+* [pharmer describe](/docs/reference/pharmer_describe.md)	 - 
 

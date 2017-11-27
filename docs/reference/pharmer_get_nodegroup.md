@@ -1,3 +1,14 @@
+---
+title: Pharmer Get Nodegroup
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-get-nodegroup
+    name: Pharmer Get Nodegroup
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer get nodegroup
 
 Get a Kubernetes cluster NodeGroup
@@ -41,5 +52,5 @@ pharmer get nodegroup -k <cluster_name>
 ```
 
 ### SEE ALSO
-* [pharmer get](pharmer_get.md)	 - 
+* [pharmer get](/docs/reference/pharmer_get.md)	 - 
 

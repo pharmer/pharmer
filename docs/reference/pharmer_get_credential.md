@@ -1,3 +1,14 @@
+---
+title: Pharmer Get Credential
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-get-credential
+    name: Pharmer Get Credential
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer get credential
 
 List cloud Credentials
@@ -40,5 +51,5 @@ pharmer get credential
 ```
 
 ### SEE ALSO
-* [pharmer get](pharmer_get.md)	 - 
+* [pharmer get](/docs/reference/pharmer_get.md)	 - 
 

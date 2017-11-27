@@ -1,3 +1,14 @@
+---
+title: Pharmer Create Cluster
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-create-cluster
+    name: Pharmer Create Cluster
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer create cluster
 
 Create a Kubernetes cluster for a given cloud provider
@@ -47,5 +58,5 @@ pharmer create cluster demo-cluster
 ```
 
 ### SEE ALSO
-* [pharmer create](pharmer_create.md)	 - 
+* [pharmer create](/docs/reference/pharmer_create.md)	 - 
 

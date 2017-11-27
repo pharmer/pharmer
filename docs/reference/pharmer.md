@@ -1,3 +1,19 @@
+---
+title: Pharmer
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer
+    name: Pharmer
+    parent: reference
+    weight: 0
+
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+aliases:
+  - products/pharmer/0.1.0-alpha.0/reference/
+
+---
 ## pharmer
 
 Pharmer by Appscode - Manages farms
@@ -24,17 +40,17 @@ Pharmer by Appscode - Manages farms
 ```
 
 ### SEE ALSO
-* [pharmer apply](pharmer_apply.md)	 - Apply changes
-* [pharmer backup](pharmer_backup.md)	 - 
-* [pharmer config](pharmer_config.md)	 - Pharmer configuration
-* [pharmer create](pharmer_create.md)	 - 
-* [pharmer delete](pharmer_delete.md)	 - 
-* [pharmer describe](pharmer_describe.md)	 - 
-* [pharmer edit](pharmer_edit.md)	 - 
-* [pharmer get](pharmer_get.md)	 - 
-* [pharmer inspect](pharmer_inspect.md)	 - Inspect cluster for conformance
-* [pharmer issue](pharmer_issue.md)	 - 
-* [pharmer ssh](pharmer_ssh.md)	 - 
-* [pharmer use](pharmer_use.md)	 - 
-* [pharmer version](pharmer_version.md)	 - Prints binary version number.
+* [pharmer apply](/docs/reference/pharmer_apply.md)	 - Apply changes
+* [pharmer backup](/docs/reference/pharmer_backup.md)	 - 
+* [pharmer config](/docs/reference/pharmer_config.md)	 - Pharmer configuration
+* [pharmer create](/docs/reference/pharmer_create.md)	 - 
+* [pharmer delete](/docs/reference/pharmer_delete.md)	 - 
+* [pharmer describe](/docs/reference/pharmer_describe.md)	 - 
+* [pharmer edit](/docs/reference/pharmer_edit.md)	 - 
+* [pharmer get](/docs/reference/pharmer_get.md)	 - 
+* [pharmer inspect](/docs/reference/pharmer_inspect.md)	 - Inspect cluster for conformance
+* [pharmer issue](/docs/reference/pharmer_issue.md)	 - 
+* [pharmer ssh](/docs/reference/pharmer_ssh.md)	 - 
+* [pharmer use](/docs/reference/pharmer_use.md)	 - 
+* [pharmer version](/docs/reference/pharmer_version.md)	 - Prints binary version number.
 

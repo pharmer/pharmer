@@ -1,3 +1,14 @@
+---
+title: Pharmer Backup
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-backup
+    name: Pharmer Backup
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer backup
 
 
@@ -29,6 +40,6 @@
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer backup cluster](pharmer_backup_cluster.md)	 - Backup cluster objects
+* [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer backup cluster](/docs/reference/pharmer_backup_cluster.md)	 - Backup cluster objects
 

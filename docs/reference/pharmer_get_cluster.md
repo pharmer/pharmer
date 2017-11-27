@@ -1,3 +1,14 @@
+---
+title: Pharmer Get Cluster
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-get-cluster
+    name: Pharmer Get Cluster
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer get cluster
 
 Get a Kubernetes cluster
@@ -40,5 +51,5 @@ pharmer get cluster
 ```
 
 ### SEE ALSO
-* [pharmer get](pharmer_get.md)	 - 
+* [pharmer get](/docs/reference/pharmer_get.md)	 - 
 

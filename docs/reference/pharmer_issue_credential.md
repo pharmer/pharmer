@@ -1,3 +1,14 @@
+---
+title: Pharmer Issue Credential
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-issue-credential
+    name: Pharmer Issue Credential
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer issue credential
 
 Issue credential for cc providers Azure and Google Cloud
@@ -40,5 +51,5 @@ pharmer issue credential mycred
 ```
 
 ### SEE ALSO
-* [pharmer issue](pharmer_issue.md)	 - 
+* [pharmer issue](/docs/reference/pharmer_issue.md)	 - 
 

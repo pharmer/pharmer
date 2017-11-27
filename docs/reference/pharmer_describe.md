@@ -1,3 +1,14 @@
+---
+title: Pharmer Describe
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-describe
+    name: Pharmer Describe
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer describe
 
 
@@ -33,6 +44,6 @@ pharmer describe [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer describe cluster](pharmer_describe_cluster.md)	 - Describe a Kubernetes cluster
+* [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer describe cluster](/docs/reference/pharmer_describe_cluster.md)	 - Describe a Kubernetes cluster
 

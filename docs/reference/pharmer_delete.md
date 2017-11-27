@@ -1,3 +1,14 @@
+---
+title: Pharmer Delete
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-delete
+    name: Pharmer Delete
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer delete
 
 
@@ -33,8 +44,8 @@ pharmer delete [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer delete cluster](pharmer_delete_cluster.md)	 - Delete a Kubernetes cluster
-* [pharmer delete credential](pharmer_delete_credential.md)	 - Delete  credential object
-* [pharmer delete nodegroup](pharmer_delete_nodegroup.md)	 - Delete a Kubernetes cluster NodeGroup
+* [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer delete cluster](/docs/reference/pharmer_delete_cluster.md)	 - Delete a Kubernetes cluster
+* [pharmer delete credential](/docs/reference/pharmer_delete_credential.md)	 - Delete  credential object
+* [pharmer delete nodegroup](/docs/reference/pharmer_delete_nodegroup.md)	 - Delete a Kubernetes cluster NodeGroup
 

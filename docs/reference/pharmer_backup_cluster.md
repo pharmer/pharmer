@@ -1,3 +1,14 @@
+---
+title: Pharmer Backup Cluster
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-backup-cluster
+    name: Pharmer Backup Cluster
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer backup cluster
 
 Backup cluster objects
@@ -36,5 +47,5 @@ pharmer backup cluster [flags]
 ```
 
 ### SEE ALSO
-* [pharmer backup](pharmer_backup.md)	 - 
+* [pharmer backup](/docs/reference/pharmer_backup.md)	 - 
 
