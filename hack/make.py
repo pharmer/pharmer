@@ -45,10 +45,16 @@ libbuild.BIN_MATRIX = {
         'go_version': True,
         'release': True,
         'distro': {
-            'linux': ['amd64']
+            'linux': ['386', 'amd64', 'arm64'],
+            'darwin': ['amd64'],
+            'windows': ['386', 'amd64']
         }
     }
 }
+if libbuild.ENV not in ['prod']:
+    libbuild.BIN_MATRIX['pharmer']['distro'] = {
+        libbuild.GOHOSTOS: [libbuild.GOHOSTARCH]
+    }
 
 libbuild.BUCKET_MATRIX = {
     'prod': 'gs://appscode-cdn',
