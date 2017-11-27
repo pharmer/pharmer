@@ -1,3 +1,14 @@
+---
+title: Pharmer Get
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-get
+    name: Pharmer Get
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer get
 
 
@@ -33,8 +44,8 @@ pharmer get [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer get cluster](pharmer_get_cluster.md)	 - Get a Kubernetes cluster
-* [pharmer get credential](pharmer_get_credential.md)	 - List cloud Credentials
-* [pharmer get nodegroup](pharmer_get_nodegroup.md)	 - Get a Kubernetes cluster NodeGroup
+* [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer get cluster](/docs/reference/pharmer_get_cluster.md)	 - Get a Kubernetes cluster
+* [pharmer get credential](/docs/reference/pharmer_get_credential.md)	 - List cloud Credentials
+* [pharmer get nodegroup](/docs/reference/pharmer_get_nodegroup.md)	 - Get a Kubernetes cluster NodeGroup
 

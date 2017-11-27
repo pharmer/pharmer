@@ -1,3 +1,14 @@
+---
+title: Pharmer Delete Cluster
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-delete-cluster
+    name: Pharmer Delete Cluster
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer delete cluster
 
 Delete a Kubernetes cluster
@@ -43,5 +54,5 @@ pharmer delete cluster demo-cluster
 ```
 
 ### SEE ALSO
-* [pharmer delete](pharmer_delete.md)	 - 
+* [pharmer delete](/docs/reference/pharmer_delete.md)	 - 
 

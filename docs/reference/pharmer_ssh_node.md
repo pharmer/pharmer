@@ -1,3 +1,14 @@
+---
+title: Pharmer Ssh Node
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-ssh-node
+    name: Pharmer Ssh Node
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer ssh node
 
 SSH into a Kubernetes cluster instance
@@ -40,5 +51,5 @@ pharmer ssh node -k cluster-name node-name
 ```
 
 ### SEE ALSO
-* [pharmer ssh](pharmer_ssh.md)	 - 
+* [pharmer ssh](/docs/reference/pharmer_ssh.md)	 - 
 

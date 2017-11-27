@@ -1,3 +1,14 @@
+---
+title: Pharmer Apply
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-apply
+    name: Pharmer Apply
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer apply
 
 Apply changes
@@ -34,5 +45,5 @@ pharmer apply [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
 

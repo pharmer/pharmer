@@ -1,3 +1,14 @@
+---
+title: Pharmer Edit
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-edit
+    name: Pharmer Edit
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer edit
 
 
@@ -33,8 +44,8 @@ pharmer edit [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer edit cluster](pharmer_edit_cluster.md)	 - Edit cluster object
-* [pharmer edit credential](pharmer_edit_credential.md)	 - Edit a cloud Credential
-* [pharmer edit nodegroup](pharmer_edit_nodegroup.md)	 - Edit a Kubernetes cluster NodeGroup
+* [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer edit cluster](/docs/reference/pharmer_edit_cluster.md)	 - Edit cluster object
+* [pharmer edit credential](/docs/reference/pharmer_edit_credential.md)	 - Edit a cloud Credential
+* [pharmer edit nodegroup](/docs/reference/pharmer_edit_nodegroup.md)	 - Edit a Kubernetes cluster NodeGroup
 

@@ -1,3 +1,14 @@
+---
+title: Pharmer Use
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-use
+    name: Pharmer Use
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer use
 
 
@@ -29,6 +40,6 @@
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer use cluster](pharmer_use_cluster.md)	 - Sets `kubectl` context to given cluster
+* [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer use cluster](/docs/reference/pharmer_use_cluster.md)	 - Sets `kubectl` context to given cluster
 

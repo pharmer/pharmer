@@ -1,3 +1,14 @@
+---
+title: Pharmer Inspect
+menu:
+  product_pharmer_0.1.0-alpha.0:
+    identifier: pharmer-inspect
+    name: Pharmer Inspect
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.0
+section_menu_id: reference
+---
 ## pharmer inspect
 
 Inspect cluster for conformance
@@ -29,6 +40,6 @@ Inspect cluster for conformance
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer inspect cluster](pharmer_inspect_cluster.md)	 - Inspect cluster object
+* [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer inspect cluster](/docs/reference/pharmer_inspect_cluster.md)	 - Inspect cluster object
 
