@@ -3,16 +3,16 @@ package lightsail
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 
+	"github.com/appscode/errors"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/credential"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
-	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/credential"
-	"encoding/json"
 )
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
@@ -56,7 +56,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 			panic(err)
 		}
 		cloudConfig := &api.LightsailCloudConfig{
-			AccessKeyID: typed.AccessKeyID(),
+			AccessKeyID:     typed.AccessKeyID(),
 			SecretAccessKey: typed.SecretAccessKey(),
 		}
 		data, err := json.Marshal(cloudConfig)
@@ -96,7 +96,6 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
-
 	}
 	td.MasterConfiguration = &cfg
 	return td
@@ -115,6 +114,7 @@ exec_until_success() {
 		$1
 	done
 }
+
 {{ end }}
 `
 )
