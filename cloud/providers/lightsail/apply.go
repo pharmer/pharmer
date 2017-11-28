@@ -324,7 +324,6 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	masterNodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			api.RoleMasterKey: "",
-			api.NodePoolKey:   masterNG.Name,
 		}).String(),
 	})
 	if err != nil {
