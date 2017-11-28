@@ -35,12 +35,18 @@ This project is spread over 4 repositories:
  - [Create & manage a Kubernetes cluster in Linode](/docs/cloud/linode/README.md)
  - [Create & manage a Kubernetes cluster in Scaleway](/docs/cloud/scaleway/README.md)
 
+## Supported Versions
+Kubernetes 1.8+
+
+## Contribution guidelines
+Want to help improve Pharmer? Please start [here](/CONTRIBUTING.md).
+
 ## Support
 If you have any questions, [file an issue](https://github.com/appscode/pharmer/issues/new) or talk to us on the [Kubernetes Slack team](http://slack.kubernetes.io/) channel `#pharmer`.
 
 ---
 
-**`pharmer` cli collects anonymous usage statistics to help us learn how the software is being used and how we can improve it.
+**`pharmer` binary collects anonymous usage statistics to help us learn how the software is being used and how we can improve it.
 To disable stats collection, run the operator with the flag** `--analytics=false`.
 
 ---
