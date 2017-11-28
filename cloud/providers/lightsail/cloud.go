@@ -194,7 +194,7 @@ func (conn *cloudConnector) releaseReservedIP() error {
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
-	script, err := conn.renderStartupScript(ng, token)
+	script, err := conn.renderStartupScript(ng, name, token)
 	if err != nil {
 		return nil, err
 	}
@@ -270,54 +270,33 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 }
 
 func (conn *cloudConnector) instanceByID(instanceID string) (*lightsail.Instance, error) {
-	hosts, err := conn.allInstanceList()
+	host, err := conn.client.GetInstance(&lightsail.GetInstanceInput{
+		InstanceName: StringP(instanceID),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	for _, host := range hosts {
-		if String(host.Arn) == instanceID {
-			return host, nil
-		}
+	if host.Instance != nil {
+		return host.Instance, nil
 	}
 
 	return nil, fmt.Errorf("Instance with %v not found", instanceID)
 
 }
 
-func (conn *cloudConnector) allInstanceList() ([]*lightsail.Instance, error) {
-	list := []*lightsail.Instance{}
-
-	nextPageToken := ""
-	for {
-		instances, err := conn.client.GetInstances(&lightsail.GetInstancesInput{
-			PageToken: &nextPageToken,
-		})
-		if err != nil {
-			return nil, err
-		}
-		list = append(list, instances.Instances...)
-		if instances.NextPageToken == nil {
-			break
-		}
-		nextPageToken = *instances.NextPageToken
-	}
-	return list, nil
-}
-
 // dropletIDFromProviderID returns a droplet's ID from providerID.
 //
 // The providerID spec should be retrievable from the Kubernetes
-// node object. The expected format is: digitalocean://droplet-id
-// ref: https://github.com/digitalocean/digitalocean-cloud-controller-manager/blob/f9a9856e99c9d382db3777d678f29d85dea25e91/do/droplets.go#L211
+// node object. The expected format is: lightsail://droplet-id
 func instanceIDFromProviderID(providerID string) (string, error) {
 	if providerID == "" {
 		return "", errors.New("providerID cannot be empty string")
 	}
 
-	split := strings.Split(providerID, "//")
+	split := strings.Split(providerID, "/")
 
-	if len(split) != 2 {
+	if len(split) != 3 {
 		return "", fmt.Errorf("unexpected providerID format: %s, format should be: lightsail://12345", providerID)
 	}
 
@@ -326,7 +305,7 @@ func instanceIDFromProviderID(providerID string) (string, error) {
 		return "", fmt.Errorf("provider name from providerID should be lightsail: %s", providerID)
 	}
 
-	return split[1], nil
+	return split[2], nil
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
