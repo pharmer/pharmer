@@ -194,7 +194,7 @@ func (conn *cloudConnector) releaseReservedIP() error {
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
-	script, err := conn.renderStartupScript(ng, token)
+	script, err := conn.renderStartupScript(ng, name, token)
 	if err != nil {
 		return nil, err
 	}
@@ -223,6 +223,15 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		return nil, err
 	}
 
+	conn.client.OpenInstancePublicPorts(&lightsail.OpenInstancePublicPortsInput{
+		InstanceName: StringP(name),
+		PortInfo: &lightsail.PortInfo{
+			FromPort: Int64P(6443),
+			ToPort:   Int64P(6443),
+			Protocol: StringP(lightsail.NetworkProtocolTcp),
+		},
+	})
+
 	// load again to get IP address assigned
 	host, err := conn.client.GetInstance(&lightsail.GetInstanceInput{
 		InstanceName: StringP(name),
@@ -240,38 +249,60 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 }
 
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
-	instanceName, err := instanceNameFromProviderID(providerID)
+	instanceId, err := instanceIDFromProviderID(providerID)
 	if err != nil {
 		return err
 	}
+
+	instance, err := conn.instanceByID(instanceId)
+	if err != nil {
+		return err
+	}
+
 	_, err = conn.client.DeleteInstance(&lightsail.DeleteInstanceInput{
-		InstanceName: StringP(instanceName),
+		InstanceName: instance.Name,
 	})
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("Droplet %v deleted", instanceName)
+	Logger(conn.ctx).Infof("Droplet %v deleted", String(instance.Name))
 	return nil
+}
+
+func (conn *cloudConnector) instanceByID(instanceID string) (*lightsail.Instance, error) {
+	host, err := conn.client.GetInstance(&lightsail.GetInstanceInput{
+		InstanceName: StringP(instanceID),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if host.Instance != nil {
+		return host.Instance, nil
+	}
+
+	return nil, fmt.Errorf("Instance with %v not found", instanceID)
+
 }
 
 // dropletIDFromProviderID returns a droplet's ID from providerID.
 //
 // The providerID spec should be retrievable from the Kubernetes
-// node object. The expected format is: digitalocean://droplet-id
-// ref: https://github.com/digitalocean/digitalocean-cloud-controller-manager/blob/f9a9856e99c9d382db3777d678f29d85dea25e91/do/droplets.go#L211
-func instanceNameFromProviderID(providerID string) (string, error) {
+// node object. The expected format is: lightsail://droplet-id
+func instanceIDFromProviderID(providerID string) (string, error) {
 	if providerID == "" {
 		return "", errors.New("providerID cannot be empty string")
 	}
 
 	split := strings.Split(providerID, "/")
+
 	if len(split) != 3 {
-		return "", fmt.Errorf("unexpected providerID format: %s, format should be: digitalocean://12345", providerID)
+		return "", fmt.Errorf("unexpected providerID format: %s, format should be: lightsail://12345", providerID)
 	}
 
-	// since split[0] is actually "digitalocean:"
+	// since split[0] is actually "lightsail:"
 	if strings.TrimSuffix(split[0], ":") != UID {
-		return "", fmt.Errorf("provider name from providerID should be digitalocean: %s", providerID)
+		return "", fmt.Errorf("provider name from providerID should be lightsail: %s", providerID)
 	}
 
 	return split[2], nil

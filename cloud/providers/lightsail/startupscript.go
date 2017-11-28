@@ -3,19 +3,19 @@ package lightsail
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 
+	"github.com/appscode/go/errors"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
+	"github.com/appscode/pharmer/credential"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
-	"github.com/appscode/errors"
-	"github.com/appscode/pharmer/credential"
-	"encoding/json"
 )
 
-func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
+func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, nodeName, token string) TemplateData {
 	td := TemplateData{
 		ClusterName:      cluster.Name,
 		KubeletVersion:   cluster.Spec.KubeletVersion,
@@ -28,6 +28,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		NetworkProvider:  cluster.Spec.Networking.NetworkProvider,
 		Provider:         cluster.Spec.Cloud.CloudProvider,
 		ExternalProvider: true, // DigitalOcean uses out-of-tree CCM
+
+		NodeName: nodeName,
 	}
 	{
 		td.KubeletExtraArgs = map[string]string{}
@@ -56,7 +58,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 			panic(err)
 		}
 		cloudConfig := &api.LightsailCloudConfig{
-			AccessKeyID: typed.AccessKeyID(),
+			AccessKeyID:     typed.AccessKeyID(),
 			SecretAccessKey: typed.SecretAccessKey(),
 		}
 		data, err := json.Marshal(cloudConfig)
@@ -68,8 +70,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 	return td
 }
 
-func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup) TemplateData {
-	td := newNodeTemplateData(ctx, cluster, ng, "")
+func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, nodeName string) TemplateData {
+	td := newNodeTemplateData(ctx, cluster, ng, nodeName, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: ng.Name,
 	}.String()
@@ -96,7 +98,6 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
-
 	}
 	td.MasterConfiguration = &cfg
 	return td
@@ -116,10 +117,14 @@ exec_until_success() {
 	done
 }
 {{ end }}
+
+{{ define "prepare-host" }}
+hostnamectl set-hostname {{ .NodeName }}
+{{ end }}
 `
 )
 
-func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string) (string, error) {
+func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, nodeName, token string) (string, error) {
 	tpl, err := StartupScriptTemplate.Clone()
 	if err != nil {
 		return "", err
@@ -131,11 +136,11 @@ func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string)
 
 	var script bytes.Buffer
 	if ng.Role() == api.RoleMaster {
-		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng, nodeName)); err != nil {
 			return "", err
 		}
 	} else {
-		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, nodeName, token)); err != nil {
 			return "", err
 		}
 	}

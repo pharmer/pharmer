@@ -24,6 +24,7 @@ type TemplateData struct {
 	NetworkProvider  string
 	CloudConfig      string
 	Provider         string
+	NodeName         string
 	ExternalProvider bool
 
 	MasterConfiguration *kubeadmapi.MasterConfiguration

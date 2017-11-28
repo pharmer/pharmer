@@ -8,6 +8,7 @@ import (
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
@@ -319,26 +320,37 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		return
 	}
 	var masterInstance *core.Node
-	masterInstance, err = kc.CoreV1().Nodes().Get(cm.namer.MasterName(), metav1.GetOptions{})
-	if err != nil && !kerr.IsNotFound(err) {
+
+	masterNodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			api.RoleMasterKey: "",
+		}).String(),
+	})
+	if err != nil {
 		return
-	} else if err == nil {
-		acts = append(acts, api.Action{
-			Action:   api.ActionDelete,
-			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("Will delete master instance with name %v", cm.namer.MasterName()),
-		})
-		if !dryRun {
-			err = cm.conn.DeleteInstanceByProviderID(masterInstance.Spec.ProviderID)
-			if err != nil {
-				Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", masterInstance.Spec.ProviderID, err)
-			}
-			if masterNG.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
-				for _, addr := range masterInstance.Status.Addresses {
-					if addr.Type == core.NodeExternalIP {
-						err = cm.conn.releaseReservedIP()
-						if err != nil {
-							return
+	}
+	for _, masterNode := range masterNodes.Items {
+		masterInstance, err = kc.CoreV1().Nodes().Get(masterNode.Name, metav1.GetOptions{})
+		if err != nil && !kerr.IsNotFound(err) {
+			return
+		} else if err == nil {
+			acts = append(acts, api.Action{
+				Action:   api.ActionDelete,
+				Resource: "MasterInstance",
+				Message:  fmt.Sprintf("Will delete master instance with name %v", cm.namer.MasterName()),
+			})
+			if !dryRun {
+				err = cm.conn.DeleteInstanceByProviderID(masterInstance.Spec.ProviderID)
+				if err != nil {
+					Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", masterInstance.Spec.ProviderID, err)
+				}
+				if masterNG.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
+					for _, addr := range masterInstance.Status.Addresses {
+						if addr.Type == core.NodeExternalIP {
+							err = cm.conn.releaseReservedIP()
+							if err != nil {
+								return
+							}
 						}
 					}
 				}
