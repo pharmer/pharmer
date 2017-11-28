@@ -10,6 +10,9 @@ import (
 	"k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	"github.com/appscode/errors"
+	"github.com/appscode/pharmer/credential"
+	"encoding/json"
 )
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
@@ -40,6 +43,27 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
+
+		if cluster.Spec.Cloud.CCMCredentialName == "" {
+			panic(errors.New("no cloud controller manager credential found"))
+		}
+		cred, err := Store(ctx).Credentials().Get(cluster.Spec.Cloud.CCMCredentialName)
+		if err != nil {
+			panic(err)
+		}
+		typed := credential.AWS{CommonSpec: credential.CommonSpec(cred.Spec)}
+		if ok, err := typed.IsValid(); !ok {
+			panic(err)
+		}
+		cloudConfig := &api.LightsailCloudConfig{
+			AccessKeyID: typed.AccessKeyID(),
+			SecretAccessKey: typed.SecretAccessKey(),
+		}
+		data, err := json.Marshal(cloudConfig)
+		if err != nil {
+			panic(err)
+		}
+		td.CloudConfig = string(data)
 	}
 	return td
 }
@@ -72,6 +96,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
+
 	}
 	td.MasterConfiguration = &cfg
 	return td
@@ -83,7 +108,7 @@ var (
 export DEBIAN_FRONTEND=noninteractive
 export DEBCONF_NONINTERACTIVE_SEEN=true
 
-function exec-until-success() {
+exec_until_success() {
 	$1
 	while [ $? -ne 0 ]; do
 		sleep 2
