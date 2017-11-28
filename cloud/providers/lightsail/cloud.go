@@ -321,7 +321,7 @@ func instanceIDFromProviderID(providerID string) (string, error) {
 		return "", fmt.Errorf("unexpected providerID format: %s, format should be: lightsail://12345", providerID)
 	}
 
-	// since split[0] is actually "split:"
+	// since split[0] is actually "lightsail:"
 	if strings.TrimSuffix(split[0], ":") != UID {
 		return "", fmt.Errorf("provider name from providerID should be lightsail: %s", providerID)
 	}

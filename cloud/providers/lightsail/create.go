@@ -65,7 +65,7 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
 	cfg := &api.SSHConfig{
 		PrivateKey: SSHKey(cm.ctx).PrivateKey,
-		User:       "root",
+		User:       "ubuntu",
 		HostPort:   int32(22),
 	}
 	for _, addr := range node.Status.Addresses {
