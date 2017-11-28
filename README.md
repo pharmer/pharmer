@@ -28,7 +28,8 @@ This project is spread over 4 repositories:
 - [appscode/swanc](https://github.com/appscode/swanc): StrongSwan based VPN Controller for Kubernetes
 
 ## User Guide
- - [Create & manage a Kubernetes cluster in AWS](/docs/cloud/aws/README.md)
+ - [Create & manage a Kubernetes cluster in AWS EC2](/docs/cloud/aws/README.md)
+ - [Create & manage a Kubernetes cluster in Amazon Lightsail](/docs/cloud/lightsail/README.md)
  - [Create & manage a Kubernetes cluster in DigitalOcean](/docs/cloud/digitalocean/README.md)
  - [Create & manage a Kubernetes cluster in Vultr](/docs/cloud/vultr/README.md)
  - [Create & manage a Kubernetes cluster in Linode](/docs/cloud/linode/README.md)

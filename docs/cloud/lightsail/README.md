@@ -1,4 +1,4 @@
-# Running Kubernetes on [Lightsail](https://lightsail.aws.amazon.com/)
+# Running Kubernetes on [Amazon Lightsail](https://amazonlightsail.com/)
 
 Following example will use `pharmer ` to create a Kubernetes cluster with 1 worker node instance and a master instance (i,e, 2 instances in you cluster).
 
