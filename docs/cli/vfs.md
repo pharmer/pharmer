@@ -13,7 +13,6 @@ aliases:
   - /products/pharmer/0.2.0/cli/
 ---
 
-
 ## Virtual file system (Vfs)
 
 Stores data on File (local/remote) using  [stow](https://github.com/appscode/stow) 
