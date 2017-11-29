@@ -48,9 +48,6 @@ $ aws iam create-access-key --user-name pharmer
 
 Use this access key while importing credentials on pharmer
 
-
-* **Importing credential on pharmer**
-
 From command line, run the following command and paste those keys.
 ```console
 $ pharmer create credential aws

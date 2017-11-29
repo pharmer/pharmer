@@ -43,8 +43,8 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	cluster.Spec.Cloud.AWS.MasterSGName = n.GenMasterSGName()
 	cluster.Spec.Cloud.AWS.NodeSGName = n.GenNodeSGName()
 
-	cluster.Spec.Cloud.AWS.IAMProfileMaster = "master." + cluster.Name + ".pharmer"
-	cluster.Spec.Cloud.AWS.IAMProfileNode = "node." + cluster.Name + ".pharmer"
+	cluster.Spec.Cloud.AWS.IAMProfileMaster = fmt.Sprintf("master.%v.pharmer", cluster.Name)
+	cluster.Spec.Cloud.AWS.IAMProfileNode = fmt.Sprintf("node.%v.pharmer", cluster.Name)
 	cluster.Spec.Cloud.AWS.VpcCIDRBase = "172.20"
 	cluster.Spec.Cloud.AWS.MasterIPSuffix = ".9"
 	cluster.Spec.Cloud.AWS.VpcCIDR = "172.20.0.0/16"
