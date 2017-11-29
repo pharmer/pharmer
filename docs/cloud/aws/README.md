@@ -1,3 +1,19 @@
+---
+title: AWS Overview
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: aws-overview
+    name: Overview
+    parent: aws
+    weight: 10
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: cloud
+url: /products/pharmer/0.1.0-alpha.1/cloud/aws/
+aliases:
+  - /products/pharmer/0.1.0-alpha.1/cloud/aws/README/
+---
+
 # Running Kubernetes on [AWS](https://aws.amazon.com/)
 
 Following example will use `pharmer ` to create a Kubernetes cluster with 2 worker node servers and a master server (i,e, 3 servers in you cluster).

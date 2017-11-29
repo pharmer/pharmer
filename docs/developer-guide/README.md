@@ -1,3 +1,20 @@
+---
+title: Overview | Developer Guide
+description: Developer Guide Overview
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: developer-guide-readme
+    name: Overview
+    parent: developer-guide
+    weight: 15
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: developer-guide
+url: /products/pharmer/0.1.0-alpha.1/developer-guide/
+aliases:
+  - /products/pharmer/0.1.0-alpha.1/developer-guide/README/
+---
+
 ## Development Guide
 This document is intended to be the canonical source of truth for things like supported toolchain versions for building Pack.
 If you find a requirement that this doc does not capture, please submit an issue on github.

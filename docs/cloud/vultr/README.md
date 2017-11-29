@@ -1,3 +1,18 @@
+---
+title: Vultr Overview
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: vultr-overview
+    name: Overview
+    parent: vultr
+    weight: 25
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: cloud
+url: /products/pharmer/0.1.0-alpha.1/cloud/vultr/
+aliases:
+  - /products/pharmer/0.1.0-alpha.1/cloud/vultr/README/
+---
 
 # Running Kubernetes on Vultr
 

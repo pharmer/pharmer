@@ -1,3 +1,19 @@
+---
+title: Packet Overview
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: packet-overview
+    name: Overview
+    parent: packet
+    weight: 10
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: cloud
+url: /products/pharmer/0.1.0-alpha.1/cloud/packet/
+aliases:
+  - /products/pharmer/0.1.0-alpha.1/cloud/packet/README/
+---
+
 # Running Kubernetes on [Packet](https://app.packet.net)
 
 Following example will use `pharmer ` to create a Kubernetes cluster with 1 worker node server and a master server (i,e, 2 servers in you cluster).

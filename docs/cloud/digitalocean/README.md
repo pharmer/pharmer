@@ -1,3 +1,18 @@
+---
+title: DigitalOcean Overview
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: digitalocean-overview
+    name: Overview
+    parent: digital-ocean
+    weight: 10
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: cloud
+url: /products/pharmer/0.1.0-alpha.1/cloud/digitalocean/
+aliases:
+  - /products/pharmer/0.1.0-alpha.1/cloud/digitalocean/README/
+---
 # Running Kubernetes on [DigitalOcean](https://cloud.digitalocean.com)
 
 Following example will use `pharmer ` to create a Kubernetes cluster with 2 worker node droplets and a master droplet (i,e, 3 droplets in you cluster).
