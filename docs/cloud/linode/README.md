@@ -10,6 +10,8 @@ product_name: pharmer
 left_menu: product_pharmer_0.2.0
 section_menu_id: cloud
 url: /products/pharmer/0.2.0/cloud/linode/
+aliases:
+  - /products/pharmer/0.2.0/cloud/linode/README/
 ---
 
 # Running Kubernetes on [Linode](https://www.linode.com/)

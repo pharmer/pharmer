@@ -13,6 +13,7 @@ section_menu_id: getting-started
 url: /products/pharmer/0.2.0/getting-started/credential/
 aliases:
   - /products/pharmer/0.2.0/
+  - /products/pharmer/0.2.0/credential/
 ---
 
 #Credential

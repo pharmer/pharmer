@@ -10,6 +10,8 @@ product_name: pharmer
 left_menu: product_pharmer_0.2.0
 section_menu_id: cloud
 url: /products/pharmer/0.2.0/cloud/vultr/
+aliases:
+  - /products/pharmer/0.2.0/cloud/vultr/README/
 ---
 
 # Running Kubernetes on Vultr
