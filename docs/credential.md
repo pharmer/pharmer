@@ -10,6 +10,7 @@ menu:
 product_name: pharmer
 left_menu: product_pharmer_0.2.0
 section_menu_id: getting-started
+url: /products/pharmer/0.2.0/getting-started/credential/
 aliases:
   - /products/pharmer/0.2.0/
 ---

@@ -4,6 +4,7 @@ menu:
   product_pharmer_0.2.0:
     identifier: vultr-overview
     name: Overview
+    parent: vultr
     weight: 25
 product_name: pharmer
 left_menu: product_pharmer_0.2.0

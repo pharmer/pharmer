@@ -4,6 +4,7 @@ menu:
   product_pharmer_0.2.0:
     identifier: aws-overview
     name: Overview
+    parent: aws
     weight: 10
 product_name: pharmer
 left_menu: product_pharmer_0.2.0
