@@ -1,3 +1,19 @@
+---
+title: Lightsail Overview
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: lightsail-overview
+    name: Overview
+    parent: lightsail
+    weight: 10
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: cloud
+url: /products/pharmer/0.1.0-alpha.1/cloud/lightsail/
+aliases:
+  - /products/pharmer/0.1.0-alpha.1/cloud/lightsail/README/
+---
+
 # Running Kubernetes on [Amazon Lightsail](https://amazonlightsail.com/)
 
 Following example will use `pharmer ` to create a Kubernetes cluster with 1 worker node instance and a master instance (i,e, 2 instances in you cluster).
