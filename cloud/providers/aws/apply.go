@@ -609,6 +609,17 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		}
 	}
 
+	acts = append(acts, api.Action{
+		Action:   api.ActionDelete,
+		Resource: "IAM role",
+		Message:  "IAM role will be deleted",
+	})
+	if !dryRun {
+		if err = cm.conn.deleteIAMProfile(); err != nil {
+			return
+		}
+	}
+
 	if !dryRun {
 		cm.cluster.Status.Phase = api.ClusterDeleted
 		Store(cm.ctx).Clusters().Update(cm.cluster)
