@@ -1,17 +1,17 @@
 ---
 title: Azure Overview
 menu:
-  product_pharmer_0.2.0:
+  product_pharmer_0.1.0-alpha.2:
     identifier: azure-overview
     name: Overview
     parent: azure
     weight: 10
 product_name: pharmer
-left_menu: product_pharmer_0.2.0
+left_menu: product_pharmer_0.1.0-alpha.2
 section_menu_id: cloud
-url: /products/pharmer/0.2.0/cloud/azure/
+url: /products/pharmer/0.1.0-alpha.2/cloud/azure/
 aliases:
-  - /products/pharmer/0.2.0/cloud/azure/README/
+  - /products/pharmer/0.1.0-alpha.2/cloud/azure/README/
 ---
 
 ## Example Commands

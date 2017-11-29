@@ -2,17 +2,17 @@
 title: Networking | Pharmer
 description: Networking of Pharmer
 menu:
-  product_pharmer_0.2.0:
+  product_pharmer_0.1.0-alpha.2:
     identifier: networking-pharmer
     name: Networking
     parent: getting-started
     weight: 30
 product_name: pharmer
-left_menu: product_pharmer_0.2.0
+left_menu: product_pharmer_0.1.0-alpha.2
 section_menu_id: getting-started
-url: /products/pharmer/0.2.0/getting-started/networking/
+url: /products/pharmer/0.1.0-alpha.2/getting-started/networking/
 aliases:
-  - /products/pharmer/0.2.0/networking/
+  - /products/pharmer/0.1.0-alpha.2/networking/
 ---
 
 # Pod Networking

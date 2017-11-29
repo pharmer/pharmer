@@ -2,18 +2,18 @@
 title: Credential | Pharmer
 description: Credential of Pharmer
 menu:
-  product_pharmer_0.2.0:
+  product_pharmer_0.1.0-alpha.2:
     identifier: credential-pharmer
     name: Credential
     parent: getting-started
     weight: 20
 product_name: pharmer
-left_menu: product_pharmer_0.2.0
+left_menu: product_pharmer_0.1.0-alpha.2
 section_menu_id: getting-started
-url: /products/pharmer/0.2.0/getting-started/credential/
+url: /products/pharmer/0.1.0-alpha.2/getting-started/credential/
 aliases:
-  - /products/pharmer/0.2.0/
-  - /products/pharmer/0.2.0/credential/
+  - /products/pharmer/0.1.0-alpha.2/
+  - /products/pharmer/0.1.0-alpha.2/credential/
 ---
 
 #Credential

@@ -1,17 +1,17 @@
 ---
 title: Packet Overview
 menu:
-  product_pharmer_0.2.0:
+  product_pharmer_0.1.0-alpha.2:
     identifier: packet-overview
     name: Overview
     parent: packet
     weight: 10
 product_name: pharmer
-left_menu: product_pharmer_0.2.0
+left_menu: product_pharmer_0.1.0-alpha.2
 section_menu_id: cloud
-url: /products/pharmer/0.2.0/cloud/packet/
+url: /products/pharmer/0.1.0-alpha.2/cloud/packet/
 aliases:
-  - /products/pharmer/0.2.0/cloud/packet/README/
+  - /products/pharmer/0.1.0-alpha.2/cloud/packet/README/
 ---
 
 ## Example Commands
