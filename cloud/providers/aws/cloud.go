@@ -168,6 +168,43 @@ func (conn *cloudConnector) ensureIAMProfile() error {
 	return nil
 }
 
+func (conn *cloudConnector) deleteIAMProfile() error {
+	if err := conn.deleteRolePolicy(conn.cluster.Spec.Cloud.AWS.IAMProfileMaster); err != nil {
+		Logger(conn.ctx).Infoln("Failed to delete IAM instance-policy ", conn.cluster.Spec.Cloud.AWS.IAMProfileMaster, err)
+	}
+	if err := conn.deleteRolePolicy(conn.cluster.Spec.Cloud.AWS.IAMProfileNode); err != nil {
+		Logger(conn.ctx).Infoln("Failed to delete IAM instance-policy ", conn.cluster.Spec.Cloud.AWS.IAMProfileNode, err)
+	}
+	return nil
+}
+
+func (conn *cloudConnector) deleteRolePolicy(role string) error {
+	if _, err := conn.iam.RemoveRoleFromInstanceProfile(&_iam.RemoveRoleFromInstanceProfileInput{
+		InstanceProfileName: &role,
+		RoleName:            &role,
+	}); err != nil {
+		Logger(conn.ctx).Infoln("Failed to remove role from instance profile", role, err)
+	}
+
+	if _, err := conn.iam.DeleteRolePolicy(&_iam.DeleteRolePolicyInput{
+		PolicyName: &role,
+		RoleName:   &role,
+	}); err != nil {
+		Logger(conn.ctx).Infoln("Failed to delete role policy", role, err)
+	}
+	if _, err := conn.iam.DeleteRole(&_iam.DeleteRoleInput{
+		RoleName: &role,
+	}); err != nil {
+		Logger(conn.ctx).Infoln("Failed to delete role", role, err)
+	}
+
+	if _, err := conn.iam.DeleteInstanceProfile(&_iam.DeleteInstanceProfileInput{
+		InstanceProfileName: &role,
+	}); err != nil {
+		Logger(conn.ctx).Infoln("Failed to delete instance profile", role, err)
+	}
+	return nil
+}
 func (conn *cloudConnector) createIAMProfile(role, key string) error {
 	reqRole := &_iam.CreateRoleInput{RoleName: &key}
 	if role == api.RoleMaster {

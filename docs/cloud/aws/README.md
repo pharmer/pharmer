@@ -36,10 +36,33 @@ In this document we will use local file system ([vfs](/docs/cli/vfs.md)) as a st
 
 ### Credential importing
 
-To get access on [AWS](https://aws.amazon.com/), `pharmer` needs credential os `aws`. To get the api key go to
-the `Security credentials` under `Users` option to retrieve `access key id` and `security access key`.
+* **Setup IAM User**
 
-![aws-api-key](/docs/images/aws/aws-api-key.png)
+In order to create cluster within [AWS](https://aws.amazon.com/), `pharmer` needs a dedicated IAM user. `pharmer` use this user's API credential.
+
+The `pharmer` user needs following permission to works properly.
+
+![pharmer-iam](/docs/images/aws/pharmer-iam.png)
+
+If you have installed [aws cli](http://docs.aws.amazon.com/cli/latest/userguide/installing.html) locally, then you can use the following
+command to create `pharmer` IAM user.
+
+```console
+$ aws iam create-group --group-name pharmer
+
+$ aws iam attach-group-policy --policy-arn arn:aws:iam::aws:policy/AmazonEC2FullAccess --group-name pharmer
+$ aws iam attach-group-policy --policy-arn arn:aws:iam::aws:policy/AmazonRoute53FullAccess --group-name pharmer
+$ aws iam attach-group-policy --policy-arn arn:aws:iam::aws:policy/IAMFullAccess --group-name  pharmer
+$ aws iam attach-group-policy --policy-arn arn:aws:iam::aws:policy/AmazonVPCFullAccess --group-name pharmer
+$ aws iam create-user --user-name pharmer
+
+
+$ aws iam add-user-to-group --user-name pharmer --group-name pharmer
+$ aws iam create-access-key --user-name pharmer
+
+```
+
+Use this access key while importing credentials on pharmer
 
 From command line, run the following command and paste those keys.
 ```console
@@ -85,9 +108,9 @@ You can also see the stored credential from the following location:
 ~/.pharmer/store.d/credentials/aws.json            
 ```
 
- **IAM User**
+ **Cluster IAM User**
  
- In order to create clusters within AWS `pharmer` creates following
+ While creating cluster within AWS `pharmer` creates following IAM roles and policies
  * [IAM master policy](https://github.com/appscode/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L4)
  * [IAM master role](https://github.com/appscode/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L73)
  * [IAM node policy](https://github.com/appscode/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L88)
