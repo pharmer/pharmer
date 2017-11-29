@@ -1,3 +1,16 @@
+---
+title: Data Store
+menu:
+  product_pharmer_0.2.0:
+    identifier: datastore
+    name: Data Store
+    parent: cli
+    weight: 20
+product_name: pharmer
+left_menu: product_pharmer_0.2.0
+section_menu_id: cli
+---
+
 Pharmer supports following storage provider
 
 * [Vfs](./providers/vfs/README.md)
