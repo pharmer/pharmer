@@ -3,8 +3,8 @@ title: Linode Overview
 menu:
   product_pharmer_0.2.0:
     identifier: linode-overview
-	name: Overview
-	weight: 30
+    name: Overview
+    weight: 30
 product_name: pharmer
 left_menu: product_pharmer_0.2.0
 section_menu_id: cloud

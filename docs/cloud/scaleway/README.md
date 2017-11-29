@@ -3,8 +3,8 @@ title: Scaleway Overview
 menu:
   product_pharmer_0.2.0:
     identifier: scaleway-overview
-	name: Overview
-	weight: 10
+    name: Overview
+    weight: 10
 product_name: pharmer
 left_menu: product_pharmer_0.2.0
 section_menu_id: cloud
