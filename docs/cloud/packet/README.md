@@ -1,15 +1,15 @@
 ---
-title: Linode Overview
+title: Packet Overview
 menu:
   product_pharmer_0.2.0:
-    identifier: linode-overview
+    identifier: packet-overview
     name: Overview
     parent: packet
     weight: 10
 product_name: pharmer
 left_menu: product_pharmer_0.2.0
 section_menu_id: cloud
-url: /products/pharmer/0.2.0/cloud/linode/
+url: /products/pharmer/0.2.0/cloud/packet/
 ---
 
 ## Example Commands
