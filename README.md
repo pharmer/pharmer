@@ -34,6 +34,7 @@ This project is spread over 4 repositories:
  - [Create & manage a Kubernetes cluster in Vultr](/docs/cloud/vultr/README.md)
  - [Create & manage a Kubernetes cluster in Linode](/docs/cloud/linode/README.md)
  - [Create & manage a Kubernetes cluster in Scaleway](/docs/cloud/scaleway/README.md)
+ - [Create & manage a Kubernetes cluster in Packet](/docs/cloud/packet/README.md)
 
 ## Supported Versions
 Kubernetes 1.8+
