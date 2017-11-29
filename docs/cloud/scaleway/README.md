@@ -1,17 +1,17 @@
 ---
 title: Scaleway Overview
 menu:
-  product_pharmer_0.1.0-alpha.2:
+  product_pharmer_0.1.0-alpha.1:
     identifier: scaleway-overview
     name: Overview
     parent: scaleway
     weight: 10
 product_name: pharmer
-left_menu: product_pharmer_0.1.0-alpha.2
+left_menu: product_pharmer_0.1.0-alpha.1
 section_menu_id: cloud
-url: /products/pharmer/0.1.0-alpha.2/cloud/scaleway/
+url: /products/pharmer/0.1.0-alpha.1/cloud/scaleway/
 aliases:
-  - /products/pharmer/0.1.0-alpha.2/cloud/scaleway/README/
+  - /products/pharmer/0.1.0-alpha.1/cloud/scaleway/README/
 ---
 
 # Running Kubernetes on [Scaleway](https://cloud.scaleway.com/)

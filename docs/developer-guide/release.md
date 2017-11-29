@@ -2,13 +2,13 @@
 title: Release | Pharmer
 description: Pharmer Release
 menu:
-  product_pharmer_0.1.0-alpha.2:
+  product_pharmer_0.1.0-alpha.1:
     identifier: release    
     name: Release
     parent: developer-guide
     weight: 15
 product_name: pharmer
-left_menu: product_pharmer_0.1.0-alpha.2
+left_menu: product_pharmer_0.1.0-alpha.1
 section_menu_id: developer-guide
 ---
 

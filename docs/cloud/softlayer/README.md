@@ -1,17 +1,17 @@
 ---
 title: SoftLayer Overview
 menu:
-  product_pharmer_0.1.0-alpha.2:
+  product_pharmer_0.1.0-alpha.1:
     identifier: softlayer-overview
     name: Overview
     parent: soft-layer
     weight: 10
 product_name: pharmer
-left_menu: product_pharmer_0.1.0-alpha.2
+left_menu: product_pharmer_0.1.0-alpha.1
 section_menu_id: cloud
-url: /products/pharmer/0.1.0-alpha.2/cloud/softlayer/
+url: /products/pharmer/0.1.0-alpha.1/cloud/softlayer/
 aliases:
-  - /products/pharmer/0.1.0-alpha.2/cloud/softlayer/README/
+  - /products/pharmer/0.1.0-alpha.1/cloud/softlayer/README/
 ---
 
 ## Example Commands
