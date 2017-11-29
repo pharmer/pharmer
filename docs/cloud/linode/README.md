@@ -1,3 +1,16 @@
+---
+title: Linode Overview
+menu:
+  product_pharmer_0.2.0:
+    identifier: linode-overview
+	name: Overview
+	weight: 30
+product_name: pharmer
+left_menu: product_pharmer_0.2.0
+section_menu_id: cloud
+url: /products/pharmer/0.2.0/cloud/linode/
+---
+
 # Running Kubernetes on [Linode](https://www.linode.com/)
 
 Following example will use `pharmer ` to create a Kubernetes cluster with 2 worker node instances and a master instance (i,e, 3 instance in you cluster).

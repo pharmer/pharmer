@@ -1,3 +1,15 @@
+---
+title: GCE Overview
+menu:
+  product_pharmer_0.2.0:
+    identifier: gce-overview
+	name: Overview
+	weight: 10
+product_name: pharmer
+left_menu: product_pharmer_0.2.0
+section_menu_id: cloud
+url: /products/pharmer/0.2.0/cloud/gce/
+---
 
 ## Example Commands
 

@@ -1,3 +1,16 @@
+---
+title: Scaleway Overview
+menu:
+  product_pharmer_0.2.0:
+    identifier: scaleway-overview
+	name: Overview
+	weight: 10
+product_name: pharmer
+left_menu: product_pharmer_0.2.0
+section_menu_id: cloud
+url: /products/pharmer/0.2.0/cloud/scaleway/
+---
+
 # Running Kubernetes on [Scaleway](https://cloud.scaleway.com/)
 
 Following example will use `pharmer ` to create a Kubernetes cluster with 2 worker node servers and a master server (i,e, 3 servers in you cluster).

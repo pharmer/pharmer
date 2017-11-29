@@ -1,3 +1,15 @@
+---
+title: Azure Overview
+menu:
+  product_pharmer_0.2.0:
+    identifier: azure-overview
+	name: Overview
+	weight: 10
+product_name: pharmer
+left_menu: product_pharmer_0.2.0
+section_menu_id: cloud
+url: /products/pharmer/0.2.0/cloud/azure/
+---
 
 ## Example Commands
 
