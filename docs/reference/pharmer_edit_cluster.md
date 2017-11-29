@@ -1,3 +1,14 @@
+---
+title: Pharmer Edit Cluster
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: pharmer-edit-cluster
+    name: Pharmer Edit Cluster
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: reference
+---
 ## pharmer edit cluster
 
 Edit cluster object
@@ -45,5 +56,5 @@ pharmer edit cluster
 ```
 
 ### SEE ALSO
-* [pharmer edit](pharmer_edit.md)	 - 
+* [pharmer edit](/docs/reference/pharmer_edit.md)	 - 
 

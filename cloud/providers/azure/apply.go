@@ -147,23 +147,23 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 	}
 	var as compute.AvailabilitySet
-	if as, err = cm.conn.getAvailablitySet(); err != nil {
+	if as, err = cm.conn.getAvailabilitySet(); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
-			Resource: "Availablity set",
-			Message:  fmt.Sprintf("Availablity set %v will be created", cm.namer.AvailablitySetName()),
+			Resource: "Availability set",
+			Message:  fmt.Sprintf("Availability set %v will be created", cm.namer.AvailabilitySetName()),
 		})
 		if !dryRun {
-			if as, err = cm.conn.ensureAvailablitySet(); err != nil {
+			if as, err = cm.conn.ensureAvailabilitySet(); err != nil {
 				return
 			}
-			Logger(cm.ctx).Infof("Availablity set %v created", cm.namer.AvailablitySetName())
+			Logger(cm.ctx).Infof("Availability set %v created", cm.namer.AvailabilitySetName())
 		}
 	} else {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
-			Resource: "Availablity set",
-			Message:  fmt.Sprintf("Availablity set %v found", cm.namer.AvailablitySetName()),
+			Resource: "Availability set",
+			Message:  fmt.Sprintf("Availability set %v found", cm.namer.AvailabilitySetName()),
 		})
 	}
 	var sa armstorage.Account

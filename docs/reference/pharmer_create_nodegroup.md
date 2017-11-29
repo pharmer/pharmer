@@ -1,3 +1,14 @@
+---
+title: Pharmer Create Nodegroup
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: pharmer-create-nodegroup
+    name: Pharmer Create Nodegroup
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: reference
+---
 ## pharmer create nodegroup
 
 Create a Kubernetes cluster NodeGroup for a given cloud provider
@@ -20,9 +31,11 @@ pharmer create nodegroup -k <cluster_name>
 ### Options
 
 ```
-  -k, --cluster string      Name of the Kubernetes cluster
-  -h, --help                help for nodegroup
-      --nodes stringToInt   Node set configuration (default [])
+  -k, --cluster string         Name of the Kubernetes cluster
+  -h, --help                   help for nodegroup
+      --nodes stringToInt      Node set configuration (default [])
+      --spot-price-max float   Maximum price of spot instance
+      --type string            Set node type regular/spot, default regular (default "regular")
 ```
 
 ### Options inherited from parent commands
@@ -41,5 +54,5 @@ pharmer create nodegroup -k <cluster_name>
 ```
 
 ### SEE ALSO
-* [pharmer create](pharmer_create.md)	 - 
+* [pharmer create](/docs/reference/pharmer_create.md)	 - 
 

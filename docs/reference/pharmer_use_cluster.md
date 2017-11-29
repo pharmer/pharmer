@@ -1,3 +1,14 @@
+---
+title: Pharmer Use Cluster
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: pharmer-use-cluster
+    name: Pharmer Use Cluster
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: reference
+---
 ## pharmer use cluster
 
 Sets `kubectl` context to given cluster
@@ -40,5 +51,5 @@ pharmer use cluster <name>
 ```
 
 ### SEE ALSO
-* [pharmer use](pharmer_use.md)	 - 
+* [pharmer use](/docs/reference/pharmer_use.md)	 - 
 

@@ -67,13 +67,20 @@ const (
 	IPTypeReserved  IPType = "Reserved"
 )
 
+type NodeType string
+
+const (
+	NodeTypeRegular NodeType = "regular"
+	NodeTypeSpot    NodeType = "spot"
+)
+
 type NodeSpec struct {
 	SKU              string            `json:"sku,omitempty" protobuf:"bytes,1,opt,name=sku"`
 	DiskType         string            `json:"nodeDiskType,omitempty" protobuf:"bytes,2,opt,name=nodeDiskType"`
 	DiskSize         int64             `json:"nodeDiskSize,omitempty" protobuf:"varint,3,opt,name=nodeDiskSize"`
 	ExternalIPType   IPType            `json:"externalIPType,omitempty" protobuf:"bytes,4,opt,name=externalIPType,casttype=IPType"`
 	KubeletExtraArgs map[string]string `json:"kubeletExtraArgs,omitempty" protobuf:"bytes,5,rep,name=kubeletExtraArgs"`
-	SpotInstances    bool              `json:"spotInstances,omitempty" protobuf:"varint,6,opt,name=spotInstances"`
+	Type             NodeType          `json:"type,omitempty" protobuf:"varint,6,opt,name=type"`
 	SpotPriceMax     float64           `json:"spotPriceMax,omitempty" protobuf:"fixed64,7,opt,name=spotPriceMax"`
 }
 

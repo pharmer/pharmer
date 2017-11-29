@@ -1,3 +1,14 @@
+---
+title: Pharmer Edit Credential
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: pharmer-edit-credential
+    name: Pharmer Edit Credential
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: reference
+---
 ## pharmer edit credential
 
 Edit a cloud Credential
@@ -42,5 +53,5 @@ pharmer edit credential
 ```
 
 ### SEE ALSO
-* [pharmer edit](pharmer_edit.md)	 - 
+* [pharmer edit](/docs/reference/pharmer_edit.md)	 - 
 

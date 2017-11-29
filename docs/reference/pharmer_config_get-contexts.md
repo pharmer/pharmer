@@ -1,3 +1,14 @@
+---
+title: Pharmer Config Get-Contexts
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: pharmer-config-get-contexts
+    name: Pharmer Config Get-Contexts
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: reference
+---
 ## pharmer config get-contexts
 
 List available contexts
@@ -39,5 +50,5 @@ Pharmer config get-contexts
 ```
 
 ### SEE ALSO
-* [pharmer config](pharmer_config.md)	 - Pharmer configuration
+* [pharmer config](/docs/reference/pharmer_config.md)	 - Pharmer configuration
 

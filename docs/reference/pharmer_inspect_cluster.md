@@ -1,3 +1,14 @@
+---
+title: Pharmer Inspect Cluster
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: pharmer-inspect-cluster
+    name: Pharmer Inspect Cluster
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: reference
+---
 ## pharmer inspect cluster
 
 Inspect cluster object
@@ -40,5 +51,5 @@ pharmer inspect cluster -k <cluster-name>  <inspect-type>
 ```
 
 ### SEE ALSO
-* [pharmer inspect](pharmer_inspect.md)	 - Inspect cluster for conformance
+* [pharmer inspect](/docs/reference/pharmer_inspect.md)	 - Inspect cluster for conformance
 

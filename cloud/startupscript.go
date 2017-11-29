@@ -24,6 +24,7 @@ type TemplateData struct {
 	NetworkProvider  string
 	CloudConfig      string
 	Provider         string
+	NodeName         string
 	ExternalProvider bool
 
 	MasterConfiguration *kubeadmapi.MasterConfiguration
@@ -88,20 +89,13 @@ func (td TemplateData) PackageList() string {
 }
 
 var (
-	StartupScriptTemplate = template.Must(template.New(api.RoleMaster).Parse(`#!/bin/bash
-set -euxo pipefail
-# log to /var/log/pharmer.log
-exec > >(tee -a /var/log/pharmer.log)
-exec 2>&1
-
-export DEBIAN_FRONTEND=noninteractive
-export DEBCONF_NONINTERACTIVE_SEEN=true
+	StartupScriptTemplate = template.Must(template.New(api.RoleMaster).Parse(`
+{{- template "init-script" }}
 
 # kill apt processes (E: Unable to lock directory /var/lib/apt/lists/)
 kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 
 {{ template "init-os" . }}
-{{ template "init-script" }}
 
 # https://major.io/2016/05/05/preventing-ubuntu-16-04-starting-daemons-package-installed/
 echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
@@ -111,7 +105,7 @@ apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common tzdata
 curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
-exec-until-success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
+exec_until_success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
 apt-get update -y
 apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
@@ -191,20 +185,13 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 {{ template "prepare-cluster" . }}
 `))
 
-	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`#!/bin/bash
-set -euxo pipefail
-# log to /var/log/pharmer.log
-exec > >(tee -a /var/log/pharmer.log)
-exec 2>&1
-
-export DEBIAN_FRONTEND=noninteractive
-export DEBCONF_NONINTERACTIVE_SEEN=true
+	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`
+{{- template "init-script" }}
 
 # kill apt processes (E: Unable to lock directory /var/lib/apt/lists/)
 kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 
 {{ template "init-os" . }}
-{{ template "init-script" }}
 
 # https://major.io/2016/05/05/preventing-ubuntu-16-04-starting-daemons-package-installed/
 echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
@@ -214,7 +201,7 @@ apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common tzdata
 curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
-exec-until-success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
+exec_until_success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
 apt-get update -y
 apt-get install -y {{ .PackageList }} || true
 {{ if .IsPreReleaseVersion }}
@@ -254,10 +241,16 @@ kubeadm reset
 kubeadm join --token={{ .KubeadmToken }} --discovery-token-ca-cert-hash={{ .CAHash }} {{ .APIServerAddress }}
 `))
 
-	_ = template.Must(StartupScriptTemplate.New("init-os").Parse(``))
+	_ = template.Must(StartupScriptTemplate.New("init-script").Parse(`#!/bin/bash
+set -euxo pipefail
+# log to /var/log/pharmer.log
+exec > >(tee -a /var/log/pharmer.log)
+exec 2>&1
 
-	_ = template.Must(StartupScriptTemplate.New("init-script").Parse(`
-function exec-until-success() {
+export DEBIAN_FRONTEND=noninteractive
+export DEBCONF_NONINTERACTIVE_SEEN=true
+
+exec_until_success() {
 	$1
 	while [ $? -ne 0 ]; do
 		sleep 2
@@ -265,6 +258,8 @@ function exec-until-success() {
 	done
 }
 `))
+
+	_ = template.Must(StartupScriptTemplate.New("init-os").Parse(``))
 
 	_ = template.Must(StartupScriptTemplate.New("prepare-host").Parse(``))
 
@@ -288,11 +283,11 @@ chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 	_ = template.Must(StartupScriptTemplate.New("ccm").Parse(`
 # Deploy CCM RBAC
 cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/rbac.yaml'
-exec-until-success "$cmd"
+exec_until_success "$cmd"
 
 # Deploy CCM DaemonSet
 cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/cloud-controller-manager/{{ .Provider }}/installer.yaml'
-exec-until-success "$cmd"
+exec_until_success "$cmd"
 
 until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
 do

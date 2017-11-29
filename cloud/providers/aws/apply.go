@@ -291,7 +291,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Security group",
-			Message:  fmt.Sprintf("Master security gropu %v and node security group %v will be created", cm.cluster.Spec.Cloud.AWS.MasterSGName, cm.cluster.Spec.Cloud.AWS.NodeSGName),
+			Message:  fmt.Sprintf("Master security group %v and node security group %v will be created", cm.cluster.Spec.Cloud.AWS.MasterSGName, cm.cluster.Spec.Cloud.AWS.NodeSGName),
 		})
 		if !dryRun {
 			if err = cm.conn.setupSecurityGroups(); err != nil {
@@ -307,7 +307,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "Security group",
-			Message:  fmt.Sprintf("Found master security gropu %v and node security group %v", cm.cluster.Spec.Cloud.AWS.MasterSGName, cm.cluster.Spec.Cloud.AWS.NodeSGName),
+			Message:  fmt.Sprintf("Found master security group %v and node security group %v", cm.cluster.Spec.Cloud.AWS.MasterSGName, cm.cluster.Spec.Cloud.AWS.NodeSGName),
 		})
 	}
 

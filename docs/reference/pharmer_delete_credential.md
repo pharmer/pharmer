@@ -1,3 +1,14 @@
+---
+title: Pharmer Delete Credential
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: pharmer-delete-credential
+    name: Pharmer Delete Credential
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: reference
+---
 ## pharmer delete credential
 
 Delete  credential object
@@ -39,5 +50,5 @@ pharmer delete credential
 ```
 
 ### SEE ALSO
-* [pharmer delete](pharmer_delete.md)	 - 
+* [pharmer delete](/docs/reference/pharmer_delete.md)	 - 
 

@@ -1,3 +1,14 @@
+---
+title: Pharmer Ssh
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: pharmer-ssh
+    name: Pharmer Ssh
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: reference
+---
 ## pharmer ssh
 
 
@@ -29,6 +40,6 @@
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer ssh node](pharmer_ssh_node.md)	 - SSH into a Kubernetes cluster instance
+* [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer ssh node](/docs/reference/pharmer_ssh_node.md)	 - SSH into a Kubernetes cluster instance
 

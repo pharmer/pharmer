@@ -1,3 +1,14 @@
+---
+title: Pharmer Version
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: pharmer-version
+    name: Pharmer Version
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: reference
+---
 ## pharmer version
 
 Prints binary version number.
@@ -33,5 +44,5 @@ pharmer version [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
 

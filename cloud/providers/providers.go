@@ -6,6 +6,7 @@ import (
 	_ "github.com/appscode/pharmer/cloud/providers/digitalocean"
 	_ "github.com/appscode/pharmer/cloud/providers/fake"
 	_ "github.com/appscode/pharmer/cloud/providers/gce"
+	_ "github.com/appscode/pharmer/cloud/providers/lightsail"
 	_ "github.com/appscode/pharmer/cloud/providers/linode"
 	_ "github.com/appscode/pharmer/cloud/providers/packet"
 	_ "github.com/appscode/pharmer/cloud/providers/scaleway"

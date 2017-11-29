@@ -1,3 +1,14 @@
+---
+title: Pharmer Create
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: pharmer-create
+    name: Pharmer Create
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: reference
+---
 ## pharmer create
 
 
@@ -33,8 +44,8 @@ pharmer create [flags]
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer create cluster](pharmer_create_cluster.md)	 - Create a Kubernetes cluster for a given cloud provider
-* [pharmer create credential](pharmer_create_credential.md)	 - Create  credential object
-* [pharmer create nodegroup](pharmer_create_nodegroup.md)	 - Create a Kubernetes cluster NodeGroup for a given cloud provider
+* [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer create cluster](/docs/reference/pharmer_create_cluster.md)	 - Create a Kubernetes cluster for a given cloud provider
+* [pharmer create credential](/docs/reference/pharmer_create_credential.md)	 - Create  credential object
+* [pharmer create nodegroup](/docs/reference/pharmer_create_nodegroup.md)	 - Create a Kubernetes cluster NodeGroup for a given cloud provider
 

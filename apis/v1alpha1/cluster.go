@@ -17,6 +17,11 @@ const (
 	ResourceTypeCluster = "clusters"
 )
 
+type LightsailCloudConfig struct {
+	AccessKeyID     string `json:"accessKeyID,omitempty" `
+	SecretAccessKey string `json:"secretAccessKey,omitempty"`
+}
+
 type VultrCloudConfig struct {
 	Token string `json:"token,omitempty" protobuf:"bytes,1,opt,name=token"`
 }

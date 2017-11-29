@@ -16,7 +16,7 @@ aliases:
   - /products/pharmer/0.1.0-alpha.2/credential/
 ---
 
-#Credential
+# Credential
 
 For creating cluster `pharmer` needs cloud provider's credential, so that it can create cluster resources on that provider.
 

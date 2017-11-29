@@ -15,7 +15,7 @@ func init() {
 	mrnd.Seed(time.Now().UnixNano())
 }
 
-// Hexidecimal
+// Hexadecimal
 var letterRunes = []rune("0123456789abcdef")
 
 var (

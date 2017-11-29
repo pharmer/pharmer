@@ -45,10 +45,16 @@ libbuild.BIN_MATRIX = {
         'go_version': True,
         'release': True,
         'distro': {
-            'linux': ['amd64']
+            'linux': ['386', 'amd64', 'arm64'],
+            'darwin': ['amd64'],
+            'windows': ['386', 'amd64', 'arm64']
         }
     }
 }
+if libbuild.ENV not in ['prod']:
+    libbuild.BIN_MATRIX['pharmer']['distro'] = {
+        libbuild.GOHOSTOS: [libbuild.GOHOSTARCH]
+    }
 
 libbuild.BUCKET_MATRIX = {
     'prod': 'gs://appscode-cdn',
@@ -94,8 +100,8 @@ def version():
 
 def fmt():
     libbuild.ungroup_go_imports('*.go', 'apis', 'cloud', 'cmds', 'config', 'credential', 'data', 'store')
-    die(call('goimports -w *.go apis cloud cmds config credential data store'))
-    call('gofmt -s -w *.go apis cloud cmds config credential data store')
+    die(call('goimports -w *.go apis cloud cmds config credential data store utils'))
+    call('gofmt -s -w *.go apis cloud cmds config credential data store utils')
 
 
 def vet():
@@ -126,20 +132,16 @@ def build_cmd(name):
             libbuild.go_build(name, libbuild.GOHOSTOS, libbuild.GOHOSTARCH, main='*.go')
 
 
-def build_cmds():
-    gen()
-    for name in libbuild.BIN_MATRIX:
-        build_cmd(name)
-
-
 def build(name=None):
+    gen()
+    fmt()
     if name:
         cfg = libbuild.BIN_MATRIX[name]
         if cfg['type'] == 'go':
-            gen()
             build_cmd(name)
     else:
-        build_cmds()
+        for name in libbuild.BIN_MATRIX:
+            build_cmd(name)
 
 
 def push_bin(bindir):

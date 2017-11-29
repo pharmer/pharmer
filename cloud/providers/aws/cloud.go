@@ -13,7 +13,6 @@ import (
 	"github.com/appscode/go/errors"
 	stringutil "github.com/appscode/go/strings"
 	. "github.com/appscode/go/types"
-	"github.com/appscode/go/wait"
 	api "github.com/appscode/pharmer/apis/v1alpha1"
 	. "github.com/appscode/pharmer/cloud"
 	"github.com/appscode/pharmer/credential"
@@ -24,8 +23,10 @@ import (
 	_ec2 "github.com/aws/aws-sdk-go/service/ec2"
 	_elb "github.com/aws/aws-sdk-go/service/elb"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
+	_ "github.com/aws/aws-sdk-go/service/lightsail"
 	_s3 "github.com/aws/aws-sdk-go/service/s3"
 	core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type cloudConnector struct {
@@ -47,24 +48,28 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.AWS{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, fmt.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
 	config := &_aws.Config{
 		Region:      &cluster.Spec.Cloud.Region,
 		Credentials: credentials.NewStaticCredentials(typed.AccessKeyID(), typed.SecretAccessKey(), ""),
 	}
+	sess, err := session.NewSession(config)
+	if err != nil {
+		return nil, err
+	}
 	conn := cloudConnector{
 		ctx:       ctx,
 		cluster:   cluster,
-		ec2:       _ec2.New(session.New(config)),
-		elb:       _elb.New(session.New(config)),
-		iam:       _iam.New(session.New(config)),
-		autoscale: autoscaling.New(session.New(config)),
-		s3:        _s3.New(session.New(config)),
+		ec2:       _ec2.New(sess),
+		elb:       _elb.New(sess),
+		iam:       _iam.New(sess),
+		autoscale: autoscaling.New(sess),
+		s3:        _s3.New(sess),
 	}
 	if ok, msg := conn.IsUnauthorized(); !ok {
-		return nil, fmt.Errorf("Credential %s does not have necessary authorization. Reason: %s.", cluster.Spec.CredentialName, msg)
+		return nil, fmt.Errorf("credential %s does not have necessary authorization. Reason: %s", cluster.Spec.CredentialName, msg)
 	}
 	return &conn, nil
 }
@@ -965,7 +970,7 @@ func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.No
 	return &node, nil
 }
 
-func (conn *cloudConnector) waitForInstanceState(instanceId string, state string) error {
+func (conn *cloudConnector) waitForInstanceState(instanceId, state string) error {
 	for {
 		r1, err := conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 			InstanceIds: []*string{StringP(instanceId)},
@@ -1330,7 +1335,7 @@ func (conn *cloudConnector) createLaunchConfiguration(name, token string, ng *ap
 		},
 		UserData: StringP(base64.StdEncoding.EncodeToString([]byte(script))),
 	}
-	if ng.Spec.Template.Spec.SpotInstances {
+	if ng.Spec.Template.Spec.Type == api.NodeTypeSpot {
 		configuration.SpotPrice = StringP(strconv.FormatFloat(ng.Spec.Template.Spec.SpotPriceMax, 'f', -1, 64))
 	}
 	r1, err := conn.autoscale.CreateLaunchConfiguration(configuration)
@@ -1787,7 +1792,7 @@ func (conn *cloudConnector) deleteMaster() error {
 	}
 	err = conn.ec2.WaitUntilInstanceTerminated(instanceInput)
 	Logger(conn.ctx).Infof("Master instance for cluster %v is terminated", conn.cluster.Name)
-	return nil
+	return err
 }
 
 func (conn *cloudConnector) deleteGroupInstances(ng *api.NodeGroup, instance string) error {

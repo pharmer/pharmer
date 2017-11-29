@@ -53,7 +53,7 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
 		return nil, err
 	}
-	if err = CreateNodeGroup(ctx, cluster, api.RoleMaster, "", 1, false, float64(0)); err != nil {
+	if err = CreateNodeGroup(ctx, cluster, api.RoleMaster, "", api.NodeTypeRegular, 1, float64(0)); err != nil {
 		return nil, err
 	}
 	if _, err = Store(ctx).Clusters().Update(cluster); err != nil {
@@ -62,7 +62,7 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	return cluster, nil
 }
 
-func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string, count int, spotInstance bool, spotPriceMax float64) error {
+func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string, nodeType api.NodeType, count int, spotPriceMax float64) error {
 	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
 	if err != nil {
 		return err
@@ -96,8 +96,8 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string
 			api.RoleNodeKey: "",
 		}
 	}
-	if spotInstance {
-		ig.Spec.Template.Spec.SpotInstances = spotInstance
+	ig.Spec.Template.Spec.Type = nodeType
+	if nodeType == api.NodeTypeSpot {
 		ig.Spec.Template.Spec.SpotPriceMax = spotPriceMax
 	}
 

@@ -1,3 +1,14 @@
+---
+title: Pharmer Config
+menu:
+  product_pharmer_0.1.0-alpha.1:
+    identifier: pharmer-config
+    name: Pharmer Config
+    parent: reference
+product_name: pharmer
+left_menu: product_pharmer_0.1.0-alpha.1
+section_menu_id: reference
+---
 ## pharmer config
 
 Pharmer configuration
@@ -39,7 +50,7 @@ pharmer config view
 ```
 
 ### SEE ALSO
-* [pharmer](pharmer.md)	 - Pharmer by Appscode - Manages farms
-* [pharmer config get-contexts](pharmer_config_get-contexts.md)	 - List available contexts
-* [pharmer config view](pharmer_config_view.md)	 - Print Pharmer config
+* [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
+* [pharmer config get-contexts](/docs/reference/pharmer_config_get-contexts.md)	 - List available contexts
+* [pharmer config view](/docs/reference/pharmer_config_view.md)	 - Print Pharmer config
 
