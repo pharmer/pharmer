@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/appscode/pharmer/config"
 	"github.com/ghodss/yaml"
+	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
 )
 

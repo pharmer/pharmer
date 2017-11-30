@@ -7,14 +7,14 @@ import (
 
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	. "github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/credential"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lightsail"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/credential"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 

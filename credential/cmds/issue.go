@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/appscode/go/term"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/config"
-	cc "github.com/appscode/pharmer/credential/cloud"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/config"
+	cc "github.com/pharmer/pharmer/credential/cloud"
 	"github.com/spf13/cobra"
 )
 

@@ -23,7 +23,7 @@ Following example will use `pharmer ` to create a Kubernetes cluster with 2 work
 As a prerequisite, you need to have `pharmer` installed.  To install `pharmer` run the following command.
 
 ```console
-$ go get github.com/appscode/pharmer
+$ go get github.com/pharmer/pharmer
 ```
 
 ### Pharmer storage
@@ -155,7 +155,7 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `vultr`
     - Kubernetes version: 1.8.0
     - Credential name: [vul](#Credential importing)
 
- For location code and sku details click [hrere](https://github.com/appscode/pharmer/blob/master/data/files/vultr/cloud.json)
+ For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/vultr/cloud.json)
  Available options in `pharmer` to create a cluster are:
  ```console
 $ pharmer create cluster -h

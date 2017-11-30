@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/data/files"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pharmer/pharmer/data/files"
 )
 
 const (

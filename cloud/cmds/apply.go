@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/appscode/go/log"
-	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/config"
+	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
 )
 

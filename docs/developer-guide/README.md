@@ -33,8 +33,8 @@ development environment, please follow [these instructions](https://golang.org/d
 #### Download Source
 
 ```console
-$ go get github.com/appscode/pharmer
-$ cd $(go env GOPATH)/src/github.com/appscode/pharmer
+$ go get github.com/pharmer/pharmer
+$ cd $(go env GOPATH)/src/github.com/pharmer/pharmer
 ```
 
 #### Install Dev tools

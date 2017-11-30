@@ -3,7 +3,7 @@
 set -eou pipefail
 
 GOPATH=$(go env GOPATH)
-REPO_ROOT=$GOPATH/src/github.com/appscode/pharmer
+REPO_ROOT=$GOPATH/src/github.com/pharmer/pharmer
 
 source "$REPO_ROOT/hack/libbuild/common/public_image.sh"
 

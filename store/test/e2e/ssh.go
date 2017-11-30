@@ -2,9 +2,9 @@ package e2e
 
 import (
 	"github.com/appscode/go/crypto/ssh"
-	"github.com/appscode/pharmer/store/test/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pharmer/pharmer/store/test/framework"
 )
 
 var _ = Describe("SSH", func() {

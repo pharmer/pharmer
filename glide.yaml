@@ -1,4 +1,4 @@
-package: github.com/appscode/pharmer
+package: github.com/pharmer/pharmer
 import:
 - package: github.com/Azure/azure-sdk-for-go
   version: v10.2.1-beta

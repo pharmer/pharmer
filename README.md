@@ -1,4 +1,4 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/appscode/pharmer)](https://goreportcard.com/report/github.com/appscode/pharmer)
+[![Go Report Card](https://goreportcard.com/badge/github.com/pharmer/pharmer)](https://goreportcard.com/report/github.com/pharmer/pharmer)
 
 # pharmer
 Kubernetes Cluster Manager for [Kubeadm](https://github.com/kubernetes/kubeadm). Think `kops using kubadm`!
@@ -7,7 +7,7 @@ This project is spread over 4 repositories:
 
 - [appscode/pre-k](https://github.com/appscode/pre-k): Contains [a set of handy commands](https://github.com/appscode/pre-k/blob/master/docs/reference/pre-k.md) that you run before `kubeadm init`.
 
-- [appscode/pharmer](https://github.com/appscode/pharmer): A [Kops](https://github.com/kubernetes/kops) [like](https://github.com/appscode/pharmer/blob/master/docs/reference/pharmer.md) cluster manager using Kubeadm. Supported cloud providers:
+- [appscode/pharmer](https://github.com/pharmer/pharmer): A [Kops](https://github.com/kubernetes/kops) [like](https://github.com/pharmer/pharmer/blob/master/docs/reference/pharmer.md) cluster manager using Kubeadm. Supported cloud providers:
   - aws
   - azure
   - digitalocean
@@ -43,7 +43,7 @@ Kubernetes 1.8+
 Want to help improve Pharmer? Please start [here](/CONTRIBUTING.md).
 
 ## Support
-If you have any questions, [file an issue](https://github.com/appscode/pharmer/issues/new) or talk to us on the [Kubernetes Slack team](http://slack.kubernetes.io/) channel `#pharmer`.
+If you have any questions, [file an issue](https://github.com/pharmer/pharmer/issues/new) or talk to us on the [Kubernetes Slack team](http://slack.kubernetes.io/) channel `#pharmer`.
 
 ---
 

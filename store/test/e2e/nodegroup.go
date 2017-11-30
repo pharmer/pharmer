@@ -1,10 +1,10 @@
 package e2e
 
 import (
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/store/test/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pharmer/pharmer/store/test/framework"
 )
 
 var _ = Describe("Node Group", func() {

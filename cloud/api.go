@@ -3,7 +3,7 @@ package cloud
 import (
 	"errors"
 
-	api "github.com/appscode/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	core "k8s.io/api/core/v1"
 )
 

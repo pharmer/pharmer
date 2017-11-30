@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/appscode/pharmer/utils"
 	"github.com/golang/glog"
+	"github.com/pharmer/pharmer/utils"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/kubernetes/pkg/kubectl/util/term"
 )

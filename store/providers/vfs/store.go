@@ -8,15 +8,15 @@ import (
 	"path/filepath"
 	"strconv"
 
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/credential"
-	"github.com/appscode/pharmer/store"
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/azure"
 	"github.com/graymeta/stow/google"
 	"github.com/graymeta/stow/local"
 	"github.com/graymeta/stow/s3"
 	"github.com/graymeta/stow/swift"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pharmer/pharmer/credential"
+	"github.com/pharmer/pharmer/store"
 )
 
 const (

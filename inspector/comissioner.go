@@ -7,8 +7,8 @@ import (
 
 	"context"
 	"github.com/appscode/go/term"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	. "github.com/appscode/pharmer/cloud"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	. "github.com/pharmer/pharmer/cloud"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"

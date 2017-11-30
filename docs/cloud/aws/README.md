@@ -22,7 +22,7 @@ Following example will use `pharmer ` to create a Kubernetes cluster with 2 work
 
 As a prerequisite, you need to have `pharmer` installed.  To install `pharmer` run the following command.
 ```console
-$ go get github.com/appscode/pharmer
+$ go get github.com/pharmer/pharmer
 ```
 
 ### Pharmer storage
@@ -111,10 +111,10 @@ You can also see the stored credential from the following location:
  **Cluster IAM User**
  
  While creating cluster within AWS `pharmer` creates following IAM roles and policies
- * [IAM master policy](https://github.com/appscode/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L4)
- * [IAM master role](https://github.com/appscode/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L73)
- * [IAM node policy](https://github.com/appscode/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L88)
- * [IAM node role](https://github.com/appscode/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L155) 
+ * [IAM master policy](https://github.com/pharmer/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L4)
+ * [IAM master role](https://github.com/pharmer/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L73)
+ * [IAM node policy](https://github.com/pharmer/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L88)
+ * [IAM node role](https://github.com/pharmer/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L155) 
 
 ### Cluster provisioning
 
@@ -132,7 +132,7 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `aws`
     - Kubernetes version: 1.8.0
     - Credential name: [aws](#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/appscode/pharmer/blob/master/data/files/aws/cloud.json)   
+For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/aws/cloud.json)   
 
 Available options in `pharmer` to create a cluster are:
  ```console

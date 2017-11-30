@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/crypto/ssh"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"k8s.io/client-go/util/cert"
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )

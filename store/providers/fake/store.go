@@ -6,8 +6,8 @@ import (
 	"crypto/x509"
 	"sync"
 
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/store"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pharmer/pharmer/store"
 )
 
 const (

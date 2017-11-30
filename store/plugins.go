@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/golang/glog"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
 )
 
 // Factory is a function that returns a storage.Interface.

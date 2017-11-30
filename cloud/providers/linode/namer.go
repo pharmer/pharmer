@@ -2,7 +2,7 @@ package linode
 
 import (
 	"github.com/appscode/go/crypto/rand"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
 )
 
 type namer struct {

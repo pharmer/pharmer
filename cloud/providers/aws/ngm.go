@@ -6,9 +6,9 @@ import (
 
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	. "github.com/appscode/pharmer/cloud"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	. "github.com/pharmer/pharmer/cloud"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"

@@ -7,11 +7,11 @@ import (
 
 	"github.com/appscode/go/errors"
 	"github.com/appscode/go/log"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/store"
 	"github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
 	_ "github.com/lib/pq"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pharmer/pharmer/store"
 )
 
 const (

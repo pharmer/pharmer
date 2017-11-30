@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/appscode/pharmer/store"
+	"github.com/pharmer/pharmer/store"
 )
 
 type sshKeyFileStore struct {

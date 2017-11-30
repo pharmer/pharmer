@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/appscode/go/errors"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	. "github.com/appscode/pharmer/cloud"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	. "github.com/pharmer/pharmer/cloud"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

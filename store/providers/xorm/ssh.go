@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/appscode/pharmer/store"
 	"github.com/go-xorm/xorm"
+	"github.com/pharmer/pharmer/store"
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
