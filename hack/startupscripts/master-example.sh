@@ -176,7 +176,7 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 
 
 # kubectl taint nodes ${NODE_NAME} node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
-kubectl apply -f "https://raw.githubusercontent.com/appscode/pharmer/ccm-fix/cloud/providers/digitalocean/cloud-control-manager.yaml" --kubeconfig /etc/kubernetes/admin.conf
+kubectl apply -f "https://raw.githubusercontent.com/pharmer/pharmer/ccm-fix/cloud/providers/digitalocean/cloud-control-manager.yaml" --kubeconfig /etc/kubernetes/admin.conf
 
 #until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
 #do

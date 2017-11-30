@@ -202,7 +202,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		},
 		SupplementalCreateObjectOptions: &datatypes.Virtual_Guest_SupplementalCreateObjectOptions{
 			ImmediateApprovalOnlyFlag: TrueP(),
-			PostInstallScriptUri:      StringP("https://raw.githubusercontent.com/appscode/pharmer/master/cloud/providers/softlayer/startupscript.sh"),
+			PostInstallScriptUri:      StringP("https://raw.githubusercontent.com/pharmer/pharmer/master/cloud/providers/softlayer/startupscript.sh"),
 		},
 	}
 
