@@ -172,6 +172,10 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		if totalNodes > 500 {
 			masterNG.Spec.Template.Spec.SKU = "n1-standard-32"
 		}
+		masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
+		if err != nil {
+			return
+		}
 	}
 	found, _ = cm.conn.getMasterPDDisk(cm.namer.MasterPDName())
 	if !found {
