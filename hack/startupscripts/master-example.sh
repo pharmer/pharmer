@@ -166,7 +166,7 @@ kubectl apply \
 
 
 kubectl apply \
-  -f https://raw.githubusercontent.com/appscode/pharmer/master/addons/kubeadm-probe/ds.yaml \
+  -f https://raw.githubusercontent.com/pharmer/addons/master/kubeadm-probe/ds.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 
 mkdir -p ~/.kube
