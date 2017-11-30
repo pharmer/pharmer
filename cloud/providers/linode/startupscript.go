@@ -123,7 +123,7 @@ ensure_basic_networking() {
 ensure_basic_networking
 
 # Avoid using Linode's Ubuntu mirror
-curl -fsSL --retry 5 -o /etc/apt/sources.list https://raw.githubusercontent.com/appscode/pharmer/master/addons/ubuntu/16.04/sources.list
+curl -fsSL --retry 5 -o /etc/apt/sources.list https://raw.githubusercontent.com/pharmer/addons/master/ubuntu/16.04/sources.list
 
 # http://ask.xmodulo.com/disable-ipv6-linux.html
 /bin/cat >>/etc/sysctl.conf <<EOF
