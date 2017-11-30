@@ -4,10 +4,10 @@ import (
 	"os"
 
 	logs "github.com/appscode/go/log/golog"
-	_ "github.com/appscode/pharmer/cloud/providers"
-	"github.com/appscode/pharmer/cmds"
-	_ "github.com/appscode/pharmer/store/providers"
 	_ "github.com/gogo/protobuf/gogoproto"
+	_ "github.com/pharmer/pharmer/cloud/providers"
+	"github.com/pharmer/pharmer/cmds"
+	_ "github.com/pharmer/pharmer/store/providers"
 	_ "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
 

@@ -8,11 +8,11 @@ import (
 	"github.com/appscode/go/crypto/ssh"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/store"
-	"github.com/appscode/pharmer/store/providers/fake"
-	"github.com/appscode/pharmer/store/providers/vfs"
-	"github.com/appscode/pharmer/store/providers/xorm"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pharmer/pharmer/store"
+	"github.com/pharmer/pharmer/store/providers/fake"
+	"github.com/pharmer/pharmer/store/providers/vfs"
+	"github.com/pharmer/pharmer/store/providers/xorm"
 )
 
 type paramEnv struct{}

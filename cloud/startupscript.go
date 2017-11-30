@@ -5,9 +5,9 @@ import (
 	"strings"
 	"text/template"
 
-	api "github.com/appscode/pharmer/apis/v1alpha1"
 	"github.com/ghodss/yaml"
 	"github.com/hashicorp/go-version"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 

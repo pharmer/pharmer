@@ -7,8 +7,8 @@ import (
 	"github.com/appscode/go/flags"
 	"github.com/appscode/go/term"
 	"github.com/appscode/kutil/tools/backup"
-	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/config"
+	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -73,7 +73,7 @@ func NewCmdBackup() *cobra.Command {
 }
 
 func searchLocalKubeConfig(clusterName string) (*rest.Config, error) {
-	// ref: https://github.com/appscode/pharmer/blob/19db538fe51b83e807c525e2dbf28b56b7fb36e2/cloud/lib.go#L148
+	// ref: https://github.com/pharmer/pharmer/blob/19db538fe51b83e807c525e2dbf28b56b7fb36e2/cloud/lib.go#L148
 	ctxName := fmt.Sprintf("cluster-admin@%s.pharmer", clusterName)
 	apiConfig, err := clientcmd.NewDefaultPathOptions().GetStartingConfig()
 	if err != nil {

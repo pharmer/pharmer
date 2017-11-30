@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/appscode/pharmer/store/test/framework"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
+	"github.com/pharmer/pharmer/store/test/framework"
 	"k8s.io/client-go/util/homedir"
 	//logs "github.com/appscode/go/log/golog"
 )

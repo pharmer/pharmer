@@ -1,7 +1,7 @@
 package cmds
 
 import (
-	credCmd "github.com/appscode/pharmer/credential/cmds"
+	credCmd "github.com/pharmer/pharmer/credential/cmds"
 	"github.com/spf13/cobra"
 )
 

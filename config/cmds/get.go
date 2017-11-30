@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
-	"github.com/appscode/pharmer/config"
+	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
 )
 

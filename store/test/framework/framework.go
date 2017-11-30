@@ -3,11 +3,11 @@ package framework
 import (
 	"context"
 
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/config"
-	"github.com/appscode/pharmer/store"
 	. "github.com/onsi/gomega"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/config"
+	"github.com/pharmer/pharmer/store"
 )
 
 type Framework struct {

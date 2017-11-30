@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/appscode/go/errors"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	. "github.com/appscode/pharmer/cloud"
-	"github.com/appscode/pharmer/credential"
 	"github.com/digitalocean/godo"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/credential"
 	"golang.org/x/oauth2"
 	"k8s.io/apimachinery/pkg/util/wait"
 )

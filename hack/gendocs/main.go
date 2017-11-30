@@ -11,7 +11,7 @@ import (
 	"text/template"
 
 	"github.com/appscode/go/runtime"
-	"github.com/appscode/pharmer/cmds"
+	"github.com/pharmer/pharmer/cmds"
 	"github.com/spf13/cobra/doc"
 )
 
@@ -56,7 +56,7 @@ aliases:
 // ref: https://github.com/spf13/cobra/blob/master/doc/md_docs.md
 func main() {
 	rootCmd := cmds.NewRootCmd(nil, nil, nil, "")
-	dir := runtime.GOPath() + "/src/github.com/appscode/pharmer/docs/reference"
+	dir := runtime.GOPath() + "/src/github.com/pharmer/pharmer/docs/reference"
 	fmt.Printf("Generating cli markdown tree in: %v\n", dir)
 	err := os.RemoveAll(dir)
 	if err != nil {

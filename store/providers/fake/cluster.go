@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/store"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pharmer/pharmer/store"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

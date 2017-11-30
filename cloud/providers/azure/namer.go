@@ -6,7 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/arm/storage"
 	"github.com/appscode/go/crypto/rand"
 	. "github.com/appscode/go/types"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
 )
 
 type namer struct {

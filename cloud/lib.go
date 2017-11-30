@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	api "github.com/appscode/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"

@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	_env "github.com/appscode/go/env"
-	api "github.com/appscode/pharmer/apis/v1alpha1"
-	"github.com/appscode/pharmer/cloud"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

@@ -1,7 +1,7 @@
 package cmds
 
 import (
-	cpCmd "github.com/appscode/pharmer/cloud/cmds"
+	cpCmd "github.com/pharmer/pharmer/cloud/cmds"
 	"github.com/spf13/cobra"
 )
 

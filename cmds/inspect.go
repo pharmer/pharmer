@@ -1,7 +1,7 @@
 package cmds
 
 import (
-	inCmd "github.com/appscode/pharmer/inspector/cmds"
+	inCmd "github.com/pharmer/pharmer/inspector/cmds"
 	"github.com/spf13/cobra"
 )
 

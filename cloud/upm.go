@@ -8,8 +8,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	api "github.com/appscode/pharmer/apis/v1alpha1"
 	semver "github.com/hashicorp/go-version"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

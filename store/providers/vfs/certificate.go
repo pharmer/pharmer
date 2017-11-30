@@ -9,8 +9,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/appscode/pharmer/store"
 	"github.com/graymeta/stow"
+	"github.com/pharmer/pharmer/store"
 	"k8s.io/client-go/util/cert"
 )
 

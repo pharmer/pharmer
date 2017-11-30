@@ -21,7 +21,7 @@ The following steps must be done from a Linux x64 bit machine.
 - Push all the changes to remote repo.
 - Build and push pharmer docker image:
 ```console
-$ cd ~/go/src/github.com/appscode/pharmer
+$ cd ~/go/src/github.com/pharmer/pharmer
 ./hack/release.sh
 ```
 
