@@ -212,6 +212,38 @@
       "disk": 1600
     }
   ],
+  "credentials": [
+    {
+      "provider": "Ovh",
+      "displayFormat": "field",
+      "annotations": {
+        "pharmer.appscode.com/cluster-credential": ""
+      },
+      "fields": [
+        {
+          "envconfig": "OS_USERNAME",
+          "form": "os_username",
+          "json": "username",
+          "label": "Username",
+          "input": "text"
+        },
+        {
+          "envconfig": "OS_PASSWORD",
+          "form": "os_password",
+          "json": "password",
+          "label": "Password",
+          "input": "password"
+        },
+        {
+          "envconfig": "OS_TENANT_ID",
+          "form": "os_tenant_id",
+          "json": "tenantID",
+          "label": "Tenant ID",
+          "input": "text"
+        }
+      ]
+    }
+  ],
   "kubernetes": {
     "versions": [
       {
