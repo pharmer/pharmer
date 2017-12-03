@@ -60,7 +60,7 @@ spec:
 Here, 
  - `spec.data.token` is the access token that you provided which can be edited by following command:
 ```console
-$ phrmer edit credential do
+$ pharmer edit credential do
 ``` 
 
 To see the all credentials you need to run following command.
