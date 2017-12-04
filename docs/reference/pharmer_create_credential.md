@@ -34,6 +34,7 @@ pharmer create credential
   -l, --from-env           Load credential data from ENV.
   -f, --from-file string   Load credential data from file
   -h, --help               help for credential
+      --issue              Issue credential
   -p, --provider string    Name of the Cloud provider
 ```
 
