@@ -183,10 +183,10 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 					}
 				} else {
 					reservedIP := cm.cluster.Status.ReservedIPs[0].IP
-				/*	found, err = cm.conn.getReserveIP(reservedIP)
-					if err != nil {
-						return
-					}*/
+					/*	found, err = cm.conn.getReserveIP(reservedIP)
+						if err != nil {
+							return
+						}*/
 					if !found {
 						err = fmt.Errorf("ReservedIP %s not found", reservedIP)
 						return
@@ -198,7 +198,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 						})
 					}
 					if reservedIP != masterServer.PublicIP {
-					/*	if err = cm.conn.assignReservedIP(reservedIP, masterServer.ExternalID); err != nil {
+						/*	if err = cm.conn.assignReservedIP(reservedIP, masterServer.ExternalID); err != nil {
 							return
 						}*/
 						cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{

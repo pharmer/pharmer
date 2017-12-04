@@ -29,3 +29,7 @@ func (n namer) ReserveIPName() string {
 func (n namer) StartupScriptName(ng, role string) string {
 	return n.cluster.Name + "-" + ng + "-" + role
 }
+
+func (n namer) GetSecurityGroupName() string {
+	return "security-group-" + n.cluster.Name
+}
