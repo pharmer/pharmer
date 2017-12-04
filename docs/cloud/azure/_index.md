@@ -6,5 +6,5 @@ menu:
     name: Azure
     parent: cloud
     weight: 15
-left_menu: product_pharmer_0.1.0-alpha.1 
+menu_name: product_pharmer_0.1.0-alpha.1 
 ---

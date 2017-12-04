@@ -7,7 +7,7 @@ menu:
     parent: cli
     weight: 20
 product_name: pharmer
-left_menu: product_pharmer_0.1.0-alpha.1
+menu_name: product_pharmer_0.1.0-alpha.1
 section_menu_id: cli
 ---
 
