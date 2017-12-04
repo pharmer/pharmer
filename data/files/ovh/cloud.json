@@ -28,7 +28,7 @@
   ],
   "instanceTypes": [
     {
-      "sku": "VPS CLOUD 1",
+      "sku": "vps-ssd-1",
       "description": "1 vCores, 3.1Ghz",
       "category": "VPS Cloud",
       "cpu": 1,
@@ -36,7 +36,7 @@
       "disk": 25
     },
     {
-      "sku": "VPS CLOUD 2",
+      "sku": "vps-ssd-2",
       "description": "2 vCores, 3.1Ghz",
       "category": "VPS Cloud",
       "cpu": 2,
@@ -44,7 +44,7 @@
       "disk": 50
     },
     {
-      "sku": "VPS CLOUD 3",
+      "sku": "vps-ssd-3",
       "description": "4 vCores, 3.1Ghz",
       "category": "VPS Cloud",
       "cpu": 4,

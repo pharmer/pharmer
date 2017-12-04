@@ -3,12 +3,9 @@ package ovh
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/credential"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
@@ -32,7 +29,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		APIServerAddress: cluster.APIServerAddress(),
 		NetworkProvider:  cluster.Spec.Networking.NetworkProvider,
 		Provider:         cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider: true, // Vultr uses out-of-tree CCM
+		ExternalProvider: true, // Ovh uses out-of-tree CCM
 	}
 	{
 		td.KubeletExtraArgs = map[string]string{}
@@ -47,26 +44,10 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 			api.RoleNodeKey: "",
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
-		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
+		//	td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
 		if cluster.Spec.Cloud.CCMCredentialName == "" {
-			panic(errors.New("no cloud controller manager credential found"))
+			//		panic(errors.New("no cloud controller manager credential found"))
 		}
-		cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
-		if err != nil {
-			panic(err)
-		}
-		typed := credential.DigitalOcean{CommonSpec: credential.CommonSpec(cred.Spec)}
-		if ok, err := typed.IsValid(); !ok {
-			panic(err)
-		}
-		cloudConfig := &api.VultrCloudConfig{
-			Token: typed.Token(),
-		}
-		data, err := json.Marshal(cloudConfig)
-		if err != nil {
-			panic(err)
-		}
-		td.CloudConfig = string(data)
 
 	}
 	return td
@@ -126,20 +107,6 @@ ensure_basic_networking() {
 ensure_basic_networking
 {{ end }}
 
-{{ define "prepare-host" }}
-# https://www.vultr.com/docs/configuring-private-network
-PRIVATE_ADDRESS=$(/usr/bin/curl -fsSL --retry 5 http://169.254.169.254/v1/interfaces/1/ipv4/address 2> /dev/null)
-PRIVATE_NETMASK=$(/usr/bin/curl -fsSL --retry 5 http://169.254.169.254/v1/interfaces/1/ipv4/netmask 2> /dev/null)
-/bin/cat >>/etc/network/interfaces <<EOF
-
-auto ens7
-iface ens7 inet static
-    address $PRIVATE_ADDRESS
-    netmask $PRIVATE_NETMASK
-    mtu 1450
-EOF
-ifup ens7
-{{ end }}
 `
 
 // INSTANCE_ID=$(/usr/bin/curl -fsSL --retry 5 http://169.254.169.254/v1/instanceid 2> /dev/null)

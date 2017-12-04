@@ -2,6 +2,8 @@ package ovh
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
@@ -17,6 +19,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const auth_url = "https://auth.cloud.ovh.net/"
@@ -140,33 +143,6 @@ func (conn *cloudConnector) getSecurityGroup(name string) (*secgroups.SecurityGr
 	return group, err
 }
 
-func (conn *cloudConnector) CreateSecurityGroup() error {
-	group, err := conn.getSecurityGroup(conn.namer.GetSecurityGroupName())
-	if err != nil {
-		return err
-	}
-	if group.ID == "" {
-		opts := secgroups.CreateOpts{
-			Name:        conn.namer.GetSecurityGroupName(),
-			Description: "pharmer default api port address",
-		}
-		group, err = secgroups.Create(conn.computeClient, opts).Extract()
-		if err != nil {
-			return err
-		}
-	}
-
-	ruleOpts := secgroups.CreateRuleOpts{
-		ParentGroupID: group.ID,
-		FromPort:      6443,
-		ToPort:        6443,
-		IPProtocol:    "TCP",
-		CIDR:          "0.0.0.0/0",
-	}
-	return secgroups.CreateRule(conn.computeClient, ruleOpts).Err
-
-}
-
 func (conn *cloudConnector) getSharedNetwork() (string, error) {
 	opts := networks.ListOpts{Shared: BoolP(true)}
 	pager := networks.List(conn.networkClient, opts)
@@ -216,11 +192,17 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	}
 	createOpts := keypairs.CreateOptsExt{
 		CreateOptsBuilder: opts,
-		KeyName:           conn.cluster.Status.Cloud.SShKeyExternalID,
+		KeyName:           conn.cluster.Spec.Cloud.SSHKeyName,
 	}
 
 	server, err := servers.Create(conn.computeClient, createOpts).Extract()
 	if err != nil {
+		return nil, err
+	}
+
+	Logger(conn.ctx).Infof("Ovh server %v created", name)
+
+	if err = conn.waitForActiveInstance(server.ID); err != nil {
 		return nil, err
 	}
 
@@ -251,8 +233,29 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	return &node, nil
 }
 
+func (conn *cloudConnector) waitForActiveInstance(id string) error {
+	attempt := 0
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+
+		server, err := servers.Get(conn.computeClient, id).Extract()
+		if err != nil {
+			return false, nil
+		}
+		Logger(conn.ctx).Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, id, server.Status)
+		if strings.ToLower(server.Status) == "active" {
+			return true, nil
+		}
+		return false, nil
+	})
+}
+
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
-	return nil
+	serverId, err := serverIDFromProviderID(providerID)
+	if err != nil {
+		return err
+	}
+	return servers.Delete(conn.computeClient, serverId).ExtractErr()
 }
 
 func (conn *cloudConnector) getPublicKey() (bool, string, error) {
@@ -291,4 +294,22 @@ func (conn *cloudConnector) importPublicKey() error {
 	conn.cluster.Status.Cloud.SShKeyExternalID = resp.Name
 	Logger(conn.ctx).Infof("New ssh key with name %v and id %v created", conn.cluster.Spec.Cloud.SSHKeyName, resp.Name)
 	return nil
+}
+
+func serverIDFromProviderID(providerID string) (string, error) {
+	if providerID == "" {
+		return "", errors.New("providerID cannot be empty string")
+	}
+
+	split := strings.Split(providerID, "/")
+	if len(split) != 3 {
+		return "", fmt.Errorf("unexpected providerID format: %s, format should be: ovh://12345", providerID)
+	}
+
+	// since split[0] is actually "digitalocean:"
+	if strings.TrimSuffix(split[0], ":") != UID {
+		return "", fmt.Errorf("provider name from providerID should be ovh: %s", providerID)
+	}
+
+	return split[2], nil
 }

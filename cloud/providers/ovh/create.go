@@ -16,7 +16,7 @@ import (
 
 func (cm *ClusterManager) GetDefaultNodeSpec(sku string) (api.NodeSpec, error) {
 	if sku == "" {
-		sku = "95"
+		sku = "vps-ssd-1"
 	}
 	return api.NodeSpec{
 		SKU: sku,
@@ -71,7 +71,7 @@ func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*
 		HostPort:   int32(22),
 	}
 	for _, addr := range node.Status.Addresses {
-		if addr.Type == core.NodeExternalIP {
+		if addr.Type == core.NodeInternalIP {
 			cfg.HostIP = addr.Address
 		}
 	}
