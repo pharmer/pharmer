@@ -44,11 +44,11 @@ under **my profile** option. Here you see the `Add an API key`, create and copy 
 
 From command line, run the following command and paste the api key.
 ```console
-$ pharmer create credential pack 
-```  
+$ pharmer create credential pack
+```
 ![packet-credential](/docs/images/packet/packet-credential.png)
 
-Here, `pack` is the credential name, which must be unique within your storage.        
+Here, `pack` is the credential name, which must be unique within your storage.
 
 To view credential file you can run:
 
@@ -65,12 +65,12 @@ spec:
     projectID: <project-id>
   provider: Packet
 ```
-Here, 
+Here,
  - `spec.data.projectID` is the packet project id
  - `spec.data.apiKey` is the access token that you provided which can be edited by following command:
 ```console
 $ phrmer edit credential pack
-``` 
+```
 
 
 To see the all credentials you need to run following command.
@@ -82,7 +82,7 @@ pack         Packet         projectID=6df2d99d...., apiKey=*****
 ```
 You can also see the stored credential from the following location:
 ```console
-~/.pharmer/store.d/credentials/pack.json            
+~/.pharmer/store.d/credentials/pack.json
 ```
 
 You can find other credential operations [here](/docs/credential.md)
@@ -90,8 +90,8 @@ You can find other credential operations [here](/docs/credential.md)
 ### Cluster provisioning
 
 There are two steps to create a Kubernetes cluster using `pharmer`.
-In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those 
-information to create cluster on specific provider. 
+In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those
+information to create cluster on specific provider.
 
 Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `packet`
  * **Cluster Creating:** We want to create a cluster with following information:
@@ -104,10 +104,10 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `packet`
     - Credential name: [pack](#credential-importing)
 
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/packet/cloud.json)   
+For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/packet/cloud.json)
  Available options in `pharmer` to create a cluster are:
  ```console
- $ pharmer create cluster -h 
+ $ pharmer create cluster -h
 Create a Kubernetes cluster for a given cloud provider
 
 Usage:
@@ -141,10 +141,10 @@ Global Flags:
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
- ```    
- 
+ ```
+
 So, we need to run following command to create cluster with our information.
- 
+
  ```console
 $ pharmer create cluster p1 \
 	--v=5 \
@@ -152,7 +152,7 @@ $ pharmer create cluster p1 \
 	--zone=ewr1 \
 	--nodes=baremetal_0=1 \
 	--credential-uid=pack \
-	--kubernetes-version=v1.8.0 
+	--kubernetes-version=v1.8.0
 ```
 
 If you want to use a specific version of `kubelet` and `kubeadm` for your cluster, you can pass those flags also.
@@ -352,7 +352,7 @@ To see the current node groups list, you need to run following command:
 ```console
 $ pharmer get nodegroups -k p1
 NAME               Cluster   Node      SKU
-baremetal-0-pool   p1        1         baremetal_0   
+baremetal-0-pool   p1        1         baremetal_0
 master             p1        1         baremetal_0
 ```
 
@@ -412,9 +412,9 @@ $pharmer create ng --nodes=baremetal_3=1 --type=spot --spot-price-max=1  -k p1
 
 $ pharmer get nodegroups -k p1
 NAME               Cluster   Node      SKU
-baremetal-0-pool   p1        1         baremetal_0   
-baremetal-2-pool   p1        1         baremetal_2   
-baremetal-3-pool   p1        1         baremetal_3   
+baremetal-0-pool   p1        1         baremetal_0
+baremetal-2-pool   p1        1         baremetal_2
+baremetal-3-pool   p1        1         baremetal_3
 master             p1        1         baremetal_0
 ```
 You can see the yaml of newly created node group, you need to run
@@ -444,7 +444,7 @@ status:
 Here,
  - `spec.template.spec.type` = `spot`, for spot type nodes
  - `spec.template.spec.spotPriceMax` is the maximum price of a node
-  
+
 * **Delete existing NG**
 
 If you want delete existing node group following command will help.
@@ -487,10 +487,10 @@ This command will take care of your actions that you applied on the node groups 
 ```console
  $ pharmer get nodegroups -k p1
 NAME               Cluster   Node      SKU
-baremetal-0-pool   p1        1         baremetal_0   
-baremetal-3-pool   p1        1         baremetal_3   
-master             p1        1         baremetal_0 
-```  
+baremetal-0-pool   p1        1         baremetal_0
+baremetal-3-pool   p1        1         baremetal_3
+master             p1        1         baremetal_0
+```
 
 ### Cluster Upgrading
 
