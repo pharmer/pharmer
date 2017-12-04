@@ -1,6 +1,8 @@
 package cmds
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/appscode/go/term"
@@ -8,6 +10,7 @@ import (
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential"
+	cc "github.com/pharmer/pharmer/credential/cloud"
 	"github.com/pharmer/pharmer/data/files"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -51,6 +54,7 @@ func NewCmdCreateCredential() *cobra.Command {
 	cmd.Flags().StringP("provider", "p", "", "Name of the Cloud provider")
 	cmd.Flags().BoolP("from-env", "l", false, "Load credential data from ENV.")
 	cmd.Flags().StringP("from-file", "f", "", "Load credential data from file")
+	cmd.Flags().Bool("issue", false, "Issue credential")
 
 	return cmd
 }
@@ -70,6 +74,23 @@ func runCreateCredential(ctx context.Context, cmd *cobra.Command, args []string)
 		if !files.CredentialProviders().Has(provider) {
 			return errors.New("Unknown Cloud provider")
 		}
+	}
+
+	issue, _ := cmd.Flags().GetBool("issue")
+	if issue {
+		if provider == "GoogleCloud" {
+			cc.IssueGCECredential(args[0])
+		} else if strings.ToLower(provider) == "azure" {
+			cred, err := cc.IssueAzureCredential(args[0])
+			if err != nil {
+				term.Fatalln(err)
+			}
+			_, err = cloud.Store(ctx).Credentials().Create(cred)
+			if err != nil {
+				term.Fatalln(err)
+			}
+		}
+		return fmt.Errorf("can't issue credential for provider %s", provider)
 	}
 
 	cred := &api.Credential{

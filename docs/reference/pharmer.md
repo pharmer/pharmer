@@ -49,7 +49,6 @@ Pharmer by Appscode - Manages farms
 * [pharmer edit](/docs/reference/pharmer_edit.md)	 - 
 * [pharmer get](/docs/reference/pharmer_get.md)	 - 
 * [pharmer inspect](/docs/reference/pharmer_inspect.md)	 - Inspect cluster for conformance
-* [pharmer issue](/docs/reference/pharmer_issue.md)	 - 
 * [pharmer ssh](/docs/reference/pharmer_ssh.md)	 - 
 * [pharmer use](/docs/reference/pharmer_use.md)	 - 
 * [pharmer version](/docs/reference/pharmer_version.md)	 - Prints binary version number.
