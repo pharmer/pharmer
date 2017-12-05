@@ -238,7 +238,9 @@
       "version": "v1.8.0",
       "description": "v1.8.0",
       "env": {
-        "dev": true
+        "dev": true,
+        "qa": true,
+        "prod": true
       }
     }
   ]

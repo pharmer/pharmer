@@ -50,8 +50,7 @@ func Save(pc *api.PharmerConfig, configPath string) error {
 
 func AddFlags(fs *flag.FlagSet) {
 	fs.String("config-file", "", "Path to Pharmer config file")
-	// TODO: change env to Prod
-	fs.String("env", _env.Dev.String(), "Environment used to enable debugging")
+	fs.String("env", _env.Prod.String(), "Environment used to enable debugging")
 }
 
 func GetConfigFile(fs *flag.FlagSet) (string, bool) {
