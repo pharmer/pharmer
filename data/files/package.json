@@ -1,19 +1,20 @@
 {
-  "name": "appscode-data",
-  "version": "0.1.44",
-  "description": "Static data files used by AppsCode",
+  "name": "pharmer-data",
+  "version": "0.1.0",
+  "description": "Static data files used by Pharmer",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/appscode/data.git"
+    "url": "git+https://github.com/pharmer/pharmer.git"
   },
   "keywords": [
-    "appscode"
+    "appscode",
+    "pharmer"
   ],
   "author": "AppsCode Inc.",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/appscode/data#readme"
+  "homepage": "https://github.com/pharmer/pharmer/blob/master/data/files/README.md"
 }
