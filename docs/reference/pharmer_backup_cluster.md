@@ -26,7 +26,6 @@ pharmer backup cluster [flags]
 
 ```
       --backup-dir string   Directory where yaml files will be saved
-  -k, --cluster string      Name of cluster
   -h, --help                help for cluster
       --sanitize             Sanitize fields in YAML
 ```
