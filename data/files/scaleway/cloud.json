@@ -2,7 +2,8 @@
   "name": "scaleway",
   "env": [
     "dev",
-    "qa"
+    "qa",
+    "prod"
   ],
   "regions": [
     {

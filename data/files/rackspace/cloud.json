@@ -1,7 +1,9 @@
 {
   "name": "rackspace",
   "env": [
-    "dev"
+    "dev",
+    "qa",
+    "prod"
   ],
   "regions": [
     {

@@ -1,7 +1,9 @@
 {
   "name": "hetzner",
   "env": [
-    "dev"
+    "dev",
+    "qa",
+    "prod"
   ],
   "regions": [
     {

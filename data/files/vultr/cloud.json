@@ -2,7 +2,8 @@
   "name": "vultr",
   "env": [
     "dev",
-    "qa"
+    "qa",
+    "prod"
   ],
   "regions": [
     {

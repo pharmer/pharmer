@@ -1,7 +1,9 @@
 {
   "name": "packet",
   "env": [
-    "dev"
+    "dev",
+    "qa",
+    "prod"
   ],
   "regions": [
     {
