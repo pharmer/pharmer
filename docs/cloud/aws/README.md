@@ -67,10 +67,10 @@ Use this access key while importing credentials on pharmer
 From command line, run the following command and paste those keys.
 ```console
 $ pharmer create credential aws
-```   
+```
 ![aws-credential](/docs/images/aws/aws-credential.png)
 
-Here, `aws` is the credential name, which must be unique within your storage.        
+Here, `aws` is the credential name, which must be unique within your storage.
 
 To view credential file you can run:
 ```yaml
@@ -88,7 +88,7 @@ spec:
 
 
 ```
-Here, 
+Here,
  - `spec.data.accessKeyID` is the aws access key id
  - `spec.data.secretAccessKey` is the security access key that you provided which can be edited by following command:
 ```console
@@ -105,22 +105,22 @@ aws          AWS            accessKeyID=AKIAJKUZAD3HM7OEKPNA, secretAccessKey=**
 
 You can also see the stored credential from the following location:
 ```console
-~/.pharmer/store.d/credentials/aws.json            
+~/.pharmer/store.d/credentials/aws.json
 ```
 
  **Cluster IAM User**
- 
+
  While creating cluster within AWS `pharmer` creates following IAM roles and policies
  * [IAM master policy](https://github.com/pharmer/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L4)
  * [IAM master role](https://github.com/pharmer/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L73)
  * [IAM node policy](https://github.com/pharmer/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L88)
- * [IAM node role](https://github.com/pharmer/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L155) 
+ * [IAM node role](https://github.com/pharmer/pharmer/blob/2cd28d23ea7943702729c60bc750a3a97e38b653/cloud/providers/aws/iam.go#L155)
 
 ### Cluster provisioning
 
 There are two steps to create a Kubernetes cluster using `pharmer`.
-In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those 
-information to create cluster on specific provider. 
+In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those
+information to create cluster on specific provider.
 
 Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `aws`
  * **Cluster Creating:** We want to create a cluster with following information:
@@ -132,11 +132,11 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `aws`
     - Kubernetes version: 1.8.0
     - Credential name: [aws](#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/aws/cloud.json)   
+For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/aws/cloud.json)
 
 Available options in `pharmer` to create a cluster are:
  ```console
- $ pharmer create cluster -h 
+ $ pharmer create cluster -h
 Create a Kubernetes cluster for a given cloud provider
 
 Usage:
@@ -170,10 +170,10 @@ Global Flags:
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
- ```    
- 
+ ```
+
  So, we need to run following command to create cluster with our information.
- 
+
 ```console
 
 $ pharmer create cluster a1 \
@@ -182,8 +182,8 @@ $ pharmer create cluster a1 \
 	--zone=us-west-1a \
 	--nodes=t2.medium=2 \
 	--credential-uid=aws \
-	--kubernetes-version=v1.8.0 
-	
+	--kubernetes-version=v1.8.0
+
 ```
 If you want to use a specific version of `kubelet` and `kubeadm` for your cluster, you can pass those flags also.
 For example:
@@ -290,11 +290,11 @@ Here,
 * `spec.apiServerExtraArgs` specifies which value will be forwarded to apiserver during cluster installation.
 * `spec.authorizationMode` refers the cluster authorization mode
 * `status.phase` may be `Pending`, `Ready`, `Deleting`, `Deleted`, `Upgrading` depending on current cluster status.
-  
+
 You can modify this configuration by:
 ```console
 $ pharmer edit cluster a1
-```  
+```
 
 * **Applying:** If everything looks ok, we can now apply the resources. This actually creates resources on `Scaleway`.
  Up to now we've only been working locally.
@@ -390,7 +390,7 @@ ip-172-20-0-9.us-west-1.compute.internal     Ready     master    6m        v1.8.
 If you want to `ssh` into your instance run the following command
 ```console
 $ pharmer ssh node ip-172-20-0-9.us-west-1.compute.internal -k a1
-```  
+```
 
 ### Cluster Scaling
 
@@ -399,14 +399,14 @@ Scaling a cluster refers following meanings:-
  2. Decrement the number of nodes of a certain node group
  3. Introduce a new node group with a number of nodes
  4. Drop existing node group
- 
+
 To see the current node groups list, you need to run following command:
 ```console
 $ pharmer get nodegroup -k a1
 NAME             Cluster   Node      SKU
-master           a1        1         m3.medium   
-t2.medium-pool   a1        1         t2.medium 
-```  
+master           a1        1         m3.medium
+t2.medium-pool   a1        1         t2.medium
+```
 
 * **Updating existing NG**
 
@@ -466,11 +466,11 @@ $ pharmer create ng --nodes=t2.small=1 -k a1
 
 $ pharmer get nodegroups -k a1
 NAME             Cluster   Node      SKU
-master           a1        1         m3.medium   
-t2.medium-pool   a1        1         t2.medium   
+master           a1        1         m3.medium
+t2.medium-pool   a1        1         t2.medium
 t2.small-pool    a1        1         t2.small
 
-```  
+```
 - Spot NG:
 
 To know about aws spot instance click [here](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet.html)
@@ -556,8 +556,8 @@ This command will take care of your actions that you applied on the node groups 
 ```console
 $ pharmer get ng -k a1
 NAME             Cluster   Node      SKU
-master           a1        1         m3.medium   
-t2.medium-pool   a1        1         t2.medium 
+master           a1        1         m3.medium
+t2.medium-pool   a1        1         t2.medium
 ```
 
 ### Cluster Upgrading

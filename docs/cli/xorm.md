@@ -14,28 +14,28 @@ section_menu_id: cli
 ## Postgres Database (xorm)
 
 Stores data in PostgresSQL using [xorm](https://github.com/go-xorm/xorm)
- 
+
 
 ### Introduction
 
 ```console
 $  pharmer config -h
   Pharmer configuration
-  
+
   Usage:
     pharmer config [flags]
     pharmer config [command]
-  
+
   Examples:
   pharmer config view
-  
+
   Available Commands:
     get-contexts List available contexts
     view         Print Pharmer config
-  
+
   Flags:
     -h, --help   help for config
-  
+
   Global Flags:
         --alsologtostderr                  log to standard error as well as files
         --analytics                        Send analytical events to Google Guard (default true)
@@ -51,7 +51,7 @@ $  pharmer config -h
 
 ### Configuration
 
-The configuration details of the storage provider are specified on `~/.pharmer/config.d/default` file. 
+The configuration details of the storage provider are specified on `~/.pharmer/config.d/default` file.
 
 ```yaml
 context: default
@@ -63,7 +63,7 @@ store:
     password: <password>
     host: 127.0.0.1
     port: 5432
-```    
+```
 
 ### Storage structure
 
@@ -71,31 +71,31 @@ The table of the xorm storage provider will be look like:
 
 **cluster**
 
-|id|kind|apiVersion|name|uid|resourceVersion|generation|labels|data|creationTimestamp|dateModified|deletionTimestamp|  
-|--|----|----------|----|---|---------------|----------|------|----|-----------------|------------|-----------------| 
+|id|kind|apiVersion|name|uid|resourceVersion|generation|labels|data|creationTimestamp|dateModified|deletionTimestamp|
+|--|----|----------|----|---|---------------|----------|------|----|-----------------|------------|-----------------|
 
 **credential**
 
-|id|kind|apiVersion|name|uid|resourceVersion|generation|labels|data|creationTimestamp|dateModified|deletionTimestamp|  
-|--|----|----------|----|---|---------------|----------|------|----|-----------------|------------|-----------------| 
+|id|kind|apiVersion|name|uid|resourceVersion|generation|labels|data|creationTimestamp|dateModified|deletionTimestamp|
+|--|----|----------|----|---|---------------|----------|------|----|-----------------|------------|-----------------|
 
 **nodegroup**
 
-|id|kind|apiVersion|name|clusterName|uid|resourceVersion|generation|labels|data|creationTimestamp|dateModified|deletionTimestamp|  
-|--|----|----------|----|-----------|---|---------------|----------|------|----|-----------------|------------|-----------------| 
+|id|kind|apiVersion|name|clusterName|uid|resourceVersion|generation|labels|data|creationTimestamp|dateModified|deletionTimestamp|
+|--|----|----------|----|-----------|---|---------------|----------|------|----|-----------------|------------|-----------------|
 
 **certificate**
 
-|id|name|clusterName|uid|cert|key|creationTimestamp|dateModified|deletionTimestamp|  
-|--|----|-----------|---|----|---|-----------------|------------|-----------------| 
+|id|name|clusterName|uid|cert|key|creationTimestamp|dateModified|deletionTimestamp|
+|--|----|-----------|---|----|---|-----------------|------------|-----------------|
 
 **certificate**
 
-|id|name|clusterName|uid|publicKey|privateKey|creationTimestamp|dateModified|deletionTimestamp|  
-|--|----|-----------|---|---------|----------|-----------------|------------|-----------------| 
+|id|name|clusterName|uid|publicKey|privateKey|creationTimestamp|dateModified|deletionTimestamp|
+|--|----|-----------|---|---------|----------|-----------------|------------|-----------------|
 
 
-You can view the config using 
+You can view the config using
 ```yaml
 $ pharmer config view
 

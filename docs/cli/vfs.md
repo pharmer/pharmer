@@ -15,28 +15,28 @@ aliases:
 
 ## Virtual file system (Vfs)
 
-Stores data on File (local/remote) using  [stow](https://github.com/appscode/stow) 
+Stores data on File (local/remote) using  [stow](https://github.com/appscode/stow)
 
 ### Introduction
 
 ```console
 $  pharmer config -h
   Pharmer configuration
-  
+
   Usage:
     pharmer config [flags]
     pharmer config [command]
-  
+
   Examples:
   pharmer config view
-  
+
   Available Commands:
     get-contexts List available contexts
     view         Print Pharmer config
-  
+
   Flags:
     -h, --help   help for config
-  
+
   Global Flags:
         --alsologtostderr                  log to standard error as well as files
         --analytics                        Send analytical events to Google Guard (default true)
@@ -52,7 +52,7 @@ $  pharmer config -h
 
 ### Configuration
 
-The configuration details of the storage provider are specified on `~/.pharmer/config.d/default` file. 
+The configuration details of the storage provider are specified on `~/.pharmer/config.d/default` file.
 
 ```yaml
 context: default
@@ -60,7 +60,7 @@ kind: PharmerConfig
 store:
   local:
     path: /home/sanjid/.pharmer/store.d
-```  
+```
 Here store type is `local`, so in `path` a local directory is used to locate where the cluster and credential resources will be stored.
 
 You can also use Amazon's `s3`, `gcs` to use google cloud storage, `azure` or `swift` for storage purpose.
@@ -70,7 +70,7 @@ For using `s3` you have to modify the configuration file with following field
     endpoint: <aws endpoint>
     bucket: <bucket name>
     prefix: <storage prefix>
-``` 
+```
 To use `gcs` modify with
 ```yaml
   gcs:
@@ -88,13 +88,13 @@ The directory tree of the local storage provider will be look like:
       |--config.d/
       |      |
       |      |__ default
-      |   
+      |
       |__ store.d/
              |
              |-- clusters/
              |
              |__ credentials/
-            
+
 ```
 
 Here,
@@ -103,7 +103,7 @@ Here,
  nodegroup files, a `pki` directory having cluster certificates and an `ssh` directory which stores public and private ssh key for the cluster.
  - `store.d/credentials`: stores credential resources
 
-You can view the config using 
+You can view the config using
 ```yaml
 $ pharmer config view
 

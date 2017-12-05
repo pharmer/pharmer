@@ -43,11 +43,11 @@ under **my profile** option. Here you see the `Add an API key`, create and copy 
 
 From command line, run the following command and paste the api key.
 ```console
-$ pharmer create credential scaleway 
-```  
+$ pharmer create credential scaleway
+```
 ![scaleway-credential](/docs/images/scaleway/scaleway-credential.png)
 
-Here, `scaleway` is the credential name, which must be unique within your storage.        
+Here, `scaleway` is the credential name, which must be unique within your storage.
 
 To view credential file you can run:
 ```yaml
@@ -64,12 +64,12 @@ spec:
   provider: Scaleway
 
 ```
-Here, 
+Here,
  - `spec.data.organization` is the scaleway organization id
  - `spec.data.token` is the access token that you provided which can be edited by following command:
 ```console
 $ phrmer edit credential scaleway
-``` 
+```
 
 To see the all credentials you need to run following command.
 
@@ -81,7 +81,7 @@ scaleway     Scaleway       organization=552d4......., token=*****
 
 You can also see the stored credential from the following location:
 ```console
-~/.pharmer/store.d/credentials/scaleway.json            
+~/.pharmer/store.d/credentials/scaleway.json
 ```
 
 You can find other credential operations [here](/docs/credential.md)
@@ -89,8 +89,8 @@ You can find other credential operations [here](/docs/credential.md)
 ### Cluster provisioning
 
 There are two steps to create a Kubernetes cluster using `pharmer`.
-In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those 
-information to create cluster on specific provider. 
+In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those
+information to create cluster on specific provider.
 
 Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `scaleway`
  * **Cluster Creating:** We want to create a cluster with following information:
@@ -102,10 +102,10 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `scalewa
     - Kubernetes version: 1.8.0
     - Credential name: [scaleway](#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/scaleway/cloud.json)   
+For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/scaleway/cloud.json)
  Available options in `pharmer` to create a cluster are:
  ```console
- $ pharmer create cluster -h 
+ $ pharmer create cluster -h
 Create a Kubernetes cluster for a given cloud provider
 
 Usage:
@@ -139,10 +139,10 @@ Global Flags:
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
- ```    
- 
+ ```
+
  So, we need to run following command to create cluster with our information.
- 
+
  ```console
 $ pharmer create cluster s1 \
   	--provider=scaleway \
@@ -150,7 +150,7 @@ $ pharmer create cluster s1 \
   	--nodes=VC1S=2 \
   	--credential-uid=scaleway \
   	--kubernetes-version=v1.8.0
-``` 
+```
 If you want to use a specific version of `kubelet` and `kubeadm` for your cluster, you can pass those flags also.
 For example:
 
@@ -232,7 +232,7 @@ status:
   cloud: {}
   phase: Pending
 
-```  
+```
 Here,
 
 * `metadata.name` refers the cluster name, which should be unique within your cluster list.
@@ -345,8 +345,8 @@ To see the current node groups list, you need to run following command:
 ```console
 $ pharmer get nodegroup -k s1
 NAME        Cluster   Node      SKU
-VC1S-pool   s1        2         VC1S      
-master      s1        1         VC1M 
+VC1S-pool   s1        2         VC1S
+master      s1        1         VC1M
 ```
 * **Updating existing NG**
 
@@ -399,9 +399,9 @@ $ pharmer create ng --nodes=VC1M=1 -k s1
 
 $ pharmer get nodegroups -k s1
 NAME        Cluster   Node      SKU
-VC1M-pool   s1        1         VC1M      
-VC1S-pool   s1        2         VC1S      
-master      s1        1         VC1M 
+VC1M-pool   s1        1         VC1M
+VC1S-pool   s1        2         VC1S
+master      s1        1         VC1M
 
 ```
 You can see the yaml of newly created node group, you need to run
@@ -466,8 +466,8 @@ This command will take care of your actions that you applied on the node groups 
 ```console
 $ pharmer get ng -k s1
 NAME        Cluster   Node      SKU
-VC1M-pool   s1        1         VC1M      
-master      s1        1         VC1M 
+VC1M-pool   s1        1         VC1M
+master      s1        1         VC1M
 ```
 
 ### Cluster Upgrading
