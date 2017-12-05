@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/appscode/go/errors"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/credential"
+	ini "gopkg.in/ini.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
@@ -29,7 +32,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		APIServerAddress: cluster.APIServerAddress(),
 		NetworkProvider:  cluster.Spec.Networking.NetworkProvider,
 		Provider:         cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider: true, // Ovh uses out-of-tree CCM
+		ExternalProvider: true,
 	}
 	{
 		td.KubeletExtraArgs = map[string]string{}
@@ -44,10 +47,39 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 			api.RoleNodeKey: "",
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
-		//	td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
+		td.KubeletExtraArgs["cloud-provider"] = "external"
 		if cluster.Spec.Cloud.CCMCredentialName == "" {
-			//		panic(errors.New("no cloud controller manager credential found"))
+			panic(errors.New("no cloud controller manager credential found"))
 		}
+
+		cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+		if err != nil {
+			panic(err)
+		}
+		typed := credential.Ovh{CommonSpec: credential.CommonSpec(cred.Spec)}
+		if ok, err := typed.IsValid(); !ok {
+			panic(err)
+		}
+
+		cloudConfig := &api.OVHCloudConfig{
+			AuthUrl:  auth_url,
+			Username: typed.Username(),
+			Password: typed.Password(),
+			TenantId: typed.TenantID(),
+			Region:   cluster.Spec.Cloud.Region,
+		}
+
+		cfg := ini.Empty()
+		err = cfg.Section("global").ReflectFrom(cloudConfig)
+		if err != nil {
+			panic(err)
+		}
+		var buf bytes.Buffer
+		_, err = cfg.WriteTo(&buf)
+		if err != nil {
+			panic(err)
+		}
+		td.CloudConfig = buf.String()
 
 	}
 	return td

@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-const auth_url = "https://auth.cloud.ovh.net/"
+const auth_url = "https://auth.cloud.ovh.net/v2.0"
 
 type cloudConnector struct {
 	ctx           context.Context
@@ -45,7 +45,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 
 	opts := gophercloud.AuthOptions{
-		IdentityEndpoint: auth_url + "v2.0",
+		IdentityEndpoint: auth_url,
 		Username:         typed.Username(),
 		Password:         typed.Password(),
 		TenantID:         typed.TenantID(),
@@ -143,8 +143,8 @@ func (conn *cloudConnector) getSecurityGroup(name string) (*secgroups.SecurityGr
 	return group, err
 }
 
-func (conn *cloudConnector) getSharedNetwork() (string, error) {
-	opts := networks.ListOpts{Shared: BoolP(true)}
+func (conn *cloudConnector) getNetwork(isShared bool) (string, error) {
+	opts := networks.ListOpts{Shared: BoolP(isShared)}
 	pager := networks.List(conn.networkClient, opts)
 	networkUID := ""
 	err := pager.EachPage(func(page pagination.Page) (bool, error) {
@@ -163,16 +163,17 @@ func (conn *cloudConnector) getSharedNetwork() (string, error) {
 	return networkUID, err
 }
 
-func (conn *cloudConnector) createNetwork() (string, error) {
-	return "", nil
-}
-
 func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
 	flavorRef, err := conn.getFlavorRef(ng.Spec.Template.Spec.SKU)
 	if err != nil {
 		return nil, err
 	}
-	networkUid, err := conn.getSharedNetwork()
+	publicNetworkUid, err := conn.getNetwork(true)
+	if err != nil {
+		return nil, err
+	}
+
+	privateNetworkUid, err := conn.getNetwork(false)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +186,10 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		FlavorRef: flavorRef,
 		Networks: []servers.Network{
 			{
-				UUID: networkUid,
+				UUID: publicNetworkUid,
+			},
+			{
+				UUID: privateNetworkUid,
 			},
 		},
 		UserData: []byte(script),

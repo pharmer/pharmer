@@ -18,8 +18,8 @@ const (
 )
 
 type LightsailCloudConfig struct {
-	AccessKeyID     string `json:"accessKeyID,omitempty" `
-	SecretAccessKey string `json:"secretAccessKey,omitempty"`
+	AccessKeyID     string `json:"accessKeyID,omitempty" protobuf:"bytes,1,opt,name=accessKeyID"`
+	SecretAccessKey string `json:"secretAccessKey,omitempty" protobuf:"bytes,2,opt,name=secretAccessKey"`
 }
 
 type VultrCloudConfig struct {
@@ -73,6 +73,14 @@ type GCECloudConfig struct {
 	NodeTags           []string `gcfg:"node-tags" ini:"node-tags,omitempty,omitempty" protobuf:"bytes,5,rep,name=nodeTags"`
 	NodeInstancePrefix string   `gcfg:"node-instance-prefix" ini:"node-instance-prefix,omitempty,omitempty" protobuf:"bytes,6,opt,name=nodeInstancePrefix"`
 	Multizone          bool     `gcfg:"multizone" ini:"multizone,omitempty" protobuf:"varint,7,opt,name=multizone"`
+}
+
+type OVHCloudConfig struct {
+	AuthUrl  string `gcfg:"auth-url" ini:"auth-url,omitempty" protobuf:"bytes,1,opt,name=authUrl"`
+	Username string `gcfg:"username" ini:"username,omitempty" protobuf:"bytes,2,opt,name=username"`
+	Password string `gcfg:"password" ini:"password,omitempty" protobuf:"bytes,3,opt,name=password"`
+	TenantId string `gcfg:"tenant-id" ini:"tenant-id,omitempty" protobuf:"bytes,4,opt,name=tenantId"`
+	Region   string `gcfg:"region" ini:"region,omitempty" protobuf:"bytes,5,opt,name=region"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -19,7 +19,7 @@ limitations under the License.
 
 syntax = 'proto2';
 
-package github.com.appscode.pharmer.apis.v1alpha1;
+package github.com.pharmer.pharmer.apis.v1alpha1;
 
 import "k8s.io/api/core/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -280,6 +280,12 @@ message GoogleSpec {
   repeated string nodeScopes = 3;
 }
 
+message LightsailCloudConfig {
+  optional string accessKeyID = 1;
+
+  optional string secretAccessKey = 2;
+}
+
 message LinodeCloudConfig {
   optional string token = 1;
 
@@ -375,6 +381,18 @@ message NodeTemplateSpec {
   // More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
   // +optional
   optional NodeSpec spec = 1;
+}
+
+message OVHCloudConfig {
+  optional string authUrl = 1;
+
+  optional string username = 2;
+
+  optional string password = 3;
+
+  optional string tenantId = 4;
+
+  optional string region = 5;
 }
 
 message PacketCloudConfig {
