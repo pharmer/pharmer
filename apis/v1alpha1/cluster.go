@@ -18,8 +18,8 @@ const (
 )
 
 type LightsailCloudConfig struct {
-	AccessKeyID     string `json:"accessKeyID,omitempty" `
-	SecretAccessKey string `json:"secretAccessKey,omitempty"`
+	AccessKeyID     string `json:"accessKeyID,omitempty" protobuf:"bytes,1,opt,name=accessKeyID"`
+	SecretAccessKey string `json:"secretAccessKey,omitempty" protobuf:"bytes,2,opt,name=secretAccessKey"`
 }
 
 type VultrCloudConfig struct {
