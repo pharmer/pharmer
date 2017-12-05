@@ -2,7 +2,8 @@
   "name": "aws",
   "env": [
     "dev",
-    "qa"
+    "qa",
+    "prod"
   ],
   "regions": [
     {

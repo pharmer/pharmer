@@ -2,7 +2,8 @@
   "name": "linode",
   "env": [
     "dev",
-    "qa"
+    "qa",
+    "prod"
   ],
   "regions": [
     {

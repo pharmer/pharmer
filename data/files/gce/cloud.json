@@ -2,7 +2,8 @@
   "name": "gce",
   "env": [
     "dev",
-    "qa"
+    "qa",
+    "prod"
   ],
   "regions": [
     {

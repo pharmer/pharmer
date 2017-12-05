@@ -1,7 +1,9 @@
 {
   "name": "ovh",
   "env": [
-    "dev"
+    "dev",
+    "qa",
+    "prod"
   ],
   "regions": [
     {

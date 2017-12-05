@@ -2,7 +2,8 @@
   "name": "digitalocean",
   "env": [
     "dev",
-    "qa"
+    "qa",
+    "prod"
   ],
   "regions": [
     {
