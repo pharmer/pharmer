@@ -89,8 +89,10 @@ func runCreateCredential(ctx context.Context, cmd *cobra.Command, args []string)
 			if err != nil {
 				term.Fatalln(err)
 			}
+		} else {
+			return fmt.Errorf("can't issue credential for provider %s", provider)
 		}
-		return fmt.Errorf("can't issue credential for provider %s", provider)
+		return nil
 	}
 
 	cred := &api.Credential{

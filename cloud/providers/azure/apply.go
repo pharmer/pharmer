@@ -307,6 +307,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Masater network interface %v will be created", cm.namer.NetworkInterfaceName(cm.namer.MasterName())),
 		})
 		if !dryRun {
+			cm.cluster.Spec.MasterInternalIP = "10.240.1.4"
 			if masterNIC, err = cm.conn.createNetworkInterface(cm.namer.NetworkInterfaceName(cm.namer.MasterName()), sg, sn, network.Static, cm.cluster.Spec.MasterInternalIP, masterPIP); err != nil {
 				return
 			}
