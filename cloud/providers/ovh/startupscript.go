@@ -3,12 +3,14 @@ package ovh
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/appscode/go/errors"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	ini "gopkg.in/ini.v1"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
@@ -20,6 +22,15 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 	if err != nil {
 		panic(err)
 	}
+	apiserver := cluster.APIServerAddress()
+	m := map[core.NodeAddressType]string{}
+	for _, addr := range cluster.Status.APIAddresses {
+		m[addr.Type] = fmt.Sprintf("%s:%d", addr.Address, cluster.Spec.API.BindPort)
+	}
+	if u, found := m[core.NodeExternalIP]; found {
+		apiserver = u
+	}
+
 	td := TemplateData{
 		ClusterName:      cluster.Name,
 		KubeletVersion:   cluster.Spec.KubeletVersion,
@@ -29,9 +40,9 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		CAHash:           pubkeypin.Hash(CACert(ctx)),
 		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:    string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		APIServerAddress: cluster.APIServerAddress(),
+		APIServerAddress: apiserver,
 		NetworkProvider:  cluster.Spec.Networking.NetworkProvider,
-		Provider:         cluster.Spec.Cloud.CloudProvider,
+		Provider:         "openstack", //cluster.Spec.Cloud.CloudProvider,
 		ExternalProvider: true,
 	}
 	{

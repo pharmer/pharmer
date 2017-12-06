@@ -306,14 +306,9 @@ func serverIDFromProviderID(providerID string) (string, error) {
 	}
 
 	split := strings.Split(providerID, "/")
-	if len(split) != 3 {
-		return "", fmt.Errorf("unexpected providerID format: %s, format should be: ovh://12345", providerID)
+	if len(split) != 4 {
+		return "", fmt.Errorf("unexpected providerID format: %s, format should be: pharmer-openstack:///12345", providerID)
 	}
 
-	// since split[0] is actually "digitalocean:"
-	if strings.TrimSuffix(split[0], ":") != UID {
-		return "", fmt.Errorf("provider name from providerID should be ovh: %s", providerID)
-	}
-
-	return split[2], nil
+	return split[3], nil
 }
