@@ -461,6 +461,20 @@ Here,
  - `spec.template.spec.type` = `regular`, for regular type nodes
  - `spec.template.spec.spotPriceMax` is the maximum price of a node
 
+
+## Cluster Backup
+
+To get a backup of your cluster run the following command:
+
+```console
+$ pharmer backup cluster --cluster az1 --backup-dir=az1-backup
+```
+Here,
+   `--backup-dir` is the flag for specifying your backup directory where phamer puts the backup file
+
+After finishing task `pharmer` creates a `.tar.gz` file in your backup directory where you find the backup yaml of your cluster
+
+
 * **Delete existing NG**
 
 If you want delete existing node group following command will help.
