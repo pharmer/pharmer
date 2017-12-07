@@ -16,7 +16,7 @@ import (
 
 func (cm *ClusterManager) GetDefaultNodeSpec(sku string) (api.NodeSpec, error) {
 	if sku == "" {
-		sku = "vps-ssd-2"
+		sku = "vps-ssd-3"
 	}
 	return api.NodeSpec{
 		SKU: sku,
