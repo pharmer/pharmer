@@ -1,3 +1,4 @@
+
 ---
 title: Azure Overview
 menu:
@@ -72,8 +73,10 @@ spec:
 ```
 
 Here,
- - `spec.data.projectID` is the packet project id
- - `spec.data.apiKey` is the access token that you provided which can be edited by following command:
+ - `spec.data.clientID` is the azure client id
+ - `spec.data.clientSecret` is the secret
+ - `spec.data.subscriptionID`  is the subscription id of azure account
+ - `spec.data.tenantID` is tenant id that you provided which can be edited by following command:
 ```console
 $ phrmer edit credential azur
 ```
@@ -109,7 +112,7 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `azure`
     - Kubernetes version: 1.8.0
     - Credential name: [azur](#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/packet/cloud.json)
+For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/azure/cloud.json)
  Available options in `pharmer` to create a cluster are:
  ```console
 $ pharmer create cluster -h
@@ -188,9 +191,9 @@ The directory structure of the storage provider will be look like:
         |    |     |__ fron-proxy-ca.key
         |    |
         |    |__ ssh
-        |          |__ id_p1-osfzqn
+        |          |__ id_az1-5efv4x
         |          |
-        |          |__ id_p1-osfzqn.pub
+        |          |__ id_az1-5efv4x.pub
         |
         |__ az1.json
 ```
@@ -210,10 +213,10 @@ $ pharmer get cluster az1 -o yaml
 apiVersion: v1alpha1
 kind: Cluster
 metadata:
-  creationTimestamp: 2017-12-06T11:57:42Z
-  generation: 1512561462750169126
+  creationTimestamp: 2017-12-07T09:47:46Z
+  generation: 1512640066640731326
   name: az1
-  uid: aa62f647-da7c-11e7-bfaa-382c4a73a7c4
+  uid: adf4d166-db33-11e7-a690-382c4a73a7c4
 spec:
   api:
     advertiseAddress: ""
@@ -227,9 +230,9 @@ spec:
   caCertName: ca
   cloud:
     azure:
-      azureStorageAccountName: k8saz1v6iwud
+      azureStorageAccountName: k8saz1bofhqq
       resourceGroup: az1
-      rootPassword: eb-QDZ9POjRg0dhE
+      rootPassword: S105Bf0S1ZmRkutL
       routeTableName: az1-rt
       securityGroupName: az1-nsg
       subnetCidr: 10.240.0.0/16
@@ -238,7 +241,7 @@ spec:
     ccmCredentialName: azure
     cloudProvider: azure
     region: westus2
-    sshKeyName: az1-b3kfmp
+    sshKeyName: az1-5efv4x
     zone: westus2
   controllerManagerExtraArgs:
     cloud-config: /etc/kubernetes/ccm/cloud-config
@@ -283,3 +286,406 @@ $ pharmer edit cluster az1
  ```console
 $ pharmer apply az1
 ```
+
+Now, `pharmer` will apply that configuration, thus create a Kubernetes cluster. After completing task the configuration file of
+ the cluster will be look like
+ ```yaml
+ $ pharmer get cluster az1 -o yaml
+ apiVersion: v1alpha1
+kind: Cluster
+metadata:
+  creationTimestamp: 2017-12-07T09:47:46Z
+  generation: 1512640066640731326
+  name: az1
+  uid: adf4d166-db33-11e7-a690-382c4a73a7c4
+spec:
+  api:
+    advertiseAddress: ""
+    bindPort: 6443
+  apiServerExtraArgs:
+    cloud-config: /etc/kubernetes/ccm/cloud-config
+    kubelet-preferred-address-types: InternalDNS,InternalIP,ExternalDNS,ExternalIP
+  authorizationModes:
+  - Node
+  - RBAC
+  caCertName: ca
+  cloud:
+    azure:
+      azureStorageAccountName: k8saz1bofhqq
+      resourceGroup: az1
+      rootPassword: S105Bf0S1ZmRkutL
+      routeTableName: az1-rt
+      securityGroupName: az1-nsg
+      subnetCidr: 10.240.0.0/16
+      subnetName: az1-subnet
+      vnetName: az1-vnet
+    ccmCredentialName: azure
+    cloudProvider: azure
+    region: westus2
+    sshKeyName: az1-5efv4x
+    zone: westus2
+  controllerManagerExtraArgs:
+    cloud-config: /etc/kubernetes/ccm/cloud-config
+  credentialName: azure
+  frontProxyCACertName: front-proxy-ca
+  kubernetesVersion: v1.8.0
+  networking:
+    networkProvider: calico
+    nonMasqueradeCIDR: 10.0.0.0/8
+status:
+  apiServer:
+  - address: 10.99.81.129
+    type: InternalIP
+  - address: 147.75.74.213
+    type: ExternalIP
+  cloud: {}
+  phase: Ready
+  reservedIP:
+  - ip: 52.183.45.79
+ ```
+
+Here,
+
+  `status.phase`: is ready. So, you can use your cluster from local machine.
+
+To get the `kubectl` configuration file(kubeconfig) on your local filesystem run the following command.
+```console
+$ pharmer use cluster az1
+```
+If you don't have `kubectl` installed click [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+
+Now you can run `kubectl get nodes` and verify that your kubernetes 1.8.0 is running.
+
+```console
+$ kubectl get nodes
+NAME                        STATUS    AGE       VERSION
+standard-d1-v2-pool-z5t4gh   Ready     2m        v1.8.4
+az1-master                   Ready     10m       v1.8.4
+```
+
+If you want to `ssh` into your instance run the following command
+```console
+$ pharmer ssh node az1-master  -k az1
+```
+
+### Cluster Scaling
+
+Scaling a cluster refers following meanings:-
+ 1. Increment the number of nodes of a certain node group
+ 2. Decrement the number of nodes of a certain node group
+ 3. Introduce a new node group with a number of nodes
+ 4. Drop existing node group
+
+To see the current node groups list, you need to run following command:
+
+```console
+$ pharmer get nodegroups -k az1
+NAME               Cluster   Node      SKU
+Standard-D1-v2-pool   az1       1         Standard_D1_v2
+master                az1       1         Standard_D2_v2
+```
+
+* **Updating existing NG**
+
+For scenario 1 & 2 we need to update our existing node group. To update existing node group configuration run
+the following command.
+
+```yaml
+$ pharmer edit nodegroup  Standard-D1-v2-pool -k az1
+
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: v1alpha1
+kind: NodeGroup
+metadata:
+  clusterName: az1
+  creationTimestamp: 2017-12-07T09:25:08Z
+  labels:
+    node-role.kubernetes.io/node: ""
+  name: Standard-D1-v2-pool
+  uid: 84ae51a2-db30-11e7-933a-382c4a73a7c4
+spec:
+  nodes: 1
+  template:
+    spec:
+      sku: Standard_D1_v2
+      type: regular
+status:
+  nodes: 0
+```
+
+Here,
+* `metadata.name` refers the node group name, which is unique within a cluster.
+* `metadata.labels` specifies the label of the nodegroup, which will be add to all nodes of following node group.
+    * For master label will be `"node-role.kubernetes.io/master": ""`
+    * For node label will be like `"node-role.kubernetes.io/node": ""`
+* `metadata.clusterName` indicates the cluster, which has this node group.
+* `spec.nodes` shows the number of nodes for this following group.
+* `spec.template.sku` refers the size of the machine
+* `status.node` shows the number of nodes that are really present on the current cluster while scaling
+
+To update number of nodes for this nodegroup modify the `node` number under `spec` field.
+
+* **Introducing a new NG**
+
+To add a new node group for an existing cluster you need to run
+```console
+$ pharmer create ng --nodes=Standard_D2_v2=1 -k az1
+```
+
+You can see the yaml of newly created node group, for that you need to run
+```yaml
+$ pharmer get ng Standard-D2-v2-pool -k az1 -o yaml
+apiVersion: v1alpha1
+kind: NodeGroup
+metadata:
+  clusterName: az1
+  creationTimestamp: 2017-12-07T10:20:51Z
+  labels:
+    node-role.kubernetes.io/node: ""
+  name: Standard-D2-v2-pool
+  uid: 4cca44e3-db38-11e7-809e-382c4a73a7c4
+spec:
+  nodes: 1
+  template:
+    spec:
+      sku: Standard_D2_v2
+      type: regular
+status:
+  nodes: 0
+```
+
+Here,
+ - `spec.template.spec.type` = `regular`, for regular type nodes
+ - `spec.template.spec.spotPriceMax` is the maximum price of a node
+
+* **Delete existing NG**
+
+If you want delete existing node group following command will help.
+```yaml
+$ pharmer delete ng Standard-D1-v2-pool -k az1
+
+$ pharmer get ng Standard-D1-v2-pool -k az1 -o yaml
+apiVersion: v1alpha1
+kind: NodeGroup
+metadata:
+  clusterName: az1
+  creationTimestamp: 2017-12-07T09:25:08Z
+  deletionTimestamp: 2017-12-07T10:22:25Z
+  labels:
+    node-role.kubernetes.io/node: ""
+  name: Standard-D1-v2-pool
+  uid: 84ae51a2-db30-11e7-933a-382c4a73a7c4
+spec:
+  nodes: 1
+  template:
+    spec:
+      sku: Standard_D1_v2
+      type: regular
+status:
+  nodes: 0
+
+
+```
+Here,
+
+ - `metadata.deletionTimestamp`: will appear if node group deleted command was run
+
+After completing your change on the node groups, you need to apply that via `pharmer` so that changes will be applied
+on provider cluster.
+
+```console
+$ pharmer apply az1
+```
+This command will take care of your actions that you applied on the node groups recently.
+
+```console
+ $ pharmer get nodegroups -k az1
+NAME               Cluster   Node      SKU
+Standard-D2-v2-pool   az1       1         Standard_D2_v2
+master                az1       1         Standard_D2_v2
+```
+
+### Cluster Upgrading
+
+To upgrade your cluster firstly you need to check if there any update available for your cluster and latest kubernetes version.
+To check run:
+```console
+$ pharmer describe cluster az1
+Name:		az1
+Version:	v1.8.0
+NodeGroup:
+  Name                 Node
+  ----                 ------
+  Standard-D2-v2-pool   1
+  master                1
+[upgrade/versions] Cluster version: v1.8.0
+[upgrade/versions] kubeadm version: v1.8.4
+[upgrade/versions] Latest stable version: v1.8.4
+[upgrade/versions] Latest version in the v1.8 series: v1.8.4
+Upgrade to the latest version in the v1.8 series:
+
+COMPONENT            CURRENT   AVAILABLE
+API Server           v1.8.0    v1.8.4
+Controller Manager   v1.8.0    v1.8.4
+Scheduler            v1.8.0    v1.8.4
+Kube Proxy           v1.8.0    v1.8.4
+Kube DNS             1.14.5    1.14.5
+
+You can now apply the upgrade by executing the following command:
+
+	pharmer edit cluster az1 --kubernetes-version=v1.8.4
+
+```
+
+Then, if you decided to upgrade you cluster run the command that are showing on describe command.
+```console
+$ pharmer edit cluster az1 --kubernetes-version=v1.8.4
+cluster "az1" updated
+```
+You can verify your changes by checking the yaml of the cluster.
+```yaml
+$ pharmer get cluster az1 -o yaml
+ apiVersion: v1alpha1
+kind: Cluster
+metadata:
+  creationTimestamp: 2017-12-07T09:47:46Z
+  generation: 1512640066640731326
+  name: az1
+  uid: adf4d166-db33-11e7-a690-382c4a73a7c4
+spec:
+  api:
+    advertiseAddress: ""
+    bindPort: 6443
+  apiServerExtraArgs:
+    cloud-config: /etc/kubernetes/ccm/cloud-config
+    kubelet-preferred-address-types: InternalDNS,InternalIP,ExternalDNS,ExternalIP
+  authorizationModes:
+  - Node
+  - RBAC
+  caCertName: ca
+  cloud:
+    azure:
+      azureStorageAccountName: k8saz1bofhqq
+      resourceGroup: az1
+      rootPassword: S105Bf0S1ZmRkutL
+      routeTableName: az1-rt
+      securityGroupName: az1-nsg
+      subnetCidr: 10.240.0.0/16
+      subnetName: az1-subnet
+      vnetName: az1-vnet
+    ccmCredentialName: azure
+    cloudProvider: azure
+    region: westus2
+    sshKeyName: az1-5efv4x
+    zone: westus2
+  controllerManagerExtraArgs:
+    cloud-config: /etc/kubernetes/ccm/cloud-config
+  credentialName: azure
+  frontProxyCACertName: front-proxy-ca
+  kubernetesVersion: v1.8.4
+  networking:
+    networkProvider: calico
+    nonMasqueradeCIDR: 10.0.0.0/8
+status:
+  apiServer:
+  - address: 10.99.81.129
+    type: InternalIP
+  - address: 147.75.74.213
+    type: ExternalIP
+  cloud: {}
+  phase: Ready
+  reservedIP:
+  - ip: 52.183.45.79
+```
+Here, `spec.kubernetesVersion` is changed to `v1.8.4` from `v1.8.0`
+
+If everything looks ok, then run:
+```console
+$ pharmer apply az1
+```
+You can check your cluster upgraded or not by running following command on your cluster.
+```console
+$ kubectl version
+Client Version: version.Info{Major:"1", Minor:"8", GitVersion:"v1.8.4", GitCommit:"9befc2b8928a9426501d3bf62f72849d5cbcd5a3", GitTreeState:"clean", BuildDate:"2017-11-20T05:28:34Z", GoVersion:"go1.8.3", Compiler:"gc", Platform:"linux/amd64"}
+Server Version: version.Info{Major:"1", Minor:"8", GitVersion:"v1.8.4", GitCommit:"9befc2b8928a9426501d3bf62f72849d5cbcd5a3", GitTreeState:"clean", BuildDate:"2017-11-20T05:17:43Z", GoVersion:"go1.8.3", Compiler:"gc", Platform:"linux/amd64"}
+```
+
+## Cluster Deleting
+
+To delete your cluster run
+```console
+$ pharmer delete cluster az1
+```
+
+Then, the yaml file looks like
+```yaml
+$ pharmer get cluster az1 -o yaml
+pharmer get cluster az1 -o yaml
+ apiVersion: v1alpha1
+kind: Cluster
+metadata:
+  creationTimestamp: 2017-12-07T09:47:46Z
+  deletionTimestamp: 2017-12-07T09:48:42Z
+  generation: 1512640066640731326
+  name: az1
+  uid: adf4d166-db33-11e7-a690-382c4a73a7c4
+spec:
+  api:
+    advertiseAddress: ""
+    bindPort: 6443
+  apiServerExtraArgs:
+    cloud-config: /etc/kubernetes/ccm/cloud-config
+    kubelet-preferred-address-types: InternalDNS,InternalIP,ExternalDNS,ExternalIP
+  authorizationModes:
+  - Node
+  - RBAC
+  caCertName: ca
+  cloud:
+    azure:
+      azureStorageAccountName: k8saz1bofhqq
+      resourceGroup: az1
+      rootPassword: S105Bf0S1ZmRkutL
+      routeTableName: az1-rt
+      securityGroupName: az1-nsg
+      subnetCidr: 10.240.0.0/16
+      subnetName: az1-subnet
+      vnetName: az1-vnet
+    ccmCredentialName: azure
+    cloudProvider: azure
+    region: westus2
+    sshKeyName: az1-5efv4x
+    zone: westus2
+  controllerManagerExtraArgs:
+    cloud-config: /etc/kubernetes/ccm/cloud-config
+  credentialName: azure
+  frontProxyCACertName: front-proxy-ca
+  kubernetesVersion: v1.8.0
+  networking:
+    networkProvider: calico
+    nonMasqueradeCIDR: 10.0.0.0/8
+status:
+  apiServer:
+  - address: 10.99.81.129
+    type: InternalIP
+  - address: 147.75.74.213
+    type: ExternalIP
+  cloud: {}
+  phase: Ready
+  reservedIP:
+  - ip: 52.183.45.79
+```
+
+Here,
+
+- `metadata.deletionTimestamp`: is set when cluster deletion command was applied.
+
+Now, to apply delete on provider cluster run
+```console
+$ pharmer apply az1
+```
+
+**Congratulations !!!** , you're an official `pharmer` user now.
+
