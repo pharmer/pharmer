@@ -75,7 +75,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		td.CloudConfig = string(data)
 
 		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L41
-		td.KubeletExtraArgs["cloud-config"] = "/etc/kubernetes/pharmer/cloud-config"
+		//td.KubeletExtraArgs["cloud-config"] = "/etc/kubernetes/ccm/cloud-config"
 
 		// Kubeadm will send cloud-config to kube-apiserver and kube-controller-manager
 		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L193
