@@ -1,5 +1,5 @@
 hash: 8226a10876e4670d26cb287344214e05d8c697275db0acf2871ccdbae729bee6
-updated: 2017-12-10T22:47:20.559822411-08:00
+updated: 2017-12-11T11:49:50.368562582-08:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -7,7 +7,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/go
-  version: 0042f7fe164fd03992cfa5ea70a98615516be99b
+  version: cb650d0b1a3c04a86595cf2a31fa704dbf1bc42a
   subpackages:
   - analytics
   - context
@@ -18,7 +18,7 @@ imports:
   - errors
   - flags
   - homedir
-  - io
+  - ioutil
   - log
   - log/golog
   - runtime
@@ -339,7 +339,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/lib/pq
-  version: 83612a56d3dd153a94a629cd64925371c9adad78
+  version: 69552e54d2a9d4c6a2438926a774930f7bc398ec
   subpackages:
   - oid
 - name: github.com/mailru/easyjson
@@ -484,7 +484,7 @@ imports:
   - session
   - sl
 - name: github.com/spf13/cobra
-  version: ccaecb155a2177302cb56cae929251a256d0f646
+  version: 7b2c5ac9fc04fc5efafb60700713d4fa609b777b
   subpackages:
   - doc
 - name: github.com/spf13/pflag

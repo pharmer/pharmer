@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/appscode/go/io"
+	ioutilz "github.com/appscode/go/ioutil"
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
 	"github.com/ghodss/yaml"
@@ -55,7 +55,7 @@ func NewCmdUse() *cobra.Command {
 				}
 
 				bakFile := KubeConfigPath() + ".bak." + time.Now().Format("2006-01-02T15-04")
-				err = io.CopyFile(bakFile, KubeConfigPath(), 0600)
+				err = ioutilz.CopyFile(bakFile, KubeConfigPath(), 0600)
 				if err != nil {
 					log.Fatalln(err)
 				}
