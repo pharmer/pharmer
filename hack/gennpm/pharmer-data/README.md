@@ -1,4 +1,4 @@
-[Static data files](https://github.com/pharmer/pharmer/tree/master/data/files) used by Pharmer.
+[Static data files](https://github.com/pharmer/pharmer/tree/master/hack/gennpm/pharmer-data) used by Pharmer.
 
 ## License
 `pharmer-data` is licensed under the Apache 2.0 license. See the LICENSE file for details.

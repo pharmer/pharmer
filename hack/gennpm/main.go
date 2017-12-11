@@ -25,11 +25,11 @@ func main() {
 		clouds[cd.Name] = cd
 	}
 
-	data, err := json.MarshalIndent(clouds, "", "  ")
+	content, err := json.MarshalIndent(clouds, "", "  ")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = ioutil.WriteFile(runtime.GOPath()+"/src/github.com/pharmer/pharmer/hack/gennpm/pharmer-data/index.json", data, 0644)
+	err = ioutil.WriteFile(runtime.GOPath()+"/src/github.com/pharmer/pharmer/hack/gennpm/pharmer-data/index.json", content, 0644)
 	if err != nil {
 		log.Fatalln(err)
 	}
