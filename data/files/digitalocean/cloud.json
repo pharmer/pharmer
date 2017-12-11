@@ -1,6 +1,6 @@
 {
   "name": "digitalocean",
-  "env": [
+  "envs": [
     "dev",
     "qa",
     "prod"
@@ -238,7 +238,7 @@
     {
       "version": "v1.8.0",
       "description": "v1.8.0",
-      "env": {
+      "envs": {
         "dev": true,
         "qa": true,
         "prod": true

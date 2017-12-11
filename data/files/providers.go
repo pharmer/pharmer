@@ -83,69 +83,76 @@ func parseData(bytes []byte, env _env.Environment) error {
 	return nil
 }
 
-func Load(env _env.Environment) error {
+func LoadDataFiles() ([][]byte, error) {
 	dataFiles := [][]byte{}
 
 	if bytes, err := aws.Asset("cloud.json"); err != nil {
-		return err
+		return nil, err
 	} else {
 		dataFiles = append(dataFiles, bytes)
 	}
 
 	if bytes, err := azure.Asset("cloud.json"); err != nil {
-		return err
+		return nil, err
 	} else {
 		dataFiles = append(dataFiles, bytes)
 	}
 
 	if bytes, err := digitalocean.Asset("cloud.json"); err != nil {
-		return err
+		return nil, err
 	} else {
 		dataFiles = append(dataFiles, bytes)
 	}
 
 	if bytes, err := gce.Asset("cloud.json"); err != nil {
-		return err
+		return nil, err
 	} else {
 		dataFiles = append(dataFiles, bytes)
 	}
 
 	if bytes, err := linode.Asset("cloud.json"); err != nil {
-		return err
+		return nil, err
 	} else {
 		dataFiles = append(dataFiles, bytes)
 	}
 
 	if bytes, err := packet.Asset("cloud.json"); err != nil {
-		return err
+		return nil, err
 	} else {
 		dataFiles = append(dataFiles, bytes)
 	}
 
 	if bytes, err := scaleway.Asset("cloud.json"); err != nil {
-		return err
+		return nil, err
 	} else {
 		dataFiles = append(dataFiles, bytes)
 	}
 
 	if bytes, err := softlayer.Asset("cloud.json"); err != nil {
-		return err
+		return nil, err
 	} else {
 		dataFiles = append(dataFiles, bytes)
 	}
 
 	if bytes, err := vultr.Asset("cloud.json"); err != nil {
-		return err
+		return nil, err
 	} else {
 		dataFiles = append(dataFiles, bytes)
 	}
 
 	if bytes, err := ovh.Asset("cloud.json"); err != nil {
-		return err
+		return nil, err
 	} else {
 		dataFiles = append(dataFiles, bytes)
 	}
+	return dataFiles, nil
+}
 
+func Load(env _env.Environment) error {
+	dataFiles, err := LoadDataFiles()
+	if err != nil {
+		return err
+	}
 	for _, bytes := range dataFiles {
 		if err := parseData(bytes, env); err != nil {
 			return err
