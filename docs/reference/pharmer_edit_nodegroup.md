@@ -15,7 +15,6 @@ Edit a Kubernetes cluster NodeGroup
 
 ### Synopsis
 
-
 Edit a Kubernetes cluster NodeGroup
 
 ```
@@ -54,5 +53,6 @@ pharmer edit nodegroup
 ```
 
 ### SEE ALSO
+
 * [pharmer edit](/docs/reference/pharmer_edit.md)	 - 
 

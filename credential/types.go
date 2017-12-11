@@ -44,6 +44,9 @@ const (
 	SwiftStorageURL      = "storageURL"
 	SwiftAuthToken       = "authToken"
 	VultrAPIToken        = "token"
+	OvhUsername          = "username"
+	OvhPassword          = "password"
+	OvhTenantID          = "tenantID"
 )
 
 type CommonSpec api.CredentialSpec

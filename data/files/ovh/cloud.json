@@ -30,7 +30,7 @@
   ],
   "instanceTypes": [
     {
-      "sku": "VPS CLOUD 1",
+      "sku": "vps-ssd-1",
       "description": "1 vCores, 3.1Ghz",
       "category": "VPS Cloud",
       "cpu": 1,
@@ -38,7 +38,7 @@
       "disk": 25
     },
     {
-      "sku": "VPS CLOUD 2",
+      "sku": "vps-ssd-2",
       "description": "2 vCores, 3.1Ghz",
       "category": "VPS Cloud",
       "cpu": 2,
@@ -46,7 +46,7 @@
       "disk": 50
     },
     {
-      "sku": "VPS CLOUD 3",
+      "sku": "vps-ssd-3",
       "description": "4 vCores, 3.1Ghz",
       "category": "VPS Cloud",
       "cpu": 4,
@@ -212,6 +212,38 @@
       "cpu": 8,
       "ram": 240,
       "disk": 1600
+    }
+  ],
+  "credentials": [
+    {
+      "provider": "Ovh",
+      "displayFormat": "field",
+      "annotations": {
+        "pharmer.appscode.com/cluster-credential": ""
+      },
+      "fields": [
+        {
+          "envconfig": "OS_USERNAME",
+          "form": "os_username",
+          "json": "username",
+          "label": "Username",
+          "input": "text"
+        },
+        {
+          "envconfig": "OS_PASSWORD",
+          "form": "os_password",
+          "json": "password",
+          "label": "Password",
+          "input": "password"
+        },
+        {
+          "envconfig": "OS_TENANT_ID",
+          "form": "os_tenant_id",
+          "json": "tenantID",
+          "label": "Tenant ID",
+          "input": "text"
+        }
+      ]
     }
   ],
   "kubernetes": {

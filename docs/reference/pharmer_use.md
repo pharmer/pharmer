@@ -17,7 +17,6 @@ section_menu_id: reference
 
 
 
-
 ### Options
 
 ```
@@ -40,6 +39,7 @@ section_menu_id: reference
 ```
 
 ### SEE ALSO
+
 * [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
 * [pharmer use cluster](/docs/reference/pharmer_use_cluster.md)	 - Sets `kubectl` context to given cluster
 

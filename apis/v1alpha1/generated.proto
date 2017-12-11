@@ -383,6 +383,18 @@ message NodeTemplateSpec {
   optional NodeSpec spec = 1;
 }
 
+message OVHCloudConfig {
+  optional string authUrl = 1;
+
+  optional string username = 2;
+
+  optional string password = 3;
+
+  optional string tenantId = 4;
+
+  optional string region = 5;
+}
+
 message PacketCloudConfig {
   optional string project = 1;
 

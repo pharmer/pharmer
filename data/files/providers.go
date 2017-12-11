@@ -13,6 +13,7 @@ import (
 	"github.com/pharmer/pharmer/data/files/digitalocean"
 	"github.com/pharmer/pharmer/data/files/gce"
 	"github.com/pharmer/pharmer/data/files/linode"
+	"github.com/pharmer/pharmer/data/files/ovh"
 	"github.com/pharmer/pharmer/data/files/packet"
 	"github.com/pharmer/pharmer/data/files/scaleway"
 	"github.com/pharmer/pharmer/data/files/softlayer"
@@ -134,6 +135,12 @@ func Load(env _env.Environment) error {
 	}
 
 	if bytes, err := vultr.Asset("cloud.json"); err != nil {
+		return err
+	} else {
+		dataFiles = append(dataFiles, bytes)
+	}
+
+	if bytes, err := ovh.Asset("cloud.json"); err != nil {
 		return err
 	} else {
 		dataFiles = append(dataFiles, bytes)

@@ -15,7 +15,6 @@ Edit cluster object
 
 ### Synopsis
 
-
 Edit cluster object
 
 ```
@@ -56,5 +55,6 @@ pharmer edit cluster
 ```
 
 ### SEE ALSO
+
 * [pharmer edit](/docs/reference/pharmer_edit.md)	 - 
 

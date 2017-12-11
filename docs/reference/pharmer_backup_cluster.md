@@ -15,7 +15,6 @@ Backup cluster objects
 
 ### Synopsis
 
-
 Backup cluster objects
 
 ```
@@ -46,5 +45,6 @@ pharmer backup cluster [flags]
 ```
 
 ### SEE ALSO
+
 * [pharmer backup](/docs/reference/pharmer_backup.md)	 - 
 

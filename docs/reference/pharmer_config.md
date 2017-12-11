@@ -15,7 +15,6 @@ Pharmer configuration
 
 ### Synopsis
 
-
 Pharmer configuration
 
 ```
@@ -50,6 +49,7 @@ pharmer config view
 ```
 
 ### SEE ALSO
+
 * [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
 * [pharmer config get-contexts](/docs/reference/pharmer_config_get-contexts.md)	 - List available contexts
 * [pharmer config view](/docs/reference/pharmer_config_view.md)	 - Print Pharmer config
