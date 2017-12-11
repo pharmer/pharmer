@@ -932,17 +932,15 @@
       ]
     }
   ],
-  "kubernetes": {
-    "versions": [
-      {
-        "version": "1.8.0",
-        "description": "1.8.0",
-        "envs": {
-          "dev": true,
-          "qa": true,
-          "prod": true
-        }
+  "kubernetes": [
+    {
+      "version": "1.8.0",
+      "description": "1.8.0",
+      "envs": {
+        "dev": true,
+        "qa": true,
+        "prod": true
       }
-    ]
-  }
+    }
+  ]
 }

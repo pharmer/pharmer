@@ -234,7 +234,7 @@
       ]
     }
   ],
-  "kubernetesVersions": [
+  "kubernetes": [
     {
       "version": "v1.8.0",
       "description": "v1.8.0",

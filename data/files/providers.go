@@ -25,7 +25,7 @@ type cloudData struct {
 	Name          string
 	Regions       map[string]data.Region
 	InstanceTypes map[string]data.InstanceType
-	Versions      []data.KubernetesVersion
+	Versions      []data.Kubernetes
 }
 
 var (
@@ -48,7 +48,7 @@ func parseData(bytes []byte, env _env.Environment) error {
 		Name:          cd.Name,
 		Regions:       map[string]data.Region{},
 		InstanceTypes: map[string]data.InstanceType{},
-		Versions:      make([]data.KubernetesVersion, 0),
+		Versions:      make([]data.Kubernetes, 0),
 	}
 	for _, r := range cd.Regions {
 		cloud.Regions[r.Region] = r
@@ -57,8 +57,8 @@ func parseData(bytes []byte, env _env.Environment) error {
 		cloud.InstanceTypes[t.SKU] = t
 	}
 
-	kubes := make([]data.KubernetesVersion, 0, len(cd.KubernetesVersions))
-	for _, v := range cd.KubernetesVersions {
+	kubes := make([]data.Kubernetes, 0, len(cd.Kubernetes))
+	for _, v := range cd.Kubernetes {
 		if v.Released(env) {
 			kubes = append(kubes, v)
 		}

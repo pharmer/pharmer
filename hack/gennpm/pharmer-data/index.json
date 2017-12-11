@@ -1,7 +1,11 @@
 {
   "aws": {
     "name": "aws",
-    "envs": null,
+    "envs": [
+      "dev",
+      "qa",
+      "prod"
+    ],
     "regions": [
       {
         "location": "Virginia",
@@ -447,15 +451,24 @@
         ]
       }
     ],
-    "kubernetesVersions": [
+    "kubernetes": [
       {
-        "version": "1.8.0"
+        "version": "1.8.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true
+        }
       }
     ]
   },
   "azure": {
     "name": "azure",
-    "envs": null,
+    "envs": [
+      "dev",
+      "qa",
+      "prod"
+    ],
     "regions": [
       {
         "location": "Virginia",
@@ -1214,15 +1227,24 @@
         ]
       }
     ],
-    "kubernetesVersions": [
+    "kubernetes": [
       {
-        "version": "1.8.0"
+        "version": "1.8.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true
+        }
       }
     ]
   },
   "digitalocean": {
     "name": "digitalocean",
-    "envs": null,
+    "envs": [
+      "dev",
+      "qa",
+      "prod"
+    ],
     "regions": [
       {
         "location": "Amsterdam",
@@ -1452,15 +1474,24 @@
         ]
       }
     ],
-    "kubernetesVersions": [
+    "kubernetes": [
       {
-        "version": "1.8.0"
+        "version": "1.8.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true
+        }
       }
     ]
   },
   "gce": {
     "name": "gce",
-    "envs": null,
+    "envs": [
+      "dev",
+      "qa",
+      "prod"
+    ],
     "regions": [
       {
         "location": "Berkeley County, South Carolina",
@@ -1682,15 +1713,24 @@
         ]
       }
     ],
-    "kubernetesVersions": [
+    "kubernetes": [
       {
-        "version": "1.8.0"
+        "version": "1.8.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true
+        }
       }
     ]
   },
   "linode": {
     "name": "linode",
-    "envs": null,
+    "envs": [
+      "dev",
+      "qa",
+      "prod"
+    ],
     "regions": [
       {
         "location": "Dallas, TX, USA",
@@ -1889,15 +1929,24 @@
         ]
       }
     ],
-    "kubernetesVersions": [
+    "kubernetes": [
       {
-        "version": "1.8.0"
+        "version": "1.8.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true
+        }
       }
     ]
   },
   "ovh": {
     "name": "ovh",
-    "envs": null,
+    "envs": [
+      "dev",
+      "qa",
+      "prod"
+    ],
     "regions": [
       {
         "location": "Beauharnois, Canada",
@@ -2139,11 +2188,24 @@
         ]
       }
     ],
-    "kubernetesVersions": null
+    "kubernetes": [
+      {
+        "version": "1.8.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true
+        }
+      }
+    ]
   },
   "packet": {
     "name": "packet",
-    "envs": null,
+    "envs": [
+      "dev",
+      "qa",
+      "prod"
+    ],
     "regions": [
       {
         "location": "NYC Metro, NY, USA",
@@ -2233,15 +2295,24 @@
         ]
       }
     ],
-    "kubernetesVersions": [
+    "kubernetes": [
       {
-        "version": "1.8.0"
+        "version": "1.8.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true
+        }
       }
     ]
   },
   "scaleway": {
     "name": "scaleway",
-    "envs": null,
+    "envs": [
+      "dev",
+      "qa",
+      "prod"
+    ],
     "regions": [
       {
         "location": "Paris, France",
@@ -2349,15 +2420,24 @@
         ]
       }
     ],
-    "kubernetesVersions": [
+    "kubernetes": [
       {
-        "version": "1.8.0"
+        "version": "1.8.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true
+        }
       }
     ]
   },
   "softlayer": {
     "name": "softlayer",
-    "envs": null,
+    "envs": [
+      "dev",
+      "qa",
+      "prod"
+    ],
     "regions": [
       {
         "location": "Amsterdam, Netherlands",
@@ -3276,15 +3356,24 @@
         ]
       }
     ],
-    "kubernetesVersions": [
+    "kubernetes": [
       {
-        "version": "1.8.0"
+        "version": "1.8.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true
+        }
       }
     ]
   },
   "vultr": {
     "name": "vultr",
-    "envs": null,
+    "envs": [
+      "dev",
+      "qa",
+      "prod"
+    ],
     "regions": [
       {
         "location": "New Jersey",
@@ -3686,9 +3775,14 @@
         ]
       }
     ],
-    "kubernetesVersions": [
+    "kubernetes": [
       {
-        "version": "1.8.0"
+        "version": "1.8.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true
+        }
       }
     ]
   }
