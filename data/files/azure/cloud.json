@@ -1,6 +1,6 @@
 {
   "name": "azure",
-  "env": [
+  "envs": [
     "dev",
     "qa",
     "prod"
@@ -767,7 +767,7 @@
     {
       "version": "1.8.0",
       "description": "1.8.0",
-      "env": {
+      "envs": {
         "dev": true,
         "qa": true,
         "prod": true

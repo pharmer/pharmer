@@ -1,8 +1,8 @@
 {
   "name": "pharmer-data",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Static data files used by Pharmer",
-  "main": "index.js",
+  "main": "index.json",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

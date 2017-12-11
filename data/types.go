@@ -13,7 +13,7 @@ const (
 
 type CloudData struct {
 	Name               string              `json:"name"`
-	Env                []string            `json:"env"`
+	Envs               []string            `json:"envs"`
 	Regions            []Region            `json:"regions"`
 	InstanceTypes      []InstanceType      `json:"instanceTypes"`
 	Credentials        []CredentialFormat  `json:"credentials"`
@@ -21,7 +21,7 @@ type CloudData struct {
 }
 
 func (cd CloudData) Available(env _env.Environment) bool {
-	for _, e := range cd.Env {
+	for _, e := range cd.Envs {
 		if e == env.String() {
 			return true
 		}
@@ -60,15 +60,15 @@ type CredentialFormat struct {
 
 type KubernetesVersion struct {
 	Version *version.Version `json:"version"`
-	Env     map[string]bool  `json:"env,omitempty"`
+	Envs    map[string]bool  `json:"envs,omitempty"`
 }
 
 func (v KubernetesVersion) Released(env _env.Environment) bool {
-	_, found := v.Env[env.String()]
+	_, found := v.Envs[env.String()]
 	return found
 }
 
 func (v KubernetesVersion) Deprecated(env _env.Environment) bool {
-	deprecated, found := v.Env[env.String()]
+	deprecated, found := v.Envs[env.String()]
 	return found && deprecated
 }
