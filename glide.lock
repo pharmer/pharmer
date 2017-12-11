@@ -1,5 +1,5 @@
-hash: 541a5d114258d6d6ed8773d51eaddf75750d0d00f3e94842c613aaeab760214a
-updated: 2017-12-05T11:52:39.021969723-08:00
+hash: 8226a10876e4670d26cb287344214e05d8c697275db0acf2871ccdbae729bee6
+updated: 2017-12-10T22:47:20.559822411-08:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -7,8 +7,9 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/go
-  version: 85b510edd14fe8d6beb2ad365afd3c5b3afc8c49
+  version: 0042f7fe164fd03992cfa5ea70a98615516be99b
   subpackages:
+  - analytics
   - context
   - crypto/rand
   - crypto/ssh
@@ -16,6 +17,7 @@ imports:
   - env
   - errors
   - flags
+  - homedir
   - io
   - log
   - log/golog
@@ -474,7 +476,7 @@ imports:
   subpackages:
   - open
 - name: github.com/softlayer/softlayer-go
-  version: 7fd053690157807b18b2e5b2d306c9ab798531aa
+  version: e9170c71d1858f3cbdee36f18bde1318892f94db
   subpackages:
   - config
   - datatypes
@@ -482,7 +484,7 @@ imports:
   - session
   - sl
 - name: github.com/spf13/cobra
-  version: de2d9c4eca8f3c1de17d48b096b6504e0296f003
+  version: ccaecb155a2177302cb56cae929251a256d0f646
   subpackages:
   - doc
 - name: github.com/spf13/pflag
@@ -620,7 +622,7 @@ imports:
   - storage/v1
   - storage/v1beta1
 - name: k8s.io/apiextensions-apiserver
-  version: 5bc0d8f05a92b3a09bcf1a9db442a29c0b7a514d
+  version: 996a70a27a0dcf53642ca52601b9107cb2ad810a
   subpackages:
   - pkg/apis/apiextensions
   - pkg/apis/apiextensions/v1beta1
@@ -687,7 +689,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 9707c008294d447053c0e2737c256ee23f99e5b4
+  version: 2279c12eff8d4d1dc65a104dac36483c1b59ff54
   subpackages:
   - pkg/admission
   - pkg/admission/initializer

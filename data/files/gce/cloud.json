@@ -2,7 +2,8 @@
   "name": "gce",
   "env": [
     "dev",
-    "qa"
+    "qa",
+    "prod"
   ],
   "regions": [
     {
@@ -213,7 +214,9 @@
       "version": "1.8.0",
       "description": "1.8.0",
       "env": {
-        "dev": true
+        "dev": true,
+        "qa": true,
+        "prod": true
       }
     }
   ]

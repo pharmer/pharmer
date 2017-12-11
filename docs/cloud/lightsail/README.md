@@ -7,7 +7,7 @@ menu:
     parent: lightsail
     weight: 10
 product_name: pharmer
-left_menu: product_pharmer_0.1.0-alpha.1
+menu_name: product_pharmer_0.1.0-alpha.1
 section_menu_id: cloud
 url: /products/pharmer/0.1.0-alpha.1/cloud/lightsail/
 aliases:
@@ -41,8 +41,8 @@ You can use your [aws credential](/docs/cloud/aws/README.md#credential-importing
 ### Cluster provisioning
 
 There are two steps to create a Kubernetes cluster using `pharmer`.
-In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those 
-information to create cluster on specific provider. 
+In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those
+information to create cluster on specific provider.
 
 Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `lightsail`
  * **Cluster Creating:** We want to create a cluster with following information:
@@ -54,10 +54,10 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `lightsa
     - Kubernetes version: 1.8.0
     - Credential name: [aws](/docs/cloud/aws/README.md#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/aws/cloud.json)   
+For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/aws/cloud.json)
  Available options in `pharmer` to create a cluster are:
  ```console
- $ pharmer create cluster -h 
+ $ pharmer create cluster -h
 Create a Kubernetes cluster for a given cloud provider
 
 Usage:
@@ -91,8 +91,8 @@ Global Flags:
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
- ```    
- 
+ ```
+
  So, we need to run following command to create cluster with our information.
 
 ```console
@@ -102,7 +102,7 @@ $ pharmer create cluster lsx \
 	--zone=us-west-2a \
 	--nodes=small_1_0=1 \
 	--credential-uid=aws \
-	--kubernetes-version=v1.8.0 
+	--kubernetes-version=v1.8.0
 ```
 If you want to use a specific version of `kubelet` and `kubeadm` for your cluster, you can pass those flags also.
 For example:
@@ -212,7 +212,7 @@ $ pharmer edit cluster lsx
  To apply run:
  ```console
 $ pharmer apply lsx
-```  
+```
 
 Now, `pharmer` will apply that configuration, thus create a Kubernetes cluster. After completing task the configuration file of
 the cluster will be look like
@@ -297,8 +297,8 @@ To see the current node groups list, you need to run following command:
 ```console
 $ pharmer get nodegroup -k lsx
 NAME             Cluster   Node      SKU
-master           lsx       1         small_1_0   
-small-1-0-pool   lsx       1         small_1_0 
+master           lsx       1         small_1_0
+small-1-0-pool   lsx       1         small_1_0
 ```
 
 * **Updating existing NG**
@@ -354,8 +354,8 @@ $ pharmer create ng --nodes=small_1_1=0 -k lsx
 
 $ pharmer get nodegroup -k lsx
   NAME             Cluster   Node      SKU
-  master           lsx       1         small_1_0   
-  small-1-0-pool   lsx       2         small_1_0   
+  master           lsx       1         small_1_0
+  small-1-0-pool   lsx       2         small_1_0
   small-1-1-pool   lsx       0         small_1_
 ```
 
@@ -424,8 +424,8 @@ This command will take care of your actions that you applied on the node groups 
 ```console
  $ pharmer get ng -k lsx
 NAME             Cluster   Node      SKU
-master           lsx       1         small_1_0   
-small-1-0-pool   lsx       2         small_1_0   
+master           lsx       1         small_1_0
+small-1-0-pool   lsx       2         small_1_0
 ```
 
 ### Cluster Upgrading

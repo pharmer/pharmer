@@ -6,7 +6,7 @@ menu:
     name: Pharmer Use Cluster
     parent: reference
 product_name: pharmer
-left_menu: product_pharmer_0.1.0-alpha.1
+menu_name: product_pharmer_0.1.0-alpha.1
 section_menu_id: reference
 ---
 ## pharmer use cluster
@@ -14,7 +14,6 @@ section_menu_id: reference
 Sets `kubectl` context to given cluster
 
 ### Synopsis
-
 
 Sets `kubectl` context to given cluster
 
@@ -41,7 +40,7 @@ pharmer use cluster <name>
       --alsologtostderr                  log to standard error as well as files
       --analytics                        Send analytical events to Google Guard (default true)
       --config-file string               Path to Pharmer config file
-      --env string                       Environment used to enable debugging (default "dev")
+      --env string                       Environment used to enable debugging (default "prod")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files (default true)
@@ -51,5 +50,6 @@ pharmer use cluster <name>
 ```
 
 ### SEE ALSO
+
 * [pharmer use](/docs/reference/pharmer_use.md)	 - 
 

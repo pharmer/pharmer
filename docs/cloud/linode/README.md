@@ -7,7 +7,7 @@ menu:
     parent: linode
     weight: 30
 product_name: pharmer
-left_menu: product_pharmer_0.1.0-alpha.1
+menu_name: product_pharmer_0.1.0-alpha.1
 section_menu_id: cloud
 url: /products/pharmer/0.1.0-alpha.1/cloud/linode/
 aliases:
@@ -43,11 +43,11 @@ under **my profile** option. Here you see the `Add an API key`, create and copy 
 
 From command line, run the following command and paste the api key.
 ```console
-$ pharmer create credential linode 
-```  
+$ pharmer create credential linode
+```
 ![linode-credential](/docs/images/linode/linode-credential.png)
 
-Here, `linode` is the credential name, which must be unique within your storage.        
+Here, `linode` is the credential name, which must be unique within your storage.
 
 To view credential file you can run:
 ```yaml
@@ -66,7 +66,7 @@ spec:
 Here, `spec.data.token` is the access token that you provided which can be edited by following command:
 ```console
 $ phrmer edit credential linode
-``` 
+```
 
 To see the all credentials you need to run following command.
 
@@ -78,7 +78,7 @@ linode       Linode         token=*****
 
 You can also see the stored credential from the following location:
 ```console
-~/.pharmer/store.d/credentials/linode.json            
+~/.pharmer/store.d/credentials/linode.json
 ```
 
 You can find other credential operations [here](/docs/credential.md)
@@ -86,8 +86,8 @@ You can find other credential operations [here](/docs/credential.md)
 ### Cluster provisioning
 
 There are two steps to create a Kubernetes cluster using `pharmer`.
-In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those 
-information to create cluster on specific provider. 
+In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those
+information to create cluster on specific provider.
 
 Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `linode`
  * **Cluster Creating:** We want to create a cluster with following information:
@@ -99,21 +99,21 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `linode`
     - Kubernetes version: 1.8.0
     - Credential name: [linode](#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/linode/cloud.json)   
+For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/linode/cloud.json)
  Available options in `pharmer` to create a cluster are:
   ```console
  $ pharmer create cluster -h
  Create a Kubernetes cluster for a given cloud provider
- 
+
  Usage:
    pharmer create cluster [flags]
- 
+
  Aliases:
    cluster, clusters, Cluster
- 
+
  Examples:
  pharmer create cluster demo-cluster
- 
+
  Flags:
        --credential-uid string       Use preconfigured cloud credential uid
    -h, --help                        help for cluster
@@ -124,7 +124,7 @@ For location code and sku details click [hrere](https://github.com/pharmer/pharm
        --nodes stringToInt           Node set configuration (default [])
        --provider string             Provider name
        --zone string                 Cloud provider zone name
- 
+
  Global Flags:
        --alsologtostderr                  log to standard error as well as files
        --analytics                        Send analytical events to Google Guard (default true)
@@ -136,18 +136,18 @@ For location code and sku details click [hrere](https://github.com/pharmer/pharm
        --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
    -v, --v Level                          log level for V logs
        --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
- ```    
- 
+ ```
+
  So, we need to run following command to create cluster with our information.
- 
+
  ```console
 $ pharmer create cluster l1 \
 	--provider=linode \
 	--zone=3 \
 	--nodes=1=2 \
 	--credential-uid=linode \
-	--kubernetes-version=v1.8.0 
-``` 
+	--kubernetes-version=v1.8.0
+```
 If you want to use a specific version of `kubelet` and `kubeadm` for your cluster, you can pass those flags also.
 For example:
 
@@ -230,7 +230,7 @@ status:
   cloud: {}
   phase: Pending
   sshKeyExternalID: l1-25woji
-```  
+```
 Here,
 
 * `metadata.name` refers the cluster name, which should be unique within your cluster list.
@@ -346,7 +346,7 @@ To see the current node groups list, you need to run following command:
 ```console
 $ pharmer get nodegroup -k l1
 NAME      Cluster   Node      SKU
-1-pool    l1        2         1         
+1-pool    l1        2         1
 master    l1        1         3
 ```
 * **Updating existing NG**
@@ -400,9 +400,9 @@ $ pharmer create ng --nodes=2=1 -k l1
 
 $ pharmer get nodegroups -k l1
 NAME      Cluster   Node      SKU
-1-pool    l1        2         1         
-2-pool    l1        1         2         
-master    l1        1         3 
+1-pool    l1        2         1
+2-pool    l1        1         2
+master    l1        1         3
 
 ```
 You can see the yaml of newly created node group, you need to run
@@ -466,9 +466,9 @@ This command will take care of your actions that you applied on the node groups 
 
 ```console
 $ pharmer get ng -k l1
-NAME      Cluster   Node      SKU       
-2-pool    l1        1         2         
-master    l1        1         3 
+NAME      Cluster   Node      SKU
+2-pool    l1        1         2
+master    l1        1         3
 ```
 
 ### Cluster Upgrading

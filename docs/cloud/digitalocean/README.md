@@ -7,7 +7,7 @@ menu:
     parent: digital-ocean
     weight: 10
 product_name: pharmer
-left_menu: product_pharmer_0.1.0-alpha.1
+menu_name: product_pharmer_0.1.0-alpha.1
 section_menu_id: cloud
 url: /products/pharmer/0.1.0-alpha.1/cloud/digitalocean/
 aliases:
@@ -57,11 +57,11 @@ spec:
     token: <token>
   provider: DigitalOcean
 ```
-Here, 
+Here,
  - `spec.data.token` is the access token that you provided which can be edited by following command:
 ```console
 $ pharmer edit credential do
-``` 
+```
 
 To see the all credentials you need to run following command.
 
@@ -72,7 +72,7 @@ do           DigitalOcean   token=*****
 ```
 You can also see the stored credential from the following location:
 ```console
-~/.pharmer/store.d/credentials/do.json            
+~/.pharmer/store.d/credentials/do.json
 ```
 
 You can find other credential operations [here](/docs/credential.md)
@@ -80,8 +80,8 @@ You can find other credential operations [here](/docs/credential.md)
 ### Cluster provisioning
 
 There are two steps to create a Kubernetes cluster using `pharmer`.
-In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those 
-information to create cluster on specific provider. 
+In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those
+information to create cluster on specific provider.
 
 Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `digitalocean`
  * **Cluster Creating:** We want to create a cluster with following information:
@@ -93,10 +93,10 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `digital
     - Kubernetes version: 1.8.0
     - Credential name: [do](#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/digitalocean/cloud.json)   
+For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/digitalocean/cloud.json)
  Available options in `pharmer` to create a cluster are:
  ```console
- $ pharmer create cluster -h 
+ $ pharmer create cluster -h
 Create a Kubernetes cluster for a given cloud provider
 
 Usage:
@@ -130,8 +130,8 @@ Global Flags:
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
- ```    
- 
+ ```
+
  So, we need to run following command to create cluster with our information.
 
 ```console
@@ -335,8 +335,8 @@ To see the current node groups list, you need to run following command:
 ```console
 $ pharmer get nodegroup -k d1
 NAME       Cluster   Node      SKU
-2gb-pool   d1        2         2gb       
-master     d1        1         2gb 
+2gb-pool   d1        2         2gb
+master     d1        1         2gb
 ```
 * **Updating existing NG**
 
@@ -389,9 +389,9 @@ $ pharmer create ng --nodes=1gb=1 -k d1
 
 $ pharmer get nodegroups -k d1
 NAME       Cluster   Node      SKU
-1gb-pool   d1        1         VC1M      
-2gb-pool   d1        2         2gb       
-master     d1        1         2gb 
+1gb-pool   d1        1         VC1M
+2gb-pool   d1        2         2gb
+master     d1        1         2gb
 
 ```
 You can see the yaml of newly created node group, you need to run
@@ -456,8 +456,8 @@ This command will take care of your actions that you applied on the node groups 
 
 $ pharmer get nodegroups -k d1
 NAME       Cluster   Node      SKU
-1gb-pool   d1        1         VC1M           
-master     d1        1         2gb 
+1gb-pool   d1        1         VC1M
+master     d1        1         2gb
 
 ```
 ### Cluster Upgrading

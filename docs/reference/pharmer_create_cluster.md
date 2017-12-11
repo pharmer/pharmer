@@ -6,7 +6,7 @@ menu:
     name: Pharmer Create Cluster
     parent: reference
 product_name: pharmer
-left_menu: product_pharmer_0.1.0-alpha.1
+menu_name: product_pharmer_0.1.0-alpha.1
 section_menu_id: reference
 ---
 ## pharmer create cluster
@@ -14,7 +14,6 @@ section_menu_id: reference
 Create a Kubernetes cluster for a given cloud provider
 
 ### Synopsis
-
 
 Create a Kubernetes cluster for a given cloud provider
 
@@ -48,7 +47,7 @@ pharmer create cluster demo-cluster
       --alsologtostderr                  log to standard error as well as files
       --analytics                        Send analytical events to Google Guard (default true)
       --config-file string               Path to Pharmer config file
-      --env string                       Environment used to enable debugging (default "dev")
+      --env string                       Environment used to enable debugging (default "prod")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files (default true)
@@ -58,5 +57,6 @@ pharmer create cluster demo-cluster
 ```
 
 ### SEE ALSO
+
 * [pharmer create](/docs/reference/pharmer_create.md)	 - 
 

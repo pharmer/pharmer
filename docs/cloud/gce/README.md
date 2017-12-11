@@ -7,7 +7,7 @@ menu:
     parent: gce
     weight: 10
 product_name: pharmer
-left_menu: product_pharmer_0.1.0-alpha.1
+menu_name: product_pharmer_0.1.0-alpha.1
 section_menu_id: cloud
 url: /products/pharmer/0.1.0-alpha.1/cloud/gce/
 aliases:
@@ -41,12 +41,12 @@ In this document we will use local file system ([vfs](/docs/cli/vfs.md)) as a st
 You can issue a new credential for your `gce` project by running
 ```console
 $ pharmer issue credential --provider=GoogleCloud gce
-``` 
+```
 
-Here, 
+Here,
  - 'GoogleCloud' is cloud provider name
  - `gce` is credential name
- 
+
 Store the credential on a file and use that while importing credentials on pharmer.
 
 From command line, run the following command
@@ -85,7 +85,7 @@ spec:
   provider: GoogleCloud
 
 ```
-Here, 
+Here,
  - `spec.data.projectID` is the gce project id
  - `spec.data.serviceAccount` is the service account credential which can be edited by following command:
 ```console
@@ -100,14 +100,14 @@ gce          GoogleCloud    projectID=k8s-qa, serviceAccount=<data>
 ```
 You can also see the stored credential from the following location:
 ```console
-~/.pharmer/store.d/credentials/gce.json            
+~/.pharmer/store.d/credentials/gce.json
 ```
 
 ### Cluster provisioning
 
 There are two steps to create a Kubernetes cluster using `pharmer`.
-In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those 
-information to create cluster on specific provider. 
+In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those
+information to create cluster on specific provider.
 
 Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `gce`
  * **Cluster Creating:** We want to create a cluster with following information:
@@ -119,11 +119,11 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `gce`
     - Kubernetes version: 1.8.0
     - Credential name: [gce](#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/gce/cloud.json)   
+For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/gce/cloud.json)
 
 Available options in `pharmer` to create a cluster are:
  ```console
- $ pharmer create cluster -h 
+ $ pharmer create cluster -h
 Create a Kubernetes cluster for a given cloud provider
 
 Usage:
@@ -157,8 +157,8 @@ Global Flags:
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
- ```    
- 
+ ```
+
  So, we need to run following command to create cluster with our information.
 
 ```console
@@ -169,7 +169,7 @@ $ pharmer create cluster g1 \
 	--nodes=n1-standard-2=1 \
 	--credential-uid=gce \
 	--kubernetes-version=v1.8.0
-``` 
+```
 If you want to use a specific version of `kubelet` and `kubeadm` for your cluster, you can pass those flags also.
 For example:
 
@@ -274,11 +274,11 @@ Here,
 * `spec.apiServerExtraArgs` specifies which value will be forwarded to apiserver during cluster installation.
 * `spec.authorizationMode` refers the cluster authorization mode
 * `status.phase` may be `Pending`, `Ready`, `Deleting`, `Deleted`, `Upgrading` depending on current cluster status.
-  
+
 You can modify this configuration by:
 ```console
 $ pharmer edit cluster g1
-```  
+```
 
 * **Applying:** If everything looks ok, we can now apply the resources. This actually creates resources on `Scaleway`.
  Up to now we've only been working locally.
@@ -364,7 +364,7 @@ n1-standard-2-pool-hdpldt-qnc2   Ready     node      57s       v1.8.4
 If you want to `ssh` into your instance run the following command
 ```console
 $ pharmer ssh node g1-master -k g1
-```  
+```
 
 ### Cluster Scaling
 
@@ -373,15 +373,15 @@ Scaling a cluster refers following meanings:-
  2. Decrement the number of nodes of a certain node group
  3. Introduce a new node group with a number of nodes
  4. Drop existing node group
- 
+
 To see the current node groups list, you need to run following command:
 ```console
 $ pharmer get nodegroup -k g1
 NAME                 Cluster   Node      SKU
 NAME                 Cluster   Node      SKU
-master               g1        1         n1-standard-1   
+master               g1        1         n1-standard-1
 n1-standard-2-pool   g1        1         n1-standard-2
-```  
+```
 
 * **Updating existing NG**
 
@@ -440,8 +440,8 @@ $ pharmer create ng --nodes=n1-standard-1=1 -k g1
 
 $ pharmer get nodegroup -k g1
 NAME                 Cluster   Node      SKU
-master               g1        1         n1-standard-1   
-n1-standard-1-pool   g1        1         n1-standard-1   
+master               g1        1         n1-standard-1
+n1-standard-1-pool   g1        1         n1-standard-1
 n1-standard-2-pool   g1        1         n1-standard-
 
 ```
@@ -509,17 +509,17 @@ on provider cluster.
 
 ```console
 $ pharmer apply g1
-```  
+```
 
 This command will take care of your actions that you applied on the node groups recently.
- 
+
 ```console
  $ pharmer get ng -k g1
 NAME                 Cluster   Node      SKU
-master               g1        1         n1-standard-1   
-n1-standard-1-pool   g1        1         n1-standard-1 
-``` 
-  
+master               g1        1         n1-standard-1
+n1-standard-1-pool   g1        1         n1-standard-1
+```
+
 ### Cluster Upgrading
 
 To upgrade your cluster firstly you need to check if there any update available for your cluster and latest kubernetes version.
@@ -637,7 +637,7 @@ Server Version: version.Info{Major:"1", Minor:"8", GitVersion:"v1.8.4", GitCommi
 To get a backup of your cluster run the following command:
 
 ```console
-$ pharmer backup cluster --cluster g1 --backup-dir=g1-backup 
+$ pharmer backup cluster --cluster g1 --backup-dir=g1-backup
 ```
 Here,
    `--backup-dir` is the flag for specifying your backup directory where phamer puts the backup file
@@ -719,5 +719,5 @@ $ pharmer apply g1
 **Congratulations !!!** , you're an official `pharmer` user now.
 
 
-   
-   
+
+

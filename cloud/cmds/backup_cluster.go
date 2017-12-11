@@ -29,7 +29,15 @@ func NewCmdBackup() *cobra.Command {
 		Short:             "Backup cluster objects",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			flags.EnsureRequiredFlags(cmd, "cluster", "backup-dir")
+			flags.EnsureRequiredFlags(cmd, "backup-dir")
+
+			if len(args) == 0 {
+				term.Fatalln("Missing cluster name.")
+			}
+			if len(args) > 1 {
+				term.Fatalln("Multiple cluster name provided.")
+			}
+			clusterName = args[0]
 
 			restConfig, err := searchLocalKubeConfig(clusterName)
 			if err != nil || restConfig == nil {
@@ -66,7 +74,6 @@ func NewCmdBackup() *cobra.Command {
 			term.Successln(fmt.Sprintf("Cluster objects are stored in %s", filename))
 		},
 	}
-	cmd.Flags().StringVarP(&clusterName, "cluster", "k", "", "Name of cluster")
 	cmd.Flags().BoolVar(&sanitize, "sanitize", false, " Sanitize fields in YAML")
 	cmd.Flags().StringVar(&backupDir, "backup-dir", "", "Directory where yaml files will be saved")
 	return cmd

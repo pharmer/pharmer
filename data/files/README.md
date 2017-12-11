@@ -1,19 +1,7 @@
-[![CLA assistant](https://cla-assistant.io/readme/badge/appscode/data)](https://cla-assistant.io/appscode/data)
-
-[Website](https://appscode.com) • [Slack](https://slack.appscode.com) • [Forum](https://discuss.appscode.com) • [Twitter](https://twitter.com/AppsCodeHQ)
-
-Static data files used by AppsCode.
-
-## Installing
-Using AppsCode data files is easy. First, use `go get` to install the latest version of the library.
-
-    > go get -v github.com/appscode/data
-
-Next, include AppsCode data library in your application:
-
-```go
-import "github.com/appcode/data"
-```
+[Static data files](https://github.com/pharmer/pharmer/tree/master/data/files) used by Pharmer.
 
 ## License
-`data` is licensed under the Apache 2.0 license. See the LICENSE file for details.
+`pharmer-data` is licensed under the Apache 2.0 license. See the LICENSE file for details.
+
+## Support
+If you have any questions, [file an issue](https://github.com/pharmer/pharmer/issues/new) or talk to us on the [Kubernetes Slack team](http://slack.kubernetes.io/) channel `#pharmer`.
