@@ -3,6 +3,7 @@ package xorm
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/go-xorm/xorm"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
@@ -71,6 +72,7 @@ func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 		return nil, fmt.Errorf("cluster `%s` already exists", obj.Name)
 	}
 
+	obj.CreationTimestamp = metav1.Time{Time: time.Now()}
 	cluster, err := encodeCluster(obj)
 	if err != nil {
 		return nil, err

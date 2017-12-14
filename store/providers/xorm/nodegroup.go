@@ -3,6 +3,7 @@ package xorm
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/go-xorm/xorm"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
@@ -77,6 +78,7 @@ func (s *nodeGroupXormStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) 
 		return nil, fmt.Errorf("node group `%s` already exists", obj.Name)
 	}
 
+	obj.CreationTimestamp = metav1.Time{Time: time.Now()}
 	nodeGroup, err := encodeNodeGroup(obj)
 	if err != nil {
 		return nil, err
