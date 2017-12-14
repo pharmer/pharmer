@@ -14,6 +14,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
+	"github.com/pharmer/pharmer/credential/cmds/options"
 	"github.com/pharmer/pharmer/utils"
 	"github.com/pharmer/pharmer/utils/editor"
 	"github.com/pharmer/pharmer/utils/printer"
@@ -24,6 +25,7 @@ import (
 )
 
 func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
+	credConfig := options.NewCredentialEditConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCredential,
 		Aliases: []string{
@@ -34,6 +36,9 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 		Example:           `pharmer edit credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
+			if err := credConfig.ValidateCredentialEditFlags(cmd, args); err != nil {
+				term.Fatalln(err)
+			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
 			if err != nil {
@@ -41,26 +46,22 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := runUpdateCredential(ctx, cmd, out, outErr, args); err != nil {
+			if err := RunUpdateCredential(ctx, credConfig, out, outErr, args); err != nil {
 				term.Fatalln(err)
 			}
 		},
 	}
 
-	cmd.Flags().StringP("file", "f", "", "Load credential data from file")
-	cmd.Flags().BoolP("do-not-delete", "", false, "Set do not delete flag")
-	cmd.Flags().StringP("output", "o", "yaml", "Output format. One of: yaml|json.")
+	credConfig.AddCredentialEditFlags(cmd.Flags())
 	return cmd
 }
 
-func runUpdateCredential(ctx context.Context, cmd *cobra.Command, out, errOut io.Writer, args []string) error {
+func RunUpdateCredential(ctx context.Context, opt *options.CredentialEditConfig, out, errOut io.Writer, args []string) error {
 
 	// If file is provided
-	if cmd.Flags().Changed("file") {
-		fileName, err := cmd.Flags().GetString("file")
-		if err != nil {
-			return err
-		}
+	if opt.File != "" {
+		fileName := opt.File
+
 		var local *api.Credential
 		if err := cloud.ReadFileAs(fileName, &local); err != nil {
 			return err
@@ -84,12 +85,6 @@ func runUpdateCredential(ctx context.Context, cmd *cobra.Command, out, errOut io
 		return nil
 	}
 
-	if len(args) == 0 {
-		return errors.New("Missing credential name")
-	}
-	if len(args) > 1 {
-		return errors.New("Multiple credential name provided.")
-	}
 	credential := args[0]
 
 	original, err := cloud.Store(ctx).Credentials().Get(credential)
@@ -98,7 +93,7 @@ func runUpdateCredential(ctx context.Context, cmd *cobra.Command, out, errOut io
 	}
 
 	// Check if flags are provided to update
-	if utils.CheckAlterableFlags(cmd, "do-not-delete") {
+	if opt.DoNotDelete {
 		updated, err := cloud.Store(ctx).Credentials().Get(credential)
 		if err != nil {
 			return err
@@ -113,12 +108,12 @@ func runUpdateCredential(ctx context.Context, cmd *cobra.Command, out, errOut io
 		return nil
 	}
 
-	return editCredential(ctx, cmd, original, errOut)
+	return editCredential(ctx, opt, original, errOut)
 }
 
-func editCredential(ctx context.Context, cmd *cobra.Command, original *api.Credential, errOut io.Writer) error {
+func editCredential(ctx context.Context, opt *options.CredentialEditConfig, original *api.Credential, errOut io.Writer) error {
 
-	o, err := printer.NewEditPrinter(cmd)
+	o, err := printer.NewEditPrinter(opt.Output)
 	if err != nil {
 		return err
 	}

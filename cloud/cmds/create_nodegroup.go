@@ -2,21 +2,17 @@ package cmds
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/appscode/go/flags"
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
 )
 
 func NewCmdCreateNodeGroup() *cobra.Command {
-	var nodeType string
-	var spotPriceMax float64
-	nodes := map[string]int{}
-
+	ngConfig := options.NewNodeGroupCreateConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameNodeGroup,
 		Aliases: []string{
@@ -28,18 +24,9 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 		Example:           "pharmer create nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			ensureFlags := []string{"cluster", "nodes"}
-			if api.NodeType(nodeType) == api.NodeTypeSpot {
-				ensureFlags = append(ensureFlags, "spot-price-max")
-			}
-			flags.EnsureRequiredFlags(cmd, ensureFlags...)
-
-			switch api.NodeType(nodeType) {
-			case api.NodeTypeSpot, api.NodeTypeRegular:
-				break
-			default:
-				term.Fatalln(fmt.Sprintf("flag [type] must be %v or %v", api.NodeTypeRegular, api.NodeTypeSpot))
-
+			err := ngConfig.ValidateNodeGroupCreateFlags(cmd, args)
+			if err != nil {
+				term.Fatalln(err)
 			}
 
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -48,18 +35,13 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			clusterName, _ := cmd.Flags().GetString("cluster")
-			cluster, err := cloud.Get(ctx, clusterName)
+			cluster, err := cloud.Get(ctx, ngConfig.ClusterName)
 			term.ExitOnError(err)
-			CreateNodeGroups(ctx, cluster, nodes, api.NodeType(nodeType), spotPriceMax)
+			CreateNodeGroups(ctx, cluster, ngConfig.Nodes, api.NodeType(ngConfig.NodeType), ngConfig.SpotPriceMax)
 
 		},
 	}
-
-	cmd.Flags().StringP("cluster", "k", "", "Name of the Kubernetes cluster")
-	cmd.Flags().StringVar(&nodeType, "type", string(api.NodeTypeRegular), "Set node type regular/spot, default regular")
-	cmd.Flags().Float64Var(&spotPriceMax, "spot-price-max", float64(0), "Maximum price of spot instance")
-	cmd.Flags().StringToIntVar(&nodes, "nodes", map[string]int{}, "Node set configuration")
+	ngConfig.AddNodeGroupCreateFlags(cmd.Flags())
 
 	return cmd
 }

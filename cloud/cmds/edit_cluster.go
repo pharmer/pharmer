@@ -13,6 +13,7 @@ import (
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/utils"
 	"github.com/pharmer/pharmer/utils/editor"
@@ -24,6 +25,7 @@ import (
 )
 
 func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
+	clusterConfig := options.NewClusterEditConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCluster,
 		Aliases: []string{
@@ -34,6 +36,9 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 		Example:           `pharmer edit cluster`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
+			if err := clusterConfig.ValidateClusterEditFlags(cmd, args); err != nil {
+				term.Fatalln(err)
+			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
 			if err != nil {
@@ -41,33 +46,21 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := runUpdateCluster(ctx, cmd, out, outErr, args); err != nil {
+			if err := runUpdateCluster(ctx, clusterConfig, out, outErr); err != nil {
 				term.Fatalln(err)
 			}
 		},
 	}
+	clusterConfig.AddClusterEditFlags(cmd.Flags())
 
-	cmd.Flags().StringP("file", "f", "", "Load cluster data from file")
-	//TODO: Add necessary flags that will be used for update
-	cmd.Flags().String("kubernetes-version", "", "Kubernetes version")
-	cmd.Flags().String("kubelet-version", "", "kubelet/kubectl version")
-	cmd.Flags().String("kubeadm-version", "", "Kubeadm version")
-	cmd.Flags().Bool("locked", false, "If true, locks cluster from deletion")
-	cmd.Flags().StringP("output", "o", "yaml", "Output format. One of: yaml|json.")
 	return cmd
 }
 
-func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Writer, args []string) error {
+func runUpdateCluster(ctx context.Context, conf *options.ClusterEditConfig, out, errOut io.Writer) error {
 	// If file is provided
-	if cmd.Flags().Changed("file") {
-		if len(args) != 0 {
-			return errors.New("no argument can be provided when --file flag is used")
-		}
+	if conf.File != "" {
+		fileName := conf.File
 
-		fileName, err := cmd.Flags().GetString("file")
-		if err != nil {
-			return err
-		}
 		var local *api.Cluster
 		if err := cloud.ReadFileAs(fileName, &local); err != nil {
 			return err
@@ -91,57 +84,45 @@ func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Wr
 		return nil
 	}
 
-	if len(args) == 0 {
-		return errors.New("missing cluster name")
-	}
-	if len(args) > 1 {
-		return errors.New("multiple cluster name provided")
-	}
-	clusterName := args[0]
-
-	original, err := cloud.Store(ctx).Clusters().Get(clusterName)
+	original, err := cloud.Store(ctx).Clusters().Get(conf.ClusterName)
 	if err != nil {
 		return err
 	}
 
 	// Check if flags are provided to update
 	// TODO: Provide list of flag names. If any of them is provided, update
-	if utils.CheckAlterableFlags(cmd, "locked", "kubernetes-version", "kubelet-version", "kubeadm-version") {
-		updated, err := cloud.Store(ctx).Clusters().Get(clusterName)
+	if conf.CheckForUpdateFlags() {
+		updated, err := cloud.Store(ctx).Clusters().Get(conf.ClusterName)
 		if err != nil {
 			return err
 		}
 
 		//TODO: Check provided flags, and set value
-		if cmd.Flags().Changed("locked") {
-			locked, err := cmd.Flags().GetBool("locked")
-			if err != nil {
-				return err
-			}
-			updated.Spec.Locked = locked
+		if conf.Locked {
+			updated.Spec.Locked = conf.Locked
 		}
-		if cmd.Flags().Changed("kubernetes-version") {
-			updated.Spec.KubernetesVersion, _ = cmd.Flags().GetString("kubernetes-version")
-			if cmd.Flags().Changed("kubelet-version") {
-				updated.Spec.KubeletVersion, _ = cmd.Flags().GetString("kubelet-version")
+		if conf.KubernetesVersion != "" {
+			updated.Spec.KubernetesVersion = conf.KubernetesVersion
+			if conf.KubeletVersion != "" {
+				updated.Spec.KubeletVersion = conf.KubeletVersion
 			} else if original.Spec.KubernetesVersion != updated.Spec.KubernetesVersion {
 				// User changed kubernetes version but did not provide kubelet version.
 				// So, kubelet version is cleared so that the latest version can be picked.
 				updated.Spec.KubeletVersion = ""
 			}
-			if cmd.Flags().Changed("kubeadm-version") {
-				updated.Spec.KubeadmVersion, _ = cmd.Flags().GetString("kubeadm-version")
+			if conf.KubeadmVersion != "" {
+				updated.Spec.KubeadmVersion = conf.KubeadmVersion
 			} else if original.Spec.KubernetesVersion != updated.Spec.KubernetesVersion {
 				// User changed kubernetes version but did not provide kubeadm version.
 				// So, kubeadm version is cleared so that the latest version can be picked.
 				updated.Spec.KubeadmVersion = ""
 			}
 		} else {
-			if cmd.Flags().Changed("kubelet-version") {
-				updated.Spec.KubeletVersion, _ = cmd.Flags().GetString("kubelet-version")
+			if conf.KubeletVersion != "" {
+				updated.Spec.KubeletVersion = conf.KubeletVersion
 			}
-			if cmd.Flags().Changed("kubeadm-version") {
-				updated.Spec.KubeadmVersion, _ = cmd.Flags().GetString("kubeadm-version")
+			if conf.KubeadmVersion != "" {
+				updated.Spec.KubeadmVersion = conf.KubeadmVersion
 			}
 		}
 
@@ -152,11 +133,11 @@ func runUpdateCluster(ctx context.Context, cmd *cobra.Command, out, errOut io.Wr
 		return nil
 	}
 
-	return editCluster(ctx, cmd, original, errOut)
+	return editCluster(ctx, conf, original, errOut)
 }
 
-func editCluster(ctx context.Context, cmd *cobra.Command, original *api.Cluster, errOut io.Writer) error {
-	o, err := printer.NewEditPrinter(cmd)
+func editCluster(ctx context.Context, conf *options.ClusterEditConfig, original *api.Cluster, errOut io.Writer) error {
+	o, err := printer.NewEditPrinter(conf.Output)
 	if err != nil {
 		return err
 	}

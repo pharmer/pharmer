@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/appscode/go/flags"
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
@@ -16,11 +16,7 @@ import (
 )
 
 func NewCmdSSH() *cobra.Command {
-	var (
-		clusterName string
-		nodeName    string
-	)
-
+	nodeConfig := options.NewNodeSSHConfig()
 	cmd := &cobra.Command{
 		Use:               "node",
 		Short:             "SSH into a Kubernetes cluster instance",
@@ -28,16 +24,9 @@ func NewCmdSSH() *cobra.Command {
 		Example:           `pharmer ssh node -k cluster-name node-name`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			flags.EnsureRequiredFlags(cmd, "cluster")
-
-			if len(args) == 0 {
-				term.Fatalln("Missing node name.")
+			if err := nodeConfig.ValidateNodeSSHFlags(cmd, args); err != nil {
+				term.Fatalln(err)
 			}
-			if len(args) > 1 {
-				term.Fatalln("Multiple node name provided.")
-			}
-			nodeName = args[0]
-
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
 			if err != nil {
@@ -45,18 +34,18 @@ func NewCmdSSH() *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			cluster, err := cloud.Store(ctx).Clusters().Get(clusterName)
+			cluster, err := cloud.Store(ctx).Clusters().Get(nodeConfig.ClusterName)
 			if err != nil {
 				term.Fatalln(err)
 			}
-			sshConfig, err := cloud.GetSSHConfig(ctx, cluster, nodeName)
+			sshConfig, err := cloud.GetSSHConfig(ctx, cluster, nodeConfig.NodeName)
 			if err != nil {
 				log.Fatalln(err)
 			}
 			openShell(sshConfig.PrivateKey, sshConfig.HostIP, sshConfig.HostPort, sshConfig.User)
 		},
 	}
-	cmd.Flags().StringVarP(&clusterName, "cluster", "k", "", "Name of cluster")
+	nodeConfig.AddNodeSSHFlags(cmd.Flags())
 
 	return cmd
 }

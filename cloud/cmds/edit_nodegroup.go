@@ -9,11 +9,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/appscode/go/flags"
 	"github.com/appscode/go/term"
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/utils"
 	"github.com/pharmer/pharmer/utils/editor"
@@ -25,6 +25,7 @@ import (
 )
 
 func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
+	ngConfig := options.NewNodeGroupEditConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameNodeGroup,
 		Aliases: []string{
@@ -35,8 +36,9 @@ func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
 		Example:           `pharmer edit nodegroup`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			flags.EnsureRequiredFlags(cmd, "cluster")
-
+			if err := ngConfig.ValidateNodeGroupEditFlags(cmd, args); err != nil {
+				term.Fatalln(err)
+			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
 			if err != nil {
@@ -44,31 +46,22 @@ func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := runUpdateNodeGroup(ctx, cmd, out, outErr, args); err != nil {
+			if err := RunUpdateNodeGroup(ctx, ngConfig, out, outErr); err != nil {
 				term.Fatalln(err)
 			}
 		},
 	}
+	ngConfig.AddNodeGroupEditFlags(cmd.Flags())
 
-	cmd.Flags().StringP("cluster", "k", "", "Name of the Kubernetes cluster")
-	cmd.Flags().StringP("file", "f", "", "Load nodegroup data from file")
-	cmd.Flags().BoolP("do-not-delete", "", false, "Set do not delete flag")
-	cmd.Flags().StringP("output", "o", "yaml", "Output format. One of: yaml|json.")
 	return cmd
 }
 
-func runUpdateNodeGroup(ctx context.Context, cmd *cobra.Command, out, errOut io.Writer, args []string) error {
-	clusterName, err := cmd.Flags().GetString("cluster")
-	if err != nil {
-		return err
-	}
-
+func RunUpdateNodeGroup(ctx context.Context, conf *options.NodeGroupEditConfig, out, errOut io.Writer) error {
+	clusterName := conf.ClusterName
 	// If file is provided
-	if cmd.Flags().Changed("file") {
-		fileName, err := cmd.Flags().GetString("file")
-		if err != nil {
-			return err
-		}
+	if conf.File != "" {
+		fileName := conf.File
+
 		var local *api.NodeGroup
 		if err := cloud.ReadFileAs(fileName, &local); err != nil {
 			return err
@@ -92,22 +85,14 @@ func runUpdateNodeGroup(ctx context.Context, cmd *cobra.Command, out, errOut io.
 		return nil
 	}
 
-	if len(args) == 0 {
-		return errors.New("Missing nodegroup name")
-	}
-	if len(args) > 1 {
-		return errors.New("Multiple nodegroup name provided.")
-	}
-	nodegroup := args[0]
-
-	original, err := cloud.Store(ctx).NodeGroups(clusterName).Get(nodegroup)
+	original, err := cloud.Store(ctx).NodeGroups(clusterName).Get(conf.NgName)
 	if err != nil {
 		return err
 	}
 
 	// Check if flags are provided to update
-	if utils.CheckAlterableFlags(cmd, "do-not-delete") {
-		updated, err := cloud.Store(ctx).NodeGroups(clusterName).Get(nodegroup)
+	if conf.DoNotDelete {
+		updated, err := cloud.Store(ctx).NodeGroups(clusterName).Get(conf.NgName)
 		if err != nil {
 			return err
 		}
@@ -119,12 +104,12 @@ func runUpdateNodeGroup(ctx context.Context, cmd *cobra.Command, out, errOut io.
 		return nil
 	}
 
-	return editNodeGroup(ctx, cmd, original, clusterName, errOut)
+	return editNodeGroup(ctx, conf, original, errOut)
 }
 
-func editNodeGroup(ctx context.Context, cmd *cobra.Command, original *api.NodeGroup, clusterName string, errOut io.Writer) error {
+func editNodeGroup(ctx context.Context, conf *options.NodeGroupEditConfig, original *api.NodeGroup, errOut io.Writer) error {
 
-	o, err := printer.NewEditPrinter(cmd)
+	o, err := printer.NewEditPrinter(conf.Output)
 	if err != nil {
 		return err
 	}
@@ -194,7 +179,7 @@ func editNodeGroup(ctx context.Context, cmd *cobra.Command, original *api.NodeGr
 
 			containsError = false
 
-			if err := UpdateNodeGroup(ctx, original, updated, clusterName); err != nil {
+			if err := UpdateNodeGroup(ctx, original, updated, conf.ClusterName); err != nil {
 				return err
 			}
 
