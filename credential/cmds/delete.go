@@ -5,11 +5,13 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
+	"github.com/pharmer/pharmer/credential/cmds/options"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 )
 
 func NewCmdDeleteCredential() *cobra.Command {
+	opts := options.NewCredentialDeleteConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCredential,
 		Aliases: []string{
@@ -21,8 +23,8 @@ func NewCmdDeleteCredential() *cobra.Command {
 		Example:           `pharmer delete credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				term.Fatalln("Missing Credential name.")
+			if err := opts.ValidateFlags(cmd, args); err != nil {
+				term.Fatalln(err)
 			}
 
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -31,12 +33,13 @@ func NewCmdDeleteCredential() *cobra.Command {
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			for _, arg := range args {
-				err := cloud.Store(ctx).Credentials().Delete(arg)
+			for _, cred := range opts.Credentials {
+				err := cloud.Store(ctx).Credentials().Delete(cred)
 				term.ExitOnError(err)
 			}
 		},
 	}
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

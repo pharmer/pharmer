@@ -8,6 +8,7 @@ import (
 	"time"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pharmer/pharmer/cloud/cmds/options"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"
@@ -121,7 +122,7 @@ func Delete(ctx context.Context, name string) (*api.Cluster, error) {
 	return Store(ctx).Clusters().Update(cluster)
 }
 
-func DeleteNG(ctx context.Context, nodeGroupName, clusterName string) error {
+func DeleteNG(ctx context.Context, clusterName, nodeGroupName string) error {
 	if clusterName == "" {
 		return errors.New("missing cluster name")
 	}
@@ -147,7 +148,7 @@ func DeleteNG(ctx context.Context, nodeGroupName, clusterName string) error {
 	return nil
 }
 
-func GetSSHConfig(ctx context.Context, cluster *api.Cluster, nodeName string) (*api.SSHConfig, error) {
+func GetSSHConfig(ctx context.Context, nodeName string, cluster *api.Cluster) (*api.SSHConfig, error) {
 	var err error
 	ctx, err = LoadCACertificates(ctx, cluster)
 	if err != nil {
@@ -227,14 +228,14 @@ func GetAdminConfig(ctx context.Context, cluster *api.Cluster) (*clientcmd.Confi
 	return &cfg, nil
 }
 
-func Apply(ctx context.Context, name string, dryRun bool) ([]api.Action, error) {
-	if name == "" {
+func Apply(ctx context.Context, opts *options.ApplyConfig) ([]api.Action, error) {
+	if opts.ClusterName == "" {
 		return nil, errors.New("missing cluster name")
 	}
 
-	cluster, err := Store(ctx).Clusters().Get(name)
+	cluster, err := Store(ctx).Clusters().Get(opts.ClusterName)
 	if err != nil {
-		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
+		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", opts.ClusterName, err)
 	}
 
 	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
@@ -242,7 +243,7 @@ func Apply(ctx context.Context, name string, dryRun bool) ([]api.Action, error) 
 		return nil, err
 	}
 
-	return cm.Apply(cluster, dryRun)
+	return cm.Apply(cluster, opts.DryRun)
 }
 
 func CheckForUpdates(ctx context.Context, name string) (string, error) {

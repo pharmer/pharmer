@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/appscode/go/flags"
 	"github.com/appscode/go/term"
 	"github.com/appscode/kutil/tools/backup"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/rest"
@@ -19,27 +19,16 @@ type ItemList struct {
 }
 
 func NewCmdBackup() *cobra.Command {
-	var (
-		clusterName string
-		backupDir   string
-		sanitize    bool
-	)
+	opts := options.NewClusterBackupConfig()
 	cmd := &cobra.Command{
 		Use:               "cluster",
 		Short:             "Backup cluster objects",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			flags.EnsureRequiredFlags(cmd, "backup-dir")
-
-			if len(args) == 0 {
-				term.Fatalln("Missing cluster name.")
+			if err := opts.ValidateFlags(cmd, args); err != nil {
+				term.Fatalln(err)
 			}
-			if len(args) > 1 {
-				term.Fatalln("Multiple cluster name provided.")
-			}
-			clusterName = args[0]
-
-			restConfig, err := searchLocalKubeConfig(clusterName)
+			restConfig, err := searchLocalKubeConfig(opts.ClusterName)
 			if err != nil || restConfig == nil {
 				cfgFile, _ := config.GetConfigFile(cmd.Flags())
 				cfg, err := config.LoadConfig(cfgFile)
@@ -48,7 +37,7 @@ func NewCmdBackup() *cobra.Command {
 				}
 				ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-				cluster, err := cloud.Store(ctx).Clusters().Get(clusterName)
+				cluster, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
 				if err != nil {
 					term.Fatalln(err)
 				}
@@ -66,16 +55,15 @@ func NewCmdBackup() *cobra.Command {
 				}
 			}
 
-			mgr := backup.NewBackupManager(clusterName, restConfig, sanitize)
-			filename, err := mgr.BackupToTar(backupDir)
+			mgr := backup.NewBackupManager(opts.ClusterName, restConfig, opts.Sanitize)
+			filename, err := mgr.BackupToTar(opts.BackupDir)
 			if err != nil {
 				term.Fatalln(err)
 			}
 			term.Successln(fmt.Sprintf("Cluster objects are stored in %s", filename))
 		},
 	}
-	cmd.Flags().BoolVar(&sanitize, "sanitize", false, " Sanitize fields in YAML")
-	cmd.Flags().StringVar(&backupDir, "backup-dir", "", "Directory where yaml files will be saved")
+	opts.AddFlags(cmd.Flags())
 	return cmd
 }
 

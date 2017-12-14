@@ -58,7 +58,7 @@ func (i *Inspector) runNodeExecutor(podName, podIp, namespace, containerName str
 }
 
 func (i *Inspector) runMasterExecutor(masterNode apiv1.Node, podIp string) error {
-	sshCfg, err := GetSSHConfig(i.ctx, i.cluster, masterNode.Name)
+	sshCfg, err := GetSSHConfig(i.ctx, masterNode.Name, i.cluster)
 	if err != nil {
 		return err
 	}

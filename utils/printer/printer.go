@@ -4,19 +4,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"k8s.io/kubernetes/pkg/printers"
 )
 
 // ref: k8s.io/kubernetes/pkg/kubectl/resource_printer.go
 
-func NewPrinter(cmd *cobra.Command) (printers.ResourcePrinter, error) {
-	f := cmd.Flags().Lookup("output")
+func NewPrinter(format string) (printers.ResourcePrinter, error) {
 	humanReadablePrinter := NewHumanReadablePrinter(PrintOptions{
-		Wide: f != nil && f.Value != nil && f.Value.String() == "wide",
+		Wide: format == "wide",
 	})
-
-	format, _ := cmd.Flags().GetString("output")
 
 	switch format {
 	case "json":
@@ -38,8 +34,8 @@ type editPrinterOptions struct {
 	AddHeader bool
 }
 
-func NewEditPrinter(cmd *cobra.Command) (*editPrinterOptions, error) {
-	switch format, _ := cmd.Flags().GetString("output"); format {
+func NewEditPrinter(format string) (*editPrinterOptions, error) {
+	switch format {
 	case "json":
 		return &editPrinterOptions{
 			Printer:   &printers.JSONPrinter{},

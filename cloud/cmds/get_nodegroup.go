@@ -7,6 +7,7 @@ import (
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/utils/printer"
 	"github.com/spf13/cobra"
@@ -14,6 +15,7 @@ import (
 )
 
 func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
+	opts := options.NewNodeGroupGetConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameNodeGroup,
 		Aliases: []string{
@@ -25,24 +27,26 @@ func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
 		Example:           "pharmer get nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
+				term.Fatalln(err)
+			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
 			term.ExitOnError(err)
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			RunGetNodeGroup(ctx, cmd, out, args)
+			RunGetNodeGroup(ctx, opts, out)
 
 		},
 	}
+	opts.AddFlags(cmd.Flags())
 
-	cmd.Flags().StringP("cluster", "k", "", "Name of the Kubernetes cluster")
-	cmd.Flags().StringP("output", "o", "", "Output format. One of: json|yaml|wide")
 	return cmd
 }
 
-func RunGetNodeGroup(ctx context.Context, cmd *cobra.Command, out io.Writer, args []string) error {
+func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out io.Writer) error {
 
-	rPrinter, err := printer.NewPrinter(cmd)
+	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
 		return err
 	}
@@ -50,7 +54,7 @@ func RunGetNodeGroup(ctx context.Context, cmd *cobra.Command, out io.Writer, arg
 	w := printer.GetNewTabWriter(out)
 
 	clusterList := make([]string, 0)
-	clusterName, _ := cmd.Flags().GetString("cluster")
+	clusterName := opts.ClusterName
 
 	if clusterName != "" {
 		clusterList = append(clusterList, clusterName)
@@ -65,7 +69,7 @@ func RunGetNodeGroup(ctx context.Context, cmd *cobra.Command, out io.Writer, arg
 	}
 
 	for _, cluster := range clusterList {
-		nodegroups, err := getNodeGroupList(ctx, cluster, args...)
+		nodegroups, err := getNodeGroupList(ctx, cluster, opts.NodeGroups...)
 		if err != nil {
 			return err
 		}

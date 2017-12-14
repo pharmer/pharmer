@@ -7,6 +7,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
+	"github.com/pharmer/pharmer/credential/cmds/options"
 	"github.com/pharmer/pharmer/utils/printer"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
@@ -14,6 +15,7 @@ import (
 )
 
 func NewCmdGetCredential(out io.Writer) *cobra.Command {
+	opts := options.NewCredentialGetConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCredential,
 		Aliases: []string{
@@ -25,28 +27,32 @@ func NewCmdGetCredential(out io.Writer) *cobra.Command {
 		Example:           `pharmer get credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
+				term.Fatalln(err)
+			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
 			term.ExitOnError(err)
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			RunGetCredential(ctx, cmd, out, args)
+			RunGetCredential(ctx, opts, out)
 		},
 	}
-	cmd.Flags().StringP("output", "o", "", "Output format. One of: json|yaml|wide")
+	opts.AddFlags(cmd.Flags())
+
 	return cmd
 }
 
-func RunGetCredential(ctx context.Context, cmd *cobra.Command, out io.Writer, args []string) error {
+func RunGetCredential(ctx context.Context, opts *options.CredentialGetConfig, out io.Writer) error {
 
-	rPrinter, err := printer.NewPrinter(cmd)
+	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
 		return err
 	}
 
 	w := printer.GetNewTabWriter(out)
 
-	credentials, err := getCredentialList(ctx, args)
+	credentials, err := getCredentialList(ctx, opts.Credentials)
 	if err != nil {
 		return err
 	}

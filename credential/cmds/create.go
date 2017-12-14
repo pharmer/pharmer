@@ -11,6 +11,7 @@ import (
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential"
 	cc "github.com/pharmer/pharmer/credential/cloud"
+	"github.com/pharmer/pharmer/credential/cmds/options"
 	"github.com/pharmer/pharmer/data/files"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -20,6 +21,7 @@ import (
 )
 
 func NewCmdCreateCredential() *cobra.Command {
+	opts := options.NewCredentialCreateConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCredential,
 		Aliases: []string{
@@ -31,11 +33,8 @@ func NewCmdCreateCredential() *cobra.Command {
 		Example:           `pharmer create credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				term.Fatalln("Missing credential name.")
-			}
-			if len(args) > 1 {
-				term.Fatalln("Multiple credential name provided.")
+			if err := opts.ValidateFlags(cmd, args); err != nil {
+				term.Fatalln(err)
 			}
 
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -45,23 +44,19 @@ func NewCmdCreateCredential() *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := runCreateCredential(ctx, cmd, args); err != nil {
+			if err := runCreateCredential(ctx, opts); err != nil {
 				term.Fatalln(err)
 			}
 		},
 	}
-
-	cmd.Flags().StringP("provider", "p", "", "Name of the Cloud provider")
-	cmd.Flags().BoolP("from-env", "l", false, "Load credential data from ENV.")
-	cmd.Flags().StringP("from-file", "f", "", "Load credential data from file")
-	cmd.Flags().Bool("issue", false, "Issue credential")
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }
 
-func runCreateCredential(ctx context.Context, cmd *cobra.Command, args []string) error {
+func runCreateCredential(ctx context.Context, opts *options.CredentialCreateConfig) error {
 	// Get Cloud provider
-	provider, _ := cmd.Flags().GetString("provider")
+	provider := opts.Provider
 	if provider == "" {
 		options := files.CredentialProviders().List()
 		prompt := &survey.Select{
@@ -76,12 +71,12 @@ func runCreateCredential(ctx context.Context, cmd *cobra.Command, args []string)
 		}
 	}
 
-	issue, _ := cmd.Flags().GetBool("issue")
+	issue := opts.Issue
 	if issue {
 		if provider == "GoogleCloud" {
-			cc.IssueGCECredential(args[0])
+			cc.IssueGCECredential(opts.Name)
 		} else if strings.ToLower(provider) == "azure" {
-			cred, err := cc.IssueAzureCredential(args[0])
+			cred, err := cc.IssueAzureCredential(opts.Name)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -97,7 +92,7 @@ func runCreateCredential(ctx context.Context, cmd *cobra.Command, args []string)
 
 	cred := &api.Credential{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:              args[0],
+			Name:              opts.Name,
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
 		Spec: api.CredentialSpec{
@@ -109,10 +104,10 @@ func runCreateCredential(ctx context.Context, cmd *cobra.Command, args []string)
 	var err error
 	var commonSpec credential.CommonSpec
 
-	if fromEnv, _ := cmd.Flags().GetBool("from-env"); fromEnv {
+	if opts.FromEnv {
 		commonSpec.LoadFromEnv()
-	} else if fromFile, _ := cmd.Flags().GetString("from-file"); fromFile != "" {
-		if commonSpec, err = credential.LoadCredentialDataFromJson(provider, fromFile); err != nil {
+	} else if opts.FromFile != "" {
+		if commonSpec, err = credential.LoadCredentialDataFromJson(provider, opts.FromFile); err != nil {
 			return err
 		}
 	} else {

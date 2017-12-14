@@ -7,6 +7,7 @@ import (
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/utils/printer"
 	"github.com/spf13/cobra"
@@ -14,6 +15,7 @@ import (
 )
 
 func NewCmdGetCluster(out io.Writer) *cobra.Command {
+	opts := options.NewClusterGetConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCluster,
 		Aliases: []string{
@@ -24,29 +26,32 @@ func NewCmdGetCluster(out io.Writer) *cobra.Command {
 		Example:           "pharmer get cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
+				term.Fatalln(err)
+			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
 			term.ExitOnError(err)
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			RunGetCluster(ctx, cmd, out, args)
+			RunGetCluster(ctx, opts, out)
 		},
 	}
+	opts.AddFlags(cmd.Flags())
 
-	cmd.Flags().StringP("output", "o", "", "Output format. One of: json|yaml|wide")
 	return cmd
 }
 
-func RunGetCluster(ctx context.Context, cmd *cobra.Command, out io.Writer, args []string) error {
+func RunGetCluster(ctx context.Context, opts *options.ClusterGetConfig, out io.Writer) error {
 
-	rPrinter, err := printer.NewPrinter(cmd)
+	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
 		return err
 	}
 
 	w := printer.GetNewTabWriter(out)
 
-	clusters, err := getClusterList(ctx, args)
+	clusters, err := getClusterList(ctx, opts.Clusters)
 	if err != nil {
 		return err
 	}
@@ -63,9 +68,9 @@ func RunGetCluster(ctx context.Context, cmd *cobra.Command, out io.Writer, args 
 	return nil
 }
 
-func getClusterList(ctx context.Context, args []string) (clusterList []*api.Cluster, err error) {
-	if len(args) != 0 {
-		for _, arg := range args {
+func getClusterList(ctx context.Context, clusters []string) (clusterList []*api.Cluster, err error) {
+	if len(clusters) != 0 {
+		for _, arg := range clusters {
 			cluster, er2 := cloud.Store(ctx).Clusters().Get(arg)
 			if er2 != nil {
 				return nil, er2

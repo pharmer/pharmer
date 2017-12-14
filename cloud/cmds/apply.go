@@ -4,27 +4,23 @@ import (
 	"context"
 
 	"github.com/appscode/go/log"
+	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
 )
 
 func NewCmdApply() *cobra.Command {
-	var (
-		dryRun bool
-	)
+	opts := options.NewApplyConfig()
 	cmd := &cobra.Command{
 		Use:               "apply",
 		Short:             "Apply changes",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				log.Fatalln("Missing cluster name")
+			if err := opts.ValidateFlags(cmd, args); err != nil {
+				term.Fatalln(err)
 			}
-			if len(args) > 1 {
-				log.Fatalln("Multiple cluster name provided.")
-			}
-			name := args[0]
 
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
@@ -33,7 +29,7 @@ func NewCmdApply() *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			acts, err := cloud.Apply(ctx, name, dryRun)
+			acts, err := cloud.Apply(ctx, opts)
 			if err != nil {
 				log.Fatalln(err)
 			}
@@ -42,6 +38,6 @@ func NewCmdApply() *cobra.Command {
 			}
 		},
 	}
-	cmd.Flags().BoolVar(&dryRun, "dry-run", dryRun, "Dry run.")
+	opts.AddFlags(cmd.Flags())
 	return cmd
 }
