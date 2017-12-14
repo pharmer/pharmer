@@ -15,7 +15,7 @@ import (
 )
 
 func NewCmdGetCredential(out io.Writer) *cobra.Command {
-	credConfig := options.NewCredentialGetConfig()
+	opts := options.NewCredentialGetConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCredential,
 		Aliases: []string{
@@ -27,7 +27,7 @@ func NewCmdGetCredential(out io.Writer) *cobra.Command {
 		Example:           `pharmer get credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := credConfig.ValidateCredentialGetFlags(cmd, args); err != nil {
+			if err := opts.ValidateCredentialGetFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -35,24 +35,24 @@ func NewCmdGetCredential(out io.Writer) *cobra.Command {
 			term.ExitOnError(err)
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			RunGetCredential(ctx, credConfig, out)
+			RunGetCredential(ctx, opts, out)
 		},
 	}
-	credConfig.AddCredentialGetFlags(cmd.Flags())
+	opts.AddCredentialGetFlags(cmd.Flags())
 
 	return cmd
 }
 
-func RunGetCredential(ctx context.Context, opt *options.CredentialGetConfig, out io.Writer) error {
+func RunGetCredential(ctx context.Context, opts *options.CredentialGetConfig, out io.Writer) error {
 
-	rPrinter, err := printer.NewPrinter(opt.Output)
+	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
 		return err
 	}
 
 	w := printer.GetNewTabWriter(out)
 
-	credentials, err := getCredentialList(ctx, opt.Credentials)
+	credentials, err := getCredentialList(ctx, opts.Credentials)
 	if err != nil {
 		return err
 	}

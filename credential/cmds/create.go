@@ -21,7 +21,7 @@ import (
 )
 
 func NewCmdCreateCredential() *cobra.Command {
-	credConfig := options.NewCredentialCreateConfig()
+	opts := options.NewCredentialCreateConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCredential,
 		Aliases: []string{
@@ -33,7 +33,7 @@ func NewCmdCreateCredential() *cobra.Command {
 		Example:           `pharmer create credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := credConfig.ValidateCredentialCreateFlags(cmd, args); err != nil {
+			if err := opts.ValidateCredentialCreateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 
@@ -44,19 +44,19 @@ func NewCmdCreateCredential() *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := runCreateCredential(ctx, credConfig); err != nil {
+			if err := runCreateCredential(ctx, opts); err != nil {
 				term.Fatalln(err)
 			}
 		},
 	}
-	credConfig.AddCredentialCreateFlags(cmd.Flags())
+	opts.AddCredentialCreateFlags(cmd.Flags())
 
 	return cmd
 }
 
-func runCreateCredential(ctx context.Context, opt *options.CredentialCreateConfig) error {
+func runCreateCredential(ctx context.Context, opts *options.CredentialCreateConfig) error {
 	// Get Cloud provider
-	provider := opt.Provider
+	provider := opts.Provider
 	if provider == "" {
 		options := files.CredentialProviders().List()
 		prompt := &survey.Select{
@@ -71,12 +71,12 @@ func runCreateCredential(ctx context.Context, opt *options.CredentialCreateConfi
 		}
 	}
 
-	issue := opt.Issue
+	issue := opts.Issue
 	if issue {
 		if provider == "GoogleCloud" {
-			cc.IssueGCECredential(opt.Name)
+			cc.IssueGCECredential(opts.Name)
 		} else if strings.ToLower(provider) == "azure" {
-			cred, err := cc.IssueAzureCredential(opt.Name)
+			cred, err := cc.IssueAzureCredential(opts.Name)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -92,7 +92,7 @@ func runCreateCredential(ctx context.Context, opt *options.CredentialCreateConfi
 
 	cred := &api.Credential{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:              opt.Name,
+			Name:              opts.Name,
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
 		Spec: api.CredentialSpec{
@@ -104,10 +104,10 @@ func runCreateCredential(ctx context.Context, opt *options.CredentialCreateConfi
 	var err error
 	var commonSpec credential.CommonSpec
 
-	if opt.FromEnv {
+	if opts.FromEnv {
 		commonSpec.LoadFromEnv()
-	} else if opt.FromFile != "" {
-		if commonSpec, err = credential.LoadCredentialDataFromJson(provider, opt.FromFile); err != nil {
+	} else if opts.FromFile != "" {
+		if commonSpec, err = credential.LoadCredentialDataFromJson(provider, opts.FromFile); err != nil {
 			return err
 		}
 	} else {

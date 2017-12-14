@@ -25,7 +25,7 @@ import (
 )
 
 func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
-	credConfig := options.NewCredentialEditConfig()
+	opts := options.NewCredentialEditConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCredential,
 		Aliases: []string{
@@ -36,7 +36,7 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 		Example:           `pharmer edit credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := credConfig.ValidateCredentialEditFlags(cmd, args); err != nil {
+			if err := opts.ValidateCredentialEditFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -46,21 +46,21 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := RunUpdateCredential(ctx, credConfig, out, outErr, args); err != nil {
+			if err := RunUpdateCredential(ctx, opts, out, outErr, args); err != nil {
 				term.Fatalln(err)
 			}
 		},
 	}
 
-	credConfig.AddCredentialEditFlags(cmd.Flags())
+	opts.AddCredentialEditFlags(cmd.Flags())
 	return cmd
 }
 
-func RunUpdateCredential(ctx context.Context, opt *options.CredentialEditConfig, out, errOut io.Writer, args []string) error {
+func RunUpdateCredential(ctx context.Context, opts *options.CredentialEditConfig, out, errOut io.Writer, args []string) error {
 
 	// If file is provided
-	if opt.File != "" {
-		fileName := opt.File
+	if opts.File != "" {
+		fileName := opts.File
 
 		var local *api.Credential
 		if err := cloud.ReadFileAs(fileName, &local); err != nil {
@@ -93,7 +93,7 @@ func RunUpdateCredential(ctx context.Context, opt *options.CredentialEditConfig,
 	}
 
 	// Check if flags are provided to update
-	if opt.DoNotDelete {
+	if opts.DoNotDelete {
 		updated, err := cloud.Store(ctx).Credentials().Get(credential)
 		if err != nil {
 			return err
@@ -108,12 +108,12 @@ func RunUpdateCredential(ctx context.Context, opt *options.CredentialEditConfig,
 		return nil
 	}
 
-	return editCredential(ctx, opt, original, errOut)
+	return editCredential(ctx, opts, original, errOut)
 }
 
-func editCredential(ctx context.Context, opt *options.CredentialEditConfig, original *api.Credential, errOut io.Writer) error {
+func editCredential(ctx context.Context, opts *options.CredentialEditConfig, original *api.Credential, errOut io.Writer) error {
 
-	o, err := printer.NewEditPrinter(opt.Output)
+	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
 		return err
 	}

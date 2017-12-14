@@ -12,7 +12,7 @@ import (
 )
 
 func NewCmdDeleteNodeGroup() *cobra.Command {
-	ngConfig := options.NewNodeGroupDeleteConfig()
+	opts := options.NewNodeGroupDeleteConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameNodeGroup,
 		Aliases: []string{
@@ -24,7 +24,7 @@ func NewCmdDeleteNodeGroup() *cobra.Command {
 		Example:           "pharmer delete nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := ngConfig.ValidateNodeGroupDeleteFlags(cmd, args); err != nil {
+			if err := opts.ValidateNodeGroupDeleteFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -32,16 +32,16 @@ func NewCmdDeleteNodeGroup() *cobra.Command {
 			term.ExitOnError(err)
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			nodeGroups, err := getNodeGroupList(ctx, ngConfig.ClusterName, args...)
+			nodeGroups, err := getNodeGroupList(ctx, opts.ClusterName, args...)
 			term.ExitOnError(err)
 
 			for _, ng := range nodeGroups {
-				err := cloud.DeleteNG(ctx, ng.Name, ngConfig.ClusterName)
+				err := cloud.DeleteNG(ctx, ng.Name, opts.ClusterName)
 				term.ExitOnError(err)
 			}
 		},
 	}
-	ngConfig.AddNodeGroupDeleteFlags(cmd.Flags())
+	opts.AddNodeGroupDeleteFlags(cmd.Flags())
 
 	return cmd
 }

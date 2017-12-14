@@ -15,7 +15,7 @@ import (
 )
 
 func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
-	ngConfig := options.NewNodeGroupGetConfig()
+	opts := options.NewNodeGroupGetConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameNodeGroup,
 		Aliases: []string{
@@ -27,7 +27,7 @@ func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
 		Example:           "pharmer get nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := ngConfig.ValidateNodeGroupGetFlags(cmd, args); err != nil {
+			if err := opts.ValidateNodeGroupGetFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -35,18 +35,18 @@ func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
 			term.ExitOnError(err)
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			RunGetNodeGroup(ctx, ngConfig, out)
+			RunGetNodeGroup(ctx, opts, out)
 
 		},
 	}
-	ngConfig.AddNodeGroupGetFlags(cmd.Flags())
+	opts.AddNodeGroupGetFlags(cmd.Flags())
 
 	return cmd
 }
 
-func RunGetNodeGroup(ctx context.Context, conf *options.NodeGroupGetConfig, out io.Writer) error {
+func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out io.Writer) error {
 
-	rPrinter, err := printer.NewPrinter(conf.Output)
+	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func RunGetNodeGroup(ctx context.Context, conf *options.NodeGroupGetConfig, out 
 	w := printer.GetNewTabWriter(out)
 
 	clusterList := make([]string, 0)
-	clusterName := conf.ClusterName
+	clusterName := opts.ClusterName
 
 	if clusterName != "" {
 		clusterList = append(clusterList, clusterName)
@@ -69,7 +69,7 @@ func RunGetNodeGroup(ctx context.Context, conf *options.NodeGroupGetConfig, out 
 	}
 
 	for _, cluster := range clusterList {
-		nodegroups, err := getNodeGroupList(ctx, cluster, conf.NodeGroups...)
+		nodegroups, err := getNodeGroupList(ctx, cluster, opts.NodeGroups...)
 		if err != nil {
 			return err
 		}

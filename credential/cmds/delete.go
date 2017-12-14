@@ -11,7 +11,7 @@ import (
 )
 
 func NewCmdDeleteCredential() *cobra.Command {
-	credConfig := options.NewCredentialDeleteConfig()
+	opts := options.NewCredentialDeleteConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCredential,
 		Aliases: []string{
@@ -23,7 +23,7 @@ func NewCmdDeleteCredential() *cobra.Command {
 		Example:           `pharmer delete credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := credConfig.ValidateCredentialDeleteFlags(cmd, args); err != nil {
+			if err := opts.ValidateCredentialDeleteFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 
@@ -33,13 +33,13 @@ func NewCmdDeleteCredential() *cobra.Command {
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			for _, cred := range credConfig.Credentials {
+			for _, cred := range opts.Credentials {
 				err := cloud.Store(ctx).Credentials().Delete(cred)
 				term.ExitOnError(err)
 			}
 		},
 	}
-	credConfig.AddCredentialDeleteFlags(cmd.Flags())
+	opts.AddCredentialDeleteFlags(cmd.Flags())
 
 	return cmd
 }

@@ -25,7 +25,7 @@ import (
 )
 
 func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
-	ngConfig := options.NewNodeGroupEditConfig()
+	opts := options.NewNodeGroupEditConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameNodeGroup,
 		Aliases: []string{
@@ -36,7 +36,7 @@ func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
 		Example:           `pharmer edit nodegroup`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := ngConfig.ValidateNodeGroupEditFlags(cmd, args); err != nil {
+			if err := opts.ValidateNodeGroupEditFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -46,21 +46,21 @@ func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := RunUpdateNodeGroup(ctx, ngConfig, out, outErr); err != nil {
+			if err := RunUpdateNodeGroup(ctx, opts, out, outErr); err != nil {
 				term.Fatalln(err)
 			}
 		},
 	}
-	ngConfig.AddNodeGroupEditFlags(cmd.Flags())
+	opts.AddNodeGroupEditFlags(cmd.Flags())
 
 	return cmd
 }
 
-func RunUpdateNodeGroup(ctx context.Context, conf *options.NodeGroupEditConfig, out, errOut io.Writer) error {
-	clusterName := conf.ClusterName
+func RunUpdateNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, out, errOut io.Writer) error {
+	clusterName := opts.ClusterName
 	// If file is provided
-	if conf.File != "" {
-		fileName := conf.File
+	if opts.File != "" {
+		fileName := opts.File
 
 		var local *api.NodeGroup
 		if err := cloud.ReadFileAs(fileName, &local); err != nil {
@@ -85,14 +85,14 @@ func RunUpdateNodeGroup(ctx context.Context, conf *options.NodeGroupEditConfig, 
 		return nil
 	}
 
-	original, err := cloud.Store(ctx).NodeGroups(clusterName).Get(conf.NgName)
+	original, err := cloud.Store(ctx).NodeGroups(clusterName).Get(opts.NgName)
 	if err != nil {
 		return err
 	}
 
 	// Check if flags are provided to update
-	if conf.DoNotDelete {
-		updated, err := cloud.Store(ctx).NodeGroups(clusterName).Get(conf.NgName)
+	if opts.DoNotDelete {
+		updated, err := cloud.Store(ctx).NodeGroups(clusterName).Get(opts.NgName)
 		if err != nil {
 			return err
 		}
@@ -104,12 +104,12 @@ func RunUpdateNodeGroup(ctx context.Context, conf *options.NodeGroupEditConfig, 
 		return nil
 	}
 
-	return editNodeGroup(ctx, conf, original, errOut)
+	return editNodeGroup(ctx, opts, original, errOut)
 }
 
-func editNodeGroup(ctx context.Context, conf *options.NodeGroupEditConfig, original *api.NodeGroup, errOut io.Writer) error {
+func editNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, original *api.NodeGroup, errOut io.Writer) error {
 
-	o, err := printer.NewEditPrinter(conf.Output)
+	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
 		return err
 	}
@@ -179,7 +179,7 @@ func editNodeGroup(ctx context.Context, conf *options.NodeGroupEditConfig, origi
 
 			containsError = false
 
-			if err := UpdateNodeGroup(ctx, original, updated, conf.ClusterName); err != nil {
+			if err := UpdateNodeGroup(ctx, original, updated, opts.ClusterName); err != nil {
 				return err
 			}
 

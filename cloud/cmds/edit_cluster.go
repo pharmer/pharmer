@@ -25,7 +25,7 @@ import (
 )
 
 func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
-	clusterConfig := options.NewClusterEditConfig()
+	opts := options.NewClusterEditConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCluster,
 		Aliases: []string{
@@ -36,7 +36,7 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 		Example:           `pharmer edit cluster`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := clusterConfig.ValidateClusterEditFlags(cmd, args); err != nil {
+			if err := opts.ValidateClusterEditFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -46,20 +46,20 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := runUpdateCluster(ctx, clusterConfig, out, outErr); err != nil {
+			if err := runUpdateCluster(ctx, opts, out, outErr); err != nil {
 				term.Fatalln(err)
 			}
 		},
 	}
-	clusterConfig.AddClusterEditFlags(cmd.Flags())
+	opts.AddClusterEditFlags(cmd.Flags())
 
 	return cmd
 }
 
-func runUpdateCluster(ctx context.Context, conf *options.ClusterEditConfig, out, errOut io.Writer) error {
+func runUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out, errOut io.Writer) error {
 	// If file is provided
-	if conf.File != "" {
-		fileName := conf.File
+	if opts.File != "" {
+		fileName := opts.File
 
 		var local *api.Cluster
 		if err := cloud.ReadFileAs(fileName, &local); err != nil {
@@ -84,45 +84,45 @@ func runUpdateCluster(ctx context.Context, conf *options.ClusterEditConfig, out,
 		return nil
 	}
 
-	original, err := cloud.Store(ctx).Clusters().Get(conf.ClusterName)
+	original, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
 	if err != nil {
 		return err
 	}
 
 	// Check if flags are provided to update
 	// TODO: Provide list of flag names. If any of them is provided, update
-	if conf.CheckForUpdateFlags() {
-		updated, err := cloud.Store(ctx).Clusters().Get(conf.ClusterName)
+	if opts.CheckForUpdateFlags() {
+		updated, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
 		if err != nil {
 			return err
 		}
 
 		//TODO: Check provided flags, and set value
-		if conf.Locked {
-			updated.Spec.Locked = conf.Locked
+		if opts.Locked {
+			updated.Spec.Locked = opts.Locked
 		}
-		if conf.KubernetesVersion != "" {
-			updated.Spec.KubernetesVersion = conf.KubernetesVersion
-			if conf.KubeletVersion != "" {
-				updated.Spec.KubeletVersion = conf.KubeletVersion
+		if opts.KubernetesVersion != "" {
+			updated.Spec.KubernetesVersion = opts.KubernetesVersion
+			if opts.KubeletVersion != "" {
+				updated.Spec.KubeletVersion = opts.KubeletVersion
 			} else if original.Spec.KubernetesVersion != updated.Spec.KubernetesVersion {
 				// User changed kubernetes version but did not provide kubelet version.
 				// So, kubelet version is cleared so that the latest version can be picked.
 				updated.Spec.KubeletVersion = ""
 			}
-			if conf.KubeadmVersion != "" {
-				updated.Spec.KubeadmVersion = conf.KubeadmVersion
+			if opts.KubeadmVersion != "" {
+				updated.Spec.KubeadmVersion = opts.KubeadmVersion
 			} else if original.Spec.KubernetesVersion != updated.Spec.KubernetesVersion {
 				// User changed kubernetes version but did not provide kubeadm version.
 				// So, kubeadm version is cleared so that the latest version can be picked.
 				updated.Spec.KubeadmVersion = ""
 			}
 		} else {
-			if conf.KubeletVersion != "" {
-				updated.Spec.KubeletVersion = conf.KubeletVersion
+			if opts.KubeletVersion != "" {
+				updated.Spec.KubeletVersion = opts.KubeletVersion
 			}
-			if conf.KubeadmVersion != "" {
-				updated.Spec.KubeadmVersion = conf.KubeadmVersion
+			if opts.KubeadmVersion != "" {
+				updated.Spec.KubeadmVersion = opts.KubeadmVersion
 			}
 		}
 
@@ -133,11 +133,11 @@ func runUpdateCluster(ctx context.Context, conf *options.ClusterEditConfig, out,
 		return nil
 	}
 
-	return editCluster(ctx, conf, original, errOut)
+	return editCluster(ctx, opts, original, errOut)
 }
 
-func editCluster(ctx context.Context, conf *options.ClusterEditConfig, original *api.Cluster, errOut io.Writer) error {
-	o, err := printer.NewEditPrinter(conf.Output)
+func editCluster(ctx context.Context, opts *options.ClusterEditConfig, original *api.Cluster, errOut io.Writer) error {
+	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
 		return err
 	}

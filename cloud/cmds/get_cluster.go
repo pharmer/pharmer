@@ -15,7 +15,7 @@ import (
 )
 
 func NewCmdGetCluster(out io.Writer) *cobra.Command {
-	clusterConfig := options.NewClusterGetConfig()
+	opts := options.NewClusterGetConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCluster,
 		Aliases: []string{
@@ -26,7 +26,7 @@ func NewCmdGetCluster(out io.Writer) *cobra.Command {
 		Example:           "pharmer get cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := clusterConfig.ValidateClusterGetFlags(cmd, args); err != nil {
+			if err := opts.ValidateClusterGetFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -34,24 +34,24 @@ func NewCmdGetCluster(out io.Writer) *cobra.Command {
 			term.ExitOnError(err)
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			RunGetCluster(ctx, out, clusterConfig)
+			RunGetCluster(ctx, out, opts)
 		},
 	}
-	clusterConfig.AddClusterGetFlags(cmd.Flags())
+	opts.AddClusterGetFlags(cmd.Flags())
 
 	return cmd
 }
 
-func RunGetCluster(ctx context.Context, out io.Writer, conf *options.ClusterGetConfig) error {
+func RunGetCluster(ctx context.Context, out io.Writer, opts *options.ClusterGetConfig) error {
 
-	rPrinter, err := printer.NewPrinter(conf.Output)
+	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
 		return err
 	}
 
 	w := printer.GetNewTabWriter(out)
 
-	clusters, err := getClusterList(ctx, conf.Clusters)
+	clusters, err := getClusterList(ctx, opts.Clusters)
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,7 @@ import (
 )
 
 func NewCmdDeleteCluster() *cobra.Command {
-	clusterConfig := options.NewClusterDeleteConfig()
+	opts := options.NewClusterDeleteConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCluster,
 		Aliases: []string{
@@ -23,7 +23,7 @@ func NewCmdDeleteCluster() *cobra.Command {
 		Example:           "pharmer delete cluster demo-cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := clusterConfig.ValidateClusterDeleteFlags(cmd, args); err != nil {
+			if err := opts.ValidateClusterDeleteFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 
@@ -39,7 +39,7 @@ func NewCmdDeleteCluster() *cobra.Command {
 			}
 		},
 	}
-	clusterConfig.AddClusterDeleteFlags(cmd.Flags())
+	opts.AddClusterDeleteFlags(cmd.Flags())
 
 	return cmd
 }

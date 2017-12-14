@@ -16,7 +16,7 @@ import (
 )
 
 func NewCmdSSH() *cobra.Command {
-	nodeConfig := options.NewNodeSSHConfig()
+	opts := options.NewNodeSSHConfig()
 	cmd := &cobra.Command{
 		Use:               "node",
 		Short:             "SSH into a Kubernetes cluster instance",
@@ -24,7 +24,7 @@ func NewCmdSSH() *cobra.Command {
 		Example:           `pharmer ssh node -k cluster-name node-name`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := nodeConfig.ValidateNodeSSHFlags(cmd, args); err != nil {
+			if err := opts.ValidateNodeSSHFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -34,18 +34,18 @@ func NewCmdSSH() *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			cluster, err := cloud.Store(ctx).Clusters().Get(nodeConfig.ClusterName)
+			cluster, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
 			if err != nil {
 				term.Fatalln(err)
 			}
-			sshConfig, err := cloud.GetSSHConfig(ctx, cluster, nodeConfig.NodeName)
+			sshConfig, err := cloud.GetSSHConfig(ctx, cluster, opts.NodeName)
 			if err != nil {
 				log.Fatalln(err)
 			}
 			openShell(sshConfig.PrivateKey, sshConfig.HostIP, sshConfig.HostPort, sshConfig.User)
 		},
 	}
-	nodeConfig.AddNodeSSHFlags(cmd.Flags())
+	opts.AddNodeSSHFlags(cmd.Flags())
 
 	return cmd
 }

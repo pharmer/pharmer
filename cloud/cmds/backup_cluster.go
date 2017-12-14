@@ -19,16 +19,16 @@ type ItemList struct {
 }
 
 func NewCmdBackup() *cobra.Command {
-	clusterConfig := options.NewClusterBackupConfig()
+	opts := options.NewClusterBackupConfig()
 	cmd := &cobra.Command{
 		Use:               "cluster",
 		Short:             "Backup cluster objects",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := clusterConfig.ValidateClusterBackupFlags(cmd, args); err != nil {
+			if err := opts.ValidateClusterBackupFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
-			restConfig, err := searchLocalKubeConfig(clusterConfig.ClusterName)
+			restConfig, err := searchLocalKubeConfig(opts.ClusterName)
 			if err != nil || restConfig == nil {
 				cfgFile, _ := config.GetConfigFile(cmd.Flags())
 				cfg, err := config.LoadConfig(cfgFile)
@@ -37,7 +37,7 @@ func NewCmdBackup() *cobra.Command {
 				}
 				ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-				cluster, err := cloud.Store(ctx).Clusters().Get(clusterConfig.ClusterName)
+				cluster, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
 				if err != nil {
 					term.Fatalln(err)
 				}
@@ -55,15 +55,15 @@ func NewCmdBackup() *cobra.Command {
 				}
 			}
 
-			mgr := backup.NewBackupManager(clusterConfig.ClusterName, restConfig, clusterConfig.Sanitize)
-			filename, err := mgr.BackupToTar(clusterConfig.BackupDir)
+			mgr := backup.NewBackupManager(opts.ClusterName, restConfig, opts.Sanitize)
+			filename, err := mgr.BackupToTar(opts.BackupDir)
 			if err != nil {
 				term.Fatalln(err)
 			}
 			term.Successln(fmt.Sprintf("Cluster objects are stored in %s", filename))
 		},
 	}
-	clusterConfig.AddClusterBackupFlags(cmd.Flags())
+	opts.AddClusterBackupFlags(cmd.Flags())
 	return cmd
 }
 

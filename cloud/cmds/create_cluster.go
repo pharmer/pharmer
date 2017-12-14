@@ -12,7 +12,7 @@ import (
 )
 
 func NewCmdCreateCluster() *cobra.Command {
-	clusterConfig := options.NewClusterCreateConfig()
+	opts := options.NewClusterCreateConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCluster,
 		Aliases: []string{
@@ -23,7 +23,7 @@ func NewCmdCreateCluster() *cobra.Command {
 		Example:           "pharmer create cluster demo-cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := clusterConfig.ValidateClusterCreateFlags(cmd, args); err != nil {
+			if err := opts.ValidateClusterCreateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 
@@ -33,16 +33,16 @@ func NewCmdCreateCluster() *cobra.Command {
 				term.Fatalln(err)
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			cluster, err := cloud.Create(ctx, clusterConfig.Cluster)
+			cluster, err := cloud.Create(ctx, opts.Cluster)
 			if err != nil {
 				term.Fatalln(err)
 			}
-			if len(clusterConfig.Nodes) > 0 {
-				CreateNodeGroups(ctx, cluster, clusterConfig.Nodes, api.NodeTypeRegular, float64(0))
+			if len(opts.Nodes) > 0 {
+				CreateNodeGroups(ctx, cluster, opts.Nodes, api.NodeTypeRegular, float64(0))
 			}
 		},
 	}
-	clusterConfig.AddClusterCreateFlags(cmd.Flags())
+	opts.AddClusterCreateFlags(cmd.Flags())
 
 	return cmd
 }

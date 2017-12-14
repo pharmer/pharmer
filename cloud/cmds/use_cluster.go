@@ -22,14 +22,14 @@ import (
 )
 
 func NewCmdUse() *cobra.Command {
-	clusterConfig := options.NewClusterUseConfig()
+	opts := options.NewClusterUseConfig()
 	cmd := &cobra.Command{
 		Use:               "cluster",
 		Short:             "Sets `kubectl` context to given cluster",
 		Example:           `pharmer use cluster <name>`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := clusterConfig.ValidateClusterUseFlags(cmd, args); err != nil {
+			if err := opts.ValidateClusterUseFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -39,14 +39,14 @@ func NewCmdUse() *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			UseCluster(ctx, clusterConfig)
+			UseCluster(ctx, opts)
 		},
 	}
-	clusterConfig.AddClusterUseFlags(cmd.Flags())
+	opts.AddClusterUseFlags(cmd.Flags())
 	return cmd
 }
 
-func UseCluster(ctx context.Context, opt *options.ClusterUseConfig) {
+func UseCluster(ctx context.Context, opts *options.ClusterUseConfig) {
 	var konfig clientcmd.Config
 	if _, err := os.Stat(KubeConfigPath()); err == nil {
 		// ~/.kube/config exists
@@ -79,11 +79,11 @@ func UseCluster(ctx context.Context, opt *options.ClusterUseConfig) {
 		}
 	}
 
-	ctxName := fmt.Sprintf("cluster-admin@%s.pharmer", opt.ClusterName)
+	ctxName := fmt.Sprintf("cluster-admin@%s.pharmer", opts.ClusterName)
 
-	if !opt.Overwrite {
+	if !opts.Overwrite {
 		if konfig.CurrentContext == ctxName {
-			term.Infoln(fmt.Sprintf("Cluster `%s` is already current context.", opt.ClusterName))
+			term.Infoln(fmt.Sprintf("Cluster `%s` is already current context.", opts.ClusterName))
 			os.Exit(0)
 		}
 	}
@@ -94,8 +94,8 @@ func UseCluster(ctx context.Context, opt *options.ClusterUseConfig) {
 			found = true
 		}
 	}
-	if !found || opt.Overwrite {
-		cluster, err := cloud.Store(ctx).Clusters().Get(opt.ClusterName)
+	if !found || opts.Overwrite {
+		cluster, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
 		if err != nil {
 			term.Fatalln(err)
 		}
@@ -159,7 +159,7 @@ func UseCluster(ctx context.Context, opt *options.ClusterUseConfig) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	term.Successln(fmt.Sprintf("kubectl context set to cluster `%s`.", opt.ClusterName))
+	term.Successln(fmt.Sprintf("kubectl context set to cluster `%s`.", opts.ClusterName))
 }
 
 func setCluster(cur *clientcmd.NamedCluster, desired clientcmd.NamedCluster) *clientcmd.NamedCluster {

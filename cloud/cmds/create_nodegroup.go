@@ -12,7 +12,7 @@ import (
 )
 
 func NewCmdCreateNodeGroup() *cobra.Command {
-	ngConfig := options.NewNodeGroupCreateConfig()
+	opts := options.NewNodeGroupCreateConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameNodeGroup,
 		Aliases: []string{
@@ -24,7 +24,7 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 		Example:           "pharmer create nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			err := ngConfig.ValidateNodeGroupCreateFlags(cmd, args)
+			err := opts.ValidateNodeGroupCreateFlags(cmd, args)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -35,13 +35,13 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			cluster, err := cloud.Get(ctx, ngConfig.ClusterName)
+			cluster, err := cloud.Get(ctx, opts.ClusterName)
 			term.ExitOnError(err)
-			CreateNodeGroups(ctx, cluster, ngConfig.Nodes, api.NodeType(ngConfig.NodeType), ngConfig.SpotPriceMax)
+			CreateNodeGroups(ctx, cluster, opts.Nodes, api.NodeType(opts.NodeType), opts.SpotPriceMax)
 
 		},
 	}
-	ngConfig.AddNodeGroupCreateFlags(cmd.Flags())
+	opts.AddNodeGroupCreateFlags(cmd.Flags())
 
 	return cmd
 }

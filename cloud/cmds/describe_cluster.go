@@ -16,7 +16,7 @@ import (
 )
 
 func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
-	clusterConfig := options.NewClusterDescribeConfig()
+	opts := options.NewClusterDescribeConfig()
 	cmd := &cobra.Command{
 		Use: api.ResourceNameCluster,
 		Aliases: []string{
@@ -27,7 +27,7 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 		Example:           "pharmer describe cluster <cluster_name>",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := clusterConfig.ValidateClusterDescribeFlags(cmd, args); err != nil {
+			if err := opts.ValidateClusterDescribeFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -35,11 +35,11 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 			term.ExitOnError(err)
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			err = RunDescribeCluster(ctx, out, clusterConfig.Clusters)
+			err = RunDescribeCluster(ctx, out, opts.Clusters)
 			term.ExitOnError(err)
 		},
 	}
-	clusterConfig.AddClusterDescribeFlags(cmd.Flags())
+	opts.AddClusterDescribeFlags(cmd.Flags())
 
 	return cmd
 }
