@@ -46,7 +46,7 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := RunUpdateCredential(ctx, opts, out, outErr, args); err != nil {
+			if err := RunUpdateCredential(ctx, opts, out, outErr); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -56,7 +56,7 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunUpdateCredential(ctx context.Context, opts *options.CredentialEditConfig, out, errOut io.Writer, args []string) error {
+func RunUpdateCredential(ctx context.Context, opts *options.CredentialEditConfig, out, errOut io.Writer) error {
 
 	// If file is provided
 	if opts.File != "" {
@@ -85,7 +85,7 @@ func RunUpdateCredential(ctx context.Context, opts *options.CredentialEditConfig
 		return nil
 	}
 
-	credential := args[0]
+	credential := opts.Name
 
 	original, err := cloud.Store(ctx).Credentials().Get(credential)
 	if err != nil {

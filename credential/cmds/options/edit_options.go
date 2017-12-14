@@ -8,6 +8,7 @@ import (
 )
 
 type CredentialEditConfig struct {
+	Name        string
 	File        string
 	DoNotDelete bool
 	Output      string
@@ -28,12 +29,12 @@ func (c *CredentialEditConfig) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (c *CredentialEditConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
-
 	if len(args) == 0 {
 		return errors.New("missing credential name")
 	}
 	if len(args) > 1 {
 		return errors.New("multiple credential name provided")
 	}
+	c.Name = args[0]
 	return nil
 }

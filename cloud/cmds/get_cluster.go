@@ -34,7 +34,7 @@ func NewCmdGetCluster(out io.Writer) *cobra.Command {
 			term.ExitOnError(err)
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			RunGetCluster(ctx, out, opts)
+			RunGetCluster(ctx, opts, out)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -42,7 +42,7 @@ func NewCmdGetCluster(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunGetCluster(ctx context.Context, out io.Writer, opts *options.ClusterGetConfig) error {
+func RunGetCluster(ctx context.Context, opts *options.ClusterGetConfig, out io.Writer) error {
 
 	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {

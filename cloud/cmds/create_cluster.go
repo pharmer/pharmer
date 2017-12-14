@@ -38,7 +38,10 @@ func NewCmdCreateCluster() *cobra.Command {
 				term.Fatalln(err)
 			}
 			if len(opts.Nodes) > 0 {
-				CreateNodeGroups(ctx, cluster, opts.Nodes, api.NodeTypeRegular, float64(0))
+				nodeOpts := options.NewNodeGroupCreateConfig()
+				nodeOpts.ClusterName = cluster.Name
+				nodeOpts.Nodes = opts.Nodes
+				CreateNodeGroups(ctx, nodeOpts)
 			}
 		},
 	}

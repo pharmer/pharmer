@@ -35,9 +35,7 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			cluster, err := cloud.Get(ctx, opts.ClusterName)
-			term.ExitOnError(err)
-			CreateNodeGroups(ctx, cluster, opts.Nodes, api.NodeType(opts.NodeType), opts.SpotPriceMax)
+			CreateNodeGroups(ctx, opts)
 
 		},
 	}
@@ -46,9 +44,11 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 	return cmd
 }
 
-func CreateNodeGroups(ctx context.Context, cluster *api.Cluster, nodes map[string]int, nodeType api.NodeType, spotPriceMax float64) {
-	for sku, count := range nodes {
-		err := cloud.CreateNodeGroup(ctx, cluster, api.RoleNode, sku, nodeType, count, spotPriceMax)
+func CreateNodeGroups(ctx context.Context, opts *options.NodeGroupCreateConfig) {
+	cluster, err := cloud.Get(ctx, opts.ClusterName)
+	term.ExitOnError(err)
+	for sku, count := range opts.Nodes {
+		err := cloud.CreateNodeGroup(ctx, cluster, api.RoleNode, sku, api.NodeType(opts.NodeType), count, opts.SpotPriceMax)
 		term.ExitOnError(err)
 	}
 }

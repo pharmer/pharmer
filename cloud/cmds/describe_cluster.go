@@ -35,7 +35,7 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 			term.ExitOnError(err)
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			err = RunDescribeCluster(ctx, out, opts.Clusters)
+			err = RunDescribeCluster(ctx, opts, out)
 			term.ExitOnError(err)
 		},
 	}
@@ -44,11 +44,11 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunDescribeCluster(ctx context.Context, out io.Writer, args []string) error {
+func RunDescribeCluster(ctx context.Context, opts *options.ClusterDescribeConfig, out io.Writer) error {
 	rDescriber := describer.NewDescriber(ctx)
 
 	first := true
-	clusters, err := getClusterList(ctx, args)
+	clusters, err := getClusterList(ctx, opts.Clusters)
 	if err != nil {
 		return err
 	}

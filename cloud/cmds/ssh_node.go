@@ -38,7 +38,7 @@ func NewCmdSSH() *cobra.Command {
 			if err != nil {
 				term.Fatalln(err)
 			}
-			sshConfig, err := cloud.GetSSHConfig(ctx, cluster, opts.NodeName)
+			sshConfig, err := cloud.GetSSHConfig(ctx, opts.NodeName, cluster)
 			if err != nil {
 				log.Fatalln(err)
 			}

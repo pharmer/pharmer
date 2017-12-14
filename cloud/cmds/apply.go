@@ -29,7 +29,7 @@ func NewCmdApply() *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			acts, err := cloud.Apply(ctx, opts.ClusterName, opts.DryRun)
+			acts, err := cloud.Apply(ctx, opts)
 			if err != nil {
 				log.Fatalln(err)
 			}
