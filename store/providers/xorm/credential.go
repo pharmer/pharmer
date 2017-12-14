@@ -3,6 +3,7 @@ package xorm
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/go-xorm/xorm"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
@@ -71,6 +72,7 @@ func (s *credentialXormStore) Create(obj *api.Credential) (*api.Credential, erro
 	if found {
 		return nil, fmt.Errorf("credential `%s` already exists", obj.Name)
 	}
+	obj.CreationTimestamp = metav1.Time{Time: time.Now()}
 	cred, err := encodeCredential(obj)
 	if err != nil {
 		return nil, err
