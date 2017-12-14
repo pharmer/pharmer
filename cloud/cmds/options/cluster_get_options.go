@@ -16,11 +16,11 @@ func NewClusterGetConfig() *ClusterGetConfig {
 	}
 }
 
-func (c *ClusterGetConfig) AddClusterGetFlags(fs *pflag.FlagSet) {
+func (c *ClusterGetConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.Output, "output", "o", c.Output, "Output format. One of: json|yaml|wide")
 }
 
-func (c *ClusterGetConfig) ValidateClusterGetFlags(cmd *cobra.Command, args []string) error {
+func (c *ClusterGetConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	c.Clusters = args
 	return nil
 }

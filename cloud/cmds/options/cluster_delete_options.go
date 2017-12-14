@@ -12,6 +12,7 @@ type ClusterDeleteConfig struct {
 	ReleaseReservedIP    bool
 	KeepLBs              bool
 	DeleteDynamicVolumes bool
+	Clusters             []string
 }
 
 func NewClusterDeleteConfig() *ClusterDeleteConfig {
@@ -23,7 +24,7 @@ func NewClusterDeleteConfig() *ClusterDeleteConfig {
 	}
 }
 
-func (c *ClusterDeleteConfig) AddClusterDeleteFlags(fs *pflag.FlagSet) {
+func (c *ClusterDeleteConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.Force, "force", c.Force, "Force delete any running non-system apps")
 	fs.BoolVar(&c.ReleaseReservedIP, "release-reserved-ip", c.ReleaseReservedIP, "Release reserved IP")
 	fs.BoolVar(&c.KeepLBs, "keep-loadbalancers", c.KeepLBs, "Keep loadbalancers")
@@ -31,9 +32,10 @@ func (c *ClusterDeleteConfig) AddClusterDeleteFlags(fs *pflag.FlagSet) {
 
 }
 
-func (c *ClusterDeleteConfig) ValidateClusterDeleteFlags(cmd *cobra.Command, args []string) error {
+func (c *ClusterDeleteConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		errors.New("missing cluster name")
 	}
+	c.Clusters = args
 	return nil
 }

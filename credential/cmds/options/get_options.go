@@ -16,11 +16,11 @@ func NewCredentialGetConfig() *CredentialGetConfig {
 	}
 }
 
-func (c *CredentialGetConfig) AddCredentialGetFlags(fs *pflag.FlagSet) {
+func (c *CredentialGetConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.Output, "output", "o", c.Output, "Output format. One of: json|yaml|wide")
 }
 
-func (c *CredentialGetConfig) ValidateCredentialGetFlags(cmd *cobra.Command, args []string) error {
+func (c *CredentialGetConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	c.Credentials = args
 	return nil
 }

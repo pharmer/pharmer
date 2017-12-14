@@ -19,12 +19,12 @@ func NewApplyConfig() *ApplyConfig {
 	}
 }
 
-func (c *ApplyConfig) AddApplyFlags(fs *pflag.FlagSet) {
+func (c *ApplyConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.DryRun, "dry-run", c.DryRun, "Dry run.")
 
 }
 
-func (c *ApplyConfig) ValidateApplyFlags(cmd *cobra.Command, args []string) error {
+func (c *ApplyConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		errors.New("missing cluster name")
 	}

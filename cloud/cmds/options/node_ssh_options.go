@@ -20,11 +20,11 @@ func NewNodeSSHConfig() *NodeSSHConfig {
 	}
 }
 
-func (c *NodeSSHConfig) AddNodeSSHFlags(fs *pflag.FlagSet) {
+func (c *NodeSSHConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.ClusterName, "cluster", "k", c.ClusterName, "Name of cluster")
 }
 
-func (c *NodeSSHConfig) ValidateNodeSSHFlags(cmd *cobra.Command, args []string) error {
+func (c *NodeSSHConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	flags.EnsureRequiredFlags(cmd, "cluster")
 
 	if len(args) == 0 {

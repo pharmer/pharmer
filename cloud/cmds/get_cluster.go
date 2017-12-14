@@ -26,7 +26,7 @@ func NewCmdGetCluster(out io.Writer) *cobra.Command {
 		Example:           "pharmer get cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := opts.ValidateClusterGetFlags(cmd, args); err != nil {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -37,7 +37,7 @@ func NewCmdGetCluster(out io.Writer) *cobra.Command {
 			RunGetCluster(ctx, out, opts)
 		},
 	}
-	opts.AddClusterGetFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

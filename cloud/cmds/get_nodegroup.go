@@ -27,7 +27,7 @@ func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
 		Example:           "pharmer get nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := opts.ValidateNodeGroupGetFlags(cmd, args); err != nil {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -39,7 +39,7 @@ func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
 
 		},
 	}
-	opts.AddNodeGroupGetFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

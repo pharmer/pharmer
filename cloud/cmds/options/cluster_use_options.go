@@ -19,11 +19,11 @@ func NewClusterUseConfig() *ClusterUseConfig {
 	}
 }
 
-func (c *ClusterUseConfig) AddClusterUseFlags(fs *pflag.FlagSet) {
+func (c *ClusterUseConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.Overwrite, "overwrite", c.Overwrite, "Overwrite context if found.")
 }
 
-func (c *ClusterUseConfig) ValidateClusterUseFlags(cmd *cobra.Command, args []string) error {
+func (c *ClusterUseConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		errors.New("missing cluster name")
 	}

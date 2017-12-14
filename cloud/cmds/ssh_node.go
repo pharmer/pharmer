@@ -24,7 +24,7 @@ func NewCmdSSH() *cobra.Command {
 		Example:           `pharmer ssh node -k cluster-name node-name`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := opts.ValidateNodeSSHFlags(cmd, args); err != nil {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -45,7 +45,7 @@ func NewCmdSSH() *cobra.Command {
 			openShell(sshConfig.PrivateKey, sshConfig.HostIP, sshConfig.HostPort, sshConfig.User)
 		},
 	}
-	opts.AddNodeSSHFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

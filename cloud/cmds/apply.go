@@ -18,7 +18,7 @@ func NewCmdApply() *cobra.Command {
 		Short:             "Apply changes",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := opts.ValidateApplyFlags(cmd, args); err != nil {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 
@@ -38,6 +38,6 @@ func NewCmdApply() *cobra.Command {
 			}
 		},
 	}
-	opts.AddApplyFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 	return cmd
 }

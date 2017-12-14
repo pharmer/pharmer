@@ -23,7 +23,7 @@ func NewCmdDeleteCredential() *cobra.Command {
 		Example:           `pharmer delete credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := opts.ValidateCredentialDeleteFlags(cmd, args); err != nil {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 
@@ -39,7 +39,7 @@ func NewCmdDeleteCredential() *cobra.Command {
 			}
 		},
 	}
-	opts.AddCredentialDeleteFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

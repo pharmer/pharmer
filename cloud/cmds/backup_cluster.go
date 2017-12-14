@@ -25,7 +25,7 @@ func NewCmdBackup() *cobra.Command {
 		Short:             "Backup cluster objects",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := opts.ValidateClusterBackupFlags(cmd, args); err != nil {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			restConfig, err := searchLocalKubeConfig(opts.ClusterName)
@@ -63,7 +63,7 @@ func NewCmdBackup() *cobra.Command {
 			term.Successln(fmt.Sprintf("Cluster objects are stored in %s", filename))
 		},
 	}
-	opts.AddClusterBackupFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 	return cmd
 }
 

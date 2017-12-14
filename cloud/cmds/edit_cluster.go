@@ -36,7 +36,7 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 		Example:           `pharmer edit cluster`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := opts.ValidateClusterEditFlags(cmd, args); err != nil {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -51,7 +51,7 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 			}
 		},
 	}
-	opts.AddClusterEditFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

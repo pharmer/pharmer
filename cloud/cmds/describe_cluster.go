@@ -27,7 +27,7 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 		Example:           "pharmer describe cluster <cluster_name>",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := opts.ValidateClusterDescribeFlags(cmd, args); err != nil {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -39,7 +39,7 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 			term.ExitOnError(err)
 		},
 	}
-	opts.AddClusterDescribeFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

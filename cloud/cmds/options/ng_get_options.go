@@ -18,13 +18,13 @@ func NewNodeGroupGetConfig() *NodeGroupGetConfig {
 	}
 }
 
-func (c *NodeGroupGetConfig) AddNodeGroupGetFlags(fs *pflag.FlagSet) {
+func (c *NodeGroupGetConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.ClusterName, "cluster", "k", c.ClusterName, "Name of the Kubernetes cluster")
 	fs.StringVarP(&c.Output, "output", "o", c.Output, "Output format. One of: json|yaml|wide")
 
 }
 
-func (c *NodeGroupGetConfig) ValidateNodeGroupGetFlags(cmd *cobra.Command, args []string) error {
+func (c *NodeGroupGetConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	c.NodeGroups = args
 	return nil
 }

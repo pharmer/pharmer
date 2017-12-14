@@ -13,10 +13,10 @@ func NewClusterDescribeConfig() *ClusterDescribeConfig {
 	return &ClusterDescribeConfig{}
 }
 
-func (c *ClusterDescribeConfig) AddClusterDescribeFlags(fs *pflag.FlagSet) {
+func (c *ClusterDescribeConfig) AddFlags(fs *pflag.FlagSet) {
 }
 
-func (c *ClusterDescribeConfig) ValidateClusterDescribeFlags(cmd *cobra.Command, args []string) error {
+func (c *ClusterDescribeConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	c.Clusters = args
 	return nil
 }

@@ -24,7 +24,7 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 		Example:           "pharmer create nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			err := opts.ValidateNodeGroupCreateFlags(cmd, args)
+			err := opts.ValidateFlags(cmd, args)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -41,7 +41,7 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 
 		},
 	}
-	opts.AddNodeGroupCreateFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

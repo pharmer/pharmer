@@ -26,7 +26,7 @@ func NewNodeGroupEditConfig() *NodeGroupEditConfig {
 	}
 }
 
-func (c *NodeGroupEditConfig) AddNodeGroupEditFlags(fs *pflag.FlagSet) {
+func (c *NodeGroupEditConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.ClusterName, "cluster", "k", c.ClusterName, "Name of the Kubernetes cluster")
 	fs.StringVarP(&c.File, "file", "f", c.File, "Load nodegroup data from file")
 	fs.BoolVarP(&c.DoNotDelete, "do-not-delete", "", c.DoNotDelete, "Set do not delete flag")
@@ -34,7 +34,7 @@ func (c *NodeGroupEditConfig) AddNodeGroupEditFlags(fs *pflag.FlagSet) {
 
 }
 
-func (c *NodeGroupEditConfig) ValidateNodeGroupEditFlags(cmd *cobra.Command, args []string) error {
+func (c *NodeGroupEditConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	flags.EnsureRequiredFlags(cmd, "cluster")
 	if len(args) == 0 {
 		return errors.New("missing nodegroup name")

@@ -26,7 +26,7 @@ func NewNodeGroupCreateConfig() *NodeGroupCreateConfig {
 	}
 }
 
-func (c *NodeGroupCreateConfig) AddNodeGroupCreateFlags(fs *pflag.FlagSet) {
+func (c *NodeGroupCreateConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringP("cluster", "k", c.ClusterName, "Name of the Kubernetes cluster")
 	fs.StringVar(&c.NodeType, "type", c.NodeType, "Set node type regular/spot, default regular")
 	fs.Float64Var(&c.SpotPriceMax, "spot-price-max", c.SpotPriceMax, "Maximum price of spot instance")
@@ -34,7 +34,7 @@ func (c *NodeGroupCreateConfig) AddNodeGroupCreateFlags(fs *pflag.FlagSet) {
 
 }
 
-func (c *NodeGroupCreateConfig) ValidateNodeGroupCreateFlags(cmd *cobra.Command, args []string) error {
+func (c *NodeGroupCreateConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	ensureFlags := []string{"cluster", "nodes"}
 	if api.NodeType(c.NodeType) == api.NodeTypeSpot {
 		ensureFlags = append(ensureFlags, "spot-price-max")

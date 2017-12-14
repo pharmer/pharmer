@@ -27,7 +27,7 @@ func NewClusterCreateConfig() *ClusterCreateConfig {
 	}
 }
 
-func (c *ClusterCreateConfig) AddClusterCreateFlags(fs *pflag.FlagSet) {
+func (c *ClusterCreateConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.Cluster.Spec.Cloud.CloudProvider, "provider", c.Cluster.Spec.Cloud.CloudProvider, "Provider name")
 	fs.StringVar(&c.Cluster.Spec.Cloud.Zone, "zone", c.Cluster.Spec.Cloud.Zone, "Cloud provider zone name")
 	fs.StringVar(&c.Cluster.Spec.CredentialName, "credential-uid", c.Cluster.Spec.CredentialName, "Use preconfigured cloud credential uid")
@@ -40,7 +40,7 @@ func (c *ClusterCreateConfig) AddClusterCreateFlags(fs *pflag.FlagSet) {
 
 }
 
-func (c *ClusterCreateConfig) ValidateClusterCreateFlags(cmd *cobra.Command, args []string) error {
+func (c *ClusterCreateConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	ensureFlags := []string{"provider", "zone", "kubernetes-version"}
 	flags.EnsureRequiredFlags(cmd, ensureFlags...)
 

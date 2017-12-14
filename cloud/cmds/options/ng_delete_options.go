@@ -16,11 +16,11 @@ func NewNodeGroupDeleteConfig() *NodeGroupNodeDeleteConfig {
 	}
 }
 
-func (c *NodeGroupNodeDeleteConfig) AddNodeGroupDeleteFlags(fs *pflag.FlagSet) {
-	fs.StringP("cluster", "k", c.ClusterName, "Name of the Kubernetes cluster")
+func (c *NodeGroupNodeDeleteConfig) AddFlags(fs *pflag.FlagSet) {
+	fs.StringVarP(&c.ClusterName, "cluster", "k", c.ClusterName, "Name of the Kubernetes cluster")
 }
 
-func (c *NodeGroupNodeDeleteConfig) ValidateNodeGroupDeleteFlags(cmd *cobra.Command, args []string) error {
+func (c *NodeGroupNodeDeleteConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	flags.EnsureRequiredFlags(cmd, "cluster")
 	return nil
 }

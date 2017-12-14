@@ -15,12 +15,12 @@ func NewCredentialDeleteConfig() *CredentialDeleteConfig {
 	return &CredentialDeleteConfig{}
 }
 
-func (c *CredentialDeleteConfig) AddCredentialDeleteFlags(fs *pflag.FlagSet) {
+func (c *CredentialDeleteConfig) AddFlags(fs *pflag.FlagSet) {
 }
 
-func (c *CredentialDeleteConfig) ValidateCredentialDeleteFlags(cmd *cobra.Command, args []string) error {
+func (c *CredentialDeleteConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		errors.New("Missing Credential name.")
+		errors.New("missing Credential name")
 	}
 	c.Credentials = args
 	return nil

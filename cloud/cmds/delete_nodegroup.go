@@ -24,7 +24,7 @@ func NewCmdDeleteNodeGroup() *cobra.Command {
 		Example:           "pharmer delete nodegroup -k <cluster_name>",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := opts.ValidateNodeGroupDeleteFlags(cmd, args); err != nil {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -41,7 +41,7 @@ func NewCmdDeleteNodeGroup() *cobra.Command {
 			}
 		},
 	}
-	opts.AddNodeGroupDeleteFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

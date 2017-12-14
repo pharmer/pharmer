@@ -22,13 +22,13 @@ func NewClusterBackupConfig() *ClusterBackupConfig {
 	}
 }
 
-func (c *ClusterBackupConfig) AddClusterBackupFlags(fs *pflag.FlagSet) {
+func (c *ClusterBackupConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.Sanitize, "sanitize", c.Sanitize, " Sanitize fields in YAML")
 	fs.StringVar(&c.BackupDir, "backup-dir", c.BackupDir, "Directory where yaml files will be saved")
 
 }
 
-func (c *ClusterBackupConfig) ValidateClusterBackupFlags(cmd *cobra.Command, args []string) error {
+func (c *ClusterBackupConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	flags.EnsureRequiredFlags(cmd, "backup-dir")
 
 	if len(args) == 0 {

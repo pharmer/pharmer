@@ -23,7 +23,7 @@ func NewCmdDeleteCluster() *cobra.Command {
 		Example:           "pharmer delete cluster demo-cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := opts.ValidateClusterDeleteFlags(cmd, args); err != nil {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 
@@ -33,13 +33,13 @@ func NewCmdDeleteCluster() *cobra.Command {
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			for _, clusterName := range args {
+			for _, clusterName := range opts.Clusters {
 				_, err := cloud.Delete(ctx, clusterName)
 				term.ExitOnError(err)
 			}
 		},
 	}
-	opts.AddClusterDeleteFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

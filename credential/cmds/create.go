@@ -33,7 +33,7 @@ func NewCmdCreateCredential() *cobra.Command {
 		Example:           `pharmer create credential`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := opts.ValidateCredentialCreateFlags(cmd, args); err != nil {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 
@@ -49,7 +49,7 @@ func NewCmdCreateCredential() *cobra.Command {
 			}
 		},
 	}
-	opts.AddCredentialCreateFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

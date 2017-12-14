@@ -24,19 +24,19 @@ func NewCredentialCreateConfig() *CredentialCreateConfig {
 	}
 }
 
-func (c *CredentialCreateConfig) AddCredentialCreateFlags(fs *pflag.FlagSet) {
+func (c *CredentialCreateConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.Provider, "provider", "p", c.Provider, "Name of the Cloud provider")
 	fs.BoolVarP(&c.FromEnv, "from-env", "l", c.FromEnv, "Load credential data from ENV.")
 	fs.StringVarP(&c.FromFile, "from-file", "f", c.FromFile, "Load credential data from file")
 	fs.BoolVar(&c.Issue, "issue", c.Issue, "Issue credential")
 }
 
-func (c *CredentialCreateConfig) ValidateCredentialCreateFlags(cmd *cobra.Command, args []string) error {
+func (c *CredentialCreateConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		errors.New("Missing credential name.")
+		errors.New("missing credential name")
 	}
 	if len(args) > 1 {
-		errors.New("Multiple credential name provided.")
+		errors.New("multiple credential name provided")
 	}
 	c.Name = args[0]
 	return nil

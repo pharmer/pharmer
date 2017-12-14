@@ -23,7 +23,7 @@ func NewCmdCreateCluster() *cobra.Command {
 		Example:           "pharmer create cluster demo-cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := opts.ValidateClusterCreateFlags(cmd, args); err != nil {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 
@@ -42,7 +42,7 @@ func NewCmdCreateCluster() *cobra.Command {
 			}
 		},
 	}
-	opts.AddClusterCreateFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

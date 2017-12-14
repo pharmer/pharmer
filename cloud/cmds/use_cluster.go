@@ -29,7 +29,7 @@ func NewCmdUse() *cobra.Command {
 		Example:           `pharmer use cluster <name>`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := opts.ValidateClusterUseFlags(cmd, args); err != nil {
+			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
@@ -42,7 +42,7 @@ func NewCmdUse() *cobra.Command {
 			UseCluster(ctx, opts)
 		},
 	}
-	opts.AddClusterUseFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 	return cmd
 }
 

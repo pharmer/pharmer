@@ -29,7 +29,7 @@ func NewClusterEditConfig() *ClusterEditConfig {
 	}
 }
 
-func (c *ClusterEditConfig) AddClusterEditFlags(fs *pflag.FlagSet) {
+func (c *ClusterEditConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.File, "file", "f", c.File, "Load cluster data from file")
 	//TODO: Add necessary flags that will be used for update
 	fs.StringVar(&c.KubernetesVersion, "kubernetes-version", c.KubernetesVersion, "Kubernetes version")
@@ -40,7 +40,7 @@ func (c *ClusterEditConfig) AddClusterEditFlags(fs *pflag.FlagSet) {
 
 }
 
-func (c *ClusterEditConfig) ValidateClusterEditFlags(cmd *cobra.Command, args []string) error {
+func (c *ClusterEditConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	if cmd.Flags().Changed("file") {
 		if len(args) != 0 {
 			return errors.New("no argument can be provided when --file flag is used")
