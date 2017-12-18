@@ -28,35 +28,14 @@ func NewCmdBackup() *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
-			restConfig, err := searchLocalKubeConfig(opts.ClusterName)
-			if err != nil || restConfig == nil {
-				cfgFile, _ := config.GetConfigFile(cmd.Flags())
-				cfg, err := config.LoadConfig(cfgFile)
-				if err != nil {
-					term.Fatalln(err)
-				}
-				ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-
-				cluster, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
-				if err != nil {
-					term.Fatalln(err)
-				}
-				c2, err := cloud.GetAdminConfig(ctx, cluster)
-				if err != nil {
-					term.Fatalln(err)
-				}
-				restConfig = &rest.Config{
-					Host: c2.Clusters[0].Cluster.Server,
-					TLSClientConfig: rest.TLSClientConfig{
-						CAData:   c2.Clusters[0].Cluster.CertificateAuthorityData,
-						CertData: c2.AuthInfos[0].AuthInfo.ClientCertificateData,
-						KeyData:  c2.AuthInfos[0].AuthInfo.ClientKeyData,
-					},
-				}
+			cfgFile, _ := config.GetConfigFile(cmd.Flags())
+			cfg, err := config.LoadConfig(cfgFile)
+			if err != nil {
+				term.Fatalln(err)
 			}
+			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			mgr := backup.NewBackupManager(opts.ClusterName, restConfig, opts.Sanitize)
-			filename, err := mgr.BackupToTar(opts.BackupDir)
+			filename, err := RunClusterBackup(ctx, opts)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -65,6 +44,31 @@ func NewCmdBackup() *cobra.Command {
 	}
 	opts.AddFlags(cmd.Flags())
 	return cmd
+}
+
+func RunClusterBackup(ctx context.Context, opts *options.ClusterBackupConfig) (string, error) {
+	restConfig, err := searchLocalKubeConfig(opts.ClusterName)
+	if err != nil || restConfig == nil {
+		cluster, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
+		if err != nil {
+			return "", err
+		}
+		c2, err := cloud.GetAdminConfig(ctx, cluster)
+		if err != nil {
+			return "", err
+		}
+		restConfig = &rest.Config{
+			Host: c2.Clusters[0].Cluster.Server,
+			TLSClientConfig: rest.TLSClientConfig{
+				CAData:   c2.Clusters[0].Cluster.CertificateAuthorityData,
+				CertData: c2.AuthInfos[0].AuthInfo.ClientCertificateData,
+				KeyData:  c2.AuthInfos[0].AuthInfo.ClientKeyData,
+			},
+		}
+	}
+
+	mgr := backup.NewBackupManager(opts.ClusterName, restConfig, opts.Sanitize)
+	return mgr.BackupToTar(opts.BackupDir)
 }
 
 func searchLocalKubeConfig(clusterName string) (*rest.Config, error) {
