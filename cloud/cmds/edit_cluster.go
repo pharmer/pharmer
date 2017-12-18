@@ -46,7 +46,7 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := runUpdateCluster(ctx, opts, out, outErr); err != nil {
+			if err := RunUpdateCluster(ctx, opts, out, outErr); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -56,7 +56,7 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func runUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out, errOut io.Writer) error {
+func RunUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out, errOut io.Writer) error {
 	// If file is provided
 	if opts.File != "" {
 		fileName := opts.File

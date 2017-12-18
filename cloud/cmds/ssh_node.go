@@ -42,7 +42,7 @@ func NewCmdSSH() *cobra.Command {
 			if err != nil {
 				log.Fatalln(err)
 			}
-			openShell(sshConfig.PrivateKey, sshConfig.HostIP, sshConfig.HostPort, sshConfig.User)
+			OpenShell(sshConfig.PrivateKey, sshConfig.HostIP, sshConfig.HostPort, sshConfig.User)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -51,7 +51,7 @@ func NewCmdSSH() *cobra.Command {
 }
 
 // http://stackoverflow.com/questions/26315572/ssh-executing-nsenter-as-remote-command-with-interactive-shell-in-golang-to-debu
-func openShell(privateKey []byte, addr string, port int32, user string) {
+func OpenShell(privateKey []byte, addr string, port int32, user string) {
 	keySigner, err := ssh.ParsePrivateKey(privateKey)
 	term.ExitOnError(err)
 
