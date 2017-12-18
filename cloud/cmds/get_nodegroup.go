@@ -69,7 +69,7 @@ func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out 
 	}
 
 	for _, cluster := range clusterList {
-		nodegroups, err := getNodeGroupList(ctx, cluster, opts.NodeGroups...)
+		nodegroups, err := GetNodeGroupList(ctx, cluster, opts.NodeGroups...)
 		if err != nil {
 			return err
 		}
@@ -92,7 +92,7 @@ func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out 
 	return nil
 }
 
-func getNodeGroupList(ctx context.Context, cluster string, args ...string) (nodeGroupList []*api.NodeGroup, err error) {
+func GetNodeGroupList(ctx context.Context, cluster string, args ...string) (nodeGroupList []*api.NodeGroup, err error) {
 	if len(args) != 0 {
 		for _, arg := range args {
 			nodeGroup, er2 := cloud.Store(ctx).NodeGroups(cluster).Get(arg)

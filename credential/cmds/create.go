@@ -44,7 +44,7 @@ func NewCmdCreateCredential() *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := runCreateCredential(ctx, opts); err != nil {
+			if err := RunCreateCredential(ctx, opts); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -54,7 +54,7 @@ func NewCmdCreateCredential() *cobra.Command {
 	return cmd
 }
 
-func runCreateCredential(ctx context.Context, opts *options.CredentialCreateConfig) error {
+func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConfig) error {
 	// Get Cloud provider
 	provider := opts.Provider
 	if provider == "" {
