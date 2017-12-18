@@ -13,6 +13,7 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
 	"github.com/ghodss/yaml"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
@@ -107,40 +108,40 @@ func UseCluster(ctx context.Context, opts *options.ClusterUseConfig) {
 		// Upsert cluster
 		found := false
 		for i := range konfig.Clusters {
-			if konfig.Clusters[i].Name == c2.Clusters[0].Name {
-				setCluster(&konfig.Clusters[i], c2.Clusters[0])
+			if konfig.Clusters[i].Name == c2.Cluster.Name {
+				setCluster(&konfig.Clusters[i], c2.Cluster)
 				found = true
 				break
 			}
 		}
 		if !found {
-			konfig.Clusters = append(konfig.Clusters, *setCluster(&clientcmd.NamedCluster{}, c2.Clusters[0]))
+			konfig.Clusters = append(konfig.Clusters, *setCluster(&clientcmd.NamedCluster{}, c2.Cluster))
 		}
 
 		// Upsert user
 		found = false
 		for i := range konfig.AuthInfos {
-			if konfig.AuthInfos[i].Name == c2.AuthInfos[0].Name {
-				setUser(&konfig.AuthInfos[i], c2.AuthInfos[0])
+			if konfig.AuthInfos[i].Name == c2.AuthInfo.Name {
+				setUser(&konfig.AuthInfos[i], c2.AuthInfo)
 				found = true
 				break
 			}
 		}
 		if !found {
-			konfig.AuthInfos = append(konfig.AuthInfos, *setUser(&clientcmd.NamedAuthInfo{}, c2.AuthInfos[0]))
+			konfig.AuthInfos = append(konfig.AuthInfos, *setUser(&clientcmd.NamedAuthInfo{}, c2.AuthInfo))
 		}
 
 		// Upsert context
 		found = false
 		for i := range konfig.Contexts {
-			if konfig.Contexts[i].Name == c2.Contexts[0].Name {
-				setContext(&konfig.Contexts[i], c2.Contexts[0])
+			if konfig.Contexts[i].Name == c2.Context.Name {
+				setContext(&konfig.Contexts[i], c2.Context)
 				found = true
 				break
 			}
 		}
 		if !found {
-			konfig.Contexts = append(konfig.Contexts, *setContext(&clientcmd.NamedContext{}, c2.Contexts[0]))
+			konfig.Contexts = append(konfig.Contexts, *setContext(&clientcmd.NamedContext{}, c2.Context))
 		}
 	}
 
@@ -162,18 +163,45 @@ func UseCluster(ctx context.Context, opts *options.ClusterUseConfig) {
 	term.Successln(fmt.Sprintf("kubectl context set to cluster `%s`.", opts.ClusterName))
 }
 
-func setCluster(cur *clientcmd.NamedCluster, desired clientcmd.NamedCluster) *clientcmd.NamedCluster {
-	*cur = desired
+func setCluster(cur *clientcmd.NamedCluster, desired api.NamedCluster) *clientcmd.NamedCluster {
+	d := clientcmd.NamedCluster{
+		Name: desired.Name,
+		Cluster: clientcmd.Cluster{
+			Server: desired.Server,
+			CertificateAuthorityData: append([]byte(nil), desired.CertificateAuthorityData...),
+		},
+	}
+	*cur = d
 	return cur
 }
 
-func setUser(cur *clientcmd.NamedAuthInfo, desired clientcmd.NamedAuthInfo) *clientcmd.NamedAuthInfo {
-	*cur = desired
+func setUser(cur *clientcmd.NamedAuthInfo, desired api.NamedAuthInfo) *clientcmd.NamedAuthInfo {
+	d := clientcmd.NamedAuthInfo{
+		Name: desired.Name,
+	}
+	if desired.Token == "" {
+		d.AuthInfo = clientcmd.AuthInfo{
+			ClientCertificateData: append([]byte(nil), desired.ClientCertificateData...),
+			ClientKeyData:         append([]byte(nil), desired.ClientKeyData...),
+		}
+	} else {
+		d.AuthInfo = clientcmd.AuthInfo{
+			Token: desired.Token,
+		}
+	}
+	*cur = d
 	return cur
 }
 
-func setContext(cur *clientcmd.NamedContext, desired clientcmd.NamedContext) *clientcmd.NamedContext {
-	*cur = desired
+func setContext(cur *clientcmd.NamedContext, desired api.NamedContext) *clientcmd.NamedContext {
+	d := clientcmd.NamedContext{
+		Name: desired.Name,
+		Context: clientcmd.Context{
+			Cluster:  desired.Cluster,
+			AuthInfo: desired.AuthInfo,
+		},
+	}
+	*cur = d
 	return cur
 }
 

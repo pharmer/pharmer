@@ -11,7 +11,6 @@ import (
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/cert"
 )
 
@@ -174,7 +173,7 @@ func GetSSHConfig(ctx context.Context, nodeName string, cluster *api.Cluster) (*
 	return cm.GetSSHConfig(cluster, node)
 }
 
-func GetAdminConfig(ctx context.Context, cluster *api.Cluster) (*clientcmd.Config, error) {
+func GetAdminConfig(ctx context.Context, cluster *api.Cluster) (*api.KubeConfig, error) {
 	var err error
 	ctx, err = LoadCACertificates(ctx, cluster)
 	if err != nil {
@@ -190,40 +189,29 @@ func GetAdminConfig(ctx context.Context, cluster *api.Cluster) (*clientcmd.Confi
 		userName    = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
 		ctxName     = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
 	)
-	cfg := clientcmd.Config{
-		APIVersion: "v1",
-		Kind:       "Config",
-		Preferences: clientcmd.Preferences{
+	cfg := api.KubeConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "KubeConfig",
+		},
+		Preferences: api.Preferences{
 			Colors: true,
 		},
-		Clusters: []clientcmd.NamedCluster{
-			{
-				Name: clusterName,
-				Cluster: clientcmd.Cluster{
-					Server: cluster.APIServerURL(),
-					CertificateAuthorityData: cert.EncodeCertPEM(CACert(ctx)),
-				},
-			},
+		Cluster: api.NamedCluster{
+			Name:   clusterName,
+			Server: cluster.APIServerURL(),
+			CertificateAuthorityData: cert.EncodeCertPEM(CACert(ctx)),
 		},
-		AuthInfos: []clientcmd.NamedAuthInfo{
-			{
-				Name: userName,
-				AuthInfo: clientcmd.AuthInfo{
-					ClientCertificateData: cert.EncodeCertPEM(adminCert),
-					ClientKeyData:         cert.EncodePrivateKeyPEM(adminKey),
-				},
-			},
+		AuthInfo: api.NamedAuthInfo{
+			Name: userName,
+			ClientCertificateData: cert.EncodeCertPEM(adminCert),
+			ClientKeyData:         cert.EncodePrivateKeyPEM(adminKey),
 		},
-		Contexts: []clientcmd.NamedContext{
-			{
-				Name: ctxName,
-				Context: clientcmd.Context{
-					Cluster:  clusterName,
-					AuthInfo: userName,
-				},
-			},
+		Context: api.NamedContext{
+			Name:     ctxName,
+			Cluster:  clusterName,
+			AuthInfo: userName,
 		},
-		CurrentContext: ctxName,
 	}
 	return &cfg, nil
 }

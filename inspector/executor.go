@@ -9,9 +9,9 @@ import (
 	"github.com/appscode/go/errors"
 	"github.com/appscode/go/log"
 	. "github.com/pharmer/pharmer/cloud"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 )
@@ -49,7 +49,7 @@ type ExecOptions struct {
 	Command       []string
 
 	Executor RemoteExecutor
-	Client   clientset.Interface
+	Client   kubernetes.Interface
 	Config   *rest.Config
 }
 
@@ -58,20 +58,20 @@ func (p *ExecOptions) Run(retry int) (string, error) {
 	if err != nil {
 		return "", errors.FromErr(err).WithMessage("failed to validate").Err()
 	}
-	var pod *apiv1.Pod
+	var pod *core.Pod
 	for i := 0; i < retry; i++ {
 		pod, err = p.Client.CoreV1().Pods(p.Namespace).Get(p.PodName, metav1.GetOptions{})
-		if err != nil || pod.Status.Phase != apiv1.PodRunning {
+		if err != nil || pod.Status.Phase != core.PodRunning {
 			log.Debugln("pod not running waiting, tries", i+1)
 			time.Sleep(time.Second * 30)
 			continue
 		}
-		if pod.Status.Phase == apiv1.PodRunning {
+		if pod.Status.Phase == core.PodRunning {
 			log.Debugln("pod running quiting loop, tries", i+1)
 			break
 		}
 	}
-	if pod.Status.Phase != apiv1.PodRunning || err != nil {
+	if pod.Status.Phase != core.PodRunning || err != nil {
 		return "", errors.Newf("pod %s is not running and cannot execute commands; current phase is %s", p.PodName, pod.Status.Phase).Err()
 	}
 

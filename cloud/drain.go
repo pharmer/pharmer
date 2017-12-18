@@ -8,10 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
-	clientcmd_api "k8s.io/client-go/tools/clientcmd/api"
-	clientcmd_v1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	drain "k8s.io/kubernetes/pkg/kubectl/cmd"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 )
@@ -38,15 +35,7 @@ func NewNodeDrain(ctx context.Context, kc kubernetes.Interface, cluster *api.Clu
 	if err != nil {
 		return NodeDrain{}, err
 	}
-	err = clientcmd_v1.AddToScheme(scheme.Scheme)
-	if err != nil {
-		return NodeDrain{}, err
-	}
-	out := &clientcmd_api.Config{}
-	err = scheme.Scheme.Convert(c1, out, nil)
-	if err != nil {
-		return NodeDrain{}, err
-	}
+	out := api.Convert_KubeConfig_To_Config(c1)
 	clientConfig := clientcmd.NewDefaultClientConfig(*out, &clientcmd.ConfigOverrides{})
 	do.Factory = cmdutil.NewFactory(clientConfig)
 

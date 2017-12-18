@@ -46,12 +46,16 @@ func NewCmdBackup() *cobra.Command {
 					term.Fatalln(err)
 				}
 				restConfig = &rest.Config{
-					Host: c2.Clusters[0].Cluster.Server,
+					Host: c2.Cluster.Server,
 					TLSClientConfig: rest.TLSClientConfig{
-						CAData:   c2.Clusters[0].Cluster.CertificateAuthorityData,
-						CertData: c2.AuthInfos[0].AuthInfo.ClientCertificateData,
-						KeyData:  c2.AuthInfos[0].AuthInfo.ClientKeyData,
+						CAData: c2.Cluster.CertificateAuthorityData,
 					},
+				}
+				if c2.AuthInfo.Token == "" {
+					restConfig.TLSClientConfig.CertData = c2.AuthInfo.ClientCertificateData
+					restConfig.TLSClientConfig.KeyData = c2.AuthInfo.ClientKeyData
+				} else {
+					restConfig.BearerToken = c2.AuthInfo.Token
 				}
 			}
 

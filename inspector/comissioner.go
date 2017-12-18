@@ -1,20 +1,17 @@
 package inspector
 
 import (
-	"fmt"
-	"github.com/appscode/go/errors"
-	"k8s.io/client-go/kubernetes"
-
 	"context"
+	"fmt"
+
+	"github.com/appscode/go/errors"
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
-	apiv1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes/scheme"
+	core "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	clientcmd_api "k8s.io/client-go/tools/clientcmd/api"
-	clientcmd_v1 "k8s.io/client-go/tools/clientcmd/api/v1"
 )
 
 type Inspector struct {
@@ -44,15 +41,7 @@ func New(ctx context.Context, cluster *api.Cluster) (*Inspector, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = clientcmd_v1.AddToScheme(scheme.Scheme)
-	if err != nil {
-		return nil, err
-	}
-	out := &clientcmd_api.Config{}
-	err = scheme.Scheme.Convert(adminConfig, out, nil)
-	if err != nil {
-		return nil, err
-	}
+	out := api.Convert_KubeConfig_To_Config(adminConfig)
 	clientConfig := clientcmd.NewDefaultClientConfig(*out, &clientcmd.ConfigOverrides{})
 	restConfig, err := clientConfig.ClientConfig()
 	if err != nil {
@@ -83,7 +72,7 @@ func (i *Inspector) NetworkCheck() error {
 	}
 
 	var nodeonly = make([]string, 0)
-	var masterNode apiv1.Node
+	var masterNode core.Node
 	for _, n := range nodes.Items {
 		if _, ok := n.ObjectMeta.Labels[api.RoleMasterKey]; !ok {
 			nodeonly = append(nodeonly, n.Name)
@@ -101,7 +90,7 @@ func (i *Inspector) NetworkCheck() error {
 		i.DeleteNginx()
 	}()
 
-	var pods []apiv1.Pod
+	var pods []core.Pod
 	if pods, err = i.InstallNginx(); err != nil {
 		return err
 	}
