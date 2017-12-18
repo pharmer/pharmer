@@ -27,7 +27,7 @@ func NewNodeGroupCreateConfig() *NodeGroupCreateConfig {
 }
 
 func (c *NodeGroupCreateConfig) AddFlags(fs *pflag.FlagSet) {
-	fs.StringP("cluster", "k", c.ClusterName, "Name of the Kubernetes cluster")
+	fs.StringVarP(&c.ClusterName, "cluster", "k", c.ClusterName, "Name of the Kubernetes cluster")
 	fs.StringVar(&c.NodeType, "type", c.NodeType, "Set node type regular/spot, default regular")
 	fs.Float64Var(&c.SpotPriceMax, "spot-price-max", c.SpotPriceMax, "Maximum price of spot instance")
 	fs.StringToIntVar(&c.Nodes, "nodes", c.Nodes, "Node set configuration")
