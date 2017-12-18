@@ -9,7 +9,7 @@ import (
 	"github.com/appscode/go/term"
 	. "github.com/pharmer/pharmer/cloud"
 	"golang.org/x/crypto/ssh"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -23,8 +23,8 @@ const (
 	Server           = "pingserver"
 )
 
-func (i *Inspector) getNodes() (*apiv1.NodeList, error) {
-	nodes := &apiv1.NodeList{}
+func (i *Inspector) getNodes() (*core.NodeList, error) {
+	nodes := &core.NodeList{}
 	if err := i.client.CoreV1().RESTClient().Get().Resource("nodes").Do().Into(nodes); err != nil {
 		return nodes, errors.FromErr(err).Err()
 	}
@@ -57,7 +57,7 @@ func (i *Inspector) runNodeExecutor(podName, podIp, namespace, containerName str
 	return errors.New("Network is not ok from", podName, "to", podIp).Err()
 }
 
-func (i *Inspector) runMasterExecutor(masterNode apiv1.Node, podIp string) error {
+func (i *Inspector) runMasterExecutor(masterNode core.Node, podIp string) error {
 	sshCfg, err := GetSSHConfig(i.ctx, masterNode.Name, i.cluster)
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func (i *Inspector) runMasterExecutor(masterNode apiv1.Node, podIp string) error
 
 func (i *Inspector) InstallNginxService() (string, error) {
 	fmt.Println("Installing nginx service ", Server)
-	svc := &apiv1.Service{
+	svc := &core.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      Server,
 			Namespace: defaultNamespace,
@@ -94,9 +94,9 @@ func (i *Inspector) InstallNginxService() (string, error) {
 			},
 		},
 
-		Spec: apiv1.ServiceSpec{
-			Type: apiv1.ServiceTypeClusterIP,
-			Ports: []apiv1.ServicePort{
+		Spec: core.ServiceSpec{
+			Type: core.ServiceTypeClusterIP,
+			Ports: []core.ServicePort{
 				{
 					Port:       80,
 					Protocol:   "TCP",
@@ -111,7 +111,7 @@ func (i *Inspector) InstallNginxService() (string, error) {
 	if _, err := i.client.CoreV1().Services(defaultNamespace).Create(svc); err != nil {
 		return "", errors.FromErr(err).Err()
 	}
-	var service *apiv1.Service
+	var service *core.Service
 	//attempt := 0
 	wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		var err error
@@ -129,28 +129,28 @@ func (i *Inspector) DeleteNginxService() error {
 	return i.client.CoreV1().Services(defaultNamespace).Delete(Server, &metav1.DeleteOptions{})
 }
 
-func (i *Inspector) InstallNginx() ([]apiv1.Pod, error) {
+func (i *Inspector) InstallNginx() ([]core.Pod, error) {
 	daemonset := new(extensions.DaemonSet)
 	daemonset.Name = Server
-	container := apiv1.Container{
+	container := core.Container{
 		Name:  Server,
 		Image: "appscode/inspector-nginx:alpine",
-		Ports: []apiv1.ContainerPort{
+		Ports: []core.ContainerPort{
 			{
 				ContainerPort: 80,
 				Protocol:      "TCP",
 			},
 		},
-		ImagePullPolicy: apiv1.PullIfNotPresent,
+		ImagePullPolicy: core.PullIfNotPresent,
 	}
 	daemonset.Spec.Template.Labels = map[string]string{
 		"app": Server,
 	}
-	daemonset.Spec.Template.Spec.Containers = []apiv1.Container{container}
+	daemonset.Spec.Template.Spec.Containers = []core.Container{container}
 	if _, err := i.client.ExtensionsV1beta1().DaemonSets(defaultNamespace).Create(daemonset); err != nil {
 		return nil, err
 	}
-	var pods *apiv1.PodList
+	var pods *core.PodList
 	attempt := 0
 	err := wait.Poll(RetryInterval, RetryTimeout, func() (bool, error) {
 		attempt++

@@ -280,6 +280,22 @@ message GoogleSpec {
   repeated string nodeScopes = 3;
 }
 
+// Config holds the information needed to build connect to remote kubernetes clusters as a given user
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message KubeConfig {
+  // Preferences holds general information to be use for cli interactions
+  optional Preferences preferences = 1;
+
+  // Clusters is a map of referencable names to cluster configs
+  optional NamedCluster cluster = 2;
+
+  // AuthInfos is a map of referencable names to user configs
+  optional NamedAuthInfo user = 3;
+
+  // Contexts is a map of referencable names to context configs
+  optional NamedContext context = 4;
+}
+
 message LightsailCloudConfig {
   optional string accessKeyID = 1;
 
@@ -301,6 +317,49 @@ message LinodeSpec {
 
 message LocalSpec {
   optional string path = 1;
+}
+
+// NamedAuthInfo relates nicknames to auth information
+message NamedAuthInfo {
+  // Name is the nickname for this AuthInfo
+  optional string name = 1;
+
+  // ClientCertificateData contains PEM-encoded data from a client cert file for TLS.
+  // +optional
+  optional bytes clientCertificateData = 2;
+
+  // ClientKeyData contains PEM-encoded data from a client key file for TLS.
+  // +optional
+  optional bytes clientKeyData = 3;
+
+  // Token is the bearer token for authentication to the kubernetes cluster.
+  // +optional
+  optional string token = 4;
+}
+
+// NamedCluster relates nicknames to cluster information
+message NamedCluster {
+  // Name is the nickname for this Cluster
+  optional string name = 1;
+
+  // Server is the address of the kubernetes cluster (https://hostname:port).
+  optional string server = 2;
+
+  // CertificateAuthorityData contains PEM-encoded certificate authority certificates. Overrides CertificateAuthorityData
+  // +optional
+  optional bytes certificateAuthorityData = 3;
+}
+
+// NamedContext relates nicknames to context information
+message NamedContext {
+  // Name is the nickname for this Context
+  optional string name = 1;
+
+  // Cluster is the name of the cluster for this context
+  optional string cluster = 2;
+
+  // AuthInfo is the name of the authInfo for this context
+  optional string user = 3;
 }
 
 message Networking {
@@ -421,6 +480,11 @@ message PostgresSpec {
   optional string user = 4;
 
   optional string password = 5;
+}
+
+message Preferences {
+  // +optional
+  optional bool colors = 1;
 }
 
 message ReservedIP {

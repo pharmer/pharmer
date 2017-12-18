@@ -6,6 +6,7 @@ import (
 
 	"github.com/appscode/go/term"
 	"github.com/appscode/kutil/tools/backup"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
@@ -28,7 +29,7 @@ func NewCmdBackup() *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
-			restConfig, err := searchLocalKubeConfig(opts.ClusterName)
+			restConfig, err := SearchLocalKubeConfig(opts.ClusterName)
 			if err != nil || restConfig == nil {
 				cfgFile, _ := config.GetConfigFile(cmd.Flags())
 				cfg, err := config.LoadConfig(cfgFile)
@@ -45,14 +46,7 @@ func NewCmdBackup() *cobra.Command {
 				if err != nil {
 					term.Fatalln(err)
 				}
-				restConfig = &rest.Config{
-					Host: c2.Clusters[0].Cluster.Server,
-					TLSClientConfig: rest.TLSClientConfig{
-						CAData:   c2.Clusters[0].Cluster.CertificateAuthorityData,
-						CertData: c2.AuthInfos[0].AuthInfo.ClientCertificateData,
-						KeyData:  c2.AuthInfos[0].AuthInfo.ClientKeyData,
-					},
-				}
+				restConfig = api.NewRestConfig(c2)
 			}
 
 			mgr := backup.NewBackupManager(opts.ClusterName, restConfig, opts.Sanitize)
@@ -67,7 +61,7 @@ func NewCmdBackup() *cobra.Command {
 	return cmd
 }
 
-func searchLocalKubeConfig(clusterName string) (*rest.Config, error) {
+func SearchLocalKubeConfig(clusterName string) (*rest.Config, error) {
 	// ref: https://github.com/pharmer/pharmer/blob/19db538fe51b83e807c525e2dbf28b56b7fb36e2/cloud/lib.go#L148
 	ctxName := fmt.Sprintf("cluster-admin@%s.pharmer", clusterName)
 	apiConfig, err := clientcmd.NewDefaultPathOptions().GetStartingConfig()

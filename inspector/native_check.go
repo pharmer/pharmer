@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/errors"
-	term "github.com/appscode/go/term"
+	"github.com/appscode/go/term"
 	. "github.com/pharmer/pharmer/cloud"
-	apiv1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -25,7 +25,7 @@ func (i *Inspector) CheckHelthStatus() error {
 		}
 		for _, status := range resp.Items {
 			for _, cond := range status.Conditions {
-				if cond.Type == apiv1.ComponentHealthy && cond.Status != apiv1.ConditionTrue {
+				if cond.Type == core.ComponentHealthy && cond.Status != core.ConditionTrue {
 					return false, nil
 				} else {
 					term.Infoln(fmt.Sprintf("Component %v is in condition %v with status %v", status.Name, cond.Type, cond.Status))
