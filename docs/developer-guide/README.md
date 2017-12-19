@@ -33,7 +33,7 @@ development environment, please follow [these instructions](https://golang.org/d
 #### Download Source
 
 ```console
-$ go get github.com/pharmer/pharmer
+$ go get -u github.com/pharmer/pharmer
 $ cd $(go env GOPATH)/src/github.com/pharmer/pharmer
 ```
 

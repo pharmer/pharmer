@@ -16,7 +16,6 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
-	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
@@ -573,7 +572,7 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, as compu
 				AdminUsername: StringP(conn.namer.AdminUsername()),
 				CustomData:    StringP(base64.StdEncoding.EncodeToString([]byte(data))),
 				LinuxConfiguration: &compute.LinuxConfiguration{
-					DisablePasswordAuthentication: BoolP(!_env.FromHost().DebugEnabled()),
+					DisablePasswordAuthentication: BoolP(!Env(conn.ctx).DebugEnabled()),
 					SSH: &compute.SSHConfiguration{
 						PublicKeys: &[]compute.SSHPublicKey{
 							{

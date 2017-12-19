@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	gv "github.com/JamesClonk/vultr/lib"
-	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/errors"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
@@ -272,7 +271,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		Hostname:             name,
 		Tag:                  conn.cluster.Name,
 	}
-	if _env.FromHost().IsPublic() {
+	if Env(conn.ctx).IsPublic() {
 		opts.SSHKey = sshKeyID
 	}
 	resp, err := conn.client.CreateServer(name, regionID, planID, osID, opts)
