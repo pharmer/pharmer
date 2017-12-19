@@ -117,8 +117,6 @@ For location code and sku details click [hrere](https://github.com/pharmer/pharm
  Flags:
        --credential-uid string       Use preconfigured cloud credential uid
    -h, --help                        help for cluster
-       --kubeadm-version string      Kubeadm version
-       --kubelet-version string      kubelet/kubectl version
        --kubernetes-version string   Kubernetes version
        --networking string           Networking mode to use. calico(default), flannel (default "calico")
        --nodes stringToInt           Node set configuration (default [])
@@ -138,7 +136,7 @@ For location code and sku details click [hrere](https://github.com/pharmer/pharm
        --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
  ```
 
- So, we need to run following command to create cluster with our information.
+So, we need to run following command to create cluster with our information.
 
  ```console
 $ pharmer create cluster l1 \
@@ -148,10 +146,6 @@ $ pharmer create cluster l1 \
 	--credential-uid=linode \
 	--kubernetes-version=v1.8.0
 ```
-If you want to use a specific version of `kubelet` and `kubeadm` for your cluster, you can pass those flags also.
-For example:
-
-`--kubelet-version=1.8.0 --kubeadm-version=1.8.0`
 
 To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](/docs/networking.md)
 
