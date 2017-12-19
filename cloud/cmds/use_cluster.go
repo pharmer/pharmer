@@ -40,14 +40,22 @@ func NewCmdUse() *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			UseCluster(ctx, opts)
+			cluster, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
+			if err != nil {
+				term.Fatalln(err)
+			}
+			c2, err := cloud.GetAdminConfig(ctx, cluster)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			UseCluster(ctx, opts, c2)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
 	return cmd
 }
 
-func UseCluster(ctx context.Context, opts *options.ClusterUseConfig) {
+func UseCluster(ctx context.Context, opts *options.ClusterUseConfig, konf *api.KubeConfig) {
 	var konfig clientcmd.Config
 	if _, err := os.Stat(KubeConfigPath()); err == nil {
 		// ~/.kube/config exists
@@ -96,52 +104,43 @@ func UseCluster(ctx context.Context, opts *options.ClusterUseConfig) {
 		}
 	}
 	if !found || opts.Overwrite {
-		cluster, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
-		if err != nil {
-			term.Fatalln(err)
-		}
-		c2, err := cloud.GetAdminConfig(ctx, cluster)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
 		// Upsert cluster
 		found := false
 		for i := range konfig.Clusters {
-			if konfig.Clusters[i].Name == c2.Cluster.Name {
-				setCluster(&konfig.Clusters[i], c2.Cluster)
+			if konfig.Clusters[i].Name == konf.Cluster.Name {
+				setCluster(&konfig.Clusters[i], konf.Cluster)
 				found = true
 				break
 			}
 		}
 		if !found {
-			konfig.Clusters = append(konfig.Clusters, *setCluster(&clientcmd.NamedCluster{}, c2.Cluster))
+			konfig.Clusters = append(konfig.Clusters, *setCluster(&clientcmd.NamedCluster{}, konf.Cluster))
 		}
 
 		// Upsert user
 		found = false
 		for i := range konfig.AuthInfos {
-			if konfig.AuthInfos[i].Name == c2.AuthInfo.Name {
-				setUser(&konfig.AuthInfos[i], c2.AuthInfo)
+			if konfig.AuthInfos[i].Name == konf.AuthInfo.Name {
+				setUser(&konfig.AuthInfos[i], konf.AuthInfo)
 				found = true
 				break
 			}
 		}
 		if !found {
-			konfig.AuthInfos = append(konfig.AuthInfos, *setUser(&clientcmd.NamedAuthInfo{}, c2.AuthInfo))
+			konfig.AuthInfos = append(konfig.AuthInfos, *setUser(&clientcmd.NamedAuthInfo{}, konf.AuthInfo))
 		}
 
 		// Upsert context
 		found = false
 		for i := range konfig.Contexts {
-			if konfig.Contexts[i].Name == c2.Context.Name {
-				setContext(&konfig.Contexts[i], c2.Context)
+			if konfig.Contexts[i].Name == konf.Context.Name {
+				setContext(&konfig.Contexts[i], konf.Context)
 				found = true
 				break
 			}
 		}
 		if !found {
-			konfig.Contexts = append(konfig.Contexts, *setContext(&clientcmd.NamedContext{}, c2.Context))
+			konfig.Contexts = append(konfig.Contexts, *setContext(&clientcmd.NamedContext{}, konf.Context))
 		}
 	}
 

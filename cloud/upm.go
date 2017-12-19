@@ -30,9 +30,9 @@ func NewUpgradeManager(ctx context.Context, ssh SSHGetter, kc kubernetes.Interfa
 	return &GenericUpgradeManager{ctx: ctx, ssh: ssh, kc: kc, cluster: cluster}
 }
 
-func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]api.Upgrade, error) {
+func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error) {
 	// Collect the upgrades kubeadm can do in this list
-	upgrades := []api.Upgrade{}
+	upgrades := make([]*api.Upgrade, 0)
 	v := NewKubeVersionGetter(upm.kc, upm.cluster)
 	clusterVersionStr, clusterVersion, err := v.ClusterVersion()
 	if err != nil {
@@ -100,7 +100,7 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]api.Upgrade, error) 
 				newKubeadmVer = kubeadmVersionStr
 			}
 
-			upgrades = append(upgrades, api.Upgrade{
+			upgrades = append(upgrades, &api.Upgrade{
 				Description: description,
 				Before:      beforeState,
 				After: api.ClusterState{
@@ -113,7 +113,7 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]api.Upgrade, error) 
 		}
 	}
 	if canDoMinorUpgrade {
-		upgrades = append(upgrades, api.Upgrade{
+		upgrades = append(upgrades, &api.Upgrade{
 			Description: "stable version",
 			Before:      beforeState,
 			After: api.ClusterState{
@@ -148,7 +148,7 @@ func (upm *GenericUpgradeManager) ExecuteSSHCommand(command string, node *core.N
 
 // printAvailableUpgrades prints a UX-friendly overview of what versions are available to upgrade to
 // TODO look into columnize or some other formatter when time permits instead of using the tabwriter
-func (upm *GenericUpgradeManager) PrintAvailableUpgrades(upgrades []api.Upgrade) {
+func (upm *GenericUpgradeManager) PrintAvailableUpgrades(upgrades []*api.Upgrade) {
 
 	// Return quickly if no upgrades can be made
 	if len(upgrades) == 0 {
