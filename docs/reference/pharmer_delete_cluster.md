@@ -15,6 +15,7 @@ Delete a Kubernetes cluster
 
 ### Synopsis
 
+
 Delete a Kubernetes cluster
 
 ```
@@ -53,6 +54,5 @@ pharmer delete cluster demo-cluster
 ```
 
 ### SEE ALSO
-
 * [pharmer delete](/docs/reference/pharmer_delete.md)	 - 
 

@@ -32,8 +32,6 @@ func (c *ClusterCreateConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.Cluster.Spec.Cloud.Zone, "zone", c.Cluster.Spec.Cloud.Zone, "Cloud provider zone name")
 	fs.StringVar(&c.Cluster.Spec.CredentialName, "credential-uid", c.Cluster.Spec.CredentialName, "Use preconfigured cloud credential uid")
 	fs.StringVar(&c.Cluster.Spec.KubernetesVersion, "kubernetes-version", c.Cluster.Spec.KubernetesVersion, "Kubernetes version")
-	fs.StringVar(&c.Cluster.Spec.KubeletVersion, "kubelet-version", c.Cluster.Spec.KubeletVersion, "kubelet/kubectl version")
-	fs.StringVar(&c.Cluster.Spec.KubeadmVersion, "kubeadm-version", c.Cluster.Spec.KubeadmVersion, "Kubeadm version")
 	fs.StringVar(&c.Cluster.Spec.Networking.NetworkProvider, "network-provider", c.Cluster.Spec.Networking.NetworkProvider, "Name of CNI plugin. Available options: calico, flannel, kubenet, weavenet")
 
 	fs.StringToIntVar(&c.Nodes, "nodes", c.Nodes, "Node set configuration")

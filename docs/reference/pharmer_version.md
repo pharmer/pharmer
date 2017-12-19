@@ -15,6 +15,7 @@ Prints binary version number.
 
 ### Synopsis
 
+
 Prints binary version number.
 
 ```
@@ -43,6 +44,5 @@ pharmer version [flags]
 ```
 
 ### SEE ALSO
-
 * [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
 

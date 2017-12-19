@@ -15,6 +15,7 @@ Edit cluster object
 
 ### Synopsis
 
+
 Edit cluster object
 
 ```
@@ -32,8 +33,6 @@ pharmer edit cluster
 ```
   -f, --file string                 Load cluster data from file
   -h, --help                        help for cluster
-      --kubeadm-version string      Kubeadm version
-      --kubelet-version string      kubelet/kubectl version
       --kubernetes-version string   Kubernetes version
       --locked                      If true, locks cluster from deletion
   -o, --output string               Output format. One of: yaml|json. (default "yaml")
@@ -55,6 +54,5 @@ pharmer edit cluster
 ```
 
 ### SEE ALSO
-
 * [pharmer edit](/docs/reference/pharmer_edit.md)	 - 
 

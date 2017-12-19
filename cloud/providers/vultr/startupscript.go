@@ -21,18 +21,17 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		panic(err)
 	}
 	td := TemplateData{
-		ClusterName:      cluster.Name,
-		KubeletVersion:   cluster.Spec.KubeletVersion,
-		KubeadmVersion:   cluster.Spec.KubeletVersion,
-		KubeadmToken:     token,
-		CloudCredential:  cred.Spec.Data,
-		CAHash:           pubkeypin.Hash(CACert(ctx)),
-		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		FrontProxyKey:    string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		APIServerAddress: cluster.APIServerAddress(),
-		NetworkProvider:  cluster.Spec.Networking.NetworkProvider,
-		Provider:         cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider: true, // Vultr uses out-of-tree CCM
+		ClusterName:       cluster.Name,
+		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		KubeadmToken:      token,
+		CloudCredential:   cred.Spec.Data,
+		CAHash:            pubkeypin.Hash(CACert(ctx)),
+		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		APIServerAddress:  cluster.APIServerAddress(),
+		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
+		Provider:          cluster.Spec.Cloud.CloudProvider,
+		ExternalProvider:  true, // Vultr uses out-of-tree CCM
 	}
 	{
 		td.KubeletExtraArgs = map[string]string{}

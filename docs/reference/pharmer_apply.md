@@ -15,6 +15,7 @@ Apply changes
 
 ### Synopsis
 
+
 Apply changes
 
 ```
@@ -44,6 +45,5 @@ pharmer apply [flags]
 ```
 
 ### SEE ALSO
-
 * [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
 

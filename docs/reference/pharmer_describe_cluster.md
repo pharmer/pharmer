@@ -15,6 +15,7 @@ Describe a Kubernetes cluster
 
 ### Synopsis
 
+
 Describe a Kubernetes cluster
 
 ```
@@ -49,6 +50,5 @@ pharmer describe cluster <cluster_name>
 ```
 
 ### SEE ALSO
-
 * [pharmer describe](/docs/reference/pharmer_describe.md)	 - 
 

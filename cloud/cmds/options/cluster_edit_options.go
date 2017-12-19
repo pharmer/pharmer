@@ -11,8 +11,6 @@ type ClusterEditConfig struct {
 	ClusterName       string
 	File              string
 	KubernetesVersion string
-	KubeletVersion    string
-	KubeadmVersion    string
 	Locked            bool
 	Output            string
 }
@@ -22,8 +20,6 @@ func NewClusterEditConfig() *ClusterEditConfig {
 		ClusterName:       "",
 		File:              "",
 		KubernetesVersion: "",
-		KubeletVersion:    "",
-		KubeadmVersion:    "",
 		Locked:            false,
 		Output:            "yaml",
 	}
@@ -33,8 +29,6 @@ func (c *ClusterEditConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.File, "file", "f", c.File, "Load cluster data from file")
 	//TODO: Add necessary flags that will be used for update
 	fs.StringVar(&c.KubernetesVersion, "kubernetes-version", c.KubernetesVersion, "Kubernetes version")
-	fs.StringVar(&c.KubeletVersion, "kubelet-version", c.KubeletVersion, "kubelet/kubectl version")
-	fs.StringVar(&c.KubeadmVersion, "kubeadm-version", c.KubeadmVersion, "Kubeadm version")
 	fs.BoolVar(&c.Locked, "locked", c.Locked, "If true, locks cluster from deletion")
 	fs.StringVarP(&c.Output, "output", "o", c.Output, "Output format. One of: yaml|json.")
 
@@ -57,8 +51,7 @@ func (c *ClusterEditConfig) ValidateFlags(cmd *cobra.Command, args []string) err
 }
 
 func (c *ClusterEditConfig) CheckForUpdateFlags() bool {
-	if c.Locked || c.KubernetesVersion != "" ||
-		c.KubeletVersion != "" || c.KubeadmVersion != "" {
+	if c.Locked || c.KubernetesVersion != "" {
 		return true
 	}
 	return false

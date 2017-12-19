@@ -15,6 +15,7 @@ Edit a cloud Credential
 
 ### Synopsis
 
+
 Edit a cloud Credential
 
 ```
@@ -52,6 +53,5 @@ pharmer edit credential
 ```
 
 ### SEE ALSO
-
 * [pharmer edit](/docs/reference/pharmer_edit.md)	 - 
 

@@ -17,6 +17,7 @@ section_menu_id: reference
 
 
 
+
 ```
 pharmer delete [flags]
 ```
@@ -43,7 +44,6 @@ pharmer delete [flags]
 ```
 
 ### SEE ALSO
-
 * [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
 * [pharmer delete cluster](/docs/reference/pharmer_delete_cluster.md)	 - Delete a Kubernetes cluster
 * [pharmer delete credential](/docs/reference/pharmer_delete_credential.md)	 - Delete  credential object

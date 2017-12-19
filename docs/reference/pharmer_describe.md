@@ -17,6 +17,7 @@ section_menu_id: reference
 
 
 
+
 ```
 pharmer describe [flags]
 ```
@@ -43,7 +44,6 @@ pharmer describe [flags]
 ```
 
 ### SEE ALSO
-
 * [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
 * [pharmer describe cluster](/docs/reference/pharmer_describe_cluster.md)	 - Describe a Kubernetes cluster
 

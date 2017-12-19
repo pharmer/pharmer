@@ -15,6 +15,7 @@ Inspect cluster for conformance
 
 ### Synopsis
 
+
 Inspect cluster for conformance
 
 ### Options
@@ -39,7 +40,6 @@ Inspect cluster for conformance
 ```
 
 ### SEE ALSO
-
 * [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
 * [pharmer inspect cluster](/docs/reference/pharmer_inspect_cluster.md)	 - Inspect cluster object
 

@@ -103,27 +103,6 @@ func RunUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out,
 		}
 		if opts.KubernetesVersion != "" {
 			updated.Spec.KubernetesVersion = opts.KubernetesVersion
-			if opts.KubeletVersion != "" {
-				updated.Spec.KubeletVersion = opts.KubeletVersion
-			} else if original.Spec.KubernetesVersion != updated.Spec.KubernetesVersion {
-				// User changed kubernetes version but did not provide kubelet version.
-				// So, kubelet version is cleared so that the latest version can be picked.
-				updated.Spec.KubeletVersion = ""
-			}
-			if opts.KubeadmVersion != "" {
-				updated.Spec.KubeadmVersion = opts.KubeadmVersion
-			} else if original.Spec.KubernetesVersion != updated.Spec.KubernetesVersion {
-				// User changed kubernetes version but did not provide kubeadm version.
-				// So, kubeadm version is cleared so that the latest version can be picked.
-				updated.Spec.KubeadmVersion = ""
-			}
-		} else {
-			if opts.KubeletVersion != "" {
-				updated.Spec.KubeletVersion = opts.KubeletVersion
-			}
-			if opts.KubeadmVersion != "" {
-				updated.Spec.KubeadmVersion = opts.KubeadmVersion
-			}
 		}
 
 		if err := UpdateCluster(ctx, original, updated); err != nil {
