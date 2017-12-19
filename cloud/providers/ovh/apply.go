@@ -339,7 +339,7 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 		return
 	}
 
-	upm := NewUpgradeManager(cm.ctx, cm, kc, cm.cluster)
+	upm := NewUpgradeManager(cm.ctx, cm, kc, cm.cluster, true)
 	a, err := upm.Apply(dryRun)
 	if err != nil {
 		return
