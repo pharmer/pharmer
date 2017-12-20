@@ -288,6 +288,9 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 			steps = append(steps, fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubeadm=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, patch, cni))
 		}
 	}
+
+	steps = append(steps,
+		fmt.Sprintf(`echo "pre-k check master-status --timeout=-1s --kubeconfig=/etc/kubernetes/admin.conf" >> /usr/bin/pharmer.sh`))
 	steps = append(steps,
 		fmt.Sprintf(`echo "kubeadm upgrade apply %v -y" >> /usr/bin/pharmer.sh`, upm.cluster.Spec.KubernetesVersion),
 		`chmod +x /usr/bin/pharmer.sh`,
