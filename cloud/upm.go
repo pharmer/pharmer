@@ -18,17 +18,16 @@ import (
 )
 
 type GenericUpgradeManager struct {
-	ctx              context.Context
-	ssh              SSHGetter
-	kc               kubernetes.Interface
-	cluster          *api.Cluster
-	externalProvider bool
+	ctx     context.Context
+	ssh     SSHGetter
+	kc      kubernetes.Interface
+	cluster *api.Cluster
 }
 
 var _ UpgradeManager = &GenericUpgradeManager{}
 
-func NewUpgradeManager(ctx context.Context, ssh SSHGetter, kc kubernetes.Interface, cluster *api.Cluster, externalProvider bool) UpgradeManager {
-	return &GenericUpgradeManager{ctx: ctx, ssh: ssh, kc: kc, cluster: cluster, externalProvider: externalProvider}
+func NewUpgradeManager(ctx context.Context, ssh SSHGetter, kc kubernetes.Interface, cluster *api.Cluster) UpgradeManager {
+	return &GenericUpgradeManager{ctx: ctx, ssh: ssh, kc: kc, cluster: cluster}
 }
 
 func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error) {
@@ -270,6 +269,8 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 	steps := []string{
 		`echo "#!/bin/bash" > /usr/bin/pharmer.sh`,
 		`echo "set -xeou pipefail" >> /usr/bin/pharmer.sh`,
+		`echo "export DEBIAN_FRONTEND=noninteractive" >> /usr/bin/pharmer.sh`,
+		`echo "export DEBCONF_NONINTERACTIVE_SEEN=true" >> /usr/bin/pharmer.sh`,
 		`echo "" >> /usr/bin/pharmer.sh`,
 		`echo "apt-get update" >> /usr/bin/pharmer.sh`,
 	}
@@ -281,7 +282,7 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 			return fmt.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", desireVersion)
 		}
 		// Keep using forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
-		if !upm.externalProvider && minor == "1.8.0" {
+		if minor == "1.8.0" {
 			steps = append(steps, fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, cni))
 		} else {
 			steps = append(steps, fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubeadm=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, patch, cni))
@@ -306,7 +307,7 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 	if upm.kc != nil {
 		nodes, err = upm.kc.CoreV1().Nodes().List(metav1.ListOptions{
 			LabelSelector: labels.SelectorFromSet(map[string]string{
-				api.NodePoolKey: ng.Spec.Template.Spec.SKU,
+				api.NodePoolKey: ng.Name,
 			}).String(),
 		})
 		if err != nil {
@@ -327,11 +328,13 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 			steps := []string{
 				`echo "#!/bin/bash" > /usr/bin/pharmer.sh`,
 				`echo "set -xeou pipefail" >> /usr/bin/pharmer.sh`,
+				`echo "export DEBIAN_FRONTEND=noninteractive" >> /usr/bin/pharmer.sh`,
+				`echo "export DEBCONF_NONINTERACTIVE_SEEN=true" >> /usr/bin/pharmer.sh`,
 				`echo "" >> /usr/bin/pharmer.sh`,
 				`echo "apt-get update" >> /usr/bin/pharmer.sh`,
 			}
 			// Keep using forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
-			if !upm.externalProvider && minor == "1.8.0" {
+			if minor == "1.8.0" {
 				steps = append(steps,
 					fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, cni),
 				)

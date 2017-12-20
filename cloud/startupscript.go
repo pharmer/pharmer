@@ -48,7 +48,7 @@ func (td TemplateData) MasterConfigurationYAML() (string, error) {
 // Forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
 func (td TemplateData) UseForkedKubeadm_1_8_3() bool {
 	v, _ := version.NewVersion(td.KubernetesVersion)
-	return !td.ExternalProvider && v.ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String() == "1.8.0"
+	return v.ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String() == "1.8.0"
 }
 
 func (td TemplateData) KubeletExtraArgsStr() string {
@@ -119,7 +119,7 @@ curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
 exec_until_success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
 apt-get update -y
-apt-get install -y {{ .PackageList }} || true
+exec_until_success 'apt-get install -y {{ .PackageList }}'
 {{ if .UseForkedKubeadm_1_8_3 }}
 curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/download/v1.8.3/kubeadm \
 	&& chmod +x kubeadm \
@@ -211,7 +211,7 @@ curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
 exec_until_success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
 apt-get update -y
-apt-get install -y {{ .PackageList }} || true
+exec_until_success 'apt-get install -y {{ .PackageList }}'
 {{ if .UseForkedKubeadm_1_8_3 }}
 curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/download/v1.8.3/kubeadm \
 	&& chmod +x kubeadm \
