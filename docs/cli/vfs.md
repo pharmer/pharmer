@@ -66,7 +66,7 @@ Here store type is `local`, so in `path` a local directory is used to locate whe
 You can also use Amazon's `s3`, `gcs` to use google cloud storage, `azure` or `swift` for storage purpose.
 For using `s3` you have to modify the configuration file with following field
 ```yaml
-  s2:
+  s3:
     endpoint: <aws endpoint>
     bucket: <bucket name>
     prefix: <storage prefix>
