@@ -324,10 +324,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	if masterNG.Spec.Template.Spec.SKU == "" {
 		totalNodes := NodeCount(nodeGroups)
 		// https://github.com/kubernetes/kubernetes/blob/8eb75a5810cba92ccad845ca360cf924f2385881/cluster/aws/config-default.sh#L33
-		masterNG.Spec.Template.Spec.SKU = "m3.medium"
-		if totalNodes > 5 {
-			masterNG.Spec.Template.Spec.SKU = "m3.large"
-		}
+		masterNG.Spec.Template.Spec.SKU = "m3.large"
 		if totalNodes > 10 {
 			masterNG.Spec.Template.Spec.SKU = "m3.xlarge"
 		}

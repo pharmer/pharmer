@@ -398,7 +398,7 @@ To see the current node groups list, you need to run following command:
 ```console
 $ pharmer get nodegroup -k a1
 NAME             Cluster   Node      SKU
-master           a1        1         m3.medium
+master           a1        1         m3.large
 t2.medium-pool   a1        1         t2.medium
 ```
 
@@ -460,7 +460,7 @@ $ pharmer create ng --nodes=t2.small=1 -k a1
 
 $ pharmer get nodegroups -k a1
 NAME             Cluster   Node      SKU
-master           a1        1         m3.medium
+master           a1        1         m3.large
 t2.medium-pool   a1        1         t2.medium
 t2.small-pool    a1        1         t2.small
 
@@ -550,7 +550,7 @@ This command will take care of your actions that you applied on the node groups 
 ```console
 $ pharmer get ng -k a1
 NAME             Cluster   Node      SKU
-master           a1        1         m3.medium
+master           a1        1         m3.large
 t2.medium-pool   a1        1         t2.medium
 ```
 

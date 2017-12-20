@@ -12,6 +12,7 @@ import (
 	"github.com/pharmer/pharmer/data/files/azure"
 	"github.com/pharmer/pharmer/data/files/digitalocean"
 	"github.com/pharmer/pharmer/data/files/gce"
+	"github.com/pharmer/pharmer/data/files/lightsail"
 	"github.com/pharmer/pharmer/data/files/linode"
 	"github.com/pharmer/pharmer/data/files/ovh"
 	"github.com/pharmer/pharmer/data/files/packet"
@@ -145,6 +146,12 @@ func LoadDataFiles() ([][]byte, error) {
 	} else {
 		dataFiles = append(dataFiles, bytes)
 	}
+
+	if bytes, err := lightsail.Asset("cloud.json"); err != nil {
+		return nil, err
+	} else {
+		dataFiles = append(dataFiles, bytes)
+	}
 	return dataFiles, nil
 }
 
@@ -216,7 +223,7 @@ func GetCredentialFormat(provider string) (data.CredentialFormat, bool) {
 	return cf, found
 }
 
-func GetRegions(provider string)  (map[string]data.Region, error)  {
+func GetRegions(provider string) (map[string]data.Region, error) {
 	p, found := clouds[provider]
 	if !found {
 		return nil, fmt.Errorf("can't find cluster provider %v", provider)

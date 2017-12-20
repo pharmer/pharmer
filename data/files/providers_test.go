@@ -2,6 +2,7 @@ package files_test
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"testing"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/hashicorp/go-version"
 	. "github.com/pharmer/pharmer/data/files"
 	"github.com/stretchr/testify/assert"
-	"reflect"
 )
 
 func TestName(t *testing.T) {
