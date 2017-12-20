@@ -20,6 +20,7 @@ Pharmer by Appscode - Manages farms
 
 ### Synopsis
 
+
 Pharmer by Appscode - Manages farms
 
 ### Options
@@ -39,7 +40,6 @@ Pharmer by Appscode - Manages farms
 ```
 
 ### SEE ALSO
-
 * [pharmer apply](/docs/reference/pharmer_apply.md)	 - Apply changes
 * [pharmer backup](/docs/reference/pharmer_backup.md)	 - 
 * [pharmer config](/docs/reference/pharmer_config.md)	 - Pharmer configuration

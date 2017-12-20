@@ -173,8 +173,6 @@ pharmer create cluster demo-cluster
 Flags:
       --credential-uid string       Use preconfigured cloud credential uid
   -h, --help                        help for cluster
-      --kubeadm-version string      Kubeadm version
-      --kubelet-version string      kubelet/kubectl version
       --kubernetes-version string   Kubernetes version
       --networking string           Networking mode to use. calico(default), flannel (default "calico")
       --nodes stringToInt           Node set configuration (default [])
@@ -204,10 +202,6 @@ $ pharmer create cluster v1 \
 	--credential-uid=vul \
 	--kubernetes-version=v1.8.0
 ```
-If you want to use a specific version of `kubelet` and `kubeadm` for your cluster, you can pass those flags also.
-For example:
-
-`--kubelet-version=1.8.0 --kubeadm-version=1.8.0`
 
 To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](/docs/networking.md)
 

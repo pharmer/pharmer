@@ -149,7 +149,6 @@ func (upm *GenericUpgradeManager) ExecuteSSHCommand(command string, node *core.N
 // printAvailableUpgrades prints a UX-friendly overview of what versions are available to upgrade to
 // TODO look into columnize or some other formatter when time permits instead of using the tabwriter
 func (upm *GenericUpgradeManager) PrintAvailableUpgrades(upgrades []*api.Upgrade) {
-
 	// Return quickly if no upgrades can be made
 	if len(upgrades) == 0 {
 		fmt.Println("Awesome, you're up-to-date! Enjoy!")
@@ -163,7 +162,7 @@ func (upm *GenericUpgradeManager) PrintAvailableUpgrades(upgrades []*api.Upgrade
 	for _, upgrade := range upgrades {
 
 		if upgrade.CanUpgradeKubelets() {
-			fmt.Fprintln(w, "Components that must be upgraded manually after you've upgraded the control plane with 'kubeadm upgrade apply':")
+			fmt.Fprintln(w, "Components that will be upgraded after you've upgraded the control plane:")
 			fmt.Fprintln(tabw, "COMPONENT\tCURRENT\tAVAILABLE")
 			firstPrinted := false
 
@@ -243,6 +242,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 	}
 	return
 }
+
 func (upm *GenericUpgradeManager) MasterUpgrade() error {
 	var masterInstance *core.Node
 	var err error
@@ -269,11 +269,24 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 	steps := []string{
 		`echo "#!/bin/bash" > /usr/bin/pharmer.sh`,
 		`echo "set -xeou pipefail" >> /usr/bin/pharmer.sh`,
+		`echo "export DEBIAN_FRONTEND=noninteractive" >> /usr/bin/pharmer.sh`,
+		`echo "export DEBCONF_NONINTERACTIVE_SEEN=true" >> /usr/bin/pharmer.sh`,
 		`echo "" >> /usr/bin/pharmer.sh`,
 		`echo "apt-get update" >> /usr/bin/pharmer.sh`,
 	}
-	if isPatch(desireVersion, currentVersion) {
-		steps = append(steps, `echo "apt-get upgrade -y kubelet kubectl" >> /usr/bin/pharmer.sh`)
+	if !desireVersion.Equal(currentVersion) {
+		patch := desireVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().String()
+		minor := desireVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String()
+		cni, found := kubernetesCNIVersions[minor]
+		if !found {
+			return fmt.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", desireVersion)
+		}
+		// Keep using forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
+		if minor == "1.8.0" {
+			steps = append(steps, fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, cni))
+		} else {
+			steps = append(steps, fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubeadm=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, patch, cni))
+		}
 	}
 	steps = append(steps,
 		fmt.Sprintf(`echo "kubeadm upgrade apply %v -y" >> /usr/bin/pharmer.sh`, upm.cluster.Spec.KubernetesVersion),
@@ -294,7 +307,7 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 	if upm.kc != nil {
 		nodes, err = upm.kc.CoreV1().Nodes().List(metav1.ListOptions{
 			LabelSelector: labels.SelectorFromSet(map[string]string{
-				api.NodePoolKey: ng.Spec.Template.Spec.SKU,
+				api.NodePoolKey: ng.Name,
 			}).String(),
 		})
 		if err != nil {
@@ -304,18 +317,37 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 	desireVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
 	for _, node := range nodes.Items {
 		currentVersion, _ := semver.NewVersion(node.Status.NodeInfo.KubeletVersion)
-		if isPatch(desireVersion, currentVersion) {
+		if !desireVersion.Equal(currentVersion) {
+			patch := desireVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().String()
+			minor := desireVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String()
+			cni, found := kubernetesCNIVersions[minor]
+			if !found {
+				return fmt.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", desireVersion)
+			}
 			// ref: https://stackoverflow.com/a/2831449/244009
 			steps := []string{
 				`echo "#!/bin/bash" > /usr/bin/pharmer.sh`,
 				`echo "set -xeou pipefail" >> /usr/bin/pharmer.sh`,
+				`echo "export DEBIAN_FRONTEND=noninteractive" >> /usr/bin/pharmer.sh`,
+				`echo "export DEBCONF_NONINTERACTIVE_SEEN=true" >> /usr/bin/pharmer.sh`,
 				`echo "" >> /usr/bin/pharmer.sh`,
 				`echo "apt-get update" >> /usr/bin/pharmer.sh`,
-				`echo "apt-get upgrade -y kubelet kubectl" >> /usr/bin/pharmer.sh`,
+			}
+			// Keep using forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
+			if minor == "1.8.0" {
+				steps = append(steps,
+					fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, cni),
+				)
+			} else {
+				steps = append(steps,
+					fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubeadm=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, patch, cni),
+				)
+			}
+			steps = append(steps,
 				`echo "systemctl restart kubelet" >> /usr/bin/pharmer.sh`,
 				`chmod +x /usr/bin/pharmer.sh`,
 				`nohup /usr/bin/pharmer.sh >> /var/log/pharmer.log 2>&1 &`,
-			}
+			)
 			cmd := fmt.Sprintf("sh -c '%s'", strings.Join(steps, "; "))
 			Logger(upm.ctx).Infof("Upgrading server %s using `%s`", node.Name, cmd)
 
@@ -325,15 +357,6 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 		}
 	}
 	return nil
-}
-
-func isPatch(v1, v2 *semver.Version) bool {
-	first := v1.Segments()
-	second := v2.Segments()
-	if first[0] == second[0] && first[1] == second[1] && first[2] != second[2] {
-		return true
-	}
-	return false
 }
 
 // sortedSliceFromStringIntMap returns a slice of the keys in the map sorted alphabetically

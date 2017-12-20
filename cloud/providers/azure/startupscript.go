@@ -17,17 +17,16 @@ import (
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
 	td := TemplateData{
-		ClusterName:      cluster.Name,
-		KubeletVersion:   cluster.Spec.KubeletVersion,
-		KubeadmVersion:   cluster.Spec.KubeletVersion,
-		KubeadmToken:     token,
-		CAHash:           pubkeypin.Hash(CACert(ctx)),
-		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		FrontProxyKey:    string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		APIServerAddress: cluster.APIServerAddress(),
-		NetworkProvider:  cluster.Spec.Networking.NetworkProvider,
-		Provider:         cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider: false, // Azure does not use out-of-tree CCM
+		ClusterName:       cluster.Name,
+		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		KubeadmToken:      token,
+		CAHash:            pubkeypin.Hash(CACert(ctx)),
+		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		APIServerAddress:  cluster.APIServerAddress(),
+		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
+		Provider:          cluster.Spec.Cloud.CloudProvider,
+		ExternalProvider:  false, // Azure does not use out-of-tree CCM
 	}
 	{
 		td.KubeletExtraArgs = map[string]string{}

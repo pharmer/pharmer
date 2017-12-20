@@ -15,6 +15,7 @@ Inspect cluster object
 
 ### Synopsis
 
+
 Inspect cluster object
 
 ```
@@ -50,6 +51,5 @@ pharmer inspect cluster -k <cluster-name>  <inspect-type>
 ```
 
 ### SEE ALSO
-
 * [pharmer inspect](/docs/reference/pharmer_inspect.md)	 - Inspect cluster for conformance
 

@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/template"
 
@@ -11,21 +12,26 @@ import (
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
+// https://github.com/pharmer/pharmer/issues/347
+var kubernetesCNIVersions = map[string]string{
+	"1.8.0": "0.5.1",
+	"1.9.0": "0.6.0",
+}
+
 type TemplateData struct {
-	ClusterName      string
-	KubeletVersion   string
-	KubeadmVersion   string
-	KubeadmToken     string
-	CloudCredential  map[string]string
-	CAHash           string
-	CAKey            string
-	FrontProxyKey    string
-	APIServerAddress string
-	NetworkProvider  string
-	CloudConfig      string
-	Provider         string
-	NodeName         string
-	ExternalProvider bool
+	ClusterName       string
+	KubernetesVersion string
+	KubeadmToken      string
+	CloudCredential   map[string]string
+	CAHash            string
+	CAKey             string
+	FrontProxyKey     string
+	APIServerAddress  string
+	NetworkProvider   string
+	CloudConfig       string
+	Provider          string
+	NodeName          string
+	ExternalProvider  bool
 
 	MasterConfiguration *kubeadmapi.MasterConfiguration
 	KubeletExtraArgs    map[string]string
@@ -39,11 +45,10 @@ func (td TemplateData) MasterConfigurationYAML() (string, error) {
 	return string(cb), err
 }
 
-func (td TemplateData) IsPreReleaseVersion() bool {
-	if v, err := version.NewVersion(td.KubeadmVersion); err == nil && v.Prerelease() != "" {
-		return true
-	}
-	return false
+// Forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
+func (td TemplateData) UseForkedKubeadm_1_8_3() bool {
+	v, _ := version.NewVersion(td.KubernetesVersion)
+	return v.ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String() == "1.8.0"
 }
 
 func (td TemplateData) KubeletExtraArgsStr() string {
@@ -59,6 +64,16 @@ func (td TemplateData) KubeletExtraArgsStr() string {
 }
 
 func (td TemplateData) PackageList() string {
+	v, err := version.NewVersion(td.KubernetesVersion)
+	if err != nil {
+		panic(err)
+	}
+	if v.Prerelease() != "" {
+		panic("pre-release versions are not supported")
+	}
+	patch := v.Clone().ToMutator().ResetMetadata().ResetPrerelease().String()
+	minor := v.Clone().ToMutator().ResetMetadata().ResetPrerelease().ResetPatch().String()
+
 	pkgs := []string{
 		"cron",
 		"docker.io",
@@ -69,19 +84,16 @@ func (td TemplateData) PackageList() string {
 		"jq",
 		"nfs-common",
 		"socat",
+		"kubelet=" + patch + "*",
+		"kubectl=" + patch + "*",
+		"kubeadm=" + patch + "*",
 	}
-	if !td.IsPreReleaseVersion() {
-		if td.KubeletVersion == "" {
-			pkgs = append(pkgs, "kubelet", "kubectl")
-		} else {
-			pkgs = append(pkgs, "kubelet="+td.KubeletVersion+"*", "kubectl="+td.KubeletVersion+"*")
-		}
-		if td.KubeadmVersion == "" {
-			pkgs = append(pkgs, "kubeadm")
-		} else {
-			pkgs = append(pkgs, "kubeadm="+td.KubeadmVersion+"*")
-		}
+	if cni, found := kubernetesCNIVersions[minor]; !found {
+		panic(fmt.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", td.KubernetesVersion))
+	} else {
+		pkgs = append(pkgs, "kubernetes-cni="+cni+"*")
 	}
+
 	if td.Provider != "gce" && td.Provider != "gke" {
 		pkgs = append(pkgs, "ntp")
 	}
@@ -107,12 +119,8 @@ curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
 exec_until_success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
 apt-get update -y
-apt-get install -y {{ .PackageList }} || true
-{{ if .IsPreReleaseVersion }}
-curl -fsSL --retry 5 -o kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
-    && chmod +x kubeadm \
-	&& mv kubeadm /usr/bin/
-{{ else if not .ExternalProvider }}
+exec_until_success 'apt-get install -y {{ .PackageList }}'
+{{ if .UseForkedKubeadm_1_8_3 }}
 curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/download/v1.8.3/kubeadm \
 	&& chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
@@ -203,12 +211,8 @@ curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
 exec_until_success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
 apt-get update -y
-apt-get install -y {{ .PackageList }} || true
-{{ if .IsPreReleaseVersion }}
-curl -fsSL --retry 5 -o kubeadm https://dl.k8s.io/release/{{ .KubeadmVersion }}/bin/linux/amd64/kubeadm \
-    && chmod +x kubeadm \
-	&& mv kubeadm /usr/bin/
-{{ else if not .ExternalProvider }}
+exec_until_success 'apt-get install -y {{ .PackageList }}'
+{{ if .UseForkedKubeadm_1_8_3 }}
 curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/download/v1.8.3/kubeadm \
 	&& chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/

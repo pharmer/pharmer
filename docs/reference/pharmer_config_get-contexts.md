@@ -15,6 +15,7 @@ List available contexts
 
 ### Synopsis
 
+
 List available contexts
 
 ```
@@ -49,6 +50,5 @@ Pharmer config get-contexts
 ```
 
 ### SEE ALSO
-
 * [pharmer config](/docs/reference/pharmer_config.md)	 - Pharmer configuration
 

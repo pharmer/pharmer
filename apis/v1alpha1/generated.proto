@@ -183,29 +183,25 @@ message ClusterSpec {
 
   optional string kubernetesVersion = 4;
 
-  optional string kubeletVersion = 5;
+  optional bool locked = 5;
 
-  optional string kubeadmVersion = 6;
+  optional string caCertName = 6;
 
-  optional bool locked = 7;
+  optional string frontProxyCACertName = 7;
 
-  optional string caCertName = 8;
+  optional string credentialName = 8;
 
-  optional string frontProxyCACertName = 9;
+  map<string, string> kubeletExtraArgs = 9;
 
-  optional string credentialName = 10;
+  map<string, string> apiServerExtraArgs = 10;
 
-  map<string, string> kubeletExtraArgs = 11;
+  map<string, string> controllerManagerExtraArgs = 11;
 
-  map<string, string> apiServerExtraArgs = 12;
+  map<string, string> schedulerExtraArgs = 12;
 
-  map<string, string> controllerManagerExtraArgs = 13;
+  repeated string authorizationModes = 13;
 
-  map<string, string> schedulerExtraArgs = 14;
-
-  repeated string authorizationModes = 15;
-
-  repeated string apiServerCertSANs = 16;
+  repeated string apiServerCertSANs = 14;
 }
 
 // ClusterState describes the state of certain versions for a cluster

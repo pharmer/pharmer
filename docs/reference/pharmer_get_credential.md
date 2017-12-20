@@ -15,6 +15,7 @@ List cloud Credentials
 
 ### Synopsis
 
+
 List cloud Credentials
 
 ```
@@ -50,6 +51,5 @@ pharmer get credential
 ```
 
 ### SEE ALSO
-
 * [pharmer get](/docs/reference/pharmer_get.md)	 - 
 

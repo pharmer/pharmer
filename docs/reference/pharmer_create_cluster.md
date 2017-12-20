@@ -15,6 +15,7 @@ Create a Kubernetes cluster for a given cloud provider
 
 ### Synopsis
 
+
 Create a Kubernetes cluster for a given cloud provider
 
 ```
@@ -32,8 +33,6 @@ pharmer create cluster demo-cluster
 ```
       --credential-uid string       Use preconfigured cloud credential uid
   -h, --help                        help for cluster
-      --kubeadm-version string      Kubeadm version
-      --kubelet-version string      kubelet/kubectl version
       --kubernetes-version string   Kubernetes version
       --network-provider string     Name of CNI plugin. Available options: calico, flannel, kubenet, weavenet (default "calico")
       --nodes stringToInt           Node set configuration (default [])
@@ -57,6 +56,5 @@ pharmer create cluster demo-cluster
 ```
 
 ### SEE ALSO
-
 * [pharmer create](/docs/reference/pharmer_create.md)	 - 
 

@@ -32,18 +32,17 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 	}
 
 	td := TemplateData{
-		ClusterName:      cluster.Name,
-		KubeletVersion:   cluster.Spec.KubeletVersion,
-		KubeadmVersion:   cluster.Spec.KubeletVersion,
-		KubeadmToken:     token,
-		CloudCredential:  cred.Spec.Data,
-		CAHash:           pubkeypin.Hash(CACert(ctx)),
-		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		FrontProxyKey:    string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		APIServerAddress: apiserver,
-		NetworkProvider:  cluster.Spec.Networking.NetworkProvider,
-		Provider:         "openstack", //cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider: true,
+		ClusterName:       cluster.Name,
+		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		KubeadmToken:      token,
+		CloudCredential:   cred.Spec.Data,
+		CAHash:            pubkeypin.Hash(CACert(ctx)),
+		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		APIServerAddress:  apiserver,
+		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
+		Provider:          "openstack", //cluster.Spec.Cloud.CloudProvider,
+		ExternalProvider:  true,
 	}
 	{
 		td.KubeletExtraArgs = map[string]string{}
