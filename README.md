@@ -39,7 +39,7 @@ This project is spread over 4 repositories:
  - [Create & manage a Kubernetes cluster in Vultr](/docs/cloud/vultr/README.md)
 
 ## Supported Versions
-Kubernetes 1.8+
+Kubernetes 1.8 & 1.9
 
 ## Contribution guidelines
 Want to help improve Pharmer? Please start [here](/CONTRIBUTING.md).
