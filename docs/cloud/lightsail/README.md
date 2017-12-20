@@ -54,7 +54,7 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `lightsa
     - Kubernetes version: 1.8.0
     - Credential name: [aws](/docs/cloud/aws/README.md#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/aws/cloud.json)
+For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/lightsail/cloud.json)
  Available options in `pharmer` to create a cluster are:
  ```console
  $ pharmer create cluster -h

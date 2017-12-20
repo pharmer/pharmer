@@ -156,10 +156,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 	if masterNG.Spec.Template.Spec.SKU == "" {
 		totalNodes := NodeCount(nodeGroups)
-		masterNG.Spec.Template.Spec.SKU = "n1-standard-1"
-		if totalNodes > 5 {
-			masterNG.Spec.Template.Spec.SKU = "n1-standard-2"
-		}
+		masterNG.Spec.Template.Spec.SKU = "n1-standard-2"
 		if totalNodes > 10 {
 			masterNG.Spec.Template.Spec.SKU = "n1-standard-4"
 		}

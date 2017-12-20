@@ -354,9 +354,6 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 
-			fmt.Println("----------------------------")
-			fmt.Println(script)
-			fmt.Println("----------------------------")
 			masterVM, err = cm.conn.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), script, masterNG.Spec.Template.Spec.SKU)
 			if err != nil {
 				return
