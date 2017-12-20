@@ -215,3 +215,11 @@ func GetCredentialFormat(provider string) (data.CredentialFormat, bool) {
 	cf, found := credentials[provider]
 	return cf, found
 }
+
+func GetRegions(provider string)  (map[string]data.Region, error)  {
+	p, found := clouds[provider]
+	if !found {
+		return nil, fmt.Errorf("can't find cluster provider %v", provider)
+	}
+	return p.Regions, nil
+}

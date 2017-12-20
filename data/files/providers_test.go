@@ -9,17 +9,26 @@ import (
 	"github.com/hashicorp/go-version"
 	. "github.com/pharmer/pharmer/data/files"
 	"github.com/stretchr/testify/assert"
+	"reflect"
 )
 
 func TestName(t *testing.T) {
 	GetInstanceType("digitalocean", "do.8gb")
-	GetInstanceType("gce", "n1-standard-2")
+
+	im, err := GetInstanceType("gce", "n1-standard-2")
+	fmt.Println(im, err)
 }
 
 func TestLoadForProdEnv(t *testing.T) {
 	if err := Load(_env.Prod); err != nil {
 		t.Fatal(err)
 	}
+	reg, err := GetRegions("gce")
+	fmt.Println(err)
+	keys := reflect.ValueOf(reg).MapKeys()
+	fmt.Println(keys)
+	fmt.Println(reg["Western Europe"].Zones)
+
 }
 
 func TestLoadForQAEnv(t *testing.T) {
