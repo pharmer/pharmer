@@ -262,7 +262,7 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 		return fmt.Errorf("no master found")
 	}
 
-	desireVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
+	desiredVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
 	currentVersion, _ := semver.NewVersion(masterInstance.Status.NodeInfo.KubeletVersion)
 
 	// ref: https://stackoverflow.com/a/2831449/244009
@@ -274,19 +274,25 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 		`echo "" >> /usr/bin/pharmer.sh`,
 		`echo "apt-get update" >> /usr/bin/pharmer.sh`,
 	}
-	if !desireVersion.Equal(currentVersion) {
-		patch := desireVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().String()
-		minor := desireVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String()
+	if !desiredVersion.Equal(currentVersion) {
+		patch := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().String()
+		minor := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String()
 		cni, found := kubernetesCNIVersions[minor]
 		if !found {
-			return fmt.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", desireVersion)
+			return fmt.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", desiredVersion)
 		}
+		prekVer, found := prekVersions[minor]
+		if !found {
+			return fmt.Errorf("pre-k version is unknown for Kubernetes version %s", desiredVersion)
+		}
+
 		// Keep using forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
 		if minor == "1.8.0" {
 			steps = append(steps, fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, cni))
 		} else {
 			steps = append(steps, fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubeadm=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, patch, cni))
 		}
+		steps = append(steps, fmt.Sprintf(`echo "curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/%s/pre-k-linux-amd64 && chmod +x pre-k && mv pre-k /usr/bin/" >> /usr/bin/pharmer.sh`, prekVer))
 	}
 
 	steps = append(steps,
@@ -317,15 +323,19 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 			return
 		}
 	}
-	desireVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
+	desiredVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
 	for _, node := range nodes.Items {
 		currentVersion, _ := semver.NewVersion(node.Status.NodeInfo.KubeletVersion)
-		if !desireVersion.Equal(currentVersion) {
-			patch := desireVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().String()
-			minor := desireVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String()
+		if !desiredVersion.Equal(currentVersion) {
+			patch := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().String()
+			minor := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String()
 			cni, found := kubernetesCNIVersions[minor]
 			if !found {
-				return fmt.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", desireVersion)
+				return fmt.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", desiredVersion)
+			}
+			prekVer, found := prekVersions[minor]
+			if !found {
+				return fmt.Errorf("pre-k version is unknown for Kubernetes version %s", desiredVersion)
 			}
 			// ref: https://stackoverflow.com/a/2831449/244009
 			steps := []string{
@@ -346,7 +356,9 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 					fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubeadm=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, patch, cni),
 				)
 			}
+
 			steps = append(steps,
+				fmt.Sprintf(`echo "curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/%s/pre-k-linux-amd64 && chmod +x pre-k && mv pre-k /usr/bin/" >> /usr/bin/pharmer.sh`, prekVer),
 				`echo "systemctl restart kubelet" >> /usr/bin/pharmer.sh`,
 				`chmod +x /usr/bin/pharmer.sh`,
 				`nohup /usr/bin/pharmer.sh >> /var/log/pharmer.log 2>&1 &`,
