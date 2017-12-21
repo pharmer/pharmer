@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 	"text/template"
@@ -16,6 +17,11 @@ import (
 var kubernetesCNIVersions = map[string]string{
 	"1.8.0": "0.5.1",
 	"1.9.0": "0.6.0",
+}
+
+var prekVersions = map[string]string{
+	"1.8.0": "1.8.0",
+	"1.9.0": "1.9.0-rc.0",
 }
 
 type TemplateData struct {
@@ -63,13 +69,13 @@ func (td TemplateData) KubeletExtraArgsStr() string {
 	return buf.String()
 }
 
-func (td TemplateData) PackageList() string {
+func (td TemplateData) PackageList() (string, error) {
 	v, err := version.NewVersion(td.KubernetesVersion)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	if v.Prerelease() != "" {
-		panic("pre-release versions are not supported")
+		return "", errors.New("pre-release versions are not supported")
 	}
 	patch := v.Clone().ToMutator().ResetMetadata().ResetPrerelease().String()
 	minor := v.Clone().ToMutator().ResetMetadata().ResetPrerelease().ResetPatch().String()
@@ -89,7 +95,7 @@ func (td TemplateData) PackageList() string {
 		"kubeadm=" + patch + "*",
 	}
 	if cni, found := kubernetesCNIVersions[minor]; !found {
-		panic(fmt.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", td.KubernetesVersion))
+		return "", fmt.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", td.KubernetesVersion)
 	} else {
 		pkgs = append(pkgs, "kubernetes-cni="+cni+"*")
 	}
@@ -97,7 +103,24 @@ func (td TemplateData) PackageList() string {
 	if td.Provider != "gce" && td.Provider != "gke" {
 		pkgs = append(pkgs, "ntp")
 	}
-	return strings.Join(pkgs, " ")
+	return strings.Join(pkgs, " "), nil
+}
+
+func (td TemplateData) PrekVersion() (string, error) {
+	v, err := version.NewVersion(td.KubernetesVersion)
+	if err != nil {
+		return "", err
+	}
+	if v.Prerelease() != "" {
+		return "", errors.New("pre-release versions are not supported")
+	}
+	minor := v.ToMutator().ResetMetadata().ResetPrerelease().ResetPatch().String()
+
+	prekVer, found := prekVersions[minor]
+	if !found {
+		return "", fmt.Errorf("pre-k version is unknown for Kubernetes version %s", td.KubernetesVersion)
+	}
+	return prekVer, nil
 }
 
 var (
@@ -126,7 +149,7 @@ curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/
 	&& mv kubeadm /usr/bin/
 {{ end }}
 
-curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.13/pre-k-linux-amd64 \
+curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/{{ .PrekVersion }}/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
@@ -217,7 +240,7 @@ curl -fsSL --retry 5 -o kubeadm	https://github.com/appscode/kubernetes/releases/
 	&& chmod +x kubeadm \
 	&& mv kubeadm /usr/bin/
 {{ end }}
-curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.13/pre-k-linux-amd64 \
+curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/{{ .PrekVersion }}/pre-k-linux-amd64 \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
