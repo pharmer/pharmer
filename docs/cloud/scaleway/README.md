@@ -68,7 +68,7 @@ Here,
  - `spec.data.organization` is the scaleway organization id
  - `spec.data.token` is the access token that you provided which can be edited by following command:
 ```console
-$ phrmer edit credential scaleway
+$ pharmer edit credential scaleway
 ```
 
 To see the all credentials you need to run following command.
