@@ -47,7 +47,6 @@ libbuild.BIN_MATRIX = {
         'distro': {
             'linux': ['386', 'amd64', 'arm64'],
             'darwin': ['amd64'],
-            'windows': ['386', 'amd64', 'arm64']
         }
     }
 }
