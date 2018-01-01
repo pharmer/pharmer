@@ -32,6 +32,8 @@ This project is spread over 4 repositories:
 ## User Guide
  - [Create & manage a Kubernetes cluster in AWS EC2](/docs/cloud/aws/README.md)
  - [Create & manage a Kubernetes cluster in Amazon Lightsail](/docs/cloud/lightsail/README.md)
+ - [Create & manage a Kubernetes cluster in Google Cloud](/docs/cloud/gce/README.md)
+ - [Create & manage a Kubernetes cluster in Microsoft Azure](/docs/cloud/azure/README.md)
  - [Create & manage a Kubernetes cluster in DigitalOcean](/docs/cloud/digitalocean/README.md)
  - [Create & manage a Kubernetes cluster in Linode](/docs/cloud/linode/README.md)
  - [Create & manage a Kubernetes cluster in Packet](/docs/cloud/packet/README.md)
