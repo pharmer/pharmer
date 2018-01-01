@@ -7,7 +7,15 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
+	"strings"
 
+	stringz "github.com/appscode/go/strings"
+	"github.com/appscode/go/types"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/session"
+	_s3 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/azure"
 	"github.com/graymeta/stow/google"
@@ -48,15 +56,55 @@ func init() {
 			if err != nil {
 				return nil, err
 			}
-			stowCfg := stow.ConfigMap{
-				s3.ConfigAccessKeyID: cred.Spec.Data[credential.AWSAccessKeyID],
-				s3.ConfigEndpoint:    cfg.Store.S3.Endpoint,
-				s3.ConfigRegion:      "us-east-1", // only used for creating buckets
-				s3.ConfigSecretKey:   cred.Spec.Data[credential.AWSSecretAccessKey],
+			stowCfg := stow.ConfigMap{}
+
+			keyID, foundKeyID := cred.Spec.Data[credential.AWSAccessKeyID]
+			key, foundKey := cred.Spec.Data[credential.AWSSecretAccessKey]
+			if foundKey && foundKeyID {
+				stowCfg[s3.ConfigAccessKeyID] = string(keyID)
+				stowCfg[s3.ConfigSecretKey] = string(key)
+				stowCfg[s3.ConfigAuthType] = "accesskey"
+			} else {
+				stowCfg[s3.ConfigAuthType] = "iam"
 			}
-			if u, err := url.Parse(cfg.Store.S3.Endpoint); err == nil {
-				stowCfg[s3.ConfigDisableSSL] = strconv.FormatBool(u.Scheme == "http")
+			if strings.HasSuffix(cfg.Store.S3.Endpoint, ".amazonaws.com") {
+				// find region
+				var sess *session.Session
+				var err error
+				if stowCfg[s3.ConfigAuthType] == "iam" {
+					sess, err = session.NewSessionWithOptions(session.Options{
+						Config: *aws.NewConfig(),
+						// Support MFA when authing using assumed roles.
+						SharedConfigState:       session.SharedConfigEnable,
+						AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
+					})
+				} else {
+					config := &aws.Config{
+						Credentials: credentials.NewStaticCredentials(string(keyID), string(key), ""),
+						Region:      aws.String("us-east-1"),
+					}
+					sess, err = session.NewSessionWithOptions(session.Options{
+						Config: *config,
+						// Support MFA when authing using assumed roles.
+						SharedConfigState:       session.SharedConfigEnable,
+						AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
+					})
+				}
+				if err != nil {
+					return nil, err
+				}
+				svc := _s3.New(sess)
+				out, err := svc.GetBucketLocation(&_s3.GetBucketLocationInput{
+					Bucket: types.StringP(cfg.Store.S3.Bucket),
+				})
+				stowCfg[s3.ConfigRegion] = stringz.Val(types.String(out.LocationConstraint), "us-east-1")
+			} else {
+				stowCfg[s3.ConfigEndpoint] = cfg.Store.S3.Endpoint
+				if u, err := url.Parse(cfg.Store.S3.Endpoint); err == nil {
+					stowCfg[s3.ConfigDisableSSL] = strconv.FormatBool(u.Scheme == "http")
+				}
 			}
+
 			loc, err := stow.Dial(s3.Kind, stowCfg)
 			if err != nil {
 				return nil, fmt.Errorf("failed to connect to S3 storage. Reason: %v", err)
