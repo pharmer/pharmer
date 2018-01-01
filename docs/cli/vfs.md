@@ -73,9 +73,33 @@ For using `s3` you have to modify the configuration file with following field
 ```
 To use `gcs` modify with
 ```yaml
+context: default
+kind: PharmerConfig
+credentials:
+- metadata:
+    creationTimestamp: 2018-01-01T09:01:19Z
+    name: gce
+  spec:
+    data:
+      projectID: <project-id>
+      serviceAccount: |-
+        {
+          "type": "service_account",
+          "project_id": <project-id>,
+          "private_key_id": "private key id",
+          "private_key": "private key",
+          "client_email": "email",
+          "client_id": "client id",
+          "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+          "token_uri": "https://accounts.google.com/o/oauth2/token",
+          "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+          "client_x509_cert_url": "url"
+        }
+    provider: GoogleCloud
+store:
+  credentialName: gce
   gcs:
-    bucket: <bucket name>
-    prefix: <storage prefix>
+    bucket: pharmer
 ```
 For `azure` and `swift` you need to add `container` field along with `prefix` field.
 

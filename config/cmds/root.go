@@ -15,5 +15,6 @@ func NewCmdConfig() *cobra.Command {
 
 	rootCmd.AddCommand(newCmdView())
 	rootCmd.AddCommand(newCmdGet())
+	rootCmd.AddCommand(newCmdCreate())
 	return rootCmd
 }
