@@ -1,26 +1,16 @@
 package cmds
 
 import (
-	/*"context"
-	"errors"
-	"fmt"
-	"sort"
-	"time"*/
-	/*
-		"github.com/appscode/pharmer/data/files"
-		"github.com/ghodss/yaml"
-	*/
-	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
-	//"github.com/pharmer/pharmer/credential"
 	"io/ioutil"
 	"time"
 
+	"github.com/appscode/go/term"
 	"github.com/graymeta/stow/azure"
 	gcs "github.com/graymeta/stow/google"
 	"github.com/graymeta/stow/local"
 	"github.com/graymeta/stow/s3"
 	"github.com/graymeta/stow/swift"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/spf13/cobra"
@@ -72,12 +62,7 @@ func newCmdCreate() *cobra.Command {
 	req := &setContextRequest{}
 
 	setCmd := &cobra.Command{
-		Use: "set-context",
-		Aliases: []string{
-			api.ResourceTypeConfig,
-			api.ResourceCodeConfig,
-			api.ResourceKindConfig,
-		},
+		Use:               "set-context",
 		Short:             "Create  config object",
 		Example:           `pharmer config set-context`,
 		DisableAutoGenTag: true,
