@@ -49,6 +49,10 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 			string(core.NodeExternalIP),
 		}, ","),
 	}
+	if cluster.IsMinorVersion("1.9") {
+		cluster.Spec.APIServerExtraArgs["admission-control"] = api.DefaultV19AdmissionControl
+	}
+
 	// Init status
 	cluster.Status = api.ClusterStatus{
 		Phase: api.ClusterPending,
