@@ -63,6 +63,9 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 		}, ","),
 		"cloud-config": "/etc/kubernetes/ccm/cloud-config",
 	}
+	if cluster.IsMinorVersion("1.9") {
+		cluster.Spec.APIServerExtraArgs["admission-control"] = api.DeprecatedV19AdmissionControl
+	}
 	cluster.Spec.ControllerManagerExtraArgs = map[string]string{
 		"cloud-config": "/etc/kubernetes/ccm/cloud-config",
 	}
