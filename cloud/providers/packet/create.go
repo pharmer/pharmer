@@ -8,15 +8,20 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/data/files"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultNodeSpec(sku string) (api.NodeSpec, error) {
+func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
 	if sku == "" {
-		sku = "baremetal_0"
+		ins, err := files.GetInstanceByZoneCPU(cluster.Spec.Cloud.CloudProvider, cluster.Spec.Cloud.Zone, 2)
+		if err != nil {
+			return api.NodeSpec{}, err
+		}
+		sku = ins.SKU
 	}
 	return api.NodeSpec{
 		SKU: sku,
