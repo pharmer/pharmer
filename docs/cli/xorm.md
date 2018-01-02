@@ -20,38 +20,50 @@ Stores data in PostgresSQL using [xorm](https://github.com/go-xorm/xorm)
 
 ```console
 $  pharmer config -h
-  Pharmer configuration
+Pharmer configuration
 
-  Usage:
-    pharmer config [flags]
-    pharmer config [command]
+Usage:
+  pharmer config [flags]
+  pharmer config [command]
 
-  Examples:
-  pharmer config view
+Examples:
+pharmer config view
 
-  Available Commands:
-    get-contexts List available contexts
-    view         Print Pharmer config
+Available Commands:
+  get-contexts List available contexts
+  set-context  Create  config object
+  view         Print Pharmer config
 
-  Flags:
-    -h, --help   help for config
+Flags:
+  -h, --help   help for config
 
-  Global Flags:
-        --alsologtostderr                  log to standard error as well as files
-        --analytics                        Send analytical events to Google Guard (default true)
-        --config-file string               Path to Pharmer config file
-        --env string                       Environment used to enable debugging (default "dev")
-        --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-        --log_dir string                   If non-empty, write log files in this directory
-        --logtostderr                      log to standard error instead of files (default true)
-        --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-    -v, --v Level                          log level for V logs
-        --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+Global Flags:
+      --alsologtostderr                  log to standard error as well as files
+      --analytics                        Send analytical events to Google Guard (default true)
+      --config-file string               Path to Pharmer config file
+      --env string                       Environment used to enable debugging (default "prod")
+      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+      --log_dir string                   If non-empty, write log files in this directory
+      --logtostderr                      log to standard error instead of files (default true)
+      --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+  -v, --v Level                          log level for V logs
+      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+
+Use "pharmer config [command] --help" for more information about a command.
 ```
 
 ### Configuration
 
 The configuration details of the storage provider are specified on `~/.pharmer/config.d/default` file.
+
+To create the storage you can run the following command
+
+```console
+$ pharmer config set-context --pg.db-name=<dbName> --pg.host=<host> --pg.port=5432 --pg.user=<user> --pg.password=<password>
+
+```
+
+The configuration file look like:
 
 ```yaml
 context: default

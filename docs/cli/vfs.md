@@ -21,38 +21,41 @@ Stores data on File (local/remote) using  [stow](https://github.com/appscode/sto
 
 ```console
 $  pharmer config -h
-  Pharmer configuration
+Pharmer configuration
 
-  Usage:
-    pharmer config [flags]
-    pharmer config [command]
+Usage:
+  pharmer config [flags]
+  pharmer config [command]
 
-  Examples:
-  pharmer config view
+Examples:
+pharmer config view
 
-  Available Commands:
-    get-contexts List available contexts
-    view         Print Pharmer config
+Available Commands:
+  get-contexts List available contexts
+  set-context  Create  config object
+  view         Print Pharmer config
 
-  Flags:
-    -h, --help   help for config
+Flags:
+  -h, --help   help for config
 
-  Global Flags:
-        --alsologtostderr                  log to standard error as well as files
-        --analytics                        Send analytical events to Google Guard (default true)
-        --config-file string               Path to Pharmer config file
-        --env string                       Environment used to enable debugging (default "dev")
-        --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-        --log_dir string                   If non-empty, write log files in this directory
-        --logtostderr                      log to standard error instead of files (default true)
-        --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-    -v, --v Level                          log level for V logs
-        --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+Global Flags:
+      --alsologtostderr                  log to standard error as well as files
+      --analytics                        Send analytical events to Google Guard (default true)
+      --config-file string               Path to Pharmer config file
+      --env string                       Environment used to enable debugging (default "prod")
+      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+      --log_dir string                   If non-empty, write log files in this directory
+      --logtostderr                      log to standard error instead of files (default true)
+      --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+  -v, --v Level                          log level for V logs
+      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+
+Use "pharmer config [command] --help" for more information about a command.
 ```
 
 ### Configuration
 
-The configuration details of the storage provider are specified on `~/.pharmer/config.d/default` file.
+The configuration details of the storage provider are specified on `~/.pharmer/config.d/default` file. Default storage provider is `local`.
 
 ```yaml
 context: default
@@ -64,14 +67,39 @@ store:
 Here store type is `local`, so in `path` a local directory is used to locate where the cluster and credential resources will be stored.
 
 You can also use Amazon's `s3`, `gcs` to use google cloud storage, `azure` or `swift` for storage purpose.
-For using `s3` you have to modify the configuration file with following field
+
+You can use following command to crate a storage provider confiuration.
+
+```console
+# AWS S3:
+pharmer config set-context --provider=s3 --s3.access_key_id=<key_id> --s3.secret_key=<secret_key> --s3.endpoint=<endpoint> --s3.bucket=<bucket_name> --prefix=<prefix>
+
+# GCS:
+pharmer config set-context --provider=google --google.json_key_path=<path_sa_file> --google.project_id=<my_project> --google.bucket=<bucket_name> --prefix=<prefix>
+
+# Microsoft Azure ARM Storage:
+pharmer config set-context --provider=azure --azure.account=<storage_ac> --azure.key=<key> --azure.container=<container_name> --prefix=<prefix>
+
+# Local Storage:
+pharmer config set-context --provider=local --local.path=<local_path>
+
+# Swift:
+pharmer config set-context --provider=swift --swift.key=<key> --swift.tenant_auth_url=<tenant_auth_url> --swift.tenant_name=<tenant_name> --swift.username=<username>
+--swift.domain=<domain> --swift.region=<region> --swift.tenant_id=<tenant_id> --swift.tenant_domain=<tenant_domain> --swift.storage_url=<storage_url>
+--swift.auth_token=<auth_token> --swift.container=<container_name> --prefix=<prefix>
+
+```
+
+
+If you using `s3`, the configuration file contains following field
 ```yaml
   s3:
     endpoint: <aws endpoint>
     bucket: <bucket name>
     prefix: <storage prefix>
 ```
-To use `gcs` modify with
+
+For `gcs`
 ```yaml
 context: default
 kind: PharmerConfig
@@ -101,7 +129,6 @@ store:
   gcs:
     bucket: pharmer
 ```
-For `azure` and `swift` you need to add `container` field along with `prefix` field.
 
 ### Storage structure
 
