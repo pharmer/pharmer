@@ -30,7 +30,7 @@ func (cm *ClusterManager) SetDefaults(in *api.Cluster) error {
 	return nil
 }
 
-func (cm *ClusterManager) GetDefaultNodeSpec(sku string) (api.NodeSpec, error) {
+func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
 	return api.NodeSpec{}, nil
 }
 

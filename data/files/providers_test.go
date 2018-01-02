@@ -58,3 +58,12 @@ func TestVersion(t *testing.T) {
 	pos := sort.Search(len(versions), func(i int) bool { return c2.Check(versions[i]) })
 	assert.Equal(t, 1, pos)
 }
+
+func TestInstanceZone(t *testing.T) {
+
+	if err := Load(_env.Prod); err != nil {
+		//t.Fatal(err)
+	}
+	fmt.Println(GetInstanceType("packet", "baremetal_1"))
+	fmt.Println(GetInstanceByZoneCPU("packet", "ord1", 2))
+}

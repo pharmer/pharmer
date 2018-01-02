@@ -14,7 +14,7 @@ import (
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultNodeSpec(sku string) (api.NodeSpec, error) {
+func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
 	if sku == "" {
 		// assign at the time of apply
 	}

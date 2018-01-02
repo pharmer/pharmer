@@ -67,7 +67,7 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string
 	if err != nil {
 		return err
 	}
-	spec, err := cm.GetDefaultNodeSpec(sku)
+	spec, err := cm.GetDefaultNodeSpec(cluster, sku)
 	if err != nil {
 		return err
 	}

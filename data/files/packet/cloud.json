@@ -42,7 +42,13 @@
       "category": "Bare Metal",
       "cpu": 4,
       "ram": 8,
-      "disk": 80
+      "disk": 80,
+      "zones": [
+        "ams1",
+        "sjc1",
+        "nrt1",
+        "ewr1"
+      ]
     },
     {
       "sku": "baremetal_1",
@@ -50,7 +56,34 @@
       "category": "Bare Metal",
       "cpu": 4,
       "ram": 32,
-      "disk": 120
+      "disk": 120,
+      "zones": [
+        "ams1",
+        "sjc1",
+        "nrt1",
+        "ewr1"
+      ]
+    },
+    {
+      "sku": "baremetal_1e",
+      "description": "TYPE 1E: Intel Xeon E3-1578L v5, 32GB DDR4-2400 ECC RAM",
+      "category": "Bare Metal",
+      "cpu": 4,
+      "ram": 32,
+      "disk": 240,
+      "zones": [
+        "sin1",
+        "atl1",
+        "ord1",
+        "lax1",
+        "dfw1",
+        "yyz1",
+        "iad1",
+        "fra1",
+        "hkg1",
+        "sea1",
+        "syd1"
+      ]
     },
     {
       "sku": "baremetal_2",
@@ -58,7 +91,23 @@
       "category": "Bare Metal",
       "cpu": 24,
       "ram": 256,
-      "disk": 2880
+      "disk": 2880,
+      "zones": [
+        "ams1",
+        "ewr1"
+      ]
+    },
+    {
+      "sku": "baremetal_2a",
+      "description": "TYPE 2A: 2 × Cavium ThunderX ARMv8 SoC's, 128GB DDR4 ECC RAM",
+      "category": "Bare Metal",
+      "cpu": 96,
+      "ram": 128,
+      "disk": 250,
+      "zones": [
+        "nrt1",
+        "ewr1"
+      ]
     },
     {
       "sku": "baremetal_3",
@@ -66,7 +115,23 @@
       "category": "Bare Metal",
       "cpu": 16,
       "ram": 128,
-      "disk": 120
+      "disk": 120,
+      "zones": [
+        "ams1",
+        "ewr1",
+        "sjc1"
+      ]
+    },
+    {
+      "sku": "baremetal_s",
+      "description": "TYPE S: 16 x86 64bit Cores, 128GB DDR4 ECC RAM",
+      "category": "Bare Metal",
+      "cpu": 16,
+      "ram": 128,
+      "disk": 24960,
+      "zones": [
+        "ewr1"
+      ]
     }
   ],
   "credentials": [

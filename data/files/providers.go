@@ -230,3 +230,48 @@ func GetRegions(provider string) (map[string]data.Region, error) {
 	}
 	return p.Regions, nil
 }
+
+func GetRegionsFromZone(provider, zone string) (data.Region, error) {
+	regions, err := GetRegions(provider)
+	if err != nil {
+		return data.Region{}, err
+	}
+	for _, region := range regions {
+		zones := sets.NewString(region.Zones...)
+		if zones.Has(zone) {
+			return region, nil
+		}
+	}
+	return data.Region{}, fmt.Errorf("can't find zone %v for provider %v", zone, provider)
+}
+
+func GetInstanceByRegionCPU(provider, region string, cpu int) (*data.InstanceType, error) {
+	p, found := clouds[provider]
+	if !found {
+		return nil, fmt.Errorf("can't find cluster provider %v", provider)
+	}
+
+	for _, instance := range p.InstanceTypes {
+		regions := sets.NewString(instance.Regions...)
+		if regions.Has(region) && instance.CPU >= cpu {
+			return &instance, nil
+		}
+	}
+	return nil, fmt.Errorf("can't find instance for provider %v with region %v and cpu %v", provider, region, cpu)
+}
+
+func GetInstanceByZoneCPU(provider, zone string, cpu int) (*data.InstanceType, error) {
+	p, found := clouds[provider]
+	if !found {
+		return nil, fmt.Errorf("can't find cluster provider %v", provider)
+	}
+
+	for _, instance := range p.InstanceTypes {
+		zones := sets.NewString(instance.Zones...)
+		if zones.Has(zone) && instance.CPU >= cpu {
+			return &instance, nil
+		}
+	}
+	return nil, fmt.Errorf("can't find instance for provider %v with zone %v and cpu %v", provider, zone, cpu)
+
+}

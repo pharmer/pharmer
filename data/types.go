@@ -43,6 +43,7 @@ type InstanceType struct {
 	RAM         interface{} `json:"ram"`
 	Disk        int         `json:"disk"`
 	Regions     []string    `json:"regions,omitempty"`
+	Zones       []string    `json:"zones,omitempty"`
 }
 
 type CredentialFormat struct {

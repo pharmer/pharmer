@@ -15,7 +15,7 @@ var (
 
 type Interface interface {
 	SSHGetter
-	GetDefaultNodeSpec(sku string) (api.NodeSpec, error)
+	GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error)
 	SetDefaults(in *api.Cluster) error
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
