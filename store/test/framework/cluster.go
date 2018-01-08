@@ -28,7 +28,7 @@ func (c *clusterInvocation) GetSkeleton() (*api.Cluster, error) {
 	cluster.Spec.Cloud.CloudProvider = "digitalocean"
 	cluster.Spec.Cloud.Zone = "nyc3"
 	cluster.Spec.CredentialName = "do"
-	cluster.Spec.KubernetesVersion = "v1.8.0"
+	cluster.Spec.KubernetesVersion = "v1.9.0"
 	fmt.Println(cm)
 	//err = cm.SetDefaults(cluster)
 	return cluster, err

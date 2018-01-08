@@ -22,7 +22,7 @@ spec:
     zone: nyc3
   credentialName: do
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.8.0
+  kubernetesVersion: v1.9.0
   networking:
     dnsDomain: cluster.local
     networkProvider: calico
