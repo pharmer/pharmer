@@ -22,7 +22,7 @@ func TestClusterEngine(t *testing.T) {
 	cluster.Spec.Cloud.CloudProvider = "digitalocean"
 	cluster.Spec.Cloud.Zone = "nyc3"
 	cluster.Spec.CredentialName = "do"
-	cluster.Spec.KubernetesVersion = "v1.8.0"
+	cluster.Spec.KubernetesVersion = "v1.9.0"
 
 	cluster.Spec.Networking.NetworkProvider = "calico"
 	// Init object meta

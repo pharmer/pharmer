@@ -129,7 +129,7 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `aws`
     - Location: us-west-1a (California)
     - Number of nodes: 2
     - Node sku: t2.medium (cpu:2, ram: 4)
-    - Kubernetes version: 1.8.0
+    - Kubernetes version: 1.9.0
     - Credential name: [aws](#credential-importing)
 
 For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/aws/cloud.json)
@@ -180,7 +180,7 @@ $ pharmer create cluster a1 \
 	--zone=us-west-1a \
 	--nodes=t2.medium=2 \
 	--credential-uid=aws \
-	--kubernetes-version=v1.8.0
+	--kubernetes-version=v1.9.0
 
 ```
 
@@ -258,7 +258,7 @@ spec:
     zone: us-west-1a
   credentialName: aws
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.8.0
+  kubernetesVersion: v1.9.0
   networking:
     masterSubnet: 10.246.0.0/24
     networkProvider: calico
@@ -336,7 +336,7 @@ spec:
     zone: us-west-1a
   credentialName: aws
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.8.0
+  kubernetesVersion: v1.9.0
   networking:
     masterSubnet: 10.246.0.0/24
     networkProvider: calico
@@ -372,7 +372,7 @@ $ pharmer use cluster a1
 ```
 If you don't have `kubectl` installed click [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 
-Now you can run `kubectl get nodes` and verify that your kubernetes 1.8.0 is running.
+Now you can run `kubectl get nodes` and verify that your kubernetes 1.9.0 is running.
 
 ```console
 $ kubectl get nodes
@@ -562,23 +562,23 @@ To check run:
 $ pharmer describe cluster a1
 
 Name:		a1
-Version:	v1.8.0
+Version:	v1.9.0
 NodeGroup:
   Name             Node
   ----             ------
   master           1
   t2.medium-pool   1
-[upgrade/versions] Cluster version: v1.8.0
+[upgrade/versions] Cluster version: v1.9.0
 [upgrade/versions] kubeadm version: v1.8.3
 [upgrade/versions] Latest stable version: v1.8.4
 [upgrade/versions] Latest version in the v1.8 series: v1.8.4
 Upgrade to the latest version in the v1.8 series:
 
 COMPONENT            CURRENT   AVAILABLE
-API Server           v1.8.0    v1.8.4
-Controller Manager   v1.8.0    v1.8.4
-Scheduler            v1.8.0    v1.8.4
-Kube Proxy           v1.8.0    v1.8.4
+API Server           v1.9.0    v1.8.4
+Controller Manager   v1.9.0    v1.8.4
+Scheduler            v1.9.0    v1.8.4
+Kube Proxy           v1.9.0    v1.8.4
 Kube DNS             1.14.5    1.14.5
 
 You can now apply the upgrade by executing the following command:
@@ -660,7 +660,7 @@ status:
   phase: Ready
 ```
 
-Here, `spec.kubernetesVersion` is changed to `v1.8.4` from `v1.8.0`
+Here, `spec.kubernetesVersion` is changed to `v1.8.4` from `v1.9.0`
 
 If everything looks ok, then run:
 ```console

@@ -135,7 +135,7 @@ etcd:
   keyFile: ""
 imageRepository: ""
 kind: MasterConfiguration
-kubernetesVersion: 1.8.0
+kubernetesVersion: 1.9.0
 networking:
   dnsDomain: cluster.local
   podSubnet: 192.168.0.0/16

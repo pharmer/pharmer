@@ -108,7 +108,7 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `azure`
     - Location: eastus2 (Virginia)
     - Number of nodes: 1
     - Node sku: Standard_D1_v2 (cpu: 1, ram: 3.5, disk: 50)
-    - Kubernetes version: 1.8.0
+    - Kubernetes version: 1.9.0
     - Credential name: [azur](#credential-importing)
 
 For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/azure/cloud.json)
@@ -157,7 +157,7 @@ $ pharmer create cluster az1 \
 	--zone=westus2 \
 	--nodes=Standard_D1_v2=1 \
 	--credential-uid=azur \
-	--kubernetes-version=v1.8.0
+	--kubernetes-version=v1.9.0
 
 ```
 
@@ -239,7 +239,7 @@ spec:
     cloud-config: /etc/kubernetes/ccm/cloud-config
   credentialName: azure
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.8.0
+  kubernetesVersion: v1.9.0
   networking:
     networkProvider: calico
     nonMasqueradeCIDR: 10.0.0.0/8
@@ -320,7 +320,7 @@ spec:
     cloud-config: /etc/kubernetes/ccm/cloud-config
   credentialName: azure
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.8.0
+  kubernetesVersion: v1.9.0
   networking:
     networkProvider: calico
     nonMasqueradeCIDR: 10.0.0.0/8
@@ -346,7 +346,7 @@ $ pharmer use cluster az1
 ```
 If you don't have `kubectl` installed click [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 
-Now you can run `kubectl get nodes` and verify that your kubernetes 1.8.0 is running.
+Now you can run `kubectl get nodes` and verify that your kubernetes 1.9.0 is running.
 
 ```console
 $ kubectl get nodes
@@ -521,23 +521,23 @@ To check run:
 ```console
 $ pharmer describe cluster az1
 Name:		az1
-Version:	v1.8.0
+Version:	v1.9.0
 NodeGroup:
   Name                 Node
   ----                 ------
   Standard-D2-v2-pool   1
   master                1
-[upgrade/versions] Cluster version: v1.8.0
+[upgrade/versions] Cluster version: v1.9.0
 [upgrade/versions] kubeadm version: v1.8.4
 [upgrade/versions] Latest stable version: v1.8.4
 [upgrade/versions] Latest version in the v1.8 series: v1.8.4
 Upgrade to the latest version in the v1.8 series:
 
 COMPONENT            CURRENT   AVAILABLE
-API Server           v1.8.0    v1.8.4
-Controller Manager   v1.8.0    v1.8.4
-Scheduler            v1.8.0    v1.8.4
-Kube Proxy           v1.8.0    v1.8.4
+API Server           v1.9.0    v1.8.4
+Controller Manager   v1.9.0    v1.8.4
+Scheduler            v1.9.0    v1.8.4
+Kube Proxy           v1.9.0    v1.8.4
 Kube DNS             1.14.5    1.14.5
 
 You can now apply the upgrade by executing the following command:
@@ -606,7 +606,7 @@ status:
   reservedIP:
   - ip: 52.183.45.79
 ```
-Here, `spec.kubernetesVersion` is changed to `v1.8.4` from `v1.8.0`
+Here, `spec.kubernetesVersion` is changed to `v1.8.4` from `v1.9.0`
 
 If everything looks ok, then run:
 ```console
@@ -668,7 +668,7 @@ spec:
     cloud-config: /etc/kubernetes/ccm/cloud-config
   credentialName: azure
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.8.0
+  kubernetesVersion: v1.9.0
   networking:
     networkProvider: calico
     nonMasqueradeCIDR: 10.0.0.0/8
