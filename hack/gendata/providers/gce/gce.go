@@ -2,15 +2,11 @@ package gce
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
-	logs "github.com/appscode/go/log"
 	"github.com/pharmer/pharmer/hack/gendata/credential"
 	"github.com/pharmer/pharmer/data"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
-	"github.com/pharmer/pharmer/hack/gendata/util"
 )
 
 const (
@@ -33,7 +29,7 @@ type GceDefaultData struct {
 	Kubernetes  []data.Kubernetes       `json:"kubernetes"`
 }
 
-func NewGceClient(gecProjectName, credentialFilePath string) (*GceClient, error) {
+func NewGceClient(gecProjectName, credentialFilePath string, versions string) (*GceClient, error) {
 	g := &GceClient{
 		CredentialFilePath: credentialFilePath,
 		GceProjectName:     gecProjectName,
@@ -45,28 +41,11 @@ func NewGceClient(gecProjectName, credentialFilePath string) (*GceClient, error)
 	if err != nil {
 		return nil, err
 	}
-	err = g.Data.defaultData()
+	g.Data, err = GetDefault(versions)
 	if err != nil {
 		return nil, err
 	}
 	return g, nil
-}
-
-// assign default data from gendata/providers/gce/default.json
-func (d *GceDefaultData) defaultData() error {
-	DataBytes, err := util.ReadFile(DefaultDataFile)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(DataBytes, d)
-	if err != nil {
-		return err
-	}
-	logs.Debug("Default data :", *d)
-	if len(d.Name) == 0 {
-		return fmt.Errorf("`%s` Name not found", DefaultDataFile)
-	}
-	return nil
 }
 
 func (g *GceClient) GetName() string {
@@ -155,9 +134,9 @@ func (g *GceClient) GetInstanceTypes() ([]data.InstanceType, error) {
 		}
 	}
 	//update g.Data.InstanceTypes[].Zones
-	for index, instanceType := range instanceTypes {
-		instanceTypes[index].Zones = machinesZone[instanceType.SKU]
-	}
+	//for index, instanceType := range instanceTypes {
+	//	instanceTypes[index].Zones = machinesZone[instanceType.SKU]
+	//}
 	return instanceTypes, nil
 }
 
@@ -175,51 +154,3 @@ func getComputeService(ctx context.Context, credentialFilePath string) (*compute
 	client := conf.Client(ctx)
 	return compute.New(client)
 }
-
-/*
-func (g *GceClient) WriteData() error {
-	bytes, err := json.MarshalIndent(*g.Data, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to convert GceData to json for gce. Reason: %v", err)
-	}
-	err = providers.CreateDir(WriteDir)
-	if err != nil {
-		return fmt.Errorf("failed to create directory data/gec/ for gce. Reason: %v", err)
-	}
-	err = providers.WriteFile(filepath.Join(WriteDir, "cloud.json"), bytes)
-	return err
-}
-
-func (g *GceClient) GetData() error {
-	logs.Info("Initializing..")
-	err := g.Init()
-	if err != nil {
-		return err
-	}
-	logs.Info("Getting default data..")
-	err = g.GetDefaultData()
-	if err != nil {
-		return err
-	}
-	logs.Info("Getting regions..")
-	//GetRegion must appear after init()
-	//because g.ComputeService, g.Ctx needs to initialize
-	err = g.GetRegions()
-	if err != nil {
-		return err
-	}
-	logs.Info("Getting instanceTypes..")
-	//GetInstanceTypes() must appear after GetRegion(),
-	//because it uses GetZones() which has dependency on GetRegion()
-	err = g.GetInstanceTypes()
-	if err != nil {
-		return err
-	}
-	logs.Info("Writing data..")
-	err = g.WriteData()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-*/

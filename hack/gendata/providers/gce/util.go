@@ -8,6 +8,10 @@ import (
 	"strconv"
 )
 
+const (
+	CatagoryUnknown string = "unknown"
+)
+
 func ParseRegion(region *compute.Region) (*data.Region, error) {
 	r := &data.Region{
 		Region: region.Name,
@@ -38,9 +42,20 @@ func ParseMachine(machine *compute.MachineType) (*data.InstanceType, error) {
 		Description: machine.Description,
 		CPU: int(machine.GuestCpus),
 		Disk: int(machine.MaximumPersistentDisks),
+		Category: ParseCatagoryFromSKU(machine.Name),
 	}
 
 	var err error
 	m.RAM, err =strconv.ParseFloat(strconv.FormatFloat(float64(machine.MemoryMb)/1024,'f',2,64), 64)
 	return m,err
+}
+
+//gce SKU formate: [something]-catagory-[somethin/empty]
+func ParseCatagoryFromSKU(sku string) string {
+	words := strings.Split(sku,"-")
+	if len(words)<2 {
+		return CatagoryUnknown
+	} else {
+		return words[1]
+	}
 }

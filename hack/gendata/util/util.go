@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 func CreateDir(dir string) error {
@@ -28,4 +29,11 @@ func WriteFile(filename string, bytes []byte) error {
 		return fmt.Errorf("failed to write `%s`. Reason: %v", filename, err)
 	}
 	return nil
+}
+
+// versions string formate is `1.1.0,1.9.0`
+//they are comma seperated, no space allowed
+func ParseVersions(versions string) []string {
+	v := strings.Split(versions,",")
+	return v
 }
