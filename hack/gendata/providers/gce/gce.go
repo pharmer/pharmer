@@ -3,7 +3,7 @@ package gce
 import (
 	"context"
 
-	"github.com/pharmer/pharmer/hack/gendata/credential"
+	"github.com/pharmer/pharmer/credential"
 	"github.com/pharmer/pharmer/data"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"

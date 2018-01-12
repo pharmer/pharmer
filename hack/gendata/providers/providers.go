@@ -6,15 +6,14 @@ import (
 	"path/filepath"
 	"github.com/pharmer/pharmer/hack/gendata/util"
 	"encoding/json"
+	"github.com/pharmer/pharmer/hack/gendata/cmds/options"
+	"fmt"
+	"strings"
 )
 
 const (
 	WriteDir string = "data"
 )
-
-type Interface interface {
-	Gce(gecProjectName string,credentialFilePath string, versions []string) (CloudInterface, error)
-} 
 
 type CloudInterface interface {
 	GetName() string
@@ -26,18 +25,15 @@ type CloudInterface interface {
 	GetInstanceTypes() ([]data.InstanceType, error)
 }
 
-type CloudProvider struct {}
-
-func (p *CloudProvider) Gce(gecProjectName string,credentialFilePath string, versions string) (CloudInterface, error){
-	gceClient, err := gce.NewGceClient(gecProjectName,credentialFilePath,versions)
-	if err!=nil {
-		return nil, err
+func NewCloudProvider(opts *options.CloudData) (CloudInterface, error) {
+	switch opts.Provider {
+	case "gce":
+		return gce.NewGceClient(opts.GCEProjectName, opts.Config,opts.KubernetesVersions)
+		break
+	default:
+		return nil, fmt.Errorf("Valid/Supported provider name required")
 	}
-	return gceClient, nil
-}
-
-func NewCloudProvider() *CloudProvider {
-	return &CloudProvider{}
+	return nil,nil
 }
 
 func WriteCloudData(cloudInterface CloudInterface) error {
@@ -57,10 +53,22 @@ func WriteCloudData(cloudInterface CloudInterface) error {
 		return err
 	}
 	dataBytes, err := json.MarshalIndent(cloudData, "", "  ")
-	err = util.CreateDir(WriteDir)
+	dir, err := GetWriteDir()
 	if err != nil {
 		return err
 	}
-	err = util.WriteFile(filepath.Join(WriteDir, cloudData.Name, "cloud.json"), dataBytes)
+	err = util.WriteFile(filepath.Join(dir, cloudData.Name, "cloud.json"), dataBytes)
 	return err
+}
+
+// wanted directory is [path]/pharmer/data/files
+// Current directory is [path]/pharmer/hack/gendata
+func GetWriteDir() (string, error) {
+	AbsPath, err := filepath.Abs("")
+	if err!=nil {
+		return "",err
+	}
+	p := strings.TrimSuffix(AbsPath, "/hack/gendata")
+	p = filepath.Join(p,"data","files")
+	return p,nil
 }
