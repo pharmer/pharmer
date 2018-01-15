@@ -9,14 +9,8 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
-const (
-	DefaultDataFile string = "providers/gce/default.json"
-)
-
 type GceClient struct {
 	Data *GceDefaultData `json:"data,omitempty"`
-	//path to the credential file
-	CredentialFilePath string           `json:"credentialFilePath,omitempty"`
 	GceProjectName     string           `json:"gceProjectName,omitempty"`
 	ComputeService     *compute.Service `json:"compute_service,omitempty"`
 	Ctx                context.Context  `json:"ctx,omitempty"`
@@ -29,15 +23,14 @@ type GceDefaultData struct {
 	Kubernetes  []data.Kubernetes       `json:"kubernetes"`
 }
 
-func NewGceClient(gecProjectName, credentialFilePath string, versions string) (*GceClient, error) {
+func NewGceClient(gecProjectName, credentialFilePath, versions string) (*GceClient, error) {
 	g := &GceClient{
-		CredentialFilePath: credentialFilePath,
 		GceProjectName:     gecProjectName,
 		Ctx:                context.Background(),
 		Data:               &GceDefaultData{},
 	}
 	var err error
-	g.ComputeService, err = getComputeService(g.Ctx, g.CredentialFilePath)
+	g.ComputeService, err = getComputeService(g.Ctx, credentialFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +78,6 @@ func (g *GceClient) GetRegions() ([]data.Region, error) {
 	return regions, err
 }
 
-//Here, we use data from GceClient.Data.Regions
 func (g *GceClient) GetZones() ([]string, error) {
 	req := g.ComputeService.Zones.List(g.GceProjectName)
 	zones := []string{}

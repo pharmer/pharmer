@@ -11,8 +11,11 @@ const (
 )
 
 type CloudData struct {
-	Provider string
-	Config string //file
+	Provider       string
+	//credential file for gce
+	CredentialFile string
+	//access token for digitalocean
+	DoToken        string
 
 	GCEProjectName string
 	KubernetesVersions string
@@ -29,18 +32,23 @@ func NewCloudData() *CloudData {
 
 func (c *CloudData) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.Provider, "provider", "p", c.Provider, "Name of the Cloud provider")
-	fs.StringVarP(&c.Config, "config", "c", c.Config, "Location of cloud credential file (required when --provider=gce)")
+	fs.StringVarP(&c.CredentialFile, "credential-file", "c", c.CredentialFile, "Location of cloud credential file (required when --provider=gce)")
 	fs.StringVar(&c.GCEProjectName, "google-project", c.GCEProjectName, "When using the Google provider, specify the Google project (required when --provider=gce)")
 	fs.StringVar(&c.KubernetesVersions, "versions-support", c.KubernetesVersions, "Supported versions of kubernetes, example: --versions-support=1.1.0,1.2.0")
+	fs.StringVar(&c.DoToken, "do-token", c.DoToken, "provide this flag when provider is digitalocean")
 }
 
 func (c *CloudData) ValidateFlags(cmd *cobra.Command, args []string) error {
 	var ensureFlags []string
 	switch c.Provider {
 	case "gce":
-		ensureFlags = []string{"provider",  "config", "google-project"}
+		ensureFlags = []string{"provider",  "credential-file", "google-project"}
+		break
+	case "digitalocean":
+		ensureFlags = []string{"provider",  "do-token"}
 		break
 	default:
+		ensureFlags = []string{"provider"}
 		break
 	}
 

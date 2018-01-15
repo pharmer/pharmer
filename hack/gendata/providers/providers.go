@@ -9,10 +9,7 @@ import (
 	"github.com/pharmer/pharmer/hack/gendata/cmds/options"
 	"fmt"
 	"strings"
-)
-
-const (
-	WriteDir string = "data"
+	"github.com/pharmer/pharmer/hack/gendata/providers/digitalocean"
 )
 
 type CloudInterface interface {
@@ -28,7 +25,10 @@ type CloudInterface interface {
 func NewCloudProvider(opts *options.CloudData) (CloudInterface, error) {
 	switch opts.Provider {
 	case "gce":
-		return gce.NewGceClient(opts.GCEProjectName, opts.Config,opts.KubernetesVersions)
+		return gce.NewGceClient(opts.GCEProjectName, opts.CredentialFile,opts.KubernetesVersions)
+		break
+	case "digitalocean":
+		return digitalocean.NewDigitalOceanClient(opts.DoToken, opts.KubernetesVersions)
 		break
 	default:
 		return nil, fmt.Errorf("Valid/Supported provider name required")

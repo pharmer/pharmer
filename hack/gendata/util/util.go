@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -34,6 +35,11 @@ func WriteFile(filename string, bytes []byte) error {
 // versions string formate is `1.1.0,1.9.0`
 //they are comma seperated, no space allowed
 func ParseVersions(versions string) []string {
-	v := strings.Split(versions,",")
+	v := strings.Split(versions, ",")
 	return v
+}
+
+func MBToGB(in int64) (float64, error) {
+	gb, err := strconv.ParseFloat(strconv.FormatFloat(float64(in)/1024, 'f', 2, 64), 64)
+	return gb, err
 }
