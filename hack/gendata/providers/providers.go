@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 	"github.com/pharmer/pharmer/hack/gendata/providers/digitalocean"
+	"github.com/pharmer/pharmer/hack/gendata/providers/packet"
 )
 
 type CloudInterface interface {
@@ -30,6 +31,9 @@ func NewCloudProvider(opts *options.CloudData) (CloudInterface, error) {
 	case "digitalocean":
 		return digitalocean.NewDigitalOceanClient(opts.DoToken, opts.KubernetesVersions)
 		break
+	case "packet":
+		return packet.NewPacketClient(opts.PacketToken, opts.KubernetesVersions)
+		break	
 	default:
 		return nil, fmt.Errorf("Valid/Supported provider name required")
 	}

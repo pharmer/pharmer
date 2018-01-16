@@ -16,6 +16,8 @@ type CloudData struct {
 	CredentialFile string
 	//access token for digitalocean
 	DoToken        string
+	//access token for packet
+	PacketToken string
 
 	GCEProjectName string
 	KubernetesVersions string
@@ -36,6 +38,7 @@ func (c *CloudData) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.GCEProjectName, "google-project", c.GCEProjectName, "When using the Google provider, specify the Google project (required when --provider=gce)")
 	fs.StringVar(&c.KubernetesVersions, "versions-support", c.KubernetesVersions, "Supported versions of kubernetes, example: --versions-support=1.1.0,1.2.0")
 	fs.StringVar(&c.DoToken, "do-token", c.DoToken, "provide this flag when provider is digitalocean")
+	fs.StringVar(&c.PacketToken, "packet-token", c.PacketToken, "provide this flag when provider is packet")
 }
 
 func (c *CloudData) ValidateFlags(cmd *cobra.Command, args []string) error {
@@ -46,6 +49,9 @@ func (c *CloudData) ValidateFlags(cmd *cobra.Command, args []string) error {
 		break
 	case "digitalocean":
 		ensureFlags = []string{"provider",  "do-token"}
+		break
+	case "packet":
+		ensureFlags = []string{"provider",  "packet-token"}
 		break
 	default:
 		ensureFlags = []string{"provider"}

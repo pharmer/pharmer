@@ -126,9 +126,9 @@ func (g *GceClient) GetInstanceTypes() ([]data.InstanceType, error) {
 		}
 	}
 	//update g.Data.InstanceTypes[].Zones
-	//for index, instanceType := range instanceTypes {
-	//	instanceTypes[index].Zones = machinesZone[instanceType.SKU]
-	//}
+	for index, instanceType := range instanceTypes {
+		instanceTypes[index].Zones = machinesZone[instanceType.SKU]
+	}
 	return instanceTypes, nil
 }
 
