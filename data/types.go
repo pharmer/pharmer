@@ -41,7 +41,7 @@ type InstanceType struct {
 	Category    string      `json:"category"`
 	CPU         int         `json:"cpu"`
 	RAM         interface{} `json:"ram"`
-	Disk        int         `json:"disk"`
+	Disk        int         `json:"disk,omitempty"`
 	Regions     []string    `json:"regions,omitempty"`
 	Zones       []string    `json:"zones,omitempty"`
 }

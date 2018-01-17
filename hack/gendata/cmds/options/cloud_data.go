@@ -20,6 +20,9 @@ type CloudData struct {
 	PacketToken string
 
 	GCEProjectName string
+	AWSRegion string
+	AWSAccessKeyID string
+	AWSSecretAccessKey string
 	KubernetesVersions string
 }
 
@@ -39,6 +42,9 @@ func (c *CloudData) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.KubernetesVersions, "versions-support", c.KubernetesVersions, "Supported versions of kubernetes, example: --versions-support=1.1.0,1.2.0")
 	fs.StringVar(&c.DoToken, "do-token", c.DoToken, "provide this flag when provider is digitalocean")
 	fs.StringVar(&c.PacketToken, "packet-token", c.PacketToken, "provide this flag when provider is packet")
+	fs.StringVar(&c.AWSRegion, "aws-region", c.AWSRegion, "provide this flag when provider is aws")
+	fs.StringVar(&c.AWSAccessKeyID, "aws-access-key-id", c.AWSAccessKeyID, "provide this flag when provider is aws")
+	fs.StringVar(&c.AWSSecretAccessKey, "aws-secret-access-key", c.AWSSecretAccessKey, "provide this flag when provider is aws")
 }
 
 func (c *CloudData) ValidateFlags(cmd *cobra.Command, args []string) error {
@@ -52,6 +58,9 @@ func (c *CloudData) ValidateFlags(cmd *cobra.Command, args []string) error {
 		break
 	case "packet":
 		ensureFlags = []string{"provider",  "packet-token"}
+		break
+	case "aws":
+		ensureFlags = []string{"provider",  "aws-region","aws-access-key-id","aws-secret-access-key"}
 		break
 	default:
 		ensureFlags = []string{"provider"}
