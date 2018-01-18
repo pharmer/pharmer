@@ -38,7 +38,7 @@ type Region struct {
 type InstanceType struct {
 	SKU         string      `json:"sku"`
 	Description string      `json:"description"`
-	Category    string      `json:"category"`
+	Category    string      `json:"category,omitempty"`
 	CPU         int         `json:"cpu"`
 	RAM         interface{} `json:"ram"`
 	Disk        int         `json:"disk,omitempty"`

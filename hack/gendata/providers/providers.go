@@ -12,6 +12,7 @@ import (
 	"github.com/pharmer/pharmer/hack/gendata/providers/digitalocean"
 	"github.com/pharmer/pharmer/hack/gendata/providers/packet"
 	"github.com/pharmer/pharmer/hack/gendata/providers/aws"
+	"github.com/pharmer/pharmer/hack/gendata/providers/azure"
 )
 
 type CloudInterface interface {
@@ -37,6 +38,9 @@ func NewCloudProvider(opts *options.CloudData) (CloudInterface, error) {
 		break
 	case "aws":
 		return aws.NewAwsClient(opts.AWSRegion,opts.AWSAccessKeyID,opts.AWSSecretAccessKey,opts.KubernetesVersions)
+		break
+	case "azure":
+		return azure.NewAzureClient(opts.AzureTenantId,opts.AzureSubscriptionId,opts.AzureClientId,opts.AzureClientSecret,opts.KubernetesVersions)
 		break
 	default:
 		return nil, fmt.Errorf("Valid/Supported provider name required")
