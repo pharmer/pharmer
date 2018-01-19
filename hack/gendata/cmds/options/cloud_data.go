@@ -17,18 +17,20 @@ type CloudData struct {
 	//access token for digitalocean
 	DoToken string
 	//access token for packet
-	PacketToken         string
-	GCEProjectName      string
-	AWSRegion           string
-	AWSAccessKeyID      string
-	AWSSecretAccessKey  string
-	KubernetesVersions  string
-	AzureTenantId       string
-	AzureSubscriptionId string
-	AzureClientId       string
-	AzureClientSecret   string
-	VultrApiKey         string
-	LinodeApiKey        string
+	PacketToken          string
+	GCEProjectName       string
+	AWSRegion            string
+	AWSAccessKeyID       string
+	AWSSecretAccessKey   string
+	KubernetesVersions   string
+	AzureTenantId        string
+	AzureSubscriptionId  string
+	AzureClientId        string
+	AzureClientSecret    string
+	VultrApiKey          string
+	LinodeApiKey         string
+	ScalewayToken        string
+	ScalewayOrganization string
 }
 
 func NewCloudData() *CloudData {
@@ -54,6 +56,8 @@ func (c *CloudData) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.AzureClientSecret, "azure-client-secret", c.AzureClientSecret, "provide this flag when provider is azure")
 	fs.StringVar(&c.VultrApiKey, "vultr-api-key", c.VultrApiKey, "provide this flag when provider is vultr")
 	fs.StringVar(&c.LinodeApiKey, "linode-api-key", c.LinodeApiKey, "provide this flag when provider is linode")
+	fs.StringVar(&c.ScalewayToken, "scaleway-token", c.ScalewayToken, "provide this flag when provider is scaleway")
+	fs.StringVar(&c.ScalewayOrganization, "scaleway-organization", c.ScalewayOrganization, "provide this flag when provider is scaleway")
 }
 
 func (c *CloudData) ValidateFlags(cmd *cobra.Command, args []string) error {
@@ -78,6 +82,9 @@ func (c *CloudData) ValidateFlags(cmd *cobra.Command, args []string) error {
 		break
 	case "linode":
 		ensureFlags = []string{"provider", "linode-api-key"}
+		break
+	case "scaleway":
+		ensureFlags = []string{"provider", "scaleway-token", "scaleway-organization"}
 		break
 	default:
 		ensureFlags = []string{"provider"}

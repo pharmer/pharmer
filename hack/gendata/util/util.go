@@ -43,3 +43,8 @@ func MBToGB(in int64) (float64, error) {
 	gb, err := strconv.ParseFloat(strconv.FormatFloat(float64(in)/1024, 'f', 2, 64), 64)
 	return gb, err
 }
+
+func BToGB(in int64) (float64, error) {
+	gb, err := strconv.ParseFloat(strconv.FormatFloat(float64(in)/(1024*1024*1024), 'f', 2, 64), 64)
+	return gb, err
+}

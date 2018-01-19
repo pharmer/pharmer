@@ -14,6 +14,7 @@ import (
 	"github.com/pharmer/pharmer/hack/gendata/providers/gce"
 	"github.com/pharmer/pharmer/hack/gendata/providers/linode"
 	"github.com/pharmer/pharmer/hack/gendata/providers/packet"
+	"github.com/pharmer/pharmer/hack/gendata/providers/scaleway"
 	"github.com/pharmer/pharmer/hack/gendata/providers/vultr"
 	"github.com/pharmer/pharmer/hack/gendata/util"
 )
@@ -26,6 +27,7 @@ const (
 	Azure        string = "azure"
 	Vultr        string = "vultr"
 	Linode       string = "linode"
+	Scaleway     string = "scaleway"
 )
 
 type CloudInterface interface {
@@ -60,6 +62,9 @@ func NewCloudProvider(opts *options.CloudData) (CloudInterface, error) {
 		break
 	case Linode:
 		return linode.NewLinodeClient(opts.LinodeApiKey, opts.KubernetesVersions)
+		break
+	case Scaleway:
+		return scaleway.NewScalewayClient(opts.ScalewayToken, opts.ScalewayOrganization, opts.KubernetesVersions)
 		break
 	default:
 		return nil, fmt.Errorf("Valid/Supported provider name required")
