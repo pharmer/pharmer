@@ -1,18 +1,29 @@
 package providers
 
 import (
-	"github.com/pharmer/pharmer/hack/gendata/providers/gce"
-	"github.com/pharmer/pharmer/data"
-	"path/filepath"
-	"github.com/pharmer/pharmer/hack/gendata/util"
 	"encoding/json"
-	"github.com/pharmer/pharmer/hack/gendata/cmds/options"
 	"fmt"
+	"path/filepath"
 	"strings"
-	"github.com/pharmer/pharmer/hack/gendata/providers/digitalocean"
-	"github.com/pharmer/pharmer/hack/gendata/providers/packet"
+
+	"github.com/pharmer/pharmer/data"
+	"github.com/pharmer/pharmer/hack/gendata/cmds/options"
 	"github.com/pharmer/pharmer/hack/gendata/providers/aws"
 	"github.com/pharmer/pharmer/hack/gendata/providers/azure"
+	"github.com/pharmer/pharmer/hack/gendata/providers/digitalocean"
+	"github.com/pharmer/pharmer/hack/gendata/providers/gce"
+	"github.com/pharmer/pharmer/hack/gendata/providers/packet"
+	"github.com/pharmer/pharmer/hack/gendata/providers/vultr"
+	"github.com/pharmer/pharmer/hack/gendata/util"
+)
+
+const (
+	Gce          string = "gce"
+	DigitalOcean string = "digitalocean"
+	Packet       string = "packet"
+	Aws          string = "aws"
+	Azure        string = "azure"
+	Vultr        string = "vultr"
 )
 
 type CloudInterface interface {
@@ -27,25 +38,28 @@ type CloudInterface interface {
 
 func NewCloudProvider(opts *options.CloudData) (CloudInterface, error) {
 	switch opts.Provider {
-	case "gce":
-		return gce.NewGceClient(opts.GCEProjectName, opts.CredentialFile,opts.KubernetesVersions)
+	case Gce:
+		return gce.NewGceClient(opts.GCEProjectName, opts.CredentialFile, opts.KubernetesVersions)
 		break
-	case "digitalocean":
+	case DigitalOcean:
 		return digitalocean.NewDigitalOceanClient(opts.DoToken, opts.KubernetesVersions)
 		break
-	case "packet":
+	case Packet:
 		return packet.NewPacketClient(opts.PacketToken, opts.KubernetesVersions)
 		break
-	case "aws":
-		return aws.NewAwsClient(opts.AWSRegion,opts.AWSAccessKeyID,opts.AWSSecretAccessKey,opts.KubernetesVersions)
+	case Aws:
+		return aws.NewAwsClient(opts.AWSRegion, opts.AWSAccessKeyID, opts.AWSSecretAccessKey, opts.KubernetesVersions)
 		break
-	case "azure":
-		return azure.NewAzureClient(opts.AzureTenantId,opts.AzureSubscriptionId,opts.AzureClientId,opts.AzureClientSecret,opts.KubernetesVersions)
+	case Azure:
+		return azure.NewAzureClient(opts.AzureTenantId, opts.AzureSubscriptionId, opts.AzureClientId, opts.AzureClientSecret, opts.KubernetesVersions)
+		break
+	case Vultr:
+		return vultr.NewVultrClient(opts.VultrApiKey, opts.KubernetesVersions)
 		break
 	default:
 		return nil, fmt.Errorf("Valid/Supported provider name required")
 	}
-	return nil,nil
+	return nil, nil
 }
 
 func WriteCloudData(cloudInterface CloudInterface) error {
@@ -77,10 +91,10 @@ func WriteCloudData(cloudInterface CloudInterface) error {
 // Current directory is [path]/pharmer/hack/gendata
 func GetWriteDir() (string, error) {
 	AbsPath, err := filepath.Abs("")
-	if err!=nil {
-		return "",err
+	if err != nil {
+		return "", err
 	}
 	p := strings.TrimSuffix(AbsPath, "/hack/gendata")
-	p = filepath.Join(p,"data","files")
-	return p,nil
+	p = filepath.Join(p, "data", "files")
+	return p, nil
 }

@@ -1,9 +1,9 @@
 package options
 
 import (
-	"github.com/spf13/pflag"
-	"github.com/spf13/cobra"
 	"github.com/appscode/go/flags"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 const (
@@ -11,29 +11,28 @@ const (
 )
 
 type CloudData struct {
-	Provider       string
+	Provider string
 	//credential file for gce
 	CredentialFile string
 	//access token for digitalocean
-	DoToken        string
+	DoToken string
 	//access token for packet
-	PacketToken string
-	GCEProjectName string
-	AWSRegion string
-	AWSAccessKeyID string
-	AWSSecretAccessKey string
-	KubernetesVersions string
-	AzureTenantId string
+	PacketToken         string
+	GCEProjectName      string
+	AWSRegion           string
+	AWSAccessKeyID      string
+	AWSSecretAccessKey  string
+	KubernetesVersions  string
+	AzureTenantId       string
 	AzureSubscriptionId string
-	AzureClientId string
-	AzureClientSecret string
+	AzureClientId       string
+	AzureClientSecret   string
+	VultrApiKey         string
 }
-
-
 
 func NewCloudData() *CloudData {
 	return &CloudData{
-		Provider: "",
+		Provider:           "",
 		KubernetesVersions: DefaultKubernetesVersion,
 	}
 }
@@ -52,24 +51,28 @@ func (c *CloudData) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.AzureSubscriptionId, "azure-subscription-id", c.AzureSubscriptionId, "provide this flag when provider is azure")
 	fs.StringVar(&c.AzureClientId, "azure-client-id", c.AzureClientId, "provide this flag when provider is azure")
 	fs.StringVar(&c.AzureClientSecret, "azure-client-secret", c.AzureClientSecret, "provide this flag when provider is azure")
+	fs.StringVar(&c.VultrApiKey, "vultr-api-key", c.VultrApiKey, "provide this flag when provider is vultr")
 }
 
 func (c *CloudData) ValidateFlags(cmd *cobra.Command, args []string) error {
 	var ensureFlags []string
 	switch c.Provider {
 	case "gce":
-		ensureFlags = []string{"provider",  "credential-file", "google-project"}
+		ensureFlags = []string{"provider", "credential-file", "google-project"}
 		break
 	case "digitalocean":
-		ensureFlags = []string{"provider",  "do-token"}
+		ensureFlags = []string{"provider", "do-token"}
 		break
 	case "packet":
-		ensureFlags = []string{"provider",  "packet-token"}
+		ensureFlags = []string{"provider", "packet-token"}
 		break
 	case "aws":
-		ensureFlags = []string{"provider",  "aws-region","aws-access-key-id","aws-secret-access-key"}
+		ensureFlags = []string{"provider", "aws-region", "aws-access-key-id", "aws-secret-access-key"}
 	case "azure":
-		ensureFlags = []string{"provider",  "azure-tenant-id", "azure-subscription-id", "azure-client-id", "azure-client-secret"}
+		ensureFlags = []string{"provider", "azure-tenant-id", "azure-subscription-id", "azure-client-id", "azure-client-secret"}
+		break
+	case "vultr":
+		ensureFlags = []string{"provider", "vultr-api-key"}
 		break
 	default:
 		ensureFlags = []string{"provider"}
