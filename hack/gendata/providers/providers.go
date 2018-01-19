@@ -12,6 +12,7 @@ import (
 	"github.com/pharmer/pharmer/hack/gendata/providers/azure"
 	"github.com/pharmer/pharmer/hack/gendata/providers/digitalocean"
 	"github.com/pharmer/pharmer/hack/gendata/providers/gce"
+	"github.com/pharmer/pharmer/hack/gendata/providers/linode"
 	"github.com/pharmer/pharmer/hack/gendata/providers/packet"
 	"github.com/pharmer/pharmer/hack/gendata/providers/vultr"
 	"github.com/pharmer/pharmer/hack/gendata/util"
@@ -24,6 +25,7 @@ const (
 	Aws          string = "aws"
 	Azure        string = "azure"
 	Vultr        string = "vultr"
+	Linode       string = "linode"
 )
 
 type CloudInterface interface {
@@ -55,6 +57,9 @@ func NewCloudProvider(opts *options.CloudData) (CloudInterface, error) {
 		break
 	case Vultr:
 		return vultr.NewVultrClient(opts.VultrApiKey, opts.KubernetesVersions)
+		break
+	case Linode:
+		return linode.NewLinodeClient(opts.LinodeApiKey, opts.KubernetesVersions)
 		break
 	default:
 		return nil, fmt.Errorf("Valid/Supported provider name required")

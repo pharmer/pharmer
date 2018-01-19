@@ -28,6 +28,7 @@ type CloudData struct {
 	AzureClientId       string
 	AzureClientSecret   string
 	VultrApiKey         string
+	LinodeApiKey        string
 }
 
 func NewCloudData() *CloudData {
@@ -52,6 +53,7 @@ func (c *CloudData) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.AzureClientId, "azure-client-id", c.AzureClientId, "provide this flag when provider is azure")
 	fs.StringVar(&c.AzureClientSecret, "azure-client-secret", c.AzureClientSecret, "provide this flag when provider is azure")
 	fs.StringVar(&c.VultrApiKey, "vultr-api-key", c.VultrApiKey, "provide this flag when provider is vultr")
+	fs.StringVar(&c.LinodeApiKey, "linode-api-key", c.LinodeApiKey, "provide this flag when provider is linode")
 }
 
 func (c *CloudData) ValidateFlags(cmd *cobra.Command, args []string) error {
@@ -73,6 +75,9 @@ func (c *CloudData) ValidateFlags(cmd *cobra.Command, args []string) error {
 		break
 	case "vultr":
 		ensureFlags = []string{"provider", "vultr-api-key"}
+		break
+	case "linode":
+		ensureFlags = []string{"provider", "linode-api-key"}
 		break
 	default:
 		ensureFlags = []string{"provider"}
