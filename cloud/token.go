@@ -47,7 +47,7 @@ func CreateValidKubeadmToken(kc kubernetes.Interface, duration time.Duration) (s
 	}
 	secretName := fmt.Sprintf("%s%s", bootstrapapi.BootstrapTokenSecretPrefix, tokenID)
 	description := "Bootstrap token generated for 24 hours"
-	extraGroups := []string{kubeadmconsts.V18NodeBootstrapTokenAuthGroup}
+	extraGroups := []string{kubeadmconsts.NodeBootstrapTokenAuthGroup}
 	secret := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: secretName,
