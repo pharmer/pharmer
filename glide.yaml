@@ -11,8 +11,6 @@ import:
 - package: github.com/appscode/go-hetzner
 - package: github.com/appscode/go
   version: master
-- package: github.com/appscode/kutil
-  version: release-5.0
 - package: github.com/taoh/linodego
   repo: https://github.com/appscode/linodego.git
   version: master
@@ -52,9 +50,7 @@ import:
   repo: https://github.com/tamalsaha/scaleway-cli.git
   vcs: git
 - package: github.com/moul/gotty-client
-  version: master
-  repo: https://github.com/tamalsaha/gotty-client.git
-  vcs: git
+  version: b47f2c128b4d2447db6bf2a5f79aea81017899d4
 - package: github.com/skratchdot/open-golang
 - package: github.com/softlayer/softlayer-go
 - package: github.com/spf13/cobra
@@ -75,19 +71,19 @@ import:
 - package: gopkg.in/ini.v1
   version: v1.28.2
 - package: k8s.io/api
-  version: kubernetes-1.8.3
+  version: kubernetes-1.9.0
 - package: k8s.io/apimachinery
   repo: https://github.com/tamalsaha/apimachinery.git
-  version: release-1.8
+  version: release-1.9
   vcs: git
 - package: k8s.io/client-go
-  version: kubernetes-1.8.3-beta.0
+  version: v6.0.0
 - package: k8s.io/apiextensions-apiserver
-  version: release-1.8
+  version: kubernetes-1.9.0
 - package: k8s.io/kubernetes
-  repo: https://github.com/appscode/kubernetes.git
-  version: v1.8.3
-  vcs: git
+  version: v1.9.0
+- package: github.com/appscode/kutil
+  version: release-6.0
 - package: github.com/gogo/protobuf
   version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
 - package: github.com/golang/protobuf
