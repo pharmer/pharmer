@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Pharmer Authors.
+Copyright 2018 The Pharmer Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -436,6 +436,9 @@ message NodeTemplateSpec {
   // More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
   // +optional
   optional NodeSpec spec = 1;
+}
+
+message NullNameGenerator {
 }
 
 message OVHCloudConfig {
