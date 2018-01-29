@@ -1,14 +1,14 @@
 package gce
 
 import (
-	"github.com/pharmer/pharmer/data"
-	"github.com/hashicorp/go-version"
 	"github.com/appscode/go/log"
+	"github.com/hashicorp/go-version"
+	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/gendata/util"
 )
 
 func GetDefault(versions string) (*GceDefaultData, error) {
-  d := &GceDefaultData{
+	d := &GceDefaultData{
 		Name: "gce",
 		Envs: []string{
 			"dev",
@@ -17,11 +17,11 @@ func GetDefault(versions string) (*GceDefaultData, error) {
 		},
 		Credentials: []data.CredentialFormat{
 			{
-				Provider: "GoogleCloud",
+				Provider:      "GoogleCloud",
 				DisplayFormat: "json",
 				Annotations: map[string]string{
 					"pharmer.appscode.com/cluster-credential": "",
-					"pharmer.appscode.com/dns-credential": "",
+					"pharmer.appscode.com/dns-credential":     "",
 					"pharmer.appscode.com/storage-credential": "",
 				},
 				Fields: []struct {
@@ -33,20 +33,19 @@ func GetDefault(versions string) (*GceDefaultData, error) {
 				}{
 					{
 						Envconfig: "GCE_PROJECT_ID",
-						Form: "gce_project_id",
-						JSON: "projectID",
-						Label: "Google Cloud Project ID",
-						Input: "text",
+						Form:      "gce_project_id",
+						JSON:      "projectID",
+						Label:     "Google Cloud Project ID",
+						Input:     "text",
 					},
 					{
 						Envconfig: "GCE_SERVICE_ACCOUNT",
-						Form: "gce_service_account",
-						JSON: "serviceAccount",
-						Label: "Google Cloud Service Account",
-						Input: "textarea",
+						Form:      "gce_service_account",
+						JSON:      "serviceAccount",
+						Label:     "Google Cloud Service Account",
+						Input:     "textarea",
 					},
 				},
-
 			},
 		},
 		Kubernetes: []data.Kubernetes{},
@@ -54,19 +53,19 @@ func GetDefault(versions string) (*GceDefaultData, error) {
 	vers := util.ParseVersions(versions)
 	log.Debug(vers)
 	// adding supported kubernetes versions
-	for _,v := range vers {
+	for _, v := range vers {
 		ver, err := version.NewVersion(v)
-		if err!= nil {
+		if err != nil {
 			return nil, err
 		}
-		d.Kubernetes = append(d.Kubernetes,data.Kubernetes{
-			Version:ver,
-			Envs: map[string]bool {
-				"dev": true,
-				"qa": true,
+		d.Kubernetes = append(d.Kubernetes, data.Kubernetes{
+			Version: ver,
+			Envs: map[string]bool{
+				"dev":  true,
+				"qa":   true,
 				"prod": true,
 			},
 		})
 	}
-	return d,nil
+	return d, nil
 }

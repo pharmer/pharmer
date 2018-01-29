@@ -3,12 +3,9 @@ package digitalocean
 import (
 	"encoding/json"
 	"fmt"
-
 	"testing"
 
-	"github.com/packethost/packngo"
 	"github.com/pharmer/pharmer/hack/gendata/util"
-	"github.com/digitalocean/godo"
 )
 
 func TestRegion(t *testing.T) {

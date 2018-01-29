@@ -10,24 +10,24 @@ import (
 )
 
 type GceClient struct {
-	Data *GceDefaultData `json:"data,omitempty"`
-	GceProjectName     string           `json:"gceProjectName,omitempty"`
-	ComputeService     *compute.Service `json:"compute_service,omitempty"`
-	Ctx                context.Context  `json:"ctx,omitempty"`
+	Data           *GceDefaultData  `json:"data,omitempty"`
+	GceProjectName string           `json:"gceProjectName,omitempty"`
+	ComputeService *compute.Service `json:"compute_service,omitempty"`
+	Ctx            context.Context  `json:"ctx,omitempty"`
 }
 
 type GceDefaultData struct {
-	Name        string                       `json:"name"`
-	Envs        []string                     `json:"envs,omitempty"`
+	Name        string                  `json:"name"`
+	Envs        []string                `json:"envs,omitempty"`
 	Credentials []data.CredentialFormat `json:"credentials"`
 	Kubernetes  []data.Kubernetes       `json:"kubernetes"`
 }
 
 func NewGceClient(gecProjectName, credentialFilePath, versions string) (*GceClient, error) {
 	g := &GceClient{
-		GceProjectName:     gecProjectName,
-		Ctx:                context.Background(),
-		Data:               &GceDefaultData{},
+		GceProjectName: gecProjectName,
+		Ctx:            context.Background(),
+		Data:           &GceDefaultData{},
 	}
 	var err error
 	g.ComputeService, err = getComputeService(g.Ctx, credentialFilePath)

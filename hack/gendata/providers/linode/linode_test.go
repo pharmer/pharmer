@@ -3,7 +3,6 @@ package linode
 import (
 	"encoding/json"
 	"fmt"
-
 	"testing"
 
 	"github.com/pharmer/pharmer/hack/gendata/util"

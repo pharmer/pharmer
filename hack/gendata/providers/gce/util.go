@@ -15,7 +15,7 @@ const (
 
 func ParseRegion(region *compute.Region) (*data.Region, error) {
 	r := &data.Region{
-		Region: region.Name,
+		Region:   region.Name,
 		Location: region.Name,
 	}
 	r.Zones = []string{}

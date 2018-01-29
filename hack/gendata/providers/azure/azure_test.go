@@ -6,11 +6,11 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/arm/compute"
+	"github.com/Azure/azure-sdk-for-go/arm/resources/subscriptions"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/azure-sdk-for-go/arm/resources/subscriptions"
-	"github.com/Azure/azure-sdk-for-go/arm/compute"
 )
 
 //https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/virtualmachines-list-sizes-region
@@ -43,11 +43,11 @@ func TestRegion(t *testing.T) {
 	groupsClient := subscriptions.NewGroupClient()
 	groupsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 	g := AzureClient{
-		GroupsClient:groupsClient,
-		SubscriptionId:cred.SubscriptionId,
+		GroupsClient:   groupsClient,
+		SubscriptionId: cred.SubscriptionId,
 	}
 	r, err := g.GetRegions()
-	if err!=nil {
+	if err != nil {
 		t.Error(err)
 	}
 	fmt.Println(r)
@@ -73,12 +73,12 @@ func TestInstances(t *testing.T) {
 	groupsClient := subscriptions.NewGroupClient()
 	groupsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 	g := AzureClient{
-		VmSizesClient:vmSzClient,
-		GroupsClient:groupsClient,
-		SubscriptionId:cred.SubscriptionId,
+		VmSizesClient:  vmSzClient,
+		GroupsClient:   groupsClient,
+		SubscriptionId: cred.SubscriptionId,
 	}
 	r, err := g.GetInstanceTypes()
-	if err!=nil {
+	if err != nil {
 		t.Error(err)
 	}
 	fmt.Println(r)

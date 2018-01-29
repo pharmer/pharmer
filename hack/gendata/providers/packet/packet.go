@@ -137,7 +137,7 @@ func (g *PacketClient) GetInstanceTypes() ([]data.InstanceType, error) {
 				}
 			}
 			ins.Zones = zones
-			instances = append(instances,*ins)
+			instances = append(instances, *ins)
 		}
 	}
 	return instances, nil
