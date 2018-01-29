@@ -17,7 +17,6 @@ section_menu_id: reference
 
 
 
-
 ### Options
 
 ```
@@ -40,6 +39,7 @@ section_menu_id: reference
 ```
 
 ### SEE ALSO
+
 * [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
 * [pharmer ssh node](/docs/reference/pharmer_ssh_node.md)	 - SSH into a Kubernetes cluster instance
 

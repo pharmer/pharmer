@@ -13,5 +13,5 @@ section_menu_id: cli
 
 Pharmer supports following storage provider
 
-* [Vfs](./providers/vfs/README.md)
-* [Postgres Database](./providers/xorm/README.md)
+* [Vfs](vfs.md)
+* [Postgres Database](xorm.md)

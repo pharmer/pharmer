@@ -17,7 +17,6 @@ section_menu_id: reference
 
 
 
-
 ```
 pharmer get [flags]
 ```
@@ -44,6 +43,7 @@ pharmer get [flags]
 ```
 
 ### SEE ALSO
+
 * [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
 * [pharmer get cluster](/docs/reference/pharmer_get_cluster.md)	 - Get a Kubernetes cluster
 * [pharmer get credential](/docs/reference/pharmer_get_credential.md)	 - List cloud Credentials

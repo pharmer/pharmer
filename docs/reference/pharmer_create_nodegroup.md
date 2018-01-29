@@ -15,7 +15,6 @@ Create a Kubernetes cluster NodeGroup for a given cloud provider
 
 ### Synopsis
 
-
 Create a Kubernetes cluster NodeGroup for a given cloud provider
 
 ```
@@ -54,5 +53,6 @@ pharmer create nodegroup -k <cluster_name>
 ```
 
 ### SEE ALSO
+
 * [pharmer create](/docs/reference/pharmer_create.md)	 - 
 

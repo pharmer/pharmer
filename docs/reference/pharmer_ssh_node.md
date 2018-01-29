@@ -15,7 +15,6 @@ SSH into a Kubernetes cluster instance
 
 ### Synopsis
 
-
 SSH into a cluster instance.
 
 ```
@@ -51,5 +50,6 @@ pharmer ssh node -k cluster-name node-name
 ```
 
 ### SEE ALSO
+
 * [pharmer ssh](/docs/reference/pharmer_ssh.md)	 - 
 

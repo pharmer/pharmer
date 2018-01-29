@@ -15,7 +15,6 @@ Print Pharmer config
 
 ### Synopsis
 
-
 Print Pharmer config
 
 ```
@@ -50,5 +49,6 @@ Pharmer config view
 ```
 
 ### SEE ALSO
+
 * [pharmer config](/docs/reference/pharmer_config.md)	 - Pharmer configuration
 

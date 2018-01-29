@@ -17,7 +17,6 @@ section_menu_id: reference
 
 
 
-
 ```
 pharmer create [flags]
 ```
@@ -44,6 +43,7 @@ pharmer create [flags]
 ```
 
 ### SEE ALSO
+
 * [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
 * [pharmer create cluster](/docs/reference/pharmer_create_cluster.md)	 - Create a Kubernetes cluster for a given cloud provider
 * [pharmer create credential](/docs/reference/pharmer_create_credential.md)	 - Create  credential object
