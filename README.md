@@ -3,7 +3,7 @@
 # pharmer
 Kubernetes Cluster Manager for [Kubeadm](https://github.com/kubernetes/kubeadm). Think `kops using kubeadm`!
 
-This project is spread over 4 repositories:
+This project is spread over 5 repositories:
 
 - [pharmer/pre-k](https://github.com/pharmer/pre-k): Contains [a set of handy commands](https://github.com/pharmer/pre-k/blob/master/docs/reference/pre-k.md) that you run before `kubeadm init`.
 
@@ -26,6 +26,11 @@ This project is spread over 4 repositories:
   - [Scaleway](https://www.scaleway.com/)
   - [Softlayer](http://www.softlayer.com/)
   - [Vultr](https://www.vultr.com/)
+
+- [pharmer/flexvolumes](https://github.com/pharmer/flexvolumes): Implements Flex Volume drivers for following cloud providers:
+  - [DigitalOcean](https://www.digitalocean.com/)
+  - [Linode](https://www.linode.com/)
+  - [Packet](https://www.packet.net/)
 
 - [pharmer/swanc](https://github.com/pharmer/swanc): StrongSwan based VPN Controller for Kubernetes
 
