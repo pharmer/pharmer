@@ -15,7 +15,6 @@ Sets `kubectl` context to given cluster
 
 ### Synopsis
 
-
 Sets `kubectl` context to given cluster
 
 ```
@@ -51,5 +50,6 @@ pharmer use cluster <name>
 ```
 
 ### SEE ALSO
+
 * [pharmer use](/docs/reference/pharmer_use.md)	 - 
 

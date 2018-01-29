@@ -17,7 +17,6 @@ section_menu_id: reference
 
 
 
-
 ```
 pharmer edit [flags]
 ```
@@ -44,6 +43,7 @@ pharmer edit [flags]
 ```
 
 ### SEE ALSO
+
 * [pharmer](/docs/reference/pharmer.md)	 - Pharmer by Appscode - Manages farms
 * [pharmer edit cluster](/docs/reference/pharmer_edit_cluster.md)	 - Edit cluster object
 * [pharmer edit credential](/docs/reference/pharmer_edit_credential.md)	 - Edit a cloud Credential

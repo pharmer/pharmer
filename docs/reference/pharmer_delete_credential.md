@@ -15,7 +15,6 @@ Delete  credential object
 
 ### Synopsis
 
-
 Delete  credential object
 
 ```
@@ -50,5 +49,6 @@ pharmer delete credential
 ```
 
 ### SEE ALSO
+
 * [pharmer delete](/docs/reference/pharmer_delete.md)	 - 
 

@@ -15,7 +15,6 @@ Delete a Kubernetes cluster NodeGroup
 
 ### Synopsis
 
-
 Delete a Kubernetes cluster NodeGroup
 
 ```
@@ -51,5 +50,6 @@ pharmer delete nodegroup -k <cluster_name>
 ```
 
 ### SEE ALSO
+
 * [pharmer delete](/docs/reference/pharmer_delete.md)	 - 
 

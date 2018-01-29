@@ -15,7 +15,6 @@ Create a Kubernetes cluster for a given cloud provider
 
 ### Synopsis
 
-
 Create a Kubernetes cluster for a given cloud provider
 
 ```
@@ -56,5 +55,6 @@ pharmer create cluster demo-cluster
 ```
 
 ### SEE ALSO
+
 * [pharmer create](/docs/reference/pharmer_create.md)	 - 
 

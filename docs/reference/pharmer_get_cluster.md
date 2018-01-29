@@ -15,7 +15,6 @@ Get a Kubernetes cluster
 
 ### Synopsis
 
-
 Get a Kubernetes cluster
 
 ```
@@ -51,5 +50,6 @@ pharmer get cluster
 ```
 
 ### SEE ALSO
+
 * [pharmer get](/docs/reference/pharmer_get.md)	 - 
 

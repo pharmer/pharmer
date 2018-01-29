@@ -15,7 +15,6 @@ Get a Kubernetes cluster NodeGroup
 
 ### Synopsis
 
-
 Get a Kubernetes cluster NodeGroup
 
 ```
@@ -52,5 +51,6 @@ pharmer get nodegroup -k <cluster_name>
 ```
 
 ### SEE ALSO
+
 * [pharmer get](/docs/reference/pharmer_get.md)	 - 
 
