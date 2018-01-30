@@ -87,22 +87,22 @@ func GetDataFormFile(provider string) (*data.CloudData, error) {
 	return &data, nil
 }
 
-func SortCloudData(new *data.CloudData) *data.CloudData {
-	sort.Slice(new.Regions, func(i, j int) bool {
-		return new.Regions[i].Region < new.Regions[j].Region
+func SortCloudData(data *data.CloudData) *data.CloudData {
+	sort.Slice(data.Regions, func(i, j int) bool {
+		return data.Regions[i].Region < data.Regions[j].Region
 	})
-	for index, _ := range new.Regions {
-		sort.Slice(new.Regions[index].Zones, func(i, j int) bool {
-			return new.Regions[index].Zones[i] < new.Regions[index].Zones[j]
+	for index, _ := range data.Regions {
+		sort.Slice(data.Regions[index].Zones, func(i, j int) bool {
+			return data.Regions[index].Zones[i] < data.Regions[index].Zones[j]
 		})
 	}
-	sort.Slice(new.InstanceTypes, func(i, j int) bool {
-		return new.InstanceTypes[i].SKU < new.InstanceTypes[j].SKU
+	sort.Slice(data.InstanceTypes, func(i, j int) bool {
+		return data.InstanceTypes[i].SKU < data.InstanceTypes[j].SKU
 	})
-	for index, _ := range new.InstanceTypes {
-		sort.Slice(new.InstanceTypes[index].Zones, func(i, j int) bool {
-			return new.InstanceTypes[index].Zones[i] < new.InstanceTypes[index].Zones[j]
+	for index, _ := range data.InstanceTypes {
+		sort.Slice(data.InstanceTypes[index].Zones, func(i, j int) bool {
+			return data.InstanceTypes[index].Zones[i] < data.InstanceTypes[index].Zones[j]
 		})
 	}
-	return new
+	return data
 }

@@ -105,112 +105,112 @@ func WriteCloudData(cloudData *data.CloudData, fileName string) error {
 }
 
 //region merge rule:
-//	if region doesn't exist in old data, but exists in new data, then add it
-//	if region exists in old data, but doesn't exists in new data, then delete it
+//	if region doesn't exist in old data, but exists in cur data, then add it
+//	if region exists in old data, but doesn't exists in cur data, then delete it
 //	if region exist in both, then
-//		if field data exists in both new and old data , then take the new data
-//		otherwise, take data from (old or new)whichever contains it
+//		if field data exists in both cur and old data , then take the cur data
+//		otherwise, take data from (old or cur)whichever contains it
 //
 // instanceType merge rule: same as region rule, except
-//		if instance exists in old data, but doesn't exists in new data, then add it , set the deprecated true
+//		if instance exists in old data, but doesn't exists in cur data, then add it , set the deprecated true
 //
 //In MergeCloudData, we merge only the region and instanceType data
-func MergeCloudData(old, new *data.CloudData) (*data.CloudData, error) {
+func MergeCloudData(oldData, curData *data.CloudData) (*data.CloudData, error) {
 	//region merge
-	regionIndex := map[string]int{} //keep regionName,corresponding region index in old.Regions[] as (key,value) pair
-	for index, r := range old.Regions {
+	regionIndex := map[string]int{} //keep regionName,corresponding region index in oldData.Regions[] as (key,value) pair
+	for index, r := range oldData.Regions {
 		regionIndex[r.Region] = index
 	}
-	for index, _ := range new.Regions {
-		pos, found := regionIndex[new.Regions[index].Region]
+	for index, _ := range curData.Regions {
+		pos, found := regionIndex[curData.Regions[index].Region]
 		if found {
 			//location
-			if new.Regions[index].Location == "" && old.Regions[pos].Location != "" {
-				new.Regions[index].Location = old.Regions[pos].Location
+			if curData.Regions[index].Location == "" && oldData.Regions[pos].Location != "" {
+				curData.Regions[index].Location = oldData.Regions[pos].Location
 			}
 			//zones
-			if len(new.Regions[index].Zones) == 0 && len(old.Regions[pos].Zones) != 0 {
-				new.Regions[index].Location = old.Regions[pos].Location
+			if len(curData.Regions[index].Zones) == 0 && len(oldData.Regions[pos].Zones) != 0 {
+				curData.Regions[index].Location = oldData.Regions[pos].Location
 			}
 		}
 	}
 
 	//instanceType
-	instanceIndex := map[string]int{} //keep SKU,corresponding instance index in old.InstanceTypes[] as (key,value) pair
-	for index, ins := range old.InstanceTypes {
+	instanceIndex := map[string]int{} //keep SKU,corresponding instance index in oldData.InstanceTypes[] as (key,value) pair
+	for index, ins := range oldData.InstanceTypes {
 		instanceIndex[ins.SKU] = index
 	}
-	for index, _ := range new.InstanceTypes {
-		pos, found := instanceIndex[new.InstanceTypes[index].SKU]
+	for index, _ := range curData.InstanceTypes {
+		pos, found := instanceIndex[curData.InstanceTypes[index].SKU]
 		if found {
 			//description
-			if new.InstanceTypes[index].Description == "" && old.InstanceTypes[pos].Description != "" {
-				new.InstanceTypes[index].Description = old.InstanceTypes[pos].Description
+			if curData.InstanceTypes[index].Description == "" && oldData.InstanceTypes[pos].Description != "" {
+				curData.InstanceTypes[index].Description = oldData.InstanceTypes[pos].Description
 			}
 			//zones
-			if len(new.InstanceTypes[index].Zones) == 0 && len(old.InstanceTypes[pos].Zones) == 0 {
-				new.InstanceTypes[index].Zones = old.InstanceTypes[pos].Zones
+			if len(curData.InstanceTypes[index].Zones) == 0 && len(oldData.InstanceTypes[pos].Zones) == 0 {
+				curData.InstanceTypes[index].Zones = oldData.InstanceTypes[pos].Zones
 			}
 			//regions
-			//if len(new.InstanceTypes[index].Regions)==0 && len(old.InstanceTypes[pos].Regions)!=0 {
-			//	new.InstanceTypes[index].Regions = old.InstanceTypes[pos].Regions
+			//if len(curData.InstanceTypes[index].Regions)==0 && len(oldData.InstanceTypes[pos].Regions)!=0 {
+			//	curData.InstanceTypes[index].Regions = oldData.InstanceTypes[pos].Regions
 			//}
 			//Disk
-			if new.InstanceTypes[index].Disk == 0 && old.InstanceTypes[pos].Disk != 0 {
-				new.InstanceTypes[index].Disk = old.InstanceTypes[pos].Disk
+			if curData.InstanceTypes[index].Disk == 0 && oldData.InstanceTypes[pos].Disk != 0 {
+				curData.InstanceTypes[index].Disk = oldData.InstanceTypes[pos].Disk
 			}
 			//RAM
-			if new.InstanceTypes[index].RAM == nil && old.InstanceTypes[pos].RAM != nil {
-				new.InstanceTypes[index].RAM = old.InstanceTypes[pos].RAM
+			if curData.InstanceTypes[index].RAM == nil && oldData.InstanceTypes[pos].RAM != nil {
+				curData.InstanceTypes[index].RAM = oldData.InstanceTypes[pos].RAM
 			}
 			//catagory
-			if new.InstanceTypes[index].Category == "" && old.InstanceTypes[pos].Category != "" {
-				new.InstanceTypes[index].Category = old.InstanceTypes[pos].Category
+			if curData.InstanceTypes[index].Category == "" && oldData.InstanceTypes[pos].Category != "" {
+				curData.InstanceTypes[index].Category = oldData.InstanceTypes[pos].Category
 			}
 			//CPU
-			if new.InstanceTypes[index].CPU == 0 && old.InstanceTypes[pos].CPU != 0 {
-				new.InstanceTypes[index].CPU = old.InstanceTypes[pos].CPU
+			if curData.InstanceTypes[index].CPU == 0 && oldData.InstanceTypes[pos].CPU != 0 {
+				curData.InstanceTypes[index].CPU = oldData.InstanceTypes[pos].CPU
 			}
-			//to detect it already added to new
-			instanceIndex[new.InstanceTypes[index].SKU] = -1
+			//to detect it already added to curData
+			instanceIndex[curData.InstanceTypes[index].SKU] = -1
 		}
 	}
 	for _, index := range instanceIndex {
 		if index > -1 {
 			//using regions as zones
-			if len(old.InstanceTypes[index].Regions) > 0 {
-				if len(old.InstanceTypes[index].Zones) == 0 {
-					old.InstanceTypes[index].Zones = old.InstanceTypes[index].Regions
+			if len(oldData.InstanceTypes[index].Regions) > 0 {
+				if len(oldData.InstanceTypes[index].Zones) == 0 {
+					oldData.InstanceTypes[index].Zones = oldData.InstanceTypes[index].Regions
 				}
-				old.InstanceTypes[index].Regions = nil
+				oldData.InstanceTypes[index].Regions = nil
 			}
-			new.InstanceTypes = append(new.InstanceTypes, old.InstanceTypes[index])
-			new.InstanceTypes[len(new.InstanceTypes)-1].Deprecated = true
+			curData.InstanceTypes = append(curData.InstanceTypes, oldData.InstanceTypes[index])
+			curData.InstanceTypes[len(curData.InstanceTypes)-1].Deprecated = true
 		}
 	}
-	return new, nil
+	return curData, nil
 }
 
 //get data from api , merge it with previous data and write the data
 //previous data written in cloud_old.json
 func MergeAndWriteCloudData(cloudInterface CloudInterface) error {
 	log.Infof("Getting cloud data for `%v` provider", cloudInterface.GetName())
-	new, err := GetCloudData(cloudInterface)
+	curData, err := GetCloudData(cloudInterface)
 	if err != nil {
 		return err
 	}
 
-	old, err := util.GetDataFormFile(cloudInterface.GetName())
+	oldData, err := util.GetDataFormFile(cloudInterface.GetName())
 	if err != nil {
 		return err
 	}
 	log.Info("Merging cloud data...")
-	res, err := MergeCloudData(old, new)
+	res, err := MergeCloudData(oldData, curData)
 	if err != nil {
 		return err
 	}
 
-	//err = WriteCloudData(old,"cloud_old.json")
+	//err = WriteCloudData(oldData,"cloud_old.json")
 	//if err!=nil {
 	//	return err
 	//}
