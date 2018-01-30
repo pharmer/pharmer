@@ -7,84 +7,63 @@
   ],
   "regions": [
     {
-      "location": "Amsterdam",
-      "region": "ams2",
-      "zones": [
-        "ams2"
-      ]
-    },
-    {
-      "location": "Amsterdam",
+      "location": "Amsterdam 3",
       "region": "ams3",
       "zones": [
         "ams3"
       ]
     },
     {
-      "location": "Bangalore",
+      "location": "Bangalore 1",
       "region": "blr1",
       "zones": [
         "blr1"
       ]
     },
     {
-      "location": "Frankfurt",
+      "location": "Frankfurt 1",
       "region": "fra1",
       "zones": [
         "fra1"
       ]
     },
     {
-      "location": "London",
+      "location": "London 1",
       "region": "lon1",
       "zones": [
         "lon1"
       ]
     },
     {
-      "location": "New York",
+      "location": "New York 1",
       "region": "nyc1",
       "zones": [
         "nyc1"
       ]
     },
     {
-      "location": "New York",
-      "region": "nyc2",
-      "zones": [
-        "nyc2"
-      ]
-    },
-    {
-      "location": "New York",
+      "location": "New York 3",
       "region": "nyc3",
       "zones": [
         "nyc3"
       ]
     },
     {
-      "location": "San Francisco",
-      "region": "sfo1",
-      "zones": [
-        "sfo1"
-      ]
-    },
-    {
-      "location": "San Francisco",
+      "location": "San Francisco 2",
       "region": "sfo2",
       "zones": [
         "sfo2"
       ]
     },
     {
-      "location": "Singapore",
+      "location": "Singapore 1",
       "region": "sgp1",
       "zones": [
         "sgp1"
       ]
     },
     {
-      "location": "Toronto",
+      "location": "Toronto 1",
       "region": "tor1",
       "zones": [
         "tor1"
@@ -93,12 +72,48 @@
   ],
   "instanceTypes": [
     {
+      "sku": "16gb",
+      "description": "16gb",
+      "category": "General Purpose",
+      "cpu": 8,
+      "ram": 16,
+      "disk": 160,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
       "sku": "1gb",
       "description": "1gb",
       "category": "General Purpose",
       "cpu": 1,
       "ram": 1,
-      "disk": 30
+      "disk": 30,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
     },
     {
       "sku": "2gb",
@@ -106,39 +121,21 @@
       "category": "General Purpose",
       "cpu": 2,
       "ram": 2,
-      "disk": 40
-    },
-    {
-      "sku": "4gb",
-      "description": "4gb",
-      "category": "General Purpose",
-      "cpu": 2,
-      "ram": 4,
-      "disk": 60
-    },
-    {
-      "sku": "8gb",
-      "description": "8gb",
-      "category": "General Purpose",
-      "cpu": 4,
-      "ram": 8,
-      "disk": 80
-    },
-    {
-      "sku": "16gb",
-      "description": "16gb",
-      "category": "General Purpose",
-      "cpu": 8,
-      "ram": 16,
-      "disk": 160
-    },
-    {
-      "sku": "m-16gb",
-      "description": "m-16gb",
-      "category": "High Memory",
-      "cpu": 2,
-      "ram": 16,
-      "disk": 30
+      "disk": 40,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
     },
     {
       "sku": "32gb",
@@ -146,15 +143,21 @@
       "category": "General Purpose",
       "cpu": 12,
       "ram": 32,
-      "disk": 320
-    },
-    {
-      "sku": "m-32gb",
-      "description": "m-32gb",
-      "category": "High Memory",
-      "cpu": 4,
-      "ram": 32,
-      "disk": 90
+      "disk": 320,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
     },
     {
       "sku": "48gb",
@@ -162,7 +165,51 @@
       "category": "General Purpose",
       "cpu": 16,
       "ram": 48,
-      "disk": 480
+      "disk": 480,
+      "deprecated": true
+    },
+    {
+      "sku": "4gb",
+      "description": "4gb",
+      "category": "General Purpose",
+      "cpu": 2,
+      "ram": 4,
+      "disk": 60,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "512mb",
+      "description": "512mb",
+      "cpu": 1,
+      "ram": 0.5,
+      "disk": 20,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
     },
     {
       "sku": "64gb",
@@ -170,15 +217,102 @@
       "category": "General Purpose",
       "cpu": 20,
       "ram": 64,
-      "disk": 640
+      "disk": 640,
+      "deprecated": true
     },
     {
-      "sku": "m-64gb",
-      "description": "m-64gb",
-      "category": "High Memory",
+      "sku": "8gb",
+      "description": "8gb",
+      "category": "General Purpose",
+      "cpu": 4,
+      "ram": 8,
+      "disk": 80,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "c-16",
+      "description": "c-16",
+      "cpu": 16,
+      "ram": 32,
+      "disk": 200,
+      "zones": [
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc3",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "c-2",
+      "description": "c-2",
+      "cpu": 2,
+      "ram": 4,
+      "disk": 25,
+      "zones": [
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc3",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "c-4",
+      "description": "c-4",
+      "cpu": 4,
+      "ram": 8,
+      "disk": 50,
+      "zones": [
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc3",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "c-8",
+      "description": "c-8",
       "cpu": 8,
-      "ram": 64,
-      "disk": 200
+      "ram": 16,
+      "disk": 100,
+      "zones": [
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc3",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
     },
     {
       "sku": "m-128gb",
@@ -187,7 +321,7 @@
       "cpu": 16,
       "ram": 128,
       "disk": 340,
-      "regions": [
+      "zones": [
         "blr1",
         "fra1",
         "lon1",
@@ -195,7 +329,17 @@
         "nyc3",
         "sfo2",
         "tor1"
-      ]
+      ],
+      "deprecated": true
+    },
+    {
+      "sku": "m-16gb",
+      "description": "m-16gb",
+      "category": "High Memory",
+      "cpu": 2,
+      "ram": 16,
+      "disk": 30,
+      "deprecated": true
     },
     {
       "sku": "m-224gb",
@@ -204,13 +348,221 @@
       "cpu": 32,
       "ram": 224,
       "disk": 500,
-      "regions": [
+      "zones": [
         "blr1",
         "fra1",
         "lon1",
         "nyc1",
         "nyc3",
         "sfo2",
+        "tor1"
+      ],
+      "deprecated": true
+    },
+    {
+      "sku": "m-32gb",
+      "description": "m-32gb",
+      "category": "High Memory",
+      "cpu": 4,
+      "ram": 32,
+      "disk": 90,
+      "deprecated": true
+    },
+    {
+      "sku": "m-64gb",
+      "description": "m-64gb",
+      "category": "High Memory",
+      "cpu": 8,
+      "ram": 64,
+      "disk": 200,
+      "deprecated": true
+    },
+    {
+      "sku": "s-1vcpu-1gb",
+      "description": "s-1vcpu-1gb",
+      "cpu": 1,
+      "ram": 1,
+      "disk": 25,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "s-1vcpu-2gb",
+      "description": "s-1vcpu-2gb",
+      "cpu": 1,
+      "ram": 2,
+      "disk": 50,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "s-1vcpu-3gb",
+      "description": "s-1vcpu-3gb",
+      "cpu": 1,
+      "ram": 3,
+      "disk": 60,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "s-2vcpu-2gb",
+      "description": "s-2vcpu-2gb",
+      "cpu": 2,
+      "ram": 2,
+      "disk": 60,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "s-2vcpu-4gb",
+      "description": "s-2vcpu-4gb",
+      "cpu": 2,
+      "ram": 4,
+      "disk": 80,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "s-3vcpu-1gb",
+      "description": "s-3vcpu-1gb",
+      "cpu": 3,
+      "ram": 1,
+      "disk": 60,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "s-4vcpu-8gb",
+      "description": "s-4vcpu-8gb",
+      "cpu": 4,
+      "ram": 8,
+      "disk": 160,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "s-6vcpu-16gb",
+      "description": "s-6vcpu-16gb",
+      "cpu": 6,
+      "ram": 16,
+      "disk": 320,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
+        "tor1"
+      ]
+    },
+    {
+      "sku": "s-8vcpu-32gb",
+      "description": "s-8vcpu-32gb",
+      "cpu": 8,
+      "ram": 32,
+      "disk": 640,
+      "zones": [
+        "ams2",
+        "ams3",
+        "blr1",
+        "fra1",
+        "lon1",
+        "nyc1",
+        "nyc2",
+        "nyc3",
+        "sfo1",
+        "sfo2",
+        "sgp1",
         "tor1"
       ]
     }
@@ -236,12 +588,11 @@
   ],
   "kubernetes": [
     {
-      "version": "v1.8.0",
-      "description": "v1.8.0",
+      "version": "1.8.0",
       "envs": {
         "dev": true,
-        "qa": true,
-        "prod": true
+        "prod": true,
+        "qa": true
       }
     }
   ]
