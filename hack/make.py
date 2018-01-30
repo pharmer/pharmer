@@ -100,8 +100,8 @@ def version():
 
 def fmt():
     libbuild.ungroup_go_imports('*.go', 'apis', 'cloud', 'cmds', 'config', 'credential', 'data', 'hack', 'inspector', 'store', 'utils')
-    die(call('goimports -w *.go apis cloud cmds config credential data hack/gendata hack/gendocs hack/gengo hack/gennpm inspector store utils'))
-    call('gofmt -s -w *.go apis cloud cmds config credential data hack/gendata hack/gendocs hack/gengo hack/gennpm inspector store utils')
+    die(call('goimports -w *.go apis cloud cmds config credential data hack/pharmer-tools hack/gendocs inspector store utils'))
+    call('gofmt -s -w *.go apis cloud cmds config credential data hack/pharmer-tools hack/gendocs inspector store utils')
 
 
 def vet():
