@@ -94,6 +94,7 @@ func GetCloudData(cloudInterface CloudInterface) (*data.CloudData, error) {
 
 //write data in [path to pharmer]/data/files/[provider]/
 func WriteCloudData(cloudData *data.CloudData, fileName string) error {
+	cloudData = util.SortCloudData(cloudData)
 	dataBytes, err := json.MarshalIndent(cloudData, "", "  ")
 	dir, err := util.GetWriteDir()
 	if err != nil {
@@ -105,11 +106,13 @@ func WriteCloudData(cloudData *data.CloudData, fileName string) error {
 
 //region merge rule:
 //	if region doesn't exist in old data, but exists in new data, then add it
+//	if region exists in old data, but doesn't exists in new data, then delete it
 //	if region exist in both, then
 //		if field data exists in both new and old data , then take the new data
 //		otherwise, take data from (old or new)whichever contains it
 //
-// instanceType merge rule: same as region rule
+// instanceType merge rule: same as region rule, except
+//		if instance exists in old data, but doesn't exists in new data, then add it , set the deprecated true
 //
 //In MergeCloudData, we merge only the region and instanceType data
 func MergeCloudData(old, new *data.CloudData) (*data.CloudData, error) {

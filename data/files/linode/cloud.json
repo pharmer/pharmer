@@ -7,6 +7,20 @@
   ],
   "regions": [
     {
+      "location": "Frankfurt, DE",
+      "region": "10",
+      "zones": [
+        "10"
+      ]
+    },
+    {
+      "location": "Tokyo 2, JP",
+      "region": "11",
+      "zones": [
+        "11"
+      ]
+    },
+    {
       "location": "Dallas, TX, USA",
       "region": "2",
       "zones": [
@@ -54,20 +68,6 @@
       "zones": [
         "9"
       ]
-    },
-    {
-      "location": "Frankfurt, DE",
-      "region": "10",
-      "zones": [
-        "10"
-      ]
-    },
-    {
-      "location": "Tokyo 2, JP",
-      "region": "11",
-      "zones": [
-        "11"
-      ]
     }
   ],
   "instanceTypes": [
@@ -78,6 +78,46 @@
       "cpu": 1,
       "ram": 1,
       "disk": 20
+    },
+    {
+      "sku": "10",
+      "description": "Linode 16384",
+      "category": "High Memory",
+      "cpu": 1,
+      "ram": 16,
+      "disk": 20
+    },
+    {
+      "sku": "11",
+      "description": "Linode 32768",
+      "category": "High Memory",
+      "cpu": 2,
+      "ram": 32,
+      "disk": 40
+    },
+    {
+      "sku": "12",
+      "description": "Linode 61440",
+      "category": "High Memory",
+      "cpu": 4,
+      "ram": 60,
+      "disk": 90
+    },
+    {
+      "sku": "13",
+      "description": "Linode 102400",
+      "category": "High Memory",
+      "cpu": 8,
+      "ram": 100,
+      "disk": 200
+    },
+    {
+      "sku": "14",
+      "description": "Linode 204800",
+      "category": "High Memory",
+      "cpu": 16,
+      "ram": 200,
+      "disk": 340
     },
     {
       "sku": "2",
@@ -142,46 +182,6 @@
       "cpu": 20,
       "ram": 80,
       "disk": 1536
-    },
-    {
-      "sku": "10",
-      "description": "Linode 16384",
-      "category": "High Memory",
-      "cpu": 1,
-      "ram": 16,
-      "disk": 20
-    },
-    {
-      "sku": "11",
-      "description": "Linode 32768",
-      "category": "High Memory",
-      "cpu": 2,
-      "ram": 32,
-      "disk": 40
-    },
-    {
-      "sku": "12",
-      "description": "Linode 61440",
-      "category": "High Memory",
-      "cpu": 4,
-      "ram": 60,
-      "disk": 90
-    },
-    {
-      "sku": "13",
-      "description": "Linode 102400",
-      "category": "High Memory",
-      "cpu": 8,
-      "ram": 100,
-      "disk": 200
-    },
-    {
-      "sku": "14",
-      "description": "Linode 204800",
-      "category": "High Memory",
-      "cpu": 16,
-      "ram": 200,
-      "disk": 340
     }
   ],
   "credentials": [

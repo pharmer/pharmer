@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"sort"
+
 	"github.com/pharmer/pharmer/data"
 )
 
@@ -83,4 +85,24 @@ func GetDataFormFile(provider string) (*data.CloudData, error) {
 		return nil, err
 	}
 	return &data, nil
+}
+
+func SortCloudData(new *data.CloudData) *data.CloudData {
+	sort.Slice(new.Regions, func(i, j int) bool {
+		return new.Regions[i].Region < new.Regions[j].Region
+	})
+	for index, _ := range new.Regions {
+		sort.Slice(new.Regions[index].Zones, func(i, j int) bool {
+			return new.Regions[index].Zones[i] < new.Regions[index].Zones[j]
+		})
+	}
+	sort.Slice(new.InstanceTypes, func(i, j int) bool {
+		return new.InstanceTypes[i].SKU < new.InstanceTypes[j].SKU
+	})
+	for index, _ := range new.InstanceTypes {
+		sort.Slice(new.InstanceTypes[index].Zones, func(i, j int) bool {
+			return new.InstanceTypes[index].Zones[i] < new.InstanceTypes[index].Zones[j]
+		})
+	}
+	return new
 }

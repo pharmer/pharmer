@@ -7,13 +7,6 @@
   ],
   "regions": [
     {
-      "location": "Sunnyvale, CA",
-      "region": "Sunnyvale, CA",
-      "zones": [
-        "sjc1"
-      ]
-    },
-    {
       "location": "Amsterdam, NL",
       "region": "Amsterdam, NL",
       "zones": [
@@ -21,24 +14,10 @@
       ]
     },
     {
-      "location": "Tokyo, JP",
-      "region": "Tokyo, JP",
+      "location": "Ashburn, VA",
+      "region": "Ashburn, VA",
       "zones": [
-        "nrt1"
-      ]
-    },
-    {
-      "location": "Parsippany, NJ",
-      "region": "Parsippany, NJ",
-      "zones": [
-        "ewr1"
-      ]
-    },
-    {
-      "location": "Singapore",
-      "region": "Singapore",
-      "zones": [
-        "sin1"
+        "iad1"
       ]
     },
     {
@@ -63,27 +42,6 @@
       ]
     },
     {
-      "location": "Los Angeles, CA",
-      "region": "Los Angeles, CA",
-      "zones": [
-        "lax1"
-      ]
-    },
-    {
-      "location": "Ashburn, VA",
-      "region": "Ashburn, VA",
-      "zones": [
-        "iad1"
-      ]
-    },
-    {
-      "location": "Toronto, ON, CA",
-      "region": "Toronto, ON, CA",
-      "zones": [
-        "yyz1"
-      ]
-    },
-    {
       "location": "Frankfurt, DE",
       "region": "Frankfurt, DE",
       "zones": [
@@ -98,6 +56,20 @@
       ]
     },
     {
+      "location": "Los Angeles, CA",
+      "region": "Los Angeles, CA",
+      "zones": [
+        "lax1"
+      ]
+    },
+    {
+      "location": "Parsippany, NJ",
+      "region": "Parsippany, NJ",
+      "zones": [
+        "ewr1"
+      ]
+    },
+    {
       "location": "Seattle, WA",
       "region": "Seattle, WA",
       "zones": [
@@ -105,10 +77,38 @@
       ]
     },
     {
+      "location": "Singapore",
+      "region": "Singapore",
+      "zones": [
+        "sin1"
+      ]
+    },
+    {
+      "location": "Sunnyvale, CA",
+      "region": "Sunnyvale, CA",
+      "zones": [
+        "sjc1"
+      ]
+    },
+    {
       "location": "Sydney, Australia",
       "region": "Sydney, Australia",
       "zones": [
         "syd1"
+      ]
+    },
+    {
+      "location": "Tokyo, JP",
+      "region": "Tokyo, JP",
+      "zones": [
+        "nrt1"
+      ]
+    },
+    {
+      "location": "Toronto, ON, CA",
+      "region": "Toronto, ON, CA",
+      "zones": [
+        "yyz1"
       ]
     }
   ],
@@ -121,10 +121,10 @@
       "ram": 8,
       "disk": 80,
       "zones": [
-        "sjc1",
         "ams1",
+        "ewr1",
         "nrt1",
-        "ewr1"
+        "sjc1"
       ]
     },
     {
@@ -135,9 +135,9 @@
       "ram": 32,
       "disk": 120,
       "zones": [
-        "sjc1",
+        "ewr1",
         "nrt1",
-        "ewr1"
+        "sjc1"
       ]
     },
     {
@@ -148,17 +148,17 @@
       "ram": 32,
       "disk": 240,
       "zones": [
-        "sin1",
         "atl1",
-        "ord1",
         "dfw1",
-        "lax1",
-        "iad1",
-        "yyz1",
         "fra1",
         "hkg1",
+        "iad1",
+        "lax1",
+        "ord1",
         "sea1",
-        "syd1"
+        "sin1",
+        "syd1",
+        "yyz1"
       ]
     },
     {
@@ -169,8 +169,8 @@
       "ram": 256,
       "disk": 480,
       "zones": [
-        "sjc1",
-        "ewr1"
+        "ewr1",
+        "sjc1"
       ]
     },
     {
@@ -181,7 +181,8 @@
       "ram": 128,
       "disk": 340,
       "zones": [
-        "ewr1"
+        "ewr1",
+        "nrt1"
       ]
     },
     {
@@ -192,9 +193,9 @@
       "ram": 128,
       "disk": 120,
       "zones": [
-        "sjc1",
         "ams1",
-        "ewr1"
+        "ewr1",
+        "sjc1"
       ]
     },
     {
@@ -205,9 +206,9 @@
       "ram": 64,
       "disk": 480,
       "zones": [
-        "sjc1",
         "ams1",
-        "ewr1"
+        "ewr1",
+        "sjc1"
       ]
     }
   ],
