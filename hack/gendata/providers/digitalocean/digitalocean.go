@@ -5,33 +5,32 @@ import (
 
 	"github.com/digitalocean/godo"
 	"github.com/pharmer/pharmer/data"
+	"github.com/pharmer/pharmer/hack/gendata/util"
 	"golang.org/x/oauth2"
 )
 
 type DigitalOceanClient struct {
-	Data   *DigitalOceanDefaultData `json:"data,omitempty"`
-	Client *godo.Client             `json:"client,omitempty"`
-	Ctx    context.Context          `json:"ctx,omitempty"`
+	Data   *DigitalOceanData `json:"data,omitempty"`
+	Client *godo.Client      `json:"client,omitempty"`
+	Ctx    context.Context   `json:"ctx,omitempty"`
 }
 
-type DigitalOceanDefaultData struct {
-	Name        string                  `json:"name"`
-	Envs        []string                `json:"envs,omitempty"`
-	Credentials []data.CredentialFormat `json:"credentials"`
-	Kubernetes  []data.Kubernetes       `json:"kubernetes"`
-}
+type DigitalOceanData data.CloudData
 
 func NewDigitalOceanClient(doToken, versions string) (*DigitalOceanClient, error) {
 	g := &DigitalOceanClient{
 		Ctx:  context.Background(),
-		Data: &DigitalOceanDefaultData{},
+		Data: &DigitalOceanData{},
 	}
 	var err error
 	g.Client = getClient(g.Ctx, doToken)
-	g.Data, err = GetDefault(versions)
+
+	data, err := util.GetDataFormFile("digitalocean")
 	if err != nil {
 		return nil, err
 	}
+	d := DigitalOceanData(*data)
+	g.Data = &d
 	return g, nil
 }
 

@@ -7,19 +7,15 @@ import (
 
 	vultr "github.com/JamesClonk/vultr/lib"
 	"github.com/pharmer/pharmer/data"
+	"github.com/pharmer/pharmer/hack/gendata/util"
 )
 
 type VultrClient struct {
-	Data   *VultrDefaultData `json:"data,omitempty"`
-	Client *vultr.Client     `json:"client,omitempty"`
+	Data   *VultrData    `json:"data,omitempty"`
+	Client *vultr.Client `json:"client,omitempty"`
 }
 
-type VultrDefaultData struct {
-	Name        string                  `json:"name"`
-	Envs        []string                `json:"envs,omitempty"`
-	Credentials []data.CredentialFormat `json:"credentials"`
-	Kubernetes  []data.Kubernetes       `json:"kubernetes"`
-}
+type VultrData data.CloudData
 
 type PlanExtended struct {
 	vultr.Plan
@@ -27,15 +23,17 @@ type PlanExtended struct {
 	Deprecated bool   `json:"deprecated"`
 }
 
-func NewVultrClient(vultrApiKey, versions string) (*VultrClient, error) {
+func NewVultrClient(vultrApiToken, versions string) (*VultrClient, error) {
 	g := &VultrClient{
-		Client: vultr.NewClient(vultrApiKey, nil),
+		Client: vultr.NewClient(vultrApiToken, nil),
 	}
 	var err error
-	g.Data, err = GetDefault(versions)
+	data, err := util.GetDataFormFile("vultr")
 	if err != nil {
 		return nil, err
 	}
+	d := VultrData(*data)
+	g.Data = &d
 	return g, nil
 }
 

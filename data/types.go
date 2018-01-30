@@ -44,6 +44,7 @@ type InstanceType struct {
 	Disk        int         `json:"disk,omitempty"`
 	Regions     []string    `json:"regions,omitempty"`
 	Zones       []string    `json:"zones,omitempty"`
+	Deprecated  bool        `json:"deprecated,omitempty"`
 }
 
 type CredentialFormat struct {

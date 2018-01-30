@@ -23,68 +23,199 @@
   ],
   "instanceTypes": [
     {
-      "sku": "VC1S",
-      "description": "2 x86 64bit Cores, 2GB memory",
-      "category": "Cloud Servers",
-      "cpu": 2,
-      "ram": 2,
-      "disk": 50
-    },
-    {
-      "sku": "VC1M",
-      "description": "4 x86 64bit Cores, 4GB memory",
-      "category": "Cloud Servers",
-      "cpu": 4,
-      "ram": 4,
-      "disk": 100
-    },
-    {
-      "sku": "VC1L",
-      "description": "6 x86 64bit Cores, 8GB memory",
-      "category": "Cloud Servers",
-      "cpu": 6,
+      "sku": "ARM64-8GB",
+      "description": "arm64",
+      "cpu": 8,
       "ram": 8,
-      "disk": 200
+      "zones": [
+        "par1",
+        "ams1"
+      ]
     },
     {
-      "sku": "X64-60GB",
-      "description": "10 x86 64bit Cores, 60GB memory",
-      "category": "Cloud Servers",
-      "cpu": 10,
-      "ram": 60,
-      "disk": 700
+      "sku": "X64-30GB",
+      "description": "x86_64",
+      "cpu": 8,
+      "ram": 30,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
     },
     {
-      "sku": "X64-120GB",
-      "description": "12 x86 64bit Cores, 120GB memory",
-      "category": "Cloud Servers",
-      "cpu": 12,
-      "ram": 120,
-      "disk": 1000
+      "sku": "C1",
+      "description": "arm",
+      "cpu": 4,
+      "ram": 2,
+      "zones": [
+        "par1"
+      ]
+    },
+    {
+      "sku": "ARM64-32GB",
+      "description": "arm64",
+      "cpu": 32,
+      "ram": 32,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
     },
     {
       "sku": "C2S",
-      "description": "4 Dedicated x86 64bit Cores, 8GB memory",
+      "description": "x86_64",
       "category": "BareMetal",
       "cpu": 4,
       "ram": 8,
-      "disk": 50
+      "disk": 50,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
+    },
+    {
+      "sku": "VC1M",
+      "description": "x86_64",
+      "category": "Cloud Servers",
+      "cpu": 4,
+      "ram": 4,
+      "disk": 100,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
+    },
+    {
+      "sku": "ARM64-64GB",
+      "description": "arm64",
+      "cpu": 48,
+      "ram": 64,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
     },
     {
       "sku": "C2M",
-      "description": "8 Dedicated x86 64bit Cores, 16GB memory",
+      "description": "x86_64",
       "category": "BareMetal",
       "cpu": 8,
       "ram": 16,
-      "disk": 50
+      "disk": 50,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
     },
     {
       "sku": "C2L",
-      "description": "8 Dedicated x86 64bit Cores, 32GB memory, 250GB Direct SSD",
+      "description": "x86_64",
       "category": "BareMetal",
       "cpu": 8,
       "ram": 32,
-      "disk": 50
+      "disk": 50,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
+    },
+    {
+      "sku": "X64-120GB",
+      "description": "x86_64",
+      "category": "Cloud Servers",
+      "cpu": 12,
+      "ram": 120,
+      "disk": 1000,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
+    },
+    {
+      "sku": "VC1L",
+      "description": "x86_64",
+      "category": "Cloud Servers",
+      "cpu": 6,
+      "ram": 8,
+      "disk": 200,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
+    },
+    {
+      "sku": "ARM64-16GB",
+      "description": "arm64",
+      "cpu": 16,
+      "ram": 16,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
+    },
+    {
+      "sku": "ARM64-2GB",
+      "description": "arm64",
+      "cpu": 4,
+      "ram": 2,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
+    },
+    {
+      "sku": "ARM64-128GB",
+      "description": "arm64",
+      "cpu": 64,
+      "ram": 128,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
+    },
+    {
+      "sku": "VC1S",
+      "description": "x86_64",
+      "category": "Cloud Servers",
+      "cpu": 2,
+      "ram": 2,
+      "disk": 50,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
+    },
+    {
+      "sku": "X64-15GB",
+      "description": "x86_64",
+      "cpu": 6,
+      "ram": 15,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
+    },
+    {
+      "sku": "X64-60GB",
+      "description": "x86_64",
+      "category": "Cloud Servers",
+      "cpu": 10,
+      "ram": 60,
+      "disk": 700,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
+    },
+    {
+      "sku": "ARM64-4GB",
+      "description": "arm64",
+      "cpu": 6,
+      "ram": 4,
+      "zones": [
+        "par1",
+        "ams1"
+      ]
     }
   ],
   "credentials": [
@@ -115,11 +246,10 @@
   "kubernetes": [
     {
       "version": "1.8.0",
-      "description": "1.8.0",
       "envs": {
         "dev": true,
-        "qa": true,
-        "prod": true
+        "prod": true,
+        "qa": true
       }
     }
   ]

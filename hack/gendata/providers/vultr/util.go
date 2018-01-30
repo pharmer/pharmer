@@ -26,6 +26,9 @@ func ParseInstance(in *PlanExtended) (*data.InstanceType, error) {
 		CPU:         in.VCpus,
 		Category:    in.Catagory,
 	}
+	if in.Deprecated {
+		out.Deprecated = in.Deprecated
+	}
 	var err error
 	disk, err := strconv.ParseInt(in.Disk, 10, 64)
 	if err != nil {
@@ -40,10 +43,10 @@ func ParseInstance(in *PlanExtended) (*data.InstanceType, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Parse Instance failed.reasion: %v.", err)
 	}
-	out.Regions = []string{}
+	out.Zones = []string{}
 	for _, r := range in.Regions {
 		region := strconv.Itoa(r)
-		out.Regions = append(out.Regions, region)
+		out.Zones = append(out.Zones, region)
 	}
 	return out, nil
 }

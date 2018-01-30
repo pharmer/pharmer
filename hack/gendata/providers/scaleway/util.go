@@ -17,10 +17,10 @@ func ParseInstance(name string, in *scaleway.ProductServer) (*data.InstanceType,
 	if err != nil {
 		return nil, err
 	}
-	if in.Baremetal {
-		out.Category = "BareMetal"
-	} else {
-		out.Category = "Cloud Servers"
-	}
+	//if in.Baremetal {
+	//	out.Category = "BareMetal"
+	//} else {
+	//	out.Category = "Cloud Servers"
+	//}
 	return out, nil
 }

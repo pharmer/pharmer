@@ -7,31 +7,29 @@ import (
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/pharmer/pharmer/data"
+	"github.com/pharmer/pharmer/hack/gendata/util"
 )
 
 type AzureClient struct {
-	Data           *AzureDefaultData                 `json:"data,omitempty"`
+	Data           *AzureData                        `json:"data,omitempty"`
 	SubscriptionId string                            `json:"subscription_id"`
 	GroupsClient   subscriptions.GroupClient         `json:"groups_client"`
 	VmSizesClient  compute.VirtualMachineSizesClient `json:"vm_sizes_client"`
 }
 
-type AzureDefaultData struct {
-	Name        string                  `json:"name"`
-	Envs        []string                `json:"envs,omitempty"`
-	Credentials []data.CredentialFormat `json:"credentials"`
-	Kubernetes  []data.Kubernetes       `json:"kubernetes"`
-}
+type AzureData data.CloudData
 
 func NewAzureClient(tenantId, subscriptionId, clientId, clientSecret, versions string) (*AzureClient, error) {
 	g := &AzureClient{
 		SubscriptionId: subscriptionId,
 	}
 	var err error
-	g.Data, err = GetDefault(versions)
+	data, err := util.GetDataFormFile("azure")
 	if err != nil {
 		return nil, err
 	}
+	d := AzureData(*data)
+	g.Data = &d
 
 	baseURI := azure.PublicCloud.ResourceManagerEndpoint
 	config, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, tenantId)

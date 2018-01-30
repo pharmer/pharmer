@@ -206,11 +206,10 @@
   "kubernetes": [
     {
       "version": "1.8.0",
-      "description": "1.8.0",
       "envs": {
         "dev": true,
-        "qa": true,
-        "prod": true
+        "prod": true,
+        "qa": true
       }
     }
   ]

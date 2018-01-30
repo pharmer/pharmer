@@ -11,19 +11,15 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/pharmer/pharmer/data"
+	"github.com/pharmer/pharmer/hack/gendata/util"
 )
 
 type AwsClient struct {
-	Data    *AwsDefaultData  `json:"data,omitempty"`
+	Data    *AwsData         `json:"data,omitempty"`
 	Session *session.Session `json:"session"`
 }
 
-type AwsDefaultData struct {
-	Name        string                  `json:"name"`
-	Envs        []string                `json:"envs,omitempty"`
-	Credentials []data.CredentialFormat `json:"credentials"`
-	Kubernetes  []data.Kubernetes       `json:"kubernetes"`
-}
+type AwsData data.CloudData
 
 type Ec2Instance struct {
 	Family        string      `json:"family"`
@@ -43,10 +39,12 @@ func NewAwsClient(awsRegionName, awsAccessKeyId, awsSecretAccessKey, versions st
 	if err != nil {
 		return nil, err
 	}
-	g.Data, err = GetDefault(versions)
+	data, err := util.GetDataFormFile("aws")
 	if err != nil {
 		return nil, err
 	}
+	d := AwsData(*data)
+	g.Data = &d
 	return g, nil
 }
 
@@ -75,10 +73,7 @@ func (g *AwsClient) GetRegions() ([]data.Region, error) {
 	}
 	regions := []data.Region{}
 	for _, r := range regionList.Regions {
-		regions = append(regions, data.Region{
-			Location: *r.RegionName,
-			Region:   *r.RegionName,
-		})
+		regions = append(regions, *ParseRegion(r))
 	}
 	tempSession, err := session.NewSession(&aws.Config{
 		Credentials: g.Session.Config.Credentials,

@@ -2,21 +2,17 @@ package scaleway
 
 import (
 	"github.com/pharmer/pharmer/data"
+	"github.com/pharmer/pharmer/hack/gendata/util"
 	scaleway "github.com/scaleway/scaleway-cli/pkg/api"
 )
 
 type ScalewayClient struct {
-	Data      *ScalewayDefaultData  `json:"data,omitempty"`
+	Data      *ScalewayData         `json:"data,omitempty"`
 	ParClient *scaleway.ScalewayAPI `json:"client,omitempty"`
 	AmsClient *scaleway.ScalewayAPI `json:"client,omitempty"`
 }
 
-type ScalewayDefaultData struct {
-	Name        string                  `json:"name"`
-	Envs        []string                `json:"envs,omitempty"`
-	Credentials []data.CredentialFormat `json:"credentials"`
-	Kubernetes  []data.Kubernetes       `json:"kubernetes"`
-}
+type ScalewayData data.CloudData
 
 func NewScalewayClient(scalewayToken, organization, versions string) (*ScalewayClient, error) {
 	g := &ScalewayClient{}
@@ -26,10 +22,12 @@ func NewScalewayClient(scalewayToken, organization, versions string) (*ScalewayC
 	if err != nil {
 		return nil, err
 	}
-	g.Data, err = GetDefault(versions)
+	data, err := util.GetDataFormFile("scaleway")
 	if err != nil {
 		return nil, err
 	}
+	d := ScalewayData(*data)
+	g.Data = &d
 	return g, nil
 }
 
@@ -82,7 +80,7 @@ func (g *ScalewayClient) GetInstanceTypes() ([]data.InstanceType, error) {
 	instancePos := map[string]int{}
 	for pos, ins := range instanceList.Servers {
 		instance, err := ParseInstance(pos, &ins)
-		instance.Regions = []string{"par1"}
+		instance.Zones = []string{"par1"}
 		if err != nil {
 			return nil, err
 		}
@@ -100,9 +98,9 @@ func (g *ScalewayClient) GetInstanceTypes() ([]data.InstanceType, error) {
 			return nil, err
 		}
 		if index, found := instancePos[instance.SKU]; found {
-			instances[index].Regions = append(instances[index].Regions, "ams1")
+			instances[index].Zones = append(instances[index].Zones, "ams1")
 		} else {
-			instance.Regions = []string{"ams1"}
+			instance.Zones = []string{"ams1"}
 			instances = append(instances, *instance)
 			instancePos[instance.SKU] = len(instances) - 1
 		}

@@ -5,39 +5,37 @@ import (
 
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pharmer/pharmer/data"
+	"github.com/pharmer/pharmer/hack/gendata/util"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 )
 
 type GceClient struct {
-	Data           *GceDefaultData  `json:"data,omitempty"`
-	GceProjectName string           `json:"gceProjectName,omitempty"`
+	Data           *GceData         `json:"data,omitempty"`
+	GceProjectID   string           `json:"gceProjectName,omitempty"`
 	ComputeService *compute.Service `json:"compute_service,omitempty"`
 	Ctx            context.Context  `json:"ctx,omitempty"`
 }
 
-type GceDefaultData struct {
-	Name        string                  `json:"name"`
-	Envs        []string                `json:"envs,omitempty"`
-	Credentials []data.CredentialFormat `json:"credentials"`
-	Kubernetes  []data.Kubernetes       `json:"kubernetes"`
-}
+type GceData data.CloudData
 
-func NewGceClient(gecProjectName, credentialFilePath, versions string) (*GceClient, error) {
+func NewGceClient(gecProjectId, credentialFilePath, versions string) (*GceClient, error) {
 	g := &GceClient{
-		GceProjectName: gecProjectName,
-		Ctx:            context.Background(),
-		Data:           &GceDefaultData{},
+		GceProjectID: gecProjectId,
+		Ctx:          context.Background(),
+		Data:         &GceData{},
 	}
 	var err error
 	g.ComputeService, err = getComputeService(g.Ctx, credentialFilePath)
 	if err != nil {
 		return nil, err
 	}
-	g.Data, err = GetDefault(versions)
+	data, err := util.GetDataFormFile("gce")
 	if err != nil {
 		return nil, err
 	}
+	d := GceData(*data)
+	g.Data = &d
 	return g, nil
 }
 
@@ -58,7 +56,7 @@ func (g *GceClient) GetKubernets() []data.Kubernetes {
 }
 
 func (g *GceClient) GetRegions() ([]data.Region, error) {
-	req := g.ComputeService.Regions.List(g.GceProjectName)
+	req := g.ComputeService.Regions.List(g.GceProjectID)
 
 	regions := []data.Region{}
 	err := req.Pages(g.Ctx, func(list *compute.RegionList) error {
@@ -79,7 +77,7 @@ func (g *GceClient) GetRegions() ([]data.Region, error) {
 }
 
 func (g *GceClient) GetZones() ([]string, error) {
-	req := g.ComputeService.Zones.List(g.GceProjectName)
+	req := g.ComputeService.Zones.List(g.GceProjectID)
 	zones := []string{}
 	err := req.Pages(g.Ctx, func(list *compute.ZoneList) error {
 		for _, zone := range list.Items {
@@ -103,7 +101,7 @@ func (g *GceClient) GetInstanceTypes() ([]data.InstanceType, error) {
 	machinesZone := map[string][]string{}
 	instanceTypes := []data.InstanceType{}
 	for _, zone := range zoneList {
-		req := g.ComputeService.MachineTypes.List(g.GceProjectName, zone)
+		req := g.ComputeService.MachineTypes.List(g.GceProjectID, zone)
 		err := req.Pages(g.Ctx, func(list *compute.MachineTypeList) error {
 			for _, machine := range list.Items {
 				res, err := ParseMachine(machine)

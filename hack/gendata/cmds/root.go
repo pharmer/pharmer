@@ -24,7 +24,7 @@ func NewCmdLoadData() *cobra.Command {
 			if err != nil {
 				term.Fatalln(err)
 			}
-			err = providers.WriteCloudData(cloudProvider)
+			err = providers.MergeAndWriteCloudData(cloudProvider)
 			if err != nil {
 				term.Fatalln(err)
 			} else {

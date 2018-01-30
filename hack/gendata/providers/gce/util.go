@@ -16,7 +16,6 @@ const (
 func ParseRegion(region *compute.Region) (*data.Region, error) {
 	r := &data.Region{
 		Region:   region.Name,
-		Location: region.Name,
 	}
 	r.Zones = []string{}
 	for _, url := range region.Zones {
@@ -43,16 +42,19 @@ func ParseMachine(machine *compute.MachineType) (*data.InstanceType, error) {
 		SKU:         machine.Name,
 		Description: machine.Description,
 		CPU:         int(machine.GuestCpus),
-		Disk:        int(machine.MaximumPersistentDisks),
-		Category:    ParseCatagoryFromSKU(machine.Name),
+		Disk:        int(machine.MaximumPersistentDisksSizeGb),
+		//Category:    ParseCatagoryFromSKU(machine.Name),
 	}
 
 	var err error
 	m.RAM, err = util.MBToGB(machine.MemoryMb)
+	if err != nil {
+		return nil, err
+	}
 	return m, err
 }
 
-//gce SKU formate: [something]-catagory-[somethin/empty]
+//gce SKU format: [something]-catagory-[somethin/empty]
 func ParseCatagoryFromSKU(sku string) string {
 	words := strings.Split(sku, "-")
 	if len(words) < 2 {

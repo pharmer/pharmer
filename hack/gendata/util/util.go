@@ -1,11 +1,15 @@
 package util
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/pharmer/pharmer/data"
 )
 
 func CreateDir(dir string) error {
@@ -17,11 +21,11 @@ func CreateDir(dir string) error {
 }
 
 func ReadFile(name string) ([]byte, error) {
-	crtBytes, err := ioutil.ReadFile(name)
+	dataBytes, err := ioutil.ReadFile(name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read `%s`.Reason: %v", name, err)
 	}
-	return crtBytes, nil
+	return dataBytes, nil
 }
 
 func WriteFile(filename string, bytes []byte) error {
@@ -47,4 +51,36 @@ func MBToGB(in int64) (float64, error) {
 func BToGB(in int64) (float64, error) {
 	gb, err := strconv.ParseFloat(strconv.FormatFloat(float64(in)/(1024*1024*1024), 'f', 2, 64), 64)
 	return gb, err
+}
+
+// wanted directory is [path]/pharmer/data/files
+// Current directory is [path]/pharmer/hack/gendata
+func GetWriteDir() (string, error) {
+	AbsPath, err := filepath.Abs("")
+	if err != nil {
+		return "", err
+	}
+	p := strings.TrimSuffix(AbsPath, "/hack/gendata")
+	p = filepath.Join(p, "data", "files")
+	return p, nil
+}
+
+//getting provider data from cloud.json file
+//data contained in [path to pharmer]/data/files/[provider]/cloud.json
+func GetDataFormFile(provider string) (*data.CloudData, error) {
+	data := data.CloudData{}
+	dir, err := GetWriteDir()
+	if err != nil {
+		return nil, err
+	}
+	dir = filepath.Join(dir, provider, "cloud.json")
+	dataBytes, err := ReadFile(dir)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(dataBytes, &data)
+	if err != nil {
+		return nil, err
+	}
+	return &data, nil
 }

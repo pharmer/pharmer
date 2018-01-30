@@ -36,7 +36,6 @@ func ParsePlan(plan *PlanExtended) (*data.InstanceType, error) {
 	ins := &data.InstanceType{
 		SKU:         plan.Slug,
 		Description: plan.Description,
-		Category:    "Bare Metal",
 	}
 	var err error
 	ins.RAM, err = RemoveUnitRetFloat64(plan.Specs.Memory.Total)

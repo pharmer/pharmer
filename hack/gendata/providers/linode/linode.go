@@ -2,30 +2,28 @@ package linode
 
 import (
 	"github.com/pharmer/pharmer/data"
+	"github.com/pharmer/pharmer/hack/gendata/util"
 	"github.com/taoh/linodego"
 )
 
 type LinodeClient struct {
-	Data   *LinodeDefaultData `json:"data,omitempty"`
-	Client *linodego.Client   `json:"client,omitempty"`
+	Data   *LinodeData      `json:"data,omitempty"`
+	Client *linodego.Client `json:"client,omitempty"`
 }
 
-type LinodeDefaultData struct {
-	Name        string                  `json:"name"`
-	Envs        []string                `json:"envs,omitempty"`
-	Credentials []data.CredentialFormat `json:"credentials"`
-	Kubernetes  []data.Kubernetes       `json:"kubernetes"`
-}
+type LinodeData data.CloudData
 
-func NewLinodeClient(linodeApiKey, versions string) (*LinodeClient, error) {
+func NewLinodeClient(linodeApiToken, versions string) (*LinodeClient, error) {
 	g := &LinodeClient{
-		Client: linodego.NewClient(linodeApiKey, nil),
+		Client: linodego.NewClient(linodeApiToken, nil),
 	}
 	var err error
-	g.Data, err = GetDefault(versions)
+	data, err := util.GetDataFormFile("linode")
 	if err != nil {
 		return nil, err
 	}
+	d := LinodeData(*data)
+	g.Data = &d
 	return g, nil
 }
 

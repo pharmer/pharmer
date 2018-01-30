@@ -7,21 +7,17 @@ import (
 
 	"github.com/packethost/packngo"
 	"github.com/pharmer/pharmer/data"
+	"github.com/pharmer/pharmer/hack/gendata/util"
 )
 
 type PacketClient struct {
-	Data   *PacketDefaultData `json:"data,omitempty"`
-	Client *packngo.Client    `json:"client,omitempty"`
+	Data   *PacketData     `json:"data,omitempty"`
+	Client *packngo.Client `json:"client,omitempty"`
 	//required because current packngo.Plan does not contain Zones
 	PlanRequest *http.Request `json:"plan_request,omitempty"`
 }
 
-type PacketDefaultData struct {
-	Name        string                  `json:"name"`
-	Envs        []string                `json:"envs,omitempty"`
-	Credentials []data.CredentialFormat `json:"credentials"`
-	Kubernetes  []data.Kubernetes       `json:"kubernetes"`
-}
+type PacketData data.CloudData
 
 type PlanExtended struct {
 	packngo.Plan
@@ -34,17 +30,21 @@ type PlanExtendedList struct {
 	Plans []PlanExtended `json:"plans"`
 }
 
-func NewPacketClient(packetToken, versions string) (*PacketClient, error) {
+func NewPacketClient(packetApiKey, versions string) (*PacketClient, error) {
 	g := &PacketClient{
-		Data: &PacketDefaultData{},
+		Data: &PacketData{},
 	}
 	var err error
-	g.Client = getClient(packetToken)
-	g.Data, err = GetDefault(versions)
+	g.Client = getClient(packetApiKey)
+
+	data, err := util.GetDataFormFile("packet")
 	if err != nil {
 		return nil, err
 	}
-	g.PlanRequest, err = getPlanRequest(packetToken)
+	d := PacketData(*data)
+	g.Data = &d
+
+	g.PlanRequest, err = getPlanRequest(packetApiKey)
 	if err != nil {
 		return nil, err
 	}

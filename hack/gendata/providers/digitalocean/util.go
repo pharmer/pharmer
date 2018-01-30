@@ -24,8 +24,8 @@ func ParseSizes(size *godo.Size) (*data.InstanceType, error) {
 		Description: size.Slug,
 		CPU:         size.Vcpus,
 		Disk:        size.Disk,
-		Category:    ParseCatagoryFromSlug(size.Slug),
-		Regions:     size.Regions,
+		//Category:    ParseCatagoryFromSlug(size.Slug),
+		Zones: size.Regions,
 	}
 	var err error
 	m.RAM, err = util.MBToGB(int64(size.Memory))

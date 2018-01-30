@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/log"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/pharmer/pharmer/data"
 )
 
@@ -23,10 +24,11 @@ func ParseInstance(in *Ec2Instance) (*data.InstanceType, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ParseInstance failed, intance %v. Reason: %v.", in.Instance_type, err)
 	}
-	temp := in.Pricing.(map[string]interface{})
-	out.Regions = []string{}
-	for r := range temp {
-		out.Regions = append(out.Regions, r)
-	}
 	return out, nil
+}
+
+func ParseRegion(in *ec2.Region) *data.Region {
+	return &data.Region{
+		Region: *in.RegionName,
+	}
 }

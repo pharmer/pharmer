@@ -11,8 +11,7 @@ import (
 
 func ParseRegion(in *subscriptions.Location) *data.Region {
 	return &data.Region{
-		Location: *in.DisplayName,
-		Region:   *in.DisplayName,
+		Region: *in.DisplayName,
 		Zones: []string{
 			*in.Name,
 		},
