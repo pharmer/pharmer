@@ -1,10 +1,10 @@
 package config
 
-
 import (
 	"fmt"
 	"testing"
 	"time"
+
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
