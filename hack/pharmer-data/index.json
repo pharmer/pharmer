@@ -907,6 +907,14 @@
           "prod": true,
           "qa": true
         }
+      },
+      {
+        "version": "1.9.0",
+        "envs": {
+          "dev": false,
+          "prod": false,
+          "qa": false
+        }
       }
     ]
   },
@@ -6204,6 +6212,14 @@
           "prod": true,
           "qa": true
         }
+      },
+      {
+        "version": "1.9.0",
+        "envs": {
+          "dev": false,
+          "prod": false,
+          "qa": false
+        }
       }
     ]
   },
@@ -6802,6 +6818,14 @@
           "dev": true,
           "prod": true,
           "qa": true
+        }
+      },
+      {
+        "version": "1.9.0",
+        "envs": {
+          "dev": false,
+          "prod": false,
+          "qa": false
         }
       }
     ]
@@ -8197,6 +8221,14 @@
           "prod": true,
           "qa": true
         }
+      },
+      {
+        "version": "1.9.0",
+        "envs": {
+          "dev": false,
+          "prod": false,
+          "qa": false
+        }
       }
     ]
   },
@@ -8606,6 +8638,14 @@
           "dev": true,
           "prod": true,
           "qa": true
+        }
+      },
+      {
+        "version": "1.9.0",
+        "envs": {
+          "dev": false,
+          "prod": false,
+          "qa": false
         }
       }
     ]
@@ -9116,6 +9156,14 @@
           "prod": true,
           "qa": true
         }
+      },
+      {
+        "version": "1.9.0",
+        "envs": {
+          "dev": false,
+          "prod": false,
+          "qa": false
+        }
       }
     ]
   },
@@ -9371,6 +9419,14 @@
           "dev": true,
           "prod": true,
           "qa": true
+        }
+      },
+      {
+        "version": "1.9.0",
+        "envs": {
+          "dev": false,
+          "prod": false,
+          "qa": false
         }
       }
     ]
@@ -10677,6 +10733,14 @@
           "dev": true,
           "prod": true,
           "qa": true
+        }
+      },
+      {
+        "version": "1.9.0",
+        "envs": {
+          "dev": false,
+          "prod": false,
+          "qa": false
         }
       }
     ]
