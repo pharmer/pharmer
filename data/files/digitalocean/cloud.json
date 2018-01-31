@@ -590,9 +590,9 @@
     {
       "version": "1.8.0",
       "envs": {
-        "dev": true,
-        "prod": true,
-        "qa": true
+        "dev": false,
+        "prod": false,
+        "qa": false
       }
     },
     {

@@ -249,12 +249,8 @@ func MergeKubernetesSupport(data *data.CloudData, kubeData *data.Kubernetes) (*d
 	}
 	if foundIndex == -1 { //append
 		data.Kubernetes = append(data.Kubernetes, *kubeData)
-	} else {
-		if len(kubeData.Envs) > 0 { //replace
-			data.Kubernetes[foundIndex] = *kubeData
-		} else { //delete
-			data.Kubernetes = append(data.Kubernetes[:foundIndex], data.Kubernetes[foundIndex+1:]...)
-		}
+	} else { //replace
+		data.Kubernetes[foundIndex] = *kubeData
 	}
 	return data, nil
 }
@@ -272,7 +268,7 @@ func AddKubernetesSupport(opts *options.KubernetesData) error {
 	envs := strings.Split(opts.Envs, ",")
 	for _, env := range envs {
 		if len(env) > 0 {
-			kubeData.Envs[env] = true
+			kubeData.Envs[env] = opts.Deprecated
 		}
 	}
 	for _, name := range supportedProvider {
