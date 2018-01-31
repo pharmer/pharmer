@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
-
 	"strings"
 
 	"github.com/appscode/go/log"

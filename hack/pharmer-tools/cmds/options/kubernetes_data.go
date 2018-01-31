@@ -11,9 +11,9 @@ const (
 )
 
 type KubernetesData struct {
-	Provider string
-	Version  string
-	Envs     string
+	Provider   string
+	Version    string
+	Envs       string
 	Deprecated bool
 }
 
