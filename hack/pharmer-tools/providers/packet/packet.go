@@ -30,7 +30,7 @@ type PlanExtendedList struct {
 	Plans []PlanExtended `json:"plans"`
 }
 
-func NewPacketClient(packetApiKey, versions string) (*PacketClient, error) {
+func NewPacketClient(packetApiKey string) (*PacketClient, error) {
 	g := &PacketClient{
 		Data: &PacketData{},
 	}

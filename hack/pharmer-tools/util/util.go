@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/pharmer/pharmer/data"
+	"github.com/appscode/go/homedir"
 )
 
 func CreateDir(dir string) error {
@@ -54,16 +55,10 @@ func BToGB(in int64) (float64, error) {
 	return gb, err
 }
 
-// wanted directory is [path]/pharmer/data/files
-// Current directory is [path]/pharmer/hack/gendata
+// write directory is [path]/pharmer/data/files
 func GetWriteDir() (string, error) {
-	AbsPath, err := filepath.Abs("")
-	if err != nil {
-		return "", err
-	}
-	p := strings.TrimSuffix(AbsPath, "/hack/gendata")
-	p = filepath.Join(p, "data", "files")
-	return p, nil
+	dir := filepath.Join(homedir.HomeDir(), "go/src/github.com/pharmer/pharmer/data/files")
+	return dir, nil
 }
 
 //getting provider data from cloud.json file
@@ -103,5 +98,8 @@ func SortCloudData(data *data.CloudData) *data.CloudData {
 			return data.InstanceTypes[index].Zones[i] < data.InstanceTypes[index].Zones[j]
 		})
 	}
+	sort.Slice(data.Kubernetes, func(i, j int) bool {
+		return data.Kubernetes[i].Version.LessThan(data.Kubernetes[j].Version)
+	})
 	return data
 }

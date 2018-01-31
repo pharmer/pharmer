@@ -49,6 +49,7 @@ func NewRootCmd(version string) *cobra.Command {
 	flag.CommandLine.Parse([]string{})
 
 	rootCmd.AddCommand(NewCmdGenData())
+	rootCmd.AddCommand(NewCmdKubeSupport())
 	rootCmd.AddCommand(NewCmdGenNPM())
 	rootCmd.AddCommand(v.NewCmdVersion())
 

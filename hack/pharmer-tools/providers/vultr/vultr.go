@@ -23,7 +23,7 @@ type PlanExtended struct {
 	Deprecated bool   `json:"deprecated"`
 }
 
-func NewVultrClient(vultrApiToken, versions string) (*VultrClient, error) {
+func NewVultrClient(vultrApiToken string) (*VultrClient, error) {
 	g := &VultrClient{
 		Client: vultr.NewClient(vultrApiToken, nil),
 	}

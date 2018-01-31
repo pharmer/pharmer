@@ -19,7 +19,7 @@ type GceClient struct {
 
 type GceData data.CloudData
 
-func NewGceClient(gecProjectId, credentialFilePath, versions string) (*GceClient, error) {
+func NewGceClient(gecProjectId, credentialFilePath string) (*GceClient, error) {
 	g := &GceClient{
 		GceProjectID: gecProjectId,
 		Ctx:          context.Background(),

@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"strings"
+
 	"github.com/appscode/go/log"
+	"github.com/hashicorp/go-version"
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/cmds/options"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/providers/aws"
@@ -30,6 +33,17 @@ const (
 	Scaleway     string = "scaleway"
 )
 
+var supportedProvider = []string{
+	"gce",
+	"digitalocean",
+	"packet",
+	"aws",
+	"azure",
+	"vultr",
+	"linode",
+	"scaleway",
+}
+
 type CloudInterface interface {
 	GetName() string
 	GetEnvs() []string
@@ -43,28 +57,28 @@ type CloudInterface interface {
 func NewCloudProvider(opts *options.GenData) (CloudInterface, error) {
 	switch opts.Provider {
 	case Gce:
-		return gce.NewGceClient(opts.GCEProjectID, opts.CredentialFile, opts.KubernetesVersions)
+		return gce.NewGceClient(opts.GCEProjectID, opts.CredentialFile)
 		break
 	case DigitalOcean:
-		return digitalocean.NewDigitalOceanClient(opts.DoToken, opts.KubernetesVersions)
+		return digitalocean.NewDigitalOceanClient(opts.DoToken)
 		break
 	case Packet:
-		return packet.NewPacketClient(opts.PacketApiKey, opts.KubernetesVersions)
+		return packet.NewPacketClient(opts.PacketApiKey)
 		break
 	case Aws:
-		return aws.NewAwsClient(opts.AWSRegion, opts.AWSAccessKeyID, opts.AWSSecretAccessKey, opts.KubernetesVersions)
+		return aws.NewAwsClient(opts.AWSRegion, opts.AWSAccessKeyID, opts.AWSSecretAccessKey)
 		break
 	case Azure:
-		return azure.NewAzureClient(opts.AzureTenantId, opts.AzureSubscriptionId, opts.AzureClientId, opts.AzureClientSecret, opts.KubernetesVersions)
+		return azure.NewAzureClient(opts.AzureTenantId, opts.AzureSubscriptionId, opts.AzureClientId, opts.AzureClientSecret)
 		break
 	case Vultr:
-		return vultr.NewVultrClient(opts.VultrApiToken, opts.KubernetesVersions)
+		return vultr.NewVultrClient(opts.VultrApiToken)
 		break
 	case Linode:
-		return linode.NewLinodeClient(opts.LinodeApiToken, opts.KubernetesVersions)
+		return linode.NewLinodeClient(opts.LinodeApiToken)
 		break
 	case Scaleway:
-		return scaleway.NewScalewayClient(opts.ScalewayToken, opts.ScalewayOrganization, opts.KubernetesVersions)
+		return scaleway.NewScalewayClient(opts.ScalewayToken, opts.ScalewayOrganization)
 		break
 	default:
 		return nil, fmt.Errorf("Valid/Supported provider name required")
@@ -218,6 +232,86 @@ func MergeAndWriteCloudData(cloudInterface CloudInterface) error {
 	err = WriteCloudData(res, "cloud.json")
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+//If kubeData.version exists in old data, then
+// 		if kubeData.Envs is empty, then delete it,
+//      otherwise, replace it
+//If kubeData.version doesn't exists in old data, then append it
+func MergeKubernetesSupport(data *data.CloudData, kubeData *data.Kubernetes) (*data.CloudData, error) {
+	foundIndex := -1
+	for index, k := range data.Kubernetes {
+		if k.Version.Equal(kubeData.Version) {
+			foundIndex = index
+		}
+	}
+	if foundIndex == -1 { //append
+		data.Kubernetes = append(data.Kubernetes, *kubeData)
+	} else {
+		if len(kubeData.Envs) > 0 { //replace
+			data.Kubernetes[foundIndex] = *kubeData
+		} else { //delete
+			temp := data.Kubernetes[:foundIndex]
+			data.Kubernetes = append(temp, data.Kubernetes[foundIndex+1:]...)
+		}
+	}
+	return data, nil
+}
+
+func AddKubernetesSupport(opts *options.KubernetesData) error {
+	var err error
+	kubeData := &data.Kubernetes{}
+
+	kubeData.Version, err = version.NewVersion(opts.Version)
+	if err != nil {
+		return err
+	}
+
+	kubeData.Envs = map[string]bool{}
+	envs := strings.Split(opts.Envs, ",")
+	for _, env := range envs {
+		if len(env) > 0 {
+			kubeData.Envs[env] = true
+		}
+	}
+
+	if opts.Provider == options.AllProvider { //apply to all
+		for _, name := range supprotedProvider {
+			log.Infof("Getting cloud data for `%v` provider", name)
+			data, err := util.GetDataFormFile(name)
+			if err != nil {
+				return err
+			}
+			log.Infof("Adding kubenetes support for `%v` provider", name)
+			data, err = MergeKubernetesSupport(data, kubeData)
+			if err != nil {
+				return err
+			}
+			log.Infof("Writing cloud data for `%v` provider", name)
+			err = WriteCloudData(data, "cloud.json")
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		name := opts.Provider
+		log.Infof("Getting cloud data for `%v` provider", name)
+		data, err := util.GetDataFormFile(name)
+		if err != nil {
+			return err
+		}
+		log.Infof("Adding kubenetes support for `%v` provider", name)
+		data, err = MergeKubernetesSupport(data, kubeData)
+		if err != nil {
+			return err
+		}
+		log.Infof("Writing cloud data for `%v` provider", name)
+		err = WriteCloudData(data, "cloud.json")
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

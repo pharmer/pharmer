@@ -17,7 +17,7 @@ type DigitalOceanClient struct {
 
 type DigitalOceanData data.CloudData
 
-func NewDigitalOceanClient(doToken, versions string) (*DigitalOceanClient, error) {
+func NewDigitalOceanClient(doToken string) (*DigitalOceanClient, error) {
 	g := &DigitalOceanClient{
 		Ctx:  context.Background(),
 		Data: &DigitalOceanData{},

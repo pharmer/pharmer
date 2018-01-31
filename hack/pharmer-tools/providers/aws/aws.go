@@ -29,7 +29,7 @@ type Ec2Instance struct {
 	Pricing       interface{} `json:"pricing"`
 }
 
-func NewAwsClient(awsRegionName, awsAccessKeyId, awsSecretAccessKey, versions string) (*AwsClient, error) {
+func NewAwsClient(awsRegionName, awsAccessKeyId, awsSecretAccessKey string) (*AwsClient, error) {
 	g := &AwsClient{}
 	var err error
 	g.Session, err = session.NewSession(&aws.Config{

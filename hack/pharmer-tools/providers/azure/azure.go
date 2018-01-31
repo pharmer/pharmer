@@ -19,7 +19,7 @@ type AzureClient struct {
 
 type AzureData data.CloudData
 
-func NewAzureClient(tenantId, subscriptionId, clientId, clientSecret, versions string) (*AzureClient, error) {
+func NewAzureClient(tenantId, subscriptionId, clientId, clientSecret string) (*AzureClient, error) {
 	g := &AzureClient{
 		SubscriptionId: subscriptionId,
 	}

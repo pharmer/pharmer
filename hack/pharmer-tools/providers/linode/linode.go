@@ -13,7 +13,7 @@ type LinodeClient struct {
 
 type LinodeData data.CloudData
 
-func NewLinodeClient(linodeApiToken, versions string) (*LinodeClient, error) {
+func NewLinodeClient(linodeApiToken string) (*LinodeClient, error) {
 	g := &LinodeClient{
 		Client: linodego.NewClient(linodeApiToken, nil),
 	}
