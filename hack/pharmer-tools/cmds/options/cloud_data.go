@@ -6,10 +6,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-const (
-	DefaultKubernetesVersion string = "1.8.0"
-)
-
 type GenData struct {
 	Provider string
 	//credential file for gce
@@ -22,7 +18,6 @@ type GenData struct {
 	AWSRegion            string
 	AWSAccessKeyID       string
 	AWSSecretAccessKey   string
-	KubernetesVersions   string
 	AzureTenantId        string
 	AzureSubscriptionId  string
 	AzureClientId        string
@@ -35,8 +30,7 @@ type GenData struct {
 
 func NewGenData() *GenData {
 	return &GenData{
-		Provider:           "",
-		KubernetesVersions: DefaultKubernetesVersion,
+		Provider: "",
 	}
 }
 
@@ -57,7 +51,6 @@ func (c *GenData) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.LinodeApiToken, "linode.api_token", c.LinodeApiToken, "provide this flag when provider is linode")
 	fs.StringVar(&c.ScalewayToken, "scaleway.token", c.ScalewayToken, "provide this flag when provider is scaleway")
 	fs.StringVar(&c.ScalewayOrganization, "scaleway.organization", c.ScalewayOrganization, "provide this flag when provider is scaleway")
-	fs.StringVar(&c.KubernetesVersions, "versions_support", c.KubernetesVersions, "Supported versions of kubernetes, example: --versions-support=1.1.0,1.2.0")
 }
 
 func (c *GenData) ValidateFlags(cmd *cobra.Command, args []string) error {

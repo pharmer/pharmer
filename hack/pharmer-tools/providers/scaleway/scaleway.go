@@ -14,7 +14,7 @@ type ScalewayClient struct {
 
 type ScalewayData data.CloudData
 
-func NewScalewayClient(scalewayToken, organization, versions string) (*ScalewayClient, error) {
+func NewScalewayClient(scalewayToken, organization string) (*ScalewayClient, error) {
 	g := &ScalewayClient{}
 	var err error
 	g.ParClient, err = scaleway.NewScalewayAPI(organization, scalewayToken, "gen-data", "par1")
