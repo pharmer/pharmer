@@ -253,8 +253,7 @@ func MergeKubernetesSupport(data *data.CloudData, kubeData *data.Kubernetes) (*d
 		if len(kubeData.Envs) > 0 { //replace
 			data.Kubernetes[foundIndex] = *kubeData
 		} else { //delete
-			temp := data.Kubernetes[:foundIndex]
-			data.Kubernetes = append(temp, data.Kubernetes[foundIndex+1:]...)
+			data.Kubernetes = append(data.Kubernetes[:foundIndex], data.Kubernetes[foundIndex+1:]...)
 		}
 	}
 	return data, nil
@@ -276,27 +275,10 @@ func AddKubernetesSupport(opts *options.KubernetesData) error {
 			kubeData.Envs[env] = true
 		}
 	}
-
-	if opts.Provider == options.AllProvider { //apply to all
-		for _, name := range supprotedProvider {
-			log.Infof("Getting cloud data for `%v` provider", name)
-			data, err := util.GetDataFormFile(name)
-			if err != nil {
-				return err
-			}
-			log.Infof("Adding kubenetes support for `%v` provider", name)
-			data, err = MergeKubernetesSupport(data, kubeData)
-			if err != nil {
-				return err
-			}
-			log.Infof("Writing cloud data for `%v` provider", name)
-			err = WriteCloudData(data, "cloud.json")
-			if err != nil {
-				return err
-			}
+	for _, name := range supportedProvider {
+		if opts.Provider != options.AllProvider && opts.Provider != name {
+			continue
 		}
-	} else {
-		name := opts.Provider
 		log.Infof("Getting cloud data for `%v` provider", name)
 		data, err := util.GetDataFormFile(name)
 		if err != nil {

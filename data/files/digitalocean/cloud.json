@@ -594,6 +594,14 @@
         "prod": true,
         "qa": true
       }
+    },
+    {
+      "version": "1.9.0",
+      "envs": {
+        "dev": true,
+        "prod": true,
+        "qa": true
+      }
     }
   ]
 }

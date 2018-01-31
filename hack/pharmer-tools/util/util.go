@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/appscode/go/runtime"
 	"github.com/pharmer/pharmer/data"
-	"github.com/appscode/go/homedir"
 )
 
 func CreateDir(dir string) error {
@@ -57,7 +57,7 @@ func BToGB(in int64) (float64, error) {
 
 // write directory is [path]/pharmer/data/files
 func GetWriteDir() (string, error) {
-	dir := filepath.Join(homedir.HomeDir(), "go/src/github.com/pharmer/pharmer/data/files")
+	dir := filepath.Join(runtime.GOPath(), "src/github.com/pharmer/pharmer/data/files")
 	return dir, nil
 }
 
