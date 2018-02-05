@@ -98,6 +98,15 @@ func CreateAdminCertificate(ctx context.Context) (*x509.Certificate, *rsa.Privat
 	return adminCert, adminKey, nil
 }
 
+func GetAdminCertificate(ctx context.Context, cluster *api.Cluster) (*x509.Certificate, *rsa.PrivateKey, error) {
+	certStore := Store(ctx).Certificates(cluster.Name)
+	admCert, admKey, err := certStore.Get("admin")
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get admin certificates. Reason: %v", err)
+	}
+	return admCert, admKey, nil
+}
+
 func CreateSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
 	sshKey, err := ssh.NewSSHKeyPair()
 	if err != nil {

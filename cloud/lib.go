@@ -53,8 +53,10 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
 		return nil, err
 	}
-	if err = CreateNodeGroup(ctx, cluster, api.RoleMaster, "", api.NodeTypeRegular, 1, float64(0)); err != nil {
-		return nil, err
+	if cluster.Spec.Cloud.CloudProvider != "gke" {
+		if err = CreateNodeGroup(ctx, cluster, api.RoleMaster, "", api.NodeTypeRegular, 1, float64(0)); err != nil {
+			return nil, err
+		}
 	}
 	if _, err = Store(ctx).Clusters().Update(cluster); err != nil {
 		return nil, err
