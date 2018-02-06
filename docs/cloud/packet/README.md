@@ -253,7 +253,7 @@ You can modify this configuration by:
 $ pharmer edit cluster p1
 ```
 
-* **Applying:** If everything looks ok, we can now apply the resources. This actually creates resources on `Scaleway`.
+* **Applying:** If everything looks ok, we can now apply the resources. This actually creates resources on `Packet`.
  Up to now we've only been working locally.
 
  To apply run:
