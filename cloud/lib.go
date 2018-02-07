@@ -10,9 +10,12 @@ import (
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/util/cert"
 )
+
+var managedProviders = sets.NewString("aks", "gke")
 
 func List(ctx context.Context, opts metav1.ListOptions) ([]*api.Cluster, error) {
 	return Store(ctx).Clusters().List(opts)
@@ -53,7 +56,7 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
 		return nil, err
 	}
-	if cluster.Spec.Cloud.CloudProvider != "gke" {
+	if !managedProviders.Has(cluster.Spec.Cloud.CloudProvider) {
 		if err = CreateNodeGroup(ctx, cluster, api.RoleMaster, "", api.NodeTypeRegular, 1, float64(0)); err != nil {
 			return nil, err
 		}

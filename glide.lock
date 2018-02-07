@@ -1,5 +1,5 @@
-hash: 12bc57df0b6b813abe1898d85824a3c2fba5a519e3bf3708725eb92c6cbdd85b
-updated: 2018-02-16T14:47:30.863666503-08:00
+hash: f36662d25a44730e9f669bdfcdddfa6ae3079de148e4d7d1ca9dee783f504f5a
+updated: 2018-02-16T15:54:40.875904166-08:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -79,7 +79,7 @@ imports:
   - service/s3/s3manager
   - service/sts
 - name: github.com/Azure/azure-sdk-for-go
-  version: 2d49bb8f2cee530cc16f1f1a9f0aae763dee257d
+  version: f111fc2fa3861c5fdced76cae4c9c71821969577
   subpackages:
   - arm/authorization
   - arm/compute
@@ -88,13 +88,15 @@ imports:
   - arm/resources/resources
   - arm/resources/subscriptions
   - arm/storage
+  - profiles/latest/containerservice/mgmt/containerservice
+  - services/containerservice/mgmt/2017-09-30/containerservice
   - storage
 - name: github.com/Azure/go-ansiterm
   version: 19f72df4d05d31cbe1c56bfc8045c96babff6c7e
   subpackages:
   - winterm
 - name: github.com/Azure/go-autorest
-  version: f6e08fe5e4d45c9a66e40196d3fed5f37331d224
+  version: d4e6b95c12a08b4de2d48b45d5b4d594e5d32fab
   subpackages:
   - autorest
   - autorest/adal
@@ -330,6 +332,8 @@ imports:
   - jwriter
 - name: github.com/MakeNowJust/heredoc
   version: bb23615498cded5e105af4ce27de75b089cbe851
+- name: github.com/marstr/guid
+  version: 8bdf7d1a087ccc975cf37dd6507da50698fd19ca
 - name: github.com/mattn/go-colorable
   version: 5411d3eea5978e6cdc258b30de592b60df6aba96
   repo: https://github.com/mattn/go-colorable
@@ -437,8 +441,8 @@ imports:
   - fuzzy
 - name: github.com/russross/blackfriday
   version: 300106c228d52c8941d4b3de6054a6062a86dda3
-- name: github.com/satori/uuid
-  version: 5bf94b69c6b68ee1b541973bb8e1144db23a194b
+- name: github.com/satori/go.uuid
+  version: 36e9d2ebbde5e3f13ab2e25625fd453271d6522e
 - name: github.com/scaleway/scaleway-cli
   version: 53e53aa5e3ecd18f49ec69471e82c80d288afacc
   repo: https://github.com/tamalsaha/scaleway-cli.git
