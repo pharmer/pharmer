@@ -43,7 +43,12 @@ func NewNodeDrain(ctx context.Context, kc kubernetes.Interface, cluster *api.Clu
 }
 
 func (nd *NodeDrain) Apply() error {
-	if err := nd.o.SetupDrain(&cobra.Command{}, []string{nd.Node}); err != nil {
+	cmd := &cobra.Command{}
+	// https://github.com/kubernetes/kubernetes/blob/7377c5911a5e2d5f18dfb15617316a891e661f22/pkg/kubectl/cmd/drain.go#L215
+	cmd.Flags().String("selector", nd.o.Selector, "Selector (label query) to filter on")
+	// https://github.com/kubernetes/kubernetes/blob/7377c5911a5e2d5f18dfb15617316a891e661f22/pkg/kubectl/cmd/drain.go#L227
+	cmdutil.AddDryRunFlag(cmd)
+	if err := nd.o.SetupDrain(cmd, []string{nd.Node}); err != nil {
 		return err
 	}
 	if err := nd.o.RunDrain(); err != nil {
