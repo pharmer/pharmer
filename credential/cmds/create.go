@@ -1,7 +1,6 @@
 package cmds
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -85,7 +84,7 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 				term.Fatalln(err)
 			}
 		} else {
-			return fmt.Errorf("can't issue credential for provider %s", provider)
+			return errors.Errorf("can't issue credential for provider %s", provider)
 		}
 		return nil
 	}

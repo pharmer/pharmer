@@ -3,14 +3,13 @@ package vfs
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/graymeta/stow"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -36,17 +35,17 @@ func (s *nodeGroupFileStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, er
 	for {
 		page, err := s.container.Browse(s.resourceHome()+string(os.PathSeparator), string(os.PathSeparator), cursor, pageSize)
 		if err != nil {
-			return nil, fmt.Errorf("failed to list node groups. Reason: %v", err)
+			return nil, errors.Errorf("failed to list node groups. Reason: %v", err)
 		}
 		for _, item := range page.Items {
 			r, err := item.Open()
 			if err != nil {
-				return nil, fmt.Errorf("failed to list node groups. Reason: %v", err)
+				return nil, errors.Errorf("failed to list node groups. Reason: %v", err)
 			}
 			var obj api.NodeGroup
 			err = json.NewDecoder(r).Decode(&obj)
 			if err != nil {
-				return nil, fmt.Errorf("failed to list node groups. Reason: %v", err)
+				return nil, errors.Errorf("failed to list node groups. Reason: %v", err)
 			}
 			result = append(result, &obj)
 			r.Close()
@@ -69,7 +68,7 @@ func (s *nodeGroupFileStore) Get(name string) (*api.NodeGroup, error) {
 
 	item, err := s.container.Item(s.resourceID(name))
 	if err != nil {
-		return nil, fmt.Errorf("NodeGroup `%s` does not exist. Reason: %v", name, err)
+		return nil, errors.Errorf("NodeGroup `%s` does not exist. Reason: %v", name, err)
 	}
 
 	r, err := item.Open()
@@ -103,7 +102,7 @@ func (s *nodeGroupFileStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) 
 	id := s.resourceID(obj.Name)
 	_, err = s.container.Item(id)
 	if err == nil {
-		return nil, fmt.Errorf("NodeGroup `%s` already exists", obj.Name)
+		return nil, errors.Errorf("NodeGroup `%s` already exists", obj.Name)
 	}
 
 	data, err := json.MarshalIndent(obj, "", "  ")
@@ -132,7 +131,7 @@ func (s *nodeGroupFileStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) 
 
 	_, err = s.container.Item(id)
 	if err != nil {
-		return nil, fmt.Errorf("NodeGroup `%s` does not exist. Reason: %v", obj.Name, err)
+		return nil, errors.Errorf("NodeGroup `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
 	data, err := json.MarshalIndent(obj, "", "  ")
@@ -171,7 +170,7 @@ func (s *nodeGroupFileStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, e
 
 	item, err := s.container.Item(id)
 	if err != nil {
-		return nil, fmt.Errorf("NodeGroup `%s` does not exist. Reason: %v", obj.Name, err)
+		return nil, errors.Errorf("NodeGroup `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
 	r, err := item.Open()

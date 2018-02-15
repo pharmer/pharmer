@@ -1,12 +1,11 @@
 package fake
 
 import (
-	"errors"
-	"fmt"
 	"path/filepath"
 	"sync"
 
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 )
 
 type sshKeyFileStore struct {
@@ -43,12 +42,12 @@ func (s *sshKeyFileStore) Get(name string) ([]byte, []byte, error) {
 
 	pubKey, pubOK := s.container[s.pubKeyID(name)]
 	if !pubOK {
-		return nil, nil, fmt.Errorf("SSH `id_%s.pub` does not exist", name)
+		return nil, nil, errors.Errorf("SSH `id_%s.pub` does not exist", name)
 	}
 
 	privKey, privOK := s.container[s.pubKeyID(name)]
 	if !privOK {
-		return nil, nil, fmt.Errorf("SSH key `id_%s` does not exist", name)
+		return nil, nil, errors.Errorf("SSH key `id_%s` does not exist", name)
 	}
 	return pubKey, privKey, nil
 }

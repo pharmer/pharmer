@@ -2,7 +2,6 @@ package ovh
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	. "github.com/appscode/go/context"
@@ -308,7 +307,7 @@ func serverIDFromProviderID(providerID string) (string, error) {
 
 	split := strings.Split(providerID, "/")
 	if len(split) != 4 {
-		return "", fmt.Errorf("unexpected providerID format: %s, format should be: pharmer-openstack:///12345", providerID)
+		return "", errors.Errorf("unexpected providerID format: %s, format should be: pharmer-openstack:///12345", providerID)
 	}
 
 	return split[3], nil

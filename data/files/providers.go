@@ -2,7 +2,6 @@ package files
 
 import (
 	"encoding/json"
-	"fmt"
 	"sort"
 
 	_env "github.com/appscode/go/env"
@@ -19,6 +18,7 @@ import (
 	"github.com/pharmer/pharmer/data/files/scaleway"
 	"github.com/pharmer/pharmer/data/files/softlayer"
 	"github.com/pharmer/pharmer/data/files/vultr"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -69,14 +69,14 @@ func parseData(bytes []byte, env _env.Environment) error {
 
 	if len(cloud.Versions) > 0 {
 		if _, exists := clouds[cloud.Name]; exists {
-			return fmt.Errorf("redeclared cloud provider %s", cloud.Name)
+			return errors.Errorf("redeclared cloud provider %s", cloud.Name)
 		}
 		clouds[cloud.Name] = cloud
 	}
 
 	for _, c := range cd.Credentials {
 		if _, exists := credentials[c.Provider]; exists {
-			return fmt.Errorf("redeclared credential type %s in cloud provider %s", c.Provider, cloud.Name)
+			return errors.Errorf("redeclared credential type %s in cloud provider %s", c.Provider, cloud.Name)
 		}
 		credentials[c.Provider] = c
 	}
@@ -171,11 +171,11 @@ func Load(env _env.Environment) error {
 func GetInstanceType(provider, sku string) (*data.InstanceType, error) {
 	p, found := clouds[provider]
 	if !found {
-		return nil, fmt.Errorf("can't find cluster provider %v", provider)
+		return nil, errors.Errorf("can't find cluster provider %v", provider)
 	}
 	s, found := p.InstanceTypes[sku]
 	if !found {
-		return nil, fmt.Errorf("can't find instance type %s for provider %s", sku, provider)
+		return nil, errors.Errorf("can't find instance type %s for provider %s", sku, provider)
 	}
 	return &s, nil
 }
@@ -226,7 +226,7 @@ func GetCredentialFormat(provider string) (data.CredentialFormat, bool) {
 func GetRegions(provider string) (map[string]data.Region, error) {
 	p, found := clouds[provider]
 	if !found {
-		return nil, fmt.Errorf("can't find cluster provider %v", provider)
+		return nil, errors.Errorf("can't find cluster provider %v", provider)
 	}
 	return p.Regions, nil
 }
@@ -242,13 +242,13 @@ func GetRegionsFromZone(provider, zone string) (data.Region, error) {
 			return region, nil
 		}
 	}
-	return data.Region{}, fmt.Errorf("can't find zone %v for provider %v", zone, provider)
+	return data.Region{}, errors.Errorf("can't find zone %v for provider %v", zone, provider)
 }
 
 func GetInstanceByRegionCPU(provider, region string, cpu int) (*data.InstanceType, error) {
 	p, found := clouds[provider]
 	if !found {
-		return nil, fmt.Errorf("can't find cluster provider %v", provider)
+		return nil, errors.Errorf("can't find cluster provider %v", provider)
 	}
 
 	for _, instance := range p.InstanceTypes {
@@ -257,13 +257,13 @@ func GetInstanceByRegionCPU(provider, region string, cpu int) (*data.InstanceTyp
 			return &instance, nil
 		}
 	}
-	return nil, fmt.Errorf("can't find instance for provider %v with region %v and cpu %v", provider, region, cpu)
+	return nil, errors.Errorf("can't find instance for provider %v with region %v and cpu %v", provider, region, cpu)
 }
 
 func GetInstanceByZoneCPU(provider, zone string, cpu int) (*data.InstanceType, error) {
 	p, found := clouds[provider]
 	if !found {
-		return nil, fmt.Errorf("can't find cluster provider %v", provider)
+		return nil, errors.Errorf("can't find cluster provider %v", provider)
 	}
 
 	for _, instance := range p.InstanceTypes {
@@ -272,6 +272,6 @@ func GetInstanceByZoneCPU(provider, zone string, cpu int) (*data.InstanceType, e
 			return &instance, nil
 		}
 	}
-	return nil, fmt.Errorf("can't find instance for provider %v with zone %v and cpu %v", provider, zone, cpu)
+	return nil, errors.Errorf("can't find instance for provider %v with zone %v and cpu %v", provider, zone, cpu)
 
 }

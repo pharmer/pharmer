@@ -1,11 +1,11 @@
 package gce
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"
+	"github.com/pkg/errors"
 	"google.golang.org/api/compute/v1"
 )
 
@@ -32,7 +32,7 @@ func ParseRegion(region *compute.Region) (*data.Region, error) {
 func ParseZoneFromUrl(url string) (string, error) {
 	words := strings.Split(url, "/")
 	if len(words) == 0 {
-		return "", fmt.Errorf("Invaild url: unable to parse zone from url")
+		return "", errors.Errorf("Invaild url: unable to parse zone from url")
 	}
 	return words[len(words)-1], nil
 }

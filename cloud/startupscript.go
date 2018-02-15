@@ -2,14 +2,13 @@ package cloud
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"strings"
 	"text/template"
 
 	"github.com/ghodss/yaml"
 	"github.com/hashicorp/go-version"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pkg/errors"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
@@ -95,7 +94,7 @@ func (td TemplateData) PackageList() (string, error) {
 		"kubeadm=" + patch + "*",
 	}
 	if cni, found := kubernetesCNIVersions[minor]; !found {
-		return "", fmt.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", td.KubernetesVersion)
+		return "", errors.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", td.KubernetesVersion)
 	} else {
 		pkgs = append(pkgs, "kubernetes-cni="+cni+"*")
 	}
@@ -118,7 +117,7 @@ func (td TemplateData) PrekVersion() (string, error) {
 
 	prekVer, found := prekVersions[minor]
 	if !found {
-		return "", fmt.Errorf("pre-k version is unknown for Kubernetes version %s", td.KubernetesVersion)
+		return "", errors.Errorf("pre-k version is unknown for Kubernetes version %s", td.KubernetesVersion)
 	}
 	return prekVer, nil
 }

@@ -167,7 +167,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	case float64, float32:
 		ram = int(instance.RAM.(float64) * 1024)
 	default:
-		return nil, fmt.Errorf("failed to parse memory metadata for sku %v", ng.Spec.Template.Spec.SKU)
+		return nil, errors.Errorf("failed to parse memory metadata for sku %v", ng.Spec.Template.Spec.SKU)
 	}
 
 	_, sshid, err := conn.getPublicKey()
@@ -268,12 +268,12 @@ func serverIDFromProviderID(providerID string) (int, error) {
 
 	split := strings.Split(providerID, "/")
 	if len(split) != 3 {
-		return 0, fmt.Errorf("unexpected providerID format: %s, format should be: digitalocean://12345", providerID)
+		return 0, errors.Errorf("unexpected providerID format: %s, format should be: digitalocean://12345", providerID)
 	}
 
 	// since split[0] is actually "digitalocean:"
 	if strings.TrimSuffix(split[0], ":") != UID {
-		return 0, fmt.Errorf("provider name from providerID should be digitalocean: %s", providerID)
+		return 0, errors.Errorf("provider name from providerID should be digitalocean: %s", providerID)
 	}
 
 	return strconv.Atoi(split[2])

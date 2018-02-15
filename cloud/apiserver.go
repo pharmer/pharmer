@@ -7,6 +7,7 @@ import (
 
 	stringz "github.com/appscode/go/strings"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -47,7 +48,7 @@ func NewAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes.Inter
 	}
 	host := cluster.APIServerURL()
 	if host == "" {
-		return nil, fmt.Errorf("failed to detect api server url for cluster %s", cluster.Name)
+		return nil, errors.Errorf("failed to detect api server url for cluster %s", cluster.Name)
 	}
 	cfg := &rest.Config{
 		Host: host,

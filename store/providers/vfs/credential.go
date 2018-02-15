@@ -3,14 +3,13 @@ package vfs
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/graymeta/stow"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -35,17 +34,17 @@ func (s *credentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, 
 	for {
 		page, err := s.container.Browse(s.resourceHome()+"/", string(os.PathSeparator), cursor, pageSize)
 		if err != nil {
-			return nil, fmt.Errorf("failed to list credentials. Reason: %v", err)
+			return nil, errors.Errorf("failed to list credentials. Reason: %v", err)
 		}
 		for _, item := range page.Items {
 			r, err := item.Open()
 			if err != nil {
-				return nil, fmt.Errorf("failed to list credentials. Reason: %v", err)
+				return nil, errors.Errorf("failed to list credentials. Reason: %v", err)
 			}
 			var obj api.Credential
 			err = json.NewDecoder(r).Decode(&obj)
 			if err != nil {
-				return nil, fmt.Errorf("failed to list credentials. Reason: %v", err)
+				return nil, errors.Errorf("failed to list credentials. Reason: %v", err)
 			}
 			result = append(result, &obj)
 			r.Close()
@@ -64,7 +63,7 @@ func (s *credentialFileStore) Get(name string) (*api.Credential, error) {
 	}
 	item, err := s.container.Item(s.resourceID(name))
 	if err != nil {
-		return nil, fmt.Errorf("credential `%s` does not exist. Reason: %v", name, err)
+		return nil, errors.Errorf("credential `%s` does not exist. Reason: %v", name, err)
 	}
 
 	r, err := item.Open()
@@ -95,7 +94,7 @@ func (s *credentialFileStore) Create(obj *api.Credential) (*api.Credential, erro
 	id := s.resourceID(obj.Name)
 	_, err = s.container.Item(id)
 	if err == nil {
-		return nil, fmt.Errorf("credential `%s` already exists", obj.Name)
+		return nil, errors.Errorf("credential `%s` already exists", obj.Name)
 	}
 
 	data, err := json.MarshalIndent(obj, "", "  ")
@@ -121,7 +120,7 @@ func (s *credentialFileStore) Update(obj *api.Credential) (*api.Credential, erro
 
 	_, err = s.container.Item(id)
 	if err != nil {
-		return nil, fmt.Errorf("credential `%s` does not exist. Reason: %v", obj.Name, err)
+		return nil, errors.Errorf("credential `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
 	data, err := json.MarshalIndent(obj, "", "  ")

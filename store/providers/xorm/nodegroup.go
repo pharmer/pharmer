@@ -1,13 +1,12 @@
 package xorm
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/go-xorm/xorm"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,7 +28,7 @@ func (s *nodeGroupXormStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, er
 	for _, ng := range nodeGroups {
 		decode, err := decodeNodeGroup(&ng)
 		if err != nil {
-			return nil, fmt.Errorf("failed to list node groups. Reason: %v", err)
+			return nil, errors.Errorf("failed to list node groups. Reason: %v", err)
 		}
 		result = append(result, decode)
 	}
@@ -50,7 +49,7 @@ func (s *nodeGroupXormStore) Get(name string) (*api.NodeGroup, error) {
 		return nil, err
 	}
 	if !found {
-		return nil, fmt.Errorf("credential `%s` already exists", name)
+		return nil, errors.Errorf("credential `%s` already exists", name)
 	}
 
 	return decodeNodeGroup(ng)
@@ -72,10 +71,10 @@ func (s *nodeGroupXormStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) 
 
 	found, err := s.engine.Get(&NodeGroup{Name: obj.Name, ClusterName: s.cluster})
 	if err != nil {
-		return nil, fmt.Errorf("reason: %v", err)
+		return nil, errors.Errorf("reason: %v", err)
 	}
 	if found {
-		return nil, fmt.Errorf("node group `%s` already exists", obj.Name)
+		return nil, errors.Errorf("node group `%s` already exists", obj.Name)
 	}
 
 	obj.CreationTimestamp = metav1.Time{Time: time.Now()}
@@ -104,10 +103,10 @@ func (s *nodeGroupXormStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) 
 
 	found, err := s.engine.Get(&NodeGroup{Name: obj.Name, ClusterName: s.cluster})
 	if err != nil {
-		return nil, fmt.Errorf("reason: %v", err)
+		return nil, errors.Errorf("reason: %v", err)
 	}
 	if !found {
-		return nil, fmt.Errorf("node group `%s` not found", obj.Name)
+		return nil, errors.Errorf("node group `%s` not found", obj.Name)
 	}
 
 	ng, err := encodeNodeGroup(obj)
@@ -146,10 +145,10 @@ func (s *nodeGroupXormStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, e
 	ng := &NodeGroup{Name: obj.Name, ClusterName: s.cluster}
 	found, err := s.engine.Get(ng)
 	if err != nil {
-		return nil, fmt.Errorf("NodeGroup `%s` does not exist. Reason: %v", obj.Name, err)
+		return nil, errors.Errorf("NodeGroup `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 	if !found {
-		return nil, fmt.Errorf("NodeGroup `%s` does not exist", obj.Name)
+		return nil, errors.Errorf("NodeGroup `%s` does not exist", obj.Name)
 	}
 
 	existing, err := decodeNodeGroup(ng)

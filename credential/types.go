@@ -3,12 +3,12 @@ package credential
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/data/files"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -81,7 +81,7 @@ func (c CommonSpec) IsValid() (bool, error) {
 	if cf, ok := files.GetCredentialFormat(c.Provider); ok {
 		for _, f := range cf.Fields {
 			if _, found := c.Data[f.JSON]; !found {
-				return false, fmt.Errorf("missing key: %s", f.JSON)
+				return false, errors.Errorf("missing key: %s", f.JSON)
 			}
 		}
 	}

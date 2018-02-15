@@ -1,9 +1,8 @@
 package cloud
 
 import (
-	"errors"
-
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 )
 

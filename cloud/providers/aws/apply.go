@@ -23,7 +23,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	var acts []api.Action
 
 	if in.Status.Phase == "" {
-		return nil, fmt.Errorf("cluster `%s` is in unknown phase", cm.cluster.Name)
+		return nil, errors.Errorf("cluster `%s` is in unknown phase", cm.cluster.Name)
 	}
 	if in.Status.Phase == api.ClusterDeleted {
 		return nil, nil
@@ -47,7 +47,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	cm.cluster.Spec.Cloud.InstanceImage = cm.conn.cluster.Spec.Cloud.InstanceImage
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
-		return nil, fmt.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
+		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
 	}
 	if cm.cluster.Status.Phase == api.ClusterReady {
 		var kc kubernetes.Interface

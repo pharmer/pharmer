@@ -80,7 +80,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		updateService:  updateService,
 	}
 	if ok, msg := conn.IsUnauthorized(typed.ProjectID()); !ok {
-		return nil, fmt.Errorf("Credential %s does not have necessary authorization. Reason: %s.", cluster.Spec.CredentialName, msg)
+		return nil, errors.Errorf("Credential %s does not have necessary authorization. Reason: %s.", cluster.Spec.CredentialName, msg)
 	}
 	return &conn, nil
 }
@@ -351,7 +351,7 @@ func (conn *cloudConnector) getReserveIP() (bool, error) {
 		Logger(conn.ctx).Infof("Checking existence of reserved master ip %v", name)
 		if r1, err := conn.computeService.Addresses.Get(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Region, name).Do(); err == nil {
 			if r1.Status == "IN_USE" {
-				return true, fmt.Errorf("Found a static IP with name %v in use. Failed to reserve a new ip with the same name.", name)
+				return true, errors.Errorf("Found a static IP with name %v in use. Failed to reserve a new ip with the same name.", name)
 			}
 
 			Logger(conn.ctx).Debug("Found master IP was already reserved", r1, err)

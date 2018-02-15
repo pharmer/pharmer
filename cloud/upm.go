@@ -10,6 +10,7 @@ import (
 
 	semver "github.com/hashicorp/go-version"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -257,9 +258,9 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 	if len(masterInstances.Items) == 1 {
 		masterInstance = &masterInstances.Items[0]
 	} else if len(masterInstances.Items) > 1 {
-		return fmt.Errorf("multiple master found")
+		return errors.Errorf("multiple master found")
 	} else {
-		return fmt.Errorf("no master found")
+		return errors.Errorf("no master found")
 	}
 
 	desiredVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
@@ -279,11 +280,11 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 		minor := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String()
 		cni, found := kubernetesCNIVersions[minor]
 		if !found {
-			return fmt.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", desiredVersion)
+			return errors.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", desiredVersion)
 		}
 		prekVer, found := prekVersions[minor]
 		if !found {
-			return fmt.Errorf("pre-k version is unknown for Kubernetes version %s", desiredVersion)
+			return errors.Errorf("pre-k version is unknown for Kubernetes version %s", desiredVersion)
 		}
 
 		// Keep using forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
@@ -331,11 +332,11 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 			minor := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String()
 			cni, found := kubernetesCNIVersions[minor]
 			if !found {
-				return fmt.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", desiredVersion)
+				return errors.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", desiredVersion)
 			}
 			prekVer, found := prekVersions[minor]
 			if !found {
-				return fmt.Errorf("pre-k version is unknown for Kubernetes version %s", desiredVersion)
+				return errors.Errorf("pre-k version is unknown for Kubernetes version %s", desiredVersion)
 			}
 			// ref: https://stackoverflow.com/a/2831449/244009
 			steps := []string{

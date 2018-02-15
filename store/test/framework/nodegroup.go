@@ -1,10 +1,10 @@
 package framework
 
 import (
-	"fmt"
 	"time"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
@@ -49,7 +49,7 @@ func (c *nodeGroupInvocaton) CheckUpdate(ng *api.NodeGroup) error {
 	if ng.Spec.Nodes == int64(2) {
 		return nil
 	}
-	return fmt.Errorf("node group was not updated")
+	return errors.Errorf("node group was not updated")
 }
 
 func (c *nodeGroupInvocaton) UpdateStatus(ng *api.NodeGroup) error {
@@ -64,7 +64,7 @@ func (c *nodeGroupInvocaton) CheckUpdateStatus(ng *api.NodeGroup) error {
 	if ng.Status.Nodes == int64(2) {
 		return nil
 	}
-	return fmt.Errorf("node group status was not updated")
+	return errors.Errorf("node group status was not updated")
 }
 
 func (c *nodeGroupInvocaton) List() error {
@@ -73,7 +73,7 @@ func (c *nodeGroupInvocaton) List() error {
 		return err
 	}
 	if len(ngs) < 1 {
-		return fmt.Errorf("can't list node groups")
+		return errors.Errorf("can't list node groups")
 	}
 	return nil
 }

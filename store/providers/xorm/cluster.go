@@ -1,13 +1,12 @@
 package xorm
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/go-xorm/xorm"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,7 +28,7 @@ func (s *clusterXormStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 	for _, cluster := range clusters {
 		decode, err := decodeCluster(&cluster)
 		if err != nil {
-			return nil, fmt.Errorf("failed to list clusters. Reason: %v", err)
+			return nil, errors.Errorf("failed to list clusters. Reason: %v", err)
 		}
 		result = append(result, decode)
 	}
@@ -45,10 +44,10 @@ func (s *clusterXormStore) Get(name string) (*api.Cluster, error) {
 	cluster := &Cluster{Name: name}
 	found, err := s.engine.Get(cluster)
 	if err != nil {
-		return nil, fmt.Errorf("reason: %v", err)
+		return nil, errors.Errorf("reason: %v", err)
 	}
 	if !found {
-		return nil, fmt.Errorf("cluster `%s` does not exists", name)
+		return nil, errors.Errorf("cluster `%s` does not exists", name)
 	}
 	return decodeCluster(cluster)
 }
@@ -66,10 +65,10 @@ func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 
 	found, err := s.engine.Get(&Cluster{Name: obj.Name})
 	if err != nil {
-		return nil, fmt.Errorf("reason: %v", err)
+		return nil, errors.Errorf("reason: %v", err)
 	}
 	if found {
-		return nil, fmt.Errorf("cluster `%s` already exists", obj.Name)
+		return nil, errors.Errorf("cluster `%s` already exists", obj.Name)
 	}
 
 	obj.CreationTimestamp = metav1.Time{Time: time.Now()}
@@ -94,10 +93,10 @@ func (s *clusterXormStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 
 	found, err := s.engine.Get(&Cluster{Name: obj.Name})
 	if err != nil {
-		return nil, fmt.Errorf("reason: %v", err)
+		return nil, errors.Errorf("reason: %v", err)
 	}
 	if !found {
-		return nil, fmt.Errorf("cluster `%s` does not exists", obj.Name)
+		return nil, errors.Errorf("cluster `%s` does not exists", obj.Name)
 	}
 
 	cluster, err := encodeCluster(obj)
@@ -131,10 +130,10 @@ func (s *clusterXormStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 	cluster := &Cluster{Name: obj.Name}
 	found, err := s.engine.Get(cluster)
 	if err != nil {
-		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", obj.Name, err)
+		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 	if !found {
-		return nil, fmt.Errorf("cluster `%s` does not exist", obj.Name)
+		return nil, errors.Errorf("cluster `%s` does not exist", obj.Name)
 	}
 	existing, err := decodeCluster(cluster)
 	if err != nil {

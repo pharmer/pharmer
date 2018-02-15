@@ -35,7 +35,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.AWS{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, fmt.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
 	config := &_aws.Config{
@@ -52,7 +52,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		client:  lightsail.New(sess),
 	}
 	//if ok, msg := conn.IsUnauthorized(); !ok {
-	//	return nil, fmt.Errorf("credential %s does not have necessary authorization. Reason: %s", cluster.Spec.CredentialName, msg)
+	//	return nil, errors.Errorf("credential %s does not have necessary authorization. Reason: %s", cluster.Spec.CredentialName, msg)
 	//}
 	return &conn, nil
 }
@@ -282,7 +282,7 @@ func (conn *cloudConnector) instanceByID(instanceID string) (*lightsail.Instance
 		return host.Instance, nil
 	}
 
-	return nil, fmt.Errorf("Instance with %v not found", instanceID)
+	return nil, errors.Errorf("Instance with %v not found", instanceID)
 
 }
 
@@ -298,12 +298,12 @@ func instanceIDFromProviderID(providerID string) (string, error) {
 	split := strings.Split(providerID, "/")
 
 	if len(split) != 3 {
-		return "", fmt.Errorf("unexpected providerID format: %s, format should be: lightsail://12345", providerID)
+		return "", errors.Errorf("unexpected providerID format: %s, format should be: lightsail://12345", providerID)
 	}
 
 	// since split[0] is actually "lightsail:"
 	if strings.TrimSuffix(split[0], ":") != UID {
-		return "", fmt.Errorf("provider name from providerID should be lightsail: %s", providerID)
+		return "", errors.Errorf("provider name from providerID should be lightsail: %s", providerID)
 	}
 
 	return split[2], nil

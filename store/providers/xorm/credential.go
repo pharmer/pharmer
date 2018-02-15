@@ -1,13 +1,12 @@
 package xorm
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/go-xorm/xorm"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
@@ -28,7 +27,7 @@ func (s *credentialXormStore) List(opts metav1.ListOptions) ([]*api.Credential, 
 	for _, credential := range credentials {
 		decode, err := decodeCredential(&credential)
 		if err != nil {
-			return nil, fmt.Errorf("failed to list credentials. Reason: %v", err)
+			return nil, errors.Errorf("failed to list credentials. Reason: %v", err)
 		}
 		result = append(result, decode)
 	}
@@ -46,10 +45,10 @@ func (s *credentialXormStore) Get(name string) (*api.Credential, error) {
 
 	found, err := s.engine.Get(cred)
 	if err != nil {
-		return nil, fmt.Errorf("reason: %v", err)
+		return nil, errors.Errorf("reason: %v", err)
 	}
 	if !found {
-		return nil, fmt.Errorf("credential %s does not exists", name)
+		return nil, errors.Errorf("credential %s does not exists", name)
 	}
 
 	return decodeCredential(cred)
@@ -67,10 +66,10 @@ func (s *credentialXormStore) Create(obj *api.Credential) (*api.Credential, erro
 	}
 	found, err := s.engine.Get(&Credential{Name: obj.Name, DeletionTimestamp: nil})
 	if err != nil {
-		return nil, fmt.Errorf("reason: %v", err)
+		return nil, errors.Errorf("reason: %v", err)
 	}
 	if found {
-		return nil, fmt.Errorf("credential `%s` already exists", obj.Name)
+		return nil, errors.Errorf("credential `%s` already exists", obj.Name)
 	}
 	obj.CreationTimestamp = metav1.Time{Time: time.Now()}
 	cred, err := encodeCredential(obj)
@@ -100,7 +99,7 @@ func (s *credentialXormStore) Update(obj *api.Credential) (*api.Credential, erro
 		return nil, err
 	}
 	if !found {
-		return nil, fmt.Errorf("credential `%s` does not exist. Reason: %v", obj.Name, err)
+		return nil, errors.Errorf("credential `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
 	cred, err := encodeCredential(obj)

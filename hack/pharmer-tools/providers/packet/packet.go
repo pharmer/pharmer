@@ -133,7 +133,7 @@ func (g *PacketClient) GetInstanceTypes() ([]data.InstanceType, error) {
 				code, found := facilityCode[GetFacilityIdFromHerf(f.Href)]
 				if found {
 					zones = append(zones, code)
-					//return nil, fmt.Errorf("%v doesn't exit.",f.Href)
+					//return nil, errors.Errorf("%v doesn't exit.",f.Href)
 				}
 			}
 			ins.Zones = zones

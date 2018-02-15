@@ -3,12 +3,11 @@ package xorm
 import (
 	"crypto/rsa"
 	"crypto/x509"
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/go-xorm/xorm"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
@@ -33,10 +32,10 @@ func (s *certificateXormStore) Get(name string) (*x509.Certificate, *rsa.Private
 	}
 	found, err := s.engine.Get(certificate)
 	if err != nil {
-		return nil, nil, fmt.Errorf("reason: %v", err)
+		return nil, nil, errors.Errorf("reason: %v", err)
 	}
 	if !found {
-		return nil, nil, fmt.Errorf("certificate `%s` does not exist", name)
+		return nil, nil, errors.Errorf("certificate `%s` does not exist", name)
 	}
 	return decodeCertificate(certificate)
 }
@@ -61,7 +60,7 @@ func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *r
 		return err
 	}
 	if found {
-		return fmt.Errorf("certificate `%s` already exists", name)
+		return errors.Errorf("certificate `%s` already exists", name)
 	}
 	certificate, err = encodeCertificate(crt, key)
 	if err != nil {

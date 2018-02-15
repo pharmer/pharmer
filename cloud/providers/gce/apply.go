@@ -17,7 +17,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	var acts []api.Action
 
 	if in.Status.Phase == "" {
-		return nil, fmt.Errorf("cluster `%s` is in unknown phase", cm.cluster.Name)
+		return nil, errors.Errorf("cluster `%s` is in unknown phase", cm.cluster.Name)
 	}
 	if in.Status.Phase == api.ClusterDeleted {
 		return nil, nil
@@ -36,7 +36,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	cm.conn.namer = cm.namer
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
-		return nil, fmt.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
+		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
 	}
 	if cm.cluster.Status.Phase == api.ClusterReady {
 		var kc kubernetes.Interface
@@ -224,7 +224,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 			if !found {
-				err = fmt.Errorf("ReservedIP %s not found", reservedIP)
+				err = errors.Errorf("ReservedIP %s not found", reservedIP)
 				return
 			} else {
 				acts = append(acts, api.Action{

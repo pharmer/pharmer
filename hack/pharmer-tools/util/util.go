@@ -2,7 +2,6 @@ package util
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,12 +11,13 @@ import (
 
 	"github.com/appscode/go/runtime"
 	"github.com/pharmer/pharmer/data"
+	"github.com/pkg/errors"
 )
 
 func CreateDir(dir string) error {
 	err := os.MkdirAll(dir, 0777)
 	if err != nil {
-		return fmt.Errorf("failed to create dir `%s`. Reason: %v", dir, err)
+		return errors.Errorf("failed to create dir `%s`. Reason: %v", dir, err)
 	}
 	return nil
 }
@@ -25,7 +25,7 @@ func CreateDir(dir string) error {
 func ReadFile(name string) ([]byte, error) {
 	dataBytes, err := ioutil.ReadFile(name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read `%s`.Reason: %v", name, err)
+		return nil, errors.Errorf("failed to read `%s`.Reason: %v", name, err)
 	}
 	return dataBytes, nil
 }
@@ -33,7 +33,7 @@ func ReadFile(name string) ([]byte, error) {
 func WriteFile(filename string, bytes []byte) error {
 	err := ioutil.WriteFile(filename, bytes, 0666)
 	if err != nil {
-		return fmt.Errorf("failed to write `%s`. Reason: %v", filename, err)
+		return errors.Errorf("failed to write `%s`. Reason: %v", filename, err)
 	}
 	return nil
 }

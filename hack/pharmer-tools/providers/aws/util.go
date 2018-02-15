@@ -1,11 +1,10 @@
 package aws
 
 import (
-	"fmt"
-
 	"github.com/appscode/go/log"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/pharmer/pharmer/data"
+	"github.com/pkg/errors"
 )
 
 func ParseInstance(in *Ec2Instance) (*data.InstanceType, error) {
@@ -22,7 +21,7 @@ func ParseInstance(in *Ec2Instance) (*data.InstanceType, error) {
 	out.CPU = int(cpu)
 	out.RAM, err = in.Memory.Float64()
 	if err != nil {
-		return nil, fmt.Errorf("ParseInstance failed, intance %v. Reason: %v.", in.Instance_type, err)
+		return nil, errors.Errorf("ParseInstance failed, intance %v. Reason: %v.", in.Instance_type, err)
 	}
 	return out, nil
 }

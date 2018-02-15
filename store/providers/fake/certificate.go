@@ -3,12 +3,11 @@ package fake
 import (
 	"crypto/rsa"
 	"crypto/x509"
-	"errors"
-	"fmt"
 	"path/filepath"
 	"sync"
 
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 )
 
 type certificateFileStore struct {
@@ -46,12 +45,12 @@ func (s *certificateFileStore) Get(name string) (*x509.Certificate, *rsa.Private
 
 	crt, certOK := s.certs[s.certID(name)]
 	if !certOK {
-		return nil, nil, fmt.Errorf("certificate `%s.crt` does not exist", name)
+		return nil, nil, errors.Errorf("certificate `%s.crt` does not exist", name)
 	}
 
 	key, keyOK := s.keys[s.keyID(name)]
 	if !keyOK {
-		return nil, nil, fmt.Errorf("certificate key `%s.key` does not exist", name)
+		return nil, nil, errors.Errorf("certificate key `%s.key` does not exist", name)
 	}
 	return crt, key, nil
 }

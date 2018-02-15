@@ -1,13 +1,12 @@
 package fake
 
 import (
-	"errors"
-	"fmt"
 	"path/filepath"
 	"sync"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -48,7 +47,7 @@ func (s *credentialFileStore) Get(name string) (*api.Credential, error) {
 
 	existing, ok := s.container[s.resourceID(name)]
 	if !ok {
-		return nil, fmt.Errorf("credential `%s` does not exist", name)
+		return nil, errors.Errorf("credential `%s` does not exist", name)
 	}
 	return existing, nil
 }
@@ -69,7 +68,7 @@ func (s *credentialFileStore) Create(obj *api.Credential) (*api.Credential, erro
 
 	id := s.resourceID(obj.Name)
 	if _, ok := s.container[id]; ok {
-		return nil, fmt.Errorf("credential `%s` already exists", obj.Name)
+		return nil, errors.Errorf("credential `%s` already exists", obj.Name)
 	}
 	s.container[id] = obj
 	return obj, err
@@ -91,7 +90,7 @@ func (s *credentialFileStore) Update(obj *api.Credential) (*api.Credential, erro
 
 	id := s.resourceID(obj.Name)
 	if _, ok := s.container[id]; !ok {
-		return nil, fmt.Errorf("credential `%s` does not exist", obj.Name)
+		return nil, errors.Errorf("credential `%s` does not exist", obj.Name)
 	}
 	s.container[id] = obj
 	return obj, err

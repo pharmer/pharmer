@@ -1,13 +1,12 @@
 package fake
 
 import (
-	"errors"
-	"fmt"
 	"path/filepath"
 	"sync"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -52,7 +51,7 @@ func (s *nodeGroupFileStore) Get(name string) (*api.NodeGroup, error) {
 
 	item, itemOK := s.container[s.resourceID(name)]
 	if !itemOK {
-		return nil, fmt.Errorf("NodeGroup `%s` does not exist", name)
+		return nil, errors.Errorf("NodeGroup `%s` does not exist", name)
 	}
 	return item, nil
 }
@@ -76,7 +75,7 @@ func (s *nodeGroupFileStore) Create(obj *api.NodeGroup) (*api.NodeGroup, error) 
 
 	id := s.resourceID(obj.Name)
 	if _, ok := s.container[id]; ok {
-		return nil, fmt.Errorf("NodeGroup `%s` already exists", obj.Name)
+		return nil, errors.Errorf("NodeGroup `%s` already exists", obj.Name)
 	}
 
 	s.container[id] = obj
@@ -136,7 +135,7 @@ func (s *nodeGroupFileStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, e
 	id := s.resourceID(obj.Name)
 	existing, itemOK := s.container[id]
 	if !itemOK {
-		return nil, fmt.Errorf("NodeGroup `%s` does not exist", obj.Name)
+		return nil, errors.Errorf("NodeGroup `%s` does not exist", obj.Name)
 	}
 	existing.Status = obj.Status
 	s.container[id] = existing

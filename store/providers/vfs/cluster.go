@@ -3,14 +3,13 @@ package vfs
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/graymeta/stow"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -35,17 +34,17 @@ func (s *clusterFileStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 	for {
 		page, err := s.container.Browse(s.resourceHome()+"/", string(os.PathSeparator), cursor, pageSize)
 		if err != nil {
-			return nil, fmt.Errorf("failed to list clusters. Reason: %v", err)
+			return nil, errors.Errorf("failed to list clusters. Reason: %v", err)
 		}
 		for _, item := range page.Items {
 			r, err := item.Open()
 			if err != nil {
-				return nil, fmt.Errorf("failed to list clusters. Reason: %v", err)
+				return nil, errors.Errorf("failed to list clusters. Reason: %v", err)
 			}
 			var obj api.Cluster
 			err = json.NewDecoder(r).Decode(&obj)
 			if err != nil {
-				return nil, fmt.Errorf("failed to list clusters. Reason: %v", err)
+				return nil, errors.Errorf("failed to list clusters. Reason: %v", err)
 			}
 			result = append(result, &obj)
 			r.Close()
@@ -65,7 +64,7 @@ func (s *clusterFileStore) Get(name string) (*api.Cluster, error) {
 
 	item, err := s.container.Item(s.resourceID(name))
 	if err != nil {
-		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
+		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
 
 	r, err := item.Open()
@@ -96,7 +95,7 @@ func (s *clusterFileStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 	id := s.resourceID(obj.Name)
 	_, err = s.container.Item(id)
 	if err == nil {
-		return nil, fmt.Errorf("cluster `%s` already exists", obj.Name)
+		return nil, errors.Errorf("cluster `%s` already exists", obj.Name)
 	}
 
 	data, err := json.MarshalIndent(obj, "", "  ")
@@ -121,7 +120,7 @@ func (s *clusterFileStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 	id := s.resourceID(obj.Name)
 	_, err = s.container.Item(id)
 	if err != nil {
-		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", obj.Name, err)
+		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
 	data, err := json.MarshalIndent(obj, "", "  ")
@@ -154,7 +153,7 @@ func (s *clusterFileStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 
 	item, err := s.container.Item(id)
 	if err != nil {
-		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", obj.Name, err)
+		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
 	r, err := item.Open()

@@ -1,11 +1,11 @@
 package linode
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"
+	"github.com/pkg/errors"
 	"github.com/taoh/linodego"
 )
 
@@ -29,7 +29,7 @@ func ParseInstance(in *linodego.LinodePlan) (*data.InstanceType, error) {
 	var err error
 	out.RAM, err = util.MBToGB(int64(in.RAM))
 	if err != nil {
-		return nil, fmt.Errorf("Parse Instance failed. reason: %v", err)
+		return nil, errors.Errorf("Parse Instance failed. reason: %v", err)
 	}
 	return out, nil
 }

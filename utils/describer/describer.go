@@ -2,10 +2,10 @@ package describer
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kubernetes/pkg/printers"
 )
@@ -58,18 +58,18 @@ func (h *humanReadableDescriber) Handler(describeFunc interface{}) error {
 
 func (h *humanReadableDescriber) validateDescribeHandlerFunc(describeFunc reflect.Value) error {
 	if describeFunc.Kind() != reflect.Func {
-		return fmt.Errorf("invalid describe handler. %#v is not a function", describeFunc)
+		return errors.Errorf("invalid describe handler. %#v is not a function", describeFunc)
 	}
 	funcType := describeFunc.Type()
 	if funcType.NumIn() != 2 || funcType.NumOut() != 2 {
-		return fmt.Errorf("invalid describe handler." +
+		return errors.Errorf("invalid describe handler." +
 			"Must accept 2 parameters and return 2 value.")
 	}
 
 	if funcType.In(1) != reflect.TypeOf((*printers.DescriberSettings)(nil)) ||
 		funcType.Out(0) != reflect.TypeOf((string)("")) ||
 		funcType.Out(1) != reflect.TypeOf((*error)(nil)).Elem() {
-		return fmt.Errorf("invalid describe handler. The expected signature is: "+
+		return errors.Errorf("invalid describe handler. The expected signature is: "+
 			"func handler(item %v, describerSettings *printers.DescriberSettings) (string, error)", funcType.In(0))
 	}
 	return nil
@@ -87,5 +87,5 @@ func (h *humanReadableDescriber) Describe(obj runtime.Object, describerSettings 
 		return resultValue[0].Interface().(string), nil
 	}
 
-	return "", fmt.Errorf(`kubedb doesn't support: "%v"`, t)
+	return "", errors.Errorf(`kubedb doesn't support: "%v"`, t)
 }

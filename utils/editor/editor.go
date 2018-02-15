@@ -2,7 +2,6 @@ package editor
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pharmer/pharmer/utils"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/kubernetes/pkg/kubectl/util/term"
 )
@@ -89,7 +89,7 @@ func tempFile(prefix, suffix string) (f *os.File, err error) {
 // SIGQUIT, SIGTERM, and SIGINT will all be trapped.
 func (e Editor) Launch(path string) error {
 	if len(e.Args) == 0 {
-		return fmt.Errorf("no editor defined, can't open %s", path)
+		return errors.Errorf("no editor defined, can't open %s", path)
 	}
 	abs, err := filepath.Abs(path)
 	if err != nil {
@@ -104,10 +104,10 @@ func (e Editor) Launch(path string) error {
 	if err := (term.TTY{In: os.Stdin, TryDev: true}).Safe(cmd.Run); err != nil {
 		if err, ok := err.(*exec.Error); ok {
 			if err.Err == exec.ErrNotFound {
-				return fmt.Errorf("unable to launch the editor %q", strings.Join(e.Args, " "))
+				return errors.Errorf("unable to launch the editor %q", strings.Join(e.Args, " "))
 			}
 		}
-		return fmt.Errorf("there was a problem with the editor %q", strings.Join(e.Args, " "))
+		return errors.Errorf("there was a problem with the editor %q", strings.Join(e.Args, " "))
 	}
 	return nil
 }
@@ -214,6 +214,6 @@ func ManualStrip(file []byte) []byte {
 func ConditionalPreconditionFailedError(kind string) error {
 	str := utils.PreconditionSpecField[kind]
 	strList := strings.Join(str, "\n\t")
-	return fmt.Errorf(`At least one of the following was changed:
+	return errors.Errorf(`At least one of the following was changed:
 	%v`, strList)
 }

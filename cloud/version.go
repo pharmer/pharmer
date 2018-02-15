@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -60,7 +61,7 @@ func KubernetesReleaseVersion(version string) (string, error) {
 		// Re-validate received version and return.
 		return KubernetesReleaseVersion(body)
 	}
-	return "", fmt.Errorf("version %q doesn't match patterns for neither semantic version nor labels (stable, latest, ...)", version)
+	return "", errors.Errorf("version %q doesn't match patterns for neither semantic version nor labels (stable, latest, ...)", version)
 }
 
 // Internal helper: split version parts,
@@ -69,7 +70,7 @@ func splitVersion(version string) (string, string, error) {
 	var urlSuffix string
 	subs := kubeBucketPrefixes.FindAllStringSubmatch(version, 1)
 	if len(subs) != 1 || len(subs[0]) != 4 {
-		return "", "", fmt.Errorf("invalid version %q", version)
+		return "", "", errors.Errorf("invalid version %q", version)
 	}
 
 	switch {
@@ -87,15 +88,15 @@ func splitVersion(version string) (string, string, error) {
 func FetchFromURL(url string) (string, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", fmt.Errorf("unable to get URL %q: %s", url, err.Error())
+		return "", errors.Errorf("unable to get URL %q: %s", url, err.Error())
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unable to fetch file. URL: %q Status: %v", url, resp.Status)
+		return "", errors.Errorf("unable to fetch file. URL: %q Status: %v", url, resp.Status)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("unable to read content of URL %q: %s", url, err.Error())
+		return "", errors.Errorf("unable to read content of URL %q: %s", url, err.Error())
 	}
 	return strings.TrimSpace(string(body)), nil
 }
@@ -146,13 +147,13 @@ func (g *KubeVersionGetter) IsUpgradeRequested() (bool, error) {
 func (g *KubeVersionGetter) ClusterVersion() (string, *versionutil.Version, error) {
 	clusterVersionInfo, err := g.client.Discovery().ServerVersion()
 	if err != nil {
-		return "", nil, fmt.Errorf("Couldn't fetch cluster version from the API Server: %v", err)
+		return "", nil, errors.Errorf("Couldn't fetch cluster version from the API Server: %v", err)
 	}
 	fmt.Println(fmt.Sprintf("[upgrade/versions] Cluster version: %s", clusterVersionInfo.String()))
 
 	clusterVersion, err := versionutil.ParseSemantic(clusterVersionInfo.String())
 	if err != nil {
-		return "", nil, fmt.Errorf("Couldn't parse cluster version: %v", err)
+		return "", nil, errors.Errorf("Couldn't parse cluster version: %v", err)
 	}
 	return clusterVersionInfo.String(), clusterVersion, nil
 }
@@ -174,18 +175,18 @@ func (g *KubeVersionGetter) KubeadmVersion() (string, *versionutil.Version, erro
 		LabelSelector: selector.String(),
 	})
 	if err != nil {
-		return "", nil, fmt.Errorf("couldn't list master instances in cluster, Reason: %s", err)
+		return "", nil, errors.Errorf("couldn't list master instances in cluster, Reason: %s", err)
 	}
 	if len(nodes.Items) == 0 {
-		return "", nil, fmt.Errorf("couldn't list master instances in cluster")
+		return "", nil, errors.Errorf("couldn't list master instances in cluster")
 	}
 	verStr, found := nodes.Items[0].Annotations[api.KubeadmVersionKey]
 	if !found {
-		return "", nil, fmt.Errorf("master instance %s is missing annotation %s", nodes.Items[0].Name, api.KubeadmVersionKey)
+		return "", nil, errors.Errorf("master instance %s is missing annotation %s", nodes.Items[0].Name, api.KubeadmVersionKey)
 	}
 	kubeadmVersion, err := versionutil.ParseSemantic(verStr)
 	if err != nil {
-		return "", nil, fmt.Errorf("couldn't parse kubeadm version: %v", err)
+		return "", nil, errors.Errorf("couldn't parse kubeadm version: %v", err)
 	}
 	fmt.Println(fmt.Sprintf("[upgrade/versions] kubeadm version: %s", verStr))
 
@@ -204,12 +205,12 @@ func (g *KubeVersionGetter) KubeDNSVersion() (string, error) {
 		return "", err
 	}
 	if len(allDNS.Items) == 0 {
-		return "", fmt.Errorf("No DNS pod found")
+		return "", errors.Errorf("No DNS pod found")
 	}
 	dnsImage := allDNS.Items[0].Spec.Containers[0].Image
 	imageInfo := strings.Split(dnsImage, ":")
 	if len(imageInfo) != 2 {
-		return "", fmt.Errorf("Couldn't parse dns version")
+		return "", errors.Errorf("Couldn't parse dns version")
 	}
 	return imageInfo[1], nil
 }
@@ -218,7 +219,7 @@ func (g *KubeVersionGetter) KubeDNSVersion() (string, error) {
 func (g *KubeVersionGetter) VersionFromCILabel(ciVersionLabel, description string) (string, *versionutil.Version, error) {
 	versionStr, err := KubernetesReleaseVersion(ciVersionLabel)
 	if err != nil {
-		return "", nil, fmt.Errorf("Couldn't fetch latest %s version from the internet: %v", description, err)
+		return "", nil, errors.Errorf("Couldn't fetch latest %s version from the internet: %v", description, err)
 	}
 
 	if description != "" {
@@ -227,7 +228,7 @@ func (g *KubeVersionGetter) VersionFromCILabel(ciVersionLabel, description strin
 
 	ver, err := versionutil.ParseSemantic(versionStr)
 	if err != nil {
-		return "", nil, fmt.Errorf("Couldn't parse latest %s version: %v", description, err)
+		return "", nil, errors.Errorf("Couldn't parse latest %s version: %v", description, err)
 	}
 	return versionStr, ver, nil
 }
@@ -236,7 +237,7 @@ func (g *KubeVersionGetter) VersionFromCILabel(ciVersionLabel, description strin
 func (g *KubeVersionGetter) KubeletVersions() (map[string]uint32, error) {
 	nodes, err := g.client.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("couldn't list all nodes in cluster")
+		return nil, errors.Errorf("couldn't list all nodes in cluster")
 	}
 	return computeKubeletVersions(nodes.Items), nil
 }

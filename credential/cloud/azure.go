@@ -16,6 +16,7 @@ import (
 	"github.com/pborman/uuid"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/credential"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -31,13 +32,13 @@ func getSptFromDeviceFlow(oauthConfig adal.OAuthConfig, clientID, resource strin
 	oauthClient := &autorest.Client{}
 	deviceCode, err := adal.InitiateDeviceAuth(oauthClient, oauthConfig, clientID, resource)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to start device auth flow: %s", err)
+		return nil, errors.Errorf("Failed to start device auth flow: %s", err)
 	}
 	fmt.Println(*deviceCode.Message)
 
 	token, err := adal.WaitForUserCompletion(oauthClient, deviceCode)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to finish device auth flow: %s", err)
+		return nil, errors.Errorf("Failed to finish device auth flow: %s", err)
 	}
 
 	spt, err := adal.NewServicePrincipalTokenFromManualToken(
@@ -46,7 +47,7 @@ func getSptFromDeviceFlow(oauthConfig adal.OAuthConfig, clientID, resource strin
 		resource,
 		*token)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get oauth token from device flow: %v", err)
+		return nil, errors.Errorf("Failed to get oauth token from device flow: %v", err)
 	}
 	return spt, nil
 }

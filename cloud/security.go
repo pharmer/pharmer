@@ -4,10 +4,10 @@ import (
 	"context"
 	"crypto/rsa"
 	"crypto/x509"
-	"fmt"
 
 	"github.com/appscode/go/crypto/ssh"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pkg/errors"
 	"k8s.io/client-go/util/cert"
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
@@ -23,11 +23,11 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Co
 
 		caKey, err := cert.NewPrivateKey()
 		if err != nil {
-			return ctx, fmt.Errorf("failed to generate private key. Reason: %v", err)
+			return ctx, errors.Errorf("failed to generate private key. Reason: %v", err)
 		}
 		caCert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: cluster.Spec.CACertName}, caKey)
 		if err != nil {
-			return ctx, fmt.Errorf("failed to generate self-signed certificate. Reason: %v", err)
+			return ctx, errors.Errorf("failed to generate self-signed certificate. Reason: %v", err)
 		}
 
 		ctx = context.WithValue(ctx, paramCACert{}, caCert)
@@ -42,11 +42,11 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Co
 		cluster.Spec.FrontProxyCACertName = kubeadmconst.FrontProxyCACertAndKeyBaseName
 		frontProxyCAKey, err := cert.NewPrivateKey()
 		if err != nil {
-			return ctx, fmt.Errorf("failed to generate private key. Reason: %v", err)
+			return ctx, errors.Errorf("failed to generate private key. Reason: %v", err)
 		}
 		frontProxyCACert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: cluster.Spec.CACertName}, frontProxyCAKey)
 		if err != nil {
-			return ctx, fmt.Errorf("failed to generate self-signed certificate. Reason: %v", err)
+			return ctx, errors.Errorf("failed to generate self-signed certificate. Reason: %v", err)
 		}
 
 		ctx = context.WithValue(ctx, paramFrontProxyCACert{}, frontProxyCACert)
@@ -65,14 +65,14 @@ func LoadCACertificates(ctx context.Context, cluster *api.Cluster) (context.Cont
 
 	caCert, caKey, err := certStore.Get(cluster.Spec.CACertName)
 	if err != nil {
-		return ctx, fmt.Errorf("failed to get CA certificates. Reason: %v", err)
+		return ctx, errors.Errorf("failed to get CA certificates. Reason: %v", err)
 	}
 	ctx = context.WithValue(ctx, paramCACert{}, caCert)
 	ctx = context.WithValue(ctx, paramCAKey{}, caKey)
 
 	frontProxyCACert, frontProxyCAKey, err := certStore.Get(cluster.Spec.FrontProxyCACertName)
 	if err != nil {
-		return ctx, fmt.Errorf("failed to get front proxy CA certificates. Reason: %v", err)
+		return ctx, errors.Errorf("failed to get front proxy CA certificates. Reason: %v", err)
 	}
 	ctx = context.WithValue(ctx, paramFrontProxyCACert{}, frontProxyCACert)
 	ctx = context.WithValue(ctx, paramFrontProxyCAKey{}, frontProxyCAKey)
@@ -89,11 +89,11 @@ func CreateAdminCertificate(ctx context.Context) (*x509.Certificate, *rsa.Privat
 
 	adminKey, err := cert.NewPrivateKey()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate private key. Reason: %v", err)
+		return nil, nil, errors.Errorf("failed to generate private key. Reason: %v", err)
 	}
 	adminCert, err := cert.NewSignedCert(cfg, adminKey, CACert(ctx), CAKey(ctx))
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate server certificate. Reason: %v", err)
+		return nil, nil, errors.Errorf("failed to generate server certificate. Reason: %v", err)
 	}
 	return adminCert, adminKey, nil
 }
@@ -114,12 +114,12 @@ func CreateSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, e
 func LoadSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
 	publicKey, privateKey, err := Store(ctx).SSHKeys(cluster.Name).Get(cluster.Spec.Cloud.SSHKeyName)
 	if err != nil {
-		return ctx, fmt.Errorf("failed to get SSH key. Reason: %v", err)
+		return ctx, errors.Errorf("failed to get SSH key. Reason: %v", err)
 	}
 
 	protoSSH, err := ssh.ParseSSHKeyPair(string(publicKey), string(privateKey))
 	if err != nil {
-		return ctx, fmt.Errorf("failed to parse SSH key. Reason: %v", err)
+		return ctx, errors.Errorf("failed to parse SSH key. Reason: %v", err)
 	}
 	ctx = context.WithValue(ctx, paramSSHKey{}, protoSSH)
 	return ctx, nil

@@ -1,10 +1,10 @@
 package framework
 
 import (
-	"fmt"
 	"time"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -45,7 +45,7 @@ func (c *credentialInvocation) CheckUpdate(cred *api.Credential) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("credential was not updated")
+	return errors.Errorf("credential was not updated")
 }
 
 func (c *credentialInvocation) List() error {
@@ -54,7 +54,7 @@ func (c *credentialInvocation) List() error {
 		return err
 	}
 	if len(clusters) < 1 {
-		return fmt.Errorf("can't list crdentials")
+		return errors.Errorf("can't list crdentials")
 	}
 	return nil
 }

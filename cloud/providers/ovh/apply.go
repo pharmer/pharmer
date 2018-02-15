@@ -5,6 +5,7 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +18,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	var acts []api.Action
 
 	if in.Status.Phase == "" {
-		return nil, fmt.Errorf("cluster `%s` is in unknown phase", cm.cluster.Name)
+		return nil, errors.Errorf("cluster `%s` is in unknown phase", cm.cluster.Name)
 	}
 	if in.Status.Phase == api.ClusterDeleted {
 		return nil, nil
@@ -40,7 +41,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	Logger(cm.ctx).Infof("Found ovh instance image %v", cm.cluster.Spec.Cloud.InstanceImage)
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
-		return nil, fmt.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
+		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
 	}
 	if cm.cluster.Status.Phase == api.ClusterReady {
 		var kc kubernetes.Interface

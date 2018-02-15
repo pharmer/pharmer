@@ -5,6 +5,8 @@ import (
 	mrnd "math/rand"
 	"regexp"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 func GetKubeadmToken() string {
@@ -40,7 +42,7 @@ func RandStringRunes(n int) string {
 func ParseToken(s string) (string, string, error) {
 	split := TokenRegexp.FindStringSubmatch(s)
 	if len(split) != 3 {
-		return "", "", fmt.Errorf("token [%q] was not of form [%q]", s, TokenRegexpString)
+		return "", "", errors.Errorf("token [%q] was not of form [%q]", s, TokenRegexpString)
 	}
 	return split[1], split[2], nil
 }

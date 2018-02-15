@@ -2,7 +2,6 @@ package providers
 
 import (
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -19,6 +18,7 @@ import (
 	"github.com/pharmer/pharmer/hack/pharmer-tools/providers/scaleway"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/providers/vultr"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -80,7 +80,7 @@ func NewCloudProvider(opts *options.GenData) (CloudInterface, error) {
 		return scaleway.NewScalewayClient(opts.ScalewayToken, opts.ScalewayOrganization)
 		break
 	default:
-		return nil, fmt.Errorf("Valid/Supported provider name required")
+		return nil, errors.Errorf("Valid/Supported provider name required")
 	}
 	return nil, nil
 }

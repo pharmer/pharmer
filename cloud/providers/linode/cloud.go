@@ -2,7 +2,6 @@ package linode
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pharmer/pharmer/data/files"
+	"github.com/pkg/errors"
 	"github.com/taoh/linodego"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -29,7 +29,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.Linode{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, fmt.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
 	namer := namer{cluster: cluster}
@@ -339,12 +339,12 @@ func serverIDFromProviderID(providerID string) (int, error) {
 
 	split := strings.Split(providerID, "/")
 	if len(split) != 3 {
-		return 0, fmt.Errorf("unexpected providerID format: %s, format should be: digitalocean://12345", providerID)
+		return 0, errors.Errorf("unexpected providerID format: %s, format should be: digitalocean://12345", providerID)
 	}
 
 	// since split[0] is actually "digitalocean:"
 	if strings.TrimSuffix(split[0], ":") != UID {
-		return 0, fmt.Errorf("provider name from providerID should be digitalocean: %s", providerID)
+		return 0, errors.Errorf("provider name from providerID should be digitalocean: %s", providerID)
 	}
 
 	return strconv.Atoi(split[2])

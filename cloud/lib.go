@@ -2,13 +2,13 @@ package cloud
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/util/cert"
@@ -33,7 +33,7 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 
 	_, err := Store(ctx).Clusters().Get(cluster.Name)
 	if err == nil {
-		return nil, fmt.Errorf("cluster exists with name `%s`", cluster.Name)
+		return nil, errors.Errorf("cluster exists with name `%s`", cluster.Name)
 	}
 
 	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
@@ -113,7 +113,7 @@ func Delete(ctx context.Context, name string) (*api.Cluster, error) {
 
 	cluster, err := Store(ctx).Clusters().Get(name)
 	if err != nil {
-		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
+		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
 	cluster.DeletionTimestamp = &metav1.Time{Time: time.Now()}
 	cluster.Status.Phase = api.ClusterDeleting
@@ -130,12 +130,12 @@ func DeleteNG(ctx context.Context, clusterName, nodeGroupName string) error {
 	}
 
 	if _, err := Store(ctx).Clusters().Get(clusterName); err != nil {
-		return fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
+		return errors.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
 	}
 
 	nodeGroup, err := Store(ctx).NodeGroups(clusterName).Get(nodeGroupName)
 	if err != nil {
-		return fmt.Errorf(`nodegroup not found`)
+		return errors.Errorf(`nodegroup not found`)
 	}
 
 	if !nodeGroup.IsMaster() {
@@ -223,7 +223,7 @@ func Apply(ctx context.Context, opts *options.ApplyConfig) ([]api.Action, error)
 
 	cluster, err := Store(ctx).Clusters().Get(opts.ClusterName)
 	if err != nil {
-		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", opts.ClusterName, err)
+		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", opts.ClusterName, err)
 	}
 
 	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
@@ -241,13 +241,13 @@ func CheckForUpdates(ctx context.Context, name string) (string, error) {
 
 	cluster, err := Store(ctx).Clusters().Get(name)
 	if err != nil {
-		return "", fmt.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
+		return "", errors.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
 	if cluster.Status.Phase == "" {
-		return "", fmt.Errorf("cluster `%s` is in unknown phase", cluster.Name)
+		return "", errors.Errorf("cluster `%s` is in unknown phase", cluster.Name)
 	}
 	if cluster.Status.Phase != api.ClusterReady {
-		return "", fmt.Errorf("cluster `%s` is not ready", cluster.Name)
+		return "", errors.Errorf("cluster `%s` is not ready", cluster.Name)
 	}
 	if cluster.Status.Phase == api.ClusterDeleted {
 		return "", nil
@@ -286,7 +286,7 @@ func UpdateSpec(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error)
 
 	existing, err := Store(ctx).Clusters().Get(cluster.Name)
 	if err != nil {
-		return nil, fmt.Errorf("cluster `%s` does not exist. Reason: %v", cluster.Name, err)
+		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", cluster.Name, err)
 	}
 	cluster.Status = existing.Status
 	cluster.Generation = time.Now().UnixNano()

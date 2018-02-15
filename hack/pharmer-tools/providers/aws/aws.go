@@ -2,7 +2,6 @@ package aws
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"
+	"github.com/pkg/errors"
 )
 
 type AwsClient struct {
@@ -91,7 +91,7 @@ func (g *AwsClient) GetRegions() ([]data.Region, error) {
 		region.Zones = []string{}
 		for _, z := range zoneList.AvailabilityZones {
 			if *z.RegionName != region.Region {
-				return nil, fmt.Errorf("Wrong available zone for %v.", region.Region)
+				return nil, errors.Errorf("Wrong available zone for %v.", region.Region)
 			}
 			region.Zones = append(region.Zones, *z.ZoneName)
 		}

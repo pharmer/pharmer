@@ -2,7 +2,6 @@ package packet
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -177,12 +176,12 @@ func serverIDFromProviderID(providerID string) (string, error) {
 
 	split := strings.Split(providerID, "/")
 	if len(split) != 3 {
-		return "", fmt.Errorf("unexpected providerID format: %s, format should be: digitalocean://12345", providerID)
+		return "", errors.Errorf("unexpected providerID format: %s, format should be: digitalocean://12345", providerID)
 	}
 
 	// since split[0] is actually "digitalocean:"
 	if strings.TrimSuffix(split[0], ":") != UID {
-		return "", fmt.Errorf("provider name from providerID should be digitalocean: %s", providerID)
+		return "", errors.Errorf("provider name from providerID should be digitalocean: %s", providerID)
 	}
 
 	return split[2], nil

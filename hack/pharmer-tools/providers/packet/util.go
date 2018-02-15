@@ -1,13 +1,13 @@
 package packet
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/packethost/packngo"
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -63,7 +63,7 @@ func GetCpuCore(name string) (int, error) {
 	if core, found := NumOfCore[name]; found {
 		return core, nil
 	} else {
-		return 0, fmt.Errorf("Can't find number of core for %v.", name)
+		return 0, errors.Errorf("Can't find number of core for %v.", name)
 	}
 }
 
@@ -79,7 +79,7 @@ func RemoveUnitRetFloat64(in string) (float64, error) {
 		}
 		return util.MBToGB(val)
 	} else {
-		return 0, fmt.Errorf("Invalid unit: %v.", in)
+		return 0, errors.Errorf("Invalid unit: %v.", in)
 	}
 }
 func RemoveUnitRetInt(in string) (int, error) {

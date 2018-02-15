@@ -7,6 +7,7 @@ import (
 	_env "github.com/appscode/go/env"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -44,7 +45,7 @@ func (c *clusterInvocation) CheckUpdate(cluster *api.Cluster) error {
 	if cluster.Spec.KubernetesVersion == "v1.8.1" {
 		return nil
 	}
-	return fmt.Errorf("cluster was not updated")
+	return errors.Errorf("cluster was not updated")
 }
 
 func (c *clusterInvocation) UpdateStatus(cluster *api.Cluster) error {
@@ -57,7 +58,7 @@ func (c *clusterInvocation) CheckUpdateStatus(cluster *api.Cluster) error {
 	if cluster.Status.Phase == api.ClusterReady {
 		return nil
 	}
-	return fmt.Errorf("cluster status was not updated")
+	return errors.Errorf("cluster status was not updated")
 }
 func (c *clusterInvocation) List() error {
 	clusters, err := c.Storage.Clusters().List(metav1.ListOptions{})
@@ -65,7 +66,7 @@ func (c *clusterInvocation) List() error {
 		return err
 	}
 	if len(clusters) < 1 {
-		return fmt.Errorf("can't list clusters")
+		return errors.Errorf("can't list clusters")
 	}
 	return nil
 }

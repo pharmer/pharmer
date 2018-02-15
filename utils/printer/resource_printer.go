@@ -11,6 +11,7 @@ import (
 	"github.com/golang/glog"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/credential"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -94,17 +95,17 @@ func (h *HumanReadablePrinter) Handler(printFunc interface{}) error {
 
 func (h *HumanReadablePrinter) validatePrintHandlerFunc(printFunc reflect.Value) error {
 	if printFunc.Kind() != reflect.Func {
-		return fmt.Errorf("invalid print handler. %#v is not a function", printFunc)
+		return errors.Errorf("invalid print handler. %#v is not a function", printFunc)
 	}
 	funcType := printFunc.Type()
 	if funcType.NumIn() != 3 || funcType.NumOut() != 1 {
-		return fmt.Errorf("invalid print handler." +
+		return errors.Errorf("invalid print handler." +
 			"Must accept 3 parameters and return 1 value.")
 	}
 	if funcType.In(1) != reflect.TypeOf((*io.Writer)(nil)).Elem() ||
 		funcType.In(2) != reflect.TypeOf((*PrintOptions)(nil)).Elem() ||
 		funcType.Out(0) != reflect.TypeOf((*error)(nil)).Elem() {
-		return fmt.Errorf("invalid print handler. The expected signature is: "+
+		return errors.Errorf("invalid print handler. The expected signature is: "+
 			"func handler(obj %v, w io.Writer, options PrintOptions) error", funcType.In(0))
 	}
 	return nil
@@ -223,7 +224,7 @@ func (h *HumanReadablePrinter) PrintObj(obj runtime.Object, output io.Writer) er
 		return resultValue.Interface().(error)
 	}
 
-	return fmt.Errorf(`kubedb doesn't support: "%v"`, t)
+	return errors.Errorf(`kubedb doesn't support: "%v"`, t)
 }
 
 func (h *HumanReadablePrinter) HandledResources() []string {

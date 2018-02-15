@@ -1,9 +1,7 @@
 package printer
 
 import (
-	"errors"
-	"fmt"
-
+	"github.com/pkg/errors"
 	"k8s.io/kubernetes/pkg/printers"
 )
 
@@ -24,7 +22,7 @@ func NewPrinter(format string) (printers.ResourcePrinter, error) {
 	case "":
 		return humanReadablePrinter, nil
 	default:
-		return nil, fmt.Errorf("output format %q not recognized", format)
+		return nil, errors.Errorf("output format %q not recognized", format)
 	}
 }
 

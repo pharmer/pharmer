@@ -49,7 +49,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.AWS{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, fmt.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
 	}
 
 	config := &_aws.Config{
@@ -70,7 +70,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		s3:        _s3.New(sess),
 	}
 	if ok, msg := conn.IsUnauthorized(); !ok {
-		return nil, fmt.Errorf("credential %s does not have necessary authorization. Reason: %s", cluster.Spec.CredentialName, msg)
+		return nil, errors.Errorf("credential %s does not have necessary authorization. Reason: %s", cluster.Spec.CredentialName, msg)
 	}
 	return &conn, nil
 }
@@ -485,7 +485,7 @@ func (conn *cloudConnector) getSubnet() (bool, error) {
 		return false, err
 	}
 	if len(r1.Subnets) == 0 {
-		return false, fmt.Errorf("No subnet found")
+		return false, errors.Errorf("No subnet found")
 	}
 	conn.cluster.Status.Cloud.AWS.SubnetId = *r1.Subnets[0].SubnetId
 	existingCIDR := *r1.Subnets[0].CidrBlock
@@ -558,7 +558,7 @@ func (conn *cloudConnector) getInternetGateway() (bool, error) {
 		return false, err
 	}
 	if len(r1.InternetGateways) == 0 {
-		return false, fmt.Errorf("IGW not found")
+		return false, errors.Errorf("IGW not found")
 	}
 	conn.cluster.Status.Cloud.AWS.IGWId = *r1.InternetGateways[0].InternetGatewayId
 	Logger(conn.ctx).Infof("IGW %v found", conn.cluster.Status.Cloud.AWS.IGWId)
@@ -614,7 +614,7 @@ func (conn *cloudConnector) getRouteTable() (bool, error) {
 		return false, err
 	}
 	if len(r1.RouteTables) == 0 {
-		return false, fmt.Errorf("Route table not found")
+		return false, errors.Errorf("Route table not found")
 	}
 	conn.cluster.Status.Cloud.AWS.RouteTableId = *r1.RouteTables[0].RouteTableId
 	Logger(conn.ctx).Infof("Route table %v found", conn.cluster.Status.Cloud.AWS.RouteTableId)
@@ -2000,10 +2000,10 @@ func splitProviderID(providerId string) (string, error) {
 	}
 	url, err := url.Parse(providerId)
 	if err != nil {
-		return "", fmt.Errorf("invalid instance name (%s): %v", providerId, err)
+		return "", errors.Errorf("invalid instance name (%s): %v", providerId, err)
 	}
 	if url.Scheme != "aws" {
-		return "", fmt.Errorf("invalid scheme for AWS instance (%s)", providerId)
+		return "", errors.Errorf("invalid scheme for AWS instance (%s)", providerId)
 	}
 
 	awsID := ""
@@ -2020,7 +2020,7 @@ func splitProviderID(providerId string) (string, error) {
 	// i-12345678 and i-12345678abcdef01
 	// TODO: Regex match?
 	if awsID == "" || strings.Contains(awsID, "/") || !strings.HasPrefix(awsID, "i-") {
-		return "", fmt.Errorf("Invalid format for AWS instance (%s)", providerId)
+		return "", errors.Errorf("Invalid format for AWS instance (%s)", providerId)
 	}
 
 	return awsID, nil

@@ -25,7 +25,7 @@ func init() {
 			log.Debugf("Connecting to %v db on host %v with user %v", dbCfg.DbName, dbCfg.Host, dbCfg.User)
 			engine, err := newPGEngine(dbCfg.User, dbCfg.Password, dbCfg.Host, dbCfg.Port, dbCfg.DbName)
 			if err != nil {
-				return nil, fmt.Errorf("failed to connect xorm storage. Reason %v", err)
+				return nil, errors.Errorf("failed to connect xorm storage. Reason %v", err)
 			}
 			return New(engine), nil
 		}

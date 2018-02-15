@@ -1,9 +1,8 @@
 package options
 
 import (
-	"errors"
-
 	"github.com/appscode/go/flags"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

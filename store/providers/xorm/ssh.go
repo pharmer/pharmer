@@ -1,11 +1,9 @@
 package xorm
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/go-xorm/xorm"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
@@ -30,7 +28,7 @@ func (s *sshKeyXormStore) Get(name string) ([]byte, []byte, error) {
 	}
 	found, err := s.engine.Get(sshKey)
 	if !found {
-		return nil, nil, fmt.Errorf("ssh key `%s` for cluster `%s` not found", name, s.cluster)
+		return nil, nil, errors.Errorf("ssh key `%s` for cluster `%s` not found", name, s.cluster)
 	}
 	if err != nil {
 		return nil, nil, err
@@ -54,7 +52,7 @@ func (s *sshKeyXormStore) Create(name string, pubKey, privKey []byte) error {
 	}
 	found, err := s.engine.Get(sshKey)
 	if found {
-		return fmt.Errorf("ssh key `%s` for cluster `%s` already exists", name, s.cluster)
+		return errors.Errorf("ssh key `%s` for cluster `%s` already exists", name, s.cluster)
 	}
 	if err != nil {
 		return err

@@ -3,7 +3,6 @@ package cmds
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -18,6 +17,7 @@ import (
 	"github.com/pharmer/pharmer/utils"
 	"github.com/pharmer/pharmer/utils/editor"
 	"github.com/pharmer/pharmer/utils/printer"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/mergepatch"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
@@ -161,7 +161,7 @@ func editCluster(ctx context.Context, opts *options.ClusterEditConfig, original 
 
 			if containsError {
 				if bytes.Equal(editor.StripComments(editedDiff), editor.StripComments(edited)) {
-					return editor.PreservedFile(fmt.Errorf("%s", "Edit cancelled, no valid changes were saved."), file, errOut)
+					return editor.PreservedFile(errors.Errorf("%s", "Edit cancelled, no valid changes were saved."), file, errOut)
 				}
 			}
 

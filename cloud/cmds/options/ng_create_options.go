@@ -1,11 +1,11 @@
 package options
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/appscode/go/flags"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
