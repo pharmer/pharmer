@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/appscode/go/errors"
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -116,5 +116,5 @@ func GetExistingContextVersion(ctx context.Context, cluster *api.Cluster, sku st
 			return nl.GetInt64(api.NodeLabelKey_ContextVersion), nil
 		}
 	}
-	return int64(0), errors.New("Context version not found").Err()
+	return int64(0), errors.New("Context version not found")
 }

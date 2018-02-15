@@ -3,9 +3,9 @@ package inspector
 import (
 	"fmt"
 
-	"github.com/appscode/go/errors"
 	"github.com/appscode/go/term"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -46,13 +46,13 @@ func (i *Inspector) CheckHelthStatus() error {
 func (i *Inspector) checkRBAC() error {
 	if _, err := i.client.Discovery().ServerResourcesForGroupVersion("authentication.k8s.io/v1beta1"); err != nil {
 		term.Errorln("RBAC authentication is not enabled")
-		return errors.FromErr(err).Err()
+		return errors.WithStack(err)
 	} else {
 		term.Successln("RBAC authentication is enabled")
 	}
 	if _, err := i.client.Discovery().ServerResourcesForGroupVersion("authorization.k8s.io/v1beta1"); err != nil {
 		term.Errorln("RBAC authorization is not enabled")
-		return errors.FromErr(err).Err()
+		return errors.WithStack(err)
 	} else {
 		term.Successln("RBAC authorization is enabled")
 	}

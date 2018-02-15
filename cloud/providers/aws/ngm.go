@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/appscode/go/errors"
+	. "github.com/appscode/go/context"
 	. "github.com/appscode/go/types"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -147,10 +148,10 @@ func (igm *AWSNodeGroupManager) createNodeGroup(ng *api.NodeGroup) error {
 	launchConfig := igm.namer.LaunchConfigName(ng.Spec.Template.Spec.SKU)
 
 	if err := igm.conn.createLaunchConfiguration(launchConfig, igm.token, ng); err != nil {
-		return errors.FromErr(err).WithContext(igm.ctx).Err()
+		return errors.Wrap(err, ID(igm.ctx))
 	}
 	if err := igm.conn.createAutoScalingGroup(ng.Name, launchConfig, ng.Spec.Nodes); err != nil {
-		return errors.FromErr(err).WithContext(igm.ctx).Err()
+		return errors.Wrap(err, ID(igm.ctx))
 	}
 	return nil
 }
@@ -184,7 +185,7 @@ func (igm *AWSNodeGroupManager) deleteNodeWithDrain(nodes []core.Node) error {
 func (igm *AWSNodeGroupManager) updateNodeGroup(ng *api.NodeGroup, size int64) error {
 	group, err := igm.conn.describeGroupInfo(ng.Name)
 	if err != nil {
-		return errors.FromErr(err).WithContext(igm.ctx).Err()
+		return errors.Wrap(err, ID(igm.ctx))
 	}
 	if size > *group.AutoScalingGroups[0].MaxSize {
 		_, err := igm.conn.autoscale.UpdateAutoScalingGroup(&autoscaling.UpdateAutoScalingGroupInput{
@@ -194,7 +195,7 @@ func (igm *AWSNodeGroupManager) updateNodeGroup(ng *api.NodeGroup, size int64) e
 			DesiredCapacity:      Int64P(size),
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(igm.ctx).Err()
+			return errors.Wrap(err, ID(igm.ctx))
 		}
 
 	} else if size < *group.AutoScalingGroups[0].MinSize {
@@ -204,7 +205,7 @@ func (igm *AWSNodeGroupManager) updateNodeGroup(ng *api.NodeGroup, size int64) e
 			DesiredCapacity:      Int64P(size),
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(igm.ctx).Err()
+			return errors.Wrap(err, ID(igm.ctx))
 		}
 	} else {
 		_, err := igm.conn.autoscale.UpdateAutoScalingGroup(&autoscaling.UpdateAutoScalingGroupInput{
@@ -212,7 +213,7 @@ func (igm *AWSNodeGroupManager) updateNodeGroup(ng *api.NodeGroup, size int64) e
 			DesiredCapacity:      Int64P(size),
 		})
 		if err != nil {
-			return errors.FromErr(err).WithContext(igm.ctx).Err()
+			return errors.Wrap(err, ID(igm.ctx))
 		}
 	}
 

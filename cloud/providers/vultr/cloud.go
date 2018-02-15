@@ -7,10 +7,11 @@ import (
 	"strings"
 
 	gv "github.com/JamesClonk/vultr/lib"
-	"github.com/appscode/go/errors"
+	. "github.com/appscode/go/context"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -30,7 +31,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.Vultr{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
 	}
 
 	return &cloudConnector{
@@ -44,7 +45,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 func (conn *cloudConnector) detectInstanceImage() error {
 	oses, err := conn.client.GetOS()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	for _, os := range oses {
 		if os.Arch == "x64" && os.Family == "ubuntu" && strings.HasPrefix(os.Name, "Ubuntu 16.04 x64") {
@@ -53,7 +54,7 @@ func (conn *cloudConnector) detectInstanceImage() error {
 		}
 	}
 
-	return errors.New("can't find Debian 8 image").WithContext(conn.ctx).Err()
+	return errors.Errorf("[%s] can't find Debian 8 image", ID(conn.ctx))
 }
 
 /*
@@ -98,7 +99,7 @@ func (conn *cloudConnector) importPublicKey() error {
 	Logger(conn.ctx).Infof("Adding SSH public key")
 	resp, err := conn.client.CreateSSHKey(conn.cluster.Spec.Cloud.SSHKeyName, string(SSHKey(conn.ctx).PublicKey))
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	conn.cluster.Status.Cloud.SShKeyExternalID = resp.ID
 	Logger(conn.ctx).Infof("New ssh key with name %v and id %v created", conn.cluster.Spec.Cloud.SSHKeyName, resp.ID)
@@ -155,7 +156,7 @@ func (conn *cloudConnector) createReserveIP() (string, error) {
 func (conn *cloudConnector) assignReservedIP(ip, serverId string) error {
 	err := conn.client.AttachReservedIP(ip, serverId)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Reserved ip %v assigned to %v", ip, serverId)
 	return nil
@@ -165,7 +166,7 @@ func (conn *cloudConnector) releaseReservedIP(ip string) error {
 	Logger(conn.ctx).Debugln("Deleting Floating IP", ip)
 	err := conn.client.DestroyReservedIP(ip)
 	if err != nil {
-		return errors.FromErr(err).Err()
+		return errors.WithStack(err)
 	}
 	Logger(conn.ctx).Infof("Reserved IP %v deleted", ip)
 	return nil
@@ -287,7 +288,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	// load again to get IP address assigned
 	host, err := conn.client.GetServer(resp.ID)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, errors.Wrap(err, ID(conn.ctx))
 	}
 	node := api.NodeInfo{
 		Name:       host.Name,

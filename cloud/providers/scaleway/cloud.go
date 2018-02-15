@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	. "github.com/appscode/go/context"
 	sshtools "github.com/appscode/go/crypto/ssh"
-	"github.com/appscode/go/errors"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
+	"github.com/pkg/errors"
 	scw "github.com/scaleway/scaleway-cli/pkg/api"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -29,12 +30,12 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.Scaleway{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
 	}
 
 	client, err := scw.NewScalewayAPI(typed.Organization(), typed.Token(), "pharmer", cluster.Spec.Cloud.Zone)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(ctx).Err()
+		return nil, errors.Wrap(err, ID(ctx))
 	}
 
 	return &cloudConnector{
@@ -47,7 +48,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 func (conn *cloudConnector) getInstanceImage() (string, error) {
 	imgs, err := conn.client.GetMarketPlaceImages("")
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", errors.Wrap(err, ID(conn.ctx))
 	}
 	for _, img := range imgs.Images {
 		if img.Name == "Ubuntu Xenial" {
@@ -60,14 +61,14 @@ func (conn *cloudConnector) getInstanceImage() (string, error) {
 			}
 		}
 	}
-	return "", errors.New("Ubuntu Xenial not found for Scaleway").WithContext(conn.ctx).Err()
+	return "", errors.Errorf("[%s] Ubuntu Xenial not found for Scaleway", ID(conn.ctx))
 }
 
 // http://devhub.scaleway.com/#/bootscripts
 func (conn *cloudConnector) DetectBootscript() error {
 	scripts, err := conn.client.GetBootscripts()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	for _, s := range *scripts {
 		// x86_64 4.8.3 docker #1
@@ -76,7 +77,7 @@ func (conn *cloudConnector) DetectBootscript() error {
 			return nil
 		}
 	}
-	return errors.New("Docker bootscript not found for Scaleway").WithContext(conn.ctx).Err()
+	return errors.Errorf("[%s] Docker bootscript not found for Scaleway", ID(conn.ctx))
 }
 
 func (conn *cloudConnector) waitForInstance(id, status string) error {
@@ -168,7 +169,7 @@ func (conn *cloudConnector) createReserveIP() (string, error) {
 	Logger(conn.ctx).Infof("Reserving Floating IP")
 	fip, err := conn.client.NewIP()
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("New floating ip %v reserved", fip.IP)
 	return fip.IP.ID, nil
@@ -177,13 +178,13 @@ func (conn *cloudConnector) createReserveIP() (string, error) {
 func (conn *cloudConnector) releaseReservedIP(ip string) error {
 	ips, err := conn.client.GetIPS()
 	if err != nil {
-		return errors.FromErr(err).Err()
+		return errors.WithStack(err)
 	}
 	for _, i := range ips.IPS {
 		if i.Address == ip && i.Server == nil {
 			err = conn.client.DeleteIP(ip)
 			if err != nil {
-				return errors.FromErr(err).Err()
+				return errors.WithStack(err)
 			}
 		}
 	}
@@ -247,21 +248,21 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		return true, nil
 	})
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, errors.Wrap(err, ID(conn.ctx))
 	}
 	err = conn.storeStartupScript(ng, serverID, token)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, errors.Wrap(err, ID(conn.ctx))
 	}
 	err = conn.client.PostServerAction(serverID, "poweron")
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Instance %v created", name)
 
 	err = conn.waitForInstance(serverID, "running")
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, errors.Wrap(err, ID(conn.ctx))
 	}
 
 	host, err := conn.client.GetServer(serverID)

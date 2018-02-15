@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appscode/go/errors"
 	"github.com/appscode/go/log"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -25,7 +25,7 @@ type RemoteBashExecutor struct{}
 func (e *RemoteBashExecutor) Execute(config *rest.Config, method string, url *url.URL, cmds []string) (string, error) {
 	exec, err := remotecommand.NewSPDYExecutor(config, method, url)
 	if err != nil {
-		return "", errors.FromErr(err).WithMessage("failed to create executor").Err()
+		return "", errors.Wrap(err, "failed to create executor")
 	}
 	stdIn := newStringReader(cmds)
 	DefaultWriter.Flush()
@@ -37,7 +37,7 @@ func (e *RemoteBashExecutor) Execute(config *rest.Config, method string, url *ur
 	})
 	if err != nil {
 		log.Errorln("Error in exec", err)
-		return "", errors.FromErr(err).WithMessage("failed to exec").Err()
+		return "", errors.Wrap(err, "failed to exec")
 	}
 	return DefaultWriter.Output(), nil
 }
@@ -56,7 +56,7 @@ type ExecOptions struct {
 func (p *ExecOptions) Run(retry int) (string, error) {
 	err := p.Validate()
 	if err != nil {
-		return "", errors.FromErr(err).WithMessage("failed to validate").Err()
+		return "", errors.Wrap(err, "failed to validate")
 	}
 	var pod *core.Pod
 	for i := 0; i < retry; i++ {
@@ -72,7 +72,7 @@ func (p *ExecOptions) Run(retry int) (string, error) {
 		}
 	}
 	if pod.Status.Phase != core.PodRunning || err != nil {
-		return "", errors.Newf("pod %s is not running and cannot execute commands; current phase is %s", p.PodName, pod.Status.Phase).Err()
+		return "", errors.Errorf("pod %s is not running and cannot execute commands; current phase is %s", p.PodName, pod.Status.Phase)
 	}
 
 	req := p.Client.CoreV1().RESTClient().Post().
@@ -92,13 +92,13 @@ func (p *ExecOptions) Run(retry int) (string, error) {
 
 func (p *ExecOptions) Validate() error {
 	if len(p.PodName) == 0 {
-		return errors.New("pod name must be specified").Err()
+		return errors.New("pod name must be specified")
 	}
 	if len(p.Command) == 0 {
-		return errors.New("you must specify at least one command for the container").Err()
+		return errors.New("you must specify at least one command for the container")
 	}
 	if p.Executor == nil || p.Client == nil || p.Config == nil {
-		return errors.New("client, client config, and executor must be provided").Err()
+		return errors.New("client, client config, and executor must be provided")
 	}
 	return nil
 }

@@ -34,7 +34,7 @@ func (s *nodeGroupFileStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, er
 	result := make([]*api.NodeGroup, 0)
 	cursor := stow.CursorStart
 	for {
-		page, err := s.container.Browse(s.resourceHome() + string(os.PathSeparator), string(os.PathSeparator), cursor, pageSize)
+		page, err := s.container.Browse(s.resourceHome()+string(os.PathSeparator), string(os.PathSeparator), cursor, pageSize)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list node groups. Reason: %v", err)
 		}

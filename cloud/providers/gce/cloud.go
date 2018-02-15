@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	. "github.com/appscode/go/context"
 	"github.com/appscode/go/crypto/rand"
-	"github.com/appscode/go/errors"
 	"github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
+	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 	rupdate "google.golang.org/api/replicapoolupdater/v1beta1"
@@ -46,7 +47,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.GCE{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
 	}
 
 	cluster.Spec.Cloud.Project = typed.ProjectID()
@@ -55,20 +56,20 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		compute.DevstorageReadWriteScope,
 		rupdate.ReplicapoolScope)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(ctx).Err()
+		return nil, errors.Wrap(err, ID(ctx))
 	}
 	client := conf.Client(context.Background())
 	computeService, err := compute.New(client)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(ctx).Err()
+		return nil, errors.Wrap(err, ID(ctx))
 	}
 	storageService, err := gcs.New(client)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(ctx).Err()
+		return nil, errors.Wrap(err, ID(ctx))
 	}
 	updateService, err := rupdate.New(client)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(ctx).Err()
+		return nil, errors.Wrap(err, ID(ctx))
 	}
 
 	conn := cloudConnector{
@@ -97,7 +98,7 @@ func (conn *cloudConnector) deleteInstance(name string) error {
 	Logger(conn.ctx).Info("Deleting instance...")
 	r, err := conn.computeService.Instances.Delete(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, name).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	conn.waitForZoneOperation(r.Name)
 	return nil
@@ -166,12 +167,12 @@ func (conn *cloudConnector) importPublicKey() error {
 		},
 	}).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 
 	err = conn.waitForGlobalOperation(r1.Name)
 	if err != nil {
-		errors.FromErr(err).WithContext(conn.ctx).Err()
+		errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Debug("Imported SSH key")
 	Logger(conn.ctx).Info("SSH key imported")
@@ -196,7 +197,7 @@ func (conn *cloudConnector) ensureNetworks() error {
 	}).Do()
 	Logger(conn.ctx).Debug("Created new network", r2, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("New network %v is created", defaultNetwork)
 
@@ -252,7 +253,7 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 		}).Do()
 		Logger(conn.ctx).Debug("Created firewall rule", r2, err)
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return errors.Wrap(err, ID(conn.ctx))
 		}
 		Logger(conn.ctx).Infof("Firewall rule %v created", ruleInternal)
 	}
@@ -274,7 +275,7 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 		}).Do()
 		Logger(conn.ctx).Debug("Created firewall rule", r4, err)
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return errors.Wrap(err, ID(conn.ctx))
 		}
 		Logger(conn.ctx).Infof("Firewall rule %v created", ruleSSH)
 	}
@@ -301,7 +302,7 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 		}).Do()
 		Logger(conn.ctx).Debug("Created master and configuring firewalls", r6, err)
 		if err != nil {
-			return errors.FromErr(err).WithContext(conn.ctx).Err()
+			return errors.Wrap(err, ID(conn.ctx))
 		}
 		Logger(conn.ctx).Info("Master created and firewalls configured")
 	}
@@ -332,11 +333,11 @@ func (conn *cloudConnector) createDisk(name, diskType string, sizeGb int64) (str
 
 	Logger(conn.ctx).Debug("Created master disk", r1, err)
 	if err != nil {
-		return name, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return name, errors.Wrap(err, ID(conn.ctx))
 	}
 	err = conn.waitForZoneOperation(r1.Name)
 	if err != nil {
-		return name, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return name, errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Blank disk of type %v created before creating the master VM", dType)
 	return name, nil
@@ -373,12 +374,12 @@ func (conn *cloudConnector) reserveIP() (string, error) {
 	r2, err := conn.computeService.Addresses.Insert(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Region, &compute.Address{Name: name}).Do()
 	Logger(conn.ctx).Debug("Reserved master IP", r2, err)
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", errors.Wrap(err, ID(conn.ctx))
 	}
 
 	err = conn.waitForRegionOperation(r2.Name)
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Master ip %v reserved", name)
 	if r3, err := conn.computeService.Addresses.Get(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Region, name).Do(); err == nil {
@@ -512,7 +513,7 @@ func (conn *cloudConnector) createMasterIntance(ng *api.NodeGroup) (string, erro
 	r1, err := conn.computeService.Instances.Insert(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, instance).Do()
 	Logger(conn.ctx).Debug("Created master instance", r1, err)
 	if err != nil {
-		return r1.Name, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return r1.Name, errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Master instance of type %v in zone %v using persistent disk %v created", machineType, zone, pdSrc)
 
@@ -538,18 +539,18 @@ func (conn *cloudConnector) listInstances(instanceGroup string) ([]*api.NodeInfo
 	}).Do()
 	Logger(conn.ctx).Debug("Retrieved instance", r1, err)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, errors.Wrap(err, ID(conn.ctx))
 	}
 
 	for _, item := range r1.Items {
 		name := item.Instance[strings.LastIndex(item.Instance, "/")+1:]
 		r2, err := conn.computeService.Instances.Get(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, name).Do()
 		if err != nil {
-			return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+			return nil, errors.Wrap(err, ID(conn.ctx))
 		}
 		instance, err := conn.newKubeInstance(r2)
 		if err != nil {
-			return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+			return nil, errors.Wrap(err, ID(conn.ctx))
 		}
 		//		instance.Spec.Role = api.RoleNode
 		instances = append(instances, instance)
@@ -586,7 +587,7 @@ func (conn *cloudConnector) newKubeInstance(r1 *compute.Instance) (*api.NodeInfo
 			return &i, nil
 		}
 	}
-	return nil, errors.New("Failed to convert gcloud instance to KubeInstance.").WithContext(conn.ctx).Err() //stackerr.New("Failed to convert gcloud instance to KubeInstance.")
+	return nil, errors.Errorf("[%s] failed to convert gcloud instance to KubeInstance.", ID(conn.ctx))
 }
 
 func (conn *cloudConnector) getNodeFirewallRule() (bool, error) {
@@ -630,7 +631,7 @@ func (conn *cloudConnector) createNodeFirewallRule() (string, error) {
 	}).Do()
 	Logger(conn.ctx).Debug("Created firewall rule", r1, err)
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Node firewall rule %v created", name)
 	return r1.Name, nil
@@ -733,7 +734,7 @@ func (conn *cloudConnector) createNodeInstanceTemplate(ng *api.NodeGroup, token 
 	r1, err := conn.computeService.InstanceTemplates.Insert(conn.cluster.Spec.Cloud.Project, tpl).Do()
 	Logger(conn.ctx).Debug("Create instance template called", r1, err)
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Node instance template %v created for sku %v", templateName, ng.Spec.Template.Spec.SKU)
 	return r1.Name, nil
@@ -751,7 +752,7 @@ func (conn *cloudConnector) createNodeGroup(ng *api.NodeGroup) (string, error) {
 	}).Do()
 	Logger(conn.ctx).Debug("Create instance group called", r1, err)
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Instance group %v created with %v nodes of %v sku", ng.Name, ng.Spec.Nodes, ng.Spec.Template.Spec.SKU)
 	return r1.Name, nil
@@ -772,7 +773,7 @@ func (conn *cloudConnector) createNodeGroup(ng *api.NodeGroup) (string, error) {
 	}).Do()
 	Logger(conn.ctx).Debug("Create auto scaler called", r1, err)
 	if err != nil {
-		return "", errors.FromErr(err).WithContext(conn.ctx).Err()
+		return "", errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Auto scaler %v for instance group %v created", ng.Name, target)
 	return r1.Name, nil
@@ -781,19 +782,19 @@ func (conn *cloudConnector) createNodeGroup(ng *api.NodeGroup) (string, error) {
 func (conn *cloudConnector) deleteOnlyNodeGroup(instanceGroupName, template string) error {
 	_, err := conn.computeService.InstanceGroupManagers.ListManagedInstances(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 
 	r1, err := conn.computeService.InstanceGroupManagers.Delete(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	operation := r1.Name
 	conn.waitForZoneOperation(operation)
 	Logger(conn.ctx).Infof("Instance group %v is deleted", instanceGroupName)
 	Logger(conn.ctx).Infof("Instance template %v is deleting", template)
 	if err = conn.deleteInstanceTemplate(template); err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Instance template %v is deleted", template)
 	return nil
@@ -803,7 +804,7 @@ func (conn *cloudConnector) deleteOnlyNodeGroup(instanceGroupName, template stri
 func (conn *cloudConnector) deleteInstanceTemplate(template string) error {
 	op, err := conn.computeService.InstanceTemplates.Delete(conn.cluster.Spec.Cloud.Project, template).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	return conn.waitForGlobalOperation(op.Name)
 }
@@ -829,19 +830,19 @@ func (conn *cloudConnector) deleteGroupInstances(ng *api.NodeGroup, instance str
 func (conn *cloudConnector) addNodeIntoGroup(ng *api.NodeGroup, size int64) error {
 	_, err := conn.computeService.InstanceGroupManagers.ListManagedInstances(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, ng.Name).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	//sz := int64(len(r.ManagedInstances))
 	resp, err := conn.computeService.InstanceGroupManagers.Resize(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, ng.Name, size).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	conn.waitForZoneOperation(resp.Name)
 	fmt.Println(resp.Name)
 	Logger(conn.ctx).Infof("Instance group %v resized", ng.Name)
 	/*err = WaitForReadyNodes(conn.ctx, size-sz)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}*/
 	return nil
 }
@@ -849,7 +850,7 @@ func (conn *cloudConnector) addNodeIntoGroup(ng *api.NodeGroup, size int64) erro
 func (conn *cloudConnector) deleteMaster() error {
 	r2, err := conn.computeService.Instances.Delete(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, conn.namer.MasterName()).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	operation := r2.Name
 	conn.waitForZoneOperation(operation)
@@ -862,13 +863,13 @@ func (conn *cloudConnector) deleteDisk() error {
 	masterDisk := conn.namer.MasterPDName()
 	r6, err := conn.computeService.Disks.Delete(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, masterDisk).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Debugf("Master Disk response %v", r6)
 	time.Sleep(5 * time.Second)
 	r7, err := conn.computeService.Disks.List(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	for i := range r7.Items {
 		s := strings.Split(r7.Items[i].Name, "-")
@@ -876,7 +877,7 @@ func (conn *cloudConnector) deleteDisk() error {
 
 			r, err := conn.computeService.Disks.Delete(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, r7.Items[i].Name).Do()
 			if err != nil {
-				return errors.FromErr(err).WithContext(conn.ctx).Err()
+				return errors.Wrap(err, ID(conn.ctx))
 			}
 			Logger(conn.ctx).Infof("Disk %v deleted, response %v", r7.Items[i].Name, r.Status)
 			time.Sleep(5 * time.Second)
@@ -889,7 +890,7 @@ func (conn *cloudConnector) deleteDisk() error {
 func (conn *cloudConnector) deleteRoutes() error {
 	r1, err := conn.computeService.Routes.List(conn.cluster.Spec.Cloud.Project).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	for i := range r1.Items {
 		routeName := r1.Items[i].Name
@@ -897,7 +898,7 @@ func (conn *cloudConnector) deleteRoutes() error {
 			fmt.Println(routeName)
 			r2, err := conn.computeService.Routes.Delete(conn.cluster.Spec.Cloud.Project, routeName).Do()
 			if err != nil {
-				return errors.FromErr(err).WithContext(conn.ctx).Err()
+				return errors.Wrap(err, ID(conn.ctx))
 			}
 			Logger(conn.ctx).Infof("Route %v deleted, response %v", routeName, r2.Status)
 		}
@@ -910,7 +911,7 @@ func (conn *cloudConnector) deleteFirewalls() error {
 	name := conn.cluster.Name + "-node-all"
 	r1, err := conn.computeService.Firewalls.Delete(conn.cluster.Spec.Cloud.Project, name).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Firewalls %v deleted, response %v", name, r1.Status)
 	//cluster.Spec.waitForGlobalOperation(name)
@@ -918,7 +919,7 @@ func (conn *cloudConnector) deleteFirewalls() error {
 	ruleHTTPS := conn.namer.MasterName() + "-https"
 	r2, err := conn.computeService.Firewalls.Delete(conn.cluster.Spec.Cloud.Project, ruleHTTPS).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Firewalls %v deleted, response %v", ruleHTTPS, r2.Status)
 	//cluster.Spec.waitForGlobalOperation(ruleHTTPS)
@@ -931,16 +932,16 @@ func (conn *cloudConnector) releaseReservedIP() error {
 	name := conn.namer.ReserveIPName()
 	r1, err := conn.computeService.Addresses.Get(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Region, name).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Releasing reserved master ip %v", r1.Address)
 	r2, err := conn.computeService.Addresses.Delete(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Region, name).Do()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	err = conn.waitForRegionOperation(r2.Name)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Master ip %v released", r1.Address)
 	return nil
@@ -963,15 +964,15 @@ func (conn *cloudConnector) getExistingInstanceTemplate(ng *api.NodeGroup) (stri
 func (conn *cloudConnector) updateNodeGroupTemplate(ng *api.NodeGroup, token string) error {
 	op, err := conn.createNodeInstanceTemplate(ng, token)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	err = conn.waitForGlobalOperation(op)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	oldInstanceTemplate, err := conn.getExistingInstanceTemplate(ng)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 
 	newInstanceTemplate := &compute.InstanceGroupManagersSetInstanceTemplateRequest{
@@ -987,7 +988,7 @@ func (conn *cloudConnector) updateNodeGroupTemplate(ng *api.NodeGroup, token str
 
 	err = conn.deleteInstanceTemplate(oldInstanceTemplate)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 
 	return nil

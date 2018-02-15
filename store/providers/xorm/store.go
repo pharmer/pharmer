@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/appscode/go/errors"
 	"github.com/appscode/go/log"
 	"github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
 	_ "github.com/lib/pq"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -69,7 +69,7 @@ func newPGEngine(user, password, host string, port int64, dbName string) (*xorm.
 		user, password, host, port, dbName)
 	engine, err := xorm.NewEngine("postgres", cnnstr)
 	if err != nil {
-		return nil, errors.FromErr(err).Err()
+		return nil, errors.WithStack(err)
 	}
 	engine.SetMaxIdleConns(0)
 	engine.DB().SetConnMaxLifetime(10 * time.Minute)

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/appscode/go/errors"
+	. "github.com/appscode/go/context"
 	. "github.com/appscode/go/types"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -15,6 +15,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -173,7 +174,7 @@ func (conn *cloudConnector) assignReservedIP(instanceName string) error {
 		InstanceName: StringP(instanceName),
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Reserved ip %v assigned to droplet %v", conn.cluster.Name, instanceName)
 	return nil
@@ -185,7 +186,7 @@ func (conn *cloudConnector) releaseReservedIP() error {
 	})
 	Logger(conn.ctx).Debugln("DO response", resp, " errors", err)
 	if err != nil {
-		return errors.FromErr(err).Err()
+		return errors.WithStack(err)
 	}
 	Logger(conn.ctx).Infof("Floating ip %v deleted", conn.cluster.Name)
 	return nil

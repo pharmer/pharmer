@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/appscode/go/errors"
+	. "github.com/appscode/go/context"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -296,7 +297,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		if !dryRun {
 			if err = cm.conn.setupSecurityGroups(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
-				err = errors.FromErr(err).WithContext(cm.ctx).Err()
+				err = errors.Wrap(err, ID(cm.ctx))
 				return
 			}
 		}
@@ -314,7 +315,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	var nodeGroups []*api.NodeGroup
 	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
-		err = errors.FromErr(err).WithContext(cm.ctx).Err()
+		err = errors.Wrap(err, ID(cm.ctx))
 		return
 	}
 	masterNG, err := FindMasterNodeGroup(nodeGroups)
@@ -358,7 +359,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			masterServer, err = cm.conn.startMaster(cm.namer.MasterName(), masterNG)
 			if err != nil {
 				cm.cluster.Status.Reason = err.Error()
-				err = errors.FromErr(err).WithContext(cm.ctx).Err()
+				err = errors.Wrap(err, ID(cm.ctx))
 				return acts, err
 			}
 			if masterServer.PrivateIP != "" {
@@ -477,7 +478,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		return
 	}
 	if !found {
-		err = errors.Newf("VPC %v not found for Cluster %v", cm.cluster.Status.Cloud.AWS.VpcId, cm.cluster.Name).WithContext(cm.ctx).Err()
+		err = errors.Errorf("[%s] VPC %v not found for Cluster %v", ID(cm.ctx), cm.cluster.Status.Cloud.AWS.VpcId, cm.cluster.Name)
 		return
 	}
 
