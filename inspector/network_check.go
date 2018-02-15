@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appscode/go/errors"
 	"github.com/appscode/go/term"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
@@ -26,7 +26,7 @@ const (
 func (i *Inspector) getNodes() (*core.NodeList, error) {
 	nodes := &core.NodeList{}
 	if err := i.client.CoreV1().RESTClient().Get().Resource("nodes").Do().Into(nodes); err != nil {
-		return nodes, errors.FromErr(err).Err()
+		return nodes, errors.WithStack(err)
 	}
 	return nodes, nil
 }
@@ -54,7 +54,7 @@ func (i *Inspector) runNodeExecutor(podName, podIp, namespace, containerName str
 		time.Sleep(5 * time.Second)
 		retry--
 	}
-	return errors.New("Network is not ok from", podName, "to", podIp).Err()
+	return errors.Errorf("Network is not ok from", podName, "to", podIp)
 }
 
 func (i *Inspector) runMasterExecutor(masterNode core.Node, podIp string) error {
@@ -109,7 +109,7 @@ func (i *Inspector) InstallNginxService() (string, error) {
 		},
 	}
 	if _, err := i.client.CoreV1().Services(defaultNamespace).Create(svc); err != nil {
-		return "", errors.FromErr(err).Err()
+		return "", errors.WithStack(err)
 	}
 	var service *core.Service
 	//attempt := 0

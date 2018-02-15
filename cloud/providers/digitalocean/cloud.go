@@ -8,11 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appscode/go/errors"
+	. "github.com/appscode/go/context"
 	"github.com/digitalocean/godo"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
+	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -32,7 +33,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.DigitalOcean{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
 	}
 	oauthClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: typed.Token(),
@@ -183,7 +184,7 @@ func (conn *cloudConnector) createReserveIP() (string, error) {
 func (conn *cloudConnector) assignReservedIP(ip string, dropletID int) error {
 	_, _, err := conn.client.FloatingIPActions.Assign(context.TODO(), ip, dropletID)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
 	return nil
@@ -193,7 +194,7 @@ func (conn *cloudConnector) releaseReservedIP(ip string) error {
 	resp, err := conn.client.FloatingIPs.Delete(context.TODO(), ip)
 	Logger(conn.ctx).Debugln("DO response", resp, " errors", err)
 	if err != nil {
-		return errors.FromErr(err).Err()
+		return errors.WithStack(err)
 	}
 	Logger(conn.ctx).Infof("Floating ip %v deleted", ip)
 	return nil

@@ -3,9 +3,10 @@ package gce
 import (
 	"fmt"
 
-	"github.com/appscode/go/errors"
+	. "github.com/appscode/go/context"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -146,7 +147,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	var nodeGroups []*api.NodeGroup
 	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
-		err = errors.FromErr(err).WithContext(cm.ctx).Err()
+		err = errors.Wrap(err, ID(cm.ctx))
 		return
 	}
 	var masterNG *api.NodeGroup
@@ -243,7 +244,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	// needed for master start-up config
 	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		err = errors.FromErr(err).WithContext(cm.ctx).Err()
+		err = errors.Wrap(err, ID(cm.ctx))
 		return
 	}
 
@@ -290,7 +291,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			kc, err = cm.GetAdminClient()
 			if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
 				cm.cluster.Status.Reason = err.Error()
-				err = errors.FromErr(err).WithContext(cm.ctx).Err()
+				err = errors.Wrap(err, ID(cm.ctx))
 				return acts, err
 			}
 
@@ -342,7 +343,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 	// needed for node start-up config to get master_internal_ip
 	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		err = errors.FromErr(err).WithContext(cm.ctx).Err()
+		err = errors.Wrap(err, ID(cm.ctx))
 		return
 	}
 
@@ -356,12 +357,12 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 			// Use zone operation to wait and block.
 			if op2, err := cm.conn.createNodeFirewallRule(); err != nil {
 				cm.cluster.Status.Reason = err.Error()
-				err = errors.FromErr(err).WithContext(cm.ctx).Err()
+				err = errors.Wrap(err, ID(cm.ctx))
 				return acts, err
 			} else {
 				if err = cm.conn.waitForGlobalOperation(op2); err != nil {
 					cm.cluster.Status.Reason = err.Error()
-					err = errors.FromErr(err).WithContext(cm.ctx).Err()
+					err = errors.Wrap(err, ID(cm.ctx))
 					return acts, err
 				}
 			}

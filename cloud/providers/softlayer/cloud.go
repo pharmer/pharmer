@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/appscode/go/errors"
 	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pharmer/pharmer/data/files"
+	"github.com/pkg/errors"
 	"github.com/softlayer/softlayer-go/datatypes"
 	"github.com/softlayer/softlayer-go/services"
 	"github.com/softlayer/softlayer-go/session"
@@ -33,7 +33,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.Softlayer{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
 	}
 
 	sess := session.New(typed.Username(), typed.APIKey())
@@ -248,9 +248,9 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	}
 	success, err := conn.virtualServiceClient.Id(id).DeleteObject()
 	if err != nil {
-		return errors.FromErr(err).Err()
+		return errors.WithStack(err)
 	} else if !success {
-		return errors.New("Error deleting virtual guest").Err()
+		return errors.New("Error deleting virtual guest")
 	}
 	Logger(conn.ctx).Infof("Droplet %v deleted", id)
 	return nil

@@ -16,11 +16,12 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/appscode/go/errors"
+	. "github.com/appscode/go/context"
 	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -56,18 +57,18 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
 	}
 
 	baseURI := azure.PublicCloud.ResourceManagerEndpoint
 	config, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, typed.TenantID())
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(ctx).Err()
+		return nil, errors.Wrap(err, ID(ctx))
 	}
 
 	spt, err := adal.NewServicePrincipalToken(*config, typed.ClientID(), typed.ClientSecret(), baseURI)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(ctx).Err()
+		return nil, errors.Wrap(err, ID(ctx))
 	}
 
 	client := autorest.NewClientWithUserAgent(fmt.Sprintf("Azure-SDK-for-Go/%s", compute.Version()))
@@ -271,7 +272,7 @@ func (conn *cloudConnector) createNetworkSecurityGroup() (network.SecurityGroup,
 func (conn *cloudConnector) getSubnetID(vn *network.VirtualNetwork) (network.Subnet, error) {
 	n := &network.VirtualNetwork{}
 	if vn.Name == n.Name {
-		return network.Subnet{}, errors.New("Virtualnetwork not found").Err()
+		return network.Subnet{}, errors.New("Virtualnetwork not found")
 	}
 	return conn.subnetsClient.Get(conn.namer.ResourceGroupName(), *vn.Name, conn.namer.SubnetName(), "")
 }
@@ -484,7 +485,7 @@ func (conn *cloudConnector) GetNodeGroup(instanceGroup string) (bool, map[string
 	existingNGs := make(map[string]*api.NodeInfo)
 	vm, err := conn.vmClient.List(conn.namer.ResourceGroupName())
 	if err != nil {
-		return false, existingNGs, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return false, existingNGs, errors.Wrap(err, ID(conn.ctx))
 	}
 	for _, i := range *vm.Value {
 		name := *i.Name
@@ -494,7 +495,7 @@ func (conn *cloudConnector) GetNodeGroup(instanceGroup string) (bool, map[string
 			pip, _ := conn.getPublicIP(conn.namer.PublicIPName(name))
 			instance, err := conn.newKubeInstance(i, nic, pip)
 			if err != nil {
-				return flag, existingNGs, errors.FromErr(err).WithContext(conn.ctx).Err()
+				return flag, existingNGs, errors.Wrap(err, ID(conn.ctx))
 			}
 			existingNGs[*i.Name] = instance
 		}
@@ -534,7 +535,7 @@ func (conn *cloudConnector) createNetworkInterface(name string, sg network.Secur
 	}
 	if alloc == network.Static {
 		if internalIP == "" {
-			return network.Interface{}, errors.New("No private IP provided for Static allocation.").WithContext(conn.ctx).Err()
+			return network.Interface{}, errors.Errorf("[%s] No private IP provided for Static allocation", ID(conn.ctx))
 		}
 		(*req.IPConfigurations)[0].PrivateIPAddress = StringP(internalIP)
 	}
@@ -684,7 +685,7 @@ func (conn *cloudConnector) newKubeInstance(vm compute.VirtualMachine, nic netwo
 	}
 	typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", conn.cluster.Spec.CredentialName, err)
+		return nil, errors.Wrapf(err, "credential %s is invalid", conn.cluster.Spec.CredentialName)
 	}
 
 	i := api.NodeInfo{
@@ -703,17 +704,17 @@ func (conn *cloudConnector) StartNode(nodeName, token string, as compute.Availab
 
 	nodePIP, err := conn.createPublicIP(conn.namer.PublicIPName(nodeName), network.Dynamic)
 	if err != nil {
-		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return ki, errors.Wrap(err, ID(conn.ctx))
 	}
 
 	nodeNIC, err := conn.createNetworkInterface(conn.namer.NetworkInterfaceName(nodeName), sg, sn, network.Dynamic, "", nodePIP)
 	if err != nil {
-		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return ki, errors.Wrap(err, ID(conn.ctx))
 	}
 
 	sa, err := conn.getStorageAccount()
 	if err != nil {
-		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return ki, errors.Wrap(err, ID(conn.ctx))
 	}
 
 	script, err := conn.renderStartupScript(ng, token)
@@ -723,17 +724,17 @@ func (conn *cloudConnector) StartNode(nodeName, token string, as compute.Availab
 
 	nodeVM, err := conn.createVirtualMachine(nodeNIC, as, sa, nodeName, script, ng.Spec.Template.Spec.SKU)
 	if err != nil {
-		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return ki, errors.Wrap(err, ID(conn.ctx))
 	}
 
 	nodePIP, err = conn.getPublicIP(conn.namer.PublicIPName(nodeName))
 	if err != nil {
-		return ki, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return ki, errors.Wrap(err, ID(conn.ctx))
 	}
 
 	ki, err = conn.newKubeInstance(nodeVM, nodeNIC, nodePIP)
 	if err != nil {
-		return &api.NodeInfo{}, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return &api.NodeInfo{}, errors.Wrap(err, ID(conn.ctx))
 	}
 	return ki, nil
 }
@@ -741,22 +742,22 @@ func (conn *cloudConnector) StartNode(nodeName, token string, as compute.Availab
 func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
 	as, err := conn.getAvailabilitySet()
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, errors.Wrap(err, ID(conn.ctx))
 	}
 
 	vn, err := conn.getVirtualNetwork()
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, errors.Wrap(err, ID(conn.ctx))
 	}
 
 	sn, err := conn.getSubnetID(&vn)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, errors.Wrap(err, ID(conn.ctx))
 	}
 
 	sg, err := conn.getNetworkSecurityGroup()
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(conn.ctx).Err()
+		return nil, errors.Wrap(err, ID(conn.ctx))
 	}
 	return conn.StartNode(name, token, as, sg, sn, ng)
 }

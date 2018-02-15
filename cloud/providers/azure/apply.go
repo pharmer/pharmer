@@ -6,10 +6,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
 	"github.com/Azure/azure-sdk-for-go/arm/network"
 	armstorage "github.com/Azure/azure-sdk-for-go/arm/storage"
-	"github.com/appscode/go/errors"
+	. "github.com/appscode/go/context"
 	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -41,7 +42,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 
 	// Common stuff
 	if err = cm.conn.detectUbuntuImage(); err != nil {
-		return nil, errors.FromErr(err).WithContext(cm.ctx).Err()
+		return nil, errors.Wrap(err, ID(cm.ctx))
 	}
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
@@ -269,7 +270,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		if !dryRun {
 			if masterPIP, err = cm.conn.createPublicIP(cm.namer.PublicIPName(cm.namer.MasterName()), network.Static); err != nil {
 				cm.cluster.Status.Reason = err.Error()
-				errors.FromErr(err).WithContext(cm.ctx).Err()
+				errors.Wrap(err, ID(cm.ctx))
 				return
 			}
 			cm.cluster.Status.ReservedIPs = append(cm.cluster.Status.ReservedIPs, api.ReservedIP{
@@ -294,7 +295,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	// needed for master start-up config
 	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
-		errors.FromErr(err).WithContext(cm.ctx).Err()
+		errors.Wrap(err, ID(cm.ctx))
 		return
 	}
 
@@ -329,7 +330,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		if !dryRun {
 			if err = cm.conn.createNetworkSecurityRule(&sg); err != nil {
 				cm.cluster.Status.Reason = err.Error()
-				errors.FromErr(err).WithContext(cm.ctx).Err()
+				errors.Wrap(err, ID(cm.ctx))
 				return
 			}
 		}

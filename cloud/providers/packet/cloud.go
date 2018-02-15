@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/appscode/go/errors"
+	. "github.com/appscode/go/context"
 	"github.com/packethost/packngo"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -27,7 +28,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.Packet{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
 	}
 	// TODO: FixIt Project ID
 	cluster.Spec.Cloud.Project = typed.ProjectID()
@@ -194,7 +195,7 @@ func (conn *cloudConnector) reboot(id string) error {
 	Logger(conn.ctx).Infof("Rebooting instance %v", id)
 	_, err := conn.client.Devices.Reboot(id)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	return nil
 }

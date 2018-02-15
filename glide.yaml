@@ -91,9 +91,9 @@ import:
 - package: github.com/grpc-ecosystem/grpc-gateway
   repo: https://github.com/appscode/grpc-gateway.git
   vcs: git
-  version: v1.2.2-ac
+  version: v1.3.1-ac
 - package: google.golang.org/grpc
-  version: v1.3.0
+  version: v1.9.2
 - package: github.com/lib/pq
 - package: github.com/go-xorm/builder
 - package: github.com/go-xorm/core

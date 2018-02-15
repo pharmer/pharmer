@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/appscode/go/errors"
+	. "github.com/appscode/go/context"
 	. "github.com/appscode/go/types"
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
@@ -19,6 +19,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -41,7 +42,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.Ovh{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
 	}
 
 	opts := gophercloud.AuthOptions{
@@ -53,7 +54,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 
 	provider, err := openstack.AuthenticatedClient(opts)
 	if err != nil {
-		return nil, errors.New().WithMessagef("Credential %s is not authenticated. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Wrapf(err, "credential %s is not authenticated", cluster.Spec.CredentialName)
 	}
 
 	computeClient, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
@@ -293,7 +294,7 @@ func (conn *cloudConnector) importPublicKey() error {
 	}
 	resp, err := keypairs.Create(conn.computeClient, opts).Extract()
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	conn.cluster.Status.Cloud.SShKeyExternalID = resp.Name
 	Logger(conn.ctx).Infof("New ssh key with name %v and id %v created", conn.cluster.Spec.Cloud.SSHKeyName, resp.Name)

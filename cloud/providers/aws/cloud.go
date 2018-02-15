@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appscode/go/errors"
+	. "github.com/appscode/go/context"
 	stringutil "github.com/appscode/go/strings"
 	. "github.com/appscode/go/types"
 	_aws "github.com/aws/aws-sdk-go/aws"
@@ -25,6 +25,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -796,14 +797,14 @@ func (conn *cloudConnector) detectSecurityGroups() error {
 	var err error
 	if conn.cluster.Status.Cloud.AWS.MasterSGId == "" {
 		if conn.cluster.Status.Cloud.AWS.MasterSGId, ok, err = conn.getSecurityGroupId(conn.cluster.Spec.Cloud.AWS.MasterSGName); !ok {
-			return errors.New("Could not detect Kubernetes master security group.  Make sure you've launched a cluster with appctl").WithContext(conn.ctx).Err()
+			return errors.Errorf("[%s] could not detect Kubernetes master security group.  Make sure you've launched a cluster with appctl", ID(conn.ctx))
 		} else {
 			Logger(conn.ctx).Infof("Master security group %v with id %v detected", conn.cluster.Spec.Cloud.AWS.MasterSGName, conn.cluster.Status.Cloud.AWS.MasterSGId)
 		}
 	}
 	if conn.cluster.Status.Cloud.AWS.NodeSGId == "" {
 		if conn.cluster.Status.Cloud.AWS.NodeSGId, ok, err = conn.getSecurityGroupId(conn.cluster.Spec.Cloud.AWS.NodeSGName); !ok {
-			return errors.New("Could not detect Kubernetes node security group.  Make sure you've launched a cluster with appctl").WithContext(conn.ctx).Err()
+			return errors.Errorf("[%s] could not detect Kubernetes node security group.  Make sure you've launched a cluster with appctl", ID(conn.ctx))
 		} else {
 			Logger(conn.ctx).Infof("Node security group %v with id %v detected", conn.cluster.Spec.Cloud.AWS.NodeSGName, conn.cluster.Status.Cloud.AWS.NodeSGId)
 		}
@@ -923,7 +924,7 @@ func (conn *cloudConnector) startMaster(name string, ng *api.NodeGroup) (*api.No
 		}
 		err = conn.assignIPToInstance(reservedIP, masterInstanceID)
 		if err != nil {
-			return nil, errors.FromErr(err).WithMessage("failed to assign ip").WithContext(conn.ctx).Err()
+			return nil, errors.Wrapf(err, "[%s] failed to assign ip", ID(conn.ctx))
 		}
 		conn.cluster.Status.APIAddresses = append(conn.cluster.Status.APIAddresses, core.NodeAddress{
 			Type:    core.NodeExternalIP,
@@ -1959,11 +1960,11 @@ func (conn *cloudConnector) updateLaunchConfigurationTemplate(ng *api.NodeGroup,
 	newConfigurationTemplate := conn.namer.LaunchConfigName(ng.Spec.Template.Spec.SKU)
 
 	if err := conn.createLaunchConfiguration(newConfigurationTemplate, token, ng); err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	oldConfigurationTemplate, err := conn.getExistingLaunchConfigurationTemplate(ng)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 
 	fmt.Println("Updating autoscalling group")
@@ -1972,12 +1973,12 @@ func (conn *cloudConnector) updateLaunchConfigurationTemplate(ng *api.NodeGroup,
 		LaunchConfigurationName: StringP(newConfigurationTemplate),
 	})
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 
 	err = conn.deleteLaunchConfiguration(oldConfigurationTemplate)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	return nil
 }
