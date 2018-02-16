@@ -65,6 +65,7 @@ CLOUDS = [
     'azure',
     'digitalocean',
     'gce',
+    'gke',
     'hetzner',
     'linode',
     'ovh',
