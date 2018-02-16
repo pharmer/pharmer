@@ -32,7 +32,6 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return nil, err
 	}
-	cm.conn.namer = cm.namer
 
 	if cm.cluster.Status.Phase == api.ClusterPending {
 		a, err := cm.applyCreate(dryRun)
@@ -135,7 +134,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		return
 	}
 	for _, ng := range nodeGroups {
-		igm := NewGKENodeGroupManager(cm.ctx, cm.conn, cm.namer, ng)
+		igm := NewGKENodeGroupManager(cm.ctx, cm.conn, ng)
 		var a2 []api.Action
 		a2, err = igm.Apply(dryRun)
 		if err != nil {

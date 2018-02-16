@@ -10,14 +10,13 @@ import (
 )
 
 type GKENodeGroupManager struct {
-	ctx   context.Context
-	conn  *cloudConnector
-	namer namer
-	ng    *api.NodeGroup
+	ctx  context.Context
+	conn *cloudConnector
+	ng   *api.NodeGroup
 }
 
-func NewGKENodeGroupManager(ctx context.Context, conn *cloudConnector, namer namer, ng *api.NodeGroup) *GKENodeGroupManager {
-	return &GKENodeGroupManager{ctx: ctx, conn: conn, namer: namer, ng: ng}
+func NewGKENodeGroupManager(ctx context.Context, conn *cloudConnector, ng *api.NodeGroup) *GKENodeGroupManager {
+	return &GKENodeGroupManager{ctx: ctx, conn: conn, ng: ng}
 }
 
 func (igm *GKENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {

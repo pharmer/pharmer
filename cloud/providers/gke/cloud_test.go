@@ -22,9 +22,4 @@ func TestCL(t *testing.T) {
 	containerService, err := container.New(client)
 	resp, err := containerService.Projects.Zones.Clusters.Get(project, "us-central1-f", "gk5").Context(context.Background()).Do()
 	fmt.Println(resp, err)
-
-}
-
-func TestNewKubeClient(t *testing.T) {
-
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/compute/v1"
+	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/container/v1"
 )
 
@@ -21,7 +21,6 @@ const (
 type cloudConnector struct {
 	ctx     context.Context
 	cluster *api.Cluster
-	namer   namer
 
 	containerService *container.Service
 	computeService   *compute.Service
