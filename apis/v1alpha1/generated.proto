@@ -158,6 +158,8 @@ message CloudSpec {
   optional AzureSpec azure = 12;
 
   optional LinodeSpec linode = 13;
+
+  optional GKESpec gke = 14;
 }
 
 message CloudStatus {
@@ -264,6 +266,14 @@ message GCSSpec {
   optional string bucket = 1;
 
   optional string prefix = 2;
+}
+
+message GKESpec {
+  optional string userName = 1;
+
+  optional string password = 2;
+
+  optional string networkName = 3;
 }
 
 message GoogleSpec {

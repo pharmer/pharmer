@@ -143,7 +143,7 @@ type GoogleSpec struct {
 	NodeScopes []string `json:"nodeScopes,omitempty" protobuf:"bytes,3,rep,name=nodeScopes"`
 }
 
-type GkeSpec struct {
+type GKESpec struct {
 	UserName    string `json:"userName,omitempty" protobuf:"bytes,1,opt,name=userName"`
 	Password    string `json:"password,omitempty" protobuf:"bytes,2,opt,name=password"`
 	NetworkName string `json:"networkName,omitempty" protobuf:"bytes,3,opt,name=networkName"`
@@ -181,7 +181,7 @@ type CloudSpec struct {
 	GCE                  *GoogleSpec `json:"gce,omitempty" protobuf:"bytes,11,opt,name=gce"`
 	Azure                *AzureSpec  `json:"azure,omitempty" protobuf:"bytes,12,opt,name=azure"`
 	Linode               *LinodeSpec `json:"linode,omitempty" protobuf:"bytes,13,opt,name=linode"`
-	GKE                  *GkeSpec    `json:"gke,omitempty" protobuf:"bytes,14,opt,name=gce"`
+	GKE                  *GKESpec    `json:"gke,omitempty" protobuf:"bytes,14,opt,name=gke"`
 }
 
 type API struct {

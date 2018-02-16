@@ -5,6 +5,7 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pkg/errors"
 	container "google.golang.org/api/container/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -15,7 +16,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	var acts []api.Action
 
 	if in.Status.Phase == "" {
-		return nil, fmt.Errorf("cluster `%s` is in unknown phase", cm.cluster.Name)
+		return nil, errors.Errorf("cluster `%s` is in unknown phase", cm.cluster.Name)
 	}
 	if in.Status.Phase == api.ClusterDeleted {
 		return nil, nil

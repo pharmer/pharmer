@@ -102,7 +102,7 @@ func GetAdminCertificate(ctx context.Context, cluster *api.Cluster) (*x509.Certi
 	certStore := Store(ctx).Certificates(cluster.Name)
 	admCert, admKey, err := certStore.Get("admin")
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get admin certificates. Reason: %v", err)
+		return nil, nil, errors.Errorf("failed to get admin certificates. Reason: %v", err)
 	}
 	return admCert, admKey, nil
 }

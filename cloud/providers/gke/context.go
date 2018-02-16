@@ -2,11 +2,11 @@ package gke
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/cert"
@@ -65,7 +65,7 @@ func NewGKEAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes.In
 	}
 	host := cluster.APIServerURL()
 	if host == "" {
-		return nil, fmt.Errorf("failed to detect api server url for cluster %s", cluster.Name)
+		return nil, errors.Errorf("failed to detect api server url for cluster %s", cluster.Name)
 	}
 	cfg := &rest.Config{
 		Host:     host,

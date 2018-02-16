@@ -2,21 +2,20 @@ package gke
 
 import (
 	"context"
-	"fmt"
 
+	. "github.com/appscode/go/context"
 	"github.com/appscode/go/wait"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
-	compute "google.golang.org/api/compute/v1"
-	container "google.golang.org/api/container/v1"
+	"google.golang.org/api/compute/v1"
+	"google.golang.org/api/container/v1"
 )
 
 const (
 	ProviderName = "gke"
-	TemplateURI  = "https://www.googleapis.com/compute/v1/projects/"
 )
 
 type cloudConnector struct {
@@ -35,24 +34,24 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}
 	typed := credential.GCE{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.New().WithMessagef("Credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
 	}
 
 	cluster.Spec.Cloud.Project = typed.ProjectID()
 	conf, err := google.JWTConfigFromJSON([]byte(typed.ServiceAccount()),
 		container.CloudPlatformScope)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(ctx).Err()
+		return nil, errors.Wrap(err, ID(ctx))
 	}
 	client := conf.Client(context.Background())
 	containerService, err := container.New(client)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(ctx).Err()
+		return nil, errors.Wrap(err, ID(ctx))
 	}
 
 	computeService, err := compute.New(client)
 	if err != nil {
-		return nil, errors.FromErr(err).WithContext(ctx).Err()
+		return nil, errors.Wrap(err, ID(ctx))
 	}
 
 	conn := cloudConnector{
@@ -62,7 +61,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		computeService:   computeService,
 	}
 	if ok, msg := conn.IsUnauthorized(typed.ProjectID()); !ok {
-		return nil, fmt.Errorf("Credential %s does not have necessary authorization. Reason: %s.", cluster.Spec.CredentialName, msg)
+		return nil, errors.Errorf("credential %s does not have necessary authorization. Reason: %s", cluster.Spec.CredentialName, msg)
 	}
 	return &conn, nil
 }
@@ -103,7 +102,7 @@ func (conn *cloudConnector) ensureNetworks() error {
 	}).Do()
 	Logger(conn.ctx).Debug("Created new network", r2, err)
 	if err != nil {
-		return errors.FromErr(err).WithContext(conn.ctx).Err()
+		return errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("New network %v is created", defaultNetwork)
 

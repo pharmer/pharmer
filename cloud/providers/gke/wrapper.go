@@ -5,10 +5,11 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 
+	. "github.com/appscode/go/context"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
-	container "google.golang.org/api/container/v1"
+	"google.golang.org/api/container/v1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
@@ -17,7 +18,7 @@ import (
 func encodeCluster(ctx context.Context, cluster *api.Cluster) (*container.Cluster, error) {
 	nodeGroups, err := Store(ctx).NodeGroups(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
-		err = errors.FromErr(err).WithContext(ctx).Err()
+		err = errors.Wrap(err, ID(ctx))
 		return nil, err
 	}
 
