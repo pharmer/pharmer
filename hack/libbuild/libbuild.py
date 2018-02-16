@@ -180,7 +180,7 @@ def go_build(name, goos, goarch, main, compress=False, upx=False):
     if goos == 'alpine':
         repo_dir = REPO_ROOT[len(GOPATH):]
         uid = check_output('id -u').strip()
-        cmd = "docker run --rm -u {uid} -v {repo_root}:/go{repo_dir} -w /go{repo_dir} -e {cgo_env} kiteci/golang:1.9.3-alpine {goc} build -o {bindir}/{name}-{goos}-{goarch}{ext} {cgo} {ldflags} {main}".format(
+        cmd = "docker run --rm -u {uid} -v {repo_root}:/go{repo_dir} -w /go{repo_dir} -e {cgo_env} golang:1.9.4-alpine {goc} build -o {bindir}/{name}-{goos}-{goarch}{ext} {cgo} {ldflags} {main}".format(
             repo_root=REPO_ROOT,
             repo_dir=repo_dir,
             uid=uid,
@@ -211,7 +211,7 @@ def go_build(name, goos, goarch, main, compress=False, upx=False):
     die(call(cmd, cwd=REPO_ROOT))
 
     if upx and (goarch in ['amd64', '386']):
-        cmd = "upx --brute {bindir}/{name}-{goos}-{goarch}{ext}".format(
+        cmd = "upx --brute {name}-{goos}-{goarch}{ext}".format(
                 name=name,
                 goos=goos,
                 goarch=goarch,
@@ -224,7 +224,7 @@ def go_build(name, goos, goarch, main, compress=False, upx=False):
         if goos in ['windows']:
             cmd = "zip {name}-{goos}-{goarch}.zip {name}-{goos}-{goarch}{ext}"
         else:
-            cmd = "tar -cjvf {name}-{goos}-{goarch}.tar.bz2 {name}-{goos}-{goarch}{ext}"
+            cmd = "bzip2 --keep -vf {name}-{goos}-{goarch}{ext}"
         cmd = cmd.format(
                 name=name,
                 goos=goos,
