@@ -1,9 +1,9 @@
 package: github.com/pharmer/pharmer
 import:
 - package: github.com/Azure/azure-sdk-for-go
-  version: v10.2.1-beta
+  version: v12.4.0-beta
 - package: github.com/Azure/go-autorest
-  version: ~8.1.1
+  version: ~9.9.0
 - package: github.com/JamesClonk/vultr
   version: master
 - package: github.com/appscode/go-dns
