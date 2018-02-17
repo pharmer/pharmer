@@ -94,7 +94,7 @@ func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*
 		}
 	}
 	if net.ParseIP(cfg.HostIP) == nil {
-		return nil, fmt.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
+		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
 	}
 	return cfg, nil
 }
