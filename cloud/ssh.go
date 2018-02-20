@@ -25,7 +25,7 @@ func ExecuteTCPCommand(command, addr string, config *ssh.ClientConfig) (string, 
 	session.Stderr = DefaultWriter
 	session.Stdin = os.Stdin
 	if config.User != "root" {
-		command = fmt.Sprintf("sudo %s" + command)
+		command = fmt.Sprintf("sudo %s", command)
 	}
 	session.Run(command)
 	output := DefaultWriter.Output()

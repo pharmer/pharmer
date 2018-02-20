@@ -138,7 +138,19 @@ func (g *KubeVersionGetter) IsUpgradeRequested() (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		return cur != g.cluster.Spec.KubernetesVersion, nil
+
+		requested, err := versionutil.ParseSemantic(g.cluster.Spec.KubernetesVersion)
+		if err != nil {
+			return false, err
+		}
+		// Compare compares v against a version string (which will be parsed as either Semantic
+		// or non-Semantic depending on v). On success it returns -1 if v is less than other, 1 if
+		// it is greater than other, or 0 if they are equal.
+		check, err := requested.Compare(cur)
+		if err != nil {
+			return false, err
+		}
+		return check > 0, nil
 	}
 	return false, nil
 }
