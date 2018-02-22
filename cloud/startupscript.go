@@ -215,6 +215,7 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 {{end}}
 
 {{ template "prepare-cluster" . }}
+{{ template "mount-master-pd" . }}
 `))
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`
