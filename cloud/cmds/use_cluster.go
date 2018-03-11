@@ -90,25 +90,13 @@ func UseCluster(ctx context.Context, opts *options.ClusterUseConfig, konf *api.K
 	_, found := konfig.Contexts[ctxName]
 	if !found || opts.Overwrite {
 		// Upsert cluster
-		if c, found := konfig.Clusters[konf.Cluster.Name]; found {
-			setCluster(c, konf.Cluster)
-		} else {
-			konfig.Clusters[konf.Cluster.Name] = setCluster(&clientcmdapi.Cluster{}, konf.Cluster)
-		}
+		konfig.Clusters[konf.Cluster.Name] = toCluster(konf.Cluster)
 
 		// Upsert user
-		if au, found := konfig.AuthInfos[konf.AuthInfo.Name]; found {
-			setUser(au, konf.AuthInfo)
-		} else {
-			konfig.AuthInfos[konf.AuthInfo.Name] = setUser(&clientcmdapi.AuthInfo{}, konf.AuthInfo)
-		}
+		konfig.AuthInfos[konf.AuthInfo.Name] = toUser(konf.AuthInfo)
 
 		// Upsert context
-		if c, found := konfig.Contexts[konf.Context.Name]; found {
-			setContext(c, konf.Context)
-		} else {
-			konfig.Contexts[konf.Context.Name] = setContext(&clientcmdapi.Context{}, konf.Context)
-		}
+		konfig.Contexts[konf.Context.Name] = toContext(konf.Context)
 	}
 
 	// Update current context
@@ -125,34 +113,30 @@ func UseCluster(ctx context.Context, opts *options.ClusterUseConfig, konf *api.K
 	term.Successln(fmt.Sprintf("kubectl context set to cluster `%s`.", opts.ClusterName))
 }
 
-func setCluster(cur *clientcmdapi.Cluster, desired api.NamedCluster) *clientcmdapi.Cluster {
-	*cur = clientcmdapi.Cluster{
+func toCluster(desired api.NamedCluster) *clientcmdapi.Cluster {
+	return &clientcmdapi.Cluster{
 		Server: desired.Server,
 		CertificateAuthorityData: append([]byte(nil), desired.CertificateAuthorityData...),
 	}
-	return cur
 }
 
-func setUser(cur *clientcmdapi.AuthInfo, desired api.NamedAuthInfo) *clientcmdapi.AuthInfo {
+func toUser(desired api.NamedAuthInfo) *clientcmdapi.AuthInfo {
 	if desired.Token == "" {
-		*cur = clientcmdapi.AuthInfo{
+		return &clientcmdapi.AuthInfo{
 			ClientCertificateData: append([]byte(nil), desired.ClientCertificateData...),
 			ClientKeyData:         append([]byte(nil), desired.ClientKeyData...),
 		}
-	} else {
-		*cur = clientcmdapi.AuthInfo{
-			Token: desired.Token,
-		}
 	}
-	return cur
+	return &clientcmdapi.AuthInfo{
+		Token: desired.Token,
+	}
 }
 
-func setContext(cur *clientcmdapi.Context, desired api.NamedContext) *clientcmdapi.Context {
-	*cur = clientcmdapi.Context{
+func toContext(desired api.NamedContext) *clientcmdapi.Context {
+	return &clientcmdapi.Context{
 		Cluster:  desired.Cluster,
 		AuthInfo: desired.AuthInfo,
 	}
-	return cur
 }
 
 func KubeConfigPath() string {
