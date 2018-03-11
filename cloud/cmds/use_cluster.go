@@ -2,23 +2,21 @@ package cmds
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
 
-	ioutilz "github.com/appscode/go/ioutil"
+	"github.com/appscode/go/ioutil"
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
-	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
-	clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/homedir"
 )
 
@@ -56,33 +54,25 @@ func NewCmdUse() *cobra.Command {
 }
 
 func UseCluster(ctx context.Context, opts *options.ClusterUseConfig, konf *api.KubeConfig) {
-	var konfig clientcmd.Config
+	var konfig *clientcmdapi.Config
 	if _, err := os.Stat(KubeConfigPath()); err == nil {
 		// ~/.kube/config exists
-		data, err := ioutil.ReadFile(KubeConfigPath())
-		if err != nil {
-			log.Fatalln(err)
-		}
-		data, err = yaml.YAMLToJSON(data)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		err = json.Unmarshal(data, &konfig)
+		konfig, err = clientcmd.LoadFromFile(KubeConfigPath())
 		if err != nil {
 			log.Fatalln(err)
 		}
 
 		bakFile := KubeConfigPath() + ".bak." + time.Now().Format("2006-01-02T15-04")
-		err = ioutilz.CopyFile(bakFile, KubeConfigPath(), 0600)
+		err = ioutil.CopyFile(bakFile, KubeConfigPath())
 		if err != nil {
 			log.Fatalln(err)
 		}
 		term.Infoln(fmt.Sprintf("Current Kubeconfig is backed up as %s.", bakFile))
 	} else {
-		konfig = clientcmd.Config{
+		konfig = &clientcmdapi.Config{
 			APIVersion: "v1",
 			Kind:       "Config",
-			Preferences: clientcmd.Preferences{
+			Preferences: clientcmdapi.Preferences{
 				Colors: true,
 			},
 		}
@@ -97,50 +87,27 @@ func UseCluster(ctx context.Context, opts *options.ClusterUseConfig, konf *api.K
 		}
 	}
 
-	found := false
-	for _, c := range konfig.Contexts {
-		if c.Name == ctxName {
-			found = true
-		}
-	}
+	_, found := konfig.Contexts[ctxName]
 	if !found || opts.Overwrite {
 		// Upsert cluster
-		found := false
-		for i := range konfig.Clusters {
-			if konfig.Clusters[i].Name == konf.Cluster.Name {
-				setCluster(&konfig.Clusters[i], konf.Cluster)
-				found = true
-				break
-			}
-		}
-		if !found {
-			konfig.Clusters = append(konfig.Clusters, *setCluster(&clientcmd.NamedCluster{}, konf.Cluster))
+		if c, found := konfig.Clusters[konf.Cluster.Name]; found {
+			setCluster(c, konf.Cluster)
+		} else {
+			konfig.Clusters[konf.Cluster.Name] = setCluster(&clientcmdapi.Cluster{}, konf.Cluster)
 		}
 
 		// Upsert user
-		found = false
-		for i := range konfig.AuthInfos {
-			if konfig.AuthInfos[i].Name == konf.AuthInfo.Name {
-				setUser(&konfig.AuthInfos[i], konf.AuthInfo)
-				found = true
-				break
-			}
-		}
-		if !found {
-			konfig.AuthInfos = append(konfig.AuthInfos, *setUser(&clientcmd.NamedAuthInfo{}, konf.AuthInfo))
+		if au, found := konfig.AuthInfos[konf.AuthInfo.Name]; found {
+			setUser(au, konf.AuthInfo)
+		} else {
+			konfig.AuthInfos[konf.AuthInfo.Name] = setUser(&clientcmdapi.AuthInfo{}, konf.AuthInfo)
 		}
 
 		// Upsert context
-		found = false
-		for i := range konfig.Contexts {
-			if konfig.Contexts[i].Name == konf.Context.Name {
-				setContext(&konfig.Contexts[i], konf.Context)
-				found = true
-				break
-			}
-		}
-		if !found {
-			konfig.Contexts = append(konfig.Contexts, *setContext(&clientcmd.NamedContext{}, konf.Context))
+		if c, found := konfig.Contexts[konf.Context.Name]; found {
+			setContext(c, konf.Context)
+		} else {
+			konfig.Contexts[konf.Context.Name] = setContext(&clientcmdapi.Context{}, konf.Context)
 		}
 	}
 
@@ -151,56 +118,40 @@ func UseCluster(ctx context.Context, opts *options.ClusterUseConfig, konf *api.K
 	if err != nil {
 		log.Fatalln(err)
 	}
-	data, err := yaml.Marshal(konfig)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	err = ioutil.WriteFile(KubeConfigPath(), data, 0600)
+	err = clientcmd.WriteToFile(*konfig, KubeConfigPath())
 	if err != nil {
 		log.Fatalln(err)
 	}
 	term.Successln(fmt.Sprintf("kubectl context set to cluster `%s`.", opts.ClusterName))
 }
 
-func setCluster(cur *clientcmd.NamedCluster, desired api.NamedCluster) *clientcmd.NamedCluster {
-	d := clientcmd.NamedCluster{
-		Name: desired.Name,
-		Cluster: clientcmd.Cluster{
-			Server: desired.Server,
-			CertificateAuthorityData: append([]byte(nil), desired.CertificateAuthorityData...),
-		},
+func setCluster(cur *clientcmdapi.Cluster, desired api.NamedCluster) *clientcmdapi.Cluster {
+	*cur = clientcmdapi.Cluster{
+		Server: desired.Server,
+		CertificateAuthorityData: append([]byte(nil), desired.CertificateAuthorityData...),
 	}
-	*cur = d
 	return cur
 }
 
-func setUser(cur *clientcmd.NamedAuthInfo, desired api.NamedAuthInfo) *clientcmd.NamedAuthInfo {
-	d := clientcmd.NamedAuthInfo{
-		Name: desired.Name,
-	}
+func setUser(cur *clientcmdapi.AuthInfo, desired api.NamedAuthInfo) *clientcmdapi.AuthInfo {
 	if desired.Token == "" {
-		d.AuthInfo = clientcmd.AuthInfo{
+		*cur = clientcmdapi.AuthInfo{
 			ClientCertificateData: append([]byte(nil), desired.ClientCertificateData...),
 			ClientKeyData:         append([]byte(nil), desired.ClientKeyData...),
 		}
 	} else {
-		d.AuthInfo = clientcmd.AuthInfo{
+		*cur = clientcmdapi.AuthInfo{
 			Token: desired.Token,
 		}
 	}
-	*cur = d
 	return cur
 }
 
-func setContext(cur *clientcmd.NamedContext, desired api.NamedContext) *clientcmd.NamedContext {
-	d := clientcmd.NamedContext{
-		Name: desired.Name,
-		Context: clientcmd.Context{
-			Cluster:  desired.Cluster,
-			AuthInfo: desired.AuthInfo,
-		},
+func setContext(cur *clientcmdapi.Context, desired api.NamedContext) *clientcmdapi.Context {
+	*cur = clientcmdapi.Context{
+		Cluster:  desired.Cluster,
+		AuthInfo: desired.AuthInfo,
 	}
-	*cur = d
 	return cur
 }
 
