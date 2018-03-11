@@ -63,7 +63,7 @@ func UseCluster(ctx context.Context, opts *options.ClusterUseConfig, konf *api.K
 		}
 
 		bakFile := KubeConfigPath() + ".bak." + time.Now().Format("2006-01-02T15-04")
-		err = ioutil.CopyFile(bakFile, KubeConfigPath(), 0600)
+		err = ioutil.CopyFile(bakFile, KubeConfigPath())
 		if err != nil {
 			log.Fatalln(err)
 		}
