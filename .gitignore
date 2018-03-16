@@ -18,3 +18,4 @@ kluster.json
 hack/**/.env
 .idea/
 hack/credential/**
+coverage.txt

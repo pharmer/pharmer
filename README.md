@@ -1,4 +1,9 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/pharmer/pharmer)](https://goreportcard.com/report/github.com/pharmer/pharmer)
+[![Build Status](https://travis-ci.org/pharmer/pharmer.svg?branch=master)](https://travis-ci.org/pharmer/pharmer)
+[![codecov](https://codecov.io/gh/pharmer/pharmer/branch/master/graph/badge.svg)](https://codecov.io/gh/pharmer/pharmer)
+[![Docker Pulls](https://img.shields.io/docker/pulls/pharmer/pharmer.svg)](https://hub.docker.com/r/pharmer/pharmer/)
+[![Slack](https://slack.appscode.com/badge.svg)](https://slack.appscode.com)
+[![Twitter](https://img.shields.io/twitter/follow/appscodehq.svg?style=social&logo=twitter&label=Follow)](https://twitter.com/intent/follow?screen_name=AppsCodeHQ)
 
 # pharmer
 Kubernetes Cluster Manager for [Kubeadm](https://github.com/kubernetes/kubeadm). Think `kops using kubeadm`!
