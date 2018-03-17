@@ -46,9 +46,7 @@ import:
 - package: github.com/pkg/errors
   version: v0.8.0
 - package: github.com/scaleway/scaleway-cli
-  version: logrus
-  repo: https://github.com/tamalsaha/scaleway-cli.git
-  vcs: git
+  version: master
 - package: github.com/moul/gotty-client
   version: b47f2c128b4d2447db6bf2a5f79aea81017899d4
 - package: github.com/skratchdot/open-golang
