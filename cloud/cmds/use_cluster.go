@@ -75,6 +75,9 @@ func UseCluster(ctx context.Context, opts *options.ClusterUseConfig, konf *api.K
 			Preferences: clientcmdapi.Preferences{
 				Colors: true,
 			},
+			Clusters:  make(map[string]*clientcmdapi.Cluster),
+			AuthInfos: make(map[string]*clientcmdapi.AuthInfo),
+			Contexts:  make(map[string]*clientcmdapi.Context),
 		}
 	}
 
