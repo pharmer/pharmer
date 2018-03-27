@@ -102,6 +102,7 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 
 	var err error
 	var commonSpec credential.CommonSpec
+	commonSpec.Provider = provider
 
 	if opts.FromEnv {
 		commonSpec.LoadFromEnv()
