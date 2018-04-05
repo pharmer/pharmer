@@ -14,13 +14,15 @@ import (
 
 // https://github.com/pharmer/pharmer/issues/347
 var kubernetesCNIVersions = map[string]string{
-	"1.8.0": "0.5.1",
-	"1.9.0": "0.6.0",
+	"1.8.0":  "0.5.1",
+	"1.9.0":  "0.6.0",
+	"1.10.0": "0.6.0",
 }
 
 var prekVersions = map[string]string{
-	"1.8.0": "1.8.0",
-	"1.9.0": "1.9.0-rc.0",
+	"1.8.0":  "1.8.0",
+	"1.9.0":  "1.9.0-rc.0",
+	"1.10.0": "1.9.0-rc.0",
 }
 
 type TemplateData struct {
