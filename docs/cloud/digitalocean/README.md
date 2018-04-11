@@ -22,7 +22,10 @@ Following example will use `pharmer ` to create a Kubernetes cluster with 2 work
 As a prerequisite, you need to have `pharmer` installed.  To install `pharmer` run the following command.
 
 ```console
-git clone https://github.com/pharmer/pharmer.git
+mkdir -p $(go env GOPATH)/src/github.com/pharmer
+cd $(go env GOPATH)/src/github.com/pharmer
+git clone https://github.com/pharmer/pharmer
+cd pharmer
 go install -v
 
 pharmer -h
