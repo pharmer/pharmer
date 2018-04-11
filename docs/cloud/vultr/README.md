@@ -23,7 +23,10 @@ Following example will use `pharmer ` to create a Kubernetes cluster with 2 work
 As a prerequisite, you need to have `pharmer` installed.  To install `pharmer` run the following command.
 
 ```console
-$ go get -u github.com/pharmer/pharmer
+git clone https://github.com/pharmer/pharmer.git
+go install -v
+
+pharmer -h
 ```
 
 ### Pharmer storage
