@@ -33,8 +33,6 @@ import (
 	"github.com/softlayer/softlayer-go/sl"
 )
 
-var defaultClient = &http.Client{}
-
 type RestTransport struct{}
 
 // DoRequest - Implementation of the TransportHandler interface for handling
@@ -214,7 +212,7 @@ func makeHTTPRequest(
 
 	client := session.HTTPClient
 	if client == nil {
-		client = defaultClient
+		client = &http.Client{}
 	}
 
 	client.Timeout = DefaultTimeout
@@ -276,6 +274,7 @@ func makeHTTPRequest(
 	}
 
 	if session.Debug {
+		log.Println("[DEBUG] Status Code: ", resp.StatusCode)
 		log.Println("[DEBUG] Response: ", string(responseBody))
 	}
 	err = findResponseError(resp.StatusCode, responseBody)
