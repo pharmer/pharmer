@@ -130,8 +130,7 @@ func (b *volumeBinder) GetBindingsCache() PodBindingCache {
 func (b *volumeBinder) FindPodVolumes(pod *v1.Pod, nodeName string) (unboundVolumesSatisfied, boundVolumesSatisfied bool, err error) {
 	podName := getPodName(pod)
 
-	// Warning: Below log needs high verbosity as it can be printed several times (#60933).
-	glog.V(5).Infof("FindPodVolumes for pod %q, node %q", podName, nodeName)
+	glog.V(4).Infof("FindPodVolumes for pod %q, node %q", podName, nodeName)
 
 	// Initialize to true for pods that don't have volumes
 	unboundVolumesSatisfied = true
@@ -351,17 +350,10 @@ func (b *volumeBinder) findMatchingVolumes(pod *v1.Pod, claimsToBind []*bindingI
 	// Sort all the claims by increasing size request to get the smallest fits
 	sort.Sort(byPVCSize(claimsToBind))
 
+	allPVs := b.pvCache.ListPVs()
 	chosenPVs := map[string]*v1.PersistentVolume{}
 
 	for _, bindingInfo := range claimsToBind {
-		// Get storage class name from each PVC
-		storageClassName := ""
-		storageClass := bindingInfo.pvc.Spec.StorageClassName
-		if storageClass != nil {
-			storageClassName = *storageClass
-		}
-		allPVs := b.pvCache.ListPVs(storageClassName)
-
 		// Find a matching PV
 		bindingInfo.pv, err = findMatchingVolume(bindingInfo.pvc, allPVs, node, chosenPVs, true)
 		if err != nil {

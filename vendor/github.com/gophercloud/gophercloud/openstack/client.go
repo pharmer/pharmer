@@ -56,12 +56,11 @@ func NewClient(endpoint string) (*gophercloud.ProviderClient, error) {
 	endpoint = gophercloud.NormalizeURL(endpoint)
 	base = gophercloud.NormalizeURL(base)
 
-	p := new(gophercloud.ProviderClient)
-	p.IdentityBase = base
-	p.IdentityEndpoint = endpoint
-	p.UseTokenLock()
+	return &gophercloud.ProviderClient{
+		IdentityBase:     base,
+		IdentityEndpoint: endpoint,
+	}, nil
 
-	return p, nil
 }
 
 /*
@@ -159,21 +158,9 @@ func v2auth(client *gophercloud.ProviderClient, endpoint string, options gopherc
 	}
 
 	if options.AllowReauth {
-		// here we're creating a throw-away client (tac). it's a copy of the user's provider client, but
-		// with the token and reauth func zeroed out. combined with setting `AllowReauth` to `false`,
-		// this should retry authentication only once
-		tac := *client
-		tac.ReauthFunc = nil
-		tac.TokenID = ""
-		tao := options
-		tao.AllowReauth = false
 		client.ReauthFunc = func() error {
-			err := v2auth(&tac, endpoint, tao, eo)
-			if err != nil {
-				return err
-			}
-			client.TokenID = tac.TokenID
-			return nil
+			client.TokenID = ""
+			return v2auth(client, endpoint, options, eo)
 		}
 	}
 	client.TokenID = token.ID
@@ -215,32 +202,9 @@ func v3auth(client *gophercloud.ProviderClient, endpoint string, opts tokens3.Au
 	client.TokenID = token.ID
 
 	if opts.CanReauth() {
-		// here we're creating a throw-away client (tac). it's a copy of the user's provider client, but
-		// with the token and reauth func zeroed out. combined with setting `AllowReauth` to `false`,
-		// this should retry authentication only once
-		tac := *client
-		tac.ReauthFunc = nil
-		tac.TokenID = ""
-		var tao tokens3.AuthOptionsBuilder
-		switch ot := opts.(type) {
-		case *gophercloud.AuthOptions:
-			o := *ot
-			o.AllowReauth = false
-			tao = &o
-		case *tokens3.AuthOptions:
-			o := *ot
-			o.AllowReauth = false
-			tao = &o
-		default:
-			tao = opts
-		}
 		client.ReauthFunc = func() error {
-			err := v3auth(&tac, endpoint, tao, eo)
-			if err != nil {
-				return err
-			}
-			client.TokenID = tac.TokenID
-			return nil
+			client.TokenID = ""
+			return v3auth(client, endpoint, opts, eo)
 		}
 	}
 	client.EndpointLocator = func(opts gophercloud.EndpointOpts) (string, error) {

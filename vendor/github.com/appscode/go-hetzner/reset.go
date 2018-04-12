@@ -49,9 +49,16 @@ func (s *ResetServiceImpl) Create(req *ResetCreateRequest) (*Reset, *http.Respon
 	path := fmt.Sprintf("/reset/%v", req.ServerIP)
 
 	type Data struct {
-		Reset *Reset `json:"reset"`
+		Reset *ResetCreateResponse `json:"reset"`
 	}
+
 	data := Data{}
 	resp, err := s.client.Call(http.MethodPost, path, req, &data, true)
-	return data.Reset, resp, err
+
+	out := &Reset{
+		ServerIP:     data.Reset.ServerIP,
+		ServerNumber: data.Reset.ServerNumber,
+		Type:         []string{data.Reset.Type},
+	}
+	return out, resp, err
 }
