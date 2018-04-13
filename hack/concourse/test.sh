@@ -54,6 +54,9 @@ do
     sleep 300
 done
 
+kubectl cp sonobuoy/sonobuoy:/tmp/sonobuoy ./results --namespace=sonobuoy
+tar xfz results/*.tar.gz
+
 pushd results/plugins/e2e/results
 cat e2e.log
 
