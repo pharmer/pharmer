@@ -2,10 +2,13 @@
 
 set -x -e
 
+#install python pip
+apt-get update && apt-get install -y python python-pip > /dev/null
+
 #copy pharmer to $GOPATH
-mkdir -p $GOPATH/src/github.com/appscode
-cp -r pharmer $GOPATH/src/github.com/appscode
-pushd $GOPATH/src/github.com/appscode/pharmer
+mkdir -p $GOPATH/src/github.com/pharmer
+cp -r pharmer $GOPATH/src/github.com/pharmer
+pushd $GOPATH/src/github.com/pharmer/pharmer
 
 #build
 ./hack/builddeps.sh
