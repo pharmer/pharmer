@@ -34,8 +34,8 @@ cat > cred.json <<EOF
 }
 EOF
 
-pharmer create credential --from-file=cred.json --provider=$VENDOR cred
-pharmer create cluster $NAME --provider=$VENDOR --zone=nyc3 --nodes=2gb=1 --credential-uid=cred --kubernetes-version=v1.9.0
+pharmer create credential --from-file=cred.json --provider=$CredProvider cred
+pharmer create cluster $NAME --provider=$ClusterProvider --zone=nyc3 --nodes=2gb=1 --credential-uid=cred --kubernetes-version=v1.9.0
 pharmer apply $NAME
 pharmer use cluster $NAME
 kubectl get nodes
