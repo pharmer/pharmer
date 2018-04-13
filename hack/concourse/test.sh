@@ -3,7 +3,8 @@
 set -x -e
 
 #install python pip
-apt-get update && apt-get install -y python python-pip > /dev/null
+apt-get update > /dev/null
+apt-get install -y python python-pip > /dev/null
 
 #copy pharmer to $GOPATH
 mkdir -p $GOPATH/src/github.com/pharmer
