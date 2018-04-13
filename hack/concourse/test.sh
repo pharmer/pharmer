@@ -47,6 +47,7 @@ kubectl get nodes
 
 
 curl -L https://raw.githubusercontent.com/cncf/k8s-conformance/master/sonobuoy-conformance.yaml | kubectl apply -f -
+sleep 300
 nohup kubectl logs -f -n sonobuoy sonobuoy &
 
 while [ $(grep -q "no-exit was specified, sonobuoy is now blocking" nohup.out; echo $?) == 1 ]
@@ -57,7 +58,7 @@ done
 kubectl cp sonobuoy/sonobuoy:/tmp/sonobuoy ./results --namespace=sonobuoy
 tar xfz results/*.tar.gz
 
-pushd results/plugins/e2e/results
+pushd plugins/e2e/results
 cat e2e.log
 
 if [ "$(tail -1 e2e.log)" == "Test Suite Failed" ]; then
