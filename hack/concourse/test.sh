@@ -27,7 +27,7 @@ function cleanup {
     pharmer get cluster
     pharmer delete cluster $NAME
     pharmer get cluster
-    sleep 120
+    sleep 300
     pharmer apply $NAME
     pharmer get cluster
 }
@@ -43,7 +43,7 @@ kubectl get nodes
 
 
 curl -L https://raw.githubusercontent.com/cncf/k8s-conformance/master/sonobuoy-conformance.yaml | kubectl apply -f -
-sleep 300
+sleep 900
 nohup kubectl logs -f -n sonobuoy sonobuoy &
 
 while [ $(grep -q "no-exit was specified, sonobuoy is now blocking" nohup.out; echo $?) == 1 ]
