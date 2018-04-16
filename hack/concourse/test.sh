@@ -33,14 +33,10 @@ function cleanup {
 }
 trap cleanup EXIT
 
-cat > cred.json <<EOF
-{
-        "token" : "$TOKEN"
-}
-EOF
+cp creds/creds/$CRED.json cred.json
 
 pharmer create credential --from-file=cred.json --provider=$CredProvider cred
-pharmer create cluster $NAME --provider=$ClusterProvider --zone=nyc3 --nodes=2gb=1 --credential-uid=cred --kubernetes-version=v1.9.0
+pharmer create cluster $NAME --provider=$ClusterProvider --zone=$ZONE --nodes=$NODE=1 --credential-uid=cred --kubernetes-version=v1.9.0
 pharmer apply $NAME
 pharmer use cluster $NAME
 kubectl get nodes
