@@ -20,7 +20,7 @@ pushd $GOPATH/src/github.com/pharmer/pharmer
 ./hack/builddeps.sh
 ./hack/make.py
 
-NAME=pharmer-$(git rev-parse HEAD) #name of the cluster
+NAME=pharmer-$(git rev-parse --short HEAD) #name of the cluster
 popd
 
 function cleanup {
