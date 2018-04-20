@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"sync"
-
 	"github.com/golang/glog"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 )

@@ -2,7 +2,6 @@ package digitalocean
 
 import (
 	"context"
-
 	"github.com/digitalocean/godo"
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"

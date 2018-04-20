@@ -2,7 +2,6 @@ package inspector
 
 import (
 	"context"
-
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"

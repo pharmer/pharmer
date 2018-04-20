@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-
 	logs "github.com/appscode/go/log/golog"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/cmds"
 )

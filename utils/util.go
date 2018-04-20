@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/mergepatch"

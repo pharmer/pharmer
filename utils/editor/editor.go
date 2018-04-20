@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-
 	"github.com/golang/glog"
 	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"

@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
 	"github.com/appscode/go/log"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"

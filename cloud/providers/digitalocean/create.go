@@ -3,43 +3,40 @@ package digitalocean
 import (
 	"net"
 	"strings"
-	"time"
-
+	apiv1 "github.com/pharmer/pharmer/apis/v1"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
+	//clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
+func (cm *ClusterManager) GetDefaultNodeSpec(cluster *apiv1.Cluster, sku string) (apiv1.NodeSpec, error) {
 	if sku == "" {
 		sku = "2gb"
 	}
-	return api.NodeSpec{
+	return apiv1.NodeSpec{
 		SKU: sku,
 		//	DiskType:      "",
 		//	DiskSize:      100,
 	}, nil
+
 }
 
-func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
+func (cm *ClusterManager) SetDefaultCluster(cluster *apiv1.Cluster, config *apiv1.ClusterProviderConfig) error {
 	n := namer{cluster: cluster}
 
-	// Init object meta
-	cluster.ObjectMeta.UID = uuid.NewUUID()
-	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
-	cluster.ObjectMeta.Generation = time.Now().UnixNano()
-	api.AssignTypeKind(cluster)
-
-	// Init spec
-	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
-	cluster.Spec.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
+	if err := api.AssignTypeKind(cluster); err != nil {
+		return err
+	}
+	config.Region = config.Zone
+	config.SSHKeyName = n.GenSSHKeyExternalID()
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
-	cluster.Spec.Cloud.InstanceImage = "ubuntu-16-04-x64"
-	cluster.Spec.Networking.SetDefaults()
+	config.InstanceImage = "ubuntu-16-04-x64"
+
+	cluster.SetNetworkingDefaults(config.NetworkProvider)
+
 	cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
 	cluster.Spec.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
 	cluster.Spec.APIServerExtraArgs = map[string]string{
@@ -49,15 +46,22 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 			string(core.NodeExternalIP),
 		}, ","),
 	}
+
 	if cluster.IsMinorVersion("1.9") {
 		cluster.Spec.APIServerExtraArgs["admission-control"] = api.DefaultV19AdmissionControl
 	}
 
 	// Init status
-	cluster.Status = api.ClusterStatus{
-		Phase: api.ClusterPending,
+	cluster.Status = apiv1.ClusterStatus{
+		Phase: apiv1.ClusterPending,
 	}
 
+	// add provider config to cluster
+	cluster.SetProviderConfig(config)
+
+	return nil
+}
+func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	return nil
 }
 
@@ -65,8 +69,8 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, ErrNotImplemented
 }
 
-func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
-	cfg := &api.SSHConfig{
+func (cm *ClusterManager) GetSSHConfig(cluster *apiv1.Cluster, node *core.Node) (*apiv1.SSHConfig, error) {
+	cfg := &apiv1.SSHConfig{
 		PrivateKey: SSHKey(cm.ctx).PrivateKey,
 		User:       "root",
 		HostPort:   int32(22),

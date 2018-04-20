@@ -4,7 +4,6 @@ import (
 	"net"
 	"strings"
 	"time"
-
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"

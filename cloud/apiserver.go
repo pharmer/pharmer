@@ -6,7 +6,8 @@ import (
 	"time"
 
 	stringz "github.com/appscode/go/strings"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
+	apiAlpha "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +23,7 @@ const (
 	RetryTimeout  = 15 * time.Minute
 )
 
-func NodeCount(nodeGroups []*api.NodeGroup) int64 {
+func NodeCount(nodeGroups []*apiAlpha.NodeGroup) int64 {
 	count := int64(0)
 	for _, ng := range nodeGroups {
 		count += ng.Spec.Nodes
@@ -30,7 +31,7 @@ func NodeCount(nodeGroups []*api.NodeGroup) int64 {
 	return count
 }
 
-func FindMasterNodeGroup(nodeGroups []*api.NodeGroup) (*api.NodeGroup, error) {
+func FindMasterNodeGroup(nodeGroups []*apiAlpha.NodeGroup) (*apiAlpha.NodeGroup, error) {
 	for _, ng := range nodeGroups {
 		if ng.IsMaster() {
 			return ng, nil
@@ -174,7 +175,7 @@ func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cl
 	}
 	secret := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: cluster.Spec.Cloud.CloudProvider,
+			Name: cluster.ProviderConfig().CloudProvider,
 		},
 		StringData: cred.Spec.Data,
 		Type:       core.SecretTypeOpaque,

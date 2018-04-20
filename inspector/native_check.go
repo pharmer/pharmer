@@ -2,7 +2,6 @@ package inspector
 
 import (
 	"fmt"
-
 	"github.com/appscode/go/term"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"

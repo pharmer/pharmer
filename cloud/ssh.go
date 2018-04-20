@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-
 	"github.com/appscode/go/log"
 	"golang.org/x/crypto/ssh"
 )

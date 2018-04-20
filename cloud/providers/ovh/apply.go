@@ -2,7 +2,6 @@ package ovh
 
 import (
 	"fmt"
-
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"

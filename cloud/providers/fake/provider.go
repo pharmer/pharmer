@@ -2,7 +2,6 @@ package fake
 
 import (
 	"context"
-
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	core "k8s.io/api/core/v1"

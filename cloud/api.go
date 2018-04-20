@@ -1,6 +1,7 @@
 package cloud
 
 import (
+	apiv1 "github.com/pharmer/pharmer/apis/v1"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
@@ -14,8 +15,10 @@ var (
 
 type Interface interface {
 	SSHGetter
-	GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error)
+	GetDefaultNodeSpec(cluster *apiv1.Cluster, sku string) (apiv1.NodeSpec, error)
+	//GetDefaultMachineSpec(cluster *api.Cluster, sku string) ()
 	SetDefaults(in *api.Cluster) error
+	SetDefaultCluster(in *apiv1.Cluster, conf *apiv1.ClusterProviderConfig) error
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
 	// GetAdminClient() (kubernetes.Interface, error)
@@ -28,7 +31,7 @@ type Interface interface {
 }
 
 type SSHGetter interface {
-	GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error)
+	GetSSHConfig(cluster *apiv1.Cluster, node *core.Node) (*apiv1.SSHConfig, error)
 }
 
 type NodeGroupManager interface {

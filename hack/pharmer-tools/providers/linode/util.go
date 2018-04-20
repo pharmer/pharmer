@@ -2,7 +2,6 @@ package linode
 
 import (
 	"strconv"
-
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"
 	"github.com/pkg/errors"

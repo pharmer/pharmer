@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
 	. "github.com/appscode/go/context"
 	"github.com/digitalocean/godo"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"

@@ -2,7 +2,6 @@ package gce
 
 import (
 	"context"
-
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"

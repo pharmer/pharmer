@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"testing"
-
 	_ "github.com/onsi/ginkgo"
 	_ "github.com/onsi/gomega"
 )

@@ -3,7 +3,6 @@ package cloud
 import (
 	"fmt"
 	"time"
-
 	aauthz "github.com/Azure/azure-sdk-for-go/arm/authorization"
 	"github.com/Azure/azure-sdk-for-go/arm/graphrbac"
 	"github.com/Azure/azure-sdk-for-go/arm/resources/subscriptions"

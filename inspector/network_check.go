@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-
 	"github.com/appscode/go/term"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"

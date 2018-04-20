@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"io"
-
 	cpCmd "github.com/pharmer/pharmer/cloud/cmds"
 	credCmd "github.com/pharmer/pharmer/credential/cmds"
 	"github.com/spf13/cobra"

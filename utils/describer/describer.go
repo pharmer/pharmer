@@ -3,7 +3,6 @@ package describer
 import (
 	"context"
 	"reflect"
-
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"

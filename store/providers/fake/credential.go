@@ -3,7 +3,6 @@ package fake
 import (
 	"path/filepath"
 	"sync"
-
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"

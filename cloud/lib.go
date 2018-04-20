@@ -2,17 +2,22 @@ package cloud
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	. "github.com/appscode/go/types"
+	api "github.com/pharmer/pharmer/apis/v1"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/util/cert"
+	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 var managedProviders = sets.NewString("aks", "gke")
@@ -25,7 +30,7 @@ func Get(ctx context.Context, name string) (*api.Cluster, error) {
 	return Store(ctx).Clusters().Get(name)
 }
 
-func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
+func Create(ctx context.Context, cluster *api.Cluster, config *api.ClusterProviderConfig) (*api.Cluster, error) {
 	if cluster == nil {
 		return nil, errors.New("missing cluster")
 	} else if cluster.Name == "" {
@@ -39,11 +44,11 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 		return nil, errors.Errorf("cluster exists with name `%s`", cluster.Name)
 	}
 
-	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err = cm.SetDefaults(cluster); err != nil {
+	if err = cm.SetDefaultCluster(cluster, config); err != nil {
 		return nil, err
 	}
 	if cluster, err = Store(ctx).Clusters().Create(cluster); err != nil {
@@ -56,7 +61,7 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
 		return nil, err
 	}
-	if !managedProviders.Has(cluster.Spec.Cloud.CloudProvider) {
+	if !managedProviders.Has(cluster.ProviderConfig().CloudProvider) {
 		if err = CreateNodeGroup(ctx, cluster, api.RoleMaster, "", api.NodeTypeRegular, 1, float64(0)); err != nil {
 			return nil, err
 		}
@@ -67,30 +72,53 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 	return cluster, nil
 }
 
-func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string, nodeType api.NodeType, count int, spotPriceMax float64) error {
-	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string, nodeType api.NodeType, count int32, spotPriceMax float64) error {
+	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
 	if err != nil {
 		return err
 	}
+
 	spec, err := cm.GetDefaultNodeSpec(cluster, sku)
 	if err != nil {
 		return err
 	}
 
-	ig := api.NodeGroup{
+	spec.Type = nodeType
+	if nodeType == api.NodeTypeSpot {
+		spec.SpotPriceMax = spotPriceMax
+	}
+	nodeConf := api.MachineProviderConfig{
+		Name:   "",
+		Config: &spec,
+	}
+	providerConfValue, err := json.Marshal(nodeConf)
+	if err != nil {
+		return err
+	}
+
+	ig := clusterv1.MachineSet{
 		ObjectMeta: metav1.ObjectMeta{
 			ClusterName:       cluster.Name,
 			UID:               uuid.NewUUID(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
-		Spec: api.NodeGroupSpec{
-			Nodes: int64(count),
-			Template: api.NodeTemplateSpec{
-				Spec: spec,
+		Spec: clusterv1.MachineSetSpec{
+			Replicas: Int32P(count),
+			Template: clusterv1.MachineTemplateSpec{
+				Spec: clusterv1.MachineSpec{
+					Roles: []clustercommon.MachineRole{
+						clustercommon.MachineRole(role),
+					},
+					ProviderConfig: clusterv1.ProviderConfig{
+						Value: &runtime.RawExtension{
+							Raw: providerConfValue,
+						},
+					},
+				},
 			},
 		},
 	}
-	if role == api.RoleMaster {
+	if role == string(clustercommon.MasterRole) {
 		ig.ObjectMeta.Name = "master"
 		ig.ObjectMeta.Labels = map[string]string{
 			api.RoleMasterKey: "",
@@ -100,10 +128,6 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string
 		ig.ObjectMeta.Labels = map[string]string{
 			api.RoleNodeKey: "",
 		}
-	}
-	ig.Spec.Template.Spec.Type = nodeType
-	if nodeType == api.NodeTypeSpot {
-		ig.Spec.Template.Spec.SpotPriceMax = spotPriceMax
 	}
 
 	_, err = Store(ctx).NodeGroups(cluster.Name).Create(&ig)
@@ -143,11 +167,11 @@ func DeleteNG(ctx context.Context, clusterName, nodeGroupName string) error {
 		return errors.Errorf(`nodegroup not found`)
 	}
 
-	if !nodeGroup.IsMaster() {
-		nodeGroup.DeletionTimestamp = &metav1.Time{Time: time.Now()}
-		_, err := Store(ctx).NodeGroups(clusterName).Update(nodeGroup)
-		return err
-	}
+	//	if !nodeGroup.IsMaster() {
+	//		nodeGroup.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+	_, err = Store(ctx).NodeGroups(clusterName).Update(nodeGroup)
+	return err
+	//	}
 
 	return nil
 }
@@ -171,7 +195,7 @@ func GetSSHConfig(ctx context.Context, nodeName string, cluster *api.Cluster) (*
 		return nil, err
 	}
 
-	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -231,12 +255,14 @@ func Apply(ctx context.Context, opts *options.ApplyConfig) ([]api.Action, error)
 		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", opts.ClusterName, err)
 	}
 
-	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(cm)
 
-	return cm.Apply(cluster, opts.DryRun)
+	return nil, nil
+	//return cm.Apply(cluster, opts.DryRun)
 }
 
 func CheckForUpdates(ctx context.Context, name string) (string, error) {
@@ -263,11 +289,11 @@ func CheckForUpdates(ctx context.Context, name string) (string, error) {
 	if ctx, err = LoadSSHKey(ctx, cluster); err != nil {
 		return "", err
 	}
-	kc, err := NewAdminClient(ctx, cluster)
+	/*kc, err := NewAdminClient(ctx, cluster)
 	if err != nil {
 		return "", err
 	}
-	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
 	if err != nil {
 		return "", err
 	}
@@ -276,7 +302,7 @@ func CheckForUpdates(ctx context.Context, name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	upm.PrintAvailableUpgrades(upgrades)
+	upm.PrintAvailableUpgrades(upgrades)*/
 	return "", nil
 }
 

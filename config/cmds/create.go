@@ -3,7 +3,6 @@ package cmds
 import (
 	"io/ioutil"
 	"time"
-
 	"github.com/appscode/go/term"
 	"github.com/graymeta/stow/azure"
 	gcs "github.com/graymeta/stow/google"

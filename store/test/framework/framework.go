@@ -2,7 +2,6 @@ package framework
 
 import (
 	"context"
-
 	. "github.com/onsi/gomega"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"

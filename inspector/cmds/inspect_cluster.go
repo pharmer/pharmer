@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"context"
-
 	"github.com/appscode/go/flags"
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"

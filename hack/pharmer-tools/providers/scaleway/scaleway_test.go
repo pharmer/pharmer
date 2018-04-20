@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
-
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"
 )
 

@@ -3,7 +3,6 @@ package framework
 import (
 	"context"
 	"fmt"
-
 	_env "github.com/appscode/go/env"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"

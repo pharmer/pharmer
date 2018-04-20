@@ -2,7 +2,6 @@ package cloud
 
 import (
 	"io/ioutil"
-
 	"github.com/ghodss/yaml"
 )
 
