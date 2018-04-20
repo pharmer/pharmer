@@ -2,6 +2,7 @@ package azure
 
 import (
 	"fmt"
+
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
 	"github.com/Azure/azure-sdk-for-go/arm/network"
 	armstorage "github.com/Azure/azure-sdk-for-go/arm/storage"

@@ -3,6 +3,7 @@ package packet
 import (
 	"strconv"
 	"strings"
+
 	"github.com/packethost/packngo"
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"

@@ -2,6 +2,7 @@ package digitalocean
 
 import (
 	"strings"
+
 	"github.com/digitalocean/godo"
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"

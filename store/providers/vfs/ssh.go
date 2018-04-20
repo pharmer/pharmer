@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"path/filepath"
+
 	"github.com/graymeta/stow"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"

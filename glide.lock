@@ -1,5 +1,5 @@
-hash: b50c98884b824276866316f82a3532ad41a12144f3ba91be8f5ed62757afd633
-updated: 2018-04-20T17:35:40.075428645+06:00
+hash: 795baeca76697eea553081dab3c153fc651632d3e5ea470a47a4cdee89f1294c
+updated: 2018-04-20T19:09:29.472484325+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -759,7 +759,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 1270e9f1ad9eaf6127691df90af0836f7e152495
+  version: 2b646f5717602fa3d168387e573eb4409322c8a7
   subpackages:
   - pkg/admission
   - pkg/admission/configuration
@@ -781,7 +781,6 @@ imports:
   - pkg/apis/apiserver/install
   - pkg/apis/apiserver/v1alpha1
   - pkg/apis/audit
-  - pkg/apis/audit/install
   - pkg/apis/audit/v1alpha1
   - pkg/apis/audit/v1beta1
   - pkg/apis/audit/validation
@@ -820,17 +819,14 @@ imports:
   - pkg/server/healthz
   - pkg/server/httplog
   - pkg/server/mux
-  - pkg/server/options
   - pkg/server/routes
   - pkg/server/routes/data/swagger
-  - pkg/server/storage
   - pkg/storage
   - pkg/storage/errors
   - pkg/storage/etcd
   - pkg/storage/etcd/metrics
   - pkg/storage/etcd/util
   - pkg/storage/etcd3
-  - pkg/storage/etcd3/preflight
   - pkg/storage/names
   - pkg/storage/storagebackend
   - pkg/storage/storagebackend/factory
@@ -838,12 +834,9 @@ imports:
   - pkg/util/feature
   - pkg/util/flag
   - pkg/util/flushwriter
-  - pkg/util/logs
   - pkg/util/trace
   - pkg/util/webhook
   - pkg/util/wsstream
-  - plugin/pkg/audit/log
-  - plugin/pkg/audit/webhook
   - plugin/pkg/authenticator/token/webhook
   - plugin/pkg/authorizer/webhook
 - name: k8s.io/client-go

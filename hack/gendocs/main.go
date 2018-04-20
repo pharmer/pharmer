@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
 	"github.com/appscode/go/runtime"
 	"github.com/pharmer/pharmer/cmds"
 	"github.com/spf13/cobra/doc"

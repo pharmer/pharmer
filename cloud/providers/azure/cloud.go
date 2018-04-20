@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
 	"github.com/Azure/azure-sdk-for-go/arm/network"
 	"github.com/Azure/azure-sdk-for-go/arm/resources/resources"

@@ -2,6 +2,7 @@ package azure
 
 import (
 	"strings"
+
 	"github.com/Azure/azure-sdk-for-go/arm/storage"
 	"github.com/appscode/go/crypto/rand"
 	. "github.com/appscode/go/types"

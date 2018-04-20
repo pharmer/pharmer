@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+
 	_env "github.com/appscode/go/env"
 	"github.com/hashicorp/go-version"
 	. "github.com/pharmer/pharmer/data/files"

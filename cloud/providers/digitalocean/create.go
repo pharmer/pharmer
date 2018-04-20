@@ -3,6 +3,7 @@ package digitalocean
 import (
 	"net"
 	"strings"
+
 	apiv1 "github.com/pharmer/pharmer/apis/v1"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"

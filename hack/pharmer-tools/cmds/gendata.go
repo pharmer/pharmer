@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"flag"
+
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/cmds/options"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/providers"
