@@ -248,6 +248,15 @@ curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/{{ .PrekVe
 timedatectl set-timezone Etc/UTC
 {{ template "prepare-host" . }}
 
+{{ if not .ExternalProvider }}
+{{ if .CloudConfig }}
+mkdir -p /etc/kubernetes/ccm
+cat > /etc/kubernetes/ccm/cloud-config <<EOF
+{{ .CloudConfig }}
+EOF
+{{ end }}
+{{ end }}
+
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
 Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
@@ -257,13 +266,6 @@ rm -rf /usr/sbin/policy-rc.d
 systemctl enable docker kubelet nfs-utils
 systemctl start docker kubelet nfs-utils
 
-{{ if not .ExternalProvider }}
-{{ if .CloudConfig }}
-cat > /etc/kubernetes/cloud-config <<EOF
-{{ .CloudConfig }}
-EOF
-{{ end }}
-{{ end }}
 
 kubeadm reset
 kubeadm join --token={{ .KubeadmToken }} --discovery-token-ca-cert-hash={{ .CAHash }} {{ .APIServerAddress }}
