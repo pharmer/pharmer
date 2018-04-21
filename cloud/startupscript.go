@@ -21,8 +21,8 @@ var kubernetesCNIVersions = map[string]string{
 
 var prekVersions = map[string]string{
 	"1.8.0":  "1.8.0",
-	"1.9.0":  "1.9.0-rc.0",
-	"1.10.0": "1.9.0-rc.0",
+	"1.9.0":  "1.9.0",
+	"1.10.0": "1.9.0",
 }
 
 type TemplateData struct {
@@ -156,6 +156,7 @@ curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/{{ .PrekVe
 
 timedatectl set-timezone Etc/UTC
 {{ template "prepare-host" . }}
+{{ template "mount-master-pd" . }}
 
 cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
@@ -215,7 +216,6 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 {{end}}
 
 {{ template "prepare-cluster" . }}
-{{ template "mount-master-pd" . }}
 `))
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`
