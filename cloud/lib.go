@@ -44,10 +44,11 @@ func Create(ctx context.Context, cluster *api.Cluster, config *api.ClusterProvid
 		return nil, errors.Errorf("cluster exists with name `%s`", cluster.Name)
 	}
 
-	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
+	cm, err := GetCloudManager(config.CloudProvider, ctx)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("setting up cluster")
 	if err = cm.SetDefaultCluster(cluster, config); err != nil {
 		return nil, err
 	}
@@ -62,14 +63,67 @@ func Create(ctx context.Context, cluster *api.Cluster, config *api.ClusterProvid
 		return nil, err
 	}
 	if !managedProviders.Has(cluster.ProviderConfig().CloudProvider) {
-		if err = CreateNodeGroup(ctx, cluster, api.RoleMaster, "", api.NodeTypeRegular, 1, float64(0)); err != nil {
+		masters, err := CreateMasterMachines(ctx, cluster, 1)
+		if err != nil {
 			return nil, err
 		}
+		cluster.Spec.Masters = masters
 	}
 	if _, err = Store(ctx).Clusters().Update(cluster); err != nil {
 		return nil, err
 	}
 	return cluster, nil
+}
+
+func CreateMasterMachines(ctx context.Context, cluster *api.Cluster, count int32) ([]*clusterv1.Machine, error) {
+	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
+	if err != nil {
+		return nil, err
+	}
+	spec, err := cm.GetDefaultNodeSpec(cluster, "")
+	if err != nil {
+		return nil, err
+	}
+	spec.Type = api.NodeTypeRegular
+
+	nodeConf := api.MachineProviderConfig{
+		Name:   "",
+		Config: &spec,
+	}
+	providerConfValue, err := json.Marshal(nodeConf)
+	if err != nil {
+		return nil, err
+	}
+
+	masters := make([]*clusterv1.Machine, 0)
+	var ind int32
+	for ind = 0; ind < count; ind++ {
+		machine := &clusterv1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              fmt.Sprintf("%v-master-%v", cluster.Name, ind),
+				ClusterName:       cluster.Name,
+				UID:               uuid.NewUUID(),
+				CreationTimestamp: metav1.Time{Time: time.Now()},
+				Labels: map[string]string{
+					api.RoleMasterKey: "",
+				},
+			},
+			Spec: clusterv1.MachineSpec{
+				Roles: []clustercommon.MachineRole{
+					clustercommon.MasterRole,
+				},
+				ProviderConfig: clusterv1.ProviderConfig{
+					Value: &runtime.RawExtension{
+						Raw: providerConfValue,
+					},
+				},
+			},
+		}
+		masters = append(masters, machine)
+
+	}
+
+	return masters, nil
 }
 
 func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string, nodeType api.NodeType, count int32, spotPriceMax float64) error {
@@ -130,7 +184,7 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string
 		}
 	}
 
-	_, err = Store(ctx).NodeGroups(cluster.Name).Create(&ig)
+	_, err = Store(ctx).MachineSet(cluster.Name).Create(&ig)
 
 	return err
 }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-version"
+	"k8s.io/apimachinery/pkg/runtime"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
@@ -30,6 +31,8 @@ type Cluster struct {
 type PharmerClusterSpec struct {
 	// +optional
 	ClusterAPI *clusterv1.Cluster `json:"clusterApi,omitempty" protobuf:"bytes,1,opt,name=clusterApi"`
+
+	Masters []*clusterv1.Machine `json:"masters,omitempty" protobuf:"bytes,2,opt,name=masters"`
 
 	API                        API               `json:"api" protobuf:"bytes,2,opt,name=api"`
 	KubernetesVersion          string            `json:"kubernetesVersion,omitempty" protobuf:"bytes,4,opt,name=kubernetesVersion"`
@@ -156,7 +159,11 @@ func (c *Cluster) SetProviderConfig(config *ClusterProviderConfig) error {
 		fmt.Println("Unable to marshal provider config: %v", err)
 		return err
 	}
-	c.Spec.ClusterAPI.Spec.ProviderConfig.Value.Raw = bytes
+	c.Spec.ClusterAPI.Spec.ProviderConfig = clusterv1.ProviderConfig{
+		Value: &runtime.RawExtension{
+			Raw: bytes,
+		},
+	}
 	return nil
 }
 
@@ -206,6 +213,15 @@ func (c *Cluster) IsMinorVersion(in string) bool {
 		return false
 	}
 	return inVer.String() == minor
+}
+
+func (c *Cluster) InitializeClusterApi() {
+	c.Spec.ClusterAPI = &clusterv1.Cluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: c.Name,
+		},
+		Spec: clusterv1.ClusterSpec{},
+	}
 }
 
 /*

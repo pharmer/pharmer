@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/appscode/go/crypto/rand"
+	apiv1 "github.com/pharmer/pharmer/apis/v1"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +17,7 @@ type GenericNodeGroupManager struct {
 	ng      *api.NodeGroup
 	im      InstanceManager
 	kc      kubernetes.Interface
-	cluster *api.Cluster
+	cluster *apiv1.Cluster
 	token   string
 	// preHook is run once before a set of nodes are added. This can be used to create or update startup scripts. Since this will be
 	// called, nodes are added, make sure this method can handle create/update scenarios for a NodeGroup.
@@ -28,7 +28,7 @@ type GenericNodeGroupManager struct {
 
 var _ NodeGroupManager = &GenericNodeGroupManager{}
 
-func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster, token string, initHook HookFunc, gcHook HookFunc) NodeGroupManager {
+func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *apiv1.Cluster, token string, initHook HookFunc, gcHook HookFunc) NodeGroupManager {
 	return &GenericNodeGroupManager{
 		ctx:     ctx,
 		ng:      ng,
@@ -131,10 +131,10 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 
 func (igm *GenericNodeGroupManager) AddNodes(count int64) error {
 	for i := int64(0); i < count; i++ {
-		_, err := igm.im.CreateInstance(rand.WithUniqSuffix(igm.ng.Name), igm.token, igm.ng)
+		/*_, err := igm.im.CreateInstance(rand.WithUniqSuffix(igm.ng.Name), igm.token, igm.ng)
 		if err != nil {
 			return err
-		}
+		}*/
 	}
 	return nil
 }

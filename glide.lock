@@ -1,5 +1,5 @@
-hash: 795baeca76697eea553081dab3c153fc651632d3e5ea470a47a4cdee89f1294c
-updated: 2018-04-20T19:09:29.472484325+06:00
+hash: 6b1c33ade4f4f5185fddf14fb9c0c93d2085db147460f25f9d456032e2b66e80
+updated: 2018-04-23T12:12:36.658415908+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -9,7 +9,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/go
-  version: 0eb2cabe3897bfd0fe615e9849583a88bcc82df4
+  version: 9ff183cbae833dbc9bd2da81eebfc71289e86605
   subpackages:
   - analytics
   - context
@@ -33,9 +33,13 @@ imports:
   version: 8c114997494552b1dd58cc96b5c096c2ccafe34b
 - name: github.com/appscode/go-hetzner
   version: c038e08b19b1c760484d443de8958880e35bd879
+- name: github.com/appscode/jsonpatch
+  version: 1359b374de83fa14fd58ab10aa8ea4935f84d249
 - name: github.com/appscode/kutil
   version: c3aa54aedcceb925ba15c7bf4a6c2e456138755e
   subpackages:
+  - meta
+  - tools/analytics
   - tools/backup
 - name: github.com/appscode/mergo
   version: e3000cb3d28c72b837601cac94debd91032d19fe
@@ -120,7 +124,7 @@ imports:
   - gettext/plural
   - gettext/po
 - name: github.com/coreos/etcd
-  version: 0520cb9304cb2385f7e72b8bc02d6e4d3257158a
+  version: eddf599c689ec85f4752060edff5a72e81e9106a
   subpackages:
   - auth/authpb
   - client
@@ -128,20 +132,21 @@ imports:
   - etcdserver/api/v3rpc/rpctypes
   - etcdserver/etcdserverpb
   - mvcc/mvccpb
-  - pkg/fileutil
   - pkg/pathutil
+  - pkg/srv
   - pkg/tlsutil
   - pkg/transport
   - pkg/types
+  - version
+- name: github.com/coreos/go-semver
+  version: 568e959cd89871e61434c1143528d9162da89ef2
+  subpackages:
+  - semver
 - name: github.com/coreos/go-systemd
   version: 48702e0da86bd25e76cfef347e2adeb434a0d0a6
   subpackages:
   - daemon
   - journal
-- name: github.com/coreos/pkg
-  version: fa29b1d70f0beaddd4c7021607cc3c3be8ce94b8
-  subpackages:
-  - capnslog
 - name: github.com/cpuguy83/go-md2man
   version: 71acacd42f85e5e82f70a55327789582a5200a90
   subpackages:
@@ -265,6 +270,7 @@ imports:
   subpackages:
   - jsonpb
   - proto
+  - protoc-gen-go/descriptor
   - ptypes
   - ptypes/any
   - ptypes/duration
@@ -272,6 +278,13 @@ imports:
   - ptypes/timestamp
 - name: github.com/google/btree
   version: 7d79101e329e5a3adf994758c578dab82b90c017
+- name: github.com/google/go-cmp
+  version: 97aa668b73e764ccdd786bc3ccd2edffe621150e
+  subpackages:
+  - cmp
+  - cmp/internal/diff
+  - cmp/internal/function
+  - cmp/internal/value
 - name: github.com/google/go-querystring
   version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
   subpackages:
@@ -317,16 +330,10 @@ imports:
   version: 787624de3eb7bd915c329cba748687a3b22666a6
   subpackages:
   - diskcache
-- name: github.com/grpc-ecosystem/go-grpc-prometheus
-  version: 2500245aa6110c562d17020fb31a2c133d737799
 - name: github.com/grpc-ecosystem/grpc-gateway
   version: 222f010658cca4619115dfe10279480c6621001e
   repo: https://github.com/appscode/grpc-gateway.git
   vcs: git
-  subpackages:
-  - runtime
-  - runtime/internal
-  - utilities
 - name: github.com/hashicorp/go-version
   version: 39c2af67036e26c310812b838b652cd91f66c9a7
   repo: https://github.com/appscode/go-version.git
@@ -359,6 +366,7 @@ imports:
   version: e809ac2f9f0c238f08d08a876f8b3f499604f941
   subpackages:
   - pkg/builders
+  - pkg/controller
 - name: github.com/lib/pq
   version: 69552e54d2a9d4c6a2438926a774930f7bc398ec
   subpackages:
@@ -483,11 +491,16 @@ imports:
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/scaleway/scaleway-cli
-  version: 6f1a313ee9322b6dbe499ec51c69ac38faa973b3
+  version: 53548bf67d9a32a2dcc8d627d1bd83ae4a3bf414
   subpackages:
   - pkg/api
   - pkg/sshcommand
   - pkg/utils
+- name: github.com/sergi/go-diff
+  version: 24e2351369ec4949b2ed0dc5c477afdd4c4034e8
+  repo: https://github.com/sergi/go-diff
+  subpackages:
+  - diffmatchpatch
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 10ef21a441db47d8b13ebcc5fd2310f636973c77
 - name: github.com/sirupsen/logrus
@@ -522,6 +535,13 @@ imports:
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:
   - codec
+- name: github.com/yudai/gojsondiff
+  version: e21612694bdd50975f93cd5eaccb457477128e28
+  subpackages:
+  - formatter
+- name: github.com/yudai/golcs
+  version: d1c525dea8ce39ea9a783d33cf08932305373f2c
+  repo: https://github.com/yudai/golcs
 - name: golang.org/x/crypto
   version: 84e98f45760e87786b7f24603b8166a6fa09811d
   subpackages:
@@ -613,6 +633,7 @@ imports:
 - name: google.golang.org/genproto
   version: 09f6ed296fc66555a25fe4ce95173148778dfa85
   subpackages:
+  - googleapis/api/annotations
   - googleapis/rpc/status
 - name: google.golang.org/grpc
   version: 6b51017f791ae1cfbec89c52efdf444b13b550ef
@@ -626,6 +647,7 @@ imports:
   - encoding
   - grpclb/grpc_lb_v1/messages
   - grpclog
+  - health/grpc_health_v1
   - internal
   - keepalive
   - metadata
@@ -834,6 +856,7 @@ imports:
   - pkg/util/feature
   - pkg/util/flag
   - pkg/util/flushwriter
+  - pkg/util/logs
   - pkg/util/trace
   - pkg/util/webhook
   - pkg/util/wsstream
@@ -1179,7 +1202,7 @@ imports:
   - plugin/pkg/scheduler/util
   - plugin/pkg/scheduler/volumebinder
 - name: k8s.io/metrics
-  version: dba7415d399b043dd64026e26a26aeb03dbbc220
+  version: ce28d8327a897baa8bfdf01f799693dbf7adc8ff
   subpackages:
   - pkg/apis/metrics
   - pkg/apis/metrics/v1alpha1
@@ -1190,11 +1213,29 @@ imports:
   - exec
   - exec/testing
 - name: sigs.k8s.io/cluster-api
-  version: df991ef535792b2bbec5242d63316cfd153ab5e6
+  version: 262113e72fb0857d5289e5b804a5ee3f639a6ea6
   subpackages:
+  - cloud/google
+  - cloud/google/config
+  - cloud/google/gceproviderconfig
+  - cloud/google/gceproviderconfig/v1alpha1
+  - cloud/google/machinesetup
+  - errors
   - pkg/apis/cluster
   - pkg/apis/cluster/common
   - pkg/apis/cluster/v1alpha1
+  - pkg/client/clientset_generated/clientset
+  - pkg/client/clientset_generated/clientset/scheme
+  - pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1
+  - pkg/client/informers_generated/externalversions
+  - pkg/client/informers_generated/externalversions/cluster
+  - pkg/client/informers_generated/externalversions/cluster/v1alpha1
+  - pkg/client/informers_generated/externalversions/internalinterfaces
+  - pkg/client/listers_generated/cluster/v1alpha1
+  - pkg/controller/config
+  - pkg/controller/machine
+  - pkg/controller/sharedinformers
+  - util
 - name: vbom.ml/util
   version: db5cfe13f5cc80a4990d98e2e1b0707a4d1a5394
   subpackages:

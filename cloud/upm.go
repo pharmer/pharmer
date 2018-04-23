@@ -9,6 +9,7 @@ import (
 	"text/tabwriter"
 
 	semver "github.com/hashicorp/go-version"
+	apiv1 "github.com/pharmer/pharmer/apis/v1"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -22,19 +23,19 @@ type GenericUpgradeManager struct {
 	ctx     context.Context
 	ssh     SSHGetter
 	kc      kubernetes.Interface
-	cluster *api.Cluster
+	cluster *apiv1.Cluster
 }
 
 var _ UpgradeManager = &GenericUpgradeManager{}
 
-func NewUpgradeManager(ctx context.Context, ssh SSHGetter, kc kubernetes.Interface, cluster *api.Cluster) UpgradeManager {
+func NewUpgradeManager(ctx context.Context, ssh SSHGetter, kc kubernetes.Interface, cluster *apiv1.Cluster) UpgradeManager {
 	return &GenericUpgradeManager{ctx: ctx, ssh: ssh, kc: kc, cluster: cluster}
 }
 
 func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error) {
 	// Collect the upgrades kubeadm can do in this list
 	upgrades := make([]*api.Upgrade, 0)
-	v := NewKubeVersionGetter(upm.kc, upm.cluster)
+	v := NewKubeVersionGetter(upm.kc, nil)
 	clusterVersionStr, clusterVersion, err := v.ClusterVersion()
 	if err != nil {
 		return nil, err

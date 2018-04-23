@@ -28,7 +28,7 @@ func (cm *ClusterManager) GetDefaultNodeSpec(cluster *apiv1.Cluster, sku string)
 func (cm *ClusterManager) SetDefaultCluster(cluster *apiv1.Cluster, config *apiv1.ClusterProviderConfig) error {
 	n := namer{cluster: cluster}
 
-	if err := api.AssignTypeKind(cluster); err != nil {
+	if err := apiv1.AssignTypeKind(cluster); err != nil {
 		return err
 	}
 	config.Region = config.Zone
@@ -36,6 +36,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *apiv1.Cluster, config *apiv
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	config.InstanceImage = "ubuntu-16-04-x64"
 
+	cluster.InitializeClusterApi()
 	cluster.SetNetworkingDefaults(config.NetworkProvider)
 
 	cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
@@ -53,7 +54,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *apiv1.Cluster, config *apiv
 	}
 
 	// Init status
-	cluster.Status = apiv1.ClusterStatus{
+	cluster.Status = apiv1.PharmerClusterStatus{
 		Phase: apiv1.ClusterPending,
 	}
 

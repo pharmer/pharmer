@@ -55,6 +55,10 @@ func (s *XormStore) NodeGroups(cluster string) store.NodeGroupStore {
 	return &nodeGroupXormStore{engine: s.engine, cluster: cluster}
 }
 
+func (s *XormStore) MachineSet(cluster string) store.MachineSetStore {
+	return &machineSetXormStore{engine: s.engine, cluster: cluster}
+}
+
 func (s *XormStore) Certificates(cluster string) store.CertificateStore {
 	return &certificateXormStore{engine: s.engine, cluster: cluster}
 }

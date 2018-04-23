@@ -26,7 +26,7 @@ func NewClusterCreateConfig() *ClusterCreateConfig {
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 			Generation:        time.Now().UnixNano(),
 		},
-		Spec: api.ClusterSpec{},
+		Spec: api.PharmerClusterSpec{},
 	}
 	return &ClusterCreateConfig{
 		Cluster: cluster,

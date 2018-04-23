@@ -1,6 +1,9 @@
 package v1
 
-import "github.com/pkg/errors"
+import (
+	"github.com/pkg/errors"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+)
 
 func AssignTypeKind(v interface{}) error {
 	switch u := v.(type) {
@@ -21,6 +24,12 @@ func AssignTypeKind(v interface{}) error {
 			u.APIVersion = "v1"
 		}
 		u.Kind = "Credential"
+		return nil
+	case *clusterv1.MachineSet:
+		if u.APIVersion == "" {
+			u.APIVersion = "v1"
+		}
+		u.Kind = "MachineSet"
 		return nil
 	}
 	return errors.New("Unknown api object type")

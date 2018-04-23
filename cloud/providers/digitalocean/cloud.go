@@ -2,7 +2,7 @@ package digitalocean
 
 import (
 	"context"
-	"fmt"
+	//	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,7 +10,7 @@ import (
 
 	. "github.com/appscode/go/context"
 	"github.com/digitalocean/godo"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
@@ -95,7 +95,7 @@ func (conn *cloudConnector) getPublicKey() (bool, int, error) {
 func (conn *cloudConnector) importPublicKey() (string, error) {
 	Logger(conn.ctx).Infof("Adding SSH public key")
 	id, _, err := conn.client.Keys.Create(context.TODO(), &godo.KeyCreateRequest{
-		Name:      conn.cluster.Spec.Cloud.SSHKeyName,
+		//	Name:      conn.cluster.Spec.Cloud.SSHKeyName,
 		PublicKey: string(SSHKey(conn.ctx).PublicKey),
 	})
 	if err != nil {
@@ -172,7 +172,7 @@ func (conn *cloudConnector) getReserveIP(ip string) (bool, error) {
 
 func (conn *cloudConnector) createReserveIP() (string, error) {
 	fip, _, err := conn.client.FloatingIPs.Create(context.TODO(), &godo.FloatingIPCreateRequest{
-		Region: conn.cluster.Spec.Cloud.Region,
+		//Region: conn.cluster.Spec.Cloud.Region,
 	})
 	if err != nil {
 		return "", err
@@ -202,6 +202,7 @@ func (conn *cloudConnector) releaseReservedIP(ip string) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
+/*
 func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
 	script, err := conn.renderStartupScript(ng, token)
 	if err != nil {
@@ -265,6 +266,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	}
 	return &node, nil
 }
+*/
 
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
 	dropletID, err := dropletIDFromProviderID(providerID)

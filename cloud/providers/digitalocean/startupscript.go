@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 
+	apiv1 "github.com/pharmer/pharmer/apis/v1"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,7 +13,7 @@ import (
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 )
 
-func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
+func newNodeTemplateData(ctx context.Context, cluster *apiv1.Cluster, ng *api.NodeGroup, token string) TemplateData {
 	td := TemplateData{
 		ClusterName:       cluster.Name,
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
@@ -20,10 +21,10 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		CAHash:            pubkeypin.Hash(CACert(ctx)),
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		APIServerAddress:  cluster.APIServerAddress(),
-		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
-		Provider:          cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider:  true, // DigitalOcean uses out-of-tree CCM
+		//APIServerAddress:  cluster.APIServerAddress(),
+		//	NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
+		//	Provider:          cluster.Spec.Cloud.CloudProvider,
+		ExternalProvider: true, // DigitalOcean uses out-of-tree CCM
 	}
 	{
 		td.KubeletExtraArgs = map[string]string{}
@@ -43,7 +44,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 	return td
 }
 
-func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup) TemplateData {
+func newMasterTemplateData(ctx context.Context, cluster *apiv1.Cluster, ng *api.NodeGroup) TemplateData {
 	td := newNodeTemplateData(ctx, cluster, ng, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: ng.Name,
@@ -59,9 +60,9 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			BindPort:         cluster.Spec.API.BindPort,
 		},
 		Networking: kubeadmapi.Networking{
-			ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
-			PodSubnet:     cluster.Spec.Networking.PodSubnet,
-			DNSDomain:     cluster.Spec.Networking.DNSDomain,
+			//	ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
+			//	PodSubnet:     cluster.Spec.Networking.PodSubnet,
+			//	DNSDomain:     cluster.Spec.Networking.DNSDomain,
 		},
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		// "external": cloudprovider not supported for apiserver and controller-manager

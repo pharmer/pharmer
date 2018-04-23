@@ -1,18 +1,17 @@
 package digitalocean
 
 import (
-	"context"
+	//"context"
 	"fmt"
-	"strconv"
-
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	//"strconv"
+	api "github.com/pharmer/pharmer/apis/v1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
-	core "k8s.io/api/core/v1"
-	kerr "k8s.io/apimachinery/pkg/api/errors"
+	//core "k8s.io/api/core/v1"
+	//kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	//kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
@@ -143,182 +142,182 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Tag %s found", "KubernetesCluster:"+cm.cluster.Name),
 		})
 	}
-
-	// -------------------------------------------------------------------ASSETS
-	var nodeGroups []*api.NodeGroup
-	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return
-	}
-	var masterNG *api.NodeGroup
-	masterNG, err = FindMasterNodeGroup(nodeGroups)
-	if err != nil {
-		return
-	}
-	if masterNG.Status.Nodes < masterNG.Spec.Nodes {
-		Logger(cm.ctx).Info("Creating master instance")
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("Master instance %s will be created", cm.namer.MasterName()),
-		})
-		if !dryRun {
-			var masterServer *api.NodeInfo
-			masterServer, err = cm.conn.CreateInstance(cm.namer.MasterName(), "", masterNG)
-			if err != nil {
-				return
-			}
-			if masterServer.PrivateIP != "" {
-				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
-					Type:    core.NodeInternalIP,
-					Address: masterServer.PrivateIP,
-				})
-			}
-
-			if masterNG.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
-				if len(cm.cluster.Status.ReservedIPs) == 0 {
-					acts = append(acts, api.Action{
-						Action:   api.ActionAdd,
-						Resource: "ReserveIP",
-						Message:  "ReservedIP will be created",
+	/*
+		// -------------------------------------------------------------------ASSETS
+		var nodeGroups []*api.NodeGroup
+		nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+		if err != nil {
+			return
+		}
+		var masterNG *api.NodeGroup
+		masterNG, err = FindMasterNodeGroup(nodeGroups)
+		if err != nil {
+			return
+		}
+		if masterNG.Status.Nodes < masterNG.Spec.Nodes {
+			Logger(cm.ctx).Info("Creating master instance")
+			acts = append(acts, api.Action{
+				Action:   api.ActionAdd,
+				Resource: "MasterInstance",
+				Message:  fmt.Sprintf("Master instance %s will be created", cm.namer.MasterName()),
+			})
+			if !dryRun {
+				var masterServer *api.NodeInfo
+				masterServer, err = cm.conn.CreateInstance(cm.namer.MasterName(), "", masterNG)
+				if err != nil {
+					return
+				}
+				if masterServer.PrivateIP != "" {
+					cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
+						Type:    core.NodeInternalIP,
+						Address: masterServer.PrivateIP,
 					})
-					if !dryRun {
-						var reservedIP string
-						reservedIP, err = cm.conn.createReserveIP()
+				}
+
+				if masterNG.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
+					if len(cm.cluster.Status.ReservedIPs) == 0 {
+						acts = append(acts, api.Action{
+							Action:   api.ActionAdd,
+							Resource: "ReserveIP",
+							Message:  "ReservedIP will be created",
+						})
+						if !dryRun {
+							var reservedIP string
+							reservedIP, err = cm.conn.createReserveIP()
+							if err != nil {
+								return
+							}
+							id, _ := strconv.Atoi(masterServer.ExternalID)
+							if err = cm.conn.assignReservedIP(reservedIP, id); err != nil {
+								return
+							}
+							cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
+								Type:    core.NodeExternalIP,
+								Address: reservedIP,
+							})
+							cm.cluster.Status.ReservedIPs = append(cm.cluster.Status.ReservedIPs, api.ReservedIP{
+								IP: reservedIP,
+							})
+						}
+					} else {
+						reservedIP := cm.cluster.Status.ReservedIPs[0].IP
+						found, err = cm.conn.getReserveIP(reservedIP)
 						if err != nil {
 							return
 						}
-						id, _ := strconv.Atoi(masterServer.ExternalID)
-						if err = cm.conn.assignReservedIP(reservedIP, id); err != nil {
+						if !found {
+							err = errors.Errorf("ReservedIP %s not found", reservedIP)
 							return
+						} else {
+							acts = append(acts, api.Action{
+								Action:   api.ActionNOP,
+								Resource: "ReserveIP",
+								Message:  fmt.Sprintf("Reserved ip %s found", reservedIP),
+							})
 						}
-						cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
-							Type:    core.NodeExternalIP,
-							Address: reservedIP,
-						})
-						cm.cluster.Status.ReservedIPs = append(cm.cluster.Status.ReservedIPs, api.ReservedIP{
-							IP: reservedIP,
-						})
+						if reservedIP != masterServer.PublicIP {
+							id, _ := strconv.Atoi(masterServer.ExternalID)
+							if err = cm.conn.assignReservedIP(reservedIP, id); err != nil {
+								return
+							}
+							cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
+								Type:    core.NodeExternalIP,
+								Address: reservedIP,
+							})
+							cm.cluster.Status.ReservedIPs = append(cm.cluster.Status.ReservedIPs, api.ReservedIP{
+								IP: reservedIP,
+							})
+						}
 					}
 				} else {
-					reservedIP := cm.cluster.Status.ReservedIPs[0].IP
-					found, err = cm.conn.getReserveIP(reservedIP)
-					if err != nil {
-						return
-					}
-					if !found {
-						err = errors.Errorf("ReservedIP %s not found", reservedIP)
-						return
-					} else {
-						acts = append(acts, api.Action{
-							Action:   api.ActionNOP,
-							Resource: "ReserveIP",
-							Message:  fmt.Sprintf("Reserved ip %s found", reservedIP),
-						})
-					}
-					if reservedIP != masterServer.PublicIP {
-						id, _ := strconv.Atoi(masterServer.ExternalID)
-						if err = cm.conn.assignReservedIP(reservedIP, id); err != nil {
-							return
-						}
+					if masterServer.PublicIP != "" {
 						cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
 							Type:    core.NodeExternalIP,
-							Address: reservedIP,
-						})
-						cm.cluster.Status.ReservedIPs = append(cm.cluster.Status.ReservedIPs, api.ReservedIP{
-							IP: reservedIP,
+							Address: masterServer.PublicIP,
 						})
 					}
 				}
-			} else {
-				if masterServer.PublicIP != "" {
-					cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
-						Type:    core.NodeExternalIP,
-						Address: masterServer.PublicIP,
-					})
+
+				var kc kubernetes.Interface
+				kc, err = cm.GetAdminClient()
+				if err != nil {
+					return
 				}
-			}
+				// wait for nodes to start
+				if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
+					return
+				}
 
-			var kc kubernetes.Interface
-			kc, err = cm.GetAdminClient()
-			if err != nil {
-				return
-			}
-			// wait for nodes to start
-			if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
-				return
-			}
+				masterNG.Status.Nodes = 1
+				masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(masterNG)
+				if err != nil {
+					return
+				}
 
-			masterNG.Status.Nodes = 1
-			masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(masterNG)
-			if err != nil {
-				return
-			}
+				// needed to get master_internal_ip
+				cm.cluster.Status.Phase = api.ClusterReady
+				if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+					return
+				}
+				// need to run ccm
+				if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
+					return
+				}
 
-			// needed to get master_internal_ip
-			cm.cluster.Status.Phase = api.ClusterReady
-			if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
-				return
 			}
-			// need to run ccm
-			if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
-				return
-			}
-
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "MasterInstance",
-			Message:  "master instance(s) already exist",
-		})
-	}
+		} else {
+			acts = append(acts, api.Action{
+				Action:   api.ActionNOP,
+				Resource: "MasterInstance",
+				Message:  "master instance(s) already exist",
+			})
+		}*/
 
 	return
 }
 
 // Scales up/down regular node groups
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
-	var nodeGroups []*api.NodeGroup
-	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return
-	}
-	var token string
-	var kc kubernetes.Interface
-	if cm.cluster.Status.Phase != api.ClusterPending {
-		kc, err = cm.GetAdminClient()
+	/*	var nodeGroups []*api.NodeGroup
+		nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}
-		if !dryRun {
-			if token, err = GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration); err != nil {
+		var token string
+		var kc kubernetes.Interface
+		if cm.cluster.Status.Phase != api.ClusterPending {
+			kc, err = cm.GetAdminClient()
+			if err != nil {
 				return
 			}
-			if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
-				return
+			if !dryRun {
+				if token, err = GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration); err != nil {
+					return
+				}
+				if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
+					return
+				}
 			}
-		}
 
-	}
-	for _, ng := range nodeGroups {
-		if ng.IsMaster() {
-			continue
 		}
-		igm := NewNodeGroupManager(cm.ctx, ng, cm.conn, kc, cm.cluster, token, nil, nil)
-		var a2 []api.Action
-		a2, err = igm.Apply(dryRun)
-		if err != nil {
-			return
-		}
-		acts = append(acts, a2...)
-	}
+		for _, ng := range nodeGroups {
+			if ng.IsMaster() {
+				continue
+			}
+			igm := NewNodeGroupManager(cm.ctx, ng, cm.conn, kc, cm.cluster, token, nil, nil)
+			var a2 []api.Action
+			a2, err = igm.Apply(dryRun)
+			if err != nil {
+				return
+			}
+			acts = append(acts, a2...)
+		}*/
 	return
 }
 
 // Deletes master(s) and releases other cloud resources
 func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error) {
-	var found bool
+	/*var found bool
 
 	if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
@@ -410,28 +409,28 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if err != nil {
 		return
 	}
-
+	*/
 	Logger(cm.ctx).Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
 	return
 }
 
 func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err error) {
-	var kc kubernetes.Interface
-	if kc, err = cm.GetAdminClient(); err != nil {
-		return
-	}
-
-	upm := NewUpgradeManager(cm.ctx, cm, kc, cm.cluster)
-	a, err := upm.Apply(dryRun)
-	if err != nil {
-		return
-	}
-	acts = append(acts, a...)
-	if !dryRun {
-		cm.cluster.Status.Phase = api.ClusterReady
-		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
-			return
-		}
-	}
+	//var kc kubernetes.Interface
+	//if kc, err = cm.GetAdminClient(); err != nil {
+	//	return
+	//}
+	//
+	//upm := NewUpgradeManager(cm.ctx, cm, kc, cm.cluster)
+	//a, err := upm.Apply(dryRun)
+	//if err != nil {
+	//	return
+	//}
+	//acts = append(acts, a...)
+	//if !dryRun {
+	//	cm.cluster.Status.Phase = api.ClusterReady
+	//	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+	//		return
+	//	}
+	//}
 	return
 }

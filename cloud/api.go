@@ -19,7 +19,7 @@ type Interface interface {
 	//GetDefaultMachineSpec(cluster *api.Cluster, sku string) ()
 	SetDefaults(in *api.Cluster) error
 	SetDefaultCluster(in *apiv1.Cluster, conf *apiv1.ClusterProviderConfig) error
-	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
+	Apply(in *apiv1.Cluster, dryRun bool) ([]apiv1.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
 	// GetAdminClient() (kubernetes.Interface, error)
 
@@ -41,7 +41,7 @@ type NodeGroupManager interface {
 }
 
 type InstanceManager interface {
-	CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error)
+	//CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error)
 	DeleteInstanceByProviderID(providerID string) error
 }
 

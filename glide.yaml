@@ -108,6 +108,8 @@ import:
   version: v1.9-alpha.3
 - package: k8s.io/apiserver
   version: release-1.9
+- package: github.com/coreos/etcd
+  version: v3.2.18
 testImport:
 - package: github.com/stretchr/testify
   version: v1.1.4

@@ -239,6 +239,10 @@ func (s *FileStore) NodeGroups(cluster string) store.NodeGroupStore {
 	return &nodeGroupFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
 }
 
+func (s *FileStore) MachineSet(cluster string) store.MachineSetStore {
+	return &machineSetFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
+}
+
 func (s *FileStore) Certificates(cluster string) store.CertificateStore {
 	return &certificateFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
 }
