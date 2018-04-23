@@ -5,6 +5,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 var (
@@ -41,7 +42,7 @@ type NodeGroupManager interface {
 }
 
 type InstanceManager interface {
-	//CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error)
+	CreateInstance(cluster *apiv1.Cluster, machine *clusterv1.Machine, token string) (*apiv1.NodeInfo, error)
 	DeleteInstanceByProviderID(providerID string) error
 }
 

@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/rsa"
 	"crypto/x509"
+	"fmt"
 
 	"github.com/appscode/go/crypto/ssh"
 	api "github.com/pharmer/pharmer/apis/v1"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/util/cert"
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	"k8s.io/kubernetes/pkg/apis/core"
 )
 
 func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
@@ -57,6 +59,34 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Co
 	}
 
 	Logger(ctx).Infoln("CA certificates generated successfully.")
+	return ctx, nil
+}
+
+func CreateApiserverCertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
+	Logger(ctx).Infoln("Generating CA certificate for cluster")
+
+	certStore := Store(ctx).Certificates(cluster.Name)
+	// -----------------------------------------------
+
+	cfg := cert.Config{
+		CommonName: fmt.Sprint("%v.%v.svc", "clusterapi", core.NamespaceDefault),
+	}
+
+	apiServerKey, err := cert.NewPrivateKey()
+	if err != nil {
+		return ctx, errors.Errorf("failed to generate private key. Reason: %v", err)
+	}
+	apiServerCert, err := cert.NewSignedCert(cfg, apiServerKey, CACert(ctx), CAKey(ctx))
+	if err != nil {
+		return ctx, errors.Errorf("failed to generate server certificate. Reason: %v", err)
+	}
+
+	ctx = context.WithValue(ctx, paramApiServerCert{}, apiServerCert)
+	ctx = context.WithValue(ctx, paramApiServerKey{}, apiServerKey)
+	if err = certStore.Create(kubeadmconst.APIServerCertAndKeyBaseName, apiServerCert, apiServerKey); err != nil {
+		return ctx, err
+	}
+	Logger(ctx).Infoln("Apiserver certificates generated successfully.")
 	return ctx, nil
 }
 

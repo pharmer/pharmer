@@ -1,15 +1,15 @@
 package v1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	//core "k8s.io/api/core/v1"
 	"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/go-version"
+	core "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
@@ -135,11 +135,17 @@ type CloudStatus struct {
 }
 
 type PharmerClusterStatus struct {
-	Phase  ClusterPhase `json:"phase,omitempty,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=ClusterPhase"`
-	Reason string       `json:"reason,omitempty,omitempty" protobuf:"bytes,2,opt,name=reason"`
-	Cloud  CloudStatus  `json:"cloud,omitempty" protobuf:"bytes,4,opt,name=cloud"`
-	//APIAddresses []core.NodeAddress `json:"apiServer,omitempty" protobuf:"bytes,5,rep,name=apiServer"`
-	//ReservedIPs  []ReservedIP       `json:"reservedIP,omitempty" protobuf:"bytes,6,rep,name=reservedIP"`
+	Phase        ClusterPhase       `json:"phase,omitempty,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=ClusterPhase"`
+	Reason       string             `json:"reason,omitempty,omitempty" protobuf:"bytes,2,opt,name=reason"`
+	Cloud        CloudStatus        `json:"cloud,omitempty" protobuf:"bytes,4,opt,name=cloud"`
+	APIAddresses []core.NodeAddress `json:"apiServer,omitempty" protobuf:"bytes,5,rep,name=apiServer"`
+	ReservedIPs  []ReservedIP       `json:"reservedIP,omitempty" protobuf:"bytes,6,rep,name=reservedIP"`
+}
+
+type ReservedIP struct {
+	IP   string `json:"ip,omitempty" protobuf:"bytes,1,opt,name=ip"`
+	ID   string `json:"id,omitempty" protobuf:"bytes,2,opt,name=id"`
+	Name string `json:"name,omitempty" protobuf:"bytes,3,opt,name=name"`
 }
 
 func (c *Cluster) ProviderConfig() *ClusterProviderConfig {
@@ -224,18 +230,12 @@ func (c *Cluster) InitializeClusterApi() {
 	}
 }
 
-/*
-
-func (c *Cluster) MachineProviderConfig() *MachineProviderConfig {
-	var providerConfigs []*MachineProviderConfig
-	for _, machineSet := range c.MachineSets {
-		raw := machineSet.Spec.Template.Spec.ProviderConfig
-		providerConfig := &MachineProviderConfig{}
-		err := json.Unmarshal([]byte(raw), providerConfig)
-		if err != nil {
-			logger.Critical("Unable to unmarshal provider config: %v", err)
-		}
-		providerConfigs = append(providerConfigs, providerConfig)
+func (c *Cluster) MachineProviderConfig(machine *clusterv1.Machine) (*MachineProviderConfig, error) {
+	var providerConfig *MachineProviderConfig
+	raw := machine.Spec.ProviderConfig.Value.Raw
+	err := json.Unmarshal(raw, providerConfig)
+	if err != nil {
+		return nil, err
 	}
-	return providerConfigs
-}*/
+	return providerConfig, nil
+}

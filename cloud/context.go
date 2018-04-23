@@ -24,6 +24,8 @@ type paramCACert struct{}
 type paramCAKey struct{}
 type paramFrontProxyCACert struct{}
 type paramFrontProxyCAKey struct{}
+type paramApiServerCert struct{}
+type paramApiServerKey struct{}
 
 type paramSSHKey struct{}
 
@@ -82,6 +84,14 @@ func FrontProxyCACert(ctx context.Context) *x509.Certificate {
 }
 func FrontProxyCAKey(ctx context.Context) *rsa.PrivateKey {
 	return ctx.Value(paramFrontProxyCAKey{}).(*rsa.PrivateKey)
+}
+
+func ApiServerCert(ctx context.Context) *x509.Certificate {
+	return ctx.Value(paramApiServerCert{}).(*x509.Certificate)
+}
+
+func ApiServerKey(ctx context.Context) *rsa.PrivateKey {
+	return ctx.Value(paramApiServerKey{}).(*rsa.PrivateKey)
 }
 
 func SSHKey(ctx context.Context) *ssh.SSHKey {

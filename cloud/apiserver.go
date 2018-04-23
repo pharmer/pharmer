@@ -16,11 +16,16 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/cert"
+	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
 
 const (
-	RetryInterval = 5 * time.Second
-	RetryTimeout  = 15 * time.Minute
+	RetryInterval      = 5 * time.Second
+	RetryTimeout       = 15 * time.Minute
+	ServiceAccountNs   = "kube-system"
+	ServiceAccountName = "default"
 )
 
 func NodeCount(nodeGroups []*apiAlpha.NodeGroup) int64 {
@@ -38,6 +43,34 @@ func FindMasterNodeGroup(nodeGroups []*apiAlpha.NodeGroup) (*apiAlpha.NodeGroup,
 		}
 	}
 	return nil, ErrNoMasterNG
+}
+
+func FindMasterMachines(cluster *api.Cluster) ([]*clusterv1.Machine, error) {
+	if len(cluster.Spec.Masters) == 0 {
+		return nil, fmt.Errorf("master machine not found")
+	}
+	return cluster.Spec.Masters, nil
+}
+
+func RoleContains(a clustercommon.MachineRole, list []clustercommon.MachineRole) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
+func IsMaster(machine *clusterv1.Machine) bool {
+	return RoleContains(clustercommon.MasterRole, machine.Spec.Roles)
+}
+
+func IsHASetup(cluster *api.Cluster) bool {
+	masters, err := FindMasterMachines(cluster)
+	if err != nil {
+		return false
+	}
+	return len(masters) > 1
 }
 
 // WARNING:
@@ -183,6 +216,47 @@ func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cl
 
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		_, err := client.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
+		return err == nil, nil
+	})
+}
+
+func NewClusterApiClient(ctx context.Context, cluster *api.Cluster) (*clientset.Clientset, error) {
+	adminCert, adminKey, err := CreateAdminCertificate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	host := cluster.APIServerURL()
+	if host == "" {
+		return nil, errors.Errorf("failed to detect api server url for cluster %s", cluster.Name)
+	}
+	cfg := &rest.Config{
+		Host: host,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData:   cert.EncodeCertPEM(CACert(ctx)),
+			CertData: cert.EncodeCertPEM(adminCert),
+			KeyData:  cert.EncodePrivateKeyPEM(adminKey),
+		},
+	}
+	return clientset.NewForConfig(cfg)
+}
+
+func waitForServiceAccount(ctx context.Context, client kubernetes.Interface) error {
+	attempt := 0
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+		Logger(ctx).Infof("Attempt %v: Waiting for the service account to exist...", attempt)
+
+		_, err := client.CoreV1().ServiceAccounts(ServiceAccountNs).Get(ServiceAccountName, metav1.GetOptions{})
+		return err == nil, nil
+	})
+}
+
+func waitForClusterResourceReady(ctx context.Context, clientSet clientset.Interface) error {
+	attempt := 0
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+		Logger(ctx).Infof("Attempt %v: Probing Kubernetes api server ...", attempt)
+		_, err := clientSet.Discovery().ServerResourcesForGroupVersion("cluster.k8s.io/v1alpha1")
 		return err == nil, nil
 	})
 }

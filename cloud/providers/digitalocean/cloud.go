@@ -2,7 +2,7 @@ package digitalocean
 
 import (
 	"context"
-	//	"fmt"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"k8s.io/apimachinery/pkg/util/wait"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type cloudConnector struct {
@@ -172,7 +173,7 @@ func (conn *cloudConnector) getReserveIP(ip string) (bool, error) {
 
 func (conn *cloudConnector) createReserveIP() (string, error) {
 	fip, _, err := conn.client.FloatingIPs.Create(context.TODO(), &godo.FloatingIPCreateRequest{
-		//Region: conn.cluster.Spec.Cloud.Region,
+		Region: conn.cluster.ProviderConfig().Region,
 	})
 	if err != nil {
 		return "", err
@@ -202,9 +203,8 @@ func (conn *cloudConnector) releaseReservedIP(ip string) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-/*
-func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
-	script, err := conn.renderStartupScript(ng, token)
+func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error) {
+	script, err := conn.renderStartupScript(cluster, machine, token)
 	if err != nil {
 		return nil, err
 	}
@@ -212,11 +212,16 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	fmt.Println()
 	fmt.Println(script)
 	fmt.Println()
+	clusterConfig := cluster.ProviderConfig()
+	machineConfig, err := cluster.MachineProviderConfig(machine)
+	if err != nil {
+		return nil, err
+	}
 	req := &godo.DropletCreateRequest{
-		Name:   name,
-		Region: conn.cluster.Spec.Cloud.Zone,
-		Size:   ng.Spec.Template.Spec.SKU,
-		Image:  godo.DropletCreateImage{Slug: conn.cluster.Spec.Cloud.InstanceImage},
+		Name:   machine.Name,
+		Region: clusterConfig.Zone,
+		Size:   machineConfig.Config.SKU,
+		Image:  godo.DropletCreateImage{Slug: clusterConfig.InstanceImage},
 		SSHKeys: []godo.DropletCreateSSHKey{
 			{Fingerprint: SSHKey(conn.ctx).OpensshFingerprint},
 			{Fingerprint: "0d:ff:0d:86:0c:f1:47:1d:85:67:1e:73:c6:0e:46:17"}, // tamal@beast
@@ -266,7 +271,24 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	}
 	return &node, nil
 }
-*/
+
+func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*godo.Droplet, error) {
+	droplets, _, err := conn.client.Droplets.List(oauth2.NoContext, &godo.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	for _, droplet := range droplets {
+		if droplet.Name == machine.Name {
+			d, _, err := conn.client.Droplets.Get(oauth2.NoContext, droplet.ID)
+			if err != nil {
+				return nil, err
+			}
+			return d, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no droplet found with %v name", machine.Name)
+}
 
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
 	dropletID, err := dropletIDFromProviderID(providerID)
