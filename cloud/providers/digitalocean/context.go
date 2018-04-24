@@ -13,6 +13,9 @@ type ClusterManager struct {
 	ctx     context.Context
 	cluster *api.Cluster
 	conn    *cloudConnector
+
+	actuator *Actuator
+
 	// Deprecated
 	namer namer
 

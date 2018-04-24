@@ -6,6 +6,8 @@ import (
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/controller/machine"
 )
 
 var (
@@ -15,6 +17,8 @@ var (
 )
 
 type Interface interface {
+	machine.Actuator
+
 	SSHGetter
 	GetDefaultNodeSpec(cluster *apiv1.Cluster, sku string) (apiv1.NodeSpec, error)
 	//GetDefaultMachineSpec(cluster *api.Cluster, sku string) ()
@@ -29,6 +33,8 @@ type Interface interface {
 	// SetVersion(req *proto.ClusterReconfigureRequest) error
 	// Scale(req *proto.ClusterReconfigureRequest) error
 	// GetInstance(md *api.InstanceStatus) (*api.Instance, error)
+
+	InitializeActuator(client.MachineInterface) error
 }
 
 type SSHGetter interface {

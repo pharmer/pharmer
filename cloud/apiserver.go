@@ -3,6 +3,7 @@ package cloud
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	stringz "github.com/appscode/go/strings"
@@ -12,6 +13,7 @@ import (
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -19,6 +21,7 @@ import (
 	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
+	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
 
 const (
@@ -257,6 +260,50 @@ func waitForClusterResourceReady(ctx context.Context, clientSet clientset.Interf
 		attempt++
 		Logger(ctx).Infof("Attempt %v: Probing Kubernetes api server ...", attempt)
 		_, err := clientSet.Discovery().ServerResourcesForGroupVersion("cluster.k8s.io/v1alpha1")
+		return err == nil, nil
+	})
+}
+
+func GetCurrentMachineIfExists(machineClient client.MachineInterface, machine *clusterv1.Machine) (*clusterv1.Machine, error) {
+	return GetMachineIfExists(machineClient, machine.ObjectMeta.Name, machine.ObjectMeta.UID)
+}
+
+func GetMachineIfExists(machineClient client.MachineInterface, name string, uid types.UID) (*clusterv1.Machine, error) {
+	if machineClient == nil {
+		fmt.Println("machine client is nil")
+		// Being called before k8s is setup as part of master VM creation
+		return nil, nil
+	}
+
+	// Machines are identified by name and UID
+	machine, err := machineClient.Get(name, metav1.GetOptions{})
+	if err != nil {
+		// TODO: Use formal way to check for not found
+		if strings.Contains(err.Error(), "not found") {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	fmt.Println(name, "<><>", machine.ObjectMeta.UID, "<<<", uid)
+
+	if machine.ObjectMeta.UID != uid {
+		fmt.Println("uid not match")
+		return nil, nil
+	}
+	return machine, nil
+}
+
+func CreateSecret(kc kubernetes.Interface, name string, data map[string][]byte) error {
+	secret := &core.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Data: data,
+	}
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		_, err := kc.CoreV1().Secrets(metav1.NamespaceDefault).Create(secret)
+		fmt.Println(err)
 		return err == nil, nil
 	})
 }

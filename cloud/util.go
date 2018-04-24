@@ -17,3 +17,12 @@ func ReadFileAs(path string, obj interface{}) error {
 	}
 	return nil
 }
+
+func Filter(list []string, strToFilter string) (newList []string) {
+	for _, item := range list {
+		if item != strToFilter {
+			newList = append(newList, item)
+		}
+	}
+	return
+}

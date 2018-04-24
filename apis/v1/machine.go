@@ -40,6 +40,6 @@ type NodeInfo struct {
 }
 
 type MachineProviderConfig struct {
-	Name   string
-	Config *NodeSpec
+	Name   string   `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	Config NodeSpec `json:"config,omitempty" protobuf:"bytes,2,opt,name=config"`
 }

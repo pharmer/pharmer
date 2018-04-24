@@ -326,4 +326,9 @@ func dropletIDFromProviderID(providerID string) (int, error) {
 	return strconv.Atoi(split[2])
 }
 
+func (conn *cloudConnector) deleteInstance(ctx context.Context, id int) error {
+	_, err := conn.client.Droplets.Delete(ctx, id)
+	return err
+}
+
 // ---------------------------------------------------------------------------------------------------------------------

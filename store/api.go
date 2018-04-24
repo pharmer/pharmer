@@ -24,10 +24,10 @@ type Interface interface {
 }
 
 type CredentialStore interface {
-	List(opts metav1.ListOptions) ([]*api.Credential, error)
-	Get(name string) (*api.Credential, error)
-	Create(obj *api.Credential) (*api.Credential, error)
-	Update(obj *api.Credential) (*api.Credential, error)
+	List(opts metav1.ListOptions) ([]*apiv1.Credential, error)
+	Get(name string) (*apiv1.Credential, error)
+	Create(obj *apiv1.Credential) (*apiv1.Credential, error)
+	Update(obj *apiv1.Credential) (*apiv1.Credential, error)
 	Delete(name string) error
 }
 

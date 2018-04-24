@@ -3,6 +3,7 @@ package digitalocean
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	api "github.com/pharmer/pharmer/apis/v1"
 	. "github.com/pharmer/pharmer/cloud"
@@ -21,21 +22,22 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		CAHash:            pubkeypin.Hash(CACert(ctx)),
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		//APIServerAddress:  cluster.APIServerAddress(),
-		//	NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
-		//	Provider:          cluster.Spec.Cloud.CloudProvider,
-		ExternalProvider: true, // DigitalOcean uses out-of-tree CCM
+		APIServerAddress:  cluster.APIServerAddress(),
+		NetworkProvider:   cluster.ProviderConfig().NetworkProvider,
+		Provider:          cluster.ProviderConfig().CloudProvider,
+		ExternalProvider:  true, // DigitalOcean uses out-of-tree CCM
 	}
 	{
 		td.KubeletExtraArgs = map[string]string{}
 		for k, v := range cluster.Spec.KubeletExtraArgs {
 			td.KubeletExtraArgs[k] = v
 		}
-		providerConfig, err := cluster.MachineProviderConfig(machine)
+		fmt.Println(machine)
+		machineConfig, err := cluster.MachineProviderConfig(machine)
 		if err != nil {
-			//Fatal error
+			panic(err)
 		}
-		for k, v := range providerConfig.Config.KubeletExtraArgs {
+		for k, v := range machineConfig.Config.KubeletExtraArgs {
 			td.KubeletExtraArgs[k] = v
 		}
 		td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
@@ -64,9 +66,9 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 			BindPort:         cluster.Spec.API.BindPort,
 		},
 		Networking: kubeadmapi.Networking{
-			//	ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
-			//	PodSubnet:     cluster.Spec.Networking.PodSubnet,
-			//	DNSDomain:     cluster.Spec.Networking.DNSDomain,
+			ServiceSubnet: cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Services.CIDRBlocks[0],
+			PodSubnet:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
+			DNSDomain:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.ServiceDomain,
 		},
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		// "external": cloudprovider not supported for apiserver and controller-manager

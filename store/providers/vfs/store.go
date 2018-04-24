@@ -20,7 +20,7 @@ import (
 	"github.com/graymeta/stow/local"
 	"github.com/graymeta/stow/s3"
 	"github.com/graymeta/stow/swift"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"

@@ -245,6 +245,11 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 						}
 					}
 				}
+				err = cm.cluster.SetClusterApiEndpoints()
+				if err != nil {
+					return
+				}
+				Store(cm.ctx).Clusters().Update(cm.cluster)
 			}
 		} else {
 			acts = append(acts, api.Action{
@@ -275,7 +280,15 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
 		return
 	}
-	return
+
+	ca, err := NewClusterApi(cm.ctx, cm.cluster, kc)
+	if err != nil {
+		return acts, err
+	}
+	if err := ca.Apply(); err != nil {
+		return acts, err
+	}
+	return acts, err
 }
 
 // Scales up/down regular node groups

@@ -6,8 +6,8 @@ import (
 	"crypto/x509"
 	"sync"
 
-	apiv1 "github.com/pharmer/pharmer/apis/v1"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
+	apiAlpha "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/store"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
@@ -59,7 +59,7 @@ func (s *FakeStore) Clusters() store.ClusterStore {
 	defer s.mux.Unlock()
 
 	if s.clusters == nil {
-		s.clusters = &clusterFileStore{container: map[string]*apiv1.Cluster{}}
+		s.clusters = &clusterFileStore{container: map[string]*api.Cluster{}}
 	}
 	return s.clusters
 }
@@ -69,7 +69,7 @@ func (s *FakeStore) NodeGroups(cluster string) store.NodeGroupStore {
 	defer s.mux.Unlock()
 
 	if _, found := s.nodeGroups[cluster]; !found {
-		s.nodeGroups[cluster] = &nodeGroupFileStore{container: map[string]*api.NodeGroup{}, cluster: cluster}
+		s.nodeGroups[cluster] = &nodeGroupFileStore{container: map[string]*apiAlpha.NodeGroup{}, cluster: cluster}
 	}
 	return s.nodeGroups[cluster]
 }

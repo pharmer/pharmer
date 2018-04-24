@@ -1,4 +1,4 @@
-package controller
+package cmds
 
 import (
 	"github.com/spf13/cobra"
@@ -14,12 +14,16 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/controller/machine"
 	"sigs.k8s.io/cluster-api/pkg/controller/sharedinformers"
 	"github.com/appscode/go/term"
-	"fmt"
+	"github.com/pharmer/pharmer/cloud"
+	pharmerConf "github.com/pharmer/pharmer/config"
+	core "k8s.io/api/core/v1"
+	"context"
 )
 
 
-func NewCmdRun() *cobra.Command  {
+func NewCmdRunController() *cobra.Command  {
 	s := config.ControllerConfig
+	provider := "digitalocean"
 	cmd := &cobra.Command{
 		Use:               "run",
 		Short:             "Bootstrap as a Kubernetes master or node",
@@ -33,15 +37,28 @@ func NewCmdRun() *cobra.Command  {
 			if err != nil {
 				term.Fatalln(err)
 			}
-			fmt.Println(client)
+
+			cfgFile, _ := pharmerConf.GetConfigFile(cmd.Flags())
+			cfg, err := pharmerConf.LoadConfig(cfgFile)
+			term.ExitOnError(err)
+
+			ctx := cloud.NewContext(context.Background(), cfg, pharmerConf.GetEnv(cmd.Flags()))
+			cm, err := cloud.GetCloudManager(provider, ctx)
+			term.ExitOnError(err)
+
+			err = cm.InitializeActuator(client.ClusterV1alpha1().Machines(core.NamespaceDefault))
+			term.ExitOnError(err)
+
+
 			//actuator, err :=
 			shutdown := make(chan struct{})
 			si := sharedinformers.NewSharedInformers(conf, shutdown)
-			c := machine.NewMachineController(conf, si, nil)
+			c := machine.NewMachineController(conf, si, cm)
 			c.Run(shutdown)
 			select {}
 		},
 	}
 	s.AddFlags(cmd.Flags())
+	cmd.Flags().StringVar(&provider, "provider", provider, "Cloud provider name")
 	return cmd
 }

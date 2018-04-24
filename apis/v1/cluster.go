@@ -3,6 +3,7 @@ package v1
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/go-version"
 	core "k8s.io/api/core/v1"
@@ -34,7 +35,7 @@ type PharmerClusterSpec struct {
 
 	Masters []*clusterv1.Machine `json:"masters,omitempty" protobuf:"bytes,2,opt,name=masters"`
 
-	API                        API               `json:"api" protobuf:"bytes,2,opt,name=api"`
+	API                        API               `json:"api" protobuf:"bytes,3,opt,name=api"`
 	KubernetesVersion          string            `json:"kubernetesVersion,omitempty" protobuf:"bytes,4,opt,name=kubernetesVersion"`
 	Locked                     bool              `json:"locked,omitempty" protobuf:"varint,5,opt,name=locked"`
 	CACertName                 string            `json:"caCertName,omitempty" protobuf:"bytes,6,opt,name=caCertName"`
@@ -186,6 +187,61 @@ func (c *Cluster) APIServerURL() string {
 	}
 }
 
+func (c *Cluster) SetClusterApiEndpoints() error {
+	m := map[core.NodeAddressType]string{}
+	for _, addr := range c.Status.APIAddresses {
+		m[addr.Type] = addr.Address
+
+	}
+	if u, found := m[core.NodeExternalIP]; found {
+		c.Spec.ClusterAPI.Status.APIEndpoints = []clusterv1.APIEndpoint{
+			{
+				Host: u,
+				Port: int(c.Spec.API.BindPort),
+			},
+		}
+		return nil
+	}
+	if u, found := m[core.NodeExternalDNS]; found {
+		c.Spec.ClusterAPI.Status.APIEndpoints = []clusterv1.APIEndpoint{
+			{
+				Host: u,
+				Port: int(c.Spec.API.BindPort),
+			},
+		}
+		return nil
+	}
+	return fmt.Errorf("No cluster api endpoint found")
+}
+
+func (c *Cluster) APIServerAddress() string {
+	m := map[core.NodeAddressType]string{}
+	for _, addr := range c.Status.APIAddresses {
+		m[addr.Type] = fmt.Sprintf("%s:%d", addr.Address, c.Spec.API.BindPort)
+	}
+	// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
+	addrTypes := []core.NodeAddressType{
+		core.NodeInternalDNS,
+		core.NodeInternalIP,
+		core.NodeExternalDNS,
+		core.NodeExternalIP,
+	}
+	if pat, found := c.Spec.APIServerExtraArgs["kubelet-preferred-address-types"]; found {
+		ats := strings.Split(pat, ",")
+		addrTypes = make([]core.NodeAddressType, len(ats))
+		for i, at := range ats {
+			addrTypes[i] = core.NodeAddressType(at)
+		}
+	}
+
+	for _, at := range addrTypes {
+		if u, found := m[at]; found {
+			return u
+		}
+	}
+	return ""
+}
+
 func (c *Cluster) SetNetworkingDefaults(provider string) {
 	clusterSpec := c.Spec.ClusterAPI.Spec
 	if len(clusterSpec.ClusterNetwork.Services.CIDRBlocks) == 0 {
@@ -231,7 +287,7 @@ func (c *Cluster) InitializeClusterApi() {
 }
 
 func (c *Cluster) MachineProviderConfig(machine *clusterv1.Machine) (*MachineProviderConfig, error) {
-	var providerConfig *MachineProviderConfig
+	providerConfig := &MachineProviderConfig{}
 	raw := machine.Spec.ProviderConfig.Value.Raw
 	err := json.Unmarshal(raw, providerConfig)
 	if err != nil {

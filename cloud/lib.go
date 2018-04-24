@@ -88,7 +88,7 @@ func CreateMasterMachines(ctx context.Context, cluster *api.Cluster, count int32
 
 	nodeConf := api.MachineProviderConfig{
 		Name:   "",
-		Config: &spec,
+		Config: spec,
 	}
 	providerConfValue, err := json.Marshal(nodeConf)
 	if err != nil {
@@ -143,7 +143,7 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string
 	}
 	nodeConf := api.MachineProviderConfig{
 		Name:   "",
-		Config: &spec,
+		Config: spec,
 	}
 	providerConfValue, err := json.Marshal(nodeConf)
 	if err != nil {
@@ -313,10 +313,8 @@ func Apply(ctx context.Context, opts *options.ApplyConfig) ([]api.Action, error)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(cm)
 
-	return nil, nil
-	//return cm.Apply(cluster, opts.DryRun)
+	return cm.Apply(cluster, opts.DryRun)
 }
 
 func CheckForUpdates(ctx context.Context, name string) (string, error) {

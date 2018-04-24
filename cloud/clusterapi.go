@@ -3,6 +3,7 @@ package cloud
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"text/template"
@@ -15,13 +16,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/cert"
+	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
 
 type ClusterApi struct {
-	ctx       context.Context
-	cluster   *api.Cluster
+	ctx     context.Context
+	cluster *api.Cluster
+
+	token     string
 	kc        kubernetes.Interface
 	client    v1alpha1.ClusterV1alpha1Interface
 	clientSet clientset.Interface
@@ -42,13 +46,21 @@ var apiServerImage = "pharmer/cluster-apiserver:0.0.1"
 var controllerManagerImage = "pharmer/cluster-controller-manager:0.0.1"
 var machineControllerImage = "pharmer/gce-machine-controller:0.0.1"
 
+const (
+	BasePath = ".pharmer/config.d"
+)
+
 func NewClusterApi(ctx context.Context, cluster *api.Cluster, kc kubernetes.Interface) (*ClusterApi, error) {
 	c, err := NewClusterApiClient(ctx, cluster)
 	if err != nil {
 		return nil, err
 	}
+	var token string
+	if token, err = GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration); err != nil {
+		return nil, err
+	}
 
-	return &ClusterApi{ctx: ctx, kc: kc, client: c.ClusterV1alpha1(), clientSet: c}, nil
+	return &ClusterApi{ctx: ctx, cluster: cluster, kc: kc, token: token, client: c.ClusterV1alpha1(), clientSet: c}, nil
 }
 
 func (ca *ClusterApi) Apply() error {
@@ -80,11 +92,74 @@ func (ca *ClusterApi) Apply() error {
 }
 
 func (ca *ClusterApi) CreateMachineController() error {
+	Logger(ca.ctx).Infoln("creating pharmer secret")
+	if err := ca.CreatePharmerSecret(); err != nil {
+		return err
+	}
+
+	Logger(ca.ctx).Infoln("creating cluster api rolebinding")
+	if err := ca.CreateExtApiServerRoleBinding(); err != nil {
+		return err
+	}
+
+	Logger(ca.ctx).Infoln("creating apiserver and controller")
+	if err := ca.CreateApiServerAndController(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ca *ClusterApi) CreatePharmerSecret() error {
+	providerConfig := ca.cluster.ProviderConfig()
+
+	cred, err := Store(ca.ctx).Credentials().Get(ca.cluster.Spec.CredentialName)
+	if err != nil {
+		return err
+	}
+	credData, err := json.MarshalIndent(cred, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err = CreateSecret(ca.kc, "pharmer-cred", map[string][]byte{
+		fmt.Sprintf("%v.json", ca.cluster.Spec.CredentialName): credData,
+	}); err != nil {
+		return err
+	}
+
+	cluster, err := json.MarshalIndent(ca.cluster, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err = CreateSecret(ca.kc, "pharmer-cluster", map[string][]byte{
+		fmt.Sprintf("%v.json", ca.cluster.Name): cluster,
+	}); err != nil {
+		return err
+	}
+
+	privateKey, publicKey, err := Store(ca.ctx).SSHKeys(ca.cluster.Name).Get(ca.cluster.ProviderConfig().SSHKeyName)
+	if err != nil {
+		return err
+	}
+	if err = CreateSecret(ca.kc, "pharmer-ssh", map[string][]byte{
+		providerConfig.SSHKeyName:                        privateKey,
+		fmt.Sprintf("%v.pub", providerConfig.SSHKeyName): publicKey,
+	}); err != nil {
+		return err
+	}
+
+	if err = CreateSecret(ca.kc, "pharmer-certificate", map[string][]byte{
+		"ca.crt":             cert.EncodeCertPEM(CACert(ca.ctx)),
+		"ca.key":             cert.EncodePrivateKeyPEM(CAKey(ca.ctx)),
+		"front-proxy-ca.crt": cert.EncodeCertPEM(FrontProxyCACert(ca.ctx)),
+		"front-proxy-ca.key": cert.EncodePrivateKeyPEM(FrontProxyCAKey(ca.ctx)),
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (ca *ClusterApi) CreateExtApiServerRoleBinding() error {
-	var client kubernetes.Interface
 	rolebinding := &rbac.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "machine-controller",
@@ -104,7 +179,7 @@ func (ca *ClusterApi) CreateExtApiServerRoleBinding() error {
 	}
 
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := client.RbacV1().RoleBindings(metav1.NamespaceSystem).Create(rolebinding)
+		_, err := ca.kc.RbacV1().RoleBindings(metav1.NamespaceSystem).Create(rolebinding)
 		return err == nil, nil
 	})
 }
