@@ -59,6 +59,9 @@ func Create(ctx context.Context, cluster *api.Cluster, config *api.ClusterProvid
 	if ctx, err = CreateCACertificates(ctx, cluster); err != nil {
 		return nil, err
 	}
+	if ctx, err = CreateApiserverCertificates(ctx, cluster); err != nil {
+		return nil, err
+	}
 	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
 		return nil, err
 	}
@@ -105,7 +108,8 @@ func CreateMasterMachines(ctx context.Context, cluster *api.Cluster, count int32
 				UID:               uuid.NewUUID(),
 				CreationTimestamp: metav1.Time{Time: time.Now()},
 				Labels: map[string]string{
-					api.RoleMasterKey: "",
+					api.RoleMasterKey:  "",
+					api.PharmerCluster: cluster.Name,
 				},
 			},
 			Spec: clusterv1.MachineSpec{
@@ -175,12 +179,14 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string
 	if role == string(clustercommon.MasterRole) {
 		ig.ObjectMeta.Name = "master"
 		ig.ObjectMeta.Labels = map[string]string{
-			api.RoleMasterKey: "",
+			api.RoleMasterKey:  "",
+			api.PharmerCluster: cluster.Name,
 		}
 	} else {
 		ig.ObjectMeta.Name = strings.Replace(sku, "_", "-", -1) + "-pool"
 		ig.ObjectMeta.Labels = map[string]string{
-			api.RoleNodeKey: "",
+			api.RoleNodeKey:    "",
+			api.PharmerCluster: cluster.Name,
 		}
 	}
 

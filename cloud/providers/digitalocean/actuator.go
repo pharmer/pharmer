@@ -24,7 +24,6 @@ func (cm *ClusterManager) InitializeActuator(machineClient client.MachineInterfa
 	if err != nil {
 		return err
 	}
-	fmt.Println(machineClient)
 	cm.actuator = &Actuator{
 		machineClient: machineClient,
 		scheme:        scheme,
@@ -46,9 +45,9 @@ func (cm *ClusterManager) PrepareCloud(clusterName string) error {
 	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
-	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
+	/*if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
 		return err
-	}
+	}*/
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
@@ -88,7 +87,11 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 }
 
 func (cm *ClusterManager) Delete(machine *clusterv1.Machine) error {
-	if err := cm.PrepareCloud(machine.ClusterName); err != nil {
+	clusterName := machine.ClusterName
+	if _, found := machine.Labels[api.PharmerCluster]; found {
+		clusterName = machine.Labels[api.PharmerCluster]
+	}
+	if err := cm.PrepareCloud(clusterName); err != nil {
 		return err
 	}
 	instance, err := cm.conn.instanceIfExists(machine)
@@ -124,7 +127,11 @@ func (cm *ClusterManager) Update(cluster *clusterv1.Cluster, machine *clusterv1.
 }
 
 func (cm *ClusterManager) Exists(machine *clusterv1.Machine) (bool, error) {
-	if err := cm.PrepareCloud(machine.ClusterName); err != nil {
+	clusterName := machine.ClusterName
+	if _, found := machine.Labels[api.PharmerCluster]; found {
+		clusterName = machine.Labels[api.PharmerCluster]
+	}
+	if err := cm.PrepareCloud(clusterName); err != nil {
 		return false, err
 	}
 	i, err := cm.conn.instanceIfExists(machine)

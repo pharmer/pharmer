@@ -63,20 +63,43 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Co
 }
 
 func CreateApiserverCertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
-	Logger(ctx).Infoln("Generating CA certificate for cluster")
+	Logger(ctx).Infoln("Generating Apiserver certificate for cluster")
+
+	const name = "clusterapi"
+	const namespace = core.NamespaceDefault
 
 	certStore := Store(ctx).Certificates(cluster.Name)
 	// -----------------------------------------------
 
+	// apiserver ca cert
+	caKey, err := cert.NewPrivateKey()
+	if err != nil {
+		return ctx, errors.Errorf("failed to generate private key. Reason: %v", err)
+	}
 	cfg := cert.Config{
-		CommonName: fmt.Sprint("%v.%v.svc", "clusterapi", core.NamespaceDefault),
+		CommonName: fmt.Sprintf("%v-certificate-authority", name),
+	}
+	caCert, err := cert.NewSelfSignedCACert(cfg, caKey)
+	if err != nil {
+		return ctx, errors.Errorf("failed to generate self-signed certificate. Reason: %v", err)
+	}
+
+	ctx = context.WithValue(ctx, paramApiServerCaCert{}, caCert)
+	ctx = context.WithValue(ctx, paramApiServerCaKey{}, caKey)
+	if err = certStore.Create(kubeadmconst.APIServerCertAndKeyBaseName+"-ca", caCert, caKey); err != nil {
+		return ctx, err
+	}
+
+	cfg = cert.Config{
+		CommonName: fmt.Sprintf("%v.%v.svc", name, namespace),
+		Usages:     []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 	}
 
 	apiServerKey, err := cert.NewPrivateKey()
 	if err != nil {
 		return ctx, errors.Errorf("failed to generate private key. Reason: %v", err)
 	}
-	apiServerCert, err := cert.NewSignedCert(cfg, apiServerKey, CACert(ctx), CAKey(ctx))
+	apiServerCert, err := cert.NewSignedCert(cfg, apiServerKey, ApiServerCaCert(ctx), ApiServerCaKey(ctx))
 	if err != nil {
 		return ctx, errors.Errorf("failed to generate server certificate. Reason: %v", err)
 	}
@@ -106,6 +129,25 @@ func LoadCACertificates(ctx context.Context, cluster *api.Cluster) (context.Cont
 	}
 	ctx = context.WithValue(ctx, paramFrontProxyCACert{}, frontProxyCACert)
 	ctx = context.WithValue(ctx, paramFrontProxyCAKey{}, frontProxyCAKey)
+
+	return ctx, nil
+}
+
+func LoadApiserverCertificate(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
+	certStore := Store(ctx).Certificates(cluster.Name)
+	apiserverCaCert, apiserverCaKey, err := certStore.Get(kubeadmconst.APIServerCertAndKeyBaseName + "-ca")
+	if err != nil {
+		return ctx, errors.Errorf("failed to get apiserver certificates. Reason: %v", err)
+	}
+	ctx = context.WithValue(ctx, paramApiServerCaCert{}, apiserverCaCert)
+	ctx = context.WithValue(ctx, paramApiServerCaKey{}, apiserverCaKey)
+
+	apiserverCert, apiserverKey, err := certStore.Get(kubeadmconst.APIServerCertAndKeyBaseName)
+	if err != nil {
+		return ctx, errors.Errorf("failed to get apiserver certificates. Reason: %v", err)
+	}
+	ctx = context.WithValue(ctx, paramApiServerCert{}, apiserverCert)
+	ctx = context.WithValue(ctx, paramApiServerKey{}, apiserverKey)
 
 	return ctx, nil
 }
@@ -151,6 +193,7 @@ func CreateSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, e
 }
 
 func LoadSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
+	fmt.Println(cluster.ProviderConfig().SSHKeyName)
 	publicKey, privateKey, err := Store(ctx).SSHKeys(cluster.Name).Get(cluster.ProviderConfig().SSHKeyName)
 	if err != nil {
 		return ctx, errors.Errorf("failed to get SSH key. Reason: %v", err)

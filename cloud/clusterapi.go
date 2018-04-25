@@ -3,6 +3,7 @@ package cloud
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -32,6 +33,7 @@ type ClusterApi struct {
 }
 
 type ApiServerTemplate struct {
+	ClusterName            string
 	Token                  string
 	APIServerImage         string
 	ControllerManagerImage string
@@ -42,9 +44,9 @@ type ApiServerTemplate struct {
 	Provider               string
 }
 
-var apiServerImage = "pharmer/cluster-apiserver:0.0.1"
+var apiServerImage = "pharmer/cluster-apiserver:0.0.2"
 var controllerManagerImage = "pharmer/cluster-controller-manager:0.0.1"
-var machineControllerImage = "pharmer/gce-machine-controller:0.0.1"
+var machineControllerImage = "pharmer/machine-controller:clusterApi"
 
 const (
 	BasePath = ".pharmer/config.d"
@@ -141,8 +143,8 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 		return err
 	}
 	if err = CreateSecret(ca.kc, "pharmer-ssh", map[string][]byte{
-		providerConfig.SSHKeyName:                        privateKey,
-		fmt.Sprintf("%v.pub", providerConfig.SSHKeyName): publicKey,
+		fmt.Sprintf("id_%v", providerConfig.SSHKeyName):     privateKey,
+		fmt.Sprintf("id_%v.pub", providerConfig.SSHKeyName): publicKey,
 	}); err != nil {
 		return err
 	}
@@ -166,7 +168,7 @@ func (ca *ClusterApi) CreateExtApiServerRoleBinding() error {
 		},
 		RoleRef: rbac.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "role",
+			Kind:     "Role",
 			Name:     "extension-apiserver-authentication-reader",
 		},
 		Subjects: []rbac.Subject{
@@ -189,16 +191,20 @@ func (ca *ClusterApi) CreateApiServerAndController() error {
 	if err != nil {
 		return err
 	}
+	if ca.ctx, err = LoadApiserverCertificate(ca.ctx, ca.cluster); err != nil {
+		return err
+	}
 
 	var tmplBuf bytes.Buffer
 	err = tmpl.Execute(&tmplBuf, ApiServerTemplate{
+		ClusterName:            ca.cluster.Name,
 		Token:                  "token",
 		APIServerImage:         apiServerImage,
 		ControllerManagerImage: controllerManagerImage,
 		MachineControllerImage: machineControllerImage,
-		CABundle:               string(cert.EncodeCertPEM(CACert(ca.ctx))),
-		TLSCrt:                 string(cert.EncodeCertPEM(ApiServerCert(ca.ctx))),
-		TLSKey:                 string(cert.EncodePrivateKeyPEM(ApiServerKey(ca.ctx))),
+		CABundle:               base64.StdEncoding.EncodeToString(cert.EncodeCertPEM(ApiServerCaCert(ca.ctx))),
+		TLSCrt:                 base64.StdEncoding.EncodeToString(cert.EncodeCertPEM(ApiServerCert(ca.ctx))),
+		TLSKey:                 base64.StdEncoding.EncodeToString(cert.EncodePrivateKeyPEM(ApiServerKey(ca.ctx))),
 		Provider:               ca.cluster.ProviderConfig().CloudProvider,
 	})
 	if err != nil {
@@ -227,6 +233,7 @@ func (ca *ClusterApi) CreateApiServerAndController() error {
 }
 
 func deployConfig(manifest []byte) error {
+	fmt.Println(string(manifest))
 	cmd := exec.Command("kubectl", "create", "-f", "-")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -366,12 +373,16 @@ spec:
           - name: certs
             mountPath: /etc/ssl/certs
           - name: sshkeys
-            mountPath: /etc/sshkeys
-        command:
-        - "./machine-controller"
+            mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/ssh
+          - name: certificates
+            mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/pki
+          - name: cluster
+            mountPath: /root/.pharmer/store.d/clusters
+          - name: credential
+            mountPath: /root/.pharmer/store.d/credentials
         args:
+        - controller
         - --kubeconfig=/etc/kubernetes/admin.conf
-        - --token={{ .Token }}
         - --provider={{ .Provider }}
         resources:
           requests:
@@ -392,8 +403,21 @@ spec:
           path: /etc/ssl/certs
       - name: sshkeys
         secret:
-          secretName: machine-controller-sshkeys
+          secretName: pharmer-ssh
           defaultMode: 256
+      - name: certificates
+        secret:
+          secretName: pharmer-certificate
+          defaultMode: 256
+      - name: cluster
+        secret:
+          secretName: pharmer-cluster
+          defaultMode: 256
+      - name: credential
+        secret:
+          secretName: pharmer-cred
+          defaultMode: 256
+
 ---
 apiVersion: apps/v1beta1
 kind: StatefulSet

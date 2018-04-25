@@ -9,6 +9,7 @@ const (
 	RoleMasterKey = RoleKeyPrefix + RoleMaster
 	RoleNodeKey   = RoleKeyPrefix + RoleNode
 
+	PharmerCluster    = "cloud.appscode.com/cluster"
 	KubeadmVersionKey = "cloud.appscode.com/kubeadm-version"
 	NodePoolKey       = "cloud.appscode.com/pool"
 	KubeSystem_App    = "k8s-app"

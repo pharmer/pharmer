@@ -260,6 +260,7 @@ func waitForClusterResourceReady(ctx context.Context, clientSet clientset.Interf
 		attempt++
 		Logger(ctx).Infof("Attempt %v: Probing Kubernetes api server ...", attempt)
 		_, err := clientSet.Discovery().ServerResourcesForGroupVersion("cluster.k8s.io/v1alpha1")
+		fmt.Println(err)
 		return err == nil, nil
 	})
 }

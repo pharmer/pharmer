@@ -7,21 +7,20 @@ import (
 	/*"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apiserver/pkg/util/logs"*/
-
 	//"sigs.k8s.io/cluster-api/cloud/google"
-	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
-	"sigs.k8s.io/cluster-api/pkg/controller/config"
-	"sigs.k8s.io/cluster-api/pkg/controller/machine"
-	"sigs.k8s.io/cluster-api/pkg/controller/sharedinformers"
+	"context"
+
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
 	pharmerConf "github.com/pharmer/pharmer/config"
 	core "k8s.io/api/core/v1"
-	"context"
+	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
+	"sigs.k8s.io/cluster-api/pkg/controller/config"
+	"sigs.k8s.io/cluster-api/pkg/controller/machine"
+	"sigs.k8s.io/cluster-api/pkg/controller/sharedinformers"
 )
 
-
-func NewCmdRunController() *cobra.Command  {
+func newCmdController() *cobra.Command {
 	s := config.ControllerConfig
 	provider := "digitalocean"
 	cmd := &cobra.Command{
@@ -48,7 +47,6 @@ func NewCmdRunController() *cobra.Command  {
 
 			err = cm.InitializeActuator(client.ClusterV1alpha1().Machines(core.NamespaceDefault))
 			term.ExitOnError(err)
-
 
 			//actuator, err :=
 			shutdown := make(chan struct{})
