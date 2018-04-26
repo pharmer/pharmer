@@ -9,6 +9,7 @@ image_resource:
 inputs:
 - name: pharmer
 - name: creds
+- name: pharmer-bin
 
 run:
   path: pharmer/hack/concourse/test.sh

@@ -9,5 +9,8 @@ image_resource:
 inputs:
 - name: pharmer
 
+outputs:
+- name: pharmer-bin
+
 run:
-  path: pharmer/hack/concourse/build.sh
+  path: pharmer/hack/concourse/test.sh

@@ -7,19 +7,35 @@ apt-get update > /dev/null
 apt-get install -y python python-pip > /dev/null
 
 #install kubectl
-curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
- chmod +x ./kubectl
- mv ./kubectl /bin/kubectl
+curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl &> /dev/null
+chmod +x ./kubectl
+mv ./kubectl /bin/kubectl
 
 #copy pharmer to $GOPATH
 mkdir -p $GOPATH/src/github.com/pharmer
 cp -r pharmer $GOPATH/src/github.com/pharmer
 pushd $GOPATH/src/github.com/pharmer/pharmer
 
-#build pharmer
-./hack/builddeps.sh
-./hack/make.py
+#if test_only == false, we need to build pharmer, otherwise, get pharmer from s3
+if [ -z "$test_only" ]; then
+    #build pharmer
+    ./hack/builddeps.sh
+    ./hack/make.py
+    popd
 
+    if [ -n "$build_only" ]; then
+        cp $GOPATH/bin/pharmer pharmer-bin/pharmer
+        exit 0
+    fi
+else
+    popd
+    mkdir -p $GOPATH/bin
+    cp pharmer-bin/pharmer $GOPATH/bin/pharmer
+fi
+
+chmod +x $GOPATH/bin/pharmer
+
+pushd $GOPATH/src/github.com/pharmer/pharmer
 #name of the cluster
 NAME=pharmer-$(git rev-parse --short HEAD)
 popd

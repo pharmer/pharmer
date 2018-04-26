@@ -106,7 +106,7 @@ resources:
     bucket: pharmer-test-creds
     access_key_id: ((s3-access-key))
     secret_access_key: ((s3-secret))
-    versioned_file: pharmer
+    versioned_file: pharmer-bin
 
 jobs:
 - name: digitalocean
@@ -259,17 +259,19 @@ jobs:
 - name: build-pharmer-all
   plan:
   - get: all
-    trigger: true
   - put: all
     params: { path: all, status: pending }
   - task: build
-    file: all/hack/concourse/build.yml
+    file: all/hack/concourse/task.yml
     input_mapping:
       pharmer: all
     params: { build_only: true}
     on_success:
-      put: pharmer-bin
-      params: {file: pharmer-bin/pharmer}
+      aggregate:
+      - put: all
+        params: { path: all, status: success}
+      - put: pharmer-bin
+        params: {file: pharmer-bin}
     on_failure:
       put: all
       params: { path: all, status: failure}
@@ -279,11 +281,11 @@ jobs:
   - get: all
     trigger: true
     passed: [build-pharmer-all]
+  - put: all
+    params: { path: all, status: pending}
   - get: creds
     params:
       unpack: true
-  - get: pharmer-bin
-    passed: [build-pharmer-all]
   - task: test
     file: all/hack/concourse/task.yml
     input_mapping:
