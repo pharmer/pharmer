@@ -51,7 +51,7 @@ resources:
   type: git
   source:
     uri: https://github.com/pharmer/pharmer
-    branch: concourse
+    branch: master
 
 - name: digitalocean
   type: pull-request
