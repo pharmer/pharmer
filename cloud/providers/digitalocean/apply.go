@@ -286,6 +286,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 // Scales up/down regular node groups
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
+	Logger(cm.ctx).Infoln("scaling machine set")
 	var cs clientset.Interface
 	cs, err = NewClusterApiClient(cm.ctx, cm.cluster)
 	if err != nil {
@@ -307,10 +308,11 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 				return
 			}
 		} else {
-			_, err = client.MachineSets(core.NamespaceDefault).Update(ms)
+			//TODO(): add patch here
+			/*_, err = client.MachineSets(core.NamespaceDefault).Update(ms)
 			if err != nil {
 				return
-			}
+			}*/
 		}
 
 	}
@@ -320,6 +322,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 
 // Deletes master(s) and releases other cloud resources
 func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error) {
+	Logger(cm.ctx).Infoln("deleting cluster")
 	var found bool
 
 	if cm.cluster.Status.Phase == api.ClusterReady {
