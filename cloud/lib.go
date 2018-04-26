@@ -125,7 +125,6 @@ func CreateMasterMachines(ctx context.Context, cluster *api.Cluster, count int32
 					ControlPlane: cluster.Spec.KubernetesVersion,
 				},
 			},
-
 		}
 		masters = append(masters, machine)
 

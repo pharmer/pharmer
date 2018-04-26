@@ -193,7 +193,6 @@ func CreateSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, e
 }
 
 func LoadSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
-	fmt.Println(cluster.ProviderConfig().SSHKeyName)
 	publicKey, privateKey, err := Store(ctx).SSHKeys(cluster.Name).Get(cluster.ProviderConfig().SSHKeyName)
 	if err != nil {
 		return ctx, errors.Errorf("failed to get SSH key. Reason: %v", err)

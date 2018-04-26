@@ -5,8 +5,10 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	//	"k8s.io/client-go/kubernetes"
 	"fmt"
+	"reflect"
 
 	api "github.com/pharmer/pharmer/apis/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -30,27 +32,6 @@ func (cm *ClusterManager) InitializeActuator(machineClient client.MachineInterfa
 		codecFactory:  codecFactory,
 	}
 
-	return nil
-}
-
-func (cm *ClusterManager) PrepareCloud(clusterName string) error {
-	var err error
-
-	cluster, err := Store(cm.ctx).Clusters().Get(clusterName)
-	if err != nil {
-		return fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
-	}
-	cm.cluster = cluster
-
-	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
-		return err
-	}
-	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
-		return err
-	}
-	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -103,9 +84,27 @@ func (cm *ClusterManager) Delete(machine *clusterv1.Machine) error {
 		Logger(cm.ctx).Infof("Skipped deleting a VM that is already deleted.\n")
 		return nil
 	}
-
-	err = cm.conn.deleteInstance(cm.ctx, instance.ID)
+	kc, err := cm.GetAdminClient()
 	if err != nil {
+		return err
+	}
+
+	node, err := kc.CoreV1().Nodes().Get(machine.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	nd, err := NewNodeDrain(cm.ctx, kc, cm.cluster)
+	if err != nil {
+		return err
+	}
+	// Drain Node
+	nd.Node = node.Name
+	if err = nd.Apply(); err != nil {
+		return err
+	}
+
+	if err = cm.conn.DeleteInstanceByProviderID(node.Spec.ProviderID); err != nil {
 		return err
 	}
 
@@ -118,11 +117,52 @@ func (cm *ClusterManager) Delete(machine *clusterv1.Machine) error {
 	return err
 }
 
-func (cm *ClusterManager) Update(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (cm *ClusterManager) Update(cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
 	if err := cm.PrepareCloud(cluster.Name); err != nil {
 		return err
 	}
-	return nil
+
+	sm := NewStatusManager(cm.actuator.machineClient, cm.actuator.scheme)
+	status, err := sm.InstanceStatus(goalMachine)
+	if err != nil {
+		return err
+	}
+
+	currentMachine := (*clusterv1.Machine)(status)
+	if currentMachine == nil {
+		instance, err := cm.conn.instanceIfExists(goalMachine)
+		if err != nil {
+			return err
+		}
+		if instance != nil {
+			Logger(cm.ctx).Infof("Populating current state for boostrap machine %v", goalMachine.ObjectMeta.Name)
+			return cm.updateAnnotations(goalMachine)
+		} else {
+			return fmt.Errorf("cannot retrieve current state to update machine %v", goalMachine.ObjectMeta.Name)
+		}
+	}
+	if !cm.requiresUpdate(currentMachine, goalMachine) {
+		return nil
+	}
+	kc, err := cm.GetAdminClient()
+	if err != nil {
+		return err
+	}
+
+	upm := NewUpgradeManager(cm.ctx, cm, kc, cm.cluster)
+	if IsMaster(currentMachine) {
+		Logger(cm.ctx).Infof("Doing an in-place upgrade for master.\n")
+		if err := upm.MasterUpgrade(currentMachine, goalMachine); err != nil {
+			return err
+		}
+	} else {
+		//TODO(): Do we replace node or inplace upgrade?
+		Logger(cm.ctx).Infof("Doing an in-place upgrade for master.\n")
+		if err := upm.NodeUpgrade(currentMachine, goalMachine); err != nil {
+			return err
+		}
+	}
+	return cm.updateInstanceStatus(goalMachine)
 }
 
 func (cm *ClusterManager) Exists(machine *clusterv1.Machine) (bool, error) {
@@ -181,4 +221,15 @@ func (cm *ClusterManager) updateInstanceStatus(machine *clusterv1.Machine) error
 
 	_, err = cm.actuator.machineClient.Update(m)
 	return err
+}
+
+// The two machines differ in a way that requires an update
+func (cm *ClusterManager) requiresUpdate(a *clusterv1.Machine, b *clusterv1.Machine) bool {
+	// Do not want status changes. Do want changes that impact machine provisioning
+	return !reflect.DeepEqual(a.Spec.ObjectMeta, b.Spec.ObjectMeta) ||
+		!reflect.DeepEqual(a.Spec.ProviderConfig, b.Spec.ProviderConfig) ||
+		!reflect.DeepEqual(a.Spec.Roles, b.Spec.Roles) ||
+		!reflect.DeepEqual(a.Spec.Versions, b.Spec.Versions) ||
+		a.ObjectMeta.Name != b.ObjectMeta.Name ||
+		a.ObjectMeta.UID != b.ObjectMeta.UID
 }

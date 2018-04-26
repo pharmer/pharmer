@@ -68,6 +68,16 @@ func IsMaster(machine *clusterv1.Machine) bool {
 	return RoleContains(clustercommon.MasterRole, machine.Spec.Roles)
 }
 
+func IsNodeReady(node *core.Node) bool {
+	for _, condition := range node.Status.Conditions {
+		if condition.Type == core.NodeReady {
+			return condition.Status == core.ConditionTrue
+		}
+	}
+
+	return false
+}
+
 func IsHASetup(cluster *api.Cluster) bool {
 	masters, err := FindMasterMachines(cluster)
 	if err != nil {
@@ -307,4 +317,32 @@ func CreateSecret(kc kubernetes.Interface, name string, data map[string][]byte) 
 		fmt.Println(err)
 		return err == nil, nil
 	})
+}
+
+func CheckMachineReady(ctx context.Context, cc client.MachineInterface, kc kubernetes.Interface, machineName string, kubeVersion string) (bool, error) {
+	machine, err := cc.Get(machineName, metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	if machine.Status.NodeRef == nil {
+		return false, nil
+	}
+
+	// Find the node object via reference in machine object.
+	node, err := kc.CoreV1().Nodes().Get(machine.Status.NodeRef.Name, metav1.GetOptions{})
+	switch {
+	case err != nil:
+		Logger(ctx).Infof("Failed to get node %s: %v", machineName, err)
+		return false, err
+	case !IsNodeReady(node):
+		Logger(ctx).Infof("node %s is not ready. Status : %v", machineName, node.Status.Conditions)
+		return false, nil
+	case node.Status.NodeInfo.KubeletVersion == "v"+kubeVersion:
+		Logger(ctx).Infof("node %s is ready", machineName)
+		return true, nil
+	default:
+		Logger(ctx).Infof("node %s kubelet current version: %s, target: %s.", machineName, node.Status.NodeInfo.KubeletVersion, kubeVersion)
+		return false, nil
+	}
 }

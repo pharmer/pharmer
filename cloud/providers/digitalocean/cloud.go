@@ -63,6 +63,27 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 	return true, ""
 }
 
+func (cm *ClusterManager) PrepareCloud(clusterName string) error {
+	var err error
+
+	cluster, err := Store(cm.ctx).Clusters().Get(clusterName)
+	if err != nil {
+		return fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
+	}
+	cm.cluster = cluster
+
+	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (conn *cloudConnector) WaitForInstance(id int, status string) error {
 	attempt := 0
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {

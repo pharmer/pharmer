@@ -53,11 +53,11 @@ type InstanceManager interface {
 }
 
 type UpgradeManager interface {
-	GetAvailableUpgrades() ([]*api.Upgrade, error)
-	PrintAvailableUpgrades([]*api.Upgrade)
-	Apply(dryRun bool) ([]api.Action, error)
-	MasterUpgrade() error
-	NodeGroupUpgrade(ng *api.NodeGroup) error
+	GetAvailableUpgrades() ([]*apiv1.Upgrade, error)
+	PrintAvailableUpgrades([]*apiv1.Upgrade)
+	Apply(dryRun bool) ([]apiv1.Action, error)
+	MasterUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error
+	NodeUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error
 }
 
 type HookFunc func() error
