@@ -294,6 +294,8 @@ exec_until_success() {
 
 	_ = template.Must(StartupScriptTemplate.New("prepare-host").Parse(``))
 
+	_ = template.Must(StartupScriptTemplate.New("mount-master-pd").Parse(``))
+
 	_ = template.Must(StartupScriptTemplate.New("prepare-cluster").Parse(``))
 
 	_ = template.Must(StartupScriptTemplate.New("setup-certs").Parse(`
