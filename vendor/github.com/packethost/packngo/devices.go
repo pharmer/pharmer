@@ -95,13 +95,13 @@ type DeviceCreateRequest struct {
 
 // DeviceUpdateRequest type used to update a Packet device
 type DeviceUpdateRequest struct {
-	Hostname      string   `json:"hostname"`
-	Description   string   `json:"description"`
-	UserData      string   `json:"userdata"`
-	Locked        bool     `json:"locked"`
-	Tags          []string `json:"tags"`
-	AlwaysPXE     bool     `json:"always_pxe,omitempty"`
-	IPXEScriptURL string   `json:"ipxe_script_url,omitempty"`
+	Hostname      *string   `json:"hostname,omitempty"`
+	Description   *string   `json:"description,omitempty"`
+	UserData      *string   `json:"userdata,omitempty"`
+	Locked        *bool     `json:"locked,omitempty"`
+	Tags          *[]string `json:"tags,omitempty"`
+	AlwaysPXE     *bool     `json:"always_pxe,omitempty"`
+	IPXEScriptURL *string   `json:"ipxe_script_url,omitempty"`
 }
 
 func (d DeviceCreateRequest) String() string {
@@ -233,22 +233,22 @@ func (s *DeviceServiceOp) PowerOn(deviceID string) (*Response, error) {
 	return s.client.DoRequest("POST", path, action, nil)
 }
 
-type lockDeviceType struct {
+type lockType struct {
 	Locked bool `json:"locked"`
 }
 
 // Lock sets a device to "locked"
 func (s *DeviceServiceOp) Lock(deviceID string) (*Response, error) {
 	path := fmt.Sprintf("%s/%s", deviceBasePath, deviceID)
-	action := lockDeviceType{Locked: true}
+	action := lockType{Locked: true}
 
 	return s.client.DoRequest("PATCH", path, action, nil)
 }
 
-// Unlock sets a device to "locked"
+// Unlock sets a device to "unlocked"
 func (s *DeviceServiceOp) Unlock(deviceID string) (*Response, error) {
 	path := fmt.Sprintf("%s/%s", deviceBasePath, deviceID)
-	action := lockDeviceType{Locked: false}
+	action := lockType{Locked: false}
 
 	return s.client.DoRequest("PATCH", path, action, nil)
 }
