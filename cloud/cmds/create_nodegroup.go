@@ -49,7 +49,7 @@ func CreateNodeGroups(ctx context.Context, opts *options.NodeGroupCreateConfig) 
 	cluster, err := cloud.Get(ctx, opts.ClusterName)
 	term.ExitOnError(err)
 	for sku, count := range opts.Nodes {
-		err := cloud.CreateNodeGroup(ctx, cluster, api.RoleNode, sku, apiv1.NodeType(opts.NodeType), int32(count), opts.SpotPriceMax)
+		err := cloud.CreateNodeGroup(ctx, cluster, sku, apiv1.NodeType(opts.NodeType), int32(count), opts.SpotPriceMax)
 		term.ExitOnError(err)
 	}
 }

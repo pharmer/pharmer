@@ -27,7 +27,7 @@ func AssignTypeKind(v interface{}) error {
 		return nil
 	case *clusterv1.MachineSet:
 		if u.APIVersion == "" {
-			u.APIVersion = "v1"
+			u.APIVersion = "cluster.k8s.io/v1alpha1"
 		}
 		u.Kind = "MachineSet"
 		return nil

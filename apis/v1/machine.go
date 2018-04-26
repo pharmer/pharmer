@@ -16,6 +16,8 @@ type NodeType string
 const (
 	NodeTypeRegular NodeType = "regular"
 	NodeTypeSpot    NodeType = "spot"
+
+	MachineSlecetor = "cloud.appscode.com/mg"
 )
 
 type NodeSpec struct {

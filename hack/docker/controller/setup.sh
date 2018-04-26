@@ -44,7 +44,7 @@ build_docker() {
 FROM alpine
 
 RUN set -x \
-  && apk add --update --no-cache ca-certificates tzdata
+  && apk add --update --no-cache ca-certificates tzdata curl openssl
 
 COPY machine-controller /usr/bin/machine-controller
 

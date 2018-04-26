@@ -48,7 +48,7 @@ func Create(ctx context.Context, cluster *api.Cluster, config *api.ClusterProvid
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("setting up cluster")
+
 	if err = cm.SetDefaultCluster(cluster, config); err != nil {
 		return nil, err
 	}
@@ -121,7 +121,11 @@ func CreateMasterMachines(ctx context.Context, cluster *api.Cluster, count int32
 						Raw: providerConfValue,
 					},
 				},
+				Versions: clusterv1.MachineVersionInfo{
+					ControlPlane: cluster.Spec.KubernetesVersion,
+				},
 			},
+
 		}
 		masters = append(masters, machine)
 
@@ -130,7 +134,7 @@ func CreateMasterMachines(ctx context.Context, cluster *api.Cluster, count int32
 	return masters, nil
 }
 
-func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string, nodeType api.NodeType, count int32, spotPriceMax float64) error {
+func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, sku string, nodeType api.NodeType, count int32, spotPriceMax float64) error {
 	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
 	if err != nil {
 		return err
@@ -156,38 +160,40 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string
 
 	ig := clusterv1.MachineSet{
 		ObjectMeta: metav1.ObjectMeta{
+			Name:              strings.Replace(sku, "_", "-", -1) + "-pool",
 			ClusterName:       cluster.Name,
 			UID:               uuid.NewUUID(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
 		Spec: clusterv1.MachineSetSpec{
+			Selector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					api.PharmerCluster: cluster.Name,
+				},
+			},
 			Replicas: Int32P(count),
 			Template: clusterv1.MachineTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						api.PharmerCluster: cluster.Name,
+					},
+					CreationTimestamp: metav1.Time{Time: time.Now()},
+				},
 				Spec: clusterv1.MachineSpec{
 					Roles: []clustercommon.MachineRole{
-						clustercommon.MachineRole(role),
+						clustercommon.NodeRole,
 					},
 					ProviderConfig: clusterv1.ProviderConfig{
 						Value: &runtime.RawExtension{
 							Raw: providerConfValue,
 						},
 					},
+					Versions: clusterv1.MachineVersionInfo{
+						ControlPlane: cluster.Spec.KubernetesVersion,
+					},
 				},
 			},
 		},
-	}
-	if role == string(clustercommon.MasterRole) {
-		ig.ObjectMeta.Name = "master"
-		ig.ObjectMeta.Labels = map[string]string{
-			api.RoleMasterKey:  "",
-			api.PharmerCluster: cluster.Name,
-		}
-	} else {
-		ig.ObjectMeta.Name = strings.Replace(sku, "_", "-", -1) + "-pool"
-		ig.ObjectMeta.Labels = map[string]string{
-			api.RoleNodeKey:    "",
-			api.PharmerCluster: cluster.Name,
-		}
 	}
 
 	_, err = Store(ctx).MachineSet(cluster.Name).Create(&ig)

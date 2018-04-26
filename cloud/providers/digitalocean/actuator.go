@@ -45,9 +45,9 @@ func (cm *ClusterManager) PrepareCloud(clusterName string) error {
 	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
-	/*if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
+	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
 		return err
-	}*/
+	}
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
@@ -116,7 +116,6 @@ func (cm *ClusterManager) Delete(machine *clusterv1.Machine) error {
 	}
 
 	return err
-	return nil
 }
 
 func (cm *ClusterManager) Update(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {

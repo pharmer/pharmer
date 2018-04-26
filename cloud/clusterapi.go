@@ -138,7 +138,7 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 		return err
 	}
 
-	privateKey, publicKey, err := Store(ca.ctx).SSHKeys(ca.cluster.Name).Get(ca.cluster.ProviderConfig().SSHKeyName)
+	publicKey, privateKey, err := Store(ca.ctx).SSHKeys(ca.cluster.Name).Get(ca.cluster.ProviderConfig().SSHKeyName)
 	if err != nil {
 		return err
 	}
