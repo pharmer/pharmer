@@ -17,8 +17,7 @@ cp -r pharmer $GOPATH/src/github.com/pharmer
 pushd $GOPATH/src/github.com/pharmer/pharmer
 
 #build
-./hack/builddeps.sh
-./hack/make.py
+go install -v
 
 NAME=pharmer-$(git rev-parse --short HEAD) #name of the cluster
 popd
