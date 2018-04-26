@@ -11,13 +11,14 @@ groups:
 
 - name: test-all
   jobs:
-  - test-all-digitalocean
-  - test-all-gce
-  - test-all-packet
-  - test-all-linode
-  - test-all-vultr
-  - test-all-aws
-  - test-all-lightsail
+    #  - test-all-digitalocean
+    #  - test-all-gce
+    #  - test-all-packet
+    #  - test-all-linode
+    #  - test-all-vultr
+    #  - test-all-aws
+    #  - test-all-lightsail
+  - build-pharmer-all
 
 resource_types:
 - name: pull-request
@@ -98,6 +99,14 @@ resources:
     access_key_id: ((s3-access-key))
     secret_access_key: ((s3-secret))
     versioned_file: creds.zip
+
+- name: pharmer-bin
+  type: s3
+  source:
+    bucket: pharmer-test-creds
+    access_key_id: ((s3-access-key))
+    secret_access_key: ((s3-secret))
+    versioned_file: pharmer
 
 jobs:
 - name: digitalocean
@@ -247,149 +256,169 @@ jobs:
       put: lightsail
       params: {path: lightsail, status: failure }
 
-- name: test-all-digitalocean
+- name: build-pharmer-all
   plan:
   - get: all
     trigger: true
   - put: all
-    params: { path: all, status: pending}
-  - get: creds
-    params:
-      unpack: true
-  - task: test
-    file: all/hack/concourse/task.yml
+    params: { path: all, status: pending }
+  - task: build
+    file: all/hack/concourse/build.yml
     input_mapping:
       pharmer: all
-    params: { CredProvider: DigitalOcean, ClusterProvider: digitalocean, ZONE: nyc3, NODE: 2gb, CRED: digitalocean}
     on_success:
-      put: all
-      params: { path: all, status: success}
+      aggregate:
+      - put: all
+        params: { path: all, status: success}
+      - put: pharmer-bin
+        params: {file: pharmer}
     on_failure:
       put: all
       params: { path: all, status: failure}
 
-- name: test-all-gce
-  plan:
-  - get: all
-    trigger: true
-  - put: all
-    params: { path: all, status: pending}
-  - get: creds
-    params:
-      unpack: true
-  - task: test
-    file: all/hack/concourse/task.yml
-    input_mapping:
-      pharmer: all
-    params: {CredProvider: GoogleCloud, ClusterProvider: gce, ZONE: us-central1-f, NODE: n1-standard-2, CRED: gce}
-    on_success:
-      put: all
-      params: { path: all, status: success }
-    on_failure:
-      put: all
-      params: {path: all, status: failure }
-
-- name: test-all-packet
-  plan:
-  - get: all
-    trigger: true
-  - put: all
-    params: { path: all, status: pending}
-  - get: creds
-    params:
-      unpack: true
-  - task: test
-    file: all/hack/concourse/task.yml
-    input_mapping:
-      pharmer: all
-    params: {CredProvider: Packet, ClusterProvider: packet, ZONE: ewr1, NODE: baremetal_0, CRED: packet}
-    on_success:
-      put: all
-      params: { path: all, status: success }
-    on_failure:
-      put: all
-      params: {path: all, status: failure }
-
-- name: test-all-linode
-  plan:
-  - get: all
-    trigger: true
-  - put: all
-    params: { path: all, status: pending}
-  - get: creds
-    params:
-      unpack: true
-  - task: test
-    file: all/hack/concourse/task.yml
-    input_mapping:
-      pharmer: all
-    params: {CredProvider: Linode, ClusterProvider: linode, ZONE: 3, NODE: 1, CRED: linode}
-    on_success:
-      put: all
-      params: { path: all, status: success }
-    on_failure:
-      put: all
-      params: {path: all, status: failure }
-
-- name: test-all-vultr
-  plan:
-  - get: all
-    trigger: true
-  - put: all
-    params: { path: all, status: pending}
-  - get: creds
-    params:
-      unpack: true
-  - task: test
-    file: all/hack/concourse/task.yml
-    input_mapping:
-      pharmer: all
-    params: {CredProvider: Vultr, ClusterProvider: vultr, ZONE: 6, NODE: 203, CRED: vultr}
-    on_success:
-      put: all
-      params: { path: all, status: success }
-    on_failure:
-      put: all
-      params: {path: all, status: failure }
-
-- name: test-all-aws
-  plan:
-  - get: all
-    trigger: true
-  - put: all
-    params: { path: all, status: pending}
-  - get: creds
-    params:
-      unpack: true
-  - task: test
-    file: all/hack/concourse/task.yml
-    input_mapping:
-      pharmer: all
-    params: {CredProvider: AWS, ClusterProvider: aws, ZONE: us-west-1a, NODE: t2.medium, CRED: aws}
-    on_success:
-      put: all
-      params: { path: all, status: success }
-    on_failure:
-      put: all
-      params: {path: all, status: failure }
-
-- name: test-all-lightsail
-  plan:
-  - get: all
-    trigger: true
-  - put: all
-    params: { path: all, status: pending}
-  - get: creds
-    params:
-      unpack: true
-  - task: test
-    file: all/hack/concourse/task.yml
-    input_mapping:
-      pharmer: all
-    params: {CredProvider: AWS, ClusterProvider: lightsail, ZONE: us-west-2a, NODE: small_1_0, CRED: aws}
-    on_success:
-      put: all
-      params: { path: all, status: success }
-    on_failure:
-      put: all
-      params: {path: all, status: failure }
+      #- name: test-all-digitalocean
+      #  plan:
+      #  - get: all
+      #    trigger: true
+      #  - put: all
+      #    params: { path: all, status: pending}
+      #  - get: creds
+      #    params:
+      #      unpack: true
+      #  - task: test
+      #    file: all/hack/concourse/task.yml
+      #    input_mapping:
+      #      pharmer: all
+      #    params: { CredProvider: DigitalOcean, ClusterProvider: digitalocean, ZONE: nyc3, NODE: 2gb, CRED: digitalocean}
+      #    on_success:
+      #      put: all
+      #      params: { path: all, status: success}
+      #    on_failure:
+      #      put: all
+      #      params: { path: all, status: failure}
+      #
+      #- name: test-all-gce
+      #  plan:
+      #  - get: all
+      #    trigger: true
+      #  - put: all
+      #    params: { path: all, status: pending}
+      #  - get: creds
+      #    params:
+      #      unpack: true
+      #  - task: test
+      #    file: all/hack/concourse/task.yml
+      #    input_mapping:
+      #      pharmer: all
+      #    params: {CredProvider: GoogleCloud, ClusterProvider: gce, ZONE: us-central1-f, NODE: n1-standard-2, CRED: gce}
+      #    on_success:
+      #      put: all
+      #      params: { path: all, status: success }
+      #    on_failure:
+      #      put: all
+      #      params: {path: all, status: failure }
+      #
+      #- name: test-all-packet
+      #  plan:
+      #  - get: all
+      #    trigger: true
+      #  - put: all
+      #    params: { path: all, status: pending}
+      #  - get: creds
+      #    params:
+      #      unpack: true
+      #  - task: test
+      #    file: all/hack/concourse/task.yml
+      #    input_mapping:
+      #      pharmer: all
+      #    params: {CredProvider: Packet, ClusterProvider: packet, ZONE: ewr1, NODE: baremetal_0, CRED: packet}
+      #    on_success:
+      #      put: all
+      #      params: { path: all, status: success }
+      #    on_failure:
+      #      put: all
+      #      params: {path: all, status: failure }
+      #
+      #- name: test-all-linode
+      #  plan:
+      #  - get: all
+      #    trigger: true
+      #  - put: all
+      #    params: { path: all, status: pending}
+      #  - get: creds
+      #    params:
+      #      unpack: true
+      #  - task: test
+      #    file: all/hack/concourse/task.yml
+      #    input_mapping:
+      #      pharmer: all
+      #    params: {CredProvider: Linode, ClusterProvider: linode, ZONE: 3, NODE: 1, CRED: linode}
+      #    on_success:
+      #      put: all
+      #      params: { path: all, status: success }
+      #    on_failure:
+      #      put: all
+      #      params: {path: all, status: failure }
+      #
+      #- name: test-all-vultr
+      #  plan:
+      #  - get: all
+      #    trigger: true
+      #  - put: all
+      #    params: { path: all, status: pending}
+      #  - get: creds
+      #    params:
+      #      unpack: true
+      #  - task: test
+      #    file: all/hack/concourse/task.yml
+      #    input_mapping:
+      #      pharmer: all
+      #    params: {CredProvider: Vultr, ClusterProvider: vultr, ZONE: 6, NODE: 203, CRED: vultr}
+      #    on_success:
+      #      put: all
+      #      params: { path: all, status: success }
+      #    on_failure:
+      #      put: all
+      #      params: {path: all, status: failure }
+      #
+      #- name: test-all-aws
+      #  plan:
+      #  - get: all
+      #    trigger: true
+      #  - put: all
+      #    params: { path: all, status: pending}
+      #  - get: creds
+      #    params:
+      #      unpack: true
+      #  - task: test
+      #    file: all/hack/concourse/task.yml
+      #    input_mapping:
+      #      pharmer: all
+      #    params: {CredProvider: AWS, ClusterProvider: aws, ZONE: us-west-1a, NODE: t2.medium, CRED: aws}
+      #    on_success:
+      #      put: all
+      #      params: { path: all, status: success }
+      #    on_failure:
+      #      put: all
+      #      params: {path: all, status: failure }
+      #
+      #- name: test-all-lightsail
+      #  plan:
+      #  - get: all
+      #    trigger: true
+      #  - put: all
+      #    params: { path: all, status: pending}
+      #  - get: creds
+      #    params:
+      #      unpack: true
+      #  - task: test
+      #    file: all/hack/concourse/task.yml
+      #    input_mapping:
+      #      pharmer: all
+      #    params: {CredProvider: AWS, ClusterProvider: lightsail, ZONE: us-west-2a, NODE: small_1_0, CRED: aws}
+      #    on_success:
+      #      put: all
+      #      params: { path: all, status: success }
+      #    on_failure:
+      #      put: all
+      #      params: {path: all, status: failure }

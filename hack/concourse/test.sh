@@ -16,13 +16,15 @@ mkdir -p $GOPATH/src/github.com/pharmer
 cp -r pharmer $GOPATH/src/github.com/pharmer
 pushd $GOPATH/src/github.com/pharmer/pharmer
 
-#build
+#build pharmer
 ./hack/builddeps.sh
 ./hack/make.py
 
-NAME=pharmer-$(git rev-parse --short HEAD) #name of the cluster
+#name of the cluster
+NAME=pharmer-$(git rev-parse --short HEAD)
 popd
 
+#delete cluster after running tests
 function cleanup {
     pharmer get cluster
     pharmer delete cluster $NAME
@@ -33,15 +35,18 @@ function cleanup {
 }
 trap cleanup EXIT
 
+#create k8s cluster
 cp creds/creds/$CRED.json cred.json
 
 pharmer create credential --from-file=cred.json --provider=$CredProvider cred
 pharmer create cluster $NAME --provider=$ClusterProvider --zone=$ZONE --nodes=$NODE=1 --credential-uid=cred --kubernetes-version=v1.9.0
 pharmer apply $NAME
 pharmer use cluster $NAME
+sleep 300 #make sure that all the nodes are ready
 kubectl get nodes
 
 
+#https://github.com/pharmer/k8s-conformance/tree/master/v1.9/appscode
 curl -L https://raw.githubusercontent.com/cncf/k8s-conformance/master/sonobuoy-conformance.yaml | kubectl apply -f -
 sleep 900
 nohup kubectl logs -f -n sonobuoy sonobuoy &
