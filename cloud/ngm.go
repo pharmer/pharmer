@@ -155,7 +155,10 @@ func (igm *GenericNodeGroupManager) DeleteNodes(nodes []core.Node) error {
 			return err
 		}
 		if err = nd.DeleteNode(); err != nil {
-			return err
+			// Sometimes it is not necessary to delete node using api call, because dropping the physical node
+			// removes it from node list
+			Logger(igm.ctx).Infof("warning: %v", err)
+			//return err
 		}
 	}
 	return nil
