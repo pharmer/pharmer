@@ -1,4 +1,15 @@
 groups:
+- name: test-master
+  jobs:
+  - build-pharmer-master
+  - digitalocean-master
+  - gce-master
+  - packet-master
+  - linode-master
+  - vultr-master
+  - aws-master
+  - lightsail-master
+
 - name: test-pr-individual
   jobs:
   - digitalocean
@@ -35,6 +46,12 @@ resources:
     repo: pharmer
     label: cloud/all
     access_token: ((access_token))
+
+- name: master
+  type: git
+  source:
+    uri: https://github.com/pharmer/pharmer
+    branch: concourse
 
 - name: digitalocean
   type: pull-request
@@ -444,3 +461,128 @@ jobs:
     on_failure:
       put: all
       params: {path: all, status: failure }
+
+- name: build-pharmer-master
+  plan:
+  - get: master
+    trigger: true
+  - task: build
+    file: master/hack/concourse/build.yml
+    input_mapping:
+      pharmer: master
+    params: { build_only: true}
+    on_success:
+      put: pharmer-bin
+      params: {file: pharmer-bin/pharmer}
+
+- name: digitalocean-master
+  plan:
+  - get: master
+    trigger: true
+    passed: [build-pharmer-master]
+  - get: creds
+    params:
+      unpack: true
+  - get: pharmer-bin
+    passed: [build-pharmer-master]
+  - task: test
+    file: master/hack/concourse/task.yml
+    input_mapping:
+      pharmer: master
+    params: { CredProvider: DigitalOcean, ClusterProvider: digitalocean, ZONE: nyc3, NODE: 2gb, CRED: digitalocean, test_only: true}
+
+- name: gce-master
+  plan:
+  - get: master
+    trigger: true
+    passed: [build-pharmer-master]
+  - get: creds
+    params:
+      unpack: true
+  - get: pharmer-bin
+    passed: [build-pharmer-master]
+  - task: test
+    file: master/hack/concourse/task.yml
+    input_mapping:
+      pharmer: master
+    params: {CredProvider: GoogleCloud, ClusterProvider: gce, ZONE: us-central1-f, NODE: n1-standard-2, CRED: gce, test_only: true}
+
+- name: packet-master
+  plan:
+  - get: master
+    trigger: true
+    passed: [build-pharmer-master]
+  - get: creds
+    params:
+      unpack: true
+  - get: pharmer-bin
+    passed: [build-pharmer-master]
+  - task: test
+    file: master/hack/concourse/task.yml
+    input_mapping:
+      pharmer: master
+    params: {CredProvider: Packet, ClusterProvider: packet, ZONE: ewr1, NODE: baremetal_0, CRED: packet, test_only: true}
+
+- name: linode-master
+  plan:
+  - get: master
+    trigger: true
+    passed: [build-pharmer-master]
+  - get: creds
+    params:
+      unpack: true
+  - get: pharmer-bin
+    passed: [build-pharmer-master]
+  - task: test
+    file: master/hack/concourse/task.yml
+    input_mapping:
+      pharmer: master
+    params: {CredProvider: Linode, ClusterProvider: linode, ZONE: 3, NODE: 1, CRED: linode, test_only: true}
+
+- name: vultr-master
+  plan:
+  - get: master
+    trigger: true
+    passed: [build-pharmer-master]
+  - get: creds
+    params:
+      unpack: true
+  - get: pharmer-bin
+    passed: [build-pharmer-master]
+  - task: test
+    file: master/hack/concourse/task.yml
+    input_mapping:
+      pharmer: master
+    params: {CredProvider: Vultr, ClusterProvider: vultr, ZONE: 6, NODE: 203, CRED: vultr, test_only: true}
+
+- name: aws-master
+  plan:
+  - get: master
+    trigger: true
+    passed: [build-pharmer-master]
+  - get: creds
+    params:
+      unpack: true
+  - get: pharmer-bin
+    passed: [build-pharmer-master]
+  - task: test
+    file: master/hack/concourse/task.yml
+    input_mapping:
+      pharmer: master
+    params: {CredProvider: AWS, ClusterProvider: aws, ZONE: us-west-1a, NODE: t2.medium, CRED: aws, test_only: true}
+
+- name: lightsail-master
+  plan:
+  - get: master
+    trigger: true
+    passed: [build-pharmer-master]
+  - get: creds
+    params:
+      unpack: true
+  - get: pharmer-bin
+    passed: [build-pharmer-master]
+  - task: test
+    file: master/hack/concourse/task.yml
+    input_mapping:
+      pharmer: master
+    params: {CredProvider: AWS, ClusterProvider: lightsail, ZONE: us-west-2a, NODE: smmaster, CRED: aws, test_only: true}
