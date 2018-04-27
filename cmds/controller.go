@@ -51,8 +51,12 @@ func newCmdController() *cobra.Command {
 			//actuator, err :=
 			shutdown := make(chan struct{})
 			si := sharedinformers.NewSharedInformers(conf, shutdown)
+			//	mc := machineset.NewMachineSetController(conf, si)
+			//go mc.Run(make(chan struct{}))
+
 			c := machine.NewMachineController(conf, si, cm)
-			c.Run(shutdown)
+			c.RunAsync(shutdown)
+
 			select {}
 		},
 	}

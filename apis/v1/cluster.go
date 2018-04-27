@@ -194,21 +194,17 @@ func (c *Cluster) SetClusterApiEndpoints() error {
 
 	}
 	if u, found := m[core.NodeExternalIP]; found {
-		c.Spec.ClusterAPI.Status.APIEndpoints = []clusterv1.APIEndpoint{
-			{
-				Host: u,
-				Port: int(c.Spec.API.BindPort),
-			},
-		}
+		c.Spec.ClusterAPI.Status.APIEndpoints = append(c.Spec.ClusterAPI.Status.APIEndpoints, clusterv1.APIEndpoint{
+			Host: u,
+			Port: int(c.Spec.API.BindPort),
+		})
 		return nil
 	}
 	if u, found := m[core.NodeExternalDNS]; found {
-		c.Spec.ClusterAPI.Status.APIEndpoints = []clusterv1.APIEndpoint{
-			{
-				Host: u,
-				Port: int(c.Spec.API.BindPort),
-			},
-		}
+		c.Spec.ClusterAPI.Status.APIEndpoints = append(c.Spec.ClusterAPI.Status.APIEndpoints, clusterv1.APIEndpoint{
+			Host: u,
+			Port: int(c.Spec.API.BindPort),
+		})
 		return nil
 	}
 	return fmt.Errorf("No cluster api endpoint found")

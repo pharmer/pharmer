@@ -160,21 +160,22 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, sku string, node
 	ig := clusterv1.MachineSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              strings.Replace(sku, "_", "-", -1) + "-pool",
-			ClusterName:       cluster.Name,
-			UID:               uuid.NewUUID(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
 		Spec: clusterv1.MachineSetSpec{
 			Selector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					api.PharmerCluster: cluster.Name,
+					api.PharmerCluster:  cluster.Name,
+					api.MachineSlecetor: sku,
 				},
 			},
 			Replicas: Int32P(count),
 			Template: clusterv1.MachineTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						api.PharmerCluster: cluster.Name,
+						api.PharmerCluster:  cluster.Name,
+						api.RoleNodeKey:     "",
+						api.MachineSlecetor: sku,
 					},
 					CreationTimestamp: metav1.Time{Time: time.Now()},
 				},
@@ -352,7 +353,7 @@ func CheckForUpdates(ctx context.Context, name string) (string, error) {
 	if ctx, err = LoadSSHKey(ctx, cluster); err != nil {
 		return "", err
 	}
-	/*kc, err := NewAdminClient(ctx, cluster)
+	kc, err := NewAdminClient(ctx, cluster)
 	if err != nil {
 		return "", err
 	}
@@ -365,7 +366,7 @@ func CheckForUpdates(ctx context.Context, name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	upm.PrintAvailableUpgrades(upgrades)*/
+	upm.PrintAvailableUpgrades(upgrades)
 	return "", nil
 }
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	api "github.com/pharmer/pharmer/apis/v1"
+	"github.com/pharmer/pharmer/cloud/cmds/options"
 	core "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,6 +67,16 @@ func NewClusterApi(ctx context.Context, cluster *api.Cluster, kc kubernetes.Inte
 }
 
 func (ca *ClusterApi) Apply() error {
+	Logger(ca.ctx).Infoln("using cluster locally")
+	c2, err := GetAdminConfig(ca.ctx, ca.cluster)
+	if err != nil {
+		Logger(ca.ctx).Infoln("error on using cluster", err)
+		return err
+	}
+	opt := options.NewClusterUseConfig()
+	opt.ClusterName = ca.cluster.Name
+	UseCluster(ca.ctx, opt, c2)
+
 	if err := waitForServiceAccount(ca.ctx, ca.kc); err != nil {
 		return err
 	}
@@ -77,19 +88,20 @@ func (ca *ClusterApi) Apply() error {
 	if err := waitForClusterResourceReady(ca.ctx, ca.clientSet); err != nil {
 		return err
 	}
-	c, err := ca.client.Clusters(core.NamespaceDefault).Create(ca.cluster.Spec.ClusterAPI)
-	fmt.Println(c)
-	if err != nil {
+	if _, err := ca.client.Clusters(core.NamespaceDefault).Create(ca.cluster.Spec.ClusterAPI); err != nil {
 		return err
 	}
 
+	/*if _, err := ca.client.Clusters(core.NamespaceDefault).UpdateStatus(ca.cluster.Spec.ClusterAPI); err != nil {
+		return err
+	}
+*/
 	for _, master := range ca.cluster.Spec.Masters {
 		if _, err := ca.client.Machines(core.NamespaceDefault).Create(master); err != nil {
 			return err
 		}
 	}
 
-	//c.Status.APIEndpoints =
 	return nil
 }
 
@@ -321,6 +333,7 @@ spec:
       containers:
       - name: apiserver
         image: {{ .APIServerImage }}
+        imagePullPolicy: Always
         volumeMounts:
         - name: cluster-apiserver-certs
           mountPath: /apiserver.local.config/certificates
@@ -349,6 +362,7 @@ spec:
             memory: 30Mi
       - name: controller-manager
         image: {{ .ControllerManagerImage }}
+        imagePullPolicy: Always
         volumeMounts:
           - name: config
             mountPath: /etc/kubernetes
@@ -367,6 +381,7 @@ spec:
             memory: 30Mi
       - name: machine-controller
         image: {{ .MachineControllerImage }}
+        imagePullPolicy: Always
         volumeMounts:
           - name: config
             mountPath: /etc/kubernetes
@@ -384,6 +399,7 @@ spec:
         - controller
         - --kubeconfig=/etc/kubernetes/admin.conf
         - --provider={{ .Provider }}
+        - --v=10
         resources:
           requests:
             cpu: 100m

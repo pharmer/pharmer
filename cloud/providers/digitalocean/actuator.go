@@ -36,6 +36,7 @@ func (cm *ClusterManager) InitializeActuator(machineClient client.MachineInterfa
 }
 
 func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+	Logger(cm.ctx).Infoln("call for creating machine")
 	if err := cm.PrepareCloud(cluster.Name); err != nil {
 		return err
 	}
@@ -60,14 +61,17 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 		if err != nil {
 			return err
 		}
+		if cm.actuator.machineClient != nil {
+			return cm.updateAnnotations(machine)
+		}
+	} else {
+		Logger(cm.ctx).Infoln("Skipped creating a machine that already exists.")
 	}
-
-	Logger(cm.ctx).Infoln("Skipped creating a machine that already exists.")
-
 	return nil
 }
 
 func (cm *ClusterManager) Delete(machine *clusterv1.Machine) error {
+	Logger(cm.ctx).Infoln("call for deleting machine")
 	clusterName := machine.ClusterName
 	if _, found := machine.Labels[api.PharmerCluster]; found {
 		clusterName = machine.Labels[api.PharmerCluster]
@@ -93,31 +97,36 @@ func (cm *ClusterManager) Delete(machine *clusterv1.Machine) error {
 	if err != nil {
 		return err
 	}
-
-	nd, err := NewNodeDrain(cm.ctx, kc, cm.cluster)
-	if err != nil {
-		return err
-	}
-	// Drain Node
-	nd.Node = node.Name
-	if err = nd.Apply(); err != nil {
-		return err
-	}
+	/*
+		nd, err := NewNodeDrain(cm.ctx, kc, cm.cluster)
+		if err != nil {
+			return err
+		}
+		// Drain Node
+		nd.Node = node.Name
+		if err = nd.Apply(); err != nil {
+			return err
+		}*/
 
 	if err = cm.conn.DeleteInstanceByProviderID(node.Spec.ProviderID); err != nil {
-		return err
+		Logger(cm.ctx).Infoln("errror on deleting %v", err)
 	}
+	/*if err = nd.DeleteNode(); err != nil {
+		Logger(cm.ctx).Infoln("error on deleting %v", err)
+	}*/
 
 	if cm.actuator.machineClient != nil {
 		// Remove the finalizer
 		machine.ObjectMeta.Finalizers = Filter(machine.ObjectMeta.Finalizers, clusterv1.MachineFinalizer)
 		_, err = cm.actuator.machineClient.Update(machine)
+		return err
 	}
 
-	return err
+	return nil
 }
 
 func (cm *ClusterManager) Update(cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
+	Logger(cm.ctx).Infoln("call for updating machine")
 	if err := cm.PrepareCloud(cluster.Name); err != nil {
 		return err
 	}
@@ -166,6 +175,7 @@ func (cm *ClusterManager) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 }
 
 func (cm *ClusterManager) Exists(machine *clusterv1.Machine) (bool, error) {
+	Logger(cm.ctx).Infoln("call for checking machine existence")
 	clusterName := machine.ClusterName
 	if _, found := machine.Labels[api.PharmerCluster]; found {
 		clusterName = machine.Labels[api.PharmerCluster]
@@ -195,8 +205,7 @@ func (cm *ClusterManager) updateAnnotations(machine *clusterv1.Machine) error {
 	if err != nil {
 		return err
 	}
-	err = cm.updateInstanceStatus(machine)
-	return err
+	return cm.updateInstanceStatus(machine)
 }
 
 // Sets the status of the instance identified by the given machine to the given machine
