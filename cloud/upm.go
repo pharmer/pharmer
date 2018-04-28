@@ -306,7 +306,7 @@ func (upm *GenericUpgradeManager) MasterUpgrade(oldMachine *clusterv1.Machine, n
 		steps = append(steps,
 			fmt.Sprintf(`echo "pre-k check master-status --timeout=-1s --kubeconfig=/etc/kubernetes/admin.conf" >> /usr/bin/pharmer.sh`))
 		steps = append(steps,
-			fmt.Sprintf(`echo "kubeadm upgrade apply %v -y" >> /usr/bin/pharmer.sh`, upm.cluster.Spec.KubernetesVersion),
+			fmt.Sprintf(`echo "kubeadm upgrade apply %v -y" >> /usr/bin/pharmer.sh`, newMachine.Spec.Versions.ControlPlane),
 			`chmod +x /usr/bin/pharmer.sh`,
 			`nohup /usr/bin/pharmer.sh >> /var/log/pharmer.log 2>&1 &`,
 		)

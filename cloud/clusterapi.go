@@ -95,7 +95,7 @@ func (ca *ClusterApi) Apply() error {
 	/*if _, err := ca.client.Clusters(core.NamespaceDefault).UpdateStatus(ca.cluster.Spec.ClusterAPI); err != nil {
 		return err
 	}
-*/
+	*/
 	for _, master := range ca.cluster.Spec.Masters {
 		if _, err := ca.client.Machines(core.NamespaceDefault).Create(master); err != nil {
 			return err
@@ -399,7 +399,7 @@ spec:
         - controller
         - --kubeconfig=/etc/kubernetes/admin.conf
         - --provider={{ .Provider }}
-        - --v=10
+        - --v=5
         resources:
           requests:
             cpu: 100m

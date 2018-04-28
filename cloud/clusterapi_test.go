@@ -8,9 +8,13 @@ import (
 	"testing"
 
 	_env "github.com/appscode/go/env"
+	"github.com/kubernetes-incubator/apiserver-builder/pkg/controller"
 	"github.com/pharmer/pharmer/config"
 	core "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/homedir"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
 
 func TestCreateApiserver(t *testing.T) {
@@ -56,5 +60,39 @@ func TestCreateApiserver(t *testing.T) {
 	/*if err := ca.Apply(); err != nil {
 		fmt.Println(err)
 	}*/
+
+}
+
+func TestExists(t *testing.T) {
+	machine := &clusterv1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				"cloud.appscode.com/cluster": "doco9",
+				"cloud.appscode.com/mg":      "2gb",
+			},
+			Name: "2gb-pool-phg2q",
+		},
+		Spec: clusterv1.MachineSpec{},
+	}
+
+	conf, err := controller.GetConfig("/home/sanjid/.kube/config")
+	if err != nil {
+		fmt.Println(err)
+	}
+	client, err := clientset.NewForConfig(conf)
+	fmt.Println(client, err)
+
+	cfgFile := filepath.Join(homedir.HomeDir(), ".pharmer", "config.d", "default")
+	cfg, err := config.LoadConfig(cfgFile)
+	if err != nil {
+		fmt.Println(err)
+	}
+	ctx := NewContext(context.Background(), cfg, _env.Dev)
+
+	cm, err := GetCloudManager("digitalocean", ctx)
+	fmt.Println(cm, err)
+	err = cm.InitializeActuator(client.ClusterV1alpha1().Machines(core.NamespaceDefault))
+	fmt.Println(err)
+	fmt.Println(cm.Exists(machine))
 
 }

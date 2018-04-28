@@ -2,7 +2,9 @@ package cloud
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -319,6 +322,20 @@ func CreateSecret(kc kubernetes.Interface, name string, data map[string][]byte) 
 	})
 }
 
+func CreateConfigMap(kc kubernetes.Interface, name string, data map[string]string) error {
+	conf := &core.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Data: data,
+	}
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		_, err := kc.CoreV1().ConfigMaps(metav1.NamespaceDefault).Create(conf)
+		fmt.Println(err)
+		return err == nil, nil
+	})
+}
+
 func CheckMachineReady(ctx context.Context, cc client.MachineInterface, kc kubernetes.Interface, machineName string, kubeVersion string) (bool, error) {
 	machine, err := cc.Get(machineName, metav1.GetOptions{})
 	if err != nil {
@@ -345,4 +362,33 @@ func CheckMachineReady(ctx context.Context, cc client.MachineInterface, kc kuber
 		Logger(ctx).Infof("node %s kubelet current version: %s, target: %s.", machineName, node.Status.NodeInfo.KubeletVersion, kubeVersion)
 		return false, nil
 	}
+}
+
+func PatchMachineSet(client clientset.Interface, cur, mod *clusterv1.MachineSet) (*clusterv1.MachineSet, error) {
+	curJson, err := json.Marshal(cur)
+	if err != nil {
+		return nil, err
+	}
+
+	modJson, err := json.Marshal(mod)
+	if err != nil {
+		return nil, err
+	}
+	patch, err := strategicpatch.StrategicMergePatch(curJson, modJson, clusterv1.MachineSet{})
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(string(curJson))
+	fmt.Println("-----------------------------------------")
+	fmt.Println(string(modJson))
+	fmt.Println("-----------------------------------------")
+	fmt.Println(string(patch))
+	fmt.Println("-----------------------------------------")
+	os.Exit(1)
+	if len(patch) == 0 || string(patch) == "{}" {
+		return cur, nil
+	}
+
+	out, err := client.ClusterV1alpha1().MachineSets(core.NamespaceDefault).Patch(cur.Name, types.StrategicMergePatchType, patch)
+	return out, err
 }

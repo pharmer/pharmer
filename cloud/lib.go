@@ -242,6 +242,23 @@ func DeleteNG(ctx context.Context, clusterName, nodeGroupName string) error {
 	return nil
 }
 
+func DeleteMachineSet(ctx context.Context, clusterName, setName string) error {
+	if clusterName == "" {
+		return errors.New("missing cluster name")
+	}
+	if setName == "" {
+		return errors.New("missing machineset name")
+	}
+
+	mSet, err := Store(ctx).MachineSet(clusterName).Get(setName)
+	if err != nil {
+		return errors.Errorf(`machinset not found in pharmer db, try using kubectl`)
+	}
+	mSet.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+	_, err = Store(ctx).MachineSet(clusterName).Update(mSet)
+	return err
+}
+
 func GetSSHConfig(ctx context.Context, nodeName string, cluster *api.Cluster) (*api.SSHConfig, error) {
 	var err error
 	ctx, err = LoadCACertificates(ctx, cluster)

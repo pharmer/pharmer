@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"io/ioutil"
+	"os/exec"
 
 	"github.com/ghodss/yaml"
 )
@@ -25,4 +26,8 @@ func Filter(list []string, strToFilter string) (newList []string) {
 		}
 	}
 	return
+}
+
+func CopyDirectory(src, dst string) error {
+	return exec.Command("cp", "-rf", src, dst).Run()
 }

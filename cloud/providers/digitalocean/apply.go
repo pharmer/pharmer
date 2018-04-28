@@ -295,12 +295,20 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 	client := cs.ClusterV1alpha1()
 
 	var machineSet []*clusterv1.MachineSet
-
+	//var msc *clusterv1.MachineSet
 	machineSet, err = Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
 	for _, ms := range machineSet {
+		if ms.DeletionTimestamp != nil {
+			if err = client.MachineSets(core.NamespaceDefault).Delete(ms.Name, &metav1.DeleteOptions{}); err != nil {
+				return
+			}
+			err = Store(cm.ctx).MachineSet(cm.cluster.Name).Delete(ms.Name)
+			return
+		}
+
 		_, err = client.MachineSets(core.NamespaceDefault).Get(ms.Name, metav1.GetOptions{})
 		if kerr.IsNotFound(err) {
 			_, err = client.MachineSets(core.NamespaceDefault).Create(ms)
@@ -308,9 +316,12 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 				return
 			}
 		} else {
-			//TODO(): add patch here
-			/*_, err = client.MachineSets(core.NamespaceDefault).Update(ms)
-			if err != nil {
+			if _, err = client.MachineSets(core.NamespaceDefault).Update(ms); err != nil {
+				return
+			}
+
+			//patch makes provider config null :(. TODO(): why??
+			/*if _, err = PatchMachineSet(cs, msc, ms); err != nil {
 				return
 			}*/
 		}
@@ -341,7 +352,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	var masterInstance *core.Node
 	masterInstance, err = kc.CoreV1().Nodes().Get(cm.namer.MasterName(), metav1.GetOptions{})
 	if err != nil && !kerr.IsNotFound(err) {
-		return
+		Logger(cm.ctx).Infof("master instance not found. Reason: %s", masterInstance.Spec.ProviderID, err)
 	} else if err == nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionDelete,
