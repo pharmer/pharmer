@@ -39,6 +39,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
+		td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
 	}
 	return td
 }
@@ -96,6 +97,21 @@ ensure_basic_networking() {
 
 ensure_basic_networking
 {{ end }}
+
+{{ define "install-storage-plugin" }}
+# Deploy storage RBAC
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/storagePlugin/cloud-storage/rbac.yaml'
+exec_until_success "$cmd"
+
+#Deploy plugin
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/storagePlugin/cloud-storage/{{ .Provider }}/flexplugin.yaml'
+exec_until_success "$cmd"
+
+#Deploy provisioner
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/storagePlugin/cloud-storage/{{ .Provider }}/provisioner.yaml'
+exec_until_success "$cmd"
+{{ end }}
+
 `
 )
 

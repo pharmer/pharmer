@@ -213,6 +213,7 @@ sudo chown $(id -u):$(id -g) ~/.kube/config
 
 {{ if .ExternalProvider }}
 {{ template "ccm" . }}
+{{ template "install-storage-plugin" . }}
 {{end}}
 
 {{ template "prepare-cluster" . }}
@@ -328,6 +329,7 @@ do
    sleep 5
 done
 `))
+	_ = template.Must(StartupScriptTemplate.New("install-storage-plugin").Parse(``))
 
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 kubectl apply \
