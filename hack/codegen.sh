@@ -13,7 +13,7 @@ pushd $REPO_ROOT
 docker run --rm -ti -u $(id -u):$(id -g) \
     -v "$REPO_ROOT":"$DOCKER_REPO_ROOT" \
     -w "$DOCKER_REPO_ROOT" \
-    appscode/gengo:release-1.9 deepcopy-gen \
+    appscode/gengo:release-1.10 deepcopy-gen \
     --v 1 --logtostderr \
     --go-header-file "hack/gengo/boilerplate.go.txt" \
     --input-dirs "$PACKAGE_NAME/apis/v1alpha1" \
@@ -23,7 +23,7 @@ docker run --rm -ti -u $(id -u):$(id -g) \
 docker run --rm -ti -u $(id -u):$(id -g) \
     -v "$REPO_ROOT":"$DOCKER_REPO_ROOT" \
     -w "$DOCKER_REPO_ROOT" \
-    appscode/protoc:release-1.9 go-to-protobuf \
+    appscode/protoc:release-1.10 go-to-protobuf \
     --go-header-file "hack/gengo/boilerplate.go.txt" \
     --proto-import=/go/src/github.com/pharmer/pharmer/vendor \
     --packages=-k8s.io/api/core/v1,github.com/pharmer/pharmer/apis/v1alpha1 \
