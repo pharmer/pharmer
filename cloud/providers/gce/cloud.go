@@ -147,7 +147,7 @@ func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 		if err != nil {
 			return false, nil
 		}
-		Logger(conn.ctx).Infof("Attempt %v: Operation %v is %v ...", attempt, operation)
+		Logger(conn.ctx).Infof("Attempt %v: Operation %v is %v ...", attempt, operation, r1.Status)
 		if r1.Status == "DONE" {
 			return true, nil
 		}
@@ -782,11 +782,13 @@ func (conn *cloudConnector) createNodeGroup(ng *api.NodeGroup) (string, error) {
 func (conn *cloudConnector) deleteOnlyNodeGroup(instanceGroupName, template string) error {
 	_, err := conn.computeService.InstanceGroupManagers.ListManagedInstances(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
+		Logger(conn.ctx).Infof("Error on getting nodegroup list. Reason: %v", err)
 		return errors.Wrap(err, ID(conn.ctx))
 	}
 
 	r1, err := conn.computeService.InstanceGroupManagers.Delete(conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, instanceGroupName).Do()
 	if err != nil {
+		Logger(conn.ctx).Infof("Error on deleting nodegroup. Reason: %v", err)
 		return errors.Wrap(err, ID(conn.ctx))
 	}
 	operation := r1.Name
@@ -794,6 +796,7 @@ func (conn *cloudConnector) deleteOnlyNodeGroup(instanceGroupName, template stri
 	Logger(conn.ctx).Infof("Instance group %v is deleted", instanceGroupName)
 	Logger(conn.ctx).Infof("Instance template %v is deleting", template)
 	if err = conn.deleteInstanceTemplate(template); err != nil {
+		Logger(conn.ctx).Infof("Error on deleting instance template. Reason: %v", err)
 		return errors.Wrap(err, ID(conn.ctx))
 	}
 	Logger(conn.ctx).Infof("Instance template %v is deleted", template)

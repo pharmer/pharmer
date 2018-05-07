@@ -417,7 +417,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 			})
 			if !dryRun {
 				if err = cm.conn.deleteOnlyNodeGroup(ng.Name, template); err != nil {
-					//return
+					Logger(cm.ctx).Infof("Error on deleting node group. Reason: %v", err)
 				}
 				Store(cm.ctx).NodeGroups(cm.cluster.Name).Delete(ng.Name)
 			}
@@ -430,7 +430,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	})
 	if !dryRun {
 		if err = cm.conn.deleteMaster(); err != nil {
-			//return
+			Logger(cm.ctx).Infof("Error on deleting master. Reason: %v", err)
 		}
 	}
 
@@ -448,7 +448,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if masterNG.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
 		if !dryRun {
 			if err = cm.conn.releaseReservedIP(); err != nil {
-				//return
+				Logger(cm.ctx).Infof("Error on releasing reserve ip. Reason: %v", err)
 			}
 		}
 	}
@@ -461,7 +461,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 
 	if !dryRun {
 		if err = cm.conn.deleteDisk(); err != nil {
-			//return
+			Logger(cm.ctx).Infof("Error on deleting disk. Reason: %v", err)
 		}
 	}
 
@@ -472,7 +472,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	})
 	if !dryRun {
 		if err = cm.conn.deleteRoutes(); err != nil {
-			//	return
+			Logger(cm.ctx).Infof("Error on deleting routes. Reason: %v", err)
 		}
 	}
 

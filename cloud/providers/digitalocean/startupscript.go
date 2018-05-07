@@ -100,15 +100,15 @@ ensure_basic_networking
 
 {{ define "install-storage-plugin" }}
 # Deploy storage RBAC
-cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/storagePlugin/cloud-storage/rbac.yaml'
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.10/cloud-storage/rbac.yaml'
 exec_until_success "$cmd"
 
 #Deploy plugin
-cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/storagePlugin/cloud-storage/{{ .Provider }}/flexplugin.yaml'
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.10/cloud-storage/{{ .Provider }}/flexplugin.yaml'
 exec_until_success "$cmd"
 
 #Deploy provisioner
-cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/storagePlugin/cloud-storage/{{ .Provider }}/provisioner.yaml'
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.10/cloud-storage/{{ .Provider }}/provisioner.yaml'
 exec_until_success "$cmd"
 {{ end }}
 
