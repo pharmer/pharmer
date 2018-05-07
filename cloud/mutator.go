@@ -105,7 +105,7 @@ func GetExistingContextVersion(ctx context.Context, cluster *api.Cluster, sku st
 	var kc kubernetes.Interface // TODO: Fix NPE, pass client
 	//re, _ := labels.NewRequirement(api.NodeLabelKey_SKU, selection.Equals, []string{sku})
 	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{
-		//LabelSelector: labels.Selector.Add(*re).Matches(labels.Labels(api.NodeLabelKey_SKU)),
+	//LabelSelector: labels.Selector.Add(*re).Matches(labels.Labels(api.NodeLabelKey_SKU)),
 	})
 	if err != nil {
 		log.Fatal(err)
