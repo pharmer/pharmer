@@ -16,9 +16,7 @@ func (c AWS) AccessKeyID() string     { return c.Data[AWSAccessKeyID] }
 func (c AWS) SecretAccessKey() string { return c.Data[AWSSecretAccessKey] }
 
 func (c *AWS) Load(filename string) error {
-	if c.Data != nil {
-		c.Data = map[string]string{}
-	}
+	c.Data = make(map[string]string)
 
 	cfg, err := ini.Load(filename)
 	if err != nil {

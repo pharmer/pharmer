@@ -71,8 +71,9 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 			}
 			for _, node := range nodes.Items {
 				nd.Node = node.Name
-				if err = nd.DeleteNode(); err != nil {
-					Logger(igm.ctx).Infoln("Failed to delete node ", node.Name, err)
+				if er := nd.DeleteNode(); er != nil {
+					// ignore error while deleting node
+					Logger(igm.ctx).Infoln("Failed to delete node ", node.Name, er)
 				}
 			}
 			Store(igm.ctx).NodeGroups(igm.ng.ClusterName).Delete(igm.ng.Name)

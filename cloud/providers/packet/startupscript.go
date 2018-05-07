@@ -111,6 +111,20 @@ curl -fsSL --retry 5 -o /etc/apt/sources.list https://raw.githubusercontent.com/
 {{ define "prepare-host" }}
 pre-k machine swapoff
 {{ end }}
+
+{{ define "install-storage-plugin" }}
+# Deploy storage RBAC
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.10/cloud-storage/rbac.yaml'
+exec_until_success "$cmd"
+
+#Deploy plugin
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.10/cloud-storage/{{ .Provider }}/flexplugin.yaml'
+exec_until_success "$cmd"
+
+#Deploy provisioner
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.10/cloud-storage/{{ .Provider }}/provisioner.yaml'
+exec_until_success "$cmd"
+{{ end }}
 `
 )
 
