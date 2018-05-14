@@ -35,7 +35,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	return &cloudConnector{
 		ctx:     ctx,
 		cluster: cluster,
-		client:  packngo.NewClient("", typed.APIKey(), nil),
+		client:  packngo.NewClientWithAuth("", typed.APIKey(), nil),
 	}, nil
 }
 

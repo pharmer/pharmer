@@ -1,5 +1,5 @@
 hash: 47e437b703b772c8d05ba6f192bc4f18be7777cd5c8fdbca276e7dfeaf0746d2
-updated: 2018-05-06T21:34:16.032387577-07:00
+updated: 2018-05-14T14:34:43.729745725-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -32,7 +32,7 @@ imports:
 - name: github.com/appscode/go-hetzner
   version: c038e08b19b1c760484d443de8958880e35bd879
 - name: github.com/appscode/kutil
-  version: 7c06d378914d77d52a1e2eda9c61560a38950794
+  version: c397449684de5caf2de0309e6453eab905901cf8
   subpackages:
   - tools/backup
 - name: github.com/appscode/mergo
@@ -129,9 +129,7 @@ imports:
 - name: github.com/dgrijalva/jwt-go
   version: 01aeca54ebda6e0fbfafd0a524d234159c05ec20
 - name: github.com/digitalocean/godo
-  version: 7a32b5ce17203924a21366d5031032fd326d5051
-  subpackages:
-  - context
+  version: 09db8d3b63467a9a1eae4b0a5b5c36c415219df0
 - name: github.com/docker/distribution
   version: edc3ab29cdff8694dd6feb85cfeb4b5f1b38ed9c
   subpackages:
@@ -193,7 +191,7 @@ imports:
 - name: github.com/fatih/color
   version: 9aae6aaa22315390f03959adca2c4d395b02fcef
 - name: github.com/fsnotify/fsnotify
-  version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
+  version: f12c6236fe7b5cf6bcf30e5935d08cb079d78334
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
 - name: github.com/go-ini/ini
@@ -301,7 +299,7 @@ imports:
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/JamesClonk/vultr
-  version: ee63e028f35bcafd35411640173990c97cc7f866
+  version: 164aa254b818fbb0d505b1141950a59414856d37
   subpackages:
   - lib
 - name: github.com/jmespath/go-jmespath
@@ -394,7 +392,7 @@ imports:
   - specs-go
   - specs-go/v1
 - name: github.com/packethost/packngo
-  version: 80f62d78849dba04e42d8812329ee00558e37c5b
+  version: dff6ec250ba6085b63b56b5f1e2e69c6dad7569f
 - name: github.com/pborman/uuid
   version: e790cca94e6cc75c7064b1332e63811d4aae1a53
 - name: github.com/peterbourgon/diskv
