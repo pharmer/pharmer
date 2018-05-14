@@ -39,12 +39,6 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 		return nil, err
 	}
 	Logger(cm.ctx).Infof("Using image id %v", cm.cluster.Spec.Cloud.InstanceImage)
-	err = cm.conn.DetectBootscript()
-	if err != nil {
-		return nil, err
-	}
-	Logger(cm.ctx).Infof("Using bootscript id %v", cm.conn.bootscriptID)
-
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
 	}

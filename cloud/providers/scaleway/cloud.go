@@ -233,7 +233,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		serverID, err = scw.CreateServer(conn.client, &scw.ConfigCreateServer{
 			Name:       name,
 			ImageName:  conn.cluster.Spec.Cloud.InstanceImage,
-			Bootscript: conn.bootscriptID,
+			Bootscript: "", //conn.bootscriptID,
 			// https://github.com/scaleway/scaleway-cli/blob/11bf0b65021acaf39ba101a2085c51772aca0dab/pkg/api/helpers.go#L387
 			Env: "KubernetesCluster " + conn.cluster.Name,
 			// AdditionalVolumes : "",
