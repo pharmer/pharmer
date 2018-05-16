@@ -71,10 +71,8 @@ func NewCloudProvider(opts *options.GenData) (CloudInterface, error) {
 		return linode.NewClient(opts.LinodeApiToken)
 	case Scaleway:
 		return scaleway.NewClient(opts.ScalewayToken, opts.ScalewayOrganization)
-	default:
-		return nil, errors.Errorf("Valid/Supported provider name required")
 	}
-	return nil, nil
+	return nil, errors.Errorf("Unknown cloud provider: %s", opts.Provider)
 }
 
 //get data from api
