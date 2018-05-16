@@ -89,7 +89,7 @@ NODE_NAME=$(curl http://169.254.169.254/2007-01-19/meta-data/local-hostname)
 {{ end }}
 
 {{ define "mount-master-pd" }}
-pre-k mount-master-pd
+pre-k mount-master-pd --provider=aws
 {{ end }}
 `
 )
