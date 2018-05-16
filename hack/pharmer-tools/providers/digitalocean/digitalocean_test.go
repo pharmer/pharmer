@@ -9,7 +9,7 @@ import (
 )
 
 func TestRegion(t *testing.T) {
-	client, err := NewDigitalOceanClient(tgetToken(), "1.8.0")
+	client, err := NewClient(tgetToken(), "1.8.0")
 	if err != nil {
 		t.Error(err)
 	}
@@ -23,7 +23,7 @@ func TestRegion(t *testing.T) {
 }
 
 func TestInstance(t *testing.T) {
-	client, err := NewDigitalOceanClient(tgetToken(), "1.8.0")
+	client, err := NewClient(tgetToken(), "1.8.0")
 	if err != nil {
 		t.Error(err)
 	}

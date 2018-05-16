@@ -6,15 +6,15 @@ import (
 	"github.com/taoh/linodego"
 )
 
-type LinodeClient struct {
-	Data   *LinodeData      `json:"data,omitempty"`
-	Client *linodego.Client `json:"client,omitempty"`
+type Client struct {
+	Data   *LinodeData
+	Client *linodego.Client
 }
 
 type LinodeData data.CloudData
 
-func NewLinodeClient(linodeApiToken string) (*LinodeClient, error) {
-	g := &LinodeClient{
+func NewClient(linodeApiToken string) (*Client, error) {
+	g := &Client{
 		Client: linodego.NewClient(linodeApiToken, nil),
 	}
 	var err error
@@ -27,24 +27,24 @@ func NewLinodeClient(linodeApiToken string) (*LinodeClient, error) {
 	return g, nil
 }
 
-func (g *LinodeClient) GetName() string {
+func (g *Client) GetName() string {
 	return g.Data.Name
 }
 
-func (g *LinodeClient) GetEnvs() []string {
+func (g *Client) GetEnvs() []string {
 	return g.Data.Envs
 }
 
-func (g *LinodeClient) GetCredentials() []data.CredentialFormat {
+func (g *Client) GetCredentials() []data.CredentialFormat {
 	return g.Data.Credentials
 }
 
-func (g *LinodeClient) GetKubernets() []data.Kubernetes {
+func (g *Client) GetKubernets() []data.Kubernetes {
 	return g.Data.Kubernetes
 }
 
 //DataCenter as region
-func (g *LinodeClient) GetRegions() ([]data.Region, error) {
+func (g *Client) GetRegions() ([]data.Region, error) {
 	regionList, err := g.Client.Avail.DataCenters()
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (g *LinodeClient) GetRegions() ([]data.Region, error) {
 }
 
 //data.Region.Region as Zone
-func (g *LinodeClient) GetZones() ([]string, error) {
+func (g *Client) GetZones() ([]string, error) {
 	regionList, err := g.GetRegions()
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (g *LinodeClient) GetZones() ([]string, error) {
 	return zones, nil
 }
 
-func (g *LinodeClient) GetInstanceTypes() ([]data.InstanceType, error) {
+func (g *Client) GetInstanceTypes() ([]data.InstanceType, error) {
 	instanceList, err := g.Client.Avail.LinodePlans()
 	if err != nil {
 		return nil, err

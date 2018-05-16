@@ -31,10 +31,10 @@ func (c *ClusterBackupConfig) ValidateFlags(cmd *cobra.Command, args []string) e
 	flags.EnsureRequiredFlags(cmd, "backup-dir")
 
 	if len(args) == 0 {
-		errors.New("missing cluster name")
+		return errors.New("missing cluster name")
 	}
 	if len(args) > 1 {
-		errors.New("multiple cluster name provided")
+		return errors.New("multiple cluster name provided")
 	}
 	c.ClusterName = args[0]
 	return nil

@@ -9,7 +9,7 @@ import (
 )
 
 func TestRegion(t *testing.T) {
-	client, err := NewVultrClient(tgetToken(), "1.1.2")
+	client, err := NewClient(tgetToken(), "1.1.2")
 	if err != nil {
 		t.Error(err)
 	}
@@ -21,7 +21,7 @@ func TestRegion(t *testing.T) {
 }
 
 func TestInstance(t *testing.T) {
-	client, err := NewVultrClient(tgetToken(), "1.1.2")
+	client, err := NewClient(tgetToken(), "1.1.2")
 	if err != nil {
 		t.Error(err)
 	}

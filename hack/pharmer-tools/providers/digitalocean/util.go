@@ -24,7 +24,7 @@ func ParseSizes(size *godo.Size) (*data.InstanceType, error) {
 		Description: size.Slug,
 		CPU:         size.Vcpus,
 		Disk:        size.Disk,
-		//Category:    ParseCatagoryFromSlug(size.Slug),
+		//Category:    ParseCategoryFromSlug(size.Slug),
 		Zones: size.Regions,
 	}
 	var err error
@@ -32,7 +32,7 @@ func ParseSizes(size *godo.Size) (*data.InstanceType, error) {
 	return m, err
 }
 
-func ParseCatagoryFromSlug(slug string) string {
+func ParseCategoryFromSlug(slug string) string {
 	if strings.HasPrefix(slug, "m-") {
 		return "High Memory"
 	} else if strings.HasPrefix(slug, "c-") {

@@ -9,7 +9,7 @@ import (
 )
 
 func TestRegion(t *testing.T) {
-	client, err := NewLinodeClient(tgetToken(), "1.1.1")
+	client, err := NewClient(tgetToken(), "1.1.1")
 	if err != nil {
 		t.Error(err)
 	}
@@ -23,7 +23,7 @@ func TestRegion(t *testing.T) {
 }
 
 func TestInstance(t *testing.T) {
-	client, err := NewLinodeClient(tgetToken(), "1.1.1")
+	client, err := NewClient(tgetToken(), "1.1.1")
 	if err != nil {
 		t.Error(err)
 	}

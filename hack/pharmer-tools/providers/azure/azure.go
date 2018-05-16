@@ -10,17 +10,17 @@ import (
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"
 )
 
-type AzureClient struct {
-	Data           *AzureData                        `json:"data,omitempty"`
-	SubscriptionId string                            `json:"subscription_id"`
-	GroupsClient   subscriptions.GroupClient         `json:"groups_client"`
-	VmSizesClient  compute.VirtualMachineSizesClient `json:"vm_sizes_client"`
+type Client struct {
+	Data           *AzureData
+	SubscriptionId string
+	GroupsClient   subscriptions.GroupClient
+	VmSizesClient  compute.VirtualMachineSizesClient
 }
 
 type AzureData data.CloudData
 
-func NewAzureClient(tenantId, subscriptionId, clientId, clientSecret string) (*AzureClient, error) {
-	g := &AzureClient{
+func NewClient(tenantId, subscriptionId, clientId, clientSecret string) (*Client, error) {
+	g := &Client{
 		SubscriptionId: subscriptionId,
 	}
 	var err error
@@ -49,23 +49,23 @@ func NewAzureClient(tenantId, subscriptionId, clientId, clientSecret string) (*A
 	return g, nil
 }
 
-func (g *AzureClient) GetName() string {
+func (g *Client) GetName() string {
 	return g.Data.Name
 }
 
-func (g *AzureClient) GetEnvs() []string {
+func (g *Client) GetEnvs() []string {
 	return g.Data.Envs
 }
 
-func (g *AzureClient) GetCredentials() []data.CredentialFormat {
+func (g *Client) GetCredentials() []data.CredentialFormat {
 	return g.Data.Credentials
 }
 
-func (g *AzureClient) GetKubernets() []data.Kubernetes {
+func (g *Client) GetKubernets() []data.Kubernetes {
 	return g.Data.Kubernetes
 }
 
-func (g *AzureClient) GetRegions() ([]data.Region, error) {
+func (g *Client) GetRegions() ([]data.Region, error) {
 	regionList, err := g.GroupsClient.ListLocations(g.SubscriptionId)
 	regions := []data.Region{}
 	for _, r := range *regionList.Value {
@@ -75,7 +75,7 @@ func (g *AzureClient) GetRegions() ([]data.Region, error) {
 	return regions, err
 }
 
-func (g *AzureClient) GetZones() ([]string, error) {
+func (g *Client) GetZones() ([]string, error) {
 	regions, err := g.GetRegions()
 	if err != nil {
 		return nil, err
@@ -93,13 +93,13 @@ func (g *AzureClient) GetZones() ([]string, error) {
 	return zones, nil
 }
 
-func (g *AzureClient) GetInstanceTypes() ([]data.InstanceType, error) {
+func (g *Client) GetInstanceTypes() ([]data.InstanceType, error) {
 	zones, err := g.GetZones()
 	if err != nil {
 		return nil, err
 	}
 	instances := []data.InstanceType{}
-	//to find the positon in instances array
+	//to find the position in instances array
 	instancePos := map[string]int{}
 	for _, zone := range zones {
 		instanceList, err := g.VmSizesClient.List(zone)

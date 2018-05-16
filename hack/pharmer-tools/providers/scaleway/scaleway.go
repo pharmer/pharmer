@@ -6,16 +6,16 @@ import (
 	scaleway "github.com/scaleway/scaleway-cli/pkg/api"
 )
 
-type ScalewayClient struct {
-	Data      *ScalewayData         `json:"data,omitempty"`
-	ParClient *scaleway.ScalewayAPI `json:"client,omitempty"`
-	AmsClient *scaleway.ScalewayAPI `json:"client,omitempty"`
+type Client struct {
+	Data      *ScalewayData
+	ParClient *scaleway.ScalewayAPI
+	AmsClient *scaleway.ScalewayAPI
 }
 
 type ScalewayData data.CloudData
 
-func NewScalewayClient(scalewayToken, organization string) (*ScalewayClient, error) {
-	g := &ScalewayClient{}
+func NewClient(scalewayToken, organization string) (*Client, error) {
+	g := &Client{}
 	var err error
 	g.ParClient, err = scaleway.NewScalewayAPI(organization, scalewayToken, "gen-data", "par1")
 	g.AmsClient, err = scaleway.NewScalewayAPI(organization, scalewayToken, "gen-data", "ams1")
@@ -31,23 +31,23 @@ func NewScalewayClient(scalewayToken, organization string) (*ScalewayClient, err
 	return g, nil
 }
 
-func (g *ScalewayClient) GetName() string {
+func (g *Client) GetName() string {
 	return g.Data.Name
 }
 
-func (g *ScalewayClient) GetEnvs() []string {
+func (g *Client) GetEnvs() []string {
 	return g.Data.Envs
 }
 
-func (g *ScalewayClient) GetCredentials() []data.CredentialFormat {
+func (g *Client) GetCredentials() []data.CredentialFormat {
 	return g.Data.Credentials
 }
 
-func (g *ScalewayClient) GetKubernets() []data.Kubernetes {
+func (g *Client) GetKubernets() []data.Kubernetes {
 	return g.Data.Kubernetes
 }
 
-func (g *ScalewayClient) GetRegions() ([]data.Region, error) {
+func (g *Client) GetRegions() ([]data.Region, error) {
 	regions := []data.Region{
 		{
 			Location: "Paris, France",
@@ -63,7 +63,7 @@ func (g *ScalewayClient) GetRegions() ([]data.Region, error) {
 	return regions, nil
 }
 
-func (g *ScalewayClient) GetZones() ([]string, error) {
+func (g *Client) GetZones() ([]string, error) {
 	zones := []string{
 		"ams1",
 		"par1",
@@ -71,7 +71,7 @@ func (g *ScalewayClient) GetZones() ([]string, error) {
 	return zones, nil
 }
 
-func (g *ScalewayClient) GetInstanceTypes() ([]data.InstanceType, error) {
+func (g *Client) GetInstanceTypes() ([]data.InstanceType, error) {
 	instanceList, err := g.ParClient.GetProductsServers()
 	if err != nil {
 		return nil, err

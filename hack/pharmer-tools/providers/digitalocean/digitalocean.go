@@ -9,16 +9,16 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type DigitalOceanClient struct {
-	Data   *DigitalOceanData `json:"data,omitempty"`
-	Client *godo.Client      `json:"client,omitempty"`
-	Ctx    context.Context   `json:"ctx,omitempty"`
+type Client struct {
+	Data   *DigitalOceanData
+	Client *godo.Client
+	Ctx    context.Context
 }
 
 type DigitalOceanData data.CloudData
 
-func NewDigitalOceanClient(doToken string) (*DigitalOceanClient, error) {
-	g := &DigitalOceanClient{
+func NewClient(doToken string) (*Client, error) {
+	g := &Client{
 		Ctx:  context.Background(),
 		Data: &DigitalOceanData{},
 	}
@@ -34,23 +34,23 @@ func NewDigitalOceanClient(doToken string) (*DigitalOceanClient, error) {
 	return g, nil
 }
 
-func (g *DigitalOceanClient) GetName() string {
+func (g *Client) GetName() string {
 	return g.Data.Name
 }
 
-func (g *DigitalOceanClient) GetEnvs() []string {
+func (g *Client) GetEnvs() []string {
 	return g.Data.Envs
 }
 
-func (g *DigitalOceanClient) GetCredentials() []data.CredentialFormat {
+func (g *Client) GetCredentials() []data.CredentialFormat {
 	return g.Data.Credentials
 }
 
-func (g *DigitalOceanClient) GetKubernets() []data.Kubernetes {
+func (g *Client) GetKubernets() []data.Kubernetes {
 	return g.Data.Kubernetes
 }
 
-func (g *DigitalOceanClient) GetRegions() ([]data.Region, error) {
+func (g *Client) GetRegions() ([]data.Region, error) {
 	regionList, _, err := g.Client.Regions.List(g.Ctx, &godo.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (g *DigitalOceanClient) GetRegions() ([]data.Region, error) {
 }
 
 //Rgion.Slug is used as zone name
-func (g *DigitalOceanClient) GetZones() ([]string, error) {
+func (g *Client) GetZones() ([]string, error) {
 	regionList, _, err := g.Client.Regions.List(g.Ctx, &godo.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (g *DigitalOceanClient) GetZones() ([]string, error) {
 	return zones, nil
 }
 
-func (g *DigitalOceanClient) GetInstanceTypes() ([]data.InstanceType, error) {
+func (g *Client) GetInstanceTypes() ([]data.InstanceType, error) {
 	sizeList, _, err := g.Client.Sizes.List(g.Ctx, &godo.ListOptions{})
 	if err != nil {
 		return nil, err

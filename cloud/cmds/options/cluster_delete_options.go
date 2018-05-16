@@ -33,7 +33,7 @@ func (c *ClusterDeleteConfig) AddFlags(fs *pflag.FlagSet) {
 
 func (c *ClusterDeleteConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		errors.New("missing cluster name")
+		return errors.New("missing cluster name")
 	}
 	c.Clusters = args
 	return nil

@@ -10,21 +10,21 @@ import (
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"
 )
 
-type VultrClient struct {
-	Data   *VultrData    `json:"data,omitempty"`
-	Client *vultr.Client `json:"client,omitempty"`
+type Client struct {
+	Data   *VultrData
+	Client *vultr.Client
 }
 
 type VultrData data.CloudData
 
 type PlanExtended struct {
 	vultr.Plan
-	Catagory   string `json:"plan_type"`
+	Category   string `json:"plan_type"`
 	Deprecated bool   `json:"deprecated"`
 }
 
-func NewVultrClient(vultrApiToken string) (*VultrClient, error) {
-	g := &VultrClient{
+func NewClient(vultrApiToken string) (*Client, error) {
+	g := &Client{
 		Client: vultr.NewClient(vultrApiToken, nil),
 	}
 	var err error
@@ -37,23 +37,23 @@ func NewVultrClient(vultrApiToken string) (*VultrClient, error) {
 	return g, nil
 }
 
-func (g *VultrClient) GetName() string {
+func (g *Client) GetName() string {
 	return g.Data.Name
 }
 
-func (g *VultrClient) GetEnvs() []string {
+func (g *Client) GetEnvs() []string {
 	return g.Data.Envs
 }
 
-func (g *VultrClient) GetCredentials() []data.CredentialFormat {
+func (g *Client) GetCredentials() []data.CredentialFormat {
 	return g.Data.Credentials
 }
 
-func (g *VultrClient) GetKubernets() []data.Kubernetes {
+func (g *Client) GetKubernets() []data.Kubernetes {
 	return g.Data.Kubernetes
 }
 
-func (g *VultrClient) GetRegions() ([]data.Region, error) {
+func (g *Client) GetRegions() ([]data.Region, error) {
 	regionlist, err := g.Client.GetRegions()
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (g *VultrClient) GetRegions() ([]data.Region, error) {
 	return regions, nil
 }
 
-func (g *VultrClient) GetZones() ([]string, error) {
+func (g *Client) GetZones() ([]string, error) {
 	regions, err := g.GetRegions()
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (g *VultrClient) GetZones() ([]string, error) {
 	return zones, nil
 }
 
-func (g *VultrClient) GetInstanceTypes() ([]data.InstanceType, error) {
+func (g *Client) GetInstanceTypes() ([]data.InstanceType, error) {
 	instances := []data.InstanceType{}
 	planReq, err := g.getPlanRequest()
 	if err != nil {
@@ -110,7 +110,7 @@ func (g *VultrClient) GetInstanceTypes() ([]data.InstanceType, error) {
 	return instances, nil
 }
 
-func (g *VultrClient) getPlanRequest() (*http.Request, error) {
+func (g *Client) getPlanRequest() (*http.Request, error) {
 	req, err := http.NewRequest("GET", "https://api.vultr.com/v1/plans/list?type=all", nil)
 	if err != nil {
 		return nil, err
