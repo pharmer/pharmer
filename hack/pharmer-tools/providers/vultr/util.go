@@ -24,7 +24,7 @@ func ParseInstance(in *PlanExtended) (*data.InstanceType, error) {
 		SKU:         strconv.Itoa(in.ID),
 		Description: in.Name,
 		CPU:         in.VCpus,
-		Category:    in.Catagory,
+		Category:    in.Category,
 	}
 	if in.Deprecated {
 		out.Deprecated = in.Deprecated

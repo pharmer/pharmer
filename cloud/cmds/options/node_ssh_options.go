@@ -27,12 +27,12 @@ func (c *NodeSSHConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	flags.EnsureRequiredFlags(cmd, "cluster")
 
 	if len(args) == 0 {
-		errors.New("missing node name")
+		return errors.New("missing node name")
 	}
 	if len(args) > 1 {
-		errors.New("multiple node name provided")
+		return errors.New("multiple node name provided")
 	}
-	c.NodeName = args[0]
 
+	c.NodeName = args[0]
 	return nil
 }

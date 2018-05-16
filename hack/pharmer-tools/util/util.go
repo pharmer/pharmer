@@ -39,7 +39,7 @@ func WriteFile(filename string, bytes []byte) error {
 }
 
 // versions string formate is `1.1.0,1.9.0`
-//they are comma seperated, no space allowed
+//they are comma separated, no space allowed
 func ParseVersions(versions string) []string {
 	v := strings.Split(versions, ",")
 	return v

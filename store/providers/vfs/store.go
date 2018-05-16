@@ -96,6 +96,9 @@ func init() {
 				out, err := svc.GetBucketLocation(&_s3.GetBucketLocationInput{
 					Bucket: types.StringP(cfg.Store.S3.Bucket),
 				})
+				if err != nil {
+					return nil, err
+				}
 				stowCfg[s3.ConfigRegion] = stringz.Val(types.String(out.LocationConstraint), "us-east-1")
 			} else {
 				stowCfg[s3.ConfigEndpoint] = cfg.Store.S3.Endpoint

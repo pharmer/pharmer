@@ -56,29 +56,21 @@ type CloudInterface interface {
 func NewCloudProvider(opts *options.GenData) (CloudInterface, error) {
 	switch opts.Provider {
 	case Gce:
-		return gce.NewGceClient(opts.GCEProjectID, opts.CredentialFile)
-		break
+		return gce.NewClient(opts.GCEProjectID, opts.CredentialFile)
 	case DigitalOcean:
-		return digitalocean.NewDigitalOceanClient(opts.DoToken)
-		break
+		return digitalocean.NewClient(opts.DoToken)
 	case Packet:
-		return packet.NewPacketClient(opts.PacketApiKey)
-		break
+		return packet.NewClient(opts.PacketApiKey)
 	case Aws:
-		return aws.NewAwsClient(opts.AWSRegion, opts.AWSAccessKeyID, opts.AWSSecretAccessKey)
-		break
+		return aws.NewClient(opts.AWSRegion, opts.AWSAccessKeyID, opts.AWSSecretAccessKey)
 	case Azure:
-		return azure.NewAzureClient(opts.AzureTenantId, opts.AzureSubscriptionId, opts.AzureClientId, opts.AzureClientSecret)
-		break
+		return azure.NewClient(opts.AzureTenantId, opts.AzureSubscriptionId, opts.AzureClientId, opts.AzureClientSecret)
 	case Vultr:
-		return vultr.NewVultrClient(opts.VultrApiToken)
-		break
+		return vultr.NewClient(opts.VultrApiToken)
 	case Linode:
-		return linode.NewLinodeClient(opts.LinodeApiToken)
-		break
+		return linode.NewClient(opts.LinodeApiToken)
 	case Scaleway:
-		return scaleway.NewScalewayClient(opts.ScalewayToken, opts.ScalewayOrganization)
-		break
+		return scaleway.NewClient(opts.ScalewayToken, opts.ScalewayOrganization)
 	default:
 		return nil, errors.Errorf("Valid/Supported provider name required")
 	}
@@ -176,7 +168,7 @@ func MergeCloudData(oldData, curData *data.CloudData) (*data.CloudData, error) {
 			if curData.InstanceTypes[index].RAM == nil && oldData.InstanceTypes[pos].RAM != nil {
 				curData.InstanceTypes[index].RAM = oldData.InstanceTypes[pos].RAM
 			}
-			//catagory
+			//category
 			if curData.InstanceTypes[index].Category == "" && oldData.InstanceTypes[pos].Category != "" {
 				curData.InstanceTypes[index].Category = oldData.InstanceTypes[pos].Category
 			}

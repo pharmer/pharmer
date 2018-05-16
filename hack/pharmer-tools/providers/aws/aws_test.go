@@ -9,7 +9,7 @@ import (
 )
 
 func TestRegion(t *testing.T) {
-	g, err := NewAwsClient("us-east-1", "", "", "1.1.1")
+	g, err := NewClient("us-east-1", "", "", "1.1.1")
 	if err != nil {
 		t.Error(err)
 		return
@@ -30,7 +30,7 @@ func TestRegion(t *testing.T) {
 }
 
 func TestInstance(t *testing.T) {
-	g, err := NewAwsClient("us-east-1", "", "", "1.1.1")
+	g, err := NewClient("us-east-1", "", "", "1.1.1")
 	if err != nil {
 		t.Error(err)
 		return

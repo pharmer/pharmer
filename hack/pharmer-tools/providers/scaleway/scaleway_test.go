@@ -9,7 +9,7 @@ import (
 )
 
 func TestInstance(t *testing.T) {
-	client, err := NewScalewayClient(tgetToken(), tgetOrganization(), "1.1.1")
+	client, err := NewClient(tgetToken(), tgetOrganization(), "1.1.1")
 	if err != nil {
 		t.Error(err)
 	}

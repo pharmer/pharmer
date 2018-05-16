@@ -10,18 +10,18 @@ import (
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"
 )
 
-type PacketClient struct {
-	Data   *PacketData     `json:"data,omitempty"`
-	Client *packngo.Client `json:"client,omitempty"`
+type Client struct {
+	Data   *PacketData
+	Client *packngo.Client
 	//required because current packngo.Plan does not contain Zones
-	PlanRequest *http.Request `json:"plan_request,omitempty"`
+	PlanRequest *http.Request
 }
 
 type PacketData data.CloudData
 
 type PlanExtended struct {
 	packngo.Plan
-	Available_in []struct {
+	AvailableIn []struct {
 		Href string `json:"href"`
 	} `json:"available_in"`
 }
@@ -30,8 +30,8 @@ type PlanExtendedList struct {
 	Plans []PlanExtended `json:"plans"`
 }
 
-func NewPacketClient(packetApiKey string) (*PacketClient, error) {
-	g := &PacketClient{
+func NewClient(packetApiKey string) (*Client, error) {
+	g := &Client{
 		Data: &PacketData{},
 	}
 	var err error
@@ -51,23 +51,23 @@ func NewPacketClient(packetApiKey string) (*PacketClient, error) {
 	return g, nil
 }
 
-func (g *PacketClient) GetName() string {
+func (g *Client) GetName() string {
 	return g.Data.Name
 }
 
-func (g *PacketClient) GetEnvs() []string {
+func (g *Client) GetEnvs() []string {
 	return g.Data.Envs
 }
 
-func (g *PacketClient) GetCredentials() []data.CredentialFormat {
+func (g *Client) GetCredentials() []data.CredentialFormat {
 	return g.Data.Credentials
 }
 
-func (g *PacketClient) GetKubernets() []data.Kubernetes {
+func (g *Client) GetKubernets() []data.Kubernetes {
 	return g.Data.Kubernetes
 }
 
-func (g *PacketClient) GetRegions() ([]data.Region, error) {
+func (g *Client) GetRegions() ([]data.Region, error) {
 	facilityList, _, err := g.Client.Facilities.List()
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (g *PacketClient) GetRegions() ([]data.Region, error) {
 }
 
 //Facility.Code as zone
-func (g *PacketClient) GetZones() ([]string, error) {
+func (g *Client) GetZones() ([]string, error) {
 	zones := []string{}
 	facilityList, _, err := g.Client.Facilities.List()
 	if err != nil {
@@ -93,7 +93,7 @@ func (g *PacketClient) GetZones() ([]string, error) {
 	return zones, nil
 }
 
-func (g *PacketClient) GetInstanceTypes() ([]data.InstanceType, error) {
+func (g *Client) GetInstanceTypes() ([]data.InstanceType, error) {
 	//facilityCode maps facility.ID to facility.Code
 	facilityCode := map[string]string{}
 	facilityList, _, err := g.Client.Facilities.List()
@@ -129,7 +129,7 @@ func (g *PacketClient) GetInstanceTypes() ([]data.InstanceType, error) {
 			}
 			//add zones
 			zones := []string{}
-			for _, f := range plan.Available_in {
+			for _, f := range plan.AvailableIn {
 				code, found := facilityCode[GetFacilityIdFromHerf(f.Href)]
 				if found {
 					zones = append(zones, code)

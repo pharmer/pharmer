@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	CatagoryUnknown string = "unknown"
+	CategoryUnknown string = "unknown"
 )
 
 func ParseRegion(region *compute.Region) (*data.Region, error) {
@@ -43,7 +43,7 @@ func ParseMachine(machine *compute.MachineType) (*data.InstanceType, error) {
 		Description: machine.Description,
 		CPU:         int(machine.GuestCpus),
 		Disk:        int(machine.MaximumPersistentDisksSizeGb),
-		//Category:    ParseCatagoryFromSKU(machine.Name),
+		//Category:    ParseCategoryFromSKU(machine.Name),
 	}
 
 	var err error
@@ -54,11 +54,11 @@ func ParseMachine(machine *compute.MachineType) (*data.InstanceType, error) {
 	return m, err
 }
 
-//gce SKU format: [something]-catagory-[somethin/empty]
-func ParseCatagoryFromSKU(sku string) string {
+//gce SKU format: [something]-category-[somethin/empty]
+func ParseCategoryFromSKU(sku string) string {
 	words := strings.Split(sku, "-")
 	if len(words) < 2 {
-		return CatagoryUnknown
+		return CategoryUnknown
 	} else {
 		return words[1]
 	}

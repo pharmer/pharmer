@@ -45,8 +45,7 @@ func (c *NodeGroupCreateConfig) ValidateFlags(cmd *cobra.Command, args []string)
 	case api.NodeTypeSpot, api.NodeTypeRegular:
 		break
 	default:
-		errors.New(fmt.Sprintf("flag [type] must be %v or %v", api.NodeTypeRegular, api.NodeTypeSpot))
-
+		return errors.New(fmt.Sprintf("flag [type] must be %v or %v", api.NodeTypeRegular, api.NodeTypeSpot))
 	}
 	return nil
 }

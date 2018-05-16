@@ -42,7 +42,7 @@ func TestRegion(t *testing.T) {
 	//client.Authorizer = autorest.NewBearerAuthorizer(spt)
 	groupsClient := subscriptions.NewGroupClient()
 	groupsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
-	g := AzureClient{
+	g := Client{
 		GroupsClient:   groupsClient,
 		SubscriptionId: cred.SubscriptionId,
 	}
@@ -72,7 +72,7 @@ func TestInstances(t *testing.T) {
 	vmSzClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 	groupsClient := subscriptions.NewGroupClient()
 	groupsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
-	g := AzureClient{
+	g := Client{
 		VmSizesClient:  vmSzClient,
 		GroupsClient:   groupsClient,
 		SubscriptionId: cred.SubscriptionId,

@@ -14,9 +14,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-type AwsClient struct {
-	Data    *AwsData         `json:"data,omitempty"`
-	Session *session.Session `json:"session"`
+type Client struct {
+	Data    *AwsData
+	Session *session.Session
 }
 
 type AwsData data.CloudData
@@ -29,8 +29,8 @@ type Ec2Instance struct {
 	Pricing       interface{} `json:"pricing"`
 }
 
-func NewAwsClient(awsRegionName, awsAccessKeyId, awsSecretAccessKey string) (*AwsClient, error) {
-	g := &AwsClient{}
+func NewClient(awsRegionName, awsAccessKeyId, awsSecretAccessKey string) (*Client, error) {
+	g := &Client{}
 	var err error
 	g.Session, err = session.NewSession(&aws.Config{
 		Region:      &awsRegionName,
@@ -48,23 +48,23 @@ func NewAwsClient(awsRegionName, awsAccessKeyId, awsSecretAccessKey string) (*Aw
 	return g, nil
 }
 
-func (g *AwsClient) GetName() string {
+func (g *Client) GetName() string {
 	return g.Data.Name
 }
 
-func (g *AwsClient) GetEnvs() []string {
+func (g *Client) GetEnvs() []string {
 	return g.Data.Envs
 }
 
-func (g *AwsClient) GetCredentials() []data.CredentialFormat {
+func (g *Client) GetCredentials() []data.CredentialFormat {
 	return g.Data.Credentials
 }
 
-func (g *AwsClient) GetKubernets() []data.Kubernetes {
+func (g *Client) GetKubernets() []data.Kubernetes {
 	return g.Data.Kubernetes
 }
 
-func (g *AwsClient) GetRegions() ([]data.Region, error) {
+func (g *Client) GetRegions() ([]data.Region, error) {
 	//Create new EC2 client
 	svc := ec2.New(g.Session)
 	regionList, err := svc.DescribeRegions(nil)
@@ -100,7 +100,7 @@ func (g *AwsClient) GetRegions() ([]data.Region, error) {
 	return regions, nil
 }
 
-func (g *AwsClient) GetZones() ([]string, error) {
+func (g *Client) GetZones() ([]string, error) {
 	visZone := map[string]bool{}
 	regionList, err := g.GetRegions()
 	if err != nil {
@@ -120,7 +120,7 @@ func (g *AwsClient) GetZones() ([]string, error) {
 
 //https://ec2instances.info/instances.json
 //https://github.com/powdahound/ec2instances.info
-func (g *AwsClient) GetInstanceTypes() ([]data.InstanceType, error) {
+func (g *Client) GetInstanceTypes() ([]data.InstanceType, error) {
 
 	client := &http.Client{}
 	req, err := getInstanceRequest()

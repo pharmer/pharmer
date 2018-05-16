@@ -42,10 +42,10 @@ func (c *ClusterCreateConfig) ValidateFlags(cmd *cobra.Command, args []string) e
 	flags.EnsureRequiredFlags(cmd, ensureFlags...)
 
 	if len(args) == 0 {
-		errors.New("missing cluster name")
+		return errors.New("missing cluster name")
 	}
 	if len(args) > 1 {
-		errors.New("multiple cluster name provided")
+		return errors.New("multiple cluster name provided")
 	}
 	c.Cluster.Name = args[0]
 	return nil
