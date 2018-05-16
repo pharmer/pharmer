@@ -138,6 +138,10 @@ ensure_basic_networking() {
 
 ensure_basic_networking
 {{ end }}
+
+{{ define "mount-master-pd" }}
+pre-k mount-master-pd --provider=gce
+{{ end }}
 `
 )
 
