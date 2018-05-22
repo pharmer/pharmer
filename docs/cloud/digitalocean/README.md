@@ -497,7 +497,7 @@ _____________________________________________________________________
 ```
 Then, if you decided to upgrade you cluster run the command that are showing on describe command.
 ```console
-$ pharmer edit cluster sd1 --kubernetes-version=v1.8.4
+$ pharmer edit cluster d1 --kubernetes-version=v1.8.4
 cluster "d1" updated
 ```
 You can verify your changes by checking the yaml of the cluster.
