@@ -1,6 +1,8 @@
 package options
 
 import (
+	"strings"
+
 	"github.com/appscode/go/flags"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -22,5 +24,6 @@ func (c *NodeGroupNodeDeleteConfig) AddFlags(fs *pflag.FlagSet) {
 
 func (c *NodeGroupNodeDeleteConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	flags.EnsureRequiredFlags(cmd, "cluster")
+	c.ClusterName = strings.ToLower(c.ClusterName)
 	return nil
 }

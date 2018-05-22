@@ -1,6 +1,8 @@
 package options
 
 import (
+	"strings"
+
 	"github.com/appscode/go/flags"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
@@ -47,6 +49,6 @@ func (c *ClusterCreateConfig) ValidateFlags(cmd *cobra.Command, args []string) e
 	if len(args) > 1 {
 		return errors.New("multiple cluster name provided")
 	}
-	c.Cluster.Name = args[0]
+	c.Cluster.Name = strings.ToLower(args[0])
 	return nil
 }

@@ -1,6 +1,8 @@
 package options
 
 import (
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -21,6 +23,11 @@ func (c *ClusterGetConfig) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (c *ClusterGetConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
-	c.Clusters = args
+	c.Clusters = func(names []string) []string {
+		for i := range names {
+			names[i] = strings.ToLower(names[i])
+		}
+		return names
+	}(args)
 	return nil
 }

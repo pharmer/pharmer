@@ -1,6 +1,8 @@
 package options
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -30,6 +32,6 @@ func (c *ApplyConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	if len(args) > 1 {
 		return errors.New("multiple cluster name provided.")
 	}
-	c.ClusterName = args[0]
+	c.ClusterName = strings.ToLower(args[0])
 	return nil
 }
