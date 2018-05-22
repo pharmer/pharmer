@@ -1,6 +1,8 @@
 package options
 
 import (
+	"strings"
+
 	"github.com/appscode/go/flags"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -32,7 +34,7 @@ func (c *NodeSSHConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	if len(args) > 1 {
 		return errors.New("multiple node name provided")
 	}
-
+	c.ClusterName = strings.ToLower(c.ClusterName)
 	c.NodeName = args[0]
 	return nil
 }

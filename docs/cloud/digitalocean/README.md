@@ -397,7 +397,7 @@ master     d1        1         2gb
 ```
 You can see the yaml of newly created node group, you need to run
 ```yaml
-$ pharmer get ng 1gb-pool -k stas -o yaml
+$ pharmer get ng 1gb-pool -k d1 -o yaml
 apiVersion: v1alpha1
 kind: NodeGroup
 metadata:
@@ -497,7 +497,7 @@ _____________________________________________________________________
 ```
 Then, if you decided to upgrade you cluster run the command that are showing on describe command.
 ```console
-$ pharmer edit cluster sd1 --kubernetes-version=v1.8.4
+$ pharmer edit cluster d1 --kubernetes-version=v1.8.4
 cluster "d1" updated
 ```
 You can verify your changes by checking the yaml of the cluster.

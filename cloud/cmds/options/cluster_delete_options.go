@@ -1,6 +1,8 @@
 package options
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -35,6 +37,11 @@ func (c *ClusterDeleteConfig) ValidateFlags(cmd *cobra.Command, args []string) e
 	if len(args) == 0 {
 		return errors.New("missing cluster name")
 	}
-	c.Clusters = args
+	c.Clusters = func(names []string) []string {
+		for i := range names {
+			names[i] = strings.ToLower(names[i])
+		}
+		return names
+	}(args)
 	return nil
 }

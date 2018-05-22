@@ -2,6 +2,7 @@ package options
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/appscode/go/flags"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
@@ -41,6 +42,7 @@ func (c *NodeGroupCreateConfig) ValidateFlags(cmd *cobra.Command, args []string)
 	}
 	flags.EnsureRequiredFlags(cmd, ensureFlags...)
 
+	c.ClusterName = strings.ToLower(c.ClusterName)
 	switch api.NodeType(c.NodeType) {
 	case api.NodeTypeSpot, api.NodeTypeRegular:
 		break

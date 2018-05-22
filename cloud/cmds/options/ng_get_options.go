@@ -1,6 +1,8 @@
 package options
 
 import (
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -25,6 +27,7 @@ func (c *NodeGroupGetConfig) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (c *NodeGroupGetConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
+	c.ClusterName = strings.ToLower(c.ClusterName)
 	c.NodeGroups = args
 	return nil
 }
