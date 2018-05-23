@@ -145,9 +145,17 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	if err != nil {
 		return
 	}
-	if IsHASetup(cm.cluster) {
-		//TODO(): Create load balancer
+	var lbIp string
+	haSetup := IsHASetup(cm.cluster)
+	if haSetup {
+		Logger(cm.ctx).Info("Creating loadbalancer")
+		lbIp, err = cm.conn.createLoadBalancer(cm.ctx, cm.namer.LoadBalancerName())
+		if err != nil {
+			return
+		}
+		Logger(cm.ctx).Infof("Created loadbalancer lbIp = %v", lbIp)
 	}
+	etcdServerAddress := ""
 	for _, master := range masterNG {
 		if d, _ := cm.conn.instanceIfExists(master); d == nil {
 			Logger(cm.ctx).Info("Creating master instance")
@@ -157,7 +165,14 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				Message:  fmt.Sprintf("Master instance %s will be created", cm.namer.MasterName()),
 			})
 			if !dryRun {
+				if haSetup {
+					master.Labels[api.PharmerHASetup] = "true"
+					master.Labels[api.PharmerLoadBalancerIP] = lbIp
+				}
 				var masterServer *api.NodeInfo
+				if etcdServerAddress != "" {
+					master.Labels[api.EtcdServerAddress] = etcdServerAddress
+				}
 				masterServer, err = cm.conn.CreateInstance(cm.cluster, master, "")
 				if err != nil {
 					return
@@ -168,7 +183,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 						Address: masterServer.PrivateIP,
 					})
 				}
-				if !IsHASetup(cm.cluster) {
+				if !haSetup {
 					var providerConf *api.MachineProviderConfig
 					providerConf, err = cm.cluster.MachineProviderConfig(master)
 					if err != nil {
@@ -212,7 +227,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 								acts = append(acts, api.Action{
 									Action:   api.ActionNOP,
 									Resource: "ReserveIP",
-									Message:  fmt.Sprintf("Reserved ip %s found", reservedIP),
+									Message:  fmt.Sprintf("Reserved lbIp %s found", reservedIP),
 								})
 							}
 							if reservedIP != masterServer.PublicIP {
@@ -237,12 +252,44 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 							})
 						}
 					}
+					err = cm.cluster.SetClusterApiEndpoints()
+					if err != nil {
+						return
+					}
+				} else {
+					var did int
+					did, err = strconv.Atoi(masterServer.ExternalID)
+					if err != nil {
+						return
+					}
+					if err = cm.conn.addNodeToBalancer(cm.ctx, cm.namer.LoadBalancerName(), did); err != nil {
+						return
+					}
+					cm.cluster.Spec.ClusterAPI.Status.APIEndpoints = []clusterv1.APIEndpoint{
+						{
+							Host: masterServer.PublicIP,
+							Port: int(cm.cluster.Spec.API.BindPort),
+						},
+					}
+					/*append(cm.cluster.Spec.ClusterAPI.Status.APIEndpoints, clusterv1.APIEndpoint{
+						Host: masterServer.PublicIP,
+						Port: int(cm.cluster.Spec.API.BindPort),
+					})*/
+					//	Store(cm.ctx).Clusters().Update(cm.cluster)
 				}
-				err = cm.cluster.SetClusterApiEndpoints()
-				if err != nil {
-					return
+				if etcdServerAddress == "" {
+					var kc kubernetes.Interface
+					kc, err = cm.GetAdminClient()
+					if err != nil {
+						return
+					}
+					// wait for nodes to start
+					if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
+						return
+					}
+					etcdServerAddress = masterServer.PublicIP
 				}
-				Store(cm.ctx).Clusters().Update(cm.cluster)
+
 			}
 		} else {
 			acts = append(acts, api.Action{
@@ -252,6 +299,17 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			})
 		}
 	}
+
+	if haSetup {
+		cm.cluster.Spec.ClusterAPI.Status.APIEndpoints = []clusterv1.APIEndpoint{
+			{
+				Host: lbIp,
+				Port: int(cm.cluster.Spec.API.BindPort),
+			},
+		}
+	}
+
+	Store(cm.ctx).Clusters().Update(cm.cluster)
 
 	var kc kubernetes.Interface
 	kc, err = cm.GetAdminClient()
@@ -408,6 +466,9 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 			Resource: "PublicKey",
 			Message:  "Public key not found",
 		})
+	}
+	if IsHASetup(cm.cluster) {
+		cm.conn.deleteLoadBalancer(cm.ctx, cm.namer.LoadBalancerName())
 	}
 
 	// Failed

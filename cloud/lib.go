@@ -30,7 +30,7 @@ func Get(ctx context.Context, name string) (*api.Cluster, error) {
 	return Store(ctx).Clusters().Get(name)
 }
 
-func Create(ctx context.Context, cluster *api.Cluster, config *api.ClusterProviderConfig) (*api.Cluster, error) {
+func Create(ctx context.Context, cluster *api.Cluster, config *api.ClusterProviderConfig, haNode int32) (*api.Cluster, error) {
 	if cluster == nil {
 		return nil, errors.New("missing cluster")
 	} else if cluster.Name == "" {
@@ -62,11 +62,17 @@ func Create(ctx context.Context, cluster *api.Cluster, config *api.ClusterProvid
 	if ctx, err = CreateApiserverCertificates(ctx, cluster); err != nil {
 		return nil, err
 	}
+	if ctx, err = CreateServiceAccountKey(ctx, cluster); err != nil {
+		return nil, err
+	}
+	if ctx, err = CreateEtcdCertificates(ctx, cluster); err != nil {
+		return nil, err
+	}
 	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
 		return nil, err
 	}
 	if !managedProviders.Has(cluster.ProviderConfig().CloudProvider) {
-		masters, err := CreateMasterMachines(ctx, cluster, 1)
+		masters, err := CreateMasterMachines(ctx, cluster, haNode)
 		if err != nil {
 			return nil, err
 		}
@@ -101,6 +107,10 @@ func CreateMasterMachines(ctx context.Context, cluster *api.Cluster, count int32
 	masters := make([]*clusterv1.Machine, 0)
 	var ind int32
 	for ind = 0; ind < count; ind++ {
+		role := api.RoleMember
+		if ind == 0 {
+			role = api.RoleLeader
+		}
 		machine := &clusterv1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:              fmt.Sprintf("%v-master-%v", cluster.Name, ind),
@@ -110,6 +120,7 @@ func CreateMasterMachines(ctx context.Context, cluster *api.Cluster, count int32
 				Labels: map[string]string{
 					api.RoleMasterKey:  "",
 					api.PharmerCluster: cluster.Name,
+					api.EtcdMemberKey:  role,
 				},
 			},
 			Spec: clusterv1.MachineSpec{

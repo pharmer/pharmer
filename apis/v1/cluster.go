@@ -254,6 +254,8 @@ func (c *Cluster) SetNetworkingDefaults(provider string) {
 			podSubnet = "192.168.0.0/16"
 		case "flannel":
 			podSubnet = "10.244.0.0/16"
+		case "canal":
+			podSubnet = "10.244.0.0/16"
 		}
 		c.Spec.ClusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks = []string{podSubnet}
 	}

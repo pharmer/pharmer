@@ -19,6 +19,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
+var errLBNotFound = errors.New("loadbalancer not found")
+
 type cloudConnector struct {
 	ctx     context.Context
 	cluster *api.Cluster
@@ -74,7 +76,13 @@ func (cm *ClusterManager) PrepareCloud(clusterName string) error {
 	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
+	if cm.ctx, err = LoadEtcdCertificate(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
 	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if cm.ctx, err = LoadSaKey(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
@@ -352,3 +360,148 @@ func (conn *cloudConnector) deleteInstance(ctx context.Context, id int) error {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+
+func (conn *cloudConnector) createLoadBalancer(ctx context.Context, name string) (string, error) {
+	lb, err := conn.lbByName(ctx, name)
+	if err != nil {
+		if err == errLBNotFound {
+			lbRequest, err := conn.buildLoadBalancerRequest(name)
+			if err != nil {
+				return "", err
+			}
+			lb, _, err := conn.client.LoadBalancers.Create(ctx, lbRequest)
+			if err != nil {
+				return "", err
+			}
+			if lb, err = conn.waitActive(lb.ID); err != nil {
+				return "", err
+			}
+			return lb.IP, nil
+		}
+	}
+
+	if lb.Status != "active" {
+		if lb, err = conn.waitActive(lb.ID); err != nil {
+			return "", err
+		}
+	}
+	return lb.IP, nil
+}
+
+func (conn *cloudConnector) deleteLoadBalancer(ctx context.Context, name string) error {
+	lb, err := conn.lbByName(ctx, name)
+	if err != nil {
+		return err
+	}
+	_, err = conn.client.LoadBalancers.Delete(ctx, lb.ID)
+	return err
+}
+
+func (conn *cloudConnector) addNodeToBalancer(ctx context.Context, lbName string, id int) error {
+	lb, err := conn.lbByName(ctx, lbName)
+	if err != nil {
+		return err
+	}
+	lb.DropletIDs = append(lb.DropletIDs, id)
+	_, err = conn.client.LoadBalancers.AddDroplets(ctx, lb.ID, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (conn *cloudConnector) lbByName(ctx context.Context, name string) (*godo.LoadBalancer, error) {
+	lbs, _, err := conn.client.LoadBalancers.List(ctx, &godo.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, lb := range lbs {
+		if lb.Name == name {
+			return &lb, nil
+		}
+	}
+
+	return nil, errLBNotFound
+}
+
+// buildLoadBalancerRequest returns a *godo.LoadBalancerRequest to balance
+// requests for service across nodes.
+func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*godo.LoadBalancerRequest, error) {
+
+	forwardingRules := []godo.ForwardingRule{
+		{
+			EntryProtocol:  "tcp",
+			EntryPort:      6443,
+			TargetProtocol: "tcp",
+			TargetPort:     6443,
+			//CertificateID  string `json:"certificate_id,omitempty"`
+			TlsPassthrough: false,
+		},
+		{
+			EntryProtocol:  "tcp",
+			EntryPort:      443,
+			TargetProtocol: "tcp",
+			TargetPort:     443,
+			//CertificateID  string `json:"certificate_id,omitempty"`
+			TlsPassthrough: false,
+		},
+	}
+
+	healthCheck := &godo.HealthCheck{
+		Protocol:               "tcp",
+		Port:                   6443,
+		CheckIntervalSeconds:   3,
+		ResponseTimeoutSeconds: 5,
+		HealthyThreshold:       5,
+		UnhealthyThreshold:     3,
+	}
+
+	stickySessions := &godo.StickySessions{
+		Type: "none",
+		//CookieName:       name,
+		//CookieTtlSeconds: ttl,
+	}
+
+	//algorithm := "least_connections"
+	algorithm := "round_robin"
+
+	//	redirectHttpToHttps := getRedirectHttpToHttps(service)
+	clusterConfig := conn.cluster.ProviderConfig()
+
+	return &godo.LoadBalancerRequest{
+		Name:                lbName,
+		DropletIDs:          []int{},
+		Region:              clusterConfig.Region,
+		ForwardingRules:     forwardingRules,
+		HealthCheck:         healthCheck,
+		StickySessions:      stickySessions,
+		Algorithm:           algorithm,
+		RedirectHttpToHttps: false, //redirectHttpToHttps,
+	}, nil
+}
+
+func (conn *cloudConnector) waitActive(lbID string) (*godo.LoadBalancer, error) {
+	attempt := 0
+	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+
+		lb, _, err := conn.client.LoadBalancers.Get(context.TODO(), lbID)
+		if err != nil {
+			return false, nil
+		}
+		Logger(conn.ctx).Infof("Attempt %v: LoadBalancer `%v` is in status `%s`", attempt, lbID, lb.Status)
+		fmt.Println(lb.String())
+		if strings.ToLower(lb.Status) == "active" {
+			return true, nil
+		}
+		return false, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	lb, _, err := conn.client.LoadBalancers.Get(context.TODO(), lbID)
+	return lb, err
+
+}

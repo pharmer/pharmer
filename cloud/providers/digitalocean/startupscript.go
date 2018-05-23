@@ -21,7 +21,9 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		KubeadmToken:      token,
 		CAHash:            pubkeypin.Hash(CACert(ctx)),
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
 		APIServerAddress:  cluster.APIServerAddress(),
 		NetworkProvider:   cluster.ProviderConfig().NetworkProvider,
 		Provider:          cluster.ProviderConfig().CloudProvider,
@@ -56,6 +58,11 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 		api.NodePoolKey: machine.Name,
 	}.String()
 
+	if machine.Labels[api.EtcdMemberKey] == api.RoleMember {
+		//extraArgs["server-address"] = machine.Labels[api.EtcdServerAddress]
+		td.ETCDServerAddress = machine.Labels[api.EtcdServerAddress] //fmt.Sprintf("http://%s:2379", machine.Labels[api.EtcdServerAddress])
+	}
+
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "kubeadm.k8s.io/v1alpha1",
@@ -71,6 +78,11 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 			DNSDomain:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.ServiceDomain,
 		},
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		Etcd: kubeadmapi.Etcd{
+			Image: EtcdImage,
+			//ExtraArgs: extraArgs,
+		},
+		CertificatesDir: "/etc/kubernetes/pki",
 		// "external": cloudprovider not supported for apiserver and controller-manager
 		// https://github.com/kubernetes/kubernetes/pull/50545
 		CloudProvider:              "",
@@ -78,7 +90,14 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
+		NodeName:                   machine.Name,
 	}
+	if _, found := machine.Labels[api.PharmerHASetup]; found {
+		td.HASetup = true
+		td.LoadBalancerIp = machine.Labels[api.PharmerLoadBalancerIP]
+		cfg.APIServerCertSANs = append(cfg.APIServerCertSANs, machine.Labels[api.PharmerLoadBalancerIP])
+	}
+
 	td.MasterConfiguration = &cfg
 	return td
 }
@@ -102,6 +121,10 @@ ensure_basic_networking() {
 }
 
 ensure_basic_networking
+{{ end }}
+
+{{ define "prepare-host" }}
+NODE_NAME=$(hostname)
 {{ end }}
 `
 )

@@ -46,6 +46,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 			string(core.NodeInternalIP),
 			string(core.NodeExternalIP),
 		}, ","),
+		//	"endpoint-reconciler-type": "lease",
 	}
 
 	if cluster.IsMinorVersion("1.9") {

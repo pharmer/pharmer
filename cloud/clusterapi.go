@@ -43,6 +43,7 @@ type ApiServerTemplate struct {
 	TLSCrt                 string
 	TLSKey                 string
 	Provider               string
+	MasterCount            int
 }
 
 var apiServerImage = "pharmer/cluster-apiserver:0.0.2"
@@ -206,11 +207,15 @@ func (ca *ClusterApi) CreateApiServerAndController() error {
 	if ca.ctx, err = LoadApiserverCertificate(ca.ctx, ca.cluster); err != nil {
 		return err
 	}
+	masterNG, err := FindMasterMachines(ca.cluster)
+	if err != nil {
+		return err
+	}
 
 	var tmplBuf bytes.Buffer
 	err = tmpl.Execute(&tmplBuf, ApiServerTemplate{
 		ClusterName:            ca.cluster.Name,
-		Token:                  "token",
+		Token:                  ca.token,
 		APIServerImage:         apiServerImage,
 		ControllerManagerImage: controllerManagerImage,
 		MachineControllerImage: machineControllerImage,
@@ -218,6 +223,7 @@ func (ca *ClusterApi) CreateApiServerAndController() error {
 		TLSCrt:                 base64.StdEncoding.EncodeToString(cert.EncodeCertPEM(ApiServerCert(ca.ctx))),
 		TLSKey:                 base64.StdEncoding.EncodeToString(cert.EncodePrivateKeyPEM(ApiServerKey(ca.ctx))),
 		Provider:               ca.cluster.ProviderConfig().CloudProvider,
+		MasterCount:            len(masterNG),
 	})
 	if err != nil {
 		return err
@@ -301,16 +307,17 @@ spec:
     api: clusterapi
     apiserver: "true"
 ---
-apiVersion: apps/v1beta1
-kind: Deployment
+apiVersion: extensions/v1beta1
+kind: DaemonSet
 metadata:
   name: clusterapi
   namespace: default
   labels:
     api: clusterapi
     apiserver: "true"
+  annotations:
+    scheduler.alpha.kubernetes.io/critical-pod: ''
 spec:
-  replicas: 1
   template:
     metadata:
       labels:
@@ -352,6 +359,7 @@ spec:
         - "--audit-log-maxage=0"
         - "--audit-log-maxbackup=0"
         - "--authorization-kubeconfig=/etc/kubernetes/admin.conf"
+        - "--authentication-kubeconfig=/etc/kubernetes/admin.conf"
         - "--kubeconfig=/etc/kubernetes/admin.conf"
         resources:
           requests:
@@ -496,20 +504,20 @@ spec:
           httpGet:
             port: 2379
             path: /health
-          failureThreshold: 1
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 2
-        livenessProbe:
-          httpGet:
-            port: 2379
-            path: /health
           failureThreshold: 3
           initialDelaySeconds: 10
           periodSeconds: 10
           successThreshold: 1
-          timeoutSeconds: 2
+          timeoutSeconds: 10
+        livenessProbe:
+          httpGet:
+            port: 2379
+            path: /health
+          failureThreshold: 8
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 15
 ---
 apiVersion: v1
 kind: Service
