@@ -21,3 +21,7 @@ func (n namer) GenNodeName(ng string) string {
 func (n namer) GenSSHKeyExternalID() string {
 	return n.cluster.Name + "-" + rand.Characters(6)
 }
+
+func (n namer) LoadBalancerName() string {
+	return n.cluster.Name + "-lb"
+}

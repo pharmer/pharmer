@@ -1,17 +1,18 @@
 package cloud
 
+/*
 import (
 	"context"
 	"fmt"
-
-	apiv1 "github.com/pharmer/pharmer/apis/v1"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 )
+*/
 
+/*
 type GenericNodeGroupManager struct {
 	ctx     context.Context
 	ng      *api.NodeGroup
@@ -131,10 +132,12 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 
 func (igm *GenericNodeGroupManager) AddNodes(count int64) error {
 	for i := int64(0); i < count; i++ {
-		/*_, err := igm.im.CreateInstance(rand.WithUniqSuffix(igm.ng.Name), igm.token, igm.ng)
-		if err != nil {
-			return err
-		}*/
+*/
+/*_, err := igm.im.CreateInstance(rand.WithUniqSuffix(igm.ng.Name), igm.token, igm.ng)
+if err != nil {
+	return err
+}*/ /*
+
 	}
 	return nil
 }
@@ -160,3 +163,4 @@ func (igm *GenericNodeGroupManager) DeleteNodes(nodes []core.Node) error {
 	}
 	return nil
 }
+*/

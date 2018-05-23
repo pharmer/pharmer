@@ -16,6 +16,7 @@ type ClusterCreateConfig struct {
 	Cluster        *api.Cluster
 	ProviderConfig *api.ClusterProviderConfig
 	Nodes          map[string]int
+	HaNode         int32
 }
 
 func NewClusterCreateConfig() *ClusterCreateConfig {
@@ -33,7 +34,8 @@ func NewClusterCreateConfig() *ClusterCreateConfig {
 		ProviderConfig: &api.ClusterProviderConfig{
 			NetworkProvider: "calico",
 		},
-		Nodes: map[string]int{},
+		Nodes:  map[string]int{},
+		HaNode: 1,
 	}
 }
 
@@ -45,6 +47,7 @@ func (c *ClusterCreateConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.ProviderConfig.NetworkProvider, "network-provider", c.ProviderConfig.NetworkProvider, "Name of CNI plugin. Available options: calico, flannel, kubenet, weavenet")
 
 	fs.StringToIntVar(&c.Nodes, "nodes", c.Nodes, "Node set configuration")
+	fs.Int32Var(&c.HaNode, "ha-node", c.HaNode, "Node set configuration")
 
 }
 

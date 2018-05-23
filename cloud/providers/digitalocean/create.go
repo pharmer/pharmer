@@ -4,8 +4,7 @@ import (
 	"net"
 	"strings"
 
-	apiv1 "github.com/pharmer/pharmer/apis/v1"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
@@ -13,11 +12,11 @@ import (
 	//clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultNodeSpec(cluster *apiv1.Cluster, sku string) (apiv1.NodeSpec, error) {
+func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
 	if sku == "" {
 		sku = "2gb"
 	}
-	return apiv1.NodeSpec{
+	return api.NodeSpec{
 		SKU: sku,
 		//	DiskType:      "",
 		//	DiskSize:      100,
@@ -25,10 +24,10 @@ func (cm *ClusterManager) GetDefaultNodeSpec(cluster *apiv1.Cluster, sku string)
 
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *apiv1.Cluster, config *apiv1.ClusterProviderConfig) error {
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterProviderConfig) error {
 	n := namer{cluster: cluster}
 
-	if err := apiv1.AssignTypeKind(cluster); err != nil {
+	if err := api.AssignTypeKind(cluster); err != nil {
 		return err
 	}
 	config.Region = config.Zone
@@ -47,6 +46,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *apiv1.Cluster, config *apiv
 			string(core.NodeInternalIP),
 			string(core.NodeExternalIP),
 		}, ","),
+		//	"endpoint-reconciler-type": "lease",
 	}
 
 	if cluster.IsMinorVersion("1.9") {
@@ -54,8 +54,8 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *apiv1.Cluster, config *apiv
 	}
 
 	// Init status
-	cluster.Status = apiv1.PharmerClusterStatus{
-		Phase: apiv1.ClusterPending,
+	cluster.Status = api.PharmerClusterStatus{
+		Phase: api.ClusterPending,
 	}
 
 	// add provider config to cluster
@@ -71,8 +71,8 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, ErrNotImplemented
 }
 
-func (cm *ClusterManager) GetSSHConfig(cluster *apiv1.Cluster, node *core.Node) (*apiv1.SSHConfig, error) {
-	cfg := &apiv1.SSHConfig{
+func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
+	cfg := &api.SSHConfig{
 		PrivateKey: SSHKey(cm.ctx).PrivateKey,
 		User:       "root",
 		HostPort:   int32(22),

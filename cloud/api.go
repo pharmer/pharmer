@@ -1,8 +1,7 @@
 package cloud
 
 import (
-	apiv1 "github.com/pharmer/pharmer/apis/v1"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -20,11 +19,11 @@ type Interface interface {
 	machine.Actuator
 
 	SSHGetter
-	GetDefaultNodeSpec(cluster *apiv1.Cluster, sku string) (apiv1.NodeSpec, error)
+	GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error)
 	//GetDefaultMachineSpec(cluster *api.Cluster, sku string) ()
 	SetDefaults(in *api.Cluster) error
-	SetDefaultCluster(in *apiv1.Cluster, conf *apiv1.ClusterProviderConfig) error
-	Apply(in *apiv1.Cluster, dryRun bool) ([]apiv1.Action, error)
+	SetDefaultCluster(in *api.Cluster, conf *api.ClusterProviderConfig) error
+	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
 	// GetAdminClient() (kubernetes.Interface, error)
 
@@ -38,24 +37,24 @@ type Interface interface {
 }
 
 type SSHGetter interface {
-	GetSSHConfig(cluster *apiv1.Cluster, node *core.Node) (*apiv1.SSHConfig, error)
+	GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error)
 }
 
 type NodeGroupManager interface {
-	Apply(dryRun bool) (acts []api.Action, err error)
-	AddNodes(count int64) error
-	DeleteNodes(nodes []core.Node) error
+	//	Apply(dryRun bool) (acts []api.Action, err error)
+	//	AddNodes(count int64) error
+	//	DeleteNodes(nodes []core.Node) error
 }
 
 type InstanceManager interface {
-	CreateInstance(cluster *apiv1.Cluster, machine *clusterv1.Machine, token string) (*apiv1.NodeInfo, error)
+	CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error)
 	DeleteInstanceByProviderID(providerID string) error
 }
 
 type UpgradeManager interface {
-	GetAvailableUpgrades() ([]*apiv1.Upgrade, error)
-	PrintAvailableUpgrades([]*apiv1.Upgrade)
-	Apply(dryRun bool) ([]apiv1.Action, error)
+	GetAvailableUpgrades() ([]*api.Upgrade, error)
+	PrintAvailableUpgrades([]*api.Upgrade)
+	Apply(dryRun bool) ([]api.Action, error)
 	MasterUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error
 	NodeUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error
 }
