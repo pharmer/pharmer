@@ -9,7 +9,7 @@ import (
 	"github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
 	_ "github.com/lib/pq"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 )
@@ -53,6 +53,10 @@ func (s *XormStore) Clusters() store.ClusterStore {
 
 func (s *XormStore) NodeGroups(cluster string) store.NodeGroupStore {
 	return &nodeGroupXormStore{engine: s.engine, cluster: cluster}
+}
+
+func (s *XormStore) MachineSet(cluster string) store.MachineSetStore {
+	return &machineSetXormStore{engine: s.engine, cluster: cluster}
 }
 
 func (s *XormStore) Certificates(cluster string) store.CertificateStore {

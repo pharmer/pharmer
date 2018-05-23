@@ -3,16 +3,18 @@ package digitalocean
 import (
 	"bytes"
 	"context"
+	"fmt"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
+func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine, token string) TemplateData {
 	td := TemplateData{
 		ClusterName:       cluster.Name,
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
@@ -21,8 +23,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
 		APIServerAddress:  cluster.APIServerAddress(),
-		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
-		Provider:          cluster.Spec.Cloud.CloudProvider,
+		NetworkProvider:   cluster.ProviderConfig().NetworkProvider,
+		Provider:          cluster.ProviderConfig().CloudProvider,
 		ExternalProvider:  true, // DigitalOcean uses out-of-tree CCM
 	}
 	{
@@ -30,11 +32,16 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		for k, v := range cluster.Spec.KubeletExtraArgs {
 			td.KubeletExtraArgs[k] = v
 		}
-		for k, v := range ng.Spec.Template.Spec.KubeletExtraArgs {
+		fmt.Println(machine)
+		machineConfig, err := cluster.MachineProviderConfig(machine)
+		if err != nil {
+			panic(err)
+		}
+		for k, v := range machineConfig.Config.KubeletExtraArgs {
 			td.KubeletExtraArgs[k] = v
 		}
 		td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
-			api.NodePoolKey: ng.Name,
+			api.NodePoolKey: machine.Name,
 			api.RoleNodeKey: "",
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
@@ -43,10 +50,10 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 	return td
 }
 
-func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup) TemplateData {
-	td := newNodeTemplateData(ctx, cluster, ng, "")
+func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine) TemplateData {
+	td := newNodeTemplateData(ctx, cluster, machine, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
-		api.NodePoolKey: ng.Name,
+		api.NodePoolKey: machine.Name,
 	}.String()
 
 	cfg := kubeadmapi.MasterConfiguration{
@@ -59,9 +66,9 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			BindPort:         cluster.Spec.API.BindPort,
 		},
 		Networking: kubeadmapi.Networking{
-			ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
-			PodSubnet:     cluster.Spec.Networking.PodSubnet,
-			DNSDomain:     cluster.Spec.Networking.DNSDomain,
+			ServiceSubnet: cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Services.CIDRBlocks[0],
+			PodSubnet:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
+			DNSDomain:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.ServiceDomain,
 		},
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		// "external": cloudprovider not supported for apiserver and controller-manager
@@ -99,7 +106,7 @@ ensure_basic_networking
 `
 )
 
-func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string) (string, error) {
+func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *clusterv1.Machine, token string) (string, error) {
 	tpl, err := StartupScriptTemplate.Clone()
 	if err != nil {
 		return "", err
@@ -110,12 +117,12 @@ func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string)
 	}
 
 	var script bytes.Buffer
-	if ng.Role() == api.RoleMaster {
-		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
+	if IsMaster(machine) {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, machine)); err != nil {
 			return "", err
 		}
 	} else {
-		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, machine, token)); err != nil {
 			return "", err
 		}
 	}

@@ -102,6 +102,14 @@ import:
   version: v1.4.0
 - package: github.com/onsi/gomega
   version: v1.2.0
+- package: sigs.k8s.io/cluster-api
+  version: master
+- package: github.com/kubernetes-incubator/apiserver-builder
+  version: v1.9-alpha.3
+- package: k8s.io/apiserver
+  version: release-1.9
+- package: github.com/coreos/etcd
+  version: v3.2.18
 testImport:
 - package: github.com/stretchr/testify
   version: v1.1.4

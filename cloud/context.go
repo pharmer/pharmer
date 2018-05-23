@@ -8,7 +8,7 @@ import (
 	"github.com/appscode/go/crypto/ssh"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/store/providers/fake"
 	"github.com/pharmer/pharmer/store/providers/vfs"
@@ -24,6 +24,11 @@ type paramCACert struct{}
 type paramCAKey struct{}
 type paramFrontProxyCACert struct{}
 type paramFrontProxyCAKey struct{}
+
+type paramApiServerCaCert struct{}
+type paramApiServerCaKey struct{}
+type paramApiServerCert struct{}
+type paramApiServerKey struct{}
 
 type paramSSHKey struct{}
 
@@ -82,6 +87,22 @@ func FrontProxyCACert(ctx context.Context) *x509.Certificate {
 }
 func FrontProxyCAKey(ctx context.Context) *rsa.PrivateKey {
 	return ctx.Value(paramFrontProxyCAKey{}).(*rsa.PrivateKey)
+}
+
+func ApiServerCaCert(ctx context.Context) *x509.Certificate {
+	return ctx.Value(paramApiServerCaCert{}).(*x509.Certificate)
+}
+
+func ApiServerCaKey(ctx context.Context) *rsa.PrivateKey {
+	return ctx.Value(paramApiServerCaKey{}).(*rsa.PrivateKey)
+}
+
+func ApiServerCert(ctx context.Context) *x509.Certificate {
+	return ctx.Value(paramApiServerCert{}).(*x509.Certificate)
+}
+
+func ApiServerKey(ctx context.Context) *rsa.PrivateKey {
+	return ctx.Value(paramApiServerKey{}).(*rsa.PrivateKey)
 }
 
 func SSHKey(ctx context.Context) *ssh.SSHKey {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	. "github.com/pharmer/pharmer/cloud"
 	"k8s.io/client-go/kubernetes"
 )
@@ -13,6 +13,9 @@ type ClusterManager struct {
 	ctx     context.Context
 	cluster *api.Cluster
 	conn    *cloudConnector
+
+	actuator *Actuator
+
 	// Deprecated
 	namer namer
 

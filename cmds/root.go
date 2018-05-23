@@ -74,5 +74,7 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 	rootCmd.AddCommand(cpCmd.NewCmdApply())
 	rootCmd.AddCommand(v.NewCmdVersion())
 
+	rootCmd.AddCommand(newCmdController())
+
 	return rootCmd
 }

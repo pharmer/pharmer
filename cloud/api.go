@@ -1,9 +1,12 @@
 package cloud
 
 import (
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/controller/machine"
 )
 
 var (
@@ -13,9 +16,13 @@ var (
 )
 
 type Interface interface {
+	machine.Actuator
+
 	SSHGetter
 	GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error)
+	//GetDefaultMachineSpec(cluster *api.Cluster, sku string) ()
 	SetDefaults(in *api.Cluster) error
+	SetDefaultCluster(in *api.Cluster, conf *api.ClusterProviderConfig) error
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
 	// GetAdminClient() (kubernetes.Interface, error)
@@ -25,6 +32,8 @@ type Interface interface {
 	// SetVersion(req *proto.ClusterReconfigureRequest) error
 	// Scale(req *proto.ClusterReconfigureRequest) error
 	// GetInstance(md *api.InstanceStatus) (*api.Instance, error)
+
+	InitializeActuator(client.MachineInterface) error
 }
 
 type SSHGetter interface {
@@ -32,13 +41,13 @@ type SSHGetter interface {
 }
 
 type NodeGroupManager interface {
-	Apply(dryRun bool) (acts []api.Action, err error)
-	AddNodes(count int64) error
-	DeleteNodes(nodes []core.Node) error
+	//	Apply(dryRun bool) (acts []api.Action, err error)
+	//	AddNodes(count int64) error
+	//	DeleteNodes(nodes []core.Node) error
 }
 
 type InstanceManager interface {
-	CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error)
+	CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error)
 	DeleteInstanceByProviderID(providerID string) error
 }
 
@@ -46,8 +55,8 @@ type UpgradeManager interface {
 	GetAvailableUpgrades() ([]*api.Upgrade, error)
 	PrintAvailableUpgrades([]*api.Upgrade)
 	Apply(dryRun bool) ([]api.Action, error)
-	MasterUpgrade() error
-	NodeGroupUpgrade(ng *api.NodeGroup) error
+	MasterUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error
+	NodeUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error
 }
 
 type HookFunc func() error
