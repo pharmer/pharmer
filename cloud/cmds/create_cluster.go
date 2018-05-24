@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
@@ -33,7 +33,7 @@ func NewCmdCreateCluster() *cobra.Command {
 				term.Fatalln(err)
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			cluster, err := cloud.Create(ctx, opts.Cluster)
+			cluster, err := cloud.Create(ctx, opts.Cluster, opts.ProviderConfig, opts.Masters)
 			if err != nil {
 				term.Fatalln(err)
 			}

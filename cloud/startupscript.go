@@ -21,8 +21,8 @@ var kubernetesCNIVersions = map[string]string{
 
 var prekVersions = map[string]string{
 	"1.8.0":  "1.8.0",
-	"1.9.0":  "1.9.0",
-	"1.10.0": "1.10.0",
+	"1.9.0":  "1.10.1-alpha.5",
+	"1.10.0": "1.10.1-alpha.4",
 }
 
 type TemplateData struct {
@@ -32,7 +32,12 @@ type TemplateData struct {
 	CloudCredential   map[string]string
 	CAHash            string
 	CAKey             string
+	SAKey             string
 	FrontProxyKey     string
+	ETCDCAKey         string
+	ETCDServerAddress string
+	LoadBalancerIp    string
+	HASetup           bool
 	APIServerAddress  string
 	NetworkProvider   string
 	CloudConfig       string
@@ -192,7 +197,11 @@ pre-k merge master-config \
 	--apiserver-cert-extra-sans=$(pre-k machine public-ips --routable) \
 	--apiserver-cert-extra-sans=$(pre-k machine private-ips) \
 	--node-name=${NODE_NAME:-} \
+    --ha={{ .HASetup }} \
+    --etcd-server={{ .ETCDServerAddress}} \
+    --tls-enabled=false \
 	> /etc/kubernetes/kubeadm/config.yaml
+pre-k create etcd --config=/etc/kubernetes/kubeadm/config.yaml
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 
 {{ if eq .NetworkProvider "flannel" }}
@@ -201,8 +210,9 @@ kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 {{ template "calico" . }}
 {{ else if eq .NetworkProvider "weavenet" }}
 {{ template "weavenet" . }}
+{{ else if eq .NetworkProvider "canal" }}
+{{ template "canal" . }}
 {{ end }}
-
 kubectl apply \
   -f https://raw.githubusercontent.com/pharmer/addons/master/kubeadm-probe/installer.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
@@ -210,6 +220,10 @@ kubectl apply \
 mkdir -p ~/.kube
 sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
 sudo chown $(id -u):$(id -g) ~/.kube/config
+
+{{ if .HASetup }}
+{{template "hasetup" . }}
+{{end}}
 
 {{ if .ExternalProvider }}
 {{ template "ccm" . }}
@@ -307,11 +321,28 @@ cat > /etc/kubernetes/pki/ca.key <<EOF
 EOF
 pre-k get ca-cert --common-name=ca < /etc/kubernetes/pki/ca.key > /etc/kubernetes/pki/ca.crt
 
+cat > /etc/kubernetes/pki/sa.key <<EOF
+{{ .SAKey }}
+EOF
+pre-k get sa-pub < /etc/kubernetes/pki/sa.key > /etc/kubernetes/pki/sa.pub
+
+
 cat > /etc/kubernetes/pki/front-proxy-ca.key <<EOF
 {{ .FrontProxyKey }}
 EOF
+
 pre-k get ca-cert --common-name=front-proxy-ca < /etc/kubernetes/pki/front-proxy-ca.key > /etc/kubernetes/pki/front-proxy-ca.crt
 chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
+
+mkdir -p /etc/kubernetes/pki/etcd
+
+cat > /etc/kubernetes/pki/etcd/ca.key <<EOF
+{{ .ETCDCAKey }}
+EOF
+pre-k get ca-cert --common-name=kubernetes < /etc/kubernetes/pki/etcd/ca.key > /etc/kubernetes/pki/etcd/ca.crt
+chmod 600 /etc/kubernetes/pki/etcd/ca.key
+
+
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("ccm").Parse(`
@@ -333,8 +364,17 @@ done
 
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 kubectl apply \
-  -f https://raw.githubusercontent.com/pharmer/addons/master/calico/2.6/calico.yaml \
+  -f https://raw.githubusercontent.com/pharmer/addons/1c16bd66fde953446615c7715820514b0f97eeda/calico/3.0/calico.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
+`))
+	_ = template.Must(StartupScriptTemplate.New("canal").Parse(`
+kubectl apply \
+  -f https://raw.githubusercontent.com/projectcalico/canal/master/k8s-install/1.7/rbac.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+kubectl apply \
+  -f https://raw.githubusercontent.com/projectcalico/canal/master/k8s-install/1.7/canal.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("weavenet").Parse(`
@@ -349,5 +389,23 @@ kubectl apply \
 kubectl apply \
   -f https://raw.githubusercontent.com/pharmer/addons/master/flannel/v0.9.1/kube-vxlan.yml \
   --kubeconfig /etc/kubernetes/admin.conf
+`))
+	_ = template.Must(StartupScriptTemplate.New("hasetup").Parse(`
+kubectl get configmap -n kube-public cluster-info -o yaml > cluster-info-cm.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+ sed -i 's#server:.*#server: https://{{ .LoadBalancerIp }}:6443#g' cluster-info-cm.yaml
+kubectl apply -f cluster-info-cm.yaml --force \
+  --kubeconfig /etc/kubernetes/admin.conf
+
+kubectl get configmap -n kube-system kube-proxy -o yaml > kube-proxy-cm.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+ sed -i 's#server:.*#server: https://{{ .LoadBalancerIp }}:6443#g' kube-proxy-cm.yaml
+kubectl apply -f kube-proxy-cm.yaml --force \
+  --kubeconfig /etc/kubernetes/admin.conf
+kubectl delete pod -n kube-system -l k8s-app=kube-proxy \
+  --kubeconfig /etc/kubernetes/admin.conf
+
+ sudo sed -i 's#server:.*#server: https://{{ .LoadBalancerIp }}:6443#g' /etc/kubernetes/kubelet.conf
+   sudo systemctl restart kubelet
 `))
 )

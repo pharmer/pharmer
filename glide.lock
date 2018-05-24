@@ -1,6 +1,8 @@
-hash: 47e437b703b772c8d05ba6f192bc4f18be7777cd5c8fdbca276e7dfeaf0746d2
-updated: 2018-05-14T14:34:43.729745725-07:00
+hash: 31b49e53dc24fb32e8ba17b8b5df4b797b960de343e6d5a4b1afd4bbbdbfeb61
+updated: 2018-05-24T06:24:56.855983512-07:00
 imports:
+- name: bitbucket.org/ww/goautoneg
+  version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
   subpackages:
@@ -32,7 +34,7 @@ imports:
 - name: github.com/appscode/go-hetzner
   version: c038e08b19b1c760484d443de8958880e35bd879
 - name: github.com/appscode/kutil
-  version: c397449684de5caf2de0309e6453eab905901cf8
+  version: e04d4d7ed42f54b68fc1e6a5926679883b0e5b56
   subpackages:
   - tools/backup
 - name: github.com/appscode/mergo
@@ -114,6 +116,30 @@ imports:
   - gettext/mo
   - gettext/plural
   - gettext/po
+- name: github.com/coreos/etcd
+  version: eddf599c689ec85f4752060edff5a72e81e9106a
+  subpackages:
+  - auth/authpb
+  - client
+  - clientv3
+  - etcdserver/api/v3rpc/rpctypes
+  - etcdserver/etcdserverpb
+  - mvcc/mvccpb
+  - pkg/pathutil
+  - pkg/srv
+  - pkg/tlsutil
+  - pkg/transport
+  - pkg/types
+  - version
+- name: github.com/coreos/go-semver
+  version: 568e959cd89871e61434c1143528d9162da89ef2
+  subpackages:
+  - semver
+- name: github.com/coreos/go-systemd
+  version: 48702e0da86bd25e76cfef347e2adeb434a0d0a6
+  subpackages:
+  - daemon
+  - journal
 - name: github.com/cpuguy83/go-md2man
   version: 71acacd42f85e5e82f70a55327789582a5200a90
   subpackages:
@@ -129,7 +155,7 @@ imports:
 - name: github.com/dgrijalva/jwt-go
   version: 01aeca54ebda6e0fbfafd0a524d234159c05ec20
 - name: github.com/digitalocean/godo
-  version: 09db8d3b63467a9a1eae4b0a5b5c36c415219df0
+  version: d9753f84fa7a8b3c7273c72d3fa950250006dfb4
 - name: github.com/docker/distribution
   version: edc3ab29cdff8694dd6feb85cfeb4b5f1b38ed9c
   subpackages:
@@ -182,6 +208,14 @@ imports:
   - spdy
 - name: github.com/dustin/go-humanize
   version: bb3d318650d48840a39aa21a027c6630e198e626
+- name: github.com/elazarl/go-bindata-assetfs
+  version: 3dcc96556217539f50599357fb481ac0dc7439b9
+- name: github.com/emicklei/go-restful
+  version: ff4f55a206334ef123e4f79bbf348980da81ca46
+  subpackages:
+  - log
+- name: github.com/emicklei/go-restful-swagger12
+  version: dcef7f55730566d41eae5db10e7d6981829720f6
 - name: github.com/evanphx/json-patch
   version: 944e07253867aacae43c04b2e6a239005443f33a
 - name: github.com/exponent-io/jsonpath
@@ -191,7 +225,7 @@ imports:
 - name: github.com/fatih/color
   version: 9aae6aaa22315390f03959adca2c4d395b02fcef
 - name: github.com/fsnotify/fsnotify
-  version: f12c6236fe7b5cf6bcf30e5935d08cb079d78334
+  version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
 - name: github.com/go-ini/ini
@@ -228,6 +262,7 @@ imports:
   subpackages:
   - jsonpb
   - proto
+  - protoc-gen-go/descriptor
   - ptypes
   - ptypes/any
   - ptypes/duration
@@ -312,8 +347,15 @@ imports:
   version: 13f86432b882000a51c6e610c620974462691a97
 - name: github.com/juju/ratelimit
   version: 77ed1c8a01217656d2080ad51981f6e99adaa177
+- name: github.com/kubernetes-incubator/apiserver-builder
+  version: f03ae93572a2e7751214d87947c0fe006212fe6e
+  repo: https://github.com/pharmer/apiserver-builder
+  vcs: git
+  subpackages:
+  - pkg/builders
+  - pkg/controller
 - name: github.com/lib/pq
-  version: d34b9ff171c21ad295489235aec8b6626023cd04
+  version: 90697d60dd844d5ef6ff15135d0203f65d2f53b8
   subpackages:
   - oid
 - name: github.com/mailru/easyjson
@@ -350,6 +392,8 @@ imports:
   - flowrate
 - name: github.com/ncw/swift
   version: b2a7479cf26fa841ff90dd932d0221cb5c50782d
+- name: github.com/NYTimes/gziphandler
+  version: 56545f4a5d46df9a6648819d1664c3a03a13ffdb
 - name: github.com/onsi/ginkgo
   version: 9eda700730cba42af70d53180f9dcce9266bc2bc
   subpackages:
@@ -426,7 +470,7 @@ imports:
 - name: github.com/renstrom/dedent
   version: 020d11c3b9c0c7a3c2efcc8e5cf5b9ef7bcea21f
 - name: github.com/renstrom/fuzzysearch
-  version: 7a8f9a1c4bed53899ecd512daeaf8207cc454156
+  version: 500e0fce37a81072d9bf4ec1bf5d32f52c807282
   subpackages:
   - fuzzy
 - name: github.com/russross/blackfriday
@@ -448,7 +492,7 @@ imports:
   subpackages:
   - open
 - name: github.com/softlayer/softlayer-go
-  version: b48f721534f4df1c9e6e718f85ebd4c4d6f3e356
+  version: 65da659bff9a6cabe6ea1eb6019ddcbe79d3d03e
   subpackages:
   - config
   - datatypes
@@ -469,6 +513,10 @@ imports:
   vcs: git
 - name: github.com/tent/http-link-go
   version: ac974c61c2f990f4115b119354b5e0b47550e888
+- name: github.com/ugorji/go
+  version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
+  subpackages:
+  - codec
 - name: golang.org/x/crypto
   version: 84e98f45760e87786b7f24603b8166a6fa09811d
   subpackages:
@@ -488,7 +536,10 @@ imports:
   - http2
   - http2/hpack
   - idna
+  - internal/timeseries
   - lex/httplex
+  - trace
+  - websocket
 - name: golang.org/x/oauth2
   version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
   subpackages:
@@ -558,8 +609,36 @@ imports:
   - internal/remote_api
   - internal/urlfetch
   - urlfetch
+- name: google.golang.org/genproto
+  version: 09f6ed296fc66555a25fe4ce95173148778dfa85
+  subpackages:
+  - googleapis/api/annotations
+  - googleapis/rpc/status
 - name: google.golang.org/grpc
   version: 6b51017f791ae1cfbec89c52efdf444b13b550ef
+  subpackages:
+  - balancer
+  - balancer/base
+  - balancer/roundrobin
+  - codes
+  - connectivity
+  - credentials
+  - encoding
+  - grpclb/grpc_lb_v1/messages
+  - grpclog
+  - health/grpc_health_v1
+  - internal
+  - keepalive
+  - metadata
+  - naming
+  - peer
+  - resolver
+  - resolver/dns
+  - resolver/passthrough
+  - stats
+  - status
+  - tap
+  - transport
 - name: gopkg.in/AlecAivazis/survey.v1
   version: 18a4dbb1d9d05349aea1a2bf9c84028c36817c10
   subpackages:
@@ -617,7 +696,7 @@ imports:
   - pkg/apis/apiextensions/v1beta1
   - pkg/features
 - name: k8s.io/apimachinery
-  version: a39607d10305c06679e259b67f25f36e4dc1d0b9
+  version: e557b45efb5e379071ff79e03cb28c84432ae348
   repo: https://github.com/pharmer/apimachinery.git
   vcs: git
   subpackages:
@@ -626,6 +705,7 @@ imports:
   - pkg/api/meta
   - pkg/api/resource
   - pkg/api/validation
+  - pkg/api/validation/path
   - pkg/apimachinery
   - pkg/apimachinery/announced
   - pkg/apimachinery/registered
@@ -671,6 +751,7 @@ imports:
   - pkg/util/validation
   - pkg/util/validation/field
   - pkg/util/wait
+  - pkg/util/waitgroup
   - pkg/util/yaml
   - pkg/version
   - pkg/watch
@@ -678,7 +759,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 5ae41ac86efd753e2ba012f097b83a914b268236
+  version: 1d09e09ed0ad50e299dc5ce47866aeafb01b19b2
   subpackages:
   - pkg/admission
   - pkg/admission/configuration
@@ -700,7 +781,6 @@ imports:
   - pkg/apis/apiserver/install
   - pkg/apis/apiserver/v1alpha1
   - pkg/apis/audit
-  - pkg/apis/audit/install
   - pkg/apis/audit/v1alpha1
   - pkg/apis/audit/v1beta1
   - pkg/apis/audit/validation
@@ -733,45 +813,31 @@ imports:
   - pkg/features
   - pkg/registry/generic
   - pkg/registry/generic/registry
-  - pkg/registry/generic/testing
   - pkg/registry/rest
-  - pkg/registry/rest/resttest
   - pkg/server
   - pkg/server/filters
   - pkg/server/healthz
   - pkg/server/httplog
   - pkg/server/mux
-  - pkg/server/options
-  - pkg/server/resourceconfig
   - pkg/server/routes
   - pkg/server/routes/data/swagger
   - pkg/server/storage
   - pkg/storage
   - pkg/storage/errors
   - pkg/storage/etcd
-  - pkg/storage/etcd/etcdtest
   - pkg/storage/etcd/metrics
-  - pkg/storage/etcd/testing
-  - pkg/storage/etcd/testing/testingcert
   - pkg/storage/etcd/util
   - pkg/storage/etcd3
-  - pkg/storage/etcd3/preflight
   - pkg/storage/names
   - pkg/storage/storagebackend
   - pkg/storage/storagebackend/factory
-  - pkg/storage/testing
   - pkg/storage/value
   - pkg/util/feature
-  - pkg/util/feature/testing
   - pkg/util/flag
   - pkg/util/flushwriter
-  - pkg/util/logs
   - pkg/util/trace
   - pkg/util/webhook
   - pkg/util/wsstream
-  - plugin/pkg/audit/buffered
-  - plugin/pkg/audit/log
-  - plugin/pkg/audit/webhook
   - plugin/pkg/authenticator/token/webhook
   - plugin/pkg/authorizer/webhook
 - name: k8s.io/client-go
@@ -900,6 +966,7 @@ imports:
   - tools/clientcmd/api
   - tools/clientcmd/api/latest
   - tools/clientcmd/api/v1
+  - tools/leaderelection/resourcelock
   - tools/metrics
   - tools/pager
   - tools/portforward
@@ -910,6 +977,7 @@ imports:
   - transport/spdy
   - util/buffer
   - util/cert
+  - util/cert/triple
   - util/exec
   - util/flowcontrol
   - util/homedir
@@ -1141,6 +1209,27 @@ imports:
   - clock
   - exec
   - exec/testing
+- name: sigs.k8s.io/cluster-api
+  version: 66f4f98b788ae87874fbb8f1a118da9101d0c049
+  repo: https://github.com/pharmer/cluster-api
+  vcs: git
+  subpackages:
+  - pkg/apis/cluster
+  - pkg/apis/cluster/common
+  - pkg/apis/cluster/v1alpha1
+  - pkg/client/clientset_generated/clientset
+  - pkg/client/clientset_generated/clientset/scheme
+  - pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1
+  - pkg/client/informers_generated/externalversions
+  - pkg/client/informers_generated/externalversions/cluster
+  - pkg/client/informers_generated/externalversions/cluster/v1alpha1
+  - pkg/client/informers_generated/externalversions/internalinterfaces
+  - pkg/client/listers_generated/cluster/v1alpha1
+  - pkg/controller/config
+  - pkg/controller/machine
+  - pkg/controller/sharedinformers
+  - pkg/node/util
+  - util
 - name: vbom.ml/util
   version: db5cfe13f5cc80a4990d98e2e1b0707a4d1a5394
   subpackages:
