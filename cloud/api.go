@@ -21,7 +21,6 @@ type Interface interface {
 	SSHGetter
 	GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error)
 	//GetDefaultMachineSpec(cluster *api.Cluster, sku string) ()
-	SetDefaults(in *api.Cluster) error
 	SetDefaultCluster(in *api.Cluster, conf *api.ClusterProviderConfig) error
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
