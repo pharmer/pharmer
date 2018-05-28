@@ -6,14 +6,17 @@ import (
 	"strconv"
 	"strings"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pharmer/pharmer/data/files"
 	"github.com/pkg/errors"
 	"github.com/taoh/linodego"
 	"k8s.io/apimachinery/pkg/util/wait"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
+
+var errLBNotFound = errors.New("loadbalancer not found")
 
 type cloudConnector struct {
 	ctx     context.Context
@@ -41,6 +44,33 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		namer:   namer,
 		client:  c,
 	}, nil
+}
+
+func (cm *ClusterManager) PrepareCloud(clusterName string) error {
+	var err error
+	cluster, err := Store(cm.ctx).Clusters().Get(clusterName)
+	if err != nil {
+		return fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
+	}
+	cm.cluster = cluster
+
+	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if cm.ctx, err = LoadEtcdCertificate(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if cm.ctx, err = LoadSaKey(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+		return err
+	}
+	cm.namer = namer{cluster: cm.cluster}
+	return nil
 }
 
 func (conn *cloudConnector) DetectInstanceImage() (string, error) {
@@ -130,8 +160,8 @@ const (
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) getStartupScriptID(ng *api.NodeGroup) (int, error) {
-	scriptName := conn.namer.StartupScriptName(ng.Name, ng.Role())
+func (conn *cloudConnector) getStartupScriptID(machineConf *api.MachineProviderConfig, role string) (int, error) {
+	scriptName := conn.namer.StartupScriptName(machineConf.Config.SKU, role)
 	scripts, err := conn.client.StackScript.List(0)
 	if err != nil {
 		return 0, err
@@ -144,9 +174,32 @@ func (conn *cloudConnector) getStartupScriptID(ng *api.NodeGroup) (int, error) {
 	return 0, ErrNotFound
 }
 
-func (conn *cloudConnector) createOrUpdateStackScript(ng *api.NodeGroup, token string) (int, error) {
-	scriptName := conn.namer.StartupScriptName(ng.Name, ng.Role())
-	script, err := conn.renderStartupScript(ng, token)
+func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*linodego.Linode, error) {
+	linodes, err := conn.client.Linode.List(0)
+	if err != nil {
+		return nil, err
+	}
+	for _, lin := range linodes.Linodes {
+		if lin.Label.String() == machine.Name {
+			l, err := conn.client.Linode.List(lin.LinodeId)
+			if err != nil {
+				return nil, err
+			}
+			return &l.Linodes[0], nil
+		}
+	}
+
+	return nil, fmt.Errorf("no droplet found with %v name", machine.Name)
+}
+
+func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine, token string) (int, error) {
+	machineConf, err := conn.cluster.MachineProviderConfig(machine)
+	if err != nil {
+		return 0, err
+	}
+
+	scriptName := conn.namer.StartupScriptName(machineConf.Config.SKU, string(machine.Spec.Roles[0]))
+	script, err := conn.renderStartupScript(conn.cluster, machine, token)
 	if err != nil {
 		return 0, err
 	}
@@ -163,23 +216,23 @@ func (conn *cloudConnector) createOrUpdateStackScript(ng *api.NodeGroup, token s
 			if err != nil {
 				return 0, err
 			}
-			Logger(conn.ctx).Infof("Stack script for role %v updated", ng.Role())
+			//Logger(conn.ctx).Infof("Stack script for role %v updated", ng.Role())
 			return resp.StackScriptId.StackScriptId, nil
 		}
 	}
 
-	resp, err := conn.client.StackScript.Create(scriptName, conn.cluster.Spec.Cloud.InstanceImage, script, map[string]string{
-		"Description": fmt.Sprintf("Startup script for NodeGroup %s of Cluster %s", ng.Name, conn.cluster.Name),
+	resp, err := conn.client.StackScript.Create(scriptName, conn.cluster.ProviderConfig().InstanceImage, script, map[string]string{
+		"Description": fmt.Sprintf("Startup script for NodeGroup %s of Cluster %s", machine.Name, conn.cluster.Name),
 	})
 	if err != nil {
 		return 0, err
 	}
-	Logger(conn.ctx).Infof("Stack script for role %v created", ng.Role())
+	//	Logger(conn.ctx).Infof("Stack script for role %v created", ng.Role())
 	return resp.StackScriptId.StackScriptId, nil
 }
 
-func (conn *cloudConnector) deleteStackScript(ng *api.NodeGroup) error {
-	scriptName := conn.namer.StartupScriptName(ng.Name, ng.Role())
+func (conn *cloudConnector) deleteStackScript(machineConf *api.MachineProviderConfig, role string) error {
+	scriptName := conn.namer.StartupScriptName(machineConf.Config.SKU, role)
 	scripts, err := conn.client.StackScript.List(0)
 	if err != nil {
 		return err
@@ -197,12 +250,18 @@ func (conn *cloudConnector) deleteStackScript(ng *api.NodeGroup) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) CreateInstance(_, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
-	dcId, err := strconv.Atoi(conn.cluster.Spec.Cloud.Zone)
+func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error) {
+	clusterConfig := cluster.ProviderConfig()
+	machineConfig, err := cluster.MachineProviderConfig(machine)
 	if err != nil {
 		return nil, err
 	}
-	planId, err := strconv.Atoi(ng.Spec.Template.Spec.SKU)
+
+	dcId, err := strconv.Atoi(clusterConfig.Zone)
+	if err != nil {
+		return nil, err
+	}
+	planId, err := strconv.Atoi(machineConfig.Config.SKU)
 	if err != nil {
 		return nil, err
 	}
@@ -244,17 +303,17 @@ func (conn *cloudConnector) CreateInstance(_, token string, ng *api.NodeGroup) (
 		return nil, err
 	}
 
-	scriptId, err := conn.getStartupScriptID(ng)
+	scriptId, err := conn.getStartupScriptID(machineConfig, string(machine.Spec.Roles[0]))
 	if err != nil {
 		return nil, err
 	}
 
 	stackScriptUDFResponses := fmt.Sprintf(`{"hostname": "%s"}`, node.Name)
-	mt, err := files.GetInstanceType("linode", ng.Spec.Template.Spec.SKU)
+	mt, err := files.GetInstanceType("linode", machineConfig.Config.SKU)
 	if err != nil {
 		return nil, err
 	}
-	distributionID, err := strconv.Atoi(conn.cluster.Spec.Cloud.InstanceImage)
+	distributionID, err := strconv.Atoi(clusterConfig.InstanceImage)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +327,7 @@ func (conn *cloudConnector) CreateInstance(_, token string, ng *api.NodeGroup) (
 		stackScriptUDFResponses,
 		distributionID,
 		rootDiskSize,
-		conn.cluster.Spec.Cloud.Linode.RootPassword,
+		clusterConfig.Linode.RootPassword,
 		map[string]string{
 			"rootSSHKey": string(SSHKey(conn.ctx).PublicKey),
 		})
@@ -279,7 +338,7 @@ func (conn *cloudConnector) CreateInstance(_, token string, ng *api.NodeGroup) (
 	//if err != nil {
 	//	return nil, err
 	//}
-	config, err := conn.client.Config.Create(linodeId, int(conn.cluster.Spec.Cloud.Linode.KernelId), node.Name, map[string]string{
+	config, err := conn.client.Config.Create(linodeId, int(clusterConfig.Linode.KernelId), node.Name, map[string]string{
 		"RootDeviceNum": "1",
 		"DiskList":      strconv.Itoa(rootDisk.DiskJob.DiskId),
 		// "DiskList":   fmt.Sprintf("%d,%d", rootDisk.DiskJob.DiskId, swapDisk.DiskJob.DiskId),
@@ -351,3 +410,128 @@ func serverIDFromProviderID(providerID string) (int, error) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+
+func (conn *cloudConnector) createLoadBalancer(ctx context.Context, name string) (string, error) {
+	lb, err := conn.lbByName(name)
+	if err != nil {
+		if err == errLBNotFound {
+			ip, err := conn.buildLoadBalancerRequest(name)
+			if err != nil {
+				return "", err
+			}
+			return ip, nil
+
+		}
+	}
+
+	err = l.UpdateLoadBalancer(ctx, clusterName, service, nodes)
+	if err != nil {
+		return nil, err
+	}
+
+	lbStatus, exists, err = l.GetLoadBalancer(ctx, clusterName, service)
+	if err != nil {
+		return nil, err
+	}
+
+}
+
+func (conn *cloudConnector) lbByName(name string) (*linodego.LinodeNodeBalancer, error) {
+	lbs, err := conn.client.NodeBalancer.List(0)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, lb := range lbs.NodeBalancer {
+		if lb.Label.String() == name {
+			return &lb, nil
+		}
+	}
+
+	return nil, errLBNotFound
+}
+
+func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (string, error) {
+	lb, err := conn.createNoadBalancer(lbName)
+	if err != nil {
+		return "", err
+	}
+
+	nb, err := conn.client.NodeBalancer.List(lb)
+	if err != nil {
+		return "", err
+	}
+	if len(nb.NodeBalancer) == 0 {
+		return "", fmt.Errorf("nodebalancer with id %v not found", lb)
+	}
+
+	_, err = conn.createNodeBalancerConfig(lb)
+	if err != nil {
+		return "", err
+	}
+
+	/*for _, node := range nodes {
+		if err = createNBNode(l.client, ncid, node, port.NodePort); err != nil {
+			return "", err
+		}
+	}*/
+
+	return nb.NodeBalancer[0].Address4, nil
+}
+
+func (conn *cloudConnector) createNodeBalancerConfig(nbId int) (int, error) {
+	args := map[string]string{
+		"Port":       "6443",
+		"Protocol":   "tcp",
+		"Algorithm":  "leastconn",
+		"Stickiness": "table",
+	}
+
+	healthArgs := map[string]string{
+		"check":          "connection",
+		"check_interval": "5",
+		"check_timeout":  "3",
+		"check_attempts": "2",
+		"check_passive":  "true",
+	}
+	/*if health == "http" || health == "http_body" {
+		path := service.Annotations[annLinodeCheckPath]
+		if path == "" {
+			path = "/"
+		}
+		args["check_path"] = path
+	}
+	*/
+
+	args = mergeMaps(args, healthArgs)
+
+	/*tlsArgs, err := getTLSArgs(service, port, protocol)
+	if err != nil {
+		return -1, err
+	}
+	args = mergeMaps(args, tlsArgs)*/
+	resp, err := conn.client.NodeBalancerConfig.Create(nbId, args)
+	if err != nil {
+		return -1, err
+	}
+	return resp.NodeBalancerConfigId.NodeBalancerConfigId, nil
+}
+func (conn *cloudConnector) createNoadBalancer(name string) (int, error) {
+	did, err := strconv.Atoi(conn.cluster.ProviderConfig().Zone)
+	if err != nil {
+		return -1, err
+	}
+
+	resp, err := conn.client.NodeBalancer.Create(did, name, nil)
+	if err != nil {
+		return -1, err
+	}
+	return resp.NodeBalancerId.NodeBalancerId, nil
+}
+
+func mergeMaps(first, second map[string]string) map[string]string {
+	for k, v := range second {
+		first[k] = v
+	}
+	return first
+}

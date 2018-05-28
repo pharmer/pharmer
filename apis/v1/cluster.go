@@ -118,6 +118,11 @@ type LinodeSpec struct {
 	KernelId     int64  `json:"kernelId,omitempty" protobuf:"varint,2,opt,name=kernelId"`
 }
 
+type LinodeCloudConfig struct {
+	Token string `json:"token,omitempty" protobuf:"bytes,1,opt,name=token"`
+	Zone  string `json:"zone,omitempty" protobuf:"bytes,2,opt,name=zone"`
+}
+
 // ClusterPhase is a label for the condition of a Cluster at the current time.
 type ClusterPhase string
 
@@ -221,7 +226,7 @@ func (c *Cluster) APIServerAddress() string {
 	} else {
 		return fmt.Sprintf("%s:%d", ep.Host, ep.Port)
 	}
-	
+
 }
 
 func (c *Cluster) SetNetworkingDefaults(provider string) {

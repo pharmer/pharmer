@@ -64,9 +64,6 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 
 	return nil
 }
-func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
-	return nil
-}
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, ErrNotImplemented

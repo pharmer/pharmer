@@ -2,7 +2,7 @@ package linode
 
 import (
 	"github.com/appscode/go/crypto/rand"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 )
 
 type namer struct {
@@ -24,4 +24,8 @@ func (n namer) GenSSHKeyExternalID() string {
 
 func (n namer) StartupScriptName(ng, role string) string {
 	return n.cluster.Name + "-" + ng + "-" + role
+}
+
+func (n namer) LoadBalancerName() string {
+	return n.cluster.Name + "-lb"
 }
