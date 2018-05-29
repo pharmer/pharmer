@@ -14,7 +14,7 @@ import (
 
 func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
 	if sku == "" {
-		sku = "3"
+		sku = "4"
 	}
 	return api.NodeSpec{
 		SKU: sku,

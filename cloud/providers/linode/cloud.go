@@ -423,16 +423,17 @@ func (conn *cloudConnector) createLoadBalancer(ctx context.Context, name string)
 
 		}
 	}
+	/*
+		err = l.UpdateLoadBalancer(ctx, clusterName, service, nodes)
+		if err != nil {
+			return nil, err
+		}
 
-	err = l.UpdateLoadBalancer(ctx, clusterName, service, nodes)
-	if err != nil {
-		return nil, err
-	}
-
-	lbStatus, exists, err = l.GetLoadBalancer(ctx, clusterName, service)
-	if err != nil {
-		return nil, err
-	}
+		lbStatus, exists, err = l.GetLoadBalancer(ctx, clusterName, service)
+		if err != nil {
+			return nil, err
+		} */
+	return lb.Address4, nil
 
 }
 
@@ -516,6 +517,31 @@ func (conn *cloudConnector) createNodeBalancerConfig(nbId int) (int, error) {
 	}
 	return resp.NodeBalancerConfigId.NodeBalancerConfigId, nil
 }
+func (conn *cloudConnector) addNodeToBalancer(lbName string, nodeName, ip string) error {
+	lb, err := conn.lbByName(lbName)
+	if err != nil {
+		return err
+	}
+
+	args := map[string]string{}
+	args["Weight"] = "100"
+	args["Mode"] = "accept"
+
+	lbcs, err := conn.client.NodeBalancerConfig.List(lb.NodeBalancerId, 0)
+	if err != nil {
+		return err
+	}
+
+	_, err = conn.client.Node.Create(lbcs.NodeBalancerConfigs[0].ConfigId, nodeName, ip, args)
+	if err != nil {
+		return err
+	}
+
+	Logger(conn.ctx).Infof("Added master %v to loadbalancer %v", nodeName, lbName)
+
+	return nil
+}
+
 func (conn *cloudConnector) createNoadBalancer(name string) (int, error) {
 	did, err := strconv.Atoi(conn.cluster.ProviderConfig().Zone)
 	if err != nil {

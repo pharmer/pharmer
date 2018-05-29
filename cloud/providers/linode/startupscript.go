@@ -24,6 +24,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		KubeadmToken:      token,
 		CAHash:            pubkeypin.Hash(CACert(ctx)),
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
 		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
 		APIServerAddress:  cluster.APIServerAddress(),
@@ -113,7 +114,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
-		NodeName:                   machine.Name,
+		//	NodeName:                   machine.Name,
 	}
 	if _, found := machine.Labels[api.PharmerHASetup]; found {
 		td.HASetup = true
@@ -164,6 +165,7 @@ EOF
 {{ define "prepare-host" }}
 HOSTNAME=$(pre-k linode hostname -k {{ .ClusterName }})
 hostnamectl set-hostname $HOSTNAME
+NODE_NAME=$HOSTNAME
 {{ end }}
 
 {{ define "install-storage-plugin" }}

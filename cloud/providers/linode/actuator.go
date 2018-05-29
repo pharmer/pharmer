@@ -3,12 +3,13 @@ package linode
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 
 	api "github.com/pharmer/pharmer/apis/v1"
 	. "github.com/pharmer/pharmer/cloud"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
@@ -55,22 +56,22 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 				return err
 			}
 		}
-		if !dryRun {
-			if _, err = cm.conn.createOrUpdateStackScript(masterNG, ""); err != nil {
-				return
-			}
+
+		if _, err = cm.conn.createOrUpdateStackScript(machine, token); err != nil {
+			return err
 		}
+
 		instance, err := cm.conn.CreateInstance(cm.cluster, machine, token)
 		if err != nil {
 			return err
 		}
 
 		if IsMaster(machine) {
-			var providerConf *api.MachineProviderConfig
+			/*var providerConf *api.MachineProviderConfig
 			providerConf, err = cm.cluster.MachineProviderConfig(machine)
 			if err != nil {
 				return err
-			}
+			}*/
 			if instance.PublicIP != "" {
 				cluster.Status.APIEndpoints = append(cluster.Status.APIEndpoints, clusterv1.APIEndpoint{
 					Host: instance.PublicIP,
@@ -78,11 +79,9 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 				})
 			}
 			if _, found := machine.Labels[api.PharmerHASetup]; found {
-				did, err := strconv.Atoi(instance.ExternalID)
-				if err != nil {
-					return err
-				}
-				if err = cm.conn.addNodeToBalancer(cm.ctx, cm.namer.LoadBalancerName(), did); err != nil {
+
+				ip := fmt.Sprintf("%v:%v", instance.PrivateIP, kubeadmapi.DefaultAPIBindPort)
+				if err = cm.conn.addNodeToBalancer(cm.namer.LoadBalancerName(), instance.Name, ip); err != nil {
 					return err
 				}
 			}
@@ -96,6 +95,97 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 		Logger(cm.ctx).Infoln("Skipped creating a machine that already exists.")
 	}
 	return nil
+}
+
+func (cm *ClusterManager) Delete(machine *clusterv1.Machine) error {
+	Logger(cm.ctx).Infoln("call for deleting machine")
+	clusterName := machine.ClusterName
+	if _, found := machine.Labels[api.PharmerCluster]; found {
+		clusterName = machine.Labels[api.PharmerCluster]
+	}
+	if err := cm.PrepareCloud(clusterName); err != nil {
+		return err
+	}
+	instance, err := cm.conn.instanceIfExists(machine)
+	if err != nil {
+		return err
+	}
+
+	if instance == nil {
+		Logger(cm.ctx).Infof("Skipped deleting a VM that is already deleted.\n")
+		return nil
+	}
+	kc, err := cm.GetAdminClient()
+	if err != nil {
+		return err
+	}
+
+	node, err := kc.CoreV1().Nodes().Get(machine.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	if err = cm.conn.DeleteInstanceByProviderID(node.Spec.ProviderID); err != nil {
+		Logger(cm.ctx).Infoln("errror on deleting %v", err)
+	}
+
+	if cm.actuator.machineClient != nil {
+		// Remove the finalizer
+		machine.ObjectMeta.Finalizers = Filter(machine.ObjectMeta.Finalizers, clusterv1.MachineFinalizer)
+		_, err = cm.actuator.machineClient.Update(machine)
+		return err
+	}
+
+	return nil
+}
+
+func (cm *ClusterManager) Update(cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
+	Logger(cm.ctx).Infoln("call for updating machine")
+	if err := cm.PrepareCloud(cluster.Name); err != nil {
+		return err
+	}
+
+	sm := NewStatusManager(cm.actuator.machineClient, cm.actuator.scheme)
+	status, err := sm.InstanceStatus(goalMachine)
+	if err != nil {
+		return err
+	}
+
+	currentMachine := (*clusterv1.Machine)(status)
+	if currentMachine == nil {
+		instance, err := cm.conn.instanceIfExists(goalMachine)
+		if err != nil {
+			return err
+		}
+		if instance != nil {
+			Logger(cm.ctx).Infof("Populating current state for boostrap machine %v", goalMachine.ObjectMeta.Name)
+			return cm.updateAnnotations(goalMachine)
+		} else {
+			return fmt.Errorf("cannot retrieve current state to update machine %v", goalMachine.ObjectMeta.Name)
+		}
+	}
+	if !cm.requiresUpdate(currentMachine, goalMachine) {
+		return nil
+	}
+	kc, err := cm.GetAdminClient()
+	if err != nil {
+		return err
+	}
+
+	upm := NewUpgradeManager(cm.ctx, cm, kc, cm.cluster)
+	if IsMaster(currentMachine) {
+		Logger(cm.ctx).Infof("Doing an in-place upgrade for master.\n")
+		if err := upm.MasterUpgrade(currentMachine, goalMachine); err != nil {
+			return err
+		}
+	} else {
+		//TODO(): Do we replace node or inplace upgrade?
+		Logger(cm.ctx).Infof("Doing an in-place upgrade for master.\n")
+		if err := upm.NodeUpgrade(currentMachine, goalMachine); err != nil {
+			return err
+		}
+	}
+	return cm.updateInstanceStatus(goalMachine)
 }
 
 func (cm *ClusterManager) Exists(machine *clusterv1.Machine) (bool, error) {
