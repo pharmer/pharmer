@@ -51,6 +51,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	if err = cm.cluster.SetProviderConfig(clusterConf); err != nil {
 		return nil, err
 	}
+	Store(cm.ctx).Clusters().Update(cm.cluster)
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
 	}

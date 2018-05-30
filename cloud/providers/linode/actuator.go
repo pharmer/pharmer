@@ -72,12 +72,7 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 			if err != nil {
 				return err
 			}*/
-			if instance.PublicIP != "" {
-				cluster.Status.APIEndpoints = append(cluster.Status.APIEndpoints, clusterv1.APIEndpoint{
-					Host: instance.PublicIP,
-					Port: int(cm.cluster.Spec.API.BindPort),
-				})
-			}
+
 			if _, found := machine.Labels[api.PharmerHASetup]; found {
 
 				ip := fmt.Sprintf("%v:%v", instance.PrivateIP, kubeadmapi.DefaultAPIBindPort)
@@ -90,6 +85,15 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 
 		if cm.actuator.machineClient != nil {
 			return cm.updateAnnotations(machine)
+		} else {
+			if instance.PublicIP != "" {
+				cluster.Status.APIEndpoints = append(cluster.Status.APIEndpoints, clusterv1.APIEndpoint{
+					Host: instance.PublicIP,
+					Port: int(cm.cluster.Spec.API.BindPort),
+				})
+			}
+			cm.cluster.Spec.ClusterAPI = cluster
+			Store(cm.ctx).Clusters().Update(cm.cluster)
 		}
 	} else {
 		Logger(cm.ctx).Infoln("Skipped creating a machine that already exists.")

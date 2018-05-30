@@ -21,8 +21,8 @@ var kubernetesCNIVersions = map[string]string{
 
 var prekVersions = map[string]string{
 	"1.8.0":  "1.8.0",
-	"1.9.0":  "1.10.1-alpha.6",
-	"1.10.0": "1.10.1-alpha.6",
+	"1.9.0":  "1.10.1-alpha.7",
+	"1.10.0": "1.10.1-alpha.7",
 }
 
 type TemplateData struct {
@@ -197,7 +197,6 @@ pre-k merge master-config \
 	--apiserver-cert-extra-sans=$(pre-k machine public-ips --routable) \
 	--apiserver-cert-extra-sans=$(pre-k machine private-ips) \
 	--node-name=${NODE_NAME:-} \
-    --ha={{ .HASetup }} \
     --etcd-server={{ .ETCDServerAddress}} \
     --tls-enabled=false \
 	> /etc/kubernetes/kubeadm/config.yaml
@@ -364,7 +363,7 @@ done
 
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 kubectl apply \
-  -f https://raw.githubusercontent.com/pharmer/addons/1c16bd66fde953446615c7715820514b0f97eeda/calico/3.0/calico.yaml \
+  -f https://raw.githubusercontent.com/pharmer/addons/master/calico/2.6/calico.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 	_ = template.Must(StartupScriptTemplate.New("canal").Parse(`
