@@ -180,7 +180,11 @@ func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*linod
 		return nil, err
 	}
 	for _, lin := range linodes.Linodes {
-		if lin.Label.String() == machine.Name {
+		nodeName, err := conn.getLinodeName(lin.LinodeId)
+		if err != nil {
+			return nil, err
+		}
+		if lin.Label.String() == nodeName {
 			l, err := conn.client.Linode.List(lin.LinodeId)
 			if err != nil {
 				return nil, err
@@ -192,6 +196,23 @@ func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*linod
 	return nil, fmt.Errorf("no droplet found with %v name", machine.Name)
 }
 
+func (conn *cloudConnector) getLinodeName(id int) (string, error) {
+	ips, err := conn.client.Ip.List(id, -1)
+	if err != nil {
+		return "", err
+	}
+	publicIp := ""
+	for _, ip := range ips.FullIPAddresses {
+		if ip.IsPublic == 1 {
+			publicIp = ip.IPAddress
+		}
+	}
+	if publicIp == "" {
+		return "", fmt.Errorf("pulic ip not found")
+	}
+	parts := strings.SplitN(publicIp, ".", 4)
+	return fmt.Sprintf("%s-%03s-%03s-%03s-%03s", conn.cluster.Name, parts[0], parts[1], parts[2], parts[3]), nil
+}
 func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine, token string) (int, error) {
 	machineConf, err := conn.cluster.MachineProviderConfig(machine)
 	if err != nil {
