@@ -9,16 +9,17 @@ const (
 	RoleMasterKey = RoleKeyPrefix + RoleMaster
 	RoleNodeKey   = RoleKeyPrefix + RoleNode
 
-	RoleLeader            = "leader"
-	RoleMember            = "member"
-	PharmerCluster        = "cloud.appscode.com/cluster"
-	KubeadmVersionKey     = "cloud.appscode.com/kubeadm-version"
-	NodePoolKey           = "cloud.appscode.com/pool"
-	KubeSystem_App        = "k8s-app"
-	EtcdMemberKey         = "cloud.appscode.com/etcd-type"
-	EtcdServerAddress     = "cloud.appscode.com/etcd-server-address"
-	PharmerHASetup        = "cloud.appscode.com/ha-setup"
-	PharmerLoadBalancerIP = "cloud.appscode.com/lb-ip"
+	RoleLeader               = "leader"
+	RoleMember               = "member"
+	PharmerCluster           = "cloud.appscode.com/cluster"
+	KubeadmVersionKey        = "cloud.appscode.com/kubeadm-version"
+	NodePoolKey              = "cloud.appscode.com/pool"
+	KubeSystem_App           = "k8s-app"
+	EtcdMemberKey            = "cloud.appscode.com/etcd-type"
+	EtcdServerAddress        = "cloud.appscode.com/etcd-server-address"
+	PharmerHASetup           = "cloud.appscode.com/ha-setup"
+	PharmerLoadBalancerIP    = "cloud.appscode.com/lb-ip"
+	PharmerMachineProviderID = "cloud.appscode.com/provider-id"
 
 	HostnameKey     = "kubernetes.io/hostname"
 	ArchKey         = "beta.kubernetes.io/arch"

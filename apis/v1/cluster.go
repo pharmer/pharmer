@@ -118,6 +118,11 @@ type LinodeSpec struct {
 	KernelId     int64  `json:"kernelId,omitempty" protobuf:"varint,2,opt,name=kernelId"`
 }
 
+type LinodeCloudConfig struct {
+	Token string `json:"token,omitempty" protobuf:"bytes,1,opt,name=token"`
+	Zone  string `json:"zone,omitempty" protobuf:"bytes,2,opt,name=zone"`
+}
+
 // ClusterPhase is a label for the condition of a Cluster at the current time.
 type ClusterPhase string
 
@@ -222,31 +227,6 @@ func (c *Cluster) APIServerAddress() string {
 		return fmt.Sprintf("%s:%d", ep.Host, ep.Port)
 	}
 
-	/*m := map[core.NodeAddressType]string{}
-	for _, addr := range c.Status.APIAddresses {
-		m[addr.Type] = fmt.Sprintf("%s:%d", addr.Address, c.Spec.API.BindPort)
-	}
-	// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
-	addrTypes := []core.NodeAddressType{
-		core.NodeInternalDNS,
-		core.NodeInternalIP,
-		core.NodeExternalDNS,
-		core.NodeExternalIP,
-	}
-	if pat, found := c.Spec.APIServerExtraArgs["kubelet-preferred-address-types"]; found {
-		ats := strings.Split(pat, ",")
-		addrTypes = make([]core.NodeAddressType, len(ats))
-		for i, at := range ats {
-			addrTypes[i] = core.NodeAddressType(at)
-		}
-	}
-
-	for _, at := range addrTypes {
-		if u, found := m[at]; found {
-			return u
-		}
-	}
-	return ""*/
 }
 
 func (c *Cluster) SetNetworkingDefaults(provider string) {
@@ -303,4 +283,27 @@ func (c *Cluster) MachineProviderConfig(machine *clusterv1.Machine) (*MachinePro
 		return nil, err
 	}
 	return providerConfig, nil
+}
+
+func (c *Cluster) MachineProviderStatus(machine *clusterv1.Machine) *MachineProviderStatus {
+	raw := machine.Status.ProviderStatus.Raw
+	providerStatus := &MachineProviderStatus{}
+	err := json.Unmarshal(raw, providerStatus)
+	if err != nil {
+		fmt.Println("Unable to unmarshal provider config: %v", err)
+	}
+	return providerStatus
+}
+
+func (c *Cluster) SetMachineProviderStatus(machine *clusterv1.Machine, status *MachineProviderStatus) (*clusterv1.Machine, error) {
+	bytes, err := json.Marshal(status)
+	if err != nil {
+		fmt.Println("Unable to marshal provider status: %v", err)
+		return machine, err
+	}
+	machine.Status.ProviderStatus = &runtime.RawExtension{
+		Raw: bytes,
+	}
+
+	return machine, nil
 }

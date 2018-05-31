@@ -2,8 +2,9 @@ package linode
 
 import (
 	"fmt"
+	"strings"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
@@ -11,7 +12,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
@@ -26,24 +29,30 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 	cm.cluster = in
 	cm.namer = namer{cluster: cm.cluster}
-	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
+	if err = cm.PrepareCloud(in.Name); err != nil {
 		return nil, err
 	}
-	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
-		return nil, err
-	}
-	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
-		return nil, err
-	}
-	if cm.cluster.Spec.Cloud.InstanceImage, err = cm.conn.DetectInstanceImage(); err != nil {
-		return nil, err
-	}
-	Logger(cm.ctx).Debugln("Linode instance image", cm.cluster.Spec.Cloud.InstanceImage)
-	if cm.cluster.Spec.Cloud.Linode.KernelId, err = cm.conn.DetectKernel(); err != nil {
-		return nil, err
-	}
-	Logger(cm.ctx).Infof("Linode kernel %v found", cm.cluster.Spec.Cloud.Linode.KernelId)
 
+	if err = cm.InitializeActuator(nil); err != nil {
+		return nil, err
+	}
+
+	clusterConf := cm.cluster.ProviderConfig()
+
+	if clusterConf.InstanceImage, err = cm.conn.DetectInstanceImage(); err != nil {
+		return nil, err
+	}
+
+	Logger(cm.ctx).Debugln("Linode instance image", clusterConf.InstanceImage)
+	if clusterConf.Linode.KernelId, err = cm.conn.DetectKernel(); err != nil {
+		return nil, err
+	}
+	Logger(cm.ctx).Infof("Linode kernel %v found", clusterConf.Linode.KernelId)
+
+	if err = cm.cluster.SetProviderConfig(clusterConf); err != nil {
+		return nil, err
+	}
+	Store(cm.ctx).Clusters().Update(cm.cluster)
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
 	}
@@ -107,27 +116,29 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	// FYI: Linode does not support tagging.
 
 	// -------------------------------------------------------------------ASSETS
-	var nodeGroups []*api.NodeGroup
-	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+	var masterNG []*clusterv1.Machine
+	masterNG, err = FindMasterMachines(cm.cluster)
 	if err != nil {
 		return
 	}
-	var masterNG *api.NodeGroup
-	masterNG, err = FindMasterNodeGroup(nodeGroups)
-	if err != nil {
-		return
-	}
-	acts = append(acts, api.Action{
-		Action:   api.ActionAdd,
-		Resource: "Master startup script",
-		Message:  "Startup script will be created/updated for master instance",
-	})
-	if !dryRun {
-		if _, err = cm.conn.createOrUpdateStackScript(masterNG, ""); err != nil {
+	var lbIp string
+	haSetup := IsHASetup(cm.cluster)
+	if haSetup {
+		Logger(cm.ctx).Info("Creating loadbalancer")
+		lbIp, err = cm.conn.createLoadBalancer(cm.namer.LoadBalancerName())
+		if err != nil {
 			return
 		}
+		Logger(cm.ctx).Infof("Created loadbalancer lbIp = %v", lbIp)
+		for m := range cm.cluster.Spec.Masters {
+			cm.cluster.Spec.Masters[m].Labels[api.PharmerHASetup] = "true"
+			cm.cluster.Spec.Masters[m].Labels[api.PharmerLoadBalancerIP] = lbIp
+		}
+		Store(cm.ctx).Clusters().Update(cm.cluster)
 	}
-	if masterNG.Status.Nodes < masterNG.Spec.Nodes {
+
+	leaderMaster := masterNG[0]
+	if d, _ := cm.conn.instanceIfExists(leaderMaster); d == nil {
 		Logger(cm.ctx).Info("Creating master instance")
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
@@ -135,47 +146,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Master instance %s will be created", cm.namer.MasterName()),
 		})
 		if !dryRun {
-			var masterServer *api.NodeInfo
-			masterServer, err = cm.conn.CreateInstance(cm.namer.MasterName(), "", masterNG)
-			if err != nil {
-				return
-			}
-			if masterServer.PrivateIP != "" {
-				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
-					Type:    core.NodeInternalIP,
-					Address: masterServer.PrivateIP,
-				})
-			}
-			if masterServer.PublicIP != "" {
-				cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
-					Type:    core.NodeExternalIP,
-					Address: masterServer.PublicIP,
-				})
-			}
-
-			var kc kubernetes.Interface
-			kc, err = cm.GetAdminClient()
-			if err != nil {
-				return
-			}
-			// wait for nodes to start
-			if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
-				return
-			}
-
-			masterNG.Status.Nodes = 1
-			masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(masterNG)
-			if err != nil {
-				return
-			}
-
-			// needed to get master_internal_ip
-			cm.cluster.Status.Phase = api.ClusterReady
-			if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
-				return
-			}
-			// need to run ccm
-			if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
+			if err = cm.Create(cm.cluster.Spec.ClusterAPI, leaderMaster); err != nil {
 				return
 			}
 
@@ -184,57 +155,98 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "MasterInstance",
-			Message:  "master instance(s) already exist",
+			Message:  fmt.Sprintf("master instance %v already exist", leaderMaster.Name),
 		})
 	}
+	if haSetup {
+		cm.cluster.Spec.ClusterAPI.Status.APIEndpoints = []clusterv1.APIEndpoint{
+			{
+				Host: lbIp,
+				Port: int(cm.cluster.Spec.API.BindPort),
+			},
+		}
 
-	return
+	}
+	for m := range cm.cluster.Spec.Masters {
+		cm.cluster.Spec.Masters[m].Labels[api.EtcdServerAddress] = strings.Join(cm.cluster.Spec.ETCDServers, ",")
+	}
+	Store(cm.ctx).Clusters().Update(cm.cluster)
+
+	var kc kubernetes.Interface
+	kc, err = cm.GetAdminClient()
+	if err != nil {
+		return
+	}
+	// wait for nodes to start
+	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
+		return
+	}
+
+	// needed to get master_internal_ip
+	cm.cluster.Status.Phase = api.ClusterReady
+	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+		return
+	}
+
+	// need to run ccm
+	if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
+		return
+	}
+
+	ca, err := NewClusterApi(cm.ctx, cm.cluster, kc)
+	if err != nil {
+		return acts, err
+	}
+	if err := ca.Apply(); err != nil {
+		return acts, err
+	}
+	return acts, err
 }
 
 // Scales up/down regular node groups
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
-	var nodeGroups []*api.NodeGroup
-	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+	Logger(cm.ctx).Infoln("scaling machine set")
+	var cs clientset.Interface
+	cs, err = NewClusterApiClient(cm.ctx, cm.cluster)
 	if err != nil {
 		return
 	}
-	var token string
-	var kc kubernetes.Interface
-	if cm.cluster.Status.Phase != api.ClusterPending {
-		kc, err = cm.GetAdminClient()
-		if err != nil {
+	client := cs.ClusterV1alpha1()
+
+	var machineSet []*clusterv1.MachineSet
+	//var msc *clusterv1.MachineSet
+	machineSet, err = Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+	if err != nil {
+		return
+	}
+	for _, ms := range machineSet {
+		if ms.DeletionTimestamp != nil {
+			if err = client.MachineSets(core.NamespaceDefault).Delete(ms.Name, &metav1.DeleteOptions{}); err != nil {
+				return
+			}
+			err = Store(cm.ctx).MachineSet(cm.cluster.Name).Delete(ms.Name)
 			return
 		}
-		if !dryRun {
-			if token, err = GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration); err != nil {
+
+		_, err = client.MachineSets(core.NamespaceDefault).Get(ms.Name, metav1.GetOptions{})
+		if kerr.IsNotFound(err) {
+			_, err = client.MachineSets(core.NamespaceDefault).Create(ms)
+			if err != nil {
 				return
 			}
-			if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
+		} else {
+			if _, err = client.MachineSets(core.NamespaceDefault).Update(ms); err != nil {
 				return
 			}
+
+			//patch makes provider config null :(. TODO(): why??
+			/*if _, err = PatchMachineSet(cs, msc, ms); err != nil {
+				return
+			}*/
 		}
 
 	}
-	for _, ng := range nodeGroups {
-		if ng.IsMaster() {
-			continue
-		}
-		igm := NewNodeGroupManager(cm.ctx, ng, cm.conn, kc, cm.cluster, token,
-			func() error {
-				_, e2 := cm.conn.createOrUpdateStackScript(ng, token)
-				return e2
-			},
-			func() error {
-				return cm.conn.deleteStackScript(ng)
-			},
-		)
-		var a2 []api.Action
-		a2, err = igm.Apply(dryRun)
-		if err != nil {
-			return
-		}
-		acts = append(acts, a2...)
-	}
+
 	return
 }
 
@@ -253,20 +265,11 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if err != nil {
 		return
 	}
-	var nodeGroups []*api.NodeGroup
-	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return
-	}
-	var masterNG *api.NodeGroup
-	masterNG, err = FindMasterNodeGroup(nodeGroups)
-	if err != nil {
-		return
-	}
-	masterNodes := &core.NodeList{}
-	masterNodes, err = kc.CoreV1().Nodes().List(metav1.ListOptions{
+
+	nodes := &core.NodeList{}
+	nodes, err = kc.CoreV1().Nodes().List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.NodePoolKey: masterNG.Name,
+			//api.NodePoolKey: masterNG.Name,
 		}).String(),
 	})
 	if err != nil && !kerr.IsNotFound(err) {
@@ -278,13 +281,21 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Will delete master instance with name %v", cm.namer.MasterName()),
 		})
 		if !dryRun {
-			for _, masterInstance := range masterNodes.Items {
-				err = cm.conn.DeleteInstanceByProviderID(masterInstance.Spec.ProviderID)
+			for _, instance := range nodes.Items {
+				err = cm.conn.DeleteInstanceByProviderID(instance.Spec.ProviderID)
 				if err != nil {
-					Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", masterInstance.Spec.ProviderID, err)
+					Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", instance.Spec.ProviderID, err)
+				}
+				err = cm.conn.deleteStackScript(instance.Name, string(clustercommon.MasterRole))
+				if err != nil {
+					Logger(cm.ctx).Infof("Failed to delete stack script %s. Reason: %s", instance.Name, err)
 				}
 			}
 		}
+	}
+
+	if IsHASetup(cm.cluster) {
+		cm.conn.deleteLoadBalancer(cm.namer.LoadBalancerName())
 	}
 
 	// Failed

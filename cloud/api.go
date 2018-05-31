@@ -21,7 +21,6 @@ type Interface interface {
 	SSHGetter
 	GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error)
 	//GetDefaultMachineSpec(cluster *api.Cluster, sku string) ()
-	SetDefaults(in *api.Cluster) error
 	SetDefaultCluster(in *api.Cluster, conf *api.ClusterProviderConfig) error
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
@@ -47,7 +46,7 @@ type NodeGroupManager interface {
 }
 
 type InstanceManager interface {
-	CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error)
+	CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.MachineProviderStatus, error)
 	DeleteInstanceByProviderID(providerID string) error
 }
 
