@@ -6,7 +6,6 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1"
 	. "github.com/pharmer/pharmer/cloud"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
@@ -124,18 +123,13 @@ func (cm *ClusterManager) Delete(machine *clusterv1.Machine) error {
 		Logger(cm.ctx).Infof("Skipped deleting a VM that is already deleted.\n")
 		return nil
 	}
-	kc, err := cm.GetAdminClient()
-	if err != nil {
-		return err
+
+	if err = cm.conn.deleteInstance(instance.LinodeId); err != nil {
+		Logger(cm.ctx).Infof("error on deleting linode instance. Reason %v", err)
 	}
 
-	node, err := kc.CoreV1().Nodes().Get(machine.Name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	if err = cm.conn.DeleteInstanceByProviderID(node.Spec.ProviderID); err != nil {
-		Logger(cm.ctx).Infoln("errror on deleting %v", err)
+	if err = cm.conn.deleteStackScript(machine.Name, string(machine.Spec.Roles[0])); err != nil {
+		Logger(cm.ctx).Infof("errror on deleting stack script. Reason = %v", err)
 	}
 
 	if cm.actuator.machineClient != nil {
@@ -207,7 +201,6 @@ func (cm *ClusterManager) Exists(machine *clusterv1.Machine) (bool, error) {
 		return false, err
 	}
 	i, err := cm.conn.instanceIfExists(machine)
-	//return true, nil
 	if err != nil {
 		return false, nil
 	}

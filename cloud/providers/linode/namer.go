@@ -23,7 +23,7 @@ func (n namer) GenSSHKeyExternalID() string {
 }
 
 func (n namer) StartupScriptName(ng, role string) string {
-	return n.cluster.Name + "-" + ng + "-" + role
+	return ng + "-" + role
 }
 
 func (n namer) LoadBalancerName() string {

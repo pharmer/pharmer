@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
@@ -124,7 +125,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	haSetup := IsHASetup(cm.cluster)
 	if haSetup {
 		Logger(cm.ctx).Info("Creating loadbalancer")
-		lbIp, err = cm.conn.createLoadBalancer(cm.ctx, cm.namer.LoadBalancerName())
+		lbIp, err = cm.conn.createLoadBalancer(cm.namer.LoadBalancerName())
 		if err != nil {
 			return
 		}
@@ -265,8 +266,8 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	masterNodes := &core.NodeList{}
-	masterNodes, err = kc.CoreV1().Nodes().List(metav1.ListOptions{
+	nodes := &core.NodeList{}
+	nodes, err = kc.CoreV1().Nodes().List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			//api.NodePoolKey: masterNG.Name,
 		}).String(),
@@ -280,13 +281,21 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Will delete master instance with name %v", cm.namer.MasterName()),
 		})
 		if !dryRun {
-			for _, masterInstance := range masterNodes.Items {
-				err = cm.conn.DeleteInstanceByProviderID(masterInstance.Spec.ProviderID)
+			for _, instance := range nodes.Items {
+				err = cm.conn.DeleteInstanceByProviderID(instance.Spec.ProviderID)
 				if err != nil {
-					Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", masterInstance.Spec.ProviderID, err)
+					Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", instance.Spec.ProviderID, err)
+				}
+				err = cm.conn.deleteStackScript(instance.Name, string(clustercommon.MasterRole))
+				if err != nil {
+					Logger(cm.ctx).Infof("Failed to delete stack script %s. Reason: %s", instance.Name, err)
 				}
 			}
 		}
+	}
+
+	if IsHASetup(cm.cluster) {
+		cm.conn.deleteLoadBalancer(cm.namer.LoadBalancerName())
 	}
 
 	// Failed

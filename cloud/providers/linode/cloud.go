@@ -17,6 +17,7 @@ import (
 )
 
 var errLBNotFound = errors.New("loadbalancer not found")
+var errLinodeNotFound = errors.New("linode not found")
 
 type cloudConnector struct {
 	ctx     context.Context
@@ -183,15 +184,11 @@ func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*linod
 	fmt.Println(machine.Name, "<><><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 	for _, lin := range linodes.Linodes {
 		if lin.Label.String() == machine.Name {
-			l, err := conn.client.Linode.List(lin.LinodeId)
-			if err != nil {
-				return nil, err
-			}
-			return &l.Linodes[0], nil
+			return &lin, nil
 		}
 	}
 
-	return nil, fmt.Errorf("no droplet found with %v name", machine.Name)
+	return nil, nil
 }
 
 func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine, token string) (int, error) {
@@ -234,8 +231,8 @@ func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine
 	return resp.StackScriptId.StackScriptId, nil
 }
 
-func (conn *cloudConnector) deleteStackScript(machineConf *api.MachineProviderConfig, role string) error {
-	scriptName := conn.namer.StartupScriptName(machineConf.Config.SKU, role)
+func (conn *cloudConnector) deleteStackScript(machineName string, role string) error {
+	scriptName := conn.namer.StartupScriptName(machineName, role)
 	scripts, err := conn.client.StackScript.List(0)
 	if err != nil {
 		return err
@@ -398,6 +395,13 @@ func (conn *cloudConnector) getInstanceStatus(linodeId int) (*api.MachineProvide
 	return &node, nil
 
 }
+
+func (conn *cloudConnector) deleteInstance(id int) error {
+	_, err := conn.client.Linode.Delete(id, true)
+	Logger(conn.ctx).Infof("Droplet %v deleted", id)
+	return err
+}
+
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
 	id, err := serverIDFromProviderID(providerID)
 	if err != nil {
@@ -436,7 +440,7 @@ func serverIDFromProviderID(providerID string) (int, error) {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) createLoadBalancer(ctx context.Context, name string) (string, error) {
+func (conn *cloudConnector) createLoadBalancer(name string) (string, error) {
 	lb, err := conn.lbByName(name)
 	if err != nil {
 		if err == errLBNotFound {
@@ -578,6 +582,15 @@ func (conn *cloudConnector) createNoadBalancer(name string) (int, error) {
 		return -1, err
 	}
 	return resp.NodeBalancerId.NodeBalancerId, nil
+}
+
+func (conn *cloudConnector) deleteLoadBalancer(lbName string) error {
+	lb, err := conn.lbByName(lbName)
+	if err != nil {
+		return err
+	}
+	_, err = conn.client.NodeBalancer.Delete(lb.NodeBalancerId)
+	return err
 }
 
 func mergeMaps(first, second map[string]string) map[string]string {
