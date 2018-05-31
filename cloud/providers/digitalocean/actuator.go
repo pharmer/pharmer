@@ -105,6 +105,9 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 
 		if cm.actuator.machineClient != nil {
 			return cm.updateAnnotations(machine)
+		} else {
+			cm.cluster.Spec.ClusterAPI = cluster
+			Store(cm.ctx).Clusters().Update(cm.cluster)
 		}
 	} else {
 		Logger(cm.ctx).Infoln("Skipped creating a machine that already exists.")

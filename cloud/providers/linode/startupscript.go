@@ -31,6 +31,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		NetworkProvider:   clusterConf.NetworkProvider,
 		Provider:          clusterConf.CloudProvider,
 		ExternalProvider:  true, // Linode uses out-of-tree CCM
+		NodeName:          machine.Name,
 	}
 	{
 		td.KubeletExtraArgs = map[string]string{}
@@ -114,7 +115,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
-		//	NodeName:                   machine.Name,
+		NodeName:                   machine.Name,
 	}
 	if _, found := machine.Labels[api.PharmerHASetup]; found {
 		td.HASetup = true
@@ -163,7 +164,7 @@ EOF
 {{ end }}
 
 {{ define "prepare-host" }}
-HOSTNAME=$(pre-k linode hostname -k {{ .ClusterName }})
+HOSTNAME={{ .NodeName }}
 hostnamectl set-hostname $HOSTNAME
 NODE_NAME=$HOSTNAME
 {{ end }}

@@ -284,3 +284,26 @@ func (c *Cluster) MachineProviderConfig(machine *clusterv1.Machine) (*MachinePro
 	}
 	return providerConfig, nil
 }
+
+func (c *Cluster) MachineProviderStatus(machine *clusterv1.Machine) *MachineProviderStatus {
+	raw := machine.Status.ProviderStatus.Raw
+	providerStatus := &MachineProviderStatus{}
+	err := json.Unmarshal(raw, providerStatus)
+	if err != nil {
+		fmt.Println("Unable to unmarshal provider config: %v", err)
+	}
+	return providerStatus
+}
+
+func (c *Cluster) SetMachineProviderStatus(machine *clusterv1.Machine, status *MachineProviderStatus) (*clusterv1.Machine, error) {
+	bytes, err := json.Marshal(status)
+	if err != nil {
+		fmt.Println("Unable to marshal provider status: %v", err)
+		return machine, err
+	}
+	machine.Status.ProviderStatus = &runtime.RawExtension{
+		Raw: bytes,
+	}
+
+	return machine, nil
+}

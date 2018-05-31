@@ -36,7 +36,7 @@ func (cm *ClusterManager) InitializeActuator(machineClient client.MachineInterfa
 }
 
 func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	Logger(cm.ctx).Infoln("call for creating machine")
+	Logger(cm.ctx).Infoln("call for creating machine with name ", machine.Name)
 	if err := cm.PrepareCloud(cluster.Name); err != nil {
 		return err
 	}
@@ -47,6 +47,7 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 	if !exists {
 		token := ""
 		if !IsMaster(machine) {
+			Logger(cm.ctx).Infof("worker machine with name %v needs to be created", machine.Name)
 			kc, err := cm.GetAdminClient()
 			if err != nil {
 				return err
@@ -65,16 +66,14 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 		if err != nil {
 			return err
 		}
+		Logger(cm.ctx).Infof("Created instace %v for machine %v", instance.Name, machine.Name)
+		machine, err = cm.cluster.SetMachineProviderStatus(machine, instance)
+		if err != nil {
+			return err
+		}
 
 		if IsMaster(machine) {
-			/*var providerConf *api.MachineProviderConfig
-			providerConf, err = cm.cluster.MachineProviderConfig(machine)
-			if err != nil {
-				return err
-			}*/
-
 			if _, found := machine.Labels[api.PharmerHASetup]; found {
-
 				ip := fmt.Sprintf("%v:%v", instance.PrivateIP, kubeadmapi.DefaultAPIBindPort)
 				if err = cm.conn.addNodeToBalancer(cm.namer.LoadBalancerName(), instance.Name, ip); err != nil {
 					return err
@@ -93,6 +92,12 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 				})
 			}
 			cm.cluster.Spec.ClusterAPI = cluster
+			for i := range cm.cluster.Spec.Masters {
+				if cm.cluster.Spec.Masters[i].Name == machine.Name {
+					cm.cluster.Spec.Masters[i] = machine
+				}
+			}
+
 			Store(cm.ctx).Clusters().Update(cm.cluster)
 		}
 	} else {
@@ -102,7 +107,7 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 }
 
 func (cm *ClusterManager) Delete(machine *clusterv1.Machine) error {
-	Logger(cm.ctx).Infoln("call for deleting machine")
+	Logger(cm.ctx).Infoln("call for deleting machine with name ", machine.Name)
 	clusterName := machine.ClusterName
 	if _, found := machine.Labels[api.PharmerCluster]; found {
 		clusterName = machine.Labels[api.PharmerCluster]
@@ -193,7 +198,7 @@ func (cm *ClusterManager) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 }
 
 func (cm *ClusterManager) Exists(machine *clusterv1.Machine) (bool, error) {
-	Logger(cm.ctx).Infoln("call for checking machine existence")
+	Logger(cm.ctx).Infoln("call for checking machine existence with name ", machine.Name)
 	clusterName := machine.ClusterName
 	if _, found := machine.Labels[api.PharmerCluster]; found {
 		clusterName = machine.Labels[api.PharmerCluster]
@@ -202,6 +207,7 @@ func (cm *ClusterManager) Exists(machine *clusterv1.Machine) (bool, error) {
 		return false, err
 	}
 	i, err := cm.conn.instanceIfExists(machine)
+	//return true, nil
 	if err != nil {
 		return false, nil
 	}
@@ -228,7 +234,7 @@ func (cm *ClusterManager) updateAnnotations(machine *clusterv1.Machine) error {
 
 // Sets the status of the instance identified by the given machine to the given machine
 func (cm *ClusterManager) updateInstanceStatus(machine *clusterv1.Machine) error {
-	fmt.Println("updating instance status")
+	Logger(cm.ctx).Infof("updating instance status of machine %v", machine.Name)
 	sm := NewStatusManager(cm.actuator.machineClient, cm.actuator.scheme)
 	status := sm.Initialize(machine)
 	currentMachine, err := GetCurrentMachineIfExists(cm.actuator.machineClient, machine)

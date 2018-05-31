@@ -363,7 +363,7 @@ done
 
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 kubectl apply \
-  -f https://raw.githubusercontent.com/pharmer/addons/master/calico/2.6/calico.yaml \
+  -f https://raw.githubusercontent.com/pharmer/addons/6b6b003246b137381cc4852114cdadc647146f80/calico/2.6/calico.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 	_ = template.Must(StartupScriptTemplate.New("canal").Parse(`

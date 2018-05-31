@@ -160,8 +160,8 @@ const (
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) getStartupScriptID(machineConf *api.MachineProviderConfig, role string) (int, error) {
-	scriptName := conn.namer.StartupScriptName(machineConf.Config.SKU, role)
+func (conn *cloudConnector) getStartupScriptID(machine *clusterv1.Machine, role string) (int, error) {
+	scriptName := conn.namer.StartupScriptName(machine.Name, role)
 	scripts, err := conn.client.StackScript.List(0)
 	if err != nil {
 		return 0, err
@@ -179,12 +179,10 @@ func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*linod
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println(machine.Name, "<><><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 	for _, lin := range linodes.Linodes {
-		nodeName, err := conn.getLinodeName(lin.LinodeId)
-		if err != nil {
-			return nil, err
-		}
-		if lin.Label.String() == nodeName {
+		if lin.Label.String() == machine.Name {
 			l, err := conn.client.Linode.List(lin.LinodeId)
 			if err != nil {
 				return nil, err
@@ -196,31 +194,14 @@ func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*linod
 	return nil, fmt.Errorf("no droplet found with %v name", machine.Name)
 }
 
-func (conn *cloudConnector) getLinodeName(id int) (string, error) {
-	ips, err := conn.client.Ip.List(id, -1)
-	if err != nil {
-		return "", err
-	}
-	publicIp := ""
-	for _, ip := range ips.FullIPAddresses {
-		if ip.IsPublic == 1 {
-			publicIp = ip.IPAddress
-		}
-	}
-	if publicIp == "" {
-		return "", fmt.Errorf("pulic ip not found")
-	}
-	parts := strings.SplitN(publicIp, ".", 4)
-	return fmt.Sprintf("%s-%03s-%03s-%03s-%03s", conn.cluster.Name, parts[0], parts[1], parts[2], parts[3]), nil
-}
 func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine, token string) (int, error) {
-	machineConf, err := conn.cluster.MachineProviderConfig(machine)
-	if err != nil {
-		return 0, err
-	}
+	Logger(conn.ctx).Infoln("Creating stack script for machine ", machine.Name)
 
-	scriptName := conn.namer.StartupScriptName(machineConf.Config.SKU, string(machine.Spec.Roles[0]))
+	scriptName := conn.namer.StartupScriptName(machine.Name, string(machine.Spec.Roles[0]))
 	script, err := conn.renderStartupScript(conn.cluster, machine, token)
+	fmt.Println("----------------------------")
+	fmt.Println(script)
+	fmt.Println("----------------------------")
 	if err != nil {
 		return 0, err
 	}
@@ -237,18 +218,19 @@ func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine
 			if err != nil {
 				return 0, err
 			}
-			//Logger(conn.ctx).Infof("Stack script for role %v updated", ng.Role())
+			Logger(conn.ctx).Infof("Stack script for machine %v updated", machine.Name)
 			return resp.StackScriptId.StackScriptId, nil
 		}
 	}
 
+	fmt.Println(conn.cluster.ProviderConfig().InstanceImage, "*************")
 	resp, err := conn.client.StackScript.Create(scriptName, conn.cluster.ProviderConfig().InstanceImage, script, map[string]string{
 		"Description": fmt.Sprintf("Startup script for NodeGroup %s of Cluster %s", machine.Name, conn.cluster.Name),
 	})
 	if err != nil {
 		return 0, err
 	}
-	//	Logger(conn.ctx).Infof("Stack script for role %v created", ng.Role())
+	Logger(conn.ctx).Infof("Stack script for role %v created", machine.Spec.Roles)
 	return resp.StackScriptId.StackScriptId, nil
 }
 
@@ -271,7 +253,7 @@ func (conn *cloudConnector) deleteStackScript(machineConf *api.MachineProviderCo
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error) {
+func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.MachineProviderStatus, error) {
 	clusterConfig := cluster.ProviderConfig()
 	machineConfig, err := cluster.MachineProviderConfig(machine)
 	if err != nil {
@@ -282,6 +264,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(dcId, "................")
 	planId, err := strconv.Atoi(machineConfig.Config.SKU)
 	if err != nil {
 		return nil, err
@@ -300,7 +283,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 		return nil, err
 	}
 
-	node := api.NodeInfo{
+	node := api.MachineProviderStatus{
 		ExternalID: strconv.Itoa(linodeId),
 	}
 	ips, err := conn.client.Ip.List(linodeId, -1)
@@ -314,8 +297,8 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 			node.PrivateIP = ip.IPAddress
 		}
 	}
-	parts := strings.SplitN(node.PublicIP, ".", 4)
-	node.Name = fmt.Sprintf("%s-%03s-%03s-%03s-%03s", conn.cluster.Name, parts[0], parts[1], parts[2], parts[3])
+
+	node.Name = machine.Name
 
 	_, err = conn.client.Linode.Update(linodeId, map[string]interface{}{
 		"Label": node.Name,
@@ -324,7 +307,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 		return nil, err
 	}
 
-	scriptId, err := conn.getStartupScriptID(machineConfig, string(machine.Spec.Roles[0]))
+	scriptId, err := conn.getStartupScriptID(machine, string(machine.Spec.Roles[0]))
 	if err != nil {
 		return nil, err
 	}
@@ -335,6 +318,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 		return nil, err
 	}
 	distributionID, err := strconv.Atoi(clusterConfig.InstanceImage)
+	fmt.Println(clusterConfig.InstanceImage, "***")
 	if err != nil {
 		return nil, err
 	}
@@ -394,6 +378,26 @@ func (conn *cloudConnector) bootToGrub2(linodeId, configId int, name string) err
 	return err
 }
 
+func (conn *cloudConnector) getInstanceStatus(linodeId int) (*api.MachineProviderStatus, error) {
+	node := api.MachineProviderStatus{
+		ExternalID: strconv.Itoa(linodeId),
+	}
+	ips, err := conn.client.Ip.List(linodeId, -1)
+	if err != nil {
+		return nil, err
+	}
+	for _, ip := range ips.FullIPAddresses {
+		if ip.IsPublic == 1 {
+			node.PublicIP = ip.IPAddress
+		} else {
+			node.PrivateIP = ip.IPAddress
+		}
+	}
+	parts := strings.SplitN(node.PublicIP, ".", 4)
+	node.Name = fmt.Sprintf("%s-%03s-%03s-%03s-%03s", conn.cluster.Name, parts[0], parts[1], parts[2], parts[3])
+	return &node, nil
+
+}
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
 	id, err := serverIDFromProviderID(providerID)
 	if err != nil {

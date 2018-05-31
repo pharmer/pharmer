@@ -46,7 +46,7 @@ type NodeGroupManager interface {
 }
 
 type InstanceManager interface {
-	CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error)
+	CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.MachineProviderStatus, error)
 	DeleteInstanceByProviderID(providerID string) error
 }
 
