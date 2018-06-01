@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
 	api "github.com/pharmer/pharmer/apis/v1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
@@ -271,6 +270,13 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 		return nil, err
 	}
 	linodeId := server.LinodeId.LinodeId
+	_, err = conn.client.Linode.Update(linodeId, map[string]interface{}{
+		"Label": machine.Name,
+	})
+	if err != nil {
+		conn.deleteInstance(linodeId)
+		return nil, err
+	}
 	_, err = conn.client.Ip.AddPrivate(linodeId)
 	if err != nil {
 		return nil, err
@@ -297,12 +303,8 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 
 	node.Name = machine.Name
 
-	_, err = conn.client.Linode.Update(linodeId, map[string]interface{}{
-		"Label": node.Name,
-	})
-	if err != nil {
-		return nil, err
-	}
+
+
 
 	scriptId, err := conn.getStartupScriptID(machine, string(machine.Spec.Roles[0]))
 	if err != nil {

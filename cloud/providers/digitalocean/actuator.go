@@ -61,6 +61,11 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 		if err != nil {
 			return err
 		}
+		Logger(cm.ctx).Infof("Created instace %v for machine %v", instance.Name, machine.Name)
+		machine, err = cm.cluster.SetMachineProviderStatus(machine, instance)
+		if err != nil {
+			return err
+		}
 
 		if IsMaster(machine) {
 			var providerConf *api.MachineProviderConfig
@@ -107,6 +112,12 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 			return cm.updateAnnotations(machine)
 		} else {
 			cm.cluster.Spec.ClusterAPI = cluster
+			for i := range cm.cluster.Spec.Masters {
+				if cm.cluster.Spec.Masters[i].Name == machine.Name {
+					cm.cluster.Spec.Masters[i] = machine
+				}
+			}
+
 			Store(cm.ctx).Clusters().Update(cm.cluster)
 		}
 	} else {

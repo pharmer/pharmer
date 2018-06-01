@@ -260,37 +260,32 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	var kc kubernetes.Interface
-	kc, err = cm.GetAdminClient()
+	var cs clientset.Interface
+	cs, err = NewClusterApiClient(cm.ctx, cm.cluster)
 	if err != nil {
 		return
 	}
+	client := cs.ClusterV1alpha1()
+	machineSet, err := client.MachineSets(core.NamespaceDefault).List(metav1.ListOptions{})
+	if err != nil {
+		Logger(cm.ctx).Infoln(err)
+	}
+	for _, ms := range machineSet.Items {
+		client.MachineSets(core.NamespaceDefault).Delete(ms.Name, &metav1.DeleteOptions{})
+	}
 
-	nodes := &core.NodeList{}
-	nodes, err = kc.CoreV1().Nodes().List(metav1.ListOptions{
+	masterMachines, err := client.Machines(core.NamespaceDefault).List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			//api.NodePoolKey: masterNG.Name,
+			api.RoleMasterKey:  "",
 		}).String(),
 	})
-	if err != nil && !kerr.IsNotFound(err) {
-		return
-	} else if err == nil {
-		acts = append(acts, api.Action{
-			Action:   api.ActionDelete,
-			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("Will delete master instance with name %v", cm.namer.MasterName()),
-		})
-		if !dryRun {
-			for _, instance := range nodes.Items {
-				err = cm.conn.DeleteInstanceByProviderID(instance.Spec.ProviderID)
-				if err != nil {
-					Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", instance.Spec.ProviderID, err)
-				}
-				err = cm.conn.deleteStackScript(instance.Name, string(clustercommon.MasterRole))
-				if err != nil {
-					Logger(cm.ctx).Infof("Failed to delete stack script %s. Reason: %s", instance.Name, err)
-				}
-			}
+	if err != nil {
+		Logger(cm.ctx).Infoln(err)
+	}
+
+	if !dryRun {
+		for _, instance := range masterMachines.Items {
+			client.Machines(core.NamespaceDefault).Delete(instance.Name, &metav1.DeleteOptions{})
 		}
 	}
 
