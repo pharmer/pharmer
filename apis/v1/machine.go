@@ -32,7 +32,7 @@ type NodeSpec struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type NodeInfo struct {
+type MachineProviderStatus struct {
 	metav1.TypeMeta `json:",inline,omitempty"`
 	Name            string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 	ExternalID      string `json:"externalID,omitempty" protobuf:"bytes,2,opt,name=externalID"`

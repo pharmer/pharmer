@@ -170,7 +170,7 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, sku string, node
 
 	ig := clusterv1.MachineSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:              strings.Replace(sku, "_", "-", -1) + "-pool",
+			Name:              fmt.Sprintf("%v-%v-%v", cluster.Name, strings.Replace(sku, "_", "-", -1), "pool"),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
 		Spec: clusterv1.MachineSetSpec{

@@ -48,7 +48,7 @@ type ApiServerTemplate struct {
 
 var apiServerImage = "pharmer/cluster-apiserver:0.0.3"
 var controllerManagerImage = "pharmer/cluster-controller-manager:0.0.3"
-var machineControllerImage = "pharmer/machine-controller:clusterApi"
+var machineControllerImage = "pharmer/machine-controller:linode"
 
 const (
 	BasePath = ".pharmer/config.d"

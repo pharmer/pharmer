@@ -21,8 +21,8 @@ var kubernetesCNIVersions = map[string]string{
 
 var prekVersions = map[string]string{
 	"1.8.0":  "1.8.0",
-	"1.9.0":  "1.10.1-alpha.5",
-	"1.10.0": "1.10.1-alpha.4",
+	"1.9.0":  "1.10.1-alpha.7",
+	"1.10.0": "1.10.1-alpha.7",
 }
 
 type TemplateData struct {
@@ -197,11 +197,10 @@ pre-k merge master-config \
 	--apiserver-cert-extra-sans=$(pre-k machine public-ips --routable) \
 	--apiserver-cert-extra-sans=$(pre-k machine private-ips) \
 	--node-name=${NODE_NAME:-} \
-    --ha={{ .HASetup }} \
     --etcd-server={{ .ETCDServerAddress}} \
     --tls-enabled=false \
 	> /etc/kubernetes/kubeadm/config.yaml
-pre-k create etcd --config=/etc/kubernetes/kubeadm/config.yaml
+
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 
 {{ if eq .NetworkProvider "flannel" }}
@@ -324,7 +323,7 @@ pre-k get ca-cert --common-name=ca < /etc/kubernetes/pki/ca.key > /etc/kubernete
 cat > /etc/kubernetes/pki/sa.key <<EOF
 {{ .SAKey }}
 EOF
-pre-k get sa-pub < /etc/kubernetes/pki/sa.key > /etc/kubernetes/pki/sa.pub
+pre-k get pub-key < /etc/kubernetes/pki/sa.key > /etc/kubernetes/pki/sa.pub
 
 
 cat > /etc/kubernetes/pki/front-proxy-ca.key <<EOF
@@ -364,7 +363,7 @@ done
 
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 kubectl apply \
-  -f https://raw.githubusercontent.com/pharmer/addons/1c16bd66fde953446615c7715820514b0f97eeda/calico/3.0/calico.yaml \
+  -f https://raw.githubusercontent.com/pharmer/addons/6b6b003246b137381cc4852114cdadc647146f80/calico/2.6/calico.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 	_ = template.Must(StartupScriptTemplate.New("canal").Parse(`

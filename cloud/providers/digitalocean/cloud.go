@@ -233,7 +233,7 @@ func (conn *cloudConnector) releaseReservedIP(ip string) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error) {
+func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.MachineProviderStatus, error) {
 	script, err := conn.renderStartupScript(cluster, machine, token)
 	if err != nil {
 		return nil, err
@@ -287,7 +287,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 	if err != nil {
 		return nil, err
 	}
-	node := api.NodeInfo{
+	node := api.MachineProviderStatus{
 		Name:       host.Name,
 		ExternalID: strconv.Itoa(host.ID),
 	}

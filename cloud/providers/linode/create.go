@@ -3,15 +3,12 @@ package linode
 import (
 	"net"
 	"strings"
-	"time"
 
 	"github.com/appscode/go/crypto/rand"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
@@ -26,20 +23,24 @@ func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (
 	}, nil
 }
 
-func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterProviderConfig) error {
 	n := namer{cluster: cluster}
 
 	// Init object meta
-	cluster.ObjectMeta.UID = uuid.NewUUID()
-	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
-	cluster.ObjectMeta.Generation = time.Now().UnixNano()
-	api.AssignTypeKind(cluster)
+	if err := api.AssignTypeKind(cluster); err != nil {
+		return err
+	}
 
 	// Init spec
-	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
-	cluster.Spec.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
+	config.Region = config.Zone
+	config.SSHKeyName = n.GenSSHKeyExternalID()
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
-	cluster.Spec.Networking.SetDefaults()
+	config.InstanceImage = "ubuntu-16-04-x64"
+	cluster.Spec.ETCDServers = []string{}
+
+	cluster.InitializeClusterApi()
+	cluster.SetNetworkingDefaults(config.NetworkProvider)
+
 	cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
 	cluster.Spec.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
 	cluster.Spec.APIServerExtraArgs = map[string]string{
@@ -52,16 +53,19 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	if cluster.IsMinorVersion("1.9") {
 		cluster.Spec.APIServerExtraArgs["admission-control"] = api.DefaultV19AdmissionControl
 	}
-	cluster.Spec.Cloud.CCMCredentialName = cluster.Spec.CredentialName
-	cluster.Spec.Cloud.Linode = &api.LinodeSpec{
+
+	config.CCMCredentialName = cluster.Spec.CredentialName
+	config.Linode = &api.LinodeSpec{
 		RootPassword: rand.GeneratePassword(),
 	}
 
 	// Init status
-	cluster.Status = api.ClusterStatus{
+	cluster.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,
 	}
-	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
+
+	// add provider config to cluster
+	cluster.SetProviderConfig(config)
 
 	return nil
 }
