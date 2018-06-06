@@ -124,12 +124,9 @@ Outer:
 // Levenshtein distance.
 func RankFind(source string, targets []string) Ranks {
 	var r Ranks
-
-	for index, target := range targets {
-		if match(source, target, noop) {
-			distance := LevenshteinDistance(source, target)
-			r = append(r, Rank{source, target, distance, index})
-		}
+	for _, target := range find(source, targets, noop) {
+		distance := LevenshteinDistance(source, target)
+		r = append(r, Rank{source, target, distance})
 	}
 	return r
 }
@@ -137,12 +134,9 @@ func RankFind(source string, targets []string) Ranks {
 // RankFindFold is a case-insensitive version of RankFind.
 func RankFindFold(source string, targets []string) Ranks {
 	var r Ranks
-
-	for index, target := range targets {
-		if match(source, target, unicode.ToLower) {
-			distance := LevenshteinDistance(source, target)
-			r = append(r, Rank{source, target, distance, index})
-		}
+	for _, target := range find(source, targets, unicode.ToLower) {
+		distance := LevenshteinDistance(source, target)
+		r = append(r, Rank{source, target, distance})
 	}
 	return r
 }
@@ -156,9 +150,6 @@ type Rank struct {
 
 	// Distance is the Levenshtein distance between Source and Target.
 	Distance int
-
-	// Location of Target in original list
-	OriginalIndex int
 }
 
 type Ranks []Rank
