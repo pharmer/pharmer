@@ -89,6 +89,16 @@ func IsHASetup(cluster *api.Cluster) bool {
 	return len(masters) > 1
 }
 
+func ClusterProviderConfig(providerConfig *clusterv1.ProviderConfig) *api.ClusterProviderConfig {
+	raw := providerConfig.Value.Raw
+	clusterConfig := &api.ClusterProviderConfig{}
+	err := json.Unmarshal(raw, clusterConfig)
+	if err != nil {
+		fmt.Println("Unable to unmarshal provider config: %v", err)
+	}
+	return clusterConfig
+}
+
 // WARNING:
 // Returned KubeClient uses admin client cert. This should only be used for cluster provisioning operations.
 func NewAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes.Interface, error) {
@@ -217,14 +227,14 @@ func DeleteDyanamicVolumes(client kubernetes.Interface) error {
 	})
 }
 
-func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cluster *api.Cluster) error {
-	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, clusterConf *api.ClusterProviderConfig) error {
+	cred, err := Store(ctx).Credentials().Get(clusterConf.CredentialName)
 	if err != nil {
 		return err
 	}
 	secret := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: cluster.ProviderConfig().CloudProvider,
+			Name: clusterConf.Cloud.CloudProvider,
 		},
 		StringData: cred.Spec.Data,
 		Type:       core.SecretTypeOpaque,

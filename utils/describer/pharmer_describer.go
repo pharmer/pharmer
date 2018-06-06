@@ -22,7 +22,7 @@ func (d *humanReadableDescriber) describeCluster(item *api.Cluster, describerSet
 
 	return tabbedString(func(out io.Writer) error {
 		fmt.Fprintf(out, "Name:\t%s\n", item.Name)
-		fmt.Fprintf(out, "Version:\t%s\n", item.Spec.KubernetesVersion)
+		fmt.Fprintf(out, "Version:\t%s\n", item.ProviderConfig().KubernetesVersion)
 		describeNodeGroups(nodeGroups, out)
 		return nil
 	})

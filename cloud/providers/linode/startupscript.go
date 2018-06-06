@@ -20,22 +20,23 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 	clusterConf := cluster.ProviderConfig()
 	td := TemplateData{
 		ClusterName:       cluster.Name,
-		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		KubernetesVersion: clusterConf.KubernetesVersion,
 		KubeadmToken:      token,
 		CAHash:            pubkeypin.Hash(CACert(ctx)),
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
 		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
+		ETCDTLSEnabled:    false,
 		APIServerAddress:  cluster.APIServerAddress(),
-		NetworkProvider:   clusterConf.NetworkProvider,
-		Provider:          clusterConf.CloudProvider,
+		NetworkProvider:   clusterConf.Cloud.NetworkProvider,
+		Provider:          clusterConf.Cloud.CloudProvider,
 		ExternalProvider:  true, // Linode uses out-of-tree CCM
 		NodeName:          machine.Name,
 	}
 	{
 		td.KubeletExtraArgs = map[string]string{}
-		for k, v := range cluster.Spec.KubeletExtraArgs {
+		for k, v := range clusterConf.KubeletExtraArgs {
 			td.KubeletExtraArgs[k] = v
 		}
 		machineConfig, err := cluster.MachineProviderConfig(machine)
@@ -51,11 +52,11 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
-		if clusterConf.CCMCredentialName == "" {
+		if clusterConf.Cloud.CCMCredentialName == "" {
 			panic(errors.New("no cloud controller manager credential found"))
 		}
 
-		cred, err := Store(ctx).Credentials().Get(clusterConf.CCMCredentialName)
+		cred, err := Store(ctx).Credentials().Get(clusterConf.Cloud.CCMCredentialName)
 		if err != nil {
 			panic(err)
 		}
@@ -65,7 +66,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		}
 		cloudConfig := &api.LinodeCloudConfig{
 			Token: typed.APIToken(),
-			Zone:  clusterConf.Zone,
+			Zone:  clusterConf.Cloud.Zone,
 		}
 		data, err := json.Marshal(cloudConfig)
 		if err != nil {
@@ -78,6 +79,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 }
 
 func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine) TemplateData {
+	clusterConfig := cluster.ProviderConfig()
 	td := newNodeTemplateData(ctx, cluster, machine, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
@@ -94,15 +96,15 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 			Kind:       "MasterConfiguration",
 		},
 		API: kubeadmapi.API{
-			AdvertiseAddress: cluster.Spec.API.AdvertiseAddress,
-			BindPort:         cluster.Spec.API.BindPort,
+			AdvertiseAddress: clusterConfig.API.AdvertiseAddress,
+			BindPort:         clusterConfig.API.BindPort,
 		},
 		Networking: kubeadmapi.Networking{
 			ServiceSubnet: cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Services.CIDRBlocks[0],
 			PodSubnet:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
 			DNSDomain:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.ServiceDomain,
 		},
-		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		KubernetesVersion: clusterConfig.KubernetesVersion,
 		Etcd: kubeadmapi.Etcd{
 			Image: EtcdImage,
 			//ExtraArgs: extraArgs,
@@ -111,16 +113,20 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 		// "external": cloudprovider not supported for apiserver and controller-manager
 		// https://github.com/kubernetes/kubernetes/pull/50545
 		CloudProvider:              "",
-		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
-		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
-		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
-		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
+		APIServerExtraArgs:         clusterConfig.APIServerExtraArgs,
+		ControllerManagerExtraArgs: clusterConfig.ControllerManagerExtraArgs,
+		SchedulerExtraArgs:         clusterConfig.SchedulerExtraArgs,
+		APIServerCertSANs:          clusterConfig.APIServerCertSANs,
 		NodeName:                   machine.Name,
 	}
 	if _, found := machine.Labels[api.PharmerHASetup]; found {
 		td.HASetup = true
 		td.LoadBalancerIp = machine.Labels[api.PharmerLoadBalancerIP]
 		cfg.APIServerCertSANs = append(cfg.APIServerCertSANs, machine.Labels[api.PharmerLoadBalancerIP])
+	}
+
+	if clusterConfig.IsMinorVersion("1.10") {
+		td.ETCDTLSEnabled = true
 	}
 
 	td.MasterConfiguration = &cfg

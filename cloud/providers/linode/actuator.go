@@ -39,7 +39,8 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 	if err := cm.PrepareCloud(cluster.Name); err != nil {
 		return err
 	}
-	exists, err := cm.Exists(machine)
+
+	exists, err := cm.Exists(cluster, machine)
 	if err != nil {
 		return err
 	}
@@ -78,7 +79,7 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 					return err
 				}
 			}
-			cm.cluster.Spec.ETCDServers = append(cm.cluster.Spec.ETCDServers, instance.PublicIP)
+			cm.cluster.ProviderConfig().ETCDServers = append(cm.cluster.ProviderConfig().ETCDServers, instance.PublicIP)
 		}
 
 		if cm.actuator.machineClient != nil {
@@ -87,7 +88,7 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 			if instance.PublicIP != "" {
 				cluster.Status.APIEndpoints = append(cluster.Status.APIEndpoints, clusterv1.APIEndpoint{
 					Host: instance.PublicIP,
-					Port: int(cm.cluster.Spec.API.BindPort),
+					Port: int(cm.cluster.ProviderConfig().API.BindPort),
 				})
 			}
 			cm.cluster.Spec.ClusterAPI = cluster
@@ -105,13 +106,9 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 	return nil
 }
 
-func (cm *ClusterManager) Delete(machine *clusterv1.Machine) error {
+func (cm *ClusterManager) Delete(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	Logger(cm.ctx).Infoln("call for deleting machine with name ", machine.Name)
-	clusterName := machine.ClusterName
-	if _, found := machine.Labels[api.PharmerCluster]; found {
-		clusterName = machine.Labels[api.PharmerCluster]
-	}
-	if err := cm.PrepareCloud(clusterName); err != nil {
+	if err := cm.PrepareCloud(cluster.Name); err != nil {
 		return err
 	}
 	instance, err := cm.conn.instanceIfExists(machine)
@@ -191,13 +188,9 @@ func (cm *ClusterManager) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 	return cm.updateInstanceStatus(goalMachine)
 }
 
-func (cm *ClusterManager) Exists(machine *clusterv1.Machine) (bool, error) {
+func (cm *ClusterManager) Exists(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
 	Logger(cm.ctx).Infoln("call for checking machine existence with name ", machine.Name)
-	clusterName := machine.ClusterName
-	if _, found := machine.Labels[api.PharmerCluster]; found {
-		clusterName = machine.Labels[api.PharmerCluster]
-	}
-	if err := cm.PrepareCloud(clusterName); err != nil {
+	if err := cm.PrepareCloud(cluster.Name); err != nil {
 		return false, err
 	}
 	i, err := cm.conn.instanceIfExists(machine)
@@ -210,7 +203,7 @@ func (cm *ClusterManager) Exists(machine *clusterv1.Machine) (bool, error) {
 func (cm *ClusterManager) updateAnnotations(machine *clusterv1.Machine) error {
 	//	config, err := cloud.GetProviderconfig(cm.codecFactory, machine.Spec.ProviderConfig)
 	name := machine.ObjectMeta.Name
-	zone := cm.cluster.ProviderConfig().Zone
+	zone := cm.cluster.ProviderConfig().Cloud.Zone
 
 	if machine.ObjectMeta.Annotations == nil {
 		machine.ObjectMeta.Annotations = make(map[string]string)

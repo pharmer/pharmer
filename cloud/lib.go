@@ -35,7 +35,7 @@ func Create(ctx context.Context, cluster *api.Cluster, config *api.ClusterProvid
 		return nil, errors.New("missing cluster")
 	} else if cluster.Name == "" {
 		return nil, errors.New("missing cluster name")
-	} else if cluster.Spec.KubernetesVersion == "" {
+	} else if config.KubernetesVersion == "" {
 		return nil, errors.New("missing cluster version")
 	}
 
@@ -44,7 +44,7 @@ func Create(ctx context.Context, cluster *api.Cluster, config *api.ClusterProvid
 		return nil, errors.Errorf("cluster exists with name `%s`", cluster.Name)
 	}
 
-	cm, err := GetCloudManager(config.CloudProvider, ctx)
+	cm, err := GetCloudManager(config.Cloud.CloudProvider, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func Create(ctx context.Context, cluster *api.Cluster, config *api.ClusterProvid
 	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
 		return nil, err
 	}
-	if !managedProviders.Has(cluster.ProviderConfig().CloudProvider) {
+	if !managedProviders.Has(config.Cloud.CloudProvider) {
 		masters, err := CreateMasterMachines(ctx, cluster, haNode)
 		if err != nil {
 			return nil, err
@@ -85,7 +85,8 @@ func Create(ctx context.Context, cluster *api.Cluster, config *api.ClusterProvid
 }
 
 func CreateMasterMachines(ctx context.Context, cluster *api.Cluster, count int32) ([]*clusterv1.Machine, error) {
-	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
+	clsterConfig := cluster.ProviderConfig()
+	cm, err := GetCloudManager(clsterConfig.Cloud.CloudProvider, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +134,7 @@ func CreateMasterMachines(ctx context.Context, cluster *api.Cluster, count int32
 					},
 				},
 				Versions: clusterv1.MachineVersionInfo{
-					ControlPlane: cluster.Spec.KubernetesVersion,
+					ControlPlane: clsterConfig.KubernetesVersion,
 				},
 			},
 		}
@@ -145,7 +146,8 @@ func CreateMasterMachines(ctx context.Context, cluster *api.Cluster, count int32
 }
 
 func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, sku string, nodeType api.NodeType, count int32, spotPriceMax float64) error {
-	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
+	clsterConfig := cluster.ProviderConfig()
+	cm, err := GetCloudManager(clsterConfig.Cloud.CloudProvider, ctx)
 	if err != nil {
 		return err
 	}
@@ -200,7 +202,7 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, sku string, node
 						},
 					},
 					Versions: clusterv1.MachineVersionInfo{
-						ControlPlane: cluster.Spec.KubernetesVersion,
+						ControlPlane: clsterConfig.KubernetesVersion,
 					},
 				},
 			},
@@ -289,7 +291,7 @@ func GetSSHConfig(ctx context.Context, nodeName string, cluster *api.Cluster) (*
 		return nil, err
 	}
 
-	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
+	cm, err := GetCloudManager(cluster.ProviderConfig().Cloud.CloudProvider, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +351,7 @@ func Apply(ctx context.Context, opts *options.ApplyConfig) ([]api.Action, error)
 		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", opts.ClusterName, err)
 	}
 
-	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
+	cm, err := GetCloudManager(cluster.ProviderConfig().Cloud.CloudProvider, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +387,7 @@ func CheckForUpdates(ctx context.Context, name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
+	cm, err := GetCloudManager(cluster.ProviderConfig().Cloud.CloudProvider, ctx)
 	if err != nil {
 		return "", err
 	}
@@ -403,7 +405,7 @@ func UpdateSpec(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error)
 		return nil, errors.New("missing cluster")
 	} else if cluster.Name == "" {
 		return nil, errors.New("missing cluster name")
-	} else if cluster.Spec.KubernetesVersion == "" {
+	} else if cluster.ProviderConfig().KubernetesVersion == "" {
 		return nil, errors.New("missing cluster version")
 	}
 

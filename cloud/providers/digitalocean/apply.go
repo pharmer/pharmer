@@ -94,6 +94,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 
 // Creates network, and creates ready master(s)
 func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
+	clusterConf := cm.cluster.ProviderConfig()
 	var found bool
 	found, _, err = cm.conn.getPublicKey()
 	if err != nil {
@@ -191,13 +192,13 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		cm.cluster.Spec.ClusterAPI.Status.APIEndpoints = []clusterv1.APIEndpoint{
 			{
 				Host: lbIp,
-				Port: int(cm.cluster.Spec.API.BindPort),
+				Port: int(clusterConf.API.BindPort),
 			},
 		}
 
 	}
 	for m := range cm.cluster.Spec.Masters {
-		cm.cluster.Spec.Masters[m].Labels[api.EtcdServerAddress] = strings.Join(cm.cluster.Spec.ETCDServers, ",")
+		cm.cluster.Spec.Masters[m].Labels[api.EtcdServerAddress] = strings.Join(cm.cluster.ProviderConfig().ETCDServers, ",")
 	}
 	Store(cm.ctx).Clusters().Update(cm.cluster)
 
@@ -218,7 +219,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	// need to run ccm
-	if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
+	if err = CreateCredentialSecret(cm.ctx, kc, clusterConf); err != nil {
 		return
 	}
 

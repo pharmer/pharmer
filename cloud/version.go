@@ -139,7 +139,7 @@ func (g *KubeVersionGetter) IsUpgradeRequested() (bool, error) {
 			return false, err
 		}
 
-		requested, err := versionutil.ParseSemantic(g.cluster.Spec.KubernetesVersion)
+		requested, err := versionutil.ParseSemantic(g.cluster.ProviderConfig().KubernetesVersion)
 		if err != nil {
 			return false, err
 		}

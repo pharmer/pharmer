@@ -12,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
@@ -39,15 +38,15 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 
 	clusterConf := cm.cluster.ProviderConfig()
 
-	if clusterConf.InstanceImage, err = cm.conn.DetectInstanceImage(); err != nil {
+	if clusterConf.Cloud.InstanceImage, err = cm.conn.DetectInstanceImage(); err != nil {
 		return nil, err
 	}
 
-	Logger(cm.ctx).Debugln("Linode instance image", clusterConf.InstanceImage)
-	if clusterConf.Linode.KernelId, err = cm.conn.DetectKernel(); err != nil {
+	Logger(cm.ctx).Debugln("Linode instance image", clusterConf.Cloud.InstanceImage)
+	if clusterConf.Cloud.Linode.KernelId, err = cm.conn.DetectKernel(); err != nil {
 		return nil, err
 	}
-	Logger(cm.ctx).Infof("Linode kernel %v found", clusterConf.Linode.KernelId)
+	Logger(cm.ctx).Infof("Linode kernel %v found", clusterConf.Cloud.Linode.KernelId)
 
 	if err = cm.cluster.SetProviderConfig(clusterConf); err != nil {
 		return nil, err
@@ -116,6 +115,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	// FYI: Linode does not support tagging.
 
 	// -------------------------------------------------------------------ASSETS
+	clusterConf := cm.cluster.ProviderConfig()
 	var masterNG []*clusterv1.Machine
 	masterNG, err = FindMasterMachines(cm.cluster)
 	if err != nil {
@@ -162,13 +162,13 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		cm.cluster.Spec.ClusterAPI.Status.APIEndpoints = []clusterv1.APIEndpoint{
 			{
 				Host: lbIp,
-				Port: int(cm.cluster.Spec.API.BindPort),
+				Port: int(clusterConf.API.BindPort),
 			},
 		}
 
 	}
 	for m := range cm.cluster.Spec.Masters {
-		cm.cluster.Spec.Masters[m].Labels[api.EtcdServerAddress] = strings.Join(cm.cluster.Spec.ETCDServers, ",")
+		cm.cluster.Spec.Masters[m].Labels[api.EtcdServerAddress] = strings.Join(cm.cluster.ProviderConfig().ETCDServers, ",")
 	}
 	Store(cm.ctx).Clusters().Update(cm.cluster)
 
@@ -189,7 +189,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	// need to run ccm
-	if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
+	if err = CreateCredentialSecret(cm.ctx, kc, clusterConf); err != nil {
 		return
 	}
 
@@ -276,7 +276,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 
 	masterMachines, err := client.Machines(core.NamespaceDefault).List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.RoleMasterKey:  "",
+			api.RoleMasterKey: "",
 		}).String(),
 	})
 	if err != nil {

@@ -89,19 +89,11 @@ message ClusterStatus {
   // state, and will be set to a descriptive error message.
   optional string errorMessage = 3 [(gogoproto.customname) = "ErrorMessage", (gogoproto.nullable) = false];
 
-  // Provider-specific serialized status to use during cluster
-  // creation. It is recommended that providers maintain their
+  // Provider-specific status.
+  // It is recommended that providers maintain their
   // own versioned API types that should be
   // serialized/deserialized from this field.
-  optional string providerStatus = 4 [(gogoproto.customname) = "ProviderStatus", (gogoproto.nullable) = false];
-}
-
-message ContainerRuntimeInfo {
-  // docker, rkt, containerd, ...
-  optional string name = 1 [(gogoproto.customname) = "Name", (gogoproto.nullable) = false];
-
-  // Semantic version of the container runtime to use
-  optional string version = 2 [(gogoproto.customname) = "Version", (gogoproto.nullable) = false];
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.RawExtension providerStatus = 4 [(gogoproto.customname) = "ProviderStatus"];
 }
 
 message Machine {
@@ -198,6 +190,12 @@ message MachineStatus {
 
   // +optional
   optional string errorMessage = 5 [(gogoproto.customname) = "ErrorMessage"];
+
+  // Provider-specific status.
+  // It is recommended that providers maintain their
+  // own versioned API types that should be
+  // serialized/deserialized from this field.
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.RawExtension providerStatus = 6 [(gogoproto.customname) = "ProviderStatus"];
 }
 
 message MachineVersionInfo {
@@ -209,9 +207,6 @@ message MachineVersionInfo {
   // master.
   // +optional
   optional string controlPlane = 2 [(gogoproto.customname) = "ControlPlane", (gogoproto.nullable) = false];
-
-  // Name/version of container runtime
-  optional ContainerRuntimeInfo containerRuntime = 3 [(gogoproto.customname) = "ContainerRuntime", (gogoproto.nullable) = false];
 }
 
 message NetworkRanges {
@@ -296,19 +291,7 @@ message AzureStorageSpec {
   optional string prefix = 2 [(gogoproto.customname) = "Prefix", (gogoproto.nullable) = false];
 }
 
-message CloudStatus {
-  optional string sshKeyExternalID = 1 [(gogoproto.customname) = "SShKeyExternalID", (gogoproto.nullable) = false];
-}
-
-message Cluster {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1 [(gogoproto.customname) = "ObjectMeta", (gogoproto.nullable) = false];
-
-  optional PharmerClusterSpec spec = 2 [(gogoproto.customname) = "Spec", (gogoproto.nullable) = false];
-
-  optional PharmerClusterStatus status = 3 [(gogoproto.customname) = "Status", (gogoproto.nullable) = false];
-}
-
-message ClusterProviderConfig {
+message CloudSpec {
   optional string cloudProvider = 1 [(gogoproto.customname) = "CloudProvider", (gogoproto.nullable) = false];
 
   optional string project = 2 [(gogoproto.customname) = "Project", (gogoproto.nullable) = false];
@@ -340,6 +323,63 @@ message ClusterProviderConfig {
   optional LinodeSpec linode = 14 [(gogoproto.customname) = "Linode"];
 
   optional GKESpec gke = 15 [(gogoproto.customname) = "GKE"];
+}
+
+message CloudStatus {
+  optional string sshKeyExternalID = 1 [(gogoproto.customname) = "SShKeyExternalID", (gogoproto.nullable) = false];
+}
+
+message Cluster {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1 [(gogoproto.customname) = "ObjectMeta", (gogoproto.nullable) = false];
+
+  optional PharmerClusterSpec spec = 2 [(gogoproto.customname) = "Spec", (gogoproto.nullable) = false];
+
+  optional PharmerClusterStatus status = 3 [(gogoproto.customname) = "Status", (gogoproto.nullable) = false];
+}
+
+message ClusterProviderConfig {
+  optional CloudSpec cloud = 1 [(gogoproto.customname) = "Cloud", (gogoproto.nullable) = false];
+
+  optional API api = 3 [(gogoproto.customname) = "API", (gogoproto.nullable) = false];
+
+  optional string kubernetesVersion = 4 [(gogoproto.customname) = "KubernetesVersion", (gogoproto.nullable) = false];
+
+  optional bool locked = 5 [(gogoproto.customname) = "Locked", (gogoproto.nullable) = false];
+
+  optional string caCertName = 6 [(gogoproto.customname) = "CACertName", (gogoproto.nullable) = false];
+
+  optional string frontProxyCACertName = 7 [(gogoproto.customname) = "FrontProxyCACertName", (gogoproto.nullable) = false];
+
+  optional string credentialName = 8 [(gogoproto.customname) = "CredentialName", (gogoproto.nullable) = false];
+
+  map<string, string> kubeletExtraArgs = 9 [(gogoproto.customname) = "KubeletExtraArgs", (gogoproto.nullable) = false];
+
+  map<string, string> apiServerExtraArgs = 10 [(gogoproto.customname) = "APIServerExtraArgs", (gogoproto.nullable) = false];
+
+  map<string, string> controllerManagerExtraArgs = 11 [(gogoproto.customname) = "ControllerManagerExtraArgs", (gogoproto.nullable) = false];
+
+  map<string, string> schedulerExtraArgs = 12 [(gogoproto.customname) = "SchedulerExtraArgs", (gogoproto.nullable) = false];
+
+  repeated string authorizationModes = 13 [(gogoproto.customname) = "AuthorizationModes"];
+
+  repeated string apiServerCertSANs = 14 [(gogoproto.customname) = "APIServerCertSANs"];
+
+  repeated string etcdServers = 15 [(gogoproto.customname) = "ETCDServers"];
+}
+
+// ClusterState describes the state of certain versions for a cluster
+message ClusterState {
+  // KubeVersion describes the version of the Kubernetes API Server, Controller Manager, Scheduler and Proxy.
+  optional string kubeVersion = 1 [(gogoproto.customname) = "KubeVersion", (gogoproto.nullable) = false];
+
+  // DNSVersion describes the version of the kube-dns images used and manifest version
+  optional string dnsVersion = 2 [(gogoproto.customname) = "DNSVersion", (gogoproto.nullable) = false];
+
+  // MasterKubeadmVersion describes the version of the kubeadm CLI
+  optional string kubeadmVersion = 3 [(gogoproto.customname) = "KubeadmVersion", (gogoproto.nullable) = false];
+
+  // KubeletVersions is a map with a version number linked to the amount of kubelets running that version in the cluster
+  map<string, uint32> kubeletVersions = 4 [(gogoproto.customname) = "KubeletVersions", (gogoproto.nullable) = false];
 }
 
 message Credential {
@@ -394,6 +434,12 @@ message KubeConfig {
   optional NamedContext context = 4 [(gogoproto.customname) = "Context", (gogoproto.nullable) = false];
 }
 
+message LinodeCloudConfig {
+  optional string token = 1 [(gogoproto.customname) = "Token", (gogoproto.nullable) = false];
+
+  optional string zone = 2 [(gogoproto.customname) = "Zone", (gogoproto.nullable) = false];
+}
+
 message LinodeSpec {
   // Linode
   optional string rootPassword = 1 [(gogoproto.customname) = "RootPassword", (gogoproto.nullable) = false];
@@ -409,6 +455,18 @@ message MachineProviderConfig {
   optional string name = 1 [(gogoproto.customname) = "Name", (gogoproto.nullable) = false];
 
   optional NodeSpec config = 2 [(gogoproto.customname) = "Config", (gogoproto.nullable) = false];
+}
+
+message MachineProviderStatus {
+  optional string name = 1 [(gogoproto.customname) = "Name", (gogoproto.nullable) = false];
+
+  optional string externalID = 2 [(gogoproto.customname) = "ExternalID", (gogoproto.nullable) = false];
+
+  optional string publicIP = 3 [(gogoproto.customname) = "PublicIP", (gogoproto.nullable) = false];
+
+  optional string privateIP = 4 [(gogoproto.customname) = "PrivateIP", (gogoproto.nullable) = false];
+
+  optional string diskID = 5 [(gogoproto.customname) = "DiskId", (gogoproto.nullable) = false];
 }
 
 // NamedAuthInfo relates nicknames to auth information
@@ -454,18 +512,6 @@ message NamedContext {
   optional string user = 3 [(gogoproto.customname) = "AuthInfo", (gogoproto.nullable) = false];
 }
 
-message NodeInfo {
-  optional string name = 1 [(gogoproto.customname) = "Name", (gogoproto.nullable) = false];
-
-  optional string externalID = 2 [(gogoproto.customname) = "ExternalID", (gogoproto.nullable) = false];
-
-  optional string publicIP = 3 [(gogoproto.customname) = "PublicIP", (gogoproto.nullable) = false];
-
-  optional string privateIP = 4 [(gogoproto.customname) = "PrivateIP", (gogoproto.nullable) = false];
-
-  optional string diskID = 5 [(gogoproto.customname) = "DiskId", (gogoproto.nullable) = false];
-}
-
 message NodeSpec {
   optional string sku = 1 [(gogoproto.customname) = "SKU", (gogoproto.nullable) = false];
 
@@ -482,35 +528,14 @@ message NodeSpec {
   optional double spotPriceMax = 7 [(gogoproto.customname) = "SpotPriceMax", (gogoproto.nullable) = false];
 }
 
+message NullNameGenerator {
+}
+
 message PharmerClusterSpec {
   // +optional
   optional Cluster clusterApi = 1 [(gogoproto.customname) = "ClusterAPI"];
 
   repeated Machine masters = 2 [(gogoproto.customname) = "Masters"];
-
-  optional API api = 3 [(gogoproto.customname) = "API", (gogoproto.nullable) = false];
-
-  optional string kubernetesVersion = 4 [(gogoproto.customname) = "KubernetesVersion", (gogoproto.nullable) = false];
-
-  optional bool locked = 5 [(gogoproto.customname) = "Locked", (gogoproto.nullable) = false];
-
-  optional string caCertName = 6 [(gogoproto.customname) = "CACertName", (gogoproto.nullable) = false];
-
-  optional string frontProxyCACertName = 7 [(gogoproto.customname) = "FrontProxyCACertName", (gogoproto.nullable) = false];
-
-  optional string credentialName = 8 [(gogoproto.customname) = "CredentialName", (gogoproto.nullable) = false];
-
-  map<string, string> kubeletExtraArgs = 9 [(gogoproto.customname) = "KubeletExtraArgs", (gogoproto.nullable) = false];
-
-  map<string, string> apiServerExtraArgs = 10 [(gogoproto.customname) = "APIServerExtraArgs", (gogoproto.nullable) = false];
-
-  map<string, string> controllerManagerExtraArgs = 11 [(gogoproto.customname) = "ControllerManagerExtraArgs", (gogoproto.nullable) = false];
-
-  map<string, string> schedulerExtraArgs = 12 [(gogoproto.customname) = "SchedulerExtraArgs", (gogoproto.nullable) = false];
-
-  repeated string authorizationModes = 13 [(gogoproto.customname) = "AuthorizationModes"];
-
-  repeated string apiServerCertSANs = 14 [(gogoproto.customname) = "APIServerCertSANs"];
 }
 
 message PharmerClusterStatus {
@@ -596,5 +621,14 @@ message SwiftSpec {
   optional string container = 1 [(gogoproto.customname) = "Container", (gogoproto.nullable) = false];
 
   optional string prefix = 2 [(gogoproto.customname) = "Prefix", (gogoproto.nullable) = false];
+}
+
+// https://github.com/kubernetes/kubernetes/blob/aa1dc9db3532dfbf09e45c8e3786a648cd217417/cmd/kubeadm/app/phases/upgrade/compute.go#L28
+message Upgrade {
+  optional string description = 1 [(gogoproto.customname) = "Description", (gogoproto.nullable) = false];
+
+  optional ClusterState before = 2 [(gogoproto.customname) = "Before", (gogoproto.nullable) = false];
+
+  optional ClusterState after = 3 [(gogoproto.customname) = "After", (gogoproto.nullable) = false];
 }
 

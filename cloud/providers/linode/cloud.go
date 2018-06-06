@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
 	api "github.com/pharmer/pharmer/apis/v1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
@@ -26,13 +27,14 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	clusterConf := cluster.ProviderConfig()
+	cred, err := Store(ctx).Credentials().Get(clusterConf.CredentialName)
 	if err != nil {
 		return nil, err
 	}
 	typed := credential.Linode{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Errorf("credential %s is invalid. Reason: %v", clusterConf.CredentialName, err)
 	}
 
 	namer := namer{cluster: cluster}
@@ -219,8 +221,7 @@ func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine
 		}
 	}
 
-	fmt.Println(conn.cluster.ProviderConfig().InstanceImage, "*************")
-	resp, err := conn.client.StackScript.Create(scriptName, conn.cluster.ProviderConfig().InstanceImage, script, map[string]string{
+	resp, err := conn.client.StackScript.Create(scriptName, conn.cluster.ProviderConfig().Cloud.InstanceImage, script, map[string]string{
 		"Description": fmt.Sprintf("Startup script for NodeGroup %s of Cluster %s", machine.Name, conn.cluster.Name),
 	})
 	if err != nil {
@@ -256,7 +257,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 		return nil, err
 	}
 
-	dcId, err := strconv.Atoi(clusterConfig.Zone)
+	dcId, err := strconv.Atoi(clusterConfig.Cloud.Zone)
 	if err != nil {
 		return nil, err
 	}
@@ -303,9 +304,6 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 
 	node.Name = machine.Name
 
-
-
-
 	scriptId, err := conn.getStartupScriptID(machine, string(machine.Spec.Roles[0]))
 	if err != nil {
 		return nil, err
@@ -316,8 +314,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 	if err != nil {
 		return nil, err
 	}
-	distributionID, err := strconv.Atoi(clusterConfig.InstanceImage)
-	fmt.Println(clusterConfig.InstanceImage, "***")
+	distributionID, err := strconv.Atoi(clusterConfig.Cloud.InstanceImage)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +328,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 		stackScriptUDFResponses,
 		distributionID,
 		rootDiskSize,
-		clusterConfig.Linode.RootPassword,
+		clusterConfig.Cloud.Linode.RootPassword,
 		map[string]string{
 			"rootSSHKey": string(SSHKey(conn.ctx).PublicKey),
 		})
@@ -342,7 +339,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 	//if err != nil {
 	//	return nil, err
 	//}
-	config, err := conn.client.Config.Create(linodeId, int(clusterConfig.Linode.KernelId), node.Name, map[string]string{
+	config, err := conn.client.Config.Create(linodeId, int(clusterConfig.Cloud.Linode.KernelId), node.Name, map[string]string{
 		"RootDeviceNum": "1",
 		"DiskList":      strconv.Itoa(rootDisk.DiskJob.DiskId),
 		// "DiskList":   fmt.Sprintf("%d,%d", rootDisk.DiskJob.DiskId, swapDisk.DiskJob.DiskId),
@@ -574,7 +571,7 @@ func (conn *cloudConnector) addNodeToBalancer(lbName string, nodeName, ip string
 }
 
 func (conn *cloudConnector) createNoadBalancer(name string) (int, error) {
-	did, err := strconv.Atoi(conn.cluster.ProviderConfig().Zone)
+	did, err := strconv.Atoi(conn.cluster.ProviderConfig().Cloud.Zone)
 	if err != nil {
 		return -1, err
 	}

@@ -33,7 +33,9 @@ func NewClusterCreateConfig() *ClusterCreateConfig {
 	return &ClusterCreateConfig{
 		Cluster: cluster,
 		ProviderConfig: &api.ClusterProviderConfig{
-			NetworkProvider: "calico",
+			Cloud: api.CloudSpec{
+				NetworkProvider: "calico",
+			},
 		},
 		Nodes:   map[string]int{},
 		Masters: 1,
@@ -41,11 +43,11 @@ func NewClusterCreateConfig() *ClusterCreateConfig {
 }
 
 func (c *ClusterCreateConfig) AddFlags(fs *pflag.FlagSet) {
-	fs.StringVar(&c.ProviderConfig.CloudProvider, "provider", c.ProviderConfig.CloudProvider, "Provider name")
-	fs.StringVar(&c.ProviderConfig.Zone, "zone", c.ProviderConfig.Zone, "Cloud provider zone name")
-	fs.StringVar(&c.Cluster.Spec.CredentialName, "credential-uid", c.Cluster.Spec.CredentialName, "Use preconfigured cloud credential uid")
-	fs.StringVar(&c.Cluster.Spec.KubernetesVersion, "kubernetes-version", c.Cluster.Spec.KubernetesVersion, "Kubernetes version")
-	fs.StringVar(&c.ProviderConfig.NetworkProvider, "network-provider", c.ProviderConfig.NetworkProvider, "Name of CNI plugin. Available options: calico, flannel, kubenet, weavenet")
+	fs.StringVar(&c.ProviderConfig.Cloud.CloudProvider, "provider", c.ProviderConfig.Cloud.CloudProvider, "Provider name")
+	fs.StringVar(&c.ProviderConfig.Cloud.Zone, "zone", c.ProviderConfig.Cloud.Zone, "Cloud provider zone name")
+	fs.StringVar(&c.ProviderConfig.CredentialName, "credential-uid", c.ProviderConfig.CredentialName, "Use preconfigured cloud credential uid")
+	fs.StringVar(&c.ProviderConfig.KubernetesVersion, "kubernetes-version", c.ProviderConfig.KubernetesVersion, "Kubernetes version")
+	fs.StringVar(&c.ProviderConfig.Cloud.NetworkProvider, "network-provider", c.ProviderConfig.Cloud.NetworkProvider, "Name of CNI plugin. Available options: calico, flannel, kubenet, weavenet")
 
 	fs.StringToIntVar(&c.Nodes, "nodes", c.Nodes, "Node set configuration")
 	fs.Int32Var(&c.Masters, "masters", c.Masters, "Node set configuration")

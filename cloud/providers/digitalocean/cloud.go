@@ -31,13 +31,14 @@ type cloudConnector struct {
 var _ InstanceManager = &cloudConnector{}
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	clusterConf := cluster.ProviderConfig()
+	cred, err := Store(ctx).Credentials().Get(clusterConf.CredentialName)
 	if err != nil {
 		return nil, err
 	}
 	typed := credential.DigitalOcean{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
+		return nil, errors.Wrapf(err, "credential %s is invalid", clusterConf.CredentialName)
 	}
 	oauthClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: typed.Token(),
@@ -48,7 +49,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		client:  godo.NewClient(oauthClient),
 	}
 	if ok, msg := conn.IsUnauthorized(); !ok {
-		return nil, errors.Errorf("credential `%s` does not have necessary autheorization. Reason: %s", cluster.Spec.CredentialName, msg)
+		return nil, errors.Errorf("credential `%s` does not have necessary autheorization. Reason: %s", clusterConf.CredentialName, msg)
 	}
 	return &conn, nil
 }
@@ -203,7 +204,7 @@ func (conn *cloudConnector) getReserveIP(ip string) (bool, error) {
 
 func (conn *cloudConnector) createReserveIP() (string, error) {
 	fip, _, err := conn.client.FloatingIPs.Create(context.TODO(), &godo.FloatingIPCreateRequest{
-		Region: conn.cluster.ProviderConfig().Region,
+		Region: conn.cluster.ProviderConfig().Cloud.Region,
 	})
 	if err != nil {
 		return "", err
@@ -249,9 +250,9 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 	}
 	req := &godo.DropletCreateRequest{
 		Name:   machine.Name,
-		Region: clusterConfig.Zone,
+		Region: clusterConfig.Cloud.Zone,
 		Size:   machineConfig.Config.SKU,
-		Image:  godo.DropletCreateImage{Slug: clusterConfig.InstanceImage},
+		Image:  godo.DropletCreateImage{Slug: clusterConfig.Cloud.InstanceImage},
 		SSHKeys: []godo.DropletCreateSSHKey{
 			{Fingerprint: SSHKey(conn.ctx).OpensshFingerprint},
 			{Fingerprint: "0d:ff:0d:86:0c:f1:47:1d:85:67:1e:73:c6:0e:46:17"}, // tamal@beast
@@ -432,7 +433,7 @@ func (conn *cloudConnector) lbByName(ctx context.Context, name string) (*godo.Lo
 // buildLoadBalancerRequest returns a *godo.LoadBalancerRequest to balance
 // requests for service across nodes.
 func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*godo.LoadBalancerRequest, error) {
-
+	clusterConfig := conn.cluster.ProviderConfig()
 	forwardingRules := []godo.ForwardingRule{
 		{
 			EntryProtocol:  "tcp",
@@ -463,12 +464,11 @@ func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*godo.LoadB
 	//algorithm := "round_robin"
 
 	//	redirectHttpToHttps := getRedirectHttpToHttps(service)
-	clusterConfig := conn.cluster.ProviderConfig()
 
 	return &godo.LoadBalancerRequest{
 		Name:                lbName,
 		DropletIDs:          []int{},
-		Region:              clusterConfig.Region,
+		Region:              clusterConfig.Cloud.Region,
 		ForwardingRules:     forwardingRules,
 		HealthCheck:         healthCheck,
 		StickySessions:      stickySessions,

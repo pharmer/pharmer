@@ -221,10 +221,11 @@ func (upm *GenericUpgradeManager) PrintAvailableUpgrades(upgrades []*api.Upgrade
 	}
 }
 func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err error) {
+	clusterConf := upm.cluster.ProviderConfig()
 	acts = append(acts, api.Action{
 		Action:   api.ActionUpdate,
 		Resource: "Master upgrade",
-		Message:  fmt.Sprintf("Master instance will be upgraded to %v", upm.cluster.Spec.KubernetesVersion),
+		Message:  fmt.Sprintf("Master instance will be upgraded to %v", clusterConf.KubernetesVersion),
 	})
 	upm.clientSet, err = NewClusterApiClient(upm.ctx, upm.cluster)
 	if err != nil {
@@ -238,7 +239,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 		}
 		for _, machine := range machineList.Items {
 			if IsMaster(&machine) {
-				machine.Spec.Versions.ControlPlane = upm.cluster.Spec.KubernetesVersion
+				machine.Spec.Versions.ControlPlane = clusterConf.KubernetesVersion
 				_, err = upm.client.Machines(core.NamespaceDefault).Update(&machine)
 				if err != nil {
 					return acts, err
@@ -250,7 +251,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 	acts = append(acts, api.Action{
 		Action:   api.ActionUpdate,
 		Resource: "Node group upgrade",
-		Message:  fmt.Sprintf("Node group will be upgraded to %v", upm.cluster.Spec.KubernetesVersion),
+		Message:  fmt.Sprintf("Node group will be upgraded to %v", clusterConf.KubernetesVersion),
 	})
 	if !dryRun {
 		machineSetList, err := upm.client.MachineSets(core.NamespaceDefault).List(metav1.ListOptions{})
@@ -259,7 +260,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 		}
 
 		for _, ms := range machineSetList.Items {
-			ms.Spec.Template.Spec.Versions.ControlPlane = upm.cluster.Spec.KubernetesVersion
+			ms.Spec.Template.Spec.Versions.ControlPlane = clusterConf.KubernetesVersion
 			_, err := upm.client.MachineSets(core.NamespaceDefault).Update(&ms)
 			if err != nil {
 				return acts, err

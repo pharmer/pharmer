@@ -96,15 +96,18 @@ func RunUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out,
 		if err != nil {
 			return err
 		}
-
+		updateConf := updated.ProviderConfig()
 		//TODO: Check provided flags, and set value
 		if opts.Locked {
-			updated.Spec.Locked = opts.Locked
+			updateConf.Locked = opts.Locked
 		}
 		if opts.KubernetesVersion != "" {
-			updated.Spec.KubernetesVersion = opts.KubernetesVersion
+			updateConf.KubernetesVersion = opts.KubernetesVersion
 		}
 
+		if err = updated.SetProviderConfig(updateConf); err != nil {
+			return err
+		}
 		if err := UpdateCluster(ctx, original, updated); err != nil {
 			return err
 		}

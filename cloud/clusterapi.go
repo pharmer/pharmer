@@ -128,7 +128,7 @@ func (ca *ClusterApi) CreateMachineController() error {
 func (ca *ClusterApi) CreatePharmerSecret() error {
 	providerConfig := ca.cluster.ProviderConfig()
 
-	cred, err := Store(ca.ctx).Credentials().Get(ca.cluster.Spec.CredentialName)
+	cred, err := Store(ca.ctx).Credentials().Get(providerConfig.CredentialName)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 		return err
 	}
 	if err = CreateSecret(ca.kc, "pharmer-cred", map[string][]byte{
-		fmt.Sprintf("%v.json", ca.cluster.Spec.CredentialName): credData,
+		fmt.Sprintf("%v.json", providerConfig.CredentialName): credData,
 	}); err != nil {
 		return err
 	}
@@ -152,13 +152,13 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 		return err
 	}
 
-	publicKey, privateKey, err := Store(ca.ctx).SSHKeys(ca.cluster.Name).Get(ca.cluster.ProviderConfig().SSHKeyName)
+	publicKey, privateKey, err := Store(ca.ctx).SSHKeys(ca.cluster.Name).Get(providerConfig.Cloud.SSHKeyName)
 	if err != nil {
 		return err
 	}
 	if err = CreateSecret(ca.kc, "pharmer-ssh", map[string][]byte{
-		fmt.Sprintf("id_%v", providerConfig.SSHKeyName):     privateKey,
-		fmt.Sprintf("id_%v.pub", providerConfig.SSHKeyName): publicKey,
+		fmt.Sprintf("id_%v", providerConfig.Cloud.SSHKeyName):     privateKey,
+		fmt.Sprintf("id_%v.pub", providerConfig.Cloud.SSHKeyName): publicKey,
 	}); err != nil {
 		return err
 	}
@@ -232,7 +232,7 @@ func (ca *ClusterApi) CreateApiServerAndController() error {
 		CABundle:               base64.StdEncoding.EncodeToString(cert.EncodeCertPEM(ApiServerCaCert(ca.ctx))),
 		TLSCrt:                 base64.StdEncoding.EncodeToString(cert.EncodeCertPEM(ApiServerCert(ca.ctx))),
 		TLSKey:                 base64.StdEncoding.EncodeToString(cert.EncodePrivateKeyPEM(ApiServerKey(ca.ctx))),
-		Provider:               ca.cluster.ProviderConfig().CloudProvider,
+		Provider:               ca.cluster.ProviderConfig().Cloud.CloudProvider,
 		MasterCount:            len(masterNG),
 	})
 	if err != nil {

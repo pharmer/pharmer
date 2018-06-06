@@ -29,11 +29,19 @@ type Cluster struct {
 }
 
 type PharmerClusterSpec struct {
-	// +optional
-	ClusterAPI *clusterv1.Cluster `json:"clusterApi,omitempty" protobuf:"bytes,1,opt,name=clusterApi"`
+	ClusterAPI *clusterv1.Cluster   `json:"clusterApi,omitempty" protobuf:"bytes,1,opt,name=clusterApi"`
+	Masters    []*clusterv1.Machine `json:"masters,omitempty" protobuf:"bytes,2,opt,name=masters"`
+}
 
-	Masters []*clusterv1.Machine `json:"masters,omitempty" protobuf:"bytes,2,opt,name=masters"`
+type API struct {
+	// AdvertiseAddress sets the address for the API server to advertise.
+	AdvertiseAddress string `json:"advertiseAddress" protobuf:"bytes,1,opt,name=advertiseAddress"`
+	// BindPort sets the secure port for the API Server to bind to
+	BindPort int32 `json:"bindPort" protobuf:"varint,2,opt,name=bindPort"`
+}
 
+type ClusterProviderConfig struct {
+	Cloud                      CloudSpec         `json:"cloud" protobuf:"bytes,1,opt,name=cloud"`
 	API                        API               `json:"api" protobuf:"bytes,3,opt,name=api"`
 	KubernetesVersion          string            `json:"kubernetesVersion,omitempty" protobuf:"bytes,4,opt,name=kubernetesVersion"`
 	Locked                     bool              `json:"locked,omitempty" protobuf:"varint,5,opt,name=locked"`
@@ -49,14 +57,7 @@ type PharmerClusterSpec struct {
 	ETCDServers                []string          `json:"etcdServers,omitempty" protobuf:"bytes,15,rep,name=etcdServers"`
 }
 
-type API struct {
-	// AdvertiseAddress sets the address for the API server to advertise.
-	AdvertiseAddress string `json:"advertiseAddress" protobuf:"bytes,1,opt,name=advertiseAddress"`
-	// BindPort sets the secure port for the API Server to bind to
-	BindPort int32 `json:"bindPort" protobuf:"varint,2,opt,name=bindPort"`
-}
-
-type ClusterProviderConfig struct {
+type CloudSpec struct {
 	CloudProvider        string      `json:"cloudProvider,omitempty" protobuf:"bytes,1,opt,name=cloudProvider"`
 	Project              string      `json:"project,omitempty" protobuf:"bytes,2,opt,name=project"`
 	Region               string      `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
@@ -192,29 +193,6 @@ func (c *Cluster) APIServerURL() string {
 	}
 }
 
-func (c *Cluster) SetClusterApiEndpoints() error {
-	m := map[core.NodeAddressType]string{}
-	for _, addr := range c.Status.APIAddresses {
-		m[addr.Type] = addr.Address
-
-	}
-	if u, found := m[core.NodeExternalIP]; found {
-		c.Spec.ClusterAPI.Status.APIEndpoints = append(c.Spec.ClusterAPI.Status.APIEndpoints, clusterv1.APIEndpoint{
-			Host: u,
-			Port: int(c.Spec.API.BindPort),
-		})
-		return nil
-	}
-	if u, found := m[core.NodeExternalDNS]; found {
-		c.Spec.ClusterAPI.Status.APIEndpoints = append(c.Spec.ClusterAPI.Status.APIEndpoints, clusterv1.APIEndpoint{
-			Host: u,
-			Port: int(c.Spec.API.BindPort),
-		})
-		return nil
-	}
-	return fmt.Errorf("No cluster api endpoint found")
-}
-
 func (c *Cluster) APIServerAddress() string {
 	endpoints := c.Spec.ClusterAPI.Status.APIEndpoints
 	if len(endpoints) == 0 {
@@ -252,8 +230,8 @@ func (c *Cluster) SetNetworkingDefaults(provider string) {
 	}
 }
 
-func (c *Cluster) IsMinorVersion(in string) bool {
-	v, err := version.NewVersion(c.Spec.KubernetesVersion)
+func (c *ClusterProviderConfig) IsMinorVersion(in string) bool {
+	v, err := version.NewVersion(c.KubernetesVersion)
 	if err != nil {
 		return false
 	}

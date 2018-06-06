@@ -21,7 +21,7 @@ var kubernetesCNIVersions = map[string]string{
 
 var prekVersions = map[string]string{
 	"1.8.0":  "1.8.0",
-	"1.9.0":  "1.10.1-alpha.7",
+	"1.9.0":  "1.10.1-alpha.6",
 	"1.10.0": "1.10.1-alpha.7",
 }
 
@@ -36,6 +36,7 @@ type TemplateData struct {
 	FrontProxyKey     string
 	ETCDCAKey         string
 	ETCDServerAddress string
+	ETCDTLSEnabled    bool
 	LoadBalancerIp    string
 	HASetup           bool
 	APIServerAddress  string
@@ -198,7 +199,7 @@ pre-k merge master-config \
 	--apiserver-cert-extra-sans=$(pre-k machine private-ips) \
 	--node-name=${NODE_NAME:-} \
     --etcd-server={{ .ETCDServerAddress}} \
-    --tls-enabled=false \
+    --tls-enabled={{ .ETCDTLSEnabled }} \
 	> /etc/kubernetes/kubeadm/config.yaml
 
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print

@@ -14,7 +14,7 @@ import (
 
 func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
 	if sku == "" {
-		sku = "3"
+		sku = "4"
 	}
 	return api.NodeSpec{
 		SKU: sku,
@@ -32,30 +32,30 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 	}
 
 	// Init spec
-	config.Region = config.Zone
-	config.SSHKeyName = n.GenSSHKeyExternalID()
-	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
-	config.InstanceImage = "ubuntu-16-04-x64"
-	cluster.Spec.ETCDServers = []string{}
+	config.Cloud.Region = config.Cloud.Zone
+	config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
+	config.API.BindPort = kubeadmapi.DefaultAPIBindPort
+	config.Cloud.InstanceImage = "ubuntu-16-04-x64"
+	config.ETCDServers = []string{}
 
 	cluster.InitializeClusterApi()
-	cluster.SetNetworkingDefaults(config.NetworkProvider)
+	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
 
-	cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
-	cluster.Spec.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
-	cluster.Spec.APIServerExtraArgs = map[string]string{
+	config.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
+	config.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
+	config.APIServerExtraArgs = map[string]string{
 		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
 		"kubelet-preferred-address-types": strings.Join([]string{
 			string(core.NodeInternalIP),
 			string(core.NodeExternalIP),
 		}, ","),
 	}
-	if cluster.IsMinorVersion("1.9") {
-		cluster.Spec.APIServerExtraArgs["admission-control"] = api.DefaultV19AdmissionControl
+	if config.IsMinorVersion("1.9") {
+		config.APIServerExtraArgs["admission-control"] = api.DefaultV19AdmissionControl
 	}
 
-	config.CCMCredentialName = cluster.Spec.CredentialName
-	config.Linode = &api.LinodeSpec{
+	config.Cloud.CCMCredentialName = config.CredentialName
+	config.Cloud.Linode = &api.LinodeSpec{
 		RootPassword: rand.GeneratePassword(),
 	}
 
