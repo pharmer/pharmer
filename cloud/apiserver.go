@@ -185,3 +185,18 @@ func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cl
 		return err == nil, nil
 	})
 }
+
+func CreateOrUpdateConfigMap(ctx context.Context, client kubernetes.Interface, config *core.ConfigMap) error {
+	_, err := client.CoreV1().ConfigMaps(metav1.NamespaceSystem).Get(config.Name, metav1.GetOptions{})
+	if err != nil {
+		return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+			_, err := client.CoreV1().ConfigMaps(metav1.NamespaceSystem).Create(config)
+			return err == nil, nil
+		})
+	}
+
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		_, err := client.CoreV1().ConfigMaps(metav1.NamespaceSystem).Update(config)
+		return err == nil, nil
+	})
+}

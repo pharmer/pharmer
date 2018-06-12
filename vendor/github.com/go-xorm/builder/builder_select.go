@@ -45,10 +45,6 @@ func (b *Builder) selectWriteTo(w Writer) error {
 		}
 	}
 
-	if !b.cond.IsValid() {
-		return nil
-	}
-
 	if _, err := fmt.Fprint(w, " WHERE "); err != nil {
 		return err
 	}
