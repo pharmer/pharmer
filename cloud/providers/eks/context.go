@@ -12,15 +12,10 @@ import (
 	//"k8s.io/client-go/util/cert"
 	"encoding/base64"
 	"fmt"
-	"time"
 
 	. "github.com/appscode/go/types"
 	_eks "github.com/aws/aws-sdk-go/service/eks"
-	"github.com/aws/aws-sdk-go/service/sts"
-	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//	clientset "k8s.io/client-go/kubernetes"
-	//	"k8s.io/client-go/tools/clientcmd"
-	//	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ClusterManager struct {
@@ -82,14 +77,15 @@ func (cm *ClusterManager) GetEKSAdminClient() (kubernetes.Interface, error) {
 		return nil, err
 	}
 
-	request, _ := cm.conn.sts.GetCallerIdentityRequest(&sts.GetCallerIdentityInput{})
-	request.HTTPRequest.Header.Add(clusterIDHeader, cm.cluster.Name)
-	// sign the request
-	presignedURLString, err := request.Presign(60 * time.Second)
-	token := v1Prefix + base64.RawURLEncoding.EncodeToString([]byte(presignedURLString))
+	token, err := cm.conn.getAuthenticationToken()
+	if err != nil {
+		return nil, err
+	}
 
 	caData, err := base64.StdEncoding.DecodeString(*resp.Cluster.CertificateAuthority.Data)
-	fmt.Println(err)
+	if err != nil {
+		return nil, err
+	}
 
 	cfg := &rest.Config{
 		Host:        String(resp.Cluster.Endpoint),
@@ -100,4 +96,58 @@ func (cm *ClusterManager) GetEKSAdminClient() (kubernetes.Interface, error) {
 	}
 	return kubernetes.NewForConfig(cfg)
 
+}
+
+func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
+	var err error
+	cm.conn, err = NewConnector(cm.ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := cm.conn.eks.DescribeCluster(&_eks.DescribeClusterInput{
+		Name: StringP(cluster.Name),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := cm.conn.getAuthenticationToken()
+	if err != nil {
+		return nil, err
+	}
+
+	caData, err := base64.StdEncoding.DecodeString(*resp.Cluster.CertificateAuthority.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		clusterName = fmt.Sprintf("%s.pharmer", cluster.Name)
+		userName    = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
+		ctxName     = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
+	)
+	cfg := api.KubeConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "KubeConfig",
+		},
+		Preferences: api.Preferences{
+			Colors: true,
+		},
+		Cluster: api.NamedCluster{
+			Name:   clusterName,
+			Server: String(resp.Cluster.Endpoint),
+			CertificateAuthorityData: caData,
+		},
+		AuthInfo: api.NamedAuthInfo{
+			Name:  userName,
+			Token: token,
+		},
+		Context: api.NamedContext{
+			Name:     ctxName,
+			Cluster:  clusterName,
+			AuthInfo: userName,
+		},
+	}
+	return &cfg, nil
 }

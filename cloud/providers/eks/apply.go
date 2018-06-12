@@ -193,6 +193,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Found %v.compute.internal dscp option set", cm.cluster.Spec.Cloud.Region),
 		})
 	}
+	Store(cm.ctx).Clusters().Update(cm.cluster)
 
 	var kc kubernetes.Interface
 	kc, err = cm.GetAdminClient()

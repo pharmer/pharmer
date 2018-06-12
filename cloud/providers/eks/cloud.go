@@ -20,6 +20,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	//"github.com/pharmer/pharmer/cloud/providers/eks/assets"
+	"encoding/base64"
+	"time"
 )
 
 type cloudConnector struct {
@@ -369,3 +371,15 @@ func (conn *cloudConnector) deleteSSHKey() error {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+
+func (conn *cloudConnector) getAuthenticationToken() (string, error) {
+	request, _ := conn.sts.GetCallerIdentityRequest(&_sts.GetCallerIdentityInput{})
+	request.HTTPRequest.Header.Add(clusterIDHeader, conn.cluster.Name)
+	// sign the request
+	presignedURLString, err := request.Presign(60 * time.Second)
+	if err != nil {
+		return "", err
+	}
+	token := v1Prefix + base64.RawURLEncoding.EncodeToString([]byte(presignedURLString))
+	return token, nil
+}

@@ -14,6 +14,7 @@ var (
 
 type Interface interface {
 	SSHGetter
+	ProviderKubeConfig
 	GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error)
 	SetDefaults(in *api.Cluster) error
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
@@ -48,6 +49,10 @@ type UpgradeManager interface {
 	Apply(dryRun bool) ([]api.Action, error)
 	MasterUpgrade() error
 	NodeGroupUpgrade(ng *api.NodeGroup) error
+}
+
+type ProviderKubeConfig interface {
+	GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error)
 }
 
 type HookFunc func() error
