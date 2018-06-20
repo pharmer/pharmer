@@ -2,11 +2,13 @@ package gke
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/cert"
@@ -79,4 +81,43 @@ func NewGKEAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes.In
 	}
 
 	return kubernetes.NewForConfig(cfg)
+}
+
+func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
+	var err error
+	cm.ctx, err = LoadCACertificates(cm.ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		clusterName = fmt.Sprintf("%s.pharmer", cluster.Name)
+		userName    = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
+		ctxName     = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
+	)
+	cfg := api.KubeConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "KubeConfig",
+		},
+		Preferences: api.Preferences{
+			Colors: true,
+		},
+		Cluster: api.NamedCluster{
+			Name:   clusterName,
+			Server: cluster.APIServerURL(),
+			CertificateAuthorityData: cert.EncodeCertPEM(CACert(cm.ctx)),
+		},
+		AuthInfo: api.NamedAuthInfo{
+			Name:     userName,
+			Username: cluster.Spec.Cloud.GKE.UserName,
+			Password: cluster.Spec.Cloud.GKE.Password,
+		},
+		Context: api.NamedContext{
+			Name:     ctxName,
+			Cluster:  clusterName,
+			AuthInfo: userName,
+		},
+	}
+	return &cfg, nil
 }

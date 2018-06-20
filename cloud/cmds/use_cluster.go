@@ -124,10 +124,14 @@ func toCluster(desired api.NamedCluster) *clientcmdapi.Cluster {
 }
 
 func toUser(desired api.NamedAuthInfo) *clientcmdapi.AuthInfo {
-	if desired.Token == "" {
+	if desired.Token == "" && desired.Username == "" {
 		return &clientcmdapi.AuthInfo{
 			ClientCertificateData: append([]byte(nil), desired.ClientCertificateData...),
 			ClientKeyData:         append([]byte(nil), desired.ClientKeyData...),
+		}
+	} else if desired.Token == "" {
+		return &clientcmdapi.AuthInfo{
+			Exec: desired.Exec,
 		}
 	}
 	return &clientcmdapi.AuthInfo{

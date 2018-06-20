@@ -16,6 +16,7 @@ import (
 	. "github.com/appscode/go/types"
 	_eks "github.com/aws/aws-sdk-go/service/eks"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 type ClusterManager struct {
@@ -111,11 +112,6 @@ func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, 
 		return nil, err
 	}
 
-	token, err := cm.conn.getAuthenticationToken()
-	if err != nil {
-		return nil, err
-	}
-
 	caData, err := base64.StdEncoding.DecodeString(*resp.Cluster.CertificateAuthority.Data)
 	if err != nil {
 		return nil, err
@@ -140,8 +136,13 @@ func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, 
 			CertificateAuthorityData: caData,
 		},
 		AuthInfo: api.NamedAuthInfo{
-			Name:  userName,
-			Token: token,
+			Username: userName,
+			Name:     userName,
+			Exec: &clientcmdapi.ExecConfig{
+				APIVersion: "client.authentication.k8s.io/v1alpha1",
+				Command:    "guard",
+				Args:       []string{"get", "cluster-token", "-k", cluster.Name, "-p", "eks"},
+			},
 		},
 		Context: api.NamedContext{
 			Name:     ctxName,

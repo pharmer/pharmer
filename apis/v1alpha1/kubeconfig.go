@@ -59,6 +59,14 @@ type NamedAuthInfo struct {
 	// Token is the bearer token for authentication to the kubernetes cluster.
 	// +optional
 	Token string `json:"token,omitempty" protobuf:"bytes,4,opt,name=token"`
+	// Username is the username for basic authentication to the kubernetes cluster.
+	// +optional
+	Username string `json:"username,omitempty"`
+	// Password is the password for basic authentication to the kubernetes cluster.
+	// +optional
+	Password string `json:"password,omitempty"`
+	// +optional
+	Exec *clientcmdapi.ExecConfig `json:"exec,omitempty"`
 }
 
 func Convert_KubeConfig_To_Config(in *KubeConfig) *clientcmdapi.Config {
@@ -79,6 +87,9 @@ func Convert_KubeConfig_To_Config(in *KubeConfig) *clientcmdapi.Config {
 				Token: in.AuthInfo.Token,
 				ClientCertificateData: append([]byte(nil), in.AuthInfo.ClientCertificateData...),
 				ClientKeyData:         append([]byte(nil), in.AuthInfo.ClientKeyData...),
+				Username:              in.AuthInfo.Username,
+				Password:              in.AuthInfo.Password,
+				Exec:                  in.AuthInfo.Exec,
 			},
 		},
 		Contexts: map[string]*clientcmdapi.Context{

@@ -179,7 +179,7 @@ func GetSSHConfig(ctx context.Context, nodeName string, cluster *api.Cluster) (*
 }
 
 func GetAdminConfig(ctx context.Context, cluster *api.Cluster) (*api.KubeConfig, error) {
-	if cluster.Spec.Cloud.CloudProvider == "eks" {
+	if managedProviders.Has(cluster.Spec.Cloud.CloudProvider) {
 		cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
 		if err != nil {
 			return nil, err
