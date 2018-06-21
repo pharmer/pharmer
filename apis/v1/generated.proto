@@ -532,7 +532,6 @@ message NullNameGenerator {
 }
 
 message PharmerClusterSpec {
-  // +optional
   optional Cluster clusterApi = 1 [(gogoproto.customname) = "ClusterAPI"];
 
   repeated Machine masters = 2 [(gogoproto.customname) = "Masters"];

@@ -9,7 +9,7 @@ const (
 	EtcdServerCertName           = "etcd-server.crt"
 	EtcdServerKeyName            = "etcd-server.key"
 
-	EtcdImage = "pharmer/lector:0.1.0-alpha.7"
+	EtcdImage = "pharmer/lector:0.1.0-alpha.11"
 )
 
 type EtcdCert struct {

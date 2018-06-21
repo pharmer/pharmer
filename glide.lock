@@ -1,5 +1,5 @@
 hash: 31b49e53dc24fb32e8ba17b8b5df4b797b960de343e6d5a4b1afd4bbbdbfeb61
-updated: 2018-06-06T12:17:24.579263691+06:00
+updated: 2018-06-20T13:52:42.062099645+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -9,7 +9,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/go
-  version: 230e0e4622c682b5d117db8c28a66404ed874ed5
+  version: 578091d435e848d79527d8b911fdf1dd5423b227
   subpackages:
   - analytics
   - context
@@ -34,7 +34,7 @@ imports:
 - name: github.com/appscode/go-hetzner
   version: c038e08b19b1c760484d443de8958880e35bd879
 - name: github.com/appscode/kutil
-  version: 5fbfa91a3f029faeda0520507a7bfe07df3eedbd
+  version: 85abe6c009de4b732e5963cb1ec82950efd2fdda
   subpackages:
   - tools/backup
 - name: github.com/appscode/mergo
@@ -155,7 +155,7 @@ imports:
 - name: github.com/dgrijalva/jwt-go
   version: 01aeca54ebda6e0fbfafd0a524d234159c05ec20
 - name: github.com/digitalocean/godo
-  version: 51f18c0e42941703dc13d15bc0ad69aef6a49830
+  version: a3505618b6f43aa1ddfb841791464fc660015fb4
 - name: github.com/docker/distribution
   version: edc3ab29cdff8694dd6feb85cfeb4b5f1b38ed9c
   subpackages:
@@ -302,7 +302,7 @@ imports:
 - name: github.com/gorilla/websocket
   version: 2d1e4548da234d9cb742cc3628556fef86aafbac
 - name: github.com/graymeta/stow
-  version: f2ded80b71202cf2d10efd3999a748b3cbbe6e1e
+  version: 477570d22b013061d83f2939943177abdc8a9287
   repo: https://github.com/appscode/stow.git
   vcs: git
   subpackages:
@@ -436,7 +436,7 @@ imports:
   - specs-go
   - specs-go/v1
 - name: github.com/packethost/packngo
-  version: e0a8bb7b6144123a99c4953b743b89a16bcb90fc
+  version: db5b2fb99ee303eba5699cb0f9d74aeba8b39b73
 - name: github.com/pborman/uuid
   version: e790cca94e6cc75c7064b1332e63811d4aae1a53
 - name: github.com/peterbourgon/diskv
@@ -478,7 +478,7 @@ imports:
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/scaleway/scaleway-cli
-  version: bea536139e81cc8c57aca22512ad19ddaf2cf085
+  version: 9c04e7a5a0c7c1c6c08d5a69dc9a154afe1c0a2d
   subpackages:
   - pkg/api
   - pkg/sshcommand
@@ -1194,7 +1194,7 @@ imports:
   - pkg/volume/util/recyclerclient
   - pkg/volume/util/types
 - name: k8s.io/metrics
-  version: bff0437de2268206406afd45b944385eeca0a107
+  version: a5ee2ceb74ec1be526025705afbbbac6dfd40d94
   subpackages:
   - pkg/apis/metrics
   - pkg/apis/metrics/v1alpha1
@@ -1210,7 +1210,7 @@ imports:
   - exec
   - exec/testing
 - name: sigs.k8s.io/cluster-api
-  version: 8a95247555aafae928ca98fb70eee270a298da3a
+  version: 9dcc23540ecdb1a277d7bcbc22ca66f8314323c8
   repo: https://github.com/pharmer/cluster-api
   vcs: git
   subpackages:
@@ -1229,7 +1229,7 @@ imports:
   - pkg/controller/machine
   - pkg/controller/noderefutil
   - pkg/controller/sharedinformers
-  - util
+  - pkg/util
 - name: vbom.ml/util
   version: db5cfe13f5cc80a4990d98e2e1b0707a4d1a5394
   subpackages:
