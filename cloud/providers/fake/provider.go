@@ -57,3 +57,7 @@ func (cm *ClusterManager) runFakeJob(requestType string) {
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
 	return nil, ErrNotImplemented
 }
+
+func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
+	return nil, ErrNotImplemented
+}

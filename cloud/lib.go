@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/util/cert"
 )
 
-var managedProviders = sets.NewString("aks", "gke")
+var managedProviders = sets.NewString("aks", "gke", "eks")
 
 func List(ctx context.Context, opts metav1.ListOptions) ([]*api.Cluster, error) {
 	return Store(ctx).Clusters().List(opts)
@@ -179,6 +179,13 @@ func GetSSHConfig(ctx context.Context, nodeName string, cluster *api.Cluster) (*
 }
 
 func GetAdminConfig(ctx context.Context, cluster *api.Cluster) (*api.KubeConfig, error) {
+	if managedProviders.Has(cluster.Spec.Cloud.CloudProvider) {
+		cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+		if err != nil {
+			return nil, err
+		}
+		return cm.GetKubeConfig(cluster)
+	}
 	var err error
 	ctx, err = LoadCACertificates(ctx, cluster)
 	if err != nil {
