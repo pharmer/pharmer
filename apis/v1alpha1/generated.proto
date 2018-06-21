@@ -166,6 +166,8 @@ message CloudStatus {
   optional string sshKeyExternalID = 1;
 
   optional AWSStatus aws = 2;
+
+  optional EKSStatus eks = 3;
 }
 
 message Cluster {
@@ -243,6 +245,16 @@ message CredentialSpec {
   optional string provider = 1;
 
   map<string, string> data = 2;
+}
+
+message EKSStatus {
+  optional string securityGroup = 1;
+
+  optional string vpcID = 2;
+
+  optional string subnetID = 3;
+
+  optional string roleArn = 4;
 }
 
 // ref: https://github.com/kubernetes/kubernetes/blob/8b9f0ea5de2083589f3b9b289b90273556bc09c4/pkg/cloudprovider/providers/gce/gce.go#L228
@@ -341,6 +353,17 @@ message NamedAuthInfo {
   // Token is the bearer token for authentication to the kubernetes cluster.
   // +optional
   optional string token = 4;
+
+  // Username is the username for basic authentication to the kubernetes cluster.
+  // +optional
+  optional string username = 5;
+
+  // Password is the password for basic authentication to the kubernetes cluster.
+  // +optional
+  optional string password = 6;
+
+  // +optional
+  optional ExecConfig exec = 7;
 }
 
 // NamedCluster relates nicknames to cluster information
@@ -571,5 +594,30 @@ message Upgrade {
 
 message VultrCloudConfig {
   optional string token = 1;
+}
+
+message ExecConfig {
+  // Command to execute.
+  optional string command = 1;
+
+  // Arguments to pass to the command when executing it.
+  // +optional
+  repeated string args = 2;
+
+  // Env defines additional environment variables to expose to the process. These
+  // are unioned with the host's environment, as well as variables client-go uses
+  // to pass argument to the plugin.
+  // +optional
+  repeated ExecEnvVar env = 3;
+
+  // Preferred input version of the ExecInfo. The returned ExecCredentials MUST use
+  // the same encoding version as the input.
+  optional string apiVersion = 4;
+}
+
+message ExecEnvVar {
+  optional string name = 1;
+
+  optional string value = 2;
 }
 

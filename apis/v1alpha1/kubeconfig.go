@@ -61,12 +61,12 @@ type NamedAuthInfo struct {
 	Token string `json:"token,omitempty" protobuf:"bytes,4,opt,name=token"`
 	// Username is the username for basic authentication to the kubernetes cluster.
 	// +optional
-	Username string `json:"username,omitempty"`
+	Username string `json:"username,omitempty" protobuf:"bytes,5,opt,name=username"`
 	// Password is the password for basic authentication to the kubernetes cluster.
 	// +optional
-	Password string `json:"password,omitempty"`
+	Password string `json:"password,omitempty" protobuf:"bytes,6,opt,name=password"`
 	// +optional
-	Exec *clientcmdapi.ExecConfig `json:"exec,omitempty"`
+	Exec *clientcmdapi.ExecConfig `json:"exec,omitempty" protobuf:"bytes,7,opt,name=exec"`
 }
 
 func Convert_KubeConfig_To_Config(in *KubeConfig) *clientcmdapi.Config {
