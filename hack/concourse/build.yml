@@ -1,0 +1,16 @@
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: golang
+    tag: 1.10-stretch
+
+inputs:
+- name: pharmer
+
+outputs:
+- name: pharmer-bin
+
+run:
+  path: pharmer/hack/concourse/test.sh
