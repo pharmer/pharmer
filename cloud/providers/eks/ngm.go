@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	core_util "github.com/appscode/kutil/core/v1"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
@@ -128,16 +129,16 @@ func (igm *EKSNodeGroupManager) deleteNodeAuthConfigMap(arn *string) error {
 	if err != nil {
 		return err
 	}
-	mapRoles := make([]map[string]interface{}, 1)
+	mapRoles := make([]map[string]interface{}, 0)
 	if configmaps != nil {
-		existingRules := configmaps.Data["mapRoles"]
+		existingRules := configmaps.Data[EKSConfigMapRoles]
 		if err := yaml.Unmarshal([]byte(existingRules), &mapRoles); err != nil {
 			return err
 		}
 	}
-	newRoles := make([]map[string]interface{}, 1)
+	newRoles := make([]map[string]interface{}, 0)
 	for i, r := range mapRoles {
-		if r["rolearn"] != arn {
+		if r["rolearn"] != *arn {
 			newRoles = append(newRoles, mapRoles[i])
 			//delete(mapRoles, r)
 		}
@@ -147,16 +148,16 @@ func (igm *EKSNodeGroupManager) deleteNodeAuthConfigMap(arn *string) error {
 		return err
 	}
 
-	cm := &core.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      EKSNodeConfigMap,
-			Namespace: "kube-system",
-		},
-		Data: map[string]string{
-			"mapRoles": string(mapRolesBytes),
-		},
-	}
-	return CreateOrUpdateConfigMap(igm.ctx, igm.kc, cm)
+	_, _, err = core_util.CreateOrPatchConfigMap(igm.kc,
+		metav1.ObjectMeta{Namespace: metav1.NamespaceSystem, Name: EKSNodeConfigMap},
+		func(in *core.ConfigMap) *core.ConfigMap {
+			if in.Data == nil {
+				in.Data = make(map[string]string)
+			}
+			in.Data[EKSConfigMapRoles] = string(mapRolesBytes)
+			return in
+		})
+	return err
 }
 
 func (igm *EKSNodeGroupManager) newNodeAuthConfigMap(arn *string) error {
@@ -172,7 +173,7 @@ func (igm *EKSNodeGroupManager) newNodeAuthConfigMap(arn *string) error {
 
 	configmaps, err := igm.kc.CoreV1().ConfigMaps(metav1.NamespaceSystem).Get(EKSNodeConfigMap, metav1.GetOptions{})
 	if err == nil {
-		existingRules := configmaps.Data["mapRoles"]
+		existingRules := configmaps.Data[EKSConfigMapRoles]
 		if err := yaml.Unmarshal([]byte(existingRules), &mapRoles); err != nil {
 			return err
 		}
@@ -184,14 +185,14 @@ func (igm *EKSNodeGroupManager) newNodeAuthConfigMap(arn *string) error {
 		return err
 	}
 
-	cm := &core.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      EKSNodeConfigMap,
-			Namespace: "kube-system",
-		},
-		Data: map[string]string{
-			"mapRoles": string(mapRolesBytes),
-		},
-	}
-	return CreateOrUpdateConfigMap(igm.ctx, igm.kc, cm)
+	_, _, err = core_util.CreateOrPatchConfigMap(igm.kc,
+		metav1.ObjectMeta{Namespace: metav1.NamespaceSystem, Name: EKSNodeConfigMap},
+		func(in *core.ConfigMap) *core.ConfigMap {
+			if in.Data == nil {
+				in.Data = make(map[string]string)
+			}
+			in.Data[EKSConfigMapRoles] = string(mapRolesBytes)
+			return in
+		})
+	return err
 }

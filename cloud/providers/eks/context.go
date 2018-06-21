@@ -16,7 +16,6 @@ import (
 	. "github.com/appscode/go/types"
 	_eks "github.com/aws/aws-sdk-go/service/eks"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 type ClusterManager struct {
@@ -31,16 +30,17 @@ type ClusterManager struct {
 var _ Interface = &ClusterManager{}
 
 const (
-	UID              = "eks"
-	RoleClusterUser  = "clusterUser"
-	RoleClusterAdmin = "clusterAdmin"
-	v1Prefix         = "k8s-aws-v1."
-	maxTokenLenBytes = 1024 * 4
-	clusterIDHeader  = "x-k8s-aws-id"
-	EKSNodeConfigMap = "aws-auth"
-	EKSVPCUrl        = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/amazon-eks-vpc-sample.yaml"
-	ServiceRoleUrl   = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/amazon-eks-service-role.yaml"
-	NodeGroupUrl     = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/amazon-eks-nodegroup.yaml"
+	UID               = "eks"
+	RoleClusterUser   = "clusterUser"
+	RoleClusterAdmin  = "clusterAdmin"
+	v1Prefix          = "k8s-aws-v1."
+	maxTokenLenBytes  = 1024 * 4
+	clusterIDHeader   = "x-k8s-aws-id"
+	EKSNodeConfigMap  = "aws-auth"
+	EKSConfigMapRoles = "mapRoles"
+	EKSVPCUrl         = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/amazon-eks-vpc-sample.yaml"
+	ServiceRoleUrl    = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/amazon-eks-service-role.yaml"
+	NodeGroupUrl      = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/amazon-eks-nodegroup.yaml"
 )
 
 func init() {
@@ -138,7 +138,7 @@ func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, 
 		AuthInfo: api.NamedAuthInfo{
 			Username: userName,
 			Name:     userName,
-			Exec: &clientcmdapi.ExecConfig{
+			Exec: &api.ExecConfig{
 				APIVersion: "client.authentication.k8s.io/v1alpha1",
 				Command:    "guard",
 				Args:       []string{"get", "cluster-token", "-k", cluster.Name, "-p", "eks"},

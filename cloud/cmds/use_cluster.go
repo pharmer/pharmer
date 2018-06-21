@@ -129,9 +129,14 @@ func toUser(desired api.NamedAuthInfo) *clientcmdapi.AuthInfo {
 			ClientCertificateData: append([]byte(nil), desired.ClientCertificateData...),
 			ClientKeyData:         append([]byte(nil), desired.ClientKeyData...),
 		}
-	} else if desired.Token == "" {
+	} else if desired.Exec != nil {
 		return &clientcmdapi.AuthInfo{
-			Exec: desired.Exec,
+			Exec: api.ConvertExecConfig(desired.Exec),
+		}
+	} else if desired.Username != "" {
+		return &clientcmdapi.AuthInfo{
+			Username: desired.Username,
+			Password: desired.Password,
 		}
 	}
 	return &clientcmdapi.AuthInfo{

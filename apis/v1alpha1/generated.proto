@@ -257,6 +257,38 @@ message EKSStatus {
   optional string roleArn = 4;
 }
 
+// ExecConfig specifies a command to provide client credentials. The command is exec'd
+// and outputs structured stdout holding credentials.
+// 
+// See the client.authentiction.k8s.io API group for specifications of the exact input
+// and output format
+message ExecConfig {
+  // Command to execute.
+  optional string command = 1;
+
+  // Arguments to pass to the command when executing it.
+  // +optional
+  repeated string args = 2;
+
+  // Env defines additional environment variables to expose to the process. These
+  // are unioned with the host's environment, as well as variables client-go uses
+  // to pass argument to the plugin.
+  // +optional
+  repeated ExecEnvVar env = 3;
+
+  // Preferred input version of the ExecInfo. The returned ExecCredentials MUST use
+  // the same encoding version as the input.
+  optional string apiVersion = 4;
+}
+
+// ExecEnvVar is used for setting environment variables when executing an exec-based
+// credential plugin.
+message ExecEnvVar {
+  optional string name = 1;
+
+  optional string value = 2;
+}
+
 // ref: https://github.com/kubernetes/kubernetes/blob/8b9f0ea5de2083589f3b9b289b90273556bc09c4/pkg/cloudprovider/providers/gce/gce.go#L228
 message GCECloudConfig {
   optional string tokenURL = 1;
@@ -594,30 +626,5 @@ message Upgrade {
 
 message VultrCloudConfig {
   optional string token = 1;
-}
-
-message ExecConfig {
-  // Command to execute.
-  optional string command = 1;
-
-  // Arguments to pass to the command when executing it.
-  // +optional
-  repeated string args = 2;
-
-  // Env defines additional environment variables to expose to the process. These
-  // are unioned with the host's environment, as well as variables client-go uses
-  // to pass argument to the plugin.
-  // +optional
-  repeated ExecEnvVar env = 3;
-
-  // Preferred input version of the ExecInfo. The returned ExecCredentials MUST use
-  // the same encoding version as the input.
-  optional string apiVersion = 4;
-}
-
-message ExecEnvVar {
-  optional string name = 1;
-
-  optional string value = 2;
 }
 
