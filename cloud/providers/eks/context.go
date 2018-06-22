@@ -141,7 +141,7 @@ func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, 
 			Exec: &api.ExecConfig{
 				APIVersion: "client.authentication.k8s.io/v1alpha1",
 				Command:    "guard",
-				Args:       []string{"get", "cluster-token", "-k", cluster.Name, "-p", "eks"},
+				Args:       []string{"login", "-k", cluster.Name, "-p", "eks"},
 			},
 		},
 		Context: api.NamedContext{
