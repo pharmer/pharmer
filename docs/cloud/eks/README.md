@@ -1,22 +1,22 @@
 ---
-title: Lightsail Overview
+title: Amazon EKS
 menu:
   product_pharmer_0.1.0-alpha.1:
-    identifier: lightsail-overview
+    identifier: eks-overview
     name: Overview
-    parent: lightsail
-    weight: 10
+    parent: eks
+    weight: 30
 product_name: pharmer
 menu_name: product_pharmer_0.1.0-alpha.1
 section_menu_id: cloud
-url: /products/pharmer/0.1.0-alpha.1/cloud/lightsail/
+url: /products/pharmer/0.1.0-alpha.1/cloud/eks/
 aliases:
-  - /products/pharmer/0.1.0-alpha.1/cloud/lightsail/README/
+  - /products/pharmer/0.1.0-alpha.1/cloud/eks/README/
 ---
 
-# Running Kubernetes on [Amazon Lightsail](https://amazonlightsail.com/)
+# Running Kubernetes on [Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html)
 
-Following example will use `pharmer ` to create a Kubernetes cluster with 1 worker node instance and a master instance (i,e, 2 instances in you cluster).
+Following example will use `pharmer ` to create a Kubernetes cluster with 1 worker node on Amazon EKS.
 
 ### Before you start
 
@@ -32,6 +32,10 @@ go install -v
 pharmer -h
 ```
 
+You also need `Guard` installed on your local machine. To install Guard click [here](https://appscode.com/products/guard/0.1.3/setup/install/#install-guard-as-cli)
+
+`AWS CLI` tool need to be installed. For this follow [Configuring the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html) in the AWS command Line Interface User Guide.
+
 ### Pharmer storage
 
 To store your cluster  and credential resource, `pharmer` use [vfs](/docs/cli/vfs.md) as default storage
@@ -43,7 +47,8 @@ In this document we will use local file system ([vfs](/docs/cli/vfs.md)) as a st
 
 ### Credential importing
 
-You can use your [aws credential](/docs/cloud/aws/README.md#credential-importing) to creat cluster in lightsail.
+You can use your [aws credential](/docs/cloud/aws/README.md#credential-importing) to creat cluster in Amazon EKS.
+
 
 ### Cluster provisioning
 
@@ -51,17 +56,17 @@ There are two steps to create a Kubernetes cluster using `pharmer`.
 In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those
 information to create cluster on specific provider.
 
-Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `lightsail`
+Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `Amazon EKS`
  * **Cluster Creating:** We want to create a cluster with following information:
-    - Provider: Lightsail
-    - Cluster name: lsx
+    - Provider: EKS
+    - Cluster name: eksx
     - Location: us-west-2a (Oregon)
     - Number of nodes: 1
-    - Node sku: small_1_0
-    - Kubernetes version: 1.9.0
+    - Node sku: t2.medium
+    - Kubernetes version: 1.10
     - Credential name: [aws](/docs/cloud/aws/README.md#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/lightsail/cloud.json)
+For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/eks/cloud.json)
  Available options in `pharmer` to create a cluster are:
  ```console
  $ pharmer create cluster -h
@@ -89,11 +94,11 @@ Global Flags:
       --alsologtostderr                  log to standard error as well as files
       --analytics                        Send analytical events to Google Guard (default true)
       --config-file string               Path to Pharmer config file
-      --env string                       Environment used to enable debugging (default "dev")
+      --env string                       Environment used to enable debugging (default "prod")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files (default true)
-      --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+      --stderrthreshold severity         logs at or above this threshold go to stderr
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
  ```
@@ -102,12 +107,12 @@ So, we need to run following command to create cluster with our information.
 
 ```console
 
-$ pharmer create cluster lsx \
-	--provider=lightsail \
+$ pharmer create cluster eksx \
+	--provider=eks \
 	--zone=us-west-2a \
-	--nodes=small_1_0=1 \
+	--nodes=t2.medium=1 \
 	--credential-uid=aws \
-	--kubernetes-version=v1.9.0
+	--kubernetes-version=v1.10
 ```
 
 To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](/docs/networking.md)
@@ -118,9 +123,8 @@ The directory structure of the storage provider will be look like:
 ~/.pharmer/store.d/clusters/
         |-- v1
         |    |__ nodegroups
-        |    |       |__ master.json
         |    |       |
-        |    |       |__ small-1-0-pool.json
+        |    |       |__ t2.medium-pool.json
         |    |
         |    |--- pki
         |    |     |__ ca.crt
@@ -132,57 +136,49 @@ The directory structure of the storage provider will be look like:
         |    |     |__ fron-proxy-ca.key
         |    |
         |    |__ ssh
-        |          |__ id_lsx-fzx7yg
+        |          |__ id_eksx-unu5i3
         |          |
-        |          |__ id_lsx-fzx7yg.pub
+        |          |__ id_eksx-unu5i3.pub
         |
-        |__ lsx.json
+        |__ eksx.json
 ```
 Here,
 
    - `/v1/nodegroups/`: contains the node groups information. [Check below](#cluster-scaling) for node group operations.You can see the node group list using following command.
    ```console
-$ pharmer get nodegroups -k lsx
+$ pharmer get nodegroups -k eksx
 ```
    - `v1/pki`: contains the cluster certificate information containing `ca` and `front-proxy-ca`.
    - `v1/ssh`: has the ssh credentials on cluster's nodes. With this key you can `ssh` into any node on a cluster
    - `v1.json`: contains the cluster resource information
 You can view your cluster configuration file by following command.
 ```yaml
-$ pharmer get cluster lsx -o yaml
+$ pharmer get cluster eksx -o yaml
 apiVersion: v1alpha1
 kind: Cluster
 metadata:
-  creationTimestamp: 2017-11-28T10:51:53Z
-  generation: 1511866313656558299
-  name: lsx
-  uid: 253d191b-d42a-11e7-b9e5-382c4a73a7c4
+  creationTimestamp: 2018-06-23T05:14:21Z
+  generation: 1529730861349559445
+  name: eksx
+  uid: 496e8ac4-76a4-11e8-96b1-382c4a73a7c4
 spec:
   api:
     advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    kubelet-preferred-address-types: InternalIP,ExternalIP
-  authorizationModes:
-  - Node
-  - RBAC
+    bindPort: 0
   caCertName: ca
   cloud:
-    ccmCredentialName: aws
-    cloudProvider: lightsail
+    cloudProvider: eks
     region: us-west-2
-    sshKeyName: lsx-fzx7yg
+    sshKeyName: eksx-dnafc3
     zone: us-west-2a
   credentialName: aws
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.9.0
+  kubernetesVersion: "1.10"
   networking:
-    dnsDomain: cluster.local
     networkProvider: calico
-    podSubnet: 192.168.0.0/16
-    serviceSubnet: 10.96.0.0/12
 status:
-  cloud: {}
+  cloud:
+    eks: {}
   phase: Pending
 ```
 
@@ -190,29 +186,23 @@ Here,
 
 * `metadata.name` refers the cluster name, which should be unique within your cluster list.
 * `metadata.uid` is a unique ACID, which is generated by pharmer
-* `spec.cloud` specifies the cloud provider information. pharmer uses `ubuntu-16-04-x64` image by default. don't change the instance images, otherwise cluster may not be working.
+* `spec.cloud` specifies the cloud provider information.
 * `spc.cloud.sshKeyName` shows which ssh key added to cluster instance.
-* `spec.api.bindPort` is the api server port.
-* `spec.networking` specifies the network information of the cluster
-    * `networkProvider`: by default it is `calico`. To modify it click [here](/docs/networking.md).
-    * `podSubnet`: in order for network policy to work correctly this field is needed. For flannel it will be `10.244.0.0/16`
 * `spec.kubernetesVersion` is the cluster server version. It can be modified.
 * `spec.credentialName` is the credential name which is provider during cluster creation command.
-* `spec.apiServerExtraArgs` specifies which value will be forwarded to apiserver during cluster installation.
-* `spec.authorizationMode` refers the cluster authorization mode
 * `status.phase` may be `Pending`, `Ready`, `Deleting`, `Deleted`, `Upgrading` depending on current cluster status.
 
 You can modify this configuration by:
 ```console
-$ pharmer edit cluster lsx
+$ pharmer edit cluster eksx
 ```
 
-* **Applying:** If everything looks ok, we can now apply the resources. This actually creates resources on `Lightsail`.
+* **Applying:** If everything looks ok, we can now apply the resources. This actually creates resources on `Amazon EKS`.
  Up to now we've only been working locally.
 
  To apply run:
  ```console
-$ pharmer apply lsx
+$ pharmer apply eksx
 ```
 
 Now, `pharmer` will apply that configuration, thus create a Kubernetes cluster. After completing task the configuration file of
@@ -222,42 +212,33 @@ the cluster will be look like
 apiVersion: v1alpha1
 kind: Cluster
 metadata:
-  creationTimestamp: 2017-11-28T10:51:53Z
-  generation: 1511866313656558299
-  name: lsx
-  uid: 253d191b-d42a-11e7-b9e5-382c4a73a7c4
+  creationTimestamp: 2018-06-23T05:14:21Z
+  generation: 1529730861349559445
+  name: eksx
+  uid: 496e8ac4-76a4-11e8-96b1-382c4a73a7c4
 spec:
   api:
     advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    kubelet-preferred-address-types: InternalIP,ExternalIP
-  authorizationModes:
-  - Node
-  - RBAC
+    bindPort: 0
   caCertName: ca
   cloud:
-    ccmCredentialName: aws
-    cloudProvider: lightsail
-    instanceImage: ubuntu_16_04_1
+    cloudProvider: eks
+    instanceImage: ami-73a6e20b
     region: us-west-2
-    sshKeyName: lsx-fzx7yg
+    sshKeyName: eksx-dnafc3
     zone: us-west-2a
   credentialName: aws
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.9.0
+  kubernetesVersion: "1.10"
   networking:
-    dnsDomain: cluster.local
     networkProvider: calico
-    podSubnet: 192.168.0.0/16
-    serviceSubnet: 10.96.0.0/12
 status:
-  apiServer:
-  - address: 172.26.10.22
-    type: InternalIP
-  - address: 52.39.175.84
-    type: ExternalIP
-  cloud: {}
+  cloud:
+    eks:
+      roleArn: arn:aws:iam::452618475015:role/EKS-eksx-ServiceRole-AWSServiceRoleForAmazonEKS-VKPC2W53I561
+      securityGroup: sg-eca7a69d
+      subnetID: subnet-92c6b2eb,subnet-218e1f6a,subnet-4aefac10
+      vpcID: vpc-5c908d25
   phase: Ready
 ```
 
@@ -267,39 +248,34 @@ Here,
 
 To get the `kubectl` configuration file(kubeconfig) on your local filesystem run the following command.
 ```console
-$ pharmer use cluster lsx
+$ pharmer use cluster eksx
 ```
 If you don't have `kubectl` installed click [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 
-Now you can run `kubectl get nodes` and verify that your kubernetes 1.9.0 is running.
+
+Now you can run `kubectl get nodes` and verify that your kubernetes 1.10 is running.
+
 
 ```console
 $ kubectl get nodes
 
-NAME              STATUS    AGE       VERSION
-ip-172-26-10-22   Ready     5m        v1.8.4
-ip-172-26-2-245   Ready     2m        v1.8.4
-```
-
-If you want to `ssh` into your instance run the following command
-```console
-$ pharmer ssh node ip-172-26-10-22 -k lsx
+NAME                                          STATUS    ROLES     AGE       VERSION
+ip-192-168-151-1.us-west-2.compute.internal   Ready     <none>    5m        v1.10.3
 ```
 
 ### Cluster Scaling
 
 Scaling a cluster refers following meanings:-
- 1. Increment the number of nodes of a certain node group
- 2. Decrement the number of nodes of a certain node group
+ 1. Increase the number of nodes of a certain node group
+ 2. Decrease the number of nodes of a certain node group
  3. Introduce a new node group with a number of nodes
  4. Drop existing node group
 
 To see the current node groups list, you need to run following command:
 ```console
-$ pharmer get nodegroup -k lsx
+$ pharmer get nodegroup -k eksx
 NAME             Cluster   Node      SKU
-master           lsx       1         small_1_0
-small-1-0-pool   lsx       1         small_1_0
+t2.medium-pool   eksx      1         t2.medium
 ```
 
 * **Updating existing NG**
@@ -307,8 +283,8 @@ small-1-0-pool   lsx       1         small_1_0
 For scenario 1 & 2 we need to update our existing node group. To update existing node group configuration run
 the following command.
 
-```yaml
-$ pharmer edit nodegroup small-1-0-pool -k lsx
+```console
+$ pharmer edit nodegroup t2.medium-pool  -k eksx
 
 # Please edit the object below. Lines beginning with a '#' will be ignored,
 # and an empty file will abort the edit. If an error occurs while saving this file will be
@@ -317,17 +293,19 @@ $ pharmer edit nodegroup small-1-0-pool -k lsx
 apiVersion: v1alpha1
 kind: NodeGroup
 metadata:
-  clusterName: lsx
-  creationTimestamp: 2017-11-28T10:51:54Z
+  clusterName: eksx
+  creationTimestamp: 2018-06-22T11:00:15Z
   labels:
     node-role.kubernetes.io/node: ""
-  name: small-1-0-pool
-  uid: 25fa172d-d42a-11e7-b9e5-382c4a73a7c4
+  name: t2.medium-pool
+  uid: 714dbad0-760b-11e8-b2c6-382c4a73a7c4
 spec:
   nodes: 1
   template:
     spec:
-      sku: small_1_0
+      nodeDiskSize: 100
+      nodeDiskType: gp2
+      sku: t2.medium
       type: regular
 status:
   nodes: 0
@@ -337,7 +315,6 @@ status:
 Here,
 * `metadata.name` refers the node group name, which is unique within a cluster.
 * `metadata.labels` specifies the label of the nodegroup, which will be add to all nodes of following node group.
-    * For master label will be `"node-role.kubernetes.io/master": ""`
     * For node label will be like `"node-role.kubernetes.io/node": ""`
 * `metadata.clusterName` indicates the cluster, which has this node group.
 * `spec.nodes` shows the number of nodes for this following group.
@@ -351,32 +328,33 @@ To update number of nodes for this nodegroup modify the `node` number under `spe
 To add a new node group for an existing cluster you need to run
 
 ```console
-$ pharmer create ng --nodes=small_1_1=0 -k lsx
+$  pharmer create ng --nodes=t2.large=1 -k eksx
 
-$ pharmer get nodegroup -k lsx
-  NAME             Cluster   Node      SKU
-  master           lsx       1         small_1_0
-  small-1-0-pool   lsx       2         small_1_0
-  small-1-1-pool   lsx       0         small_1_
+$ pharmer get nodegroup -k eksx
+NAME             Cluster   Node      SKU
+t2.large-pool    eksx      1         t2.large
+t2.medium-pool   eksx      1         t2.medium
 ```
 
 You can see the yaml of newly created node group, you need to run
 ```yaml
-$ pharmer get nodegroup small-1-1-pool -o yaml -k lsx
+$ pharmer get nodegroup t2.large-pool -o yaml -k eksx
 apiVersion: v1alpha1
 kind: NodeGroup
 metadata:
-  clusterName: lsx
-  creationTimestamp: 2017-11-28T11:21:32Z
+  clusterName: eksx
+  creationTimestamp: 2018-06-22T11:34:33Z
   labels:
     node-role.kubernetes.io/node: ""
-  name: small-1-1-pool
-  uid: 495d502d-d42e-11e7-a1e2-382c4a73a7c4
+  name: t2.large-pool
+  uid: 3c4bec6c-7610-11e8-a511-382c4a73a7c4
 spec:
-  nodes: 0
+  nodes: 1
   template:
     spec:
-      sku: small_1_1
+      nodeDiskSize: 100
+      nodeDiskType: gp2
+      sku: t2.large
       type: regular
 status:
   nodes: 0
@@ -386,24 +364,26 @@ status:
 If you want delete existing node group following command will help.
 
 ```yaml
-$ pharmer delete ng small-1-1-pool -k lsx
+$ pharmer delete ng t2.medium-pool -k eksx
 
-$ pharmer get nodegroup small-1-1-pool -o yaml -k lsx
+$ pharmer get nodegroup t2.medium-pool -k eksx -o yaml
 apiVersion: v1alpha1
 kind: NodeGroup
 metadata:
-  clusterName: lsx
-  creationTimestamp: 2017-11-28T11:21:32Z
-  deletionTimestamp: 2017-11-28T11:23:05Z
+  clusterName: eksx
+  creationTimestamp: 2018-06-22T11:00:15Z
+  deletionTimestamp: 2018-06-22T11:36:03Z
   labels:
     node-role.kubernetes.io/node: ""
-  name: small-1-1-pool
-  uid: 495d502d-d42e-11e7-a1e2-382c4a73a7c4
+  name: t2.medium-pool
+  uid: 714dbad0-760b-11e8-b2c6-382c4a73a7c4
 spec:
-  nodes: 0
+  nodes: 1
   template:
     spec:
-      sku: small_1_1
+      nodeDiskSize: 100
+      nodeDiskType: gp2
+      sku: t2.medium
       type: regular
 status:
   nodes: 0
@@ -417,168 +397,76 @@ After completing your change on the node groups, you need to apply that via `pha
 on provider cluster.
 
 ```console
-$ pharmer apply lsx
+$ pharmer apply eksx
 ```
 
 This command will take care of your actions that you applied on the node groups recently.
 
 ```console
- $ pharmer get ng -k lsx
-NAME             Cluster   Node      SKU
-master           lsx       1         small_1_0
-small-1-0-pool   lsx       2         small_1_0
+ $ pharmer get ng -k eksx
+NAME            Cluster   Node      SKU
+t2.large-pool   eksx      1         t2.large
 ```
 
 ### Cluster Upgrading
 
-To upgrade your cluster firstly you need to check if there any update available for your cluster and latest kubernetes version.
-To check run
+`Pharmer` currently does not support upgrading cluster on `Amazon EKS`. Only supported version is `1.10` .
+
+
+## Cluster Backup
+
+To get a backup of your cluster run the following command:
 
 ```console
-
-$ pharmer describe cluster lsx
-Name:		lsx
-Version:	v1.9.0
-NodeGroup:
-  Name             Node
-  ----             ------
-  master           1
-  small-1-0-pool   2
-[upgrade/versions] Cluster version: v1.9.0
-[upgrade/versions] kubeadm version: v1.8.4
-[upgrade/versions] Latest stable version: v1.8.4
-[upgrade/versions] Latest version in the v1.8 series: v1.8.4
-Upgrade to the latest version in the v1.8 series:
-
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.9.0    v1.8.4
-Controller Manager   v1.9.0    v1.8.4
-Scheduler            v1.9.0    v1.8.4
-Kube Proxy           v1.9.0    v1.8.4
-Kube DNS             1.14.5    1.14.5
-
-You can now apply the upgrade by executing the following command:
-
-	pharmer edit cluster lsx --kubernetes-version=v1.8.4
-
-_____________________________________________________________________
-
+$ pharmer backup cluster --cluster eksx --backup-dir=eksx-backup
 ```
-Then, if you decided to upgrade you cluster run the command that are showing on describe command.
-```console
-$ pharmer edit cluster lsx --kubernetes-version=v1.8.4
-cluster "lsx" updated
+Here,
+   `--backup-dir` is the flag for specifying your backup directory where phamer puts the backup file
+
+After finishing task `pharmer` creates a `.tar.gz` file in your backup directory where you find the backup yaml of your cluster
 
 
-
-You can verify your changes by checking the yaml of the cluster.
-```yaml
-$ pharmer get cluster lsx -o yaml
-apiVersion: v1alpha1
-kind: Cluster
-metadata:
-  creationTimestamp: 2017-11-28T10:51:53Z
-  generation: 1511868490935037825
-  name: lsx
-  uid: 253d191b-d42a-11e7-b9e5-382c4a73a7c4
-spec:
-  api:
-    advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    kubelet-preferred-address-types: InternalIP,ExternalIP
-  authorizationModes:
-  - Node
-  - RBAC
-  caCertName: ca
-  cloud:
-    ccmCredentialName: aws
-    cloudProvider: lightsail
-    instanceImage: ubuntu_16_04_1
-    region: us-west-2
-    sshKeyName: lsx-fzx7yg
-    zone: us-west-2a
-  credentialName: aws
-  frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.8.4
-  networking:
-    dnsDomain: cluster.local
-    networkProvider: calico
-    podSubnet: 192.168.0.0/16
-    serviceSubnet: 10.96.0.0/12
-status:
-  apiServer:
-  - address: 172.26.10.22
-    type: InternalIP
-  - address: 52.39.175.84
-    type: ExternalIP
-  cloud: {}
-  phase: Ready
-
-```
-Here, `spec.kubernetesVersion` is changed to `v1.8.4` from `v1.9.0`
-
-If everything looks ok, then run:
-```console
-$ pharmer apply lsx
-```
-
-You can check your cluster upgraded or not by running following command on your cluster.
-```console
-$ kubectl version
-Client Version: version.Info{Major:"1", Minor:"8", GitVersion:"v1.8.4", GitCommit:"9befc2b8928a9426501d3bf62f72849d5cbcd5a3", GitTreeState:"clean", BuildDate:"2017-11-20T05:28:34Z", GoVersion:"go1.8.3", Compiler:"gc", Platform:"linux/amd64"}
-Server Version: version.Info{Major:"1", Minor:"8", GitVersion:"v1.8.4", GitCommit:"9befc2b8928a9426501d3bf62f72849d5cbcd5a3", GitTreeState:"clean", BuildDate:"2017-11-20T05:17:43Z", GoVersion:"go1.8.3", Compiler:"gc", Platform:"linux/amd64"}
-```
 ## Cluster Deleting
 
 To delete your cluster run
 ```console
-$ pharmer delete cluster lsx
+$ pharmer delete cluster eksx
 ```
 Then, the yaml file looks like
 
 ```yaml
-$ pharmer get cluster lsx -o yaml
+$ pharmer get cluster eksx -o yaml
 apiVersion: v1alpha1
 kind: Cluster
 metadata:
-  creationTimestamp: 2017-11-28T10:51:53Z
-  deletionTimestamp: 2017-11-28T11:29:36Z
-  generation: 1511868490935037825
-  name: lsx
-  uid: 253d191b-d42a-11e7-b9e5-382c4a73a7c4
+  creationTimestamp: 2018-06-23T05:14:21Z
+  deletionTimestamp: 2018-06-23T05:39:36Z
+  generation: 1529730861349559445
+  name: eksx
+  uid: 496e8ac4-76a4-11e8-96b1-382c4a73a7c4
 spec:
   api:
     advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    kubelet-preferred-address-types: InternalIP,ExternalIP
-  authorizationModes:
-  - Node
-  - RBAC
+    bindPort: 0
   caCertName: ca
   cloud:
-    ccmCredentialName: aws
-    cloudProvider: lightsail
-    instanceImage: ubuntu_16_04_1
+    cloudProvider: eks
+    instanceImage: ami-73a6e20b
     region: us-west-2
-    sshKeyName: lsx-fzx7yg
+    sshKeyName: eksx-dnafc3
     zone: us-west-2a
   credentialName: aws
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.8.4
+  kubernetesVersion: "1.10"
   networking:
-    dnsDomain: cluster.local
     networkProvider: calico
-    podSubnet: 192.168.0.0/16
-    serviceSubnet: 10.96.0.0/12
 status:
-  apiServer:
-  - address: 172.26.10.22
-    type: InternalIP
-  - address: 52.39.175.84
-    type: ExternalIP
-  cloud: {}
+  cloud:
+    eks:
+      roleArn: arn:aws:iam::452618475015:role/EKS-eksx-ServiceRole-AWSServiceRoleForAmazonEKS-VKPC2W53I561
+      securityGroup: sg-eca7a69d
+      subnetID: subnet-92c6b2eb,subnet-218e1f6a,subnet-4aefac10
+      vpcID: vpc-5c908d25
   phase: Deleting
 
 ```
@@ -588,15 +476,8 @@ Here,
 
 Now, to apply delete on provider cluster run
 ```console
-$ pharmer apply lsx
+$ pharmer apply eksx
 ```
 
 **Congratulations !!!** , you're an official `pharmer` user now.
-
-
-
-
-
-
-
 

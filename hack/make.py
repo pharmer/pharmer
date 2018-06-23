@@ -74,7 +74,8 @@ CLOUDS = [
     'scaleway',
     'softlayer',
     'vultr',
-    'lightsail'
+    'lightsail',
+    'eks'
 ]
 
 
