@@ -1,22 +1,22 @@
 ---
-title: GCE Overview
+title: GKE
 menu:
   product_pharmer_0.1.0-alpha.1:
-    identifier: gce-overview
+    identifier: gke-overview
     name: Overview
-    parent: gce
-    weight: 10
+    parent: eks
+    weight: 30
 product_name: pharmer
 menu_name: product_pharmer_0.1.0-alpha.1
 section_menu_id: cloud
-url: /products/pharmer/0.1.0-alpha.1/cloud/gce/
+url: /products/pharmer/0.1.0-alpha.1/cloud/gke/
 aliases:
-  - /products/pharmer/0.1.0-alpha.1/cloud/gce/README/
+  - /products/pharmer/0.1.0-alpha.1/cloud/gke/README/
 ---
 
-# Running Kubernetes on [Google Cloud Service](https://console.cloud.google.com)
+# Running Kubernetes on [Google Kubernetes Engine](https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html)
 
-Following example will use `pharmer ` to create a Kubernetes cluster with 1 worker node instance and a master instance (i,e, 2 instances in you cluster).
+Following example will use `pharmer ` to create a Kubernetes cluster with 1 worker node on Google Kubernetes Engine (GKE).
 
 ### Before you start
 
@@ -110,6 +110,7 @@ You can also see the stored credential from the following location:
 ~/.pharmer/store.d/credentials/gce.json
 ```
 
+
 ### Cluster provisioning
 
 There are two steps to create a Kubernetes cluster using `pharmer`.
@@ -118,15 +119,15 @@ information to create cluster on specific provider.
 
 Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `gce`
  * **Cluster Creating:** We want to create a cluster with following information:
-    - Provider: Google Cloud
-    - Cluster name: g1
+    - Provider: GKE
+    - Cluster name: gkex
     - Location: us-central1-f (Central US)
     - Number of nodes: 1
     - Node sku: n1-standard-2 (cpu:2, ram: 7.5)
-    - Kubernetes version: 1.9.0
+    - Kubernetes version: 1.10.4-gke.2
     - Credential name: [gce](#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/gce/cloud.json)
+For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/gke/cloud.json)
 
 Available options in `pharmer` to create a cluster are:
  ```console
@@ -167,13 +168,12 @@ Global Flags:
  So, we need to run following command to create cluster with our information.
 
 ```console
-$ pharmer create cluster g1 \
-	--v=5 \
-	--provider=gce \
+$ pharmer create cluster gkex \
+	--provider=gke \
 	--zone=us-central1-f \
 	--nodes=n1-standard-2=1 \
 	--credential-uid=gce \
-	--kubernetes-version=v1.9.0
+	--kubernetes-version=1.10.4-gke.2
 ```
 
 To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](/docs/networking.md)
@@ -184,7 +184,6 @@ The directory structure of the storage provider will be look like:
 ~/.pharmer/store.d/clusters/
         |-- v1
         |    |__ nodegroups
-        |    |       |__ master.json
         |    |       |
         |    |       |__ n1-standard-2-pool.json
         |    |
@@ -198,11 +197,11 @@ The directory structure of the storage provider will be look like:
         |    |     |__ fron-proxy-ca.key
         |    |
         |    |__ ssh
-        |          |__ id_g1-fwctge
+        |          |__ id_gkex-liw4ux
         |          |
-        |          |__ id_g1-fwctge.pub
+        |          |__ id_gkex-liw4ux.pub
         |
-        |__ g1.json
+        |__ gkex.json
 ```
 Here,
 
@@ -220,40 +219,30 @@ $ pharmer get cluster g1 -o yaml
 apiVersion: v1alpha1
 kind: Cluster
 metadata:
-  creationTimestamp: 2017-11-30T05:40:53Z
-  generation: 1512020453910376439
-  name: g1
-  uid: 07fd49c7-d591-11e7-b0c0-382c4a73a7c4
+  creationTimestamp: 2018-06-23T07:12:27Z
+  generation: 1529737947731374709
+  name: gkex
+  uid: c93e989e-76b4-11e8-b244-382c4a73a7c4
 spec:
   api:
     advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    cloud-config: /etc/kubernetes/ccm/cloud-config
-    kubelet-preferred-address-types: Hostname,InternalDNS,InternalIP,ExternalDNS,ExternalIP
-  authorizationModes:
-  - Node
-  - RBAC
+    bindPort: 0
   caCertName: ca
   cloud:
-    ccmCredentialName: gce
-    cloudProvider: gce
-    gce:
-      NetworkName: default
-      NodeTags:
-      - g1-node
-    instanceImage: ubuntu-1604-xenial-v20170721
-    instanceImageProject: ubuntu-os-cloud
+    cloudProvider: gke
+    gke:
+      networkName: default
+      password: JvZApK9JKYuK9dLV
+      userName: pharmer
+    instanceImage: Ubuntu
     region: us-central1
-    sshKeyName: g1-fwctge
+    sshKeyName: gkex-liw4ux
     zone: us-central1-f
-  controllerManagerExtraArgs:
-    cloud-config: /etc/kubernetes/ccm/cloud-config
   credentialName: gce
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.9.0
+  kubernetesVersion: 1.10.4-gke.2
   networking:
-    networkProvider: calico
+    networkProvider: CALICO
     nonMasqueradeCIDR: 10.0.0.0/8
     podSubnet: 10.244.0.0/16
 status:
@@ -264,29 +253,26 @@ Here,
 
 * `metadata.name` refers the cluster name, which should be unique within your cluster list.
 * `metadata.uid` is a unique ACID, which is generated by pharmer
-* `spec.cloud` specifies the cloud provider information. pharmer uses `ubuntu-16-04-x64` image by default. don't change the instance images, otherwise cluster may not be working.
+* `spec.cloud` specifies the cloud provider information.
 * `spc.cloud.sshKeyName` shows which ssh key added to cluster instance.
-* `spec.api.bindPort` is the api server port.
 * `spec.networking` specifies the network information of the cluster
-    * `networkProvider`: by default it is `calico`. To modify it click [here](/docs/networking.md).
+    * `networkProvider`: by default it is `CALICO`. To modify it click [here](/docs/networking.md).
     * `podSubnet`: in order for network policy to work correctly this field is needed. For flannel it will be `10.244.0.0/16`
 * `spec.kubernetesVersion` is the cluster server version. It can be modified.
 * `spec.credentialName` is the credential name which is provider during cluster creation command.
-* `spec.apiServerExtraArgs` specifies which value will be forwarded to apiserver during cluster installation.
-* `spec.authorizationMode` refers the cluster authorization mode
 * `status.phase` may be `Pending`, `Ready`, `Deleting`, `Deleted`, `Upgrading` depending on current cluster status.
 
 You can modify this configuration by:
 ```console
-$ pharmer edit cluster g1
+$ pharmer edit cluster gkex
 ```
 
-* **Applying:** If everything looks ok, we can now apply the resources. This actually creates resources on `GCE`.
+* **Applying:** If everything looks ok, we can now apply the resources. This actually creates resources on `GKE`.
  Up to now we've only been working locally.
 
  To apply run:
  ```console
-$ pharmer apply g1
+$ pharmer apply gkex
 ```
 
  Now, `pharmer` will apply that configuration, thus create a Kubernetes cluster. After completing task the configuration file of
@@ -296,48 +282,35 @@ $ pharmer apply g1
 apiVersion: v1alpha1
 kind: Cluster
 metadata:
-  creationTimestamp: 2017-11-30T05:40:53Z
-  generation: 1512020453910376439
-  name: g1
-  uid: 07fd49c7-d591-11e7-b0c0-382c4a73a7c4
+  creationTimestamp: 2018-06-23T07:12:27Z
+  generation: 1529737947731374709
+  name: gkex
+  uid: c93e989e-76b4-11e8-b244-382c4a73a7c4
 spec:
   api:
     advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    cloud-config: /etc/kubernetes/ccm/cloud-config
-    kubelet-preferred-address-types: Hostname,InternalDNS,InternalIP,ExternalDNS,ExternalIP
-  authorizationModes:
-  - Node
-  - RBAC
+    bindPort: 0
   caCertName: ca
   cloud:
-    ccmCredentialName: gce
-    cloudProvider: gce
-    gce:
-      NetworkName: default
-      NodeTags:
-      - g1-node
-    instanceImage: ubuntu-1604-xenial-v20170721
-    instanceImageProject: ubuntu-os-cloud
+    cloudProvider: gke
+    gke:
+      networkName: default
+      password: JvZApK9JKYuK9dLV
+      userName: pharmer
+    instanceImage: Ubuntu
     project: k8s-qa
     region: us-central1
-    sshKeyName: g1-fwctge
+    sshKeyName: gkex-liw4ux
     zone: us-central1-f
-  controllerManagerExtraArgs:
-    cloud-config: /etc/kubernetes/ccm/cloud-config
   credentialName: gce
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.9.0
+  kubernetesVersion: 1.10.4-gke.2
   networking:
-    networkProvider: calico
+    networkProvider: CALICO
     nonMasqueradeCIDR: 10.0.0.0/8
-    podSubnet: 10.244.0.0/16
 status:
   apiServer:
-  - address: 10.128.0.2
-    type: InternalIP
-  - address: 104.154.163.23
+  - address: 35.188.204.137
     type: ExternalIP
   cloud: {}
   phase: Ready
@@ -351,20 +324,16 @@ Here,
 
 To get the `kubectl` configuration file(kubeconfig) on your local filesystem run the following command.
 ```console
-$ pharmer use cluster g1
+$ pharmer use cluster gkex
 ```
 If you don't have `kubectl` installed click [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 
 Now you can run `kubectl get nodes` and verify that your kubernetes 1.9.0 is running.
 ```console
 $ kubectl get nodes
-NAME                             STATUS    ROLES     AGE       VERSION
-g1-master                        Ready     master    4m        v1.8.4
-n1-standard-2-pool-hdpldt-qnc2   Ready     node      57s       v1.8.4
-```
-If you want to `ssh` into your instance run the following command
-```console
-$ pharmer ssh node g1-master -k g1
+NAME                                        STATUS    ROLES     AGE       VERSION
+gke-gkex-n1-standard-2-pool-9c900da6-hcsz   Ready     <none>    14m       v1.10.4-gke.2
+
 ```
 
 ### Cluster Scaling
@@ -377,10 +346,9 @@ Scaling a cluster refers following meanings:-
 
 To see the current node groups list, you need to run following command:
 ```console
-$ pharmer get nodegroup -k g1
+$ pharmer get nodegroup -k gkex
 NAME                 Cluster   Node      SKU
-master               g1        1         n1-standard-1
-n1-standard-2-pool   g1        1         n1-standard-2
+n1-standard-2-pool   gkex      1         n1-standard-2
 ```
 
 * **Updating existing NG**
@@ -389,7 +357,7 @@ For scenario 1 & 2 we need to update our existing node group. To update existing
 the following command.
 
 ```yaml
-$ pharmer edit nodegroup n1-standard-2-pool -k g
+$ pharmer edit nodegroup n1-standard-2-pool -k gkex
 
 # Please edit the object below. Lines beginning with a '#' will be ignored,
 # and an empty file will abort the edit. If an error occurs while saving this file will be
@@ -398,12 +366,12 @@ $ pharmer edit nodegroup n1-standard-2-pool -k g
 apiVersion: v1alpha1
 kind: NodeGroup
 metadata:
-  clusterName: g1
-  creationTimestamp: 2017-11-30T05:40:54Z
+  clusterName: gkex
+  creationTimestamp: 2018-06-23T07:12:28Z
   labels:
     node-role.kubernetes.io/node: ""
   name: n1-standard-2-pool
-  uid: 089352b2-d591-11e7-b0c0-382c4a73a7c4
+  uid: c9ce370c-76b4-11e8-b244-382c4a73a7c4
 spec:
   nodes: 1
   template:
@@ -413,7 +381,7 @@ spec:
       sku: n1-standard-2
       type: regular
 status:
-  nodes: 0
+  nodes: 1
 ```
 
 Here,
@@ -436,29 +404,28 @@ To update number of nodes for this nodegroup modify the `node` number under `spe
 
 To add a new regular node group for an existing cluster you need to run
 ```console
-$ pharmer create ng --nodes=n1-standard-1=1 -k g1
+$ pharmer create ng --nodes=n1-standard-1=1 -k gkex
 
-$ pharmer get nodegroup -k g1
+$ pharmer get nodegroup -k gkex
 NAME                 Cluster   Node      SKU
-master               g1        1         n1-standard-1
-n1-standard-1-pool   g1        1         n1-standard-1
-n1-standard-2-pool   g1        1         n1-standard-
+n1-standard-1-pool   gkex      1         n1-standard-1
+n1-standard-2-pool   gkex      1         n1-standard-2
 
 ```
 
 You can see the yaml of the newly created node group by running
 
 ```yaml
-$ pharmer get ng n1-standard-1-pool -k g1 -o yaml
+$ pharmer get nodegroup n1-standard-1-pool -k gkex -o yaml
 apiVersion: v1alpha1
 kind: NodeGroup
 metadata:
-  clusterName: g1
-  creationTimestamp: 2017-11-30T06:12:07Z
+  clusterName: gkex
+  creationTimestamp: 2018-06-23T09:20:50Z
   labels:
     node-role.kubernetes.io/node: ""
   name: n1-standard-1-pool
-  uid: 64a4fd3c-d595-11e7-80e7-382c4a73a7c4
+  uid: b82ad9e0-76c6-11e8-8382-382c4a73a7c4
 spec:
   nodes: 1
   template:
@@ -468,27 +435,27 @@ spec:
       sku: n1-standard-1
       type: regular
 status:
-  nodes: 0
+
 
 ```
 * **Delete existing NG**
 
 If you want delete existing node group following command will help.
 ```yaml
-$ pharmer delete ng n1-standard-2-pool -k g1
+$ pharmer delete ng n1-standard-2-pool -k gkex
 
 
 $ pharmer get ng n1-standard-2-pool -k g1 -o yaml
 apiVersion: v1alpha1
 kind: NodeGroup
 metadata:
-  clusterName: g1
-  creationTimestamp: 2017-11-30T05:40:54Z
-  deletionTimestamp: 2017-11-30T06:13:29Z
+  clusterName: gkex
+  creationTimestamp: 2018-06-23T07:12:28Z
+  deletionTimestamp: 2018-06-23T09:29:13Z
   labels:
     node-role.kubernetes.io/node: ""
   name: n1-standard-2-pool
-  uid: 089352b2-d591-11e7-b0c0-382c4a73a7c4
+  uid: c9ce370c-76b4-11e8-b244-382c4a73a7c4
 spec:
   nodes: 1
   template:
@@ -498,7 +465,7 @@ spec:
       sku: n1-standard-2
       type: regular
 status:
-  nodes: 0
+  nodes: 1
 ```
 Here,
 
@@ -508,128 +475,21 @@ After completing your change on the node groups, you need to apply that via `pha
 on provider cluster.
 
 ```console
-$ pharmer apply g1
+$ pharmer apply gkex
 ```
 
 This command will take care of your actions that you applied on the node groups recently.
 
 ```console
- $ pharmer get ng -k g1
+ $ pharmer get ng -k gkex
 NAME                 Cluster   Node      SKU
-master               g1        1         n1-standard-1
-n1-standard-1-pool   g1        1         n1-standard-1
+n1-standard-1-pool   gkex      1         n1-standard-1
 ```
 
 ### Cluster Upgrading
 
-To upgrade your cluster firstly you need to check if there any update available for your cluster and latest kubernetes version.
-To check run:
-```console
-$ pharmer describe cluster g1
+`Pharmer` currently does not support upgrading cluster on `GKE`.
 
-Name:		g1
-Version:	v1.9.0
-NodeGroup:
-  Name                 Node
-  ----                 ------
-  master               1
-  n1-standard-1-pool   1
-[upgrade/versions] Cluster version: v1.9.0
-[upgrade/versions] kubeadm version: v1.8.3
-[upgrade/versions] Latest stable version: v1.8.4
-[upgrade/versions] Latest version in the v1.8 series: v1.8.4
-Upgrade to the latest version in the v1.8 series:
-
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.9.0    v1.8.4
-Controller Manager   v1.9.0    v1.8.4
-Scheduler            v1.9.0    v1.8.4
-Kube Proxy           v1.9.0    v1.8.4
-Kube DNS             1.14.5    1.14.5
-
-You can now apply the upgrade by executing the following command:
-
-	pharmer edit cluster g1 --kubernetes-version=v1.8.4
-
-Note: Before you do can perform this upgrade, you have to update kubeadm to v1.8.4
-
-_____________________________________________________________________
-
-```
-
-Then, if you decided to upgrade you cluster run the command that are showing on describe command.
-```console
-$ pharmer edit cluster g1 --kubernetes-version=v1.8.4
-cluster "g1" updated
-```
-You can verify your changes by checking the yaml of the cluster.
-
-```yaml
-$ pharmer get cluster g1 -o yaml
-apiVersion: v1alpha1
-kind: Cluster
-metadata:
-  creationTimestamp: 2017-11-30T05:40:53Z
-  generation: 1512023147007799905
-  name: g1
-  uid: 07fd49c7-d591-11e7-b0c0-382c4a73a7c4
-spec:
-  api:
-    advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    cloud-config: /etc/kubernetes/ccm/cloud-config
-    kubelet-preferred-address-types: Hostname,InternalDNS,InternalIP,ExternalDNS,ExternalIP
-  authorizationModes:
-  - Node
-  - RBAC
-  caCertName: ca
-  cloud:
-    ccmCredentialName: gce
-    cloudProvider: gce
-    gce:
-      NetworkName: default
-      NodeTags:
-      - g1-node
-    instanceImage: ubuntu-1604-xenial-v20170721
-    instanceImageProject: ubuntu-os-cloud
-    project: k8s-qa
-    region: us-central1
-    sshKeyName: g1-fwctge
-    zone: us-central1-f
-  controllerManagerExtraArgs:
-    cloud-config: /etc/kubernetes/ccm/cloud-config
-  credentialName: gce
-  frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.8.4
-  networking:
-    networkProvider: calico
-    nonMasqueradeCIDR: 10.0.0.0/8
-    podSubnet: 10.244.0.0/16
-status:
-  apiServer:
-  - address: 10.128.0.2
-    type: InternalIP
-  - address: 104.154.163.23
-    type: ExternalIP
-  cloud: {}
-  phase: Ready
-
-```
-
-Here, `spec.kubernetesVersion` is changed to `v1.8.4` from `v1.9.0`
-
-If everything looks ok, then run:
-```console
-$ pharmer apply g1
-```
-
-You can check your cluster upgraded or not by running following command on your cluster.
-```console
-$ kubectl version
-Client Version: version.Info{Major:"1", Minor:"8", GitVersion:"v1.8.4", GitCommit:"9befc2b8928a9426501d3bf62f72849d5cbcd5a3", GitTreeState:"clean", BuildDate:"2017-11-20T05:28:34Z", GoVersion:"go1.8.3", Compiler:"gc", Platform:"linux/amd64"}
-Server Version: version.Info{Major:"1", Minor:"8", GitVersion:"v1.8.4", GitCommit:"9befc2b8928a9426501d3bf62f72849d5cbcd5a3", GitTreeState:"clean", BuildDate:"2017-11-20T05:17:43Z", GoVersion:"go1.8.3", Compiler:"gc", Platform:"linux/amd64"}
-```
 
 
 ## Cluster Backup
@@ -637,7 +497,7 @@ Server Version: version.Info{Major:"1", Minor:"8", GitVersion:"v1.8.4", GitCommi
 To get a backup of your cluster run the following command:
 
 ```console
-$ pharmer backup cluster --cluster g1 --backup-dir=g1-backup
+$ pharmer backup cluster --cluster gkex --backup-dir=gkex-backup
 ```
 Here,
    `--backup-dir` is the flag for specifying your backup directory where phamer puts the backup file
@@ -649,58 +509,45 @@ After finishing task `pharmer` creates a `.tar.gz` file in your backup directory
 
 To delete your cluster run
 ```console
-$ pharmer delete cluster g1
+$ pharmer delete cluster gkex
 ```
 Then, the yaml file looks like
 
 ```yaml
- $ pharmer get cluster g1 -o yaml
+ $ pharmer get cluster gkex -o yaml
 apiVersion: v1alpha1
 kind: Cluster
 metadata:
-  creationTimestamp: 2017-11-30T05:40:53Z
-  deletionTimestamp: 2017-11-30T06:39:34Z
-  generation: 1512023147007799905
-  name: g1
-  uid: 07fd49c7-d591-11e7-b0c0-382c4a73a7c4
+  creationTimestamp: 2018-06-23T07:12:27Z
+  deletionTimestamp: 2018-06-23T09:52:39Z
+  generation: 1529737947731374709
+  name: gkex
+  uid: c93e989e-76b4-11e8-b244-382c4a73a7c4
 spec:
   api:
     advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    cloud-config: /etc/kubernetes/ccm/cloud-config
-    kubelet-preferred-address-types: Hostname,InternalDNS,InternalIP,ExternalDNS,ExternalIP
-  authorizationModes:
-  - Node
-  - RBAC
+    bindPort: 0
   caCertName: ca
   cloud:
-    ccmCredentialName: gce
-    cloudProvider: gce
-    gce:
-      NetworkName: default
-      NodeTags:
-      - g1-node
-    instanceImage: ubuntu-1604-xenial-v20170721
-    instanceImageProject: ubuntu-os-cloud
+    cloudProvider: gke
+    gke:
+      networkName: default
+      password: JvZApK9JKYuK9dLV
+      userName: pharmer
+    instanceImage: Ubuntu
     project: k8s-qa
     region: us-central1
-    sshKeyName: g1-fwctge
+    sshKeyName: gkex-liw4ux
     zone: us-central1-f
-  controllerManagerExtraArgs:
-    cloud-config: /etc/kubernetes/ccm/cloud-config
   credentialName: gce
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.8.4
+  kubernetesVersion: 1.10.4-gke.2
   networking:
-    networkProvider: calico
+    networkProvider: CALICO
     nonMasqueradeCIDR: 10.0.0.0/8
-    podSubnet: 10.244.0.0/16
 status:
   apiServer:
-  - address: 10.128.0.2
-    type: InternalIP
-  - address: 104.154.163.23
+  - address: 35.188.204.137
     type: ExternalIP
   cloud: {}
   phase: Deleting
@@ -713,7 +560,7 @@ Here,
 
 Now, to apply delete on provider cluster run
 ```console
-$ pharmer apply g1
+$ pharmer apply gkex
 ```
 
 **Congratulations !!!** , you're an official `pharmer` user now.

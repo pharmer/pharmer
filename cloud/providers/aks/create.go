@@ -2,7 +2,6 @@ package aks
 
 import (
 	"net"
-	"strings"
 	"time"
 
 	"github.com/appscode/go/crypto/rand"
@@ -12,7 +11,6 @@ import (
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 )
 
 func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
@@ -38,27 +36,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	// Init spec
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
 	cluster.Spec.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
-	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
-	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
-	cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
-	cluster.Spec.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
-	cluster.Spec.APIServerExtraArgs = map[string]string{
-		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
-		"kubelet-preferred-address-types": strings.Join([]string{
-			string(core.NodeInternalDNS),
-			string(core.NodeInternalIP),
-			string(core.NodeExternalDNS),
-			string(core.NodeExternalIP),
-		}, ","),
-		"cloud-config": "/etc/kubernetes/ccm/cloud-config",
-	}
-	if cluster.IsMinorVersion("1.9") {
-		cluster.Spec.APIServerExtraArgs["admission-control"] = api.DefaultV19AdmissionControl
-	}
-	cluster.Spec.ControllerManagerExtraArgs = map[string]string{
-		"cloud-config": "/etc/kubernetes/ccm/cloud-config",
-	}
-	cluster.Spec.Cloud.CCMCredentialName = cluster.Spec.CredentialName
+
 	cluster.Spec.Cloud.Azure = &api.AzureSpec{
 		ResourceGroup:      n.ResourceGroupName(),
 		SubnetName:         n.SubnetName(),
@@ -97,8 +75,4 @@ func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*
 		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
 	}
 	return cfg, nil
-}
-
-func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
-	return nil, nil
 }
