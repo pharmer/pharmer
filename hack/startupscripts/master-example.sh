@@ -11,28 +11,25 @@ exec 2>&1
 # kill apt processes (E: Unable to lock directory /var/lib/apt/lists/)
 kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 
-
-
 apt-get update -y
 apt-get install -y apt-transport-https curl ca-certificates
 
 curl -fSsL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
+echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' >/etc/apt/sources.list.d/kubernetes.list
 
 add-apt-repository -y ppa:gluster/glusterfs-3.10
 
 apt-get update -y
 apt-get install -y cron docker.io ebtables git glusterfs-client haveged kubectl kubelet nfs-common socat kubeadm ntp || true
 
-
-curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.6/pre-k-linux-amd64 \
-	&& chmod +x pre-k \
-	&& mv pre-k /usr/bin/
+curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.6/pre-k-linux-amd64 &&
+  chmod +x pre-k &&
+  mv pre-k /usr/bin/
 
 systemctl enable docker
 systemctl start docker
 
-cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
+cat >/etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
 Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool=master --cloud-provider=external "
 EOF
@@ -42,10 +39,9 @@ systemctl restart kubelet
 
 kubeadm reset
 
-
 mkdir -p /etc/kubernetes/pki
 
-cat > /etc/kubernetes/pki/ca.key <<EOF
+cat >/etc/kubernetes/pki/ca.key <<EOF
 -----BEGIN RSA PRIVATE KEY-----
 MIIEpQIBAAKCAQEAxlWMEyTBU4qVOdu7z51AX4BFX092/epnqznUMBHIR+XQrnA2
 gbJyR60GYgkhrEbpaR/g3Z0dw3X3QvA9IzfBx/sH+KNtPZEzN8PKOEF2Sa4vVSvV
@@ -75,9 +71,9 @@ XCVFl0EOa/4XpgbHUjdItsytgSjGWyLnhKlaxejKUvqWr6MTJBB9O/w=
 -----END RSA PRIVATE KEY-----
 
 EOF
-pre-k get cacert --common-name=ca < /etc/kubernetes/pki/ca.key > /etc/kubernetes/pki/ca.crt
+pre-k get cacert --common-name=ca </etc/kubernetes/pki/ca.key >/etc/kubernetes/pki/ca.crt
 
-cat > /etc/kubernetes/pki/front-proxy-ca.key <<EOF
+cat >/etc/kubernetes/pki/front-proxy-ca.key <<EOF
 -----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEA0dvl5dWTQPvh798NmOk4ni7uTrs8aHX1dkO0/V+zR/0chN/g
 KOvK1yEwea9gXQM0QrMhtNMKl+yOekTPbDIqG0mCE3thXash5m2o9qmYC9/Aqp+A
@@ -107,17 +103,13 @@ v8tBxaaXhVJL8x/tqUGY5QazXFaRn2Z2A9DFPWq2QNSd3nz72vb0
 -----END RSA PRIVATE KEY-----
 
 EOF
-pre-k get cacert --common-name=front-proxy-ca < /etc/kubernetes/pki/front-proxy-ca.key > /etc/kubernetes/pki/front-proxy-ca.crt
+pre-k get cacert --common-name=front-proxy-ca </etc/kubernetes/pki/front-proxy-ca.key >/etc/kubernetes/pki/front-proxy-ca.crt
 
 chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 
-
-
-
 mkdir -p /etc/kubernetes/kubeadm
 
-
-cat > /etc/kubernetes/kubeadm/base.yaml <<EOF
+cat >/etc/kubernetes/kubeadm/base.yaml <<EOF
 api:
   advertiseAddress: ""
   bindPort: 6443
@@ -147,23 +139,18 @@ unifiedControlPlaneImage: ""
 
 EOF
 
-
 pre-k merge master-config \
-	--config=/etc/kubernetes/kubeadm/base.yaml \
-	--apiserver-advertise-address=$(pre-k get public-ips --all=false) \
-	--apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
-	--apiserver-cert-extra-sans=$(pre-k get private-ips) \
-	--apiserver-cert-extra-sans= \
-	> /etc/kubernetes/kubeadm/config.yaml
+  --config=/etc/kubernetes/kubeadm/base.yaml \
+  --apiserver-advertise-address=$(pre-k get public-ips --all=false) \
+  --apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
+  --apiserver-cert-extra-sans=$(pre-k get private-ips) \
+  --apiserver-cert-extra-sans= \
+  >/etc/kubernetes/kubeadm/config.yaml
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
-
-
 
 kubectl apply \
   -f https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
-
-
 
 kubectl apply \
   -f https://raw.githubusercontent.com/pharmer/addons/master/kubeadm-probe/ds.yaml \
@@ -172,8 +159,6 @@ kubectl apply \
 mkdir -p ~/.kube
 sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
 sudo chown $(id -u):$(id -g) ~/.kube/config
-
-
 
 # kubectl taint nodes ${NODE_NAME} node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule --kubeconfig /etc/kubernetes/admin.conf
 kubectl apply -f "https://raw.githubusercontent.com/pharmer/pharmer/ccm-fix/cloud/providers/digitalocean/cloud-control-manager.yaml" --kubeconfig /etc/kubernetes/admin.conf

@@ -11,10 +11,10 @@ IMG=inspector-nginx
 TAG=alpine
 
 build() {
-	pushd $(dirname "${BASH_SOURCE}")
-	local cmd="docker build -t appscode/$IMG:$TAG ."
-	echo $cmd; $cmd
-	popd
+  pushd $(dirname "${BASH_SOURCE}")
+  local cmd="docker build -t appscode/$IMG:$TAG ."
+  echo $cmd; $cmd
+  popd
 }
 
 binary_repo $@
