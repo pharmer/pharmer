@@ -6,8 +6,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/appscode/go-version"
 	_env "github.com/appscode/go/env"
-	"github.com/hashicorp/go-version"
 	. "github.com/pharmer/pharmer/data/files"
 	"github.com/stretchr/testify/assert"
 )

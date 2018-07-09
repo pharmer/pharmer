@@ -1,12 +1,14 @@
 package cloud
 
 import (
+	"context"
 	"fmt"
 	"time"
 
-	aauthz "github.com/Azure/azure-sdk-for-go/arm/authorization"
-	"github.com/Azure/azure-sdk-for-go/arm/graphrbac"
-	"github.com/Azure/azure-sdk-for-go/arm/resources/subscriptions"
+	"github.com/Azure/azure-sdk-for-go/profiles/2017-03-09/resources/mgmt/subscriptions"
+	aauthz "github.com/Azure/azure-sdk-for-go/profiles/latest/authorization/mgmt/authorization"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/graphrbac/graphrbac"
+	"github.com/Azure/azure-sdk-for-go/profiles/preview/preview/apimanagement/mgmt/apimanagement"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
@@ -66,17 +68,13 @@ func IssueAzureCredential(name string) (*api.Credential, error) {
 	client := autorest.NewClientWithUserAgent(subscriptions.UserAgent())
 	client.Authorizer = autorest.NewBearerAuthorizer(spt)
 
-	tenantsClient := subscriptions.TenantsClient{
-		ManagementClient: subscriptions.ManagementClient{
-			Client:  client,
-			BaseURI: subscriptions.DefaultBaseURI,
-		},
-	}
-	tenants, err := tenantsClient.List()
+	tenantsClient := subscriptions.NewTenantsClientWithBaseURI(subscriptions.DefaultBaseURI)
+	tenantsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
+	tenants, err := tenantsClient.List(context.TODO())
 	if err != nil {
 		return nil, err
 	}
-	tenantID := types.String((*tenants.Value)[0].TenantID)
+	tenantID := types.String((tenants.Values())[0].TenantID)
 
 	userOauthConfig, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, tenantID)
 	if err != nil {
@@ -87,7 +85,7 @@ func IssueAzureCredential(name string) (*api.Credential, error) {
 		*userOauthConfig,
 		azureNativeApplicationID,
 		azure.PublicCloud.ServiceManagementEndpoint,
-		spt.Token)
+		spt.Token())
 	if err != nil {
 		return nil, err
 	}
@@ -100,23 +98,22 @@ func IssueAzureCredential(name string) (*api.Credential, error) {
 	userClient := autorest.NewClientWithUserAgent(subscriptions.UserAgent())
 	userClient.Authorizer = autorest.NewBearerAuthorizer(userSpt)
 
-	userSubsClient := subscriptions.GroupClient{
-		ManagementClient: subscriptions.ManagementClient{
-			Client:  userClient,
-			BaseURI: subscriptions.DefaultBaseURI,
-		},
-	}
-	subs, err := userSubsClient.List()
+	// TODO(tamal): Fix it!
+	userSubsClient := apimanagement.NewGroupClientWithBaseURI(subscriptions.DefaultBaseURI, "")
+	userSubsClient.Authorizer = autorest.NewBearerAuthorizer(userSpt)
+
+	// TODO(tamal): Fix it!
+	subs, err := userSubsClient.ListByServiceComplete(context.TODO(), "", "", "", nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	subscriptionID := types.String((*subs.Value)[0].SubscriptionID)
+	subscriptionID := types.String(subs.Value().ID)
 
 	graphSpt, err := adal.NewServicePrincipalTokenFromManualToken(
 		*userOauthConfig,
 		azureNativeApplicationID,
 		azure.PublicCloud.GraphEndpoint,
-		userSpt.Token)
+		userSpt.Token())
 	if err != nil {
 		return nil, err
 	}
@@ -138,15 +135,10 @@ func IssueAzureCredential(name string) (*api.Credential, error) {
 		Value:     types.StringP(clientSecret),
 	}
 
-	appClient := graphrbac.ApplicationsClient{
-		ManagementClient: graphrbac.ManagementClient{
-			Client:   graphClient,
-			BaseURI:  graphrbac.DefaultBaseURI,
-			TenantID: tenantID,
-		},
-	}
+	appClient := graphrbac.NewApplicationsClientWithBaseURI(graphrbac.DefaultBaseURI, tenantID)
+	appClient.Authorizer = autorest.NewBearerAuthorizer(graphSpt)
 
-	app, err := appClient.Create(graphrbac.ApplicationCreateParameters{
+	app, err := appClient.Create(context.TODO(), graphrbac.ApplicationCreateParameters{
 		AvailableToOtherTenants: types.FalseP(),
 		DisplayName:             types.StringP(name),
 		Homepage:                types.StringP("http://" + name),
@@ -158,14 +150,9 @@ func IssueAzureCredential(name string) (*api.Credential, error) {
 	}
 	clientID := *app.AppID
 
-	spClient := graphrbac.ServicePrincipalsClient{
-		ManagementClient: graphrbac.ManagementClient{
-			Client:   graphClient,
-			BaseURI:  graphrbac.DefaultBaseURI,
-			TenantID: tenantID,
-		},
-	}
-	sp, err := spClient.Create(graphrbac.ServicePrincipalCreateParameters{
+	spClient := graphrbac.NewServicePrincipalsClientWithBaseURI(graphrbac.DefaultBaseURI, tenantID)
+	spClient.Authorizer = autorest.NewBearerAuthorizer(graphSpt)
+	sp, err := spClient.Create(context.TODO(), graphrbac.ServicePrincipalCreateParameters{
 		AppID:          types.StringP(clientID),
 		AccountEnabled: types.TrueP(),
 	})
@@ -173,34 +160,24 @@ func IssueAzureCredential(name string) (*api.Credential, error) {
 		return nil, err
 	}
 
-	roleDefClient := aauthz.RoleDefinitionsClient{
-		ManagementClient: aauthz.ManagementClient{
-			Client:         userClient,
-			BaseURI:        aauthz.DefaultBaseURI,
-			SubscriptionID: subscriptionID,
-		},
-	}
+	roleDefClient := aauthz.NewRoleDefinitionsClientWithBaseURI(aauthz.DefaultBaseURI, subscriptionID)
+	roleDefClient.Authorizer = autorest.NewBearerAuthorizer(userSpt)
 
-	roles, err := roleDefClient.List("subscriptions/"+subscriptionID, `roleName eq 'Contributor'`)
+	roles, err := roleDefClient.List(context.TODO(), "subscriptions/"+subscriptionID, `roleName eq 'Contributor'`)
 	if err != nil {
 		return nil, err
 	}
-	if len(*roles.Value) == 0 {
+	if len(roles.Values()) == 0 {
 		term.Fatalln("Can't find Contributor role.")
 	}
-	roleID := (*roles.Value)[0].ID
+	roleID := (roles.Values())[0].ID
 
-	roleAssignClient := aauthz.RoleAssignmentsClient{
-		ManagementClient: aauthz.ManagementClient{
-			Client:         userClient,
-			BaseURI:        aauthz.DefaultBaseURI,
-			SubscriptionID: subscriptionID,
-		},
-	}
+	roleAssignClient := aauthz.NewRoleAssignmentsClientWithBaseURI(aauthz.DefaultBaseURI, subscriptionID)
+	roleAssignClient.Authorizer = autorest.NewBearerAuthorizer(userSpt)
 
 	wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		roleAssignmentName := uuid.NewRandom().String()
-		_, err := roleAssignClient.Create("subscriptions/"+subscriptionID, roleAssignmentName, aauthz.RoleAssignmentCreateParameters{
+		_, err := roleAssignClient.Create(context.TODO(), "subscriptions/"+subscriptionID, roleAssignmentName, aauthz.RoleAssignmentCreateParameters{
 			Properties: &aauthz.RoleAssignmentProperties{
 				PrincipalID:      sp.ObjectID,
 				RoleDefinitionID: roleID,

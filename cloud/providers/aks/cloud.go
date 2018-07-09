@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/Azure/azure-sdk-for-go/arm/compute"
-	"github.com/Azure/azure-sdk-for-go/arm/resources/resources"
 	ms "github.com/Azure/azure-sdk-for-go/profiles/latest/containerservice/mgmt/containerservice"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-12-01/compute"
 	cs "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2017-09-30/containerservice"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2017-05-10/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
@@ -62,21 +62,11 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	client := autorest.NewClientWithUserAgent(fmt.Sprintf("Azure-SDK-for-Go/%s", compute.Version()))
 	client.Authorizer = autorest.NewBearerAuthorizer(spt)
 
-	availabilitySetsClient := compute.AvailabilitySetsClient{
-		ManagementClient: compute.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
+	availabilitySetsClient := compute.NewAvailabilitySetsClientWithBaseURI(baseURI, typed.SubscriptionID())
+	availabilitySetsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
-	groupsClient := resources.GroupsClient{
-		ManagementClient: resources.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
+	groupsClient := resources.NewGroupsClientWithBaseURI(baseURI, typed.SubscriptionID())
+	groupsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
 	managedClient := ms.NewManagedClustersClient(typed.SubscriptionID())
 	managedClient.Authorizer = autorest.NewBearerAuthorizer(spt)
@@ -96,7 +86,7 @@ func (conn *cloudConnector) detectUbuntuImage() error {
 }
 
 func (conn *cloudConnector) getResourceGroup() (bool, error) {
-	_, err := conn.groupsClient.Get(conn.namer.ResourceGroupName())
+	_, err := conn.groupsClient.Get(context.TODO(), conn.namer.ResourceGroupName())
 	return err == nil, err
 }
 
@@ -104,15 +94,15 @@ func (conn *cloudConnector) ensureResourceGroup() (resources.Group, error) {
 	req := resources.Group{
 		Name:     StringP(conn.namer.ResourceGroupName()),
 		Location: StringP(conn.cluster.Spec.Cloud.Zone),
-		Tags: &map[string]*string{
+		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
 	}
-	return conn.groupsClient.CreateOrUpdate(conn.namer.ResourceGroupName(), req)
+	return conn.groupsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), req)
 }
 
 func (conn *cloudConnector) getAvailabilitySet() (compute.AvailabilitySet, error) {
-	return conn.availabilitySetsClient.Get(conn.namer.ResourceGroupName(), conn.namer.AvailabilitySetName())
+	return conn.availabilitySetsClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.AvailabilitySetName())
 }
 
 func (conn *cloudConnector) ensureAvailabilitySet() (compute.AvailabilitySet, error) {
@@ -120,17 +110,17 @@ func (conn *cloudConnector) ensureAvailabilitySet() (compute.AvailabilitySet, er
 	req := compute.AvailabilitySet{
 		Name:     StringP(name),
 		Location: StringP(conn.cluster.Spec.Cloud.Zone),
-		Tags: &map[string]*string{
+		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
 	}
-	return conn.availabilitySetsClient.CreateOrUpdate(conn.namer.ResourceGroupName(), name, req)
+	return conn.availabilitySetsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), name, req)
 }
 
 func (conn *cloudConnector) deleteResourceGroup() error {
-	_, errchan := conn.groupsClient.Delete(conn.namer.ResourceGroupName(), make(chan struct{}))
+	_, err := conn.groupsClient.Delete(context.TODO(), conn.namer.ResourceGroupName())
 	Logger(conn.ctx).Infof("Resource group %v deleted", conn.namer.ResourceGroupName())
-	return <-errchan
+	return err
 }
 
 func (conn *cloudConnector) upsertAKS(agentPools []cs.AgentPoolProfile) error {

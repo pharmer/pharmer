@@ -2,13 +2,19 @@ package cloud
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
+	"time"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	drain "k8s.io/kubernetes/pkg/kubectl/cmd"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 )
@@ -18,6 +24,35 @@ type NodeDrain struct {
 	Node string
 	ctx  context.Context
 	kc   kubernetes.Interface
+	f    cmdutil.Factory
+}
+
+type restClientGetter struct {
+	config *clientcmdapi.Config
+}
+
+func (r *restClientGetter) ToRESTConfig() (*rest.Config, error) {
+	return r.ToRawKubeConfigLoader().ClientConfig()
+}
+
+func (r *restClientGetter) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+	config, err := r.ToRESTConfig()
+	if err != nil {
+		return nil, err
+	}
+	return discovery.NewCachedDiscoveryClientForConfig(config, os.TempDir(), "", 10*time.Minute)
+}
+
+func (r *restClientGetter) ToRESTMapper() (meta.RESTMapper, error) {
+	client, err := r.ToDiscoveryClient()
+	if err != nil {
+		return nil, err
+	}
+	return restmapper.NewDeferredDiscoveryRESTMapper(client), nil
+}
+
+func (r *restClientGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
+	return clientcmd.NewDefaultClientConfig(*r.config, nil)
 }
 
 func NewNodeDrain(ctx context.Context, kc kubernetes.Interface, cluster *api.Cluster) (NodeDrain, error) {
@@ -27,8 +62,6 @@ func NewNodeDrain(ctx context.Context, kc kubernetes.Interface, cluster *api.Clu
 		DeleteLocalData:    true,
 		GracePeriodSeconds: -1,
 		Timeout:            0,
-		Out:                ioutil.Discard,
-		ErrOut:             ioutil.Discard,
 	}
 
 	c1, err := GetAdminConfig(ctx, cluster)
@@ -36,10 +69,12 @@ func NewNodeDrain(ctx context.Context, kc kubernetes.Interface, cluster *api.Clu
 		return NodeDrain{}, err
 	}
 	out := api.Convert_KubeConfig_To_Config(c1)
-	clientConfig := clientcmd.NewDefaultClientConfig(*out, &clientcmd.ConfigOverrides{})
-	do.Factory = cmdutil.NewFactory(clientConfig)
+	// clientConfig := clientcmd.NewDefaultClientConfig(*out, &clientcmd.ConfigOverrides{})
+	//	do.Factory = cmdutil.NewFactory(clientConfig)
 
-	return NodeDrain{o: do, ctx: ctx, kc: kc}, nil
+	factory := cmdutil.NewFactory(&restClientGetter{out})
+
+	return NodeDrain{o: do, ctx: ctx, kc: kc, f: factory}, nil
 }
 
 func (nd *NodeDrain) Apply() error {
@@ -48,7 +83,7 @@ func (nd *NodeDrain) Apply() error {
 	cmd.Flags().String("selector", nd.o.Selector, "Selector (label query) to filter on")
 	// https://github.com/kubernetes/kubernetes/blob/7377c5911a5e2d5f18dfb15617316a891e661f22/pkg/kubectl/cmd/drain.go#L227
 	cmdutil.AddDryRunFlag(cmd)
-	if err := nd.o.SetupDrain(cmd, []string{nd.Node}); err != nil {
+	if err := nd.o.Complete(nd.f, cmd, []string{nd.Node}); err != nil {
 		return err
 	}
 	if err := nd.o.RunDrain(); err != nil {

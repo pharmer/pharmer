@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	semver "github.com/hashicorp/go-version"
+	semver "github.com/appscode/go-version"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"

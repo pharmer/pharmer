@@ -2,7 +2,7 @@ package printer
 
 import (
 	"github.com/pkg/errors"
-	"k8s.io/kubernetes/pkg/printers"
+	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/printers"
 )
 
 // ref: k8s.io/kubernetes/pkg/kubectl/resource_printer.go

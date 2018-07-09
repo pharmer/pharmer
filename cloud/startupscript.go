@@ -5,8 +5,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/appscode/go-version"
 	"github.com/ghodss/yaml"
-	"github.com/hashicorp/go-version"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"

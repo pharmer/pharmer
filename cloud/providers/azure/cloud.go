@@ -7,11 +7,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/arm/compute"
-	"github.com/Azure/azure-sdk-for-go/arm/network"
-	"github.com/Azure/azure-sdk-for-go/arm/resources/resources"
-	"github.com/Azure/azure-sdk-for-go/arm/storage"
-	armstorage "github.com/Azure/azure-sdk-for-go/arm/storage"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2017-09-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2017-05-10/resources"
+	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2017-10-01/storage"
+	armstorage "github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2017-10-01/storage"
 	azstore "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -74,92 +74,41 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	client := autorest.NewClientWithUserAgent(fmt.Sprintf("Azure-SDK-for-Go/%s", compute.Version()))
 	client.Authorizer = autorest.NewBearerAuthorizer(spt)
 
-	availabilitySetsClient := compute.AvailabilitySetsClient{
-		ManagementClient: compute.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
-	vmClient := compute.VirtualMachinesClient{
-		ManagementClient: compute.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
-	vmExtensionsClient := compute.VirtualMachineExtensionsClient{
-		ManagementClient: compute.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
+	availabilitySetsClient := compute.NewAvailabilitySetsClientWithBaseURI(baseURI, typed.SubscriptionID())
+	availabilitySetsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
-	groupsClient := resources.GroupsClient{
-		ManagementClient: resources.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
-	virtualNetworksClient := network.VirtualNetworksClient{
-		ManagementClient: network.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
-	publicIPAddressesClient := network.PublicIPAddressesClient{
-		ManagementClient: network.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
-	securityGroupsClient := network.SecurityGroupsClient{
-		ManagementClient: network.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
-	securityRulesClient := network.SecurityRulesClient{
-		ManagementClient: network.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
-	subnetsClient := network.SubnetsClient{
-		ManagementClient: network.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
-	routeTablesClient := network.RouteTablesClient{
-		ManagementClient: network.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
-	interfacesClient := network.InterfacesClient{
-		ManagementClient: network.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
+	vmClient := compute.NewVirtualMachinesClientWithBaseURI(baseURI, typed.SubscriptionID())
+	vmClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
-	storageClient := storage.AccountsClient{
-		ManagementClient: storage.ManagementClient{
-			Client:         client,
-			BaseURI:        baseURI,
-			SubscriptionID: typed.SubscriptionID(),
-		},
-	}
+	vmExtensionsClient := compute.NewVirtualMachineExtensionsClientWithBaseURI(baseURI, typed.SubscriptionID())
+	vmExtensionsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
+
+	groupsClient := resources.NewGroupsClientWithBaseURI(baseURI, typed.SubscriptionID())
+	groupsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
+
+	virtualNetworksClient := network.NewVirtualNetworksClientWithBaseURI(baseURI, typed.SubscriptionID())
+	virtualNetworksClient.Authorizer = autorest.NewBearerAuthorizer(spt)
+
+	publicIPAddressesClient := network.NewPublicIPAddressesClientWithBaseURI(baseURI, typed.SubscriptionID())
+	publicIPAddressesClient.Authorizer = autorest.NewBearerAuthorizer(spt)
+
+	securityGroupsClient := network.NewSecurityGroupsClientWithBaseURI(baseURI, typed.SubscriptionID())
+	securityGroupsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
+
+	securityRulesClient := network.NewSecurityRulesClientWithBaseURI(baseURI, typed.SubscriptionID())
+	securityRulesClient.Authorizer = autorest.NewBearerAuthorizer(spt)
+
+	subnetsClient := network.NewSubnetsClientWithBaseURI(baseURI, typed.SubscriptionID())
+	subnetsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
+
+	routeTablesClient := network.NewRouteTablesClientWithBaseURI(baseURI, typed.SubscriptionID())
+	routeTablesClient.Authorizer = autorest.NewBearerAuthorizer(spt)
+
+	interfacesClient := network.NewInterfacesClientWithBaseURI(baseURI, typed.SubscriptionID())
+	interfacesClient.Authorizer = autorest.NewBearerAuthorizer(spt)
+
+	storageClient := storage.NewAccountsClientWithBaseURI(baseURI, typed.SubscriptionID())
+	storageClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
 	return &cloudConnector{
 		cluster: cluster,
@@ -188,7 +137,7 @@ func (conn *cloudConnector) detectUbuntuImage() error {
 }
 
 func (conn *cloudConnector) getResourceGroup() (bool, error) {
-	_, err := conn.groupsClient.Get(conn.namer.ResourceGroupName())
+	_, err := conn.groupsClient.Get(context.TODO(), conn.namer.ResourceGroupName())
 	return err == nil, err
 }
 
@@ -196,15 +145,15 @@ func (conn *cloudConnector) ensureResourceGroup() (resources.Group, error) {
 	req := resources.Group{
 		Name:     StringP(conn.namer.ResourceGroupName()),
 		Location: StringP(conn.cluster.Spec.Cloud.Zone),
-		Tags: &map[string]*string{
+		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
 	}
-	return conn.groupsClient.CreateOrUpdate(conn.namer.ResourceGroupName(), req)
+	return conn.groupsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), req)
 }
 
 func (conn *cloudConnector) getAvailabilitySet() (compute.AvailabilitySet, error) {
-	return conn.availabilitySetsClient.Get(conn.namer.ResourceGroupName(), conn.namer.AvailabilitySetName())
+	return conn.availabilitySetsClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.AvailabilitySetName())
 }
 
 func (conn *cloudConnector) ensureAvailabilitySet() (compute.AvailabilitySet, error) {
@@ -212,15 +161,15 @@ func (conn *cloudConnector) ensureAvailabilitySet() (compute.AvailabilitySet, er
 	req := compute.AvailabilitySet{
 		Name:     StringP(name),
 		Location: StringP(conn.cluster.Spec.Cloud.Zone),
-		Tags: &map[string]*string{
+		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
 	}
-	return conn.availabilitySetsClient.CreateOrUpdate(conn.namer.ResourceGroupName(), name, req)
+	return conn.availabilitySetsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), name, req)
 }
 
 func (conn *cloudConnector) getVirtualNetwork() (network.VirtualNetwork, error) {
-	return conn.virtualNetworksClient.Get(conn.namer.ResourceGroupName(), conn.namer.VirtualNetworkName(), "")
+	return conn.virtualNetworksClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.VirtualNetworkName(), "")
 }
 
 func (conn *cloudConnector) ensureVirtualNetwork() (network.VirtualNetwork, error) {
@@ -233,22 +182,21 @@ func (conn *cloudConnector) ensureVirtualNetwork() (network.VirtualNetwork, erro
 				AddressPrefixes: &[]string{conn.cluster.Spec.Networking.NonMasqueradeCIDR},
 			},
 		},
-		Tags: &map[string]*string{
+		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
 	}
 
-	_, errchan := conn.virtualNetworksClient.CreateOrUpdate(conn.namer.ResourceGroupName(), name, req, nil)
-	err := <-errchan
+	_, err := conn.virtualNetworksClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), name, req)
 	if err != nil {
 		return network.VirtualNetwork{}, err
 	}
 	Logger(conn.ctx).Infof("Virtual network %v created", name)
-	return conn.virtualNetworksClient.Get(conn.namer.ResourceGroupName(), name, "")
+	return conn.virtualNetworksClient.Get(context.TODO(), conn.namer.ResourceGroupName(), name, "")
 }
 
 func (conn *cloudConnector) getNetworkSecurityGroup() (network.SecurityGroup, error) {
-	return conn.securityGroupsClient.Get(conn.namer.ResourceGroupName(), conn.namer.NetworkSecurityGroupName(), "")
+	return conn.securityGroupsClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.NetworkSecurityGroupName(), "")
 }
 
 func (conn *cloudConnector) createNetworkSecurityGroup() (network.SecurityGroup, error) {
@@ -256,17 +204,16 @@ func (conn *cloudConnector) createNetworkSecurityGroup() (network.SecurityGroup,
 	securityGroup := network.SecurityGroup{
 		Name:     StringP(securityGroupName),
 		Location: StringP(conn.cluster.Spec.Cloud.Zone),
-		Tags: &map[string]*string{
+		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
 	}
-	_, errchan := conn.securityGroupsClient.CreateOrUpdate(conn.namer.ResourceGroupName(), securityGroupName, securityGroup, nil)
-	err := <-errchan
+	_, err := conn.securityGroupsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), securityGroupName, securityGroup)
 	if err != nil {
 		return network.SecurityGroup{}, err
 	}
 	Logger(conn.ctx).Infof("Network security group %v created", securityGroupName)
-	return conn.securityGroupsClient.Get(conn.namer.ResourceGroupName(), securityGroupName, "")
+	return conn.securityGroupsClient.Get(context.TODO(), conn.namer.ResourceGroupName(), securityGroupName, "")
 }
 
 func (conn *cloudConnector) getSubnetID(vn *network.VirtualNetwork) (network.Subnet, error) {
@@ -274,7 +221,7 @@ func (conn *cloudConnector) getSubnetID(vn *network.VirtualNetwork) (network.Sub
 	if vn.Name == n.Name {
 		return network.Subnet{}, errors.New("Virtualnetwork not found")
 	}
-	return conn.subnetsClient.Get(conn.namer.ResourceGroupName(), *vn.Name, conn.namer.SubnetName(), "")
+	return conn.subnetsClient.Get(context.TODO(), conn.namer.ResourceGroupName(), *vn.Name, conn.namer.SubnetName(), "")
 }
 
 func (conn *cloudConnector) createSubnetID(vn *network.VirtualNetwork, sg *network.SecurityGroup) (network.Subnet, error) {
@@ -299,17 +246,16 @@ func (conn *cloudConnector) createSubnetID(vn *network.VirtualNetwork, sg *netwo
 		},
 	}
 
-	_, errchan := conn.subnetsClient.CreateOrUpdate(conn.namer.ResourceGroupName(), *vn.Name, name, req, nil)
-	err = <-errchan
+	_, err = conn.subnetsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), *vn.Name, name, req)
 	if err != nil {
 		return network.Subnet{}, err
 	}
 	Logger(conn.ctx).Infof("Subnet name %v created", name)
-	return conn.subnetsClient.Get(conn.namer.ResourceGroupName(), *vn.Name, name, "")
+	return conn.subnetsClient.Get(context.TODO(), conn.namer.ResourceGroupName(), *vn.Name, name, "")
 }
 
 func (conn *cloudConnector) getRouteTable() (network.RouteTable, error) {
-	return conn.routeTablesClient.Get(conn.namer.ResourceGroupName(), conn.namer.RouteTableName(), "")
+	return conn.routeTablesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.RouteTableName(), "")
 }
 
 func (conn *cloudConnector) createRouteTable() (network.RouteTable, error) {
@@ -317,29 +263,28 @@ func (conn *cloudConnector) createRouteTable() (network.RouteTable, error) {
 	req := network.RouteTable{
 		Name:     StringP(name),
 		Location: StringP(conn.cluster.Spec.Cloud.Zone),
-		Tags: &map[string]*string{
+		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
 	}
-	_, errchan := conn.routeTablesClient.CreateOrUpdate(conn.namer.ResourceGroupName(), name, req, nil)
-	err := <-errchan
+	_, err := conn.routeTablesClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), name, req)
 	if err != nil {
 		return network.RouteTable{}, err
 	}
 	Logger(conn.ctx).Infof("Route table %v created", name)
-	return conn.routeTablesClient.Get(conn.namer.ResourceGroupName(), name, "")
+	return conn.routeTablesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), name, "")
 }
 
 func (conn *cloudConnector) getNetworkSecurityRule() (bool, error) {
-	_, err := conn.securityRulesClient.Get(conn.namer.ResourceGroupName(), conn.namer.NetworkSecurityGroupName(), conn.namer.NetworkSecurityRule("ssh"))
+	_, err := conn.securityRulesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.NetworkSecurityGroupName(), conn.namer.NetworkSecurityRule("ssh"))
 	if err != nil {
 		return false, err
 	}
-	_, err = conn.securityRulesClient.Get(conn.namer.ResourceGroupName(), conn.namer.NetworkSecurityGroupName(), conn.namer.NetworkSecurityRule("ssl"))
+	_, err = conn.securityRulesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.NetworkSecurityGroupName(), conn.namer.NetworkSecurityRule("ssl"))
 	if err != nil {
 		return false, err
 	}
-	_, err = conn.securityRulesClient.Get(conn.namer.ResourceGroupName(), conn.namer.NetworkSecurityGroupName(), conn.namer.NetworkSecurityRule("masterssl"))
+	_, err = conn.securityRulesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.NetworkSecurityGroupName(), conn.namer.NetworkSecurityRule("masterssl"))
 	if err != nil {
 		return false, err
 	}
@@ -361,8 +306,7 @@ func (conn *cloudConnector) createNetworkSecurityRule(sg *network.SecurityGroup)
 			SourcePortRange:          StringP("*"),
 		},
 	}
-	_, errchan := conn.securityRulesClient.CreateOrUpdate(conn.namer.ResourceGroupName(), *sg.Name, sshRuleName, sshRule, nil)
-	err := <-errchan
+	_, err := conn.securityRulesClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), *sg.Name, sshRuleName, sshRule)
 	if err != nil {
 		return err
 	}
@@ -381,8 +325,7 @@ func (conn *cloudConnector) createNetworkSecurityRule(sg *network.SecurityGroup)
 			SourcePortRange:          StringP("*"),
 		},
 	}
-	_, errchan = conn.securityRulesClient.CreateOrUpdate(conn.namer.ResourceGroupName(), *sg.Name, sslRuleName, sslRule, nil)
-	err = <-errchan
+	_, err = conn.securityRulesClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), *sg.Name, sslRuleName, sslRule)
 	if err != nil {
 		return err
 	}
@@ -402,8 +345,7 @@ func (conn *cloudConnector) createNetworkSecurityRule(sg *network.SecurityGroup)
 			SourcePortRange:          StringP("*"),
 		},
 	}
-	_, errchan = conn.securityRulesClient.CreateOrUpdate(conn.namer.ResourceGroupName(), *sg.Name, mastersslRuleName, mastersslRule, nil)
-	err = <-errchan
+	_, err = conn.securityRulesClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), *sg.Name, mastersslRuleName, mastersslRule)
 	if err != nil {
 		return err
 	}
@@ -414,7 +356,7 @@ func (conn *cloudConnector) createNetworkSecurityRule(sg *network.SecurityGroup)
 
 func (conn *cloudConnector) getStorageAccount() (armstorage.Account, error) {
 	storageName := conn.cluster.Spec.Cloud.Azure.StorageAccountName
-	return conn.storageClient.GetProperties(conn.namer.ResourceGroupName(), storageName)
+	return conn.storageClient.GetProperties(context.TODO(), conn.namer.ResourceGroupName(), storageName)
 }
 
 func (conn *cloudConnector) createStorageAccount() (armstorage.Account, error) {
@@ -424,17 +366,16 @@ func (conn *cloudConnector) createStorageAccount() (armstorage.Account, error) {
 		Sku: &armstorage.Sku{
 			Name: armstorage.StandardLRS,
 		},
-		Tags: &map[string]*string{
+		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
 	}
-	_, errchan := conn.storageClient.Create(conn.namer.ResourceGroupName(), storageName, req, nil)
-	err := <-errchan
+	_, err := conn.storageClient.Create(context.TODO(), conn.namer.ResourceGroupName(), storageName, req)
 	if err != nil {
 		return armstorage.Account{}, err
 	}
 	Logger(conn.ctx).Infof("Storage account %v created", storageName)
-	keys, err := conn.storageClient.ListKeys(conn.namer.ResourceGroupName(), storageName)
+	keys, err := conn.storageClient.ListKeys(context.TODO(), conn.namer.ResourceGroupName(), storageName)
 	if err != nil {
 		return armstorage.Account{}, err
 	}
@@ -448,7 +389,7 @@ func (conn *cloudConnector) createStorageAccount() (armstorage.Account, error) {
 	if err != nil {
 		return armstorage.Account{}, err
 	}
-	return conn.storageClient.GetProperties(conn.namer.ResourceGroupName(), storageName)
+	return conn.storageClient.GetProperties(context.TODO(), conn.namer.ResourceGroupName(), storageName)
 }
 
 func (conn *cloudConnector) createPublicIP(name string, alloc network.IPAllocationMethod) (network.PublicIPAddress, error) {
@@ -458,36 +399,35 @@ func (conn *cloudConnector) createPublicIP(name string, alloc network.IPAllocati
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
 			PublicIPAllocationMethod: alloc,
 		},
-		Tags: &map[string]*string{
+		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
 	}
 
-	_, errchan := conn.publicIPAddressesClient.CreateOrUpdate(conn.namer.ResourceGroupName(), name, req, nil)
-	err := <-errchan
+	_, err := conn.publicIPAddressesClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), name, req)
 	if err != nil {
 		return network.PublicIPAddress{}, err
 	}
 	Logger(conn.ctx).Infof("Public ip address %v created", name)
-	return conn.publicIPAddressesClient.Get(conn.namer.ResourceGroupName(), name, "")
+	return conn.publicIPAddressesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), name, "")
 }
 
 func (conn *cloudConnector) getPublicIP(name string) (network.PublicIPAddress, error) {
-	return conn.publicIPAddressesClient.Get(conn.namer.ResourceGroupName(), name, "")
+	return conn.publicIPAddressesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), name, "")
 }
 
 func (conn *cloudConnector) getNetworkInterface(name string) (network.Interface, error) {
-	return conn.interfacesClient.Get(conn.namer.ResourceGroupName(), name, "")
+	return conn.interfacesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), name, "")
 }
 
 func (conn *cloudConnector) GetNodeGroup(instanceGroup string) (bool, map[string]*api.NodeInfo, error) {
 	var flag bool = false
 	existingNGs := make(map[string]*api.NodeInfo)
-	vm, err := conn.vmClient.List(conn.namer.ResourceGroupName())
+	vm, err := conn.vmClient.List(context.TODO(), conn.namer.ResourceGroupName())
 	if err != nil {
 		return false, existingNGs, errors.Wrap(err, ID(conn.ctx))
 	}
-	for _, i := range *vm.Value {
+	for _, i := range vm.Values() {
 		name := *i.Name
 		if strings.HasPrefix(name, instanceGroup) {
 			flag = true
@@ -529,7 +469,7 @@ func (conn *cloudConnector) createNetworkInterface(name string, sg network.Secur
 				ID: sg.ID,
 			},
 		},
-		Tags: &map[string]*string{
+		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
 	}
@@ -539,17 +479,16 @@ func (conn *cloudConnector) createNetworkInterface(name string, sg network.Secur
 		}
 		(*req.IPConfigurations)[0].PrivateIPAddress = StringP(internalIP)
 	}
-	_, errchan := conn.interfacesClient.CreateOrUpdate(conn.namer.ResourceGroupName(), name, req, nil)
-	err := <-errchan
+	_, err := conn.interfacesClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), name, req)
 	if err != nil {
 		return network.Interface{}, err
 	}
 	Logger(conn.ctx).Infof("Network interface %v created", name)
-	return conn.interfacesClient.Get(conn.namer.ResourceGroupName(), name, "")
+	return conn.interfacesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), name, "")
 }
 
 func (conn *cloudConnector) getVirtualMachine(name string) (compute.VirtualMachine, error) {
-	return conn.vmClient.Get(conn.namer.ResourceGroupName(), name, "")
+	return conn.vmClient.Get(context.TODO(), conn.namer.ResourceGroupName(), name, "")
 }
 
 func (conn *cloudConnector) createVirtualMachine(nic network.Interface, as compute.AvailabilitySet, sa armstorage.Account, vmName, data, vmSize string) (compute.VirtualMachine, error) {
@@ -604,13 +543,12 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, as compu
 				VMSize: compute.VirtualMachineSizeTypes(vmSize),
 			},
 		},
-		Tags: &map[string]*string{
+		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
 	}
 
-	_, errchan := conn.vmClient.CreateOrUpdate(conn.namer.ResourceGroupName(), vmName, req, nil)
-	err := <-errchan
+	_, err := conn.vmClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), vmName, req)
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
@@ -635,12 +573,11 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, as compu
 			},
 			// ProvisioningState
 		},
-		Tags: &map[string]*string{
+		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
 	}
-	_, errchan = conn.vmExtensionsClient.CreateOrUpdate(conn.namer.ResourceGroupName(), vmName, extName, extReq, nil)
-	err = <-errchan
+	_, err = conn.vmExtensionsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), vmName, extName, extReq)
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
@@ -651,19 +588,18 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, as compu
 	//	return compute.VirtualMachine{}, err
 	//}
 
-	vm, err := conn.vmClient.Get(conn.namer.ResourceGroupName(), vmName, compute.InstanceView)
+	vm, err := conn.vmClient.Get(context.TODO(), conn.namer.ResourceGroupName(), vmName, compute.InstanceView)
 	Logger(conn.ctx).Infof("Found virtual machine %v", vm)
 	return vm, err
 }
 
 func (conn *cloudConnector) DeleteVirtualMachine(vmName string) error {
-	_, errchan := conn.vmClient.Delete(conn.namer.ResourceGroupName(), vmName, nil)
-	err := <-errchan
+	_, err := conn.vmClient.Delete(context.TODO(), conn.namer.ResourceGroupName(), vmName)
 	if err != nil {
 		return err
 	}
 	storageName := conn.cluster.Spec.Cloud.Azure.StorageAccountName
-	keys, err := conn.storageClient.ListKeys(conn.namer.ResourceGroupName(), storageName)
+	keys, err := conn.storageClient.ListKeys(context.TODO(), conn.namer.ResourceGroupName(), storageName)
 	if err != nil {
 		return err
 	}
@@ -783,26 +719,26 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 }
 
 func (conn *cloudConnector) deleteResourceGroup() error {
-	_, errchan := conn.groupsClient.Delete(conn.namer.ResourceGroupName(), make(chan struct{}))
+	_, err := conn.groupsClient.Delete(context.TODO(), conn.namer.ResourceGroupName())
 	Logger(conn.ctx).Infof("Resource group %v deleted", conn.namer.ResourceGroupName())
-	return <-errchan
+	return err
 }
 
 func (conn *cloudConnector) deleteNodeNetworkInterface(interfaceName string) error {
-	_, errchan := conn.interfacesClient.Delete(conn.cluster.Name, interfaceName, make(chan struct{}))
+	_, err := conn.interfacesClient.Delete(context.TODO(), conn.cluster.Name, interfaceName)
 	Logger(conn.ctx).Infof("Node network interface %v deleted", interfaceName)
-	return <-errchan
+	return err
 }
 
 func (conn *cloudConnector) deletePublicIp(ipName string) error {
-	_, errchan := conn.publicIPAddressesClient.Delete(conn.cluster.Name, ipName, nil)
+	_, err := conn.publicIPAddressesClient.Delete(context.TODO(), conn.cluster.Name, ipName)
 	Logger(conn.ctx).Infof("Public ip %v deleted", ipName)
-	return <-errchan
+	return err
 }
 func (conn *cloudConnector) deleteVirtualMachine(machineName string) error {
-	_, errchan := conn.vmClient.Delete(conn.cluster.Name, machineName, make(chan struct{}))
+	_, err := conn.vmClient.Delete(context.TODO(), conn.cluster.Name, machineName)
 	Logger(conn.ctx).Infof("Virtual machine %v deleted", machineName)
-	return <-errchan
+	return err
 }
 
 // splitProviderID converts a providerID to a NodeName.

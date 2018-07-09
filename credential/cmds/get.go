@@ -44,7 +44,6 @@ func NewCmdGetCredential(out io.Writer) *cobra.Command {
 }
 
 func RunGetCredential(ctx context.Context, opts *options.CredentialGetConfig, out io.Writer) error {
-
 	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
 		return err
@@ -60,9 +59,7 @@ func RunGetCredential(ctx context.Context, opts *options.CredentialGetConfig, ou
 		if err := rPrinter.PrintObj(credential, w); err != nil {
 			return err
 		}
-		if rPrinter.IsGeneric() {
-			printer.PrintNewline(w)
-		}
+		printer.PrintNewline(w)
 	}
 
 	w.Flush()
