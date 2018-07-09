@@ -17,12 +17,14 @@ var kubernetesCNIVersions = map[string]string{
 	"1.8.0":  "0.5.1",
 	"1.9.0":  "0.6.0",
 	"1.10.0": "0.6.0",
+	"1.11.0": "0.6.0",
 }
 
 var prekVersions = map[string]string{
 	"1.8.0":  "1.8.0",
 	"1.9.0":  "1.9.0",
 	"1.10.0": "1.10.0",
+	"1.11.0": "0.1.0-alpha.13-21-g509d309",
 }
 
 type TemplateData struct {
@@ -167,7 +169,7 @@ rm -rf /usr/sbin/policy-rc.d
 systemctl enable docker kubelet nfs-utils
 systemctl start docker kubelet nfs-utils
 
-kubeadm reset
+kubeadm reset -f
 
 {{ template "setup-certs" . }}
 
