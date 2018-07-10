@@ -24,7 +24,7 @@ var prekVersions = map[string]string{
 	"1.8.0":  "1.8.0",
 	"1.9.0":  "1.9.0",
 	"1.10.0": "1.10.0",
-	"1.11.0": "0.1.0-alpha.13-21-g509d309",
+	"1.11.0": "k-1.11",
 }
 
 type TemplateData struct {
@@ -50,8 +50,46 @@ func (td TemplateData) MasterConfigurationYAML() (string, error) {
 	if td.MasterConfiguration == nil {
 		return "", nil
 	}
-	cb, err := yaml.Marshal(td.MasterConfiguration)
+
+	var cb []byte
+	v11, err := td.isVersion1_11()
+	if err != nil {
+		return "", err
+	}
+	if v11 {
+		conf := api.Convert_Kubeadm_V1alpha1_To_V1alpha2(td.MasterConfiguration)
+		conf.ClusterName = td.ClusterName
+        cb, err = yaml.Marshal(conf)
+	} else {
+		cb, err = yaml.Marshal(td.MasterConfiguration)
+	}
 	return string(cb), err
+
+}
+
+
+func (td TemplateData) ForceKubeadmResetFlag() (string, error) {
+	v11, err := td.isVersion1_11()
+	if err != nil {
+		return "", err
+	}
+	if v11 {
+		return "-f", nil
+	}
+	return "", nil
+
+}
+
+func (td TemplateData) isVersion1_11() (bool, error)  {
+	cv, err := version.NewVersion(td.KubernetesVersion)
+	if err != nil {
+		return false, err
+	}
+	v11, err := version.NewVersion("1.11.0")
+	if cv.LessThan(v11) {
+		return false, nil
+	}
+	return true, nil
 }
 
 // Forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
@@ -169,7 +207,7 @@ rm -rf /usr/sbin/policy-rc.d
 systemctl enable docker kubelet nfs-utils
 systemctl start docker kubelet nfs-utils
 
-kubeadm reset -f
+kubeadm reset {{ .ForceKubeadmResetFlag }}
 
 {{ template "setup-certs" . }}
 
@@ -271,7 +309,7 @@ systemctl enable docker kubelet nfs-utils
 systemctl start docker kubelet nfs-utils
 
 
-kubeadm reset
+kubeadm reset {{ .ForceKubeadmResetFlag }}
 kubeadm join --token={{ .KubeadmToken }} --discovery-token-ca-cert-hash={{ .CAHash }} {{ .APIServerAddress }}
 `))
 

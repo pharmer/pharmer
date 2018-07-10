@@ -71,11 +71,19 @@ func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*
 		User:       "root",
 		HostPort:   int32(22),
 	}
+	internalIP := ""
 	for _, addr := range node.Status.Addresses {
 		if addr.Type == core.NodeExternalIP {
 			cfg.HostIP = addr.Address
 		}
+		if addr.Type == core.NodeInternalIP {
+			internalIP = addr.Address
+		}
 	}
+	if cfg.HostIP == "" {
+		cfg.HostIP = internalIP
+	}
+
 	if net.ParseIP(cfg.HostIP) == nil {
 		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
 	}
