@@ -61,6 +61,7 @@ func OpenShell(privateKey []byte, addr string, port int32, user string) {
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(keySigner),
 		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
 	// Connect to ssh server

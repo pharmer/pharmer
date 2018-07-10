@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	version "github.com/appscode/go-version"
 )
 
 func TestUpgradeScript(t *testing.T) {
@@ -21,4 +23,10 @@ func TestUpgradeScript(t *testing.T) {
 	cmd := fmt.Sprintf("sh -c '%s'", strings.Join(script, "; "))
 
 	fmt.Println(cmd)
+}
+
+func TestVersion(t *testing.T) {
+	v1, _ := version.NewVersion("1.11.3")
+	v2, _ := version.NewVersion("1.11.0")
+	fmt.Println(v1.Compare(v2))
 }
