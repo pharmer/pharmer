@@ -57,16 +57,15 @@ func (td TemplateData) MasterConfigurationYAML() (string, error) {
 		return "", err
 	}
 	if v11 {
-		conf := api.Convert_Kubeadm_V1alpha1_To_V1alpha2(td.MasterConfiguration)
+		conf := Convert_Kubeadm_V1alpha1_To_V1alpha2(td.MasterConfiguration)
 		conf.ClusterName = td.ClusterName
-        cb, err = yaml.Marshal(conf)
+		cb, err = yaml.Marshal(conf)
 	} else {
 		cb, err = yaml.Marshal(td.MasterConfiguration)
 	}
 	return string(cb), err
 
 }
-
 
 func (td TemplateData) ForceKubeadmResetFlag() (string, error) {
 	v11, err := td.isVersion1_11()
@@ -80,7 +79,7 @@ func (td TemplateData) ForceKubeadmResetFlag() (string, error) {
 
 }
 
-func (td TemplateData) isVersion1_11() (bool, error)  {
+func (td TemplateData) isVersion1_11() (bool, error) {
 	cv, err := version.NewVersion(td.KubernetesVersion)
 	if err != nil {
 		return false, err
