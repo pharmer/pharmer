@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"time"
 
+	. "github.com/appscode/go/types"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
@@ -86,7 +87,7 @@ func Convert_Kubeadm_V1alpha1_To_V1alpha2(in *v1alpha1.MasterConfiguration) *v1a
 		conf.APIServerExtraArgs["cloud-provider"] = in.CloudProvider
 		conf.APIServerExtraArgs["cloud-config"] = in.APIServerExtraVolumes[0].HostPath
 		conf.ControllerManagerExtraArgs["cloud-provider"] = in.CloudProvider
-		conf.ControllerManagerExtraArgs["cloud-confi"] = in.ControllerManagerExtraVolumes[0].HostPath
+		conf.ControllerManagerExtraArgs["cloud-config"] = in.ControllerManagerExtraVolumes[0].HostPath
 	}
 	return conf
 }

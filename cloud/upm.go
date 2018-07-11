@@ -372,8 +372,6 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 				`echo "" >> /usr/bin/pharmer.sh`,
 				`echo "apt-get update" >> /usr/bin/pharmer.sh`,
 			}
-			steps = append(steps,
-				fmt.Sprintf(`echo "kubectl drain %s" >> /usr/bin/pharmer.sh`, node.Name))
 
 			// Keep using forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
 			if minor == "1.8.0" {
@@ -388,12 +386,11 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 
 			if desiredVersion.Compare(v11) >= 0 {
 				steps = append(steps,
-					fmt.Sprintf(`echo "kubeadm upgrade node config --kubelet-version \$(kubelet --version | cut -d \' \' -f 2)" >> /usr/bin/pharmer.sh`))
+					fmt.Sprintf(`echo "kubeadm upgrade node config --kubelet-version \$(kubelet --version | cut -d '"'"' '"'"' -f 2)" >> /usr/bin/pharmer.sh`))
 			}
 			steps = append(steps,
 				fmt.Sprintf(`echo "curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/%s/pre-k-linux-amd64 && chmod +x pre-k && mv pre-k /usr/bin/" >> /usr/bin/pharmer.sh`, prekVer),
 				`echo "systemctl restart kubelet" >> /usr/bin/pharmer.sh`,
-				fmt.Sprintf(`echo "kubectl uncordon %s"`, node.Name),
 				`chmod +x /usr/bin/pharmer.sh`,
 				`nohup /usr/bin/pharmer.sh >> /var/log/pharmer.log 2>&1 &`,
 			)
