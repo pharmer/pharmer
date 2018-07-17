@@ -92,7 +92,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		// "external": cloudprovider not supported for apiserver and controller-manager
 		// https://github.com/kubernetes/kubernetes/pull/50545
-		CloudProvider:              "",
+		//CloudProvider:              "",
 		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,

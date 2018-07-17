@@ -11,7 +11,7 @@ import (
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha2"
 )
 
 func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
@@ -40,7 +40,7 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	cluster.Spec.Cloud.InstanceImage = "ubuntu-16-04-x64"
 	cluster.Spec.Networking.SetDefaults()
-	cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
+	//cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
 	cluster.Spec.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
 	cluster.Spec.APIServerExtraArgs = map[string]string{
 		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
@@ -51,6 +51,9 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	}
 	if cluster.IsMinorVersion("1.9") {
 		cluster.Spec.APIServerExtraArgs["admission-control"] = api.DefaultV19AdmissionControl
+	} else if cluster.IsMinorVersion("1.11") {
+		cluster.Spec.APIServerExtraArgs["enable-admission-plugins"] = api.DefaultV111AdmissionControl
+		cluster.Spec.APIServerExtraArgs["runtime-config"] = "admissionregistration.k8s.io/v1alpha1"
 	}
 
 	// Init status
@@ -71,17 +74,11 @@ func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*
 		User:       "root",
 		HostPort:   int32(22),
 	}
-	internalIP := ""
+
 	for _, addr := range node.Status.Addresses {
 		if addr.Type == core.NodeExternalIP {
 			cfg.HostIP = addr.Address
 		}
-		if addr.Type == core.NodeInternalIP {
-			internalIP = addr.Address
-		}
-	}
-	if cfg.HostIP == "" {
-		cfg.HostIP = internalIP
 	}
 
 	if net.ParseIP(cfg.HostIP) == nil {

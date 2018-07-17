@@ -57,7 +57,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 	}
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1alpha1",
+			APIVersion: "kubeadm.k8s.io/v1alpha2",
 			Kind:       "MasterConfiguration",
 		},
 		API: kubeadmapi.API{
@@ -71,13 +71,17 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			PodSubnet:     cluster.Spec.Networking.PodSubnet,
 			DNSDomain:     cluster.Spec.Networking.DNSDomain,
 		},
-		KubernetesVersion:          cluster.Spec.KubernetesVersion,
-		CloudProvider:              cluster.Spec.Cloud.CloudProvider,
+		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		//CloudProvider:              cluster.Spec.Cloud.CloudProvider,
 		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
 	}
+	cfg.APIServerExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider
+	cfg.APIServerExtraArgs["cloud-config"] = hostPath.HostPath
+	cfg.ControllerManagerExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider
+	cfg.ControllerManagerExtraArgs["cloud-config"] = hostPath.HostPath
 	td.MasterConfiguration = &cfg
 	return td
 }

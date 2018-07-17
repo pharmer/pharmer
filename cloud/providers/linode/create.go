@@ -51,6 +51,9 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	}
 	if cluster.IsMinorVersion("1.9") {
 		cluster.Spec.APIServerExtraArgs["admission-control"] = api.DefaultV19AdmissionControl
+	} else if cluster.IsMinorVersion("1.11") {
+		cluster.Spec.APIServerExtraArgs["enable-admission-plugins"] = api.DefaultV111AdmissionControl
+		cluster.Spec.APIServerExtraArgs["runtime-config"] = "admissionregistration.k8s.io/v1alpha1"
 	}
 	cluster.Spec.Cloud.CCMCredentialName = cluster.Spec.CredentialName
 	cluster.Spec.Cloud.Linode = &api.LinodeSpec{
