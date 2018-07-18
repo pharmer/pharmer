@@ -55,22 +55,22 @@ func GetLatestKubeadmVerson() (string, error) {
 	return FetchFromURL("https://dl.k8s.io/release/stable.txt")
 }
 
-func Convert_Kubeadm_V1alpha1_To_V1alpha2(in *v1alpha1.MasterConfiguration) *v1alpha2.MasterConfiguration {
-	conf := &v1alpha2.MasterConfiguration{
+func Convert_Kubeadm_V1alpha2_To_V1alpha1(in *v1alpha2.MasterConfiguration, provider string) *v1alpha1.MasterConfiguration {
+	conf := &v1alpha1.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1alpha2",
+			APIVersion: "kubeadm.k8s.io/v1alpha1",
 			Kind:       "MasterConfiguration",
 		},
-		API: v1alpha2.API{
+		API: v1alpha1.API{
 			AdvertiseAddress: in.API.AdvertiseAddress,
 			BindPort:         in.API.BindPort,
 		},
-		Networking: v1alpha2.Networking{
+		Networking: v1alpha1.Networking{
 			ServiceSubnet: in.Networking.ServiceSubnet,
 			PodSubnet:     in.Networking.PodSubnet,
 			DNSDomain:     in.Networking.DNSDomain,
 		},
-		AuditPolicyConfiguration: v1alpha2.AuditPolicyConfiguration{
+		AuditPolicyConfiguration: v1alpha1.AuditPolicyConfiguration{
 			Path:      "",
 			LogDir:    "/var/log/kubernetes/audit",
 			LogMaxAge: Int32P(2),
@@ -83,11 +83,6 @@ func Convert_Kubeadm_V1alpha1_To_V1alpha2(in *v1alpha1.MasterConfiguration) *v1a
 		SchedulerExtraArgs:         in.SchedulerExtraArgs,
 		APIServerCertSANs:          in.APIServerCertSANs,
 	}
-	if in.CloudProvider != "" {
-		conf.APIServerExtraArgs["cloud-provider"] = in.CloudProvider
-		conf.APIServerExtraArgs["cloud-config"] = in.APIServerExtraVolumes[0].HostPath
-		conf.ControllerManagerExtraArgs["cloud-provider"] = in.CloudProvider
-		conf.ControllerManagerExtraArgs["cloud-config"] = in.ControllerManagerExtraVolumes[0].HostPath
-	}
+	conf.CloudProvider = provider
 	return conf
 }

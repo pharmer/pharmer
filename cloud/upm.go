@@ -221,6 +221,10 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 		if err = upm.MasterUpgrade(); err != nil {
 			return
 		}
+		// wait for nodes to start
+		if err = WaitForReadyMaster(upm.ctx, upm.kc); err != nil {
+			return
+		}
 	}
 
 	var nodeGroups []*api.NodeGroup

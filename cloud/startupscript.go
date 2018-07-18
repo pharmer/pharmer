@@ -25,7 +25,7 @@ var prekVersions = map[string]string{
 	"1.8.0":  "1.8.0",
 	"1.9.0":  "1.9.0",
 	"1.10.0": "1.10.0",
-	"1.11.0": "0.1.0-alpha.16",
+	"1.11.0": "1.11.0-alpha.1",
 }
 
 type TemplateData struct {
@@ -51,18 +51,21 @@ func (td TemplateData) MasterConfigurationYAML() (string, error) {
 	if td.MasterConfiguration == nil {
 		return "", nil
 	}
-
-	cb, err := yaml.Marshal(td.MasterConfiguration)
+	var cb []byte
+	var err error
+	if td.IsVersionLessThan1_11() {
+		conf := Convert_Kubeadm_V1alpha2_To_V1alpha1(td.MasterConfiguration, td.KubeletExtraArgs["cloud-provider"])
+		cb, err = yaml.Marshal(conf)
+	} else {
+		cb, err = yaml.Marshal(td.MasterConfiguration)
+	}
 
 	return string(cb), err
 
 }
 
 func (td TemplateData) ForceKubeadmResetFlag() (string, error) {
-	lv11, err := td.IsVersionLessThan1_11()
-	if err != nil {
-		return "", err
-	}
+	lv11 := td.IsVersionLessThan1_11()
 	if !lv11 {
 		return "-f", nil
 	}
@@ -74,10 +77,7 @@ func (td TemplateData) KubeletExtraArgsFile() (string, error) {
 [Service]
 Environment="KUBELET_EXTRA_ARGS=%s"
 EOF`, td.KubeletExtraArgsStr())
-	lv11, err := td.IsVersionLessThan1_11()
-	if err != nil {
-		return "", err
-	}
+	lv11 := td.IsVersionLessThan1_11()
 	if !lv11 {
 		file = fmt.Sprintf(`cat > /etc/default/kubelet <<EOF
 KUBELET_EXTRA_ARGS=%s
@@ -86,16 +86,18 @@ EOF`, td.KubeletExtraArgsStr())
 	return file, nil
 }
 
-func (td TemplateData) IsVersionLessThan1_11() (bool, error) {
-	cv, err := version.NewVersion(td.KubernetesVersion)
-	if err != nil {
-		return false, err
+func (td TemplateData) IsVersionLessThan1_11() bool {
+	cv, _ := version.NewVersion(td.KubernetesVersion)
+	v11, _ := version.NewVersion("1.11.0")
+	return cv.LessThan(v11)
+}
+
+func (td TemplateData) UseKubeProxy1_11_0() bool {
+	v, _ := version.NewVersion(td.KubernetesVersion)
+	if v.ToMutator().Version.String() == "1.11.0" {
+		return true
 	}
-	v11, err := version.NewVersion("1.11.0")
-	if cv.LessThan(v11) {
-		return true, nil
-	}
-	return false, nil
+	return false
 }
 
 // Forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
@@ -206,9 +208,6 @@ timedatectl set-timezone Etc/UTC
 
 {{ .KubeletExtraArgsFile }}
 
-sed -i "s/cgroup-driver=systemd/cgroup-driver=cgroupfs/g" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-systemctl daemon-reload
-systemctl restart kubelet
 rm -rf /usr/sbin/policy-rc.d
 systemctl enable docker kubelet nfs-utils
 systemctl start docker kubelet nfs-utils
@@ -241,8 +240,10 @@ pre-k merge master-config \
 	> /etc/kubernetes/kubeadm/config.yaml
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 
+{{ if .UseKubeProxy1_11_0 }}
 kubectl apply -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/kube-proxy/v1.11.0/kube-proxy.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
+{{ end }}
 
 {{ if eq .NetworkProvider "flannel" }}
 {{ template "flannel" . }}

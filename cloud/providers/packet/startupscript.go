@@ -11,8 +11,9 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha2"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	kubeproxyconfigv1alpha1 "k8s.io/kubernetes/pkg/proxy/apis/kubeproxyconfig/v1alpha1"
 )
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
@@ -89,6 +90,12 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			PodSubnet:     cluster.Spec.Networking.PodSubnet,
 			DNSDomain:     cluster.Spec.Networking.DNSDomain,
 		},
+		KubeProxy: kubeadmapi.KubeProxy{
+			Config: &kubeproxyconfigv1alpha1.KubeProxyConfiguration{
+				BindAddress: "0.0.0.0",
+				ClusterCIDR: cluster.Spec.Networking.PodSubnet,
+			},
+		},
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		// "external": cloudprovider not supported for apiserver and controller-manager
 		// https://github.com/kubernetes/kubernetes/pull/50545
@@ -124,6 +131,12 @@ exec_until_success "$cmd"
 #Deploy provisioner
 cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.10/cloud-storage/{{ .Provider }}/provisioner.yaml'
 exec_until_success "$cmd"
+
+{{ if not .IsVersionLessThan1_11}}
+#Deploy initializer
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/cloud-controller-manager/initializer.yaml'
+exec_until_success "$cmd"
+{{ end }}
 {{ end }}
 `
 )

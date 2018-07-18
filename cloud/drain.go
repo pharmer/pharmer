@@ -17,10 +17,14 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	drain "k8s.io/kubernetes/pkg/kubectl/cmd"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
+	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+
+	//"k8s.io/kubernetes/pkg/kubectl/scheme"
+	"io/ioutil"
 )
 
 type NodeDrain struct {
-	o    drain.DrainOptions
+	o    *drain.DrainOptions
 	Node string
 	ctx  context.Context
 	kc   kubernetes.Interface
@@ -52,17 +56,21 @@ func (r *restClientGetter) ToRESTMapper() (meta.RESTMapper, error) {
 }
 
 func (r *restClientGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
-	return clientcmd.NewDefaultClientConfig(*r.config, nil)
+	return clientcmd.NewDefaultClientConfig(*r.config, &clientcmd.ConfigOverrides{})
 }
 
 func NewNodeDrain(ctx context.Context, kc kubernetes.Interface, cluster *api.Cluster) (NodeDrain, error) {
-	do := drain.DrainOptions{
-		Force:              true,
-		IgnoreDaemonsets:   true,
-		DeleteLocalData:    true,
-		GracePeriodSeconds: -1,
-		Timeout:            0,
-	}
+	do := drain.NewDrainOptions(nil, genericclioptions.IOStreams{
+		In:     os.Stdin,
+		Out:    ioutil.Discard,
+		ErrOut: ioutil.Discard,
+	})
+
+	do.Force = true
+	do.IgnoreDaemonsets = true
+	do.DeleteLocalData = true
+
+	do.Timeout = 0
 
 	c1, err := GetAdminConfig(ctx, cluster)
 	if err != nil {

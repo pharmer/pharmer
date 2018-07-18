@@ -40,8 +40,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
-		lv11, _ := td.IsVersionLessThan1_11()
-		if lv11 {
+		if td.IsVersionLessThan1_11() {
 			td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
 		}
 	}
@@ -121,9 +120,11 @@ exec_until_success "$cmd"
 cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/cloud-storage/{{ .Provider }}/provisioner.yaml'
 exec_until_success "$cmd"
 
+{{ if not .IsVersionLessThan1_11}}
 #Deploy initializer
 cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/cloud-controller-manager/initializer.yaml'
 exec_until_success "$cmd"
+{{ end }}
 {{ end }}
 
 

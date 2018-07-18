@@ -284,6 +284,9 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 					Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", masterInstance.Spec.ProviderID, err)
 				}
 			}
+			if err = cm.conn.deleteStackScript(masterNG); err != nil {
+				Logger(cm.ctx).Infof("Failed to delete stack script %s. Reason: %s", masterNG.Name, err)
+			}
 		}
 	}
 

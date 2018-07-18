@@ -376,3 +376,15 @@ func (c Cluster) IsMinorVersion(in string) bool {
 	}
 	return inVer.String() == minor
 }
+
+func (c Cluster) IsLessThanVersion(in string) bool {
+	v, err := version.NewVersion(c.Spec.KubernetesVersion)
+	if err != nil {
+		return false
+	}
+	inVer, err := version.NewVersion(in)
+	if err != nil {
+		return false
+	}
+	return v.LessThan(inVer)
+}
