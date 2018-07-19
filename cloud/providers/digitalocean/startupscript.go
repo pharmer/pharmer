@@ -40,9 +40,9 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
-		if td.IsVersionLessThan1_11() {
-			td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
-		}
+		td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
+		td.KubeletExtraArgs["keep-terminated-pod-volumes"] = "true"
+
 	}
 	return td
 }

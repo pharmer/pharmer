@@ -43,6 +43,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
+		td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
+		td.KubeletExtraArgs["keep-terminated-pod-volumes"] = "true"
 		if cluster.Spec.Cloud.CCMCredentialName == "" {
 			panic(errors.New("no cloud controller manager credential found"))
 		}
