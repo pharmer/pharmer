@@ -289,7 +289,7 @@ jobs:
       - put: pharmer-bin
         params: {file: pharmer-bin/pharmer}
       - put: all
-        params: { path: all, status: failure}
+        params: { path: all, status: success}
     on_failure:
       put: all
       params: { path: all, status: failure}
