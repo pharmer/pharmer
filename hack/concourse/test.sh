@@ -55,7 +55,7 @@ trap cleanup EXIT
 cp creds/creds/$CRED.json cred.json
 
 pharmer create credential --from-file=cred.json --provider=$CredProvider cred
-pharmer create cluster $NAME --provider=$ClusterProvider --zone=$ZONE --nodes=$NODE=1 --credential-uid=cred --kubernetes-version=v1.9.0
+pharmer create cluster $NAME --provider=$ClusterProvider --zone=$ZONE --nodes=$NODE=1 --credential-uid=cred --kubernetes-version=v1.10.5
 pharmer apply $NAME
 pharmer use cluster $NAME
 sleep 300 #make sure that all the nodes are ready
