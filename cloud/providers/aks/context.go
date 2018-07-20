@@ -7,6 +7,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	. "github.com/pharmer/pharmer/cloud"
 	"k8s.io/client-go/kubernetes"
+
 	//"fmt"
 	"k8s.io/client-go/rest"
 	//"k8s.io/client-go/util/cert"

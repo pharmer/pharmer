@@ -2,14 +2,15 @@ package cloud
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/template"
 
+	"github.com/appscode/go-version"
 	"github.com/ghodss/yaml"
-	"github.com/hashicorp/go-version"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha2"
 )
 
 // https://github.com/pharmer/pharmer/issues/347
@@ -17,12 +18,14 @@ var kubernetesCNIVersions = map[string]string{
 	"1.8.0":  "0.5.1",
 	"1.9.0":  "0.6.0",
 	"1.10.0": "0.6.0",
+	"1.11.0": "0.6.0",
 }
 
 var prekVersions = map[string]string{
 	"1.8.0":  "1.8.0",
 	"1.9.0":  "1.9.0",
 	"1.10.0": "1.10.0",
+	"1.11.0": "1.11.0-alpha.1",
 }
 
 type TemplateData struct {
@@ -48,8 +51,53 @@ func (td TemplateData) MasterConfigurationYAML() (string, error) {
 	if td.MasterConfiguration == nil {
 		return "", nil
 	}
-	cb, err := yaml.Marshal(td.MasterConfiguration)
+	var cb []byte
+	var err error
+	if td.IsVersionLessThan1_11() {
+		conf := Convert_Kubeadm_V1alpha2_To_V1alpha1(td.MasterConfiguration, td.KubeletExtraArgs["cloud-provider"])
+		cb, err = yaml.Marshal(conf)
+	} else {
+		cb, err = yaml.Marshal(td.MasterConfiguration)
+	}
+
 	return string(cb), err
+
+}
+
+func (td TemplateData) ForceKubeadmResetFlag() (string, error) {
+	lv11 := td.IsVersionLessThan1_11()
+	if !lv11 {
+		return "-f", nil
+	}
+	return "", nil
+}
+
+func (td TemplateData) KubeletExtraArgsFile() (string, error) {
+	file := fmt.Sprintf(`cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
+[Service]
+Environment="KUBELET_EXTRA_ARGS=%s"
+EOF`, td.KubeletExtraArgsStr())
+	lv11 := td.IsVersionLessThan1_11()
+	if !lv11 {
+		file = fmt.Sprintf(`cat > /etc/default/kubelet <<EOF
+KUBELET_EXTRA_ARGS=%s
+EOF`, td.KubeletExtraArgsStr())
+	}
+	return file, nil
+}
+
+func (td TemplateData) IsVersionLessThan1_11() bool {
+	cv, _ := version.NewVersion(td.KubernetesVersion)
+	v11, _ := version.NewVersion("1.11.0")
+	return cv.LessThan(v11)
+}
+
+func (td TemplateData) UseKubeProxy1_11_0() bool {
+	v, _ := version.NewVersion(td.KubernetesVersion)
+	if v.ToMutator().Version.String() == "1.11.0" {
+		return true
+	}
+	return false
 }
 
 // Forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
@@ -158,16 +206,13 @@ timedatectl set-timezone Etc/UTC
 {{ template "prepare-host" . }}
 {{ template "mount-master-pd" . }}
 
-cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
-[Service]
-Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
-EOF
-systemctl daemon-reload
+{{ .KubeletExtraArgsFile }}
+
 rm -rf /usr/sbin/policy-rc.d
 systemctl enable docker kubelet nfs-utils
 systemctl start docker kubelet nfs-utils
 
-kubeadm reset
+kubeadm reset {{ .ForceKubeadmResetFlag }}
 
 {{ template "setup-certs" . }}
 
@@ -195,6 +240,11 @@ pre-k merge master-config \
 	> /etc/kubernetes/kubeadm/config.yaml
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 
+{{ if .UseKubeProxy1_11_0 }}
+kubectl apply -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/kube-proxy/v1.11.0/kube-proxy.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+{{ end }}
+
 {{ if eq .NetworkProvider "flannel" }}
 {{ template "flannel" . }}
 {{ else if eq .NetworkProvider "calico" }}
@@ -210,6 +260,7 @@ kubectl apply \
 mkdir -p ~/.kube
 sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
 sudo chown $(id -u):$(id -g) ~/.kube/config
+
 
 {{ if .ExternalProvider }}
 {{ template "ccm" . }}
@@ -259,17 +310,15 @@ EOF
 {{ end }}
 {{ end }}
 
-cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
-[Service]
-Environment="KUBELET_EXTRA_ARGS={{ .KubeletExtraArgsStr }}"
-EOF
+{{ .KubeletExtraArgsFile }}
+
 systemctl daemon-reload
 rm -rf /usr/sbin/policy-rc.d
 systemctl enable docker kubelet nfs-utils
 systemctl start docker kubelet nfs-utils
 
 
-kubeadm reset
+kubeadm reset {{ .ForceKubeadmResetFlag }}
 kubeadm join --token={{ .KubeadmToken }} --discovery-token-ca-cert-hash={{ .CAHash }} {{ .APIServerAddress }}
 `))
 
@@ -316,11 +365,11 @@ chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 
 	_ = template.Must(StartupScriptTemplate.New("ccm").Parse(`
 # Deploy CCM RBAC
-cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/master/cloud-controller-manager/rbac.yaml'
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/cloud-controller-manager/rbac.yaml'
 exec_until_success "$cmd"
 
 # Deploy CCM DaemonSet
-cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/master/cloud-controller-manager/{{ .Provider }}/installer.yaml'
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/cloud-controller-manager/{{ .Provider }}/installer.yaml'
 exec_until_success "$cmd"
 
 until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
@@ -333,7 +382,11 @@ done
 
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 kubectl apply \
-  -f https://raw.githubusercontent.com/pharmer/addons/master/calico/2.6/calico.yaml \
+  -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+
+kubectl apply \
+  -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 

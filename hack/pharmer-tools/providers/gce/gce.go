@@ -3,7 +3,7 @@ package gce
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/arm/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-12-01/compute"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"

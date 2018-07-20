@@ -13,7 +13,7 @@ import (
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha2"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 )
 
@@ -118,7 +118,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		// "external": cloudprovider not supported for apiserver and controller-manager
 		// https://github.com/kubernetes/kubernetes/pull/50545
-		CloudProvider:              "",
+		//CloudProvider:              "",
 		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,

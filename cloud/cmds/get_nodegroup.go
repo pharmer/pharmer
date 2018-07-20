@@ -81,9 +81,7 @@ func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out 
 			if err := rPrinter.PrintObj(ng, w); err != nil {
 				return err
 			}
-			if rPrinter.IsGeneric() {
-				printer.PrintNewline(w)
-			}
+			printer.PrintNewline(w)
 		}
 
 	}

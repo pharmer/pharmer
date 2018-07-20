@@ -8,7 +8,7 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha2"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 )
 
@@ -57,7 +57,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 	}
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1alpha1",
+			APIVersion: "kubeadm.k8s.io/v1alpha2",
 			Kind:       "MasterConfiguration",
 		},
 		API: kubeadmapi.API{
@@ -71,13 +71,15 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			PodSubnet:     cluster.Spec.Networking.PodSubnet,
 			DNSDomain:     cluster.Spec.Networking.DNSDomain,
 		},
-		KubernetesVersion:          cluster.Spec.KubernetesVersion,
-		CloudProvider:              cluster.Spec.Cloud.CloudProvider,
+		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		//CloudProvider:              cluster.Spec.Cloud.CloudProvider,
 		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
-		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
+		ControllerManagerExtraArgs: map[string]string{},
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
 	}
+	cfg.APIServerExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider
+	cfg.ControllerManagerExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider
 	td.MasterConfiguration = &cfg
 	return td
 }

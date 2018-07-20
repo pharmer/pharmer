@@ -59,9 +59,7 @@ func RunGetCluster(ctx context.Context, opts *options.ClusterGetConfig, out io.W
 		if err := rPrinter.PrintObj(cluster, w); err != nil {
 			return err
 		}
-		if rPrinter.IsGeneric() {
-			printer.PrintNewline(w)
-		}
+		printer.PrintNewline(w)
 	}
 
 	w.Flush()

@@ -11,8 +11,9 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha2"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	kubeproxyconfigv1alpha1 "k8s.io/kubernetes/pkg/proxy/apis/kubeproxyconfig/v1alpha1"
 )
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
@@ -89,10 +90,16 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			PodSubnet:     cluster.Spec.Networking.PodSubnet,
 			DNSDomain:     cluster.Spec.Networking.DNSDomain,
 		},
+		KubeProxy: kubeadmapi.KubeProxy{
+			Config: &kubeproxyconfigv1alpha1.KubeProxyConfiguration{
+				BindAddress: "0.0.0.0",
+				ClusterCIDR: cluster.Spec.Networking.PodSubnet,
+			},
+		},
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		// "external": cloudprovider not supported for apiserver and controller-manager
 		// https://github.com/kubernetes/kubernetes/pull/50545
-		CloudProvider:              "",
+		//CloudProvider:              "",
 		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,

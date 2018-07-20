@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	semver "github.com/hashicorp/go-version"
+	semver "github.com/appscode/go-version"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -143,6 +143,7 @@ func (upm *GenericUpgradeManager) ExecuteSSHCommand(command string, node *core.N
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(keySigner),
 		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 	return ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", cfg.HostIP, cfg.HostPort), config)
 }
@@ -220,6 +221,10 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 		if err = upm.MasterUpgrade(); err != nil {
 			return
 		}
+		// wait for nodes to start
+		if err = WaitForReadyMaster(upm.ctx, upm.kc); err != nil {
+			return
+		}
 	}
 
 	var nodeGroups []*api.NodeGroup
@@ -266,6 +271,11 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 	desiredVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
 	currentVersion, _ := semver.NewVersion(masterInstance.Status.NodeInfo.KubeletVersion)
 
+	v11, err := semver.NewVersion("1.11.0")
+	if err != nil {
+		return err
+	}
+
 	// ref: https://stackoverflow.com/a/2831449/244009
 	steps := []string{
 		`echo "#!/bin/bash" > /usr/bin/pharmer.sh`,
@@ -290,8 +300,14 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 		// Keep using forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
 		if minor == "1.8.0" {
 			steps = append(steps, fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, cni))
-		} else {
+		} else if desiredVersion.LessThan(v11) {
 			steps = append(steps, fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubeadm=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, patch, cni))
+		} else {
+			steps = append(steps, []string{
+				`echo "curl -sSL https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubeadm > /usr/bin/kubeadm" >> /usr/bin/pharmer.sh`,
+				`echo "chmod a+rx /usr/bin/kubeadm" >> /usr/bin/pharmer.sh`,
+			}...)
+
 		}
 		steps = append(steps, fmt.Sprintf(`echo "curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/%s/pre-k-linux-amd64 && chmod +x pre-k && mv pre-k /usr/bin/" >> /usr/bin/pharmer.sh`, prekVer))
 	}
@@ -299,7 +315,16 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 	steps = append(steps,
 		fmt.Sprintf(`echo "pre-k check master-status --timeout=-1s --kubeconfig=/etc/kubernetes/admin.conf" >> /usr/bin/pharmer.sh`))
 	steps = append(steps,
-		fmt.Sprintf(`echo "kubeadm upgrade apply %v -y" >> /usr/bin/pharmer.sh`, upm.cluster.Spec.KubernetesVersion),
+		fmt.Sprintf(`echo "kubeadm upgrade apply %v -y" >> /usr/bin/pharmer.sh`, upm.cluster.Spec.KubernetesVersion))
+
+	if desiredVersion.Compare(v11) >= 0 {
+		steps = append(steps,
+			fmt.Sprintf(`echo "kubectl drain %s --ignore-daemonsets" >> /usr/bin/pharmer.sh`, masterInstance.Name),
+			fmt.Sprintf(`echo "apt-get upgrade -y kubelet kubeadm" >> /usr/bin/pharmer.sh`),
+			fmt.Sprintf(`echo "kubectl uncordon %s" >> /usr/bin/pharmer.sh`, masterInstance.Name))
+	}
+
+	steps = append(steps,
 		`chmod +x /usr/bin/pharmer.sh`,
 		`nohup /usr/bin/pharmer.sh >> /var/log/pharmer.log 2>&1 &`,
 	)
@@ -325,6 +350,10 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 		}
 	}
 	desiredVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
+	v11, err := semver.NewVersion("1.11.0")
+	if err != nil {
+		return err
+	}
 	for _, node := range nodes.Items {
 		currentVersion, _ := semver.NewVersion(node.Status.NodeInfo.KubeletVersion)
 		if !desiredVersion.Equal(currentVersion) {
@@ -347,6 +376,7 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 				`echo "" >> /usr/bin/pharmer.sh`,
 				`echo "apt-get update" >> /usr/bin/pharmer.sh`,
 			}
+
 			// Keep using forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
 			if minor == "1.8.0" {
 				steps = append(steps,
@@ -358,6 +388,10 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 				)
 			}
 
+			if desiredVersion.Compare(v11) >= 0 {
+				steps = append(steps,
+					fmt.Sprintf(`echo "kubeadm upgrade node config --kubelet-version \$(kubelet --version | cut -d '"'"' '"'"' -f 2)" >> /usr/bin/pharmer.sh`))
+			}
 			steps = append(steps,
 				fmt.Sprintf(`echo "curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/%s/pre-k-linux-amd64 && chmod +x pre-k && mv pre-k /usr/bin/" >> /usr/bin/pharmer.sh`, prekVer),
 				`echo "systemctl restart kubelet" >> /usr/bin/pharmer.sh`,

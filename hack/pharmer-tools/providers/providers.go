@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/appscode/go-version"
 	"github.com/appscode/go/log"
-	"github.com/hashicorp/go-version"
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/cmds/options"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/providers/aws"

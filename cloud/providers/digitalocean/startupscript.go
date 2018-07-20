@@ -8,8 +8,9 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha2"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	kubeproxyconfigv1alpha1 "k8s.io/kubernetes/pkg/proxy/apis/kubeproxyconfig/v1alpha1"
 )
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
@@ -40,6 +41,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
 		td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
+		td.KubeletExtraArgs["keep-terminated-pod-volumes"] = "true"
+
 	}
 	return td
 }
@@ -52,7 +55,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 
 	cfg := kubeadmapi.MasterConfiguration{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1alpha1",
+			APIVersion: "kubeadm.k8s.io/v1alpha2",
 			Kind:       "MasterConfiguration",
 		},
 		API: kubeadmapi.API{
@@ -64,10 +67,16 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			PodSubnet:     cluster.Spec.Networking.PodSubnet,
 			DNSDomain:     cluster.Spec.Networking.DNSDomain,
 		},
+		//ClusterName: "kubernetes",
+		KubeProxy: kubeadmapi.KubeProxy{
+			Config: &kubeproxyconfigv1alpha1.KubeProxyConfiguration{
+				BindAddress: "0.0.0.0",
+				ClusterCIDR: cluster.Spec.Networking.PodSubnet,
+			},
+		},
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		// "external": cloudprovider not supported for apiserver and controller-manager
 		// https://github.com/kubernetes/kubernetes/pull/50545
-		CloudProvider:              "",
 		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
@@ -100,17 +109,24 @@ ensure_basic_networking
 
 {{ define "install-storage-plugin" }}
 # Deploy storage RBAC
-cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.10/cloud-storage/rbac.yaml'
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/cloud-storage/rbac.yaml'
 exec_until_success "$cmd"
 
 #Deploy plugin
-cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.10/cloud-storage/{{ .Provider }}/flexplugin.yaml'
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/cloud-storage/{{ .Provider }}/flexplugin.yaml'
 exec_until_success "$cmd"
 
 #Deploy provisioner
-cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.10/cloud-storage/{{ .Provider }}/provisioner.yaml'
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/cloud-storage/{{ .Provider }}/provisioner.yaml'
+exec_until_success "$cmd"
+
+{{ if not .IsVersionLessThan1_11}}
+#Deploy initializer
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/cloud-controller-manager/initializer.yaml'
 exec_until_success "$cmd"
 {{ end }}
+{{ end }}
+
 
 `
 )
