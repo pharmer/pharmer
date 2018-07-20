@@ -241,7 +241,7 @@ pre-k merge master-config \
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 
 {{ if .UseKubeProxy1_11_0 }}
-kubectl apply -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/kube-proxy/v1.11.0/kube-proxy.yaml \
+kubectl apply -f https://raw.githubusercontent.com/pharmer/addons/release-1.11/kube-proxy/v1.11.0/kube-proxy.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 {{ end }}
 
@@ -254,7 +254,7 @@ kubectl apply -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/kube-pr
 {{ end }}
 
 kubectl apply \
-  -f https://raw.githubusercontent.com/pharmer/addons/master/kubeadm-probe/installer.yaml \
+  -f https://raw.githubusercontent.com/pharmer/addons/release-1.11/kubeadm-probe/installer.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 
 mkdir -p ~/.kube
@@ -365,11 +365,11 @@ chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
 
 	_ = template.Must(StartupScriptTemplate.New("ccm").Parse(`
 # Deploy CCM RBAC
-cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/cloud-controller-manager/rbac.yaml'
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.11/cloud-controller-manager/rbac.yaml'
 exec_until_success "$cmd"
 
 # Deploy CCM DaemonSet
-cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/k-1.11/cloud-controller-manager/{{ .Provider }}/installer.yaml'
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.11/cloud-controller-manager/{{ .Provider }}/installer.yaml'
 exec_until_success "$cmd"
 
 until [ $(kubectl get pods -n kube-system -l k8s-app=kube-dns -o jsonpath='{.items[0].status.phase}' --kubeconfig /etc/kubernetes/admin.conf) == "Running" ]
@@ -400,7 +400,7 @@ kubectl apply \
 
 	_ = template.Must(StartupScriptTemplate.New("flannel").Parse(`
 kubectl apply \
-  -f https://raw.githubusercontent.com/pharmer/addons/master/flannel/v0.9.1/kube-vxlan.yml \
+  -f https://raw.githubusercontent.com/pharmer/addons/release-1.11/flannel/v0.9.1/kube-vxlan.yml \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 )
