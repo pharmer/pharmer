@@ -381,6 +381,11 @@ done
 	_ = template.Must(StartupScriptTemplate.New("install-storage-plugin").Parse(``))
 
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
+{{ if .IsVersionLessThan1_11 }}
+kubectl apply \
+  -f https://raw.githubusercontent.com/pharmer/addons/master/calico/2.6/calico.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
+{{ else }}
 kubectl apply \
   -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
@@ -388,6 +393,7 @@ kubectl apply \
 kubectl apply \
   -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
+{{ end }}
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("weavenet").Parse(`
