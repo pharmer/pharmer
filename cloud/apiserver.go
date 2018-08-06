@@ -2,9 +2,9 @@ package cloud
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	semver "github.com/appscode/go-version"
 	stringz "github.com/appscode/go/strings"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
@@ -68,9 +68,41 @@ func waitForReadyAPIServer(ctx context.Context, client kubernetes.Interface) err
 		Logger(ctx).Infof("Attempt %v: Probing Kubernetes api server ...", attempt)
 
 		_, err := client.CoreV1().Pods(core.NamespaceAll).List(metav1.ListOptions{})
-		fmt.Println(err, ",.,.,.,.,.,")
 		return err == nil, nil
 	})
+}
+
+func WaitForReadyMasterVersion(ctx context.Context, client kubernetes.Interface, desiredVersion *semver.Version) error {
+	attempt := 0
+	var masterInstance *core.Node
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+		Logger(ctx).Infof("Attempt %v: Upgrading to version %v ...", attempt, desiredVersion.String())
+		masterInstances, err := client.CoreV1().Nodes().List(metav1.ListOptions{
+			LabelSelector: labels.SelectorFromSet(map[string]string{
+				api.RoleMasterKey: "",
+			}).String(),
+		})
+		if err != nil {
+			return false, nil
+		}
+		if len(masterInstances.Items) == 1 {
+			masterInstance = &masterInstances.Items[0]
+		} else if len(masterInstances.Items) > 1 {
+			return false, errors.Errorf("multiple master found")
+		} else {
+			return false, nil
+		}
+
+		currentVersion, _ := semver.NewVersion(masterInstance.Status.NodeInfo.KubeletVersion)
+
+		if currentVersion.Equal(desiredVersion) {
+			return true, nil
+		}
+		return false, nil
+
+	})
+
 }
 
 func waitForReadyComponents(ctx context.Context, client kubernetes.Interface) error {
