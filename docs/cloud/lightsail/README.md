@@ -58,7 +58,7 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `lightsa
     - Location: us-west-2a (Oregon)
     - Number of nodes: 1
     - Node sku: small_1_0
-    - Kubernetes version: 1.9.0
+    - Kubernetes version: 1.11.0
     - Credential name: [aws](/docs/cloud/aws/README.md#credential-importing)
 
 For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/lightsail/cloud.json)
@@ -107,7 +107,7 @@ $ pharmer create cluster lsx \
 	--zone=us-west-2a \
 	--nodes=small_1_0=1 \
 	--credential-uid=aws \
-	--kubernetes-version=v1.9.0
+	--kubernetes-version=v1.11.0
 ```
 
 To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](/docs/networking.md)
@@ -162,10 +162,9 @@ spec:
     advertiseAddress: ""
     bindPort: 6443
   apiServerExtraArgs:
+    enable-admission-plugins: Initializers,NodeRestriction,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ValidatingAdmissionWebhook,DefaultTolerationSeconds,MutatingAdmissionWebhook,ResourceQuota
     kubelet-preferred-address-types: InternalIP,ExternalIP
-  authorizationModes:
-  - Node
-  - RBAC
+    runtime-config: admissionregistration.k8s.io/v1alpha1
   caCertName: ca
   cloud:
     ccmCredentialName: aws
@@ -175,7 +174,7 @@ spec:
     zone: us-west-2a
   credentialName: aws
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.9.0
+  kubernetesVersion: v1.11.0
   networking:
     dnsDomain: cluster.local
     networkProvider: calico
@@ -231,10 +230,9 @@ spec:
     advertiseAddress: ""
     bindPort: 6443
   apiServerExtraArgs:
+    enable-admission-plugins: Initializers,NodeRestriction,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ValidatingAdmissionWebhook,DefaultTolerationSeconds,MutatingAdmissionWebhook,ResourceQuota
     kubelet-preferred-address-types: InternalIP,ExternalIP
-  authorizationModes:
-  - Node
-  - RBAC
+    runtime-config: admissionregistration.k8s.io/v1alpha1
   caCertName: ca
   cloud:
     ccmCredentialName: aws
@@ -245,7 +243,7 @@ spec:
     zone: us-west-2a
   credentialName: aws
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.9.0
+  kubernetesVersion: v1.11.0
   networking:
     dnsDomain: cluster.local
     networkProvider: calico
@@ -271,14 +269,14 @@ $ pharmer use cluster lsx
 ```
 If you don't have `kubectl` installed click [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 
-Now you can run `kubectl get nodes` and verify that your kubernetes 1.9.0 is running.
+Now you can run `kubectl get nodes` and verify that your kubernetes 1.11.0 is running.
 
 ```console
 $ kubectl get nodes
 
 NAME              STATUS    AGE       VERSION
-ip-172-26-10-22   Ready     5m        v1.8.4
-ip-172-26-2-245   Ready     2m        v1.8.4
+ip-172-26-10-22   Ready     5m        v1.11.0
+ip-172-26-2-245   Ready     2m        v1.11.0
 ```
 
 If you want to `ssh` into your instance run the following command
@@ -438,35 +436,40 @@ To check run
 
 $ pharmer describe cluster lsx
 Name:		lsx
-Version:	v1.9.0
+Version:	v1.11.0
 NodeGroup:
   Name             Node
   ----             ------
   master           1
   small-1-0-pool   2
-[upgrade/versions] Cluster version: v1.9.0
-[upgrade/versions] kubeadm version: v1.8.4
-[upgrade/versions] Latest stable version: v1.8.4
-[upgrade/versions] Latest version in the v1.8 series: v1.8.4
-Upgrade to the latest version in the v1.8 series:
+[upgrade/versions] Cluster version: v1.11.0
+[upgrade/versions] kubeadm version: v1.11.0
+[upgrade/versions] Latest stable version: v1.11.1
+[upgrade/versions] Latest version in the v1.1 series: v1.1.8
+Components that will be upgraded after you've upgraded the control plane:
+COMPONENT   CURRENT       AVAILABLE
+Kubelet     2 x v1.11.0   v1.11.1
+
+Upgrade to the latest stable version:
 
 COMPONENT            CURRENT   AVAILABLE
-API Server           v1.9.0    v1.8.4
-Controller Manager   v1.9.0    v1.8.4
-Scheduler            v1.9.0    v1.8.4
-Kube Proxy           v1.9.0    v1.8.4
-Kube DNS             1.14.5    1.14.5
+API Server           v1.11.0   v1.11.1
+Controller Manager   v1.11.0   v1.11.1
+Scheduler            v1.11.0   v1.11.1
+Kube Proxy           v1.11.0   v1.11.1
+Kube DNS             1.1.3     1.1.3
+
 
 You can now apply the upgrade by executing the following command:
 
-	pharmer edit cluster lsx --kubernetes-version=v1.8.4
+	pharmer edit cluster lsx --kubernetes-version=v1.11.1
 
 _____________________________________________________________________
 
 ```
 Then, if you decided to upgrade you cluster run the command that are showing on describe command.
 ```console
-$ pharmer edit cluster lsx --kubernetes-version=v1.8.4
+$ pharmer edit cluster lsx --kubernetes-version=v1.11.1
 cluster "lsx" updated
 
 
@@ -486,10 +489,9 @@ spec:
     advertiseAddress: ""
     bindPort: 6443
   apiServerExtraArgs:
+    enable-admission-plugins: Initializers,NodeRestriction,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ValidatingAdmissionWebhook,DefaultTolerationSeconds,MutatingAdmissionWebhook,ResourceQuota
     kubelet-preferred-address-types: InternalIP,ExternalIP
-  authorizationModes:
-  - Node
-  - RBAC
+    runtime-config: admissionregistration.k8s.io/v1alpha1
   caCertName: ca
   cloud:
     ccmCredentialName: aws
@@ -500,7 +502,7 @@ spec:
     zone: us-west-2a
   credentialName: aws
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.8.4
+  kubernetesVersion: v1.11.1
   networking:
     dnsDomain: cluster.local
     networkProvider: calico
@@ -516,7 +518,7 @@ status:
   phase: Ready
 
 ```
-Here, `spec.kubernetesVersion` is changed to `v1.8.4` from `v1.9.0`
+Here, `spec.kubernetesVersion` is changed to `v1.11.0` from `v1.11.1`
 
 If everything looks ok, then run:
 ```console
@@ -526,8 +528,8 @@ $ pharmer apply lsx
 You can check your cluster upgraded or not by running following command on your cluster.
 ```console
 $ kubectl version
-Client Version: version.Info{Major:"1", Minor:"8", GitVersion:"v1.8.4", GitCommit:"9befc2b8928a9426501d3bf62f72849d5cbcd5a3", GitTreeState:"clean", BuildDate:"2017-11-20T05:28:34Z", GoVersion:"go1.8.3", Compiler:"gc", Platform:"linux/amd64"}
-Server Version: version.Info{Major:"1", Minor:"8", GitVersion:"v1.8.4", GitCommit:"9befc2b8928a9426501d3bf62f72849d5cbcd5a3", GitTreeState:"clean", BuildDate:"2017-11-20T05:17:43Z", GoVersion:"go1.8.3", Compiler:"gc", Platform:"linux/amd64"}
+Client Version: version.Info{Major:"1", Minor:"11", GitVersion:"v1.11.0", GitCommit:"91e7b4fd31fcd3d5f436da26c980becec37ceefe", GitTreeState:"clean", BuildDate:"2018-06-27T20:17:28Z", GoVersion:"go1.10.2", Compiler:"gc", Platform:"linux/amd64"}
+Server Version: version.Info{Major:"1", Minor:"11", GitVersion:"v1.11.0", GitCommit:"91e7b4fd31fcd3d5f436da26c980becec37ceefe", GitTreeState:"clean", BuildDate:"2018-06-27T20:08:34Z", GoVersion:"go1.10.2", Compiler:"gc", Platform:"linux/amd64"}
 ```
 ## Cluster Deleting
 
@@ -552,10 +554,9 @@ spec:
     advertiseAddress: ""
     bindPort: 6443
   apiServerExtraArgs:
+    enable-admission-plugins: Initializers,NodeRestriction,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ValidatingAdmissionWebhook,DefaultTolerationSeconds,MutatingAdmissionWebhook,ResourceQuota
     kubelet-preferred-address-types: InternalIP,ExternalIP
-  authorizationModes:
-  - Node
-  - RBAC
+    runtime-config: admissionregistration.k8s.io/v1alpha1
   caCertName: ca
   cloud:
     ccmCredentialName: aws
@@ -566,7 +567,7 @@ spec:
     zone: us-west-2a
   credentialName: aws
   frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.8.4
+  kubernetesVersion: v1.11.1
   networking:
     dnsDomain: cluster.local
     networkProvider: calico

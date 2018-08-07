@@ -25,7 +25,7 @@ $ pharmer create cluster softlayer \
 	--zone=dal05 \
 	--nodes=2c2m=0 \
 	--credential-uid=sl \
-	--kubernetes-version=1.9.0
+	--kubernetes-version=1.11.0
 
 $ pharmer apply softlayer --v=3
 ```
