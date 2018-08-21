@@ -4,10 +4,6 @@
 
 package builder
 
-import (
-	"fmt"
-)
-
 type optype byte
 
 const (
@@ -16,6 +12,15 @@ const (
 	insertType               // insert
 	updateType               // update
 	deleteType               // delete
+	unionType                // union
+)
+
+const (
+	POSTGRES = "postgres"
+	SQLITE   = "sqlite3"
+	MYSQL    = "mysql"
+	MSSQL    = "mssql"
+	ORACLE   = "oracle"
 )
 
 type join struct {
@@ -24,42 +29,38 @@ type join struct {
 	joinCond  Cond
 }
 
+type union struct {
+	unionType string
+	builder   *Builder
+}
+
+type limit struct {
+	limitN int
+	offset int
+}
+
 // Builder describes a SQL statement
 type Builder struct {
 	optype
-	tableName string
-	cond      Cond
-	selects   []string
-	joins     []join
-	inserts   Eq
-	updates   []Eq
-	orderBy   string
-	groupBy   string
-	having    string
+	dialect    string
+	tableName  string
+	subQuery   *Builder
+	cond       Cond
+	selects    []string
+	joins      []join
+	unions     []union
+	limitation *limit
+	inserts    Eq
+	updates    []Eq
+	orderBy    string
+	groupBy    string
+	having     string
 }
 
-// Select creates a select Builder
-func Select(cols ...string) *Builder {
-	builder := &Builder{cond: NewCond()}
-	return builder.Select(cols...)
-}
-
-// Insert creates an insert Builder
-func Insert(eq Eq) *Builder {
-	builder := &Builder{cond: NewCond()}
-	return builder.Insert(eq)
-}
-
-// Update creates an update Builder
-func Update(updates ...Eq) *Builder {
-	builder := &Builder{cond: NewCond()}
-	return builder.Update(updates...)
-}
-
-// Delete creates a delete Builder
-func Delete(conds ...Cond) *Builder {
-	builder := &Builder{cond: NewCond()}
-	return builder.Delete(conds...)
+// Dialect sets the db dialect of Builder.
+func Dialect(dialect string) *Builder {
+	builder := &Builder{cond: NewCond(), dialect: dialect}
+	return builder
 }
 
 // Where sets where SQL
@@ -68,9 +69,14 @@ func (b *Builder) Where(cond Cond) *Builder {
 	return b
 }
 
-// From sets the table name
-func (b *Builder) From(tableName string) *Builder {
+// From sets the name of table or the sub query's alias and itself
+func (b *Builder) From(tableName string, subQuery ...*Builder) *Builder {
 	b.tableName = tableName
+
+	if len(subQuery) > 0 {
+		b.subQuery = subQuery[0]
+	}
+
 	return b
 }
 
@@ -85,13 +91,54 @@ func (b *Builder) Into(tableName string) *Builder {
 	return b
 }
 
-// Join sets join table and contions
+// Join sets join table and conditions
 func (b *Builder) Join(joinType, joinTable string, joinCond interface{}) *Builder {
 	switch joinCond.(type) {
 	case Cond:
 		b.joins = append(b.joins, join{joinType, joinTable, joinCond.(Cond)})
 	case string:
 		b.joins = append(b.joins, join{joinType, joinTable, Expr(joinCond.(string))})
+	}
+
+	return b
+}
+
+// Union sets union conditions
+func (b *Builder) Union(unionTp string, unionCond *Builder) *Builder {
+	var builder *Builder
+	if b.optype != unionType {
+		builder = &Builder{cond: NewCond()}
+		builder.optype = unionType
+		builder.dialect = b.dialect
+		builder.selects = b.selects
+
+		currentUnions := b.unions
+		// erase sub unions (actually append to new Builder.unions)
+		b.unions = nil
+
+		for e := range currentUnions {
+			currentUnions[e].builder.dialect = b.dialect
+		}
+
+		builder.unions = append(append(builder.unions, union{"", b}), currentUnions...)
+	} else {
+		builder = b
+	}
+
+	if unionCond != nil {
+		unionCond.dialect = builder.dialect
+		builder.unions = append(builder.unions, union{unionTp, unionCond})
+	}
+
+	return builder
+}
+
+// Limit sets limitN condition
+func (b *Builder) Limit(limitN int, offset ...int) *Builder {
+	b.limitation = &limit{limitN: limitN}
+
+	if len(offset) > 0 {
+		b.limitation.offset = offset[0]
 	}
 
 	return b
@@ -150,7 +197,12 @@ func (b *Builder) Insert(eq Eq) *Builder {
 
 // Update sets update SQL
 func (b *Builder) Update(updates ...Eq) *Builder {
-	b.updates = updates
+	b.updates = make([]Eq, 0, len(updates))
+	for _, update := range updates {
+		if update.IsValid() {
+			b.updates = append(b.updates, update)
+		}
+	}
 	b.optype = updateType
 	return b
 }
@@ -175,6 +227,8 @@ func (b *Builder) WriteTo(w Writer) error {
 		return b.updateWriteTo(w)
 	case deleteType:
 		return b.deleteWriteTo(w)
+	case unionType:
+		return b.unionWriteTo(w)
 	}
 
 	return ErrNotSupportType
@@ -190,40 +244,12 @@ func (b *Builder) ToSQL() (string, []interface{}, error) {
 	return w.writer.String(), w.args, nil
 }
 
-// ConvertPlaceholder replaces ? to $1, $2 ... or :1, :2 ... according prefix
-func ConvertPlaceholder(sql, prefix string) (string, error) {
-	buf := StringBuilder{}
-	var j, start = 0, 0
-	for i := 0; i < len(sql); i++ {
-		if sql[i] == '?' {
-			_, err := buf.WriteString(sql[start:i])
-			if err != nil {
-				return "", err
-			}
-			start = i + 1
-
-			_, err = buf.WriteString(prefix)
-			if err != nil {
-				return "", err
-			}
-
-			j = j + 1
-			_, err = buf.WriteString(fmt.Sprintf("%d", j))
-			if err != nil {
-				return "", err
-			}
-		}
+// ToBoundSQL
+func (b *Builder) ToBoundSQL() (string, error) {
+	w := NewWriter()
+	if err := b.WriteTo(w); err != nil {
+		return "", err
 	}
-	return buf.String(), nil
-}
 
-// ToSQL convert a builder or condtions to SQL and args
-func ToSQL(cond interface{}) (string, []interface{}, error) {
-	switch cond.(type) {
-	case Cond:
-		return condToSQL(cond.(Cond))
-	case *Builder:
-		return cond.(*Builder).ToSQL()
-	}
-	return "", nil, ErrNotSupportType
+	return ConvertToBoundSQL(w.writer.String(), w.args)
 }

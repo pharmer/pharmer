@@ -2,6 +2,7 @@ package pflag
 
 import (
 	"bytes"
+	"encoding/csv"
 	"fmt"
 	"strings"
 )
@@ -21,7 +22,11 @@ func newStringToStringValue(val map[string]string, p *map[string]string) *string
 
 // Format: a=1,b=2
 func (s *stringToStringValue) Set(val string) error {
-	ss := strings.Split(val, ",")
+	r := csv.NewReader(strings.NewReader(val))
+	ss, err := r.Read()
+	if err != nil {
+		return err
+	}
 	out := make(map[string]string, len(ss))
 	for _, pair := range ss {
 		kv := strings.SplitN(pair, "=", 2)
@@ -46,18 +51,18 @@ func (s *stringToStringValue) Type() string {
 }
 
 func (s *stringToStringValue) String() string {
-	var buf bytes.Buffer
-	i := 0
+	records := make([]string, 0, len(*s.value)>>1)
 	for k, v := range *s.value {
-		if i > 0 {
-			buf.WriteRune(',')
-		}
-		buf.WriteString(k)
-		buf.WriteRune('=')
-		buf.WriteString(v)
-		i++
+		records = append(records, k+"="+v)
 	}
-	return "[" + buf.String() + "]"
+
+	var buf bytes.Buffer
+	w := csv.NewWriter(&buf)
+	if err := w.Write(records); err != nil {
+		panic(err)
+	}
+	w.Flush()
+	return "[" + strings.TrimSpace(buf.String()) + "]"
 }
 
 func stringToStringConv(val string) (interface{}, error) {
@@ -66,7 +71,11 @@ func stringToStringConv(val string) (interface{}, error) {
 	if len(val) == 0 {
 		return map[string]string{}, nil
 	}
-	ss := strings.Split(val, ",")
+	r := csv.NewReader(strings.NewReader(val))
+	ss, err := r.Read()
+	if err != nil {
+		return nil, err
+	}
 	out := make(map[string]string, len(ss))
 	for _, pair := range ss {
 		kv := strings.SplitN(pair, "=", 2)
