@@ -1,5 +1,5 @@
-hash: a740e47ef2504fc4e93bb44366b984af57422e1c0a109b804d2c8a93d90a2395
-updated: 2018-07-19T21:34:15.524900788-07:00
+hash: 6225ed119204c43ca1d9ac5e14648c8d912f7b24e85c5ad69566c094f42c36ef
+updated: 2018-08-21T16:36:11.031580364-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -28,13 +28,13 @@ imports:
   - version
   - wait
 - name: github.com/appscode/go-dns
-  version: 8c114997494552b1dd58cc96b5c096c2ccafe34b
+  version: 13bf708e906643b7ee3dfab11b4f89626f0bd9fe
 - name: github.com/appscode/go-hetzner
   version: c038e08b19b1c760484d443de8958880e35bd879
 - name: github.com/appscode/go-version
   version: 0dcf3ac121c7c30e035b41ba9f652d1ce5994242
 - name: github.com/appscode/kutil
-  version: d3937b4296055e551cd85c7d3fff52449a2f80a0
+  version: 569ee52ec2c8bb3c151daa20a8433cfa6cc1bfce
   subpackages:
   - core/v1
   - tools/backup
@@ -195,7 +195,7 @@ imports:
   subpackages:
   - spdy
 - name: github.com/dustin/go-humanize
-  version: bb3d318650d48840a39aa21a027c6630e198e626
+  version: 9f541cc9db5d55bce703bd99987c9d5cb8eea45e
 - name: github.com/evanphx/json-patch
   version: 94e38aa1586e8a6c8a75770bddf5ff84c48a106b
 - name: github.com/exponent-io/jsonpath
@@ -203,7 +203,7 @@ imports:
 - name: github.com/fatih/camelcase
   version: f6a740d52f961c60348ebb109adde9f4635d7540
 - name: github.com/fatih/color
-  version: 2d684516a8861da43017284349b7e303e809ac21
+  version: 9aae6aaa22315390f03959adca2c4d395b02fcef
 - name: github.com/fsnotify/fsnotify
   version: f12c6236fe7b5cf6bcf30e5935d08cb079d78334
 - name: github.com/ghodss/yaml
@@ -219,7 +219,7 @@ imports:
 - name: github.com/go-openapi/swag
   version: f3f9494671f93fcff853e3c6e9e948b3eb71e590
 - name: github.com/go-xorm/builder
-  version: dc8bf48f58fab2b4da338ffd25191905fd741b8f
+  version: c923dd45575b73ed2d0a782fbb02a994e0c4db11
 - name: github.com/go-xorm/core
   version: c10e21e7e1cec20e09398f2dfae385e58c8df555
 - name: github.com/go-xorm/xorm
@@ -256,7 +256,7 @@ imports:
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/google/uuid
-  version: 8c31c18f31ede9fc8eae72290a7e7a8064e9b3e3
+  version: 064e2069ce9c359c118179501254f67d7d37ba24
 - name: github.com/googleapis/gnostic
   version: 0c5108395e2debce0d731cf0287ddf7242066aba
   subpackages:
@@ -281,7 +281,7 @@ imports:
 - name: github.com/gorilla/websocket
   version: 2d1e4548da234d9cb742cc3628556fef86aafbac
 - name: github.com/graymeta/stow
-  version: 749bd5039731d827684b5d49a59b01d4c5316b65
+  version: afce6d90444a3ba63c6d6671498c6cdc79375369
   repo: https://github.com/appscode/stow.git
   vcs: git
   subpackages:
@@ -339,7 +339,7 @@ imports:
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
-  version: 57fdcb988a5c543893cc61bce354a6e24ab70022
+  version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
 - name: github.com/mgutz/ansi
   version: 9520e82c474b0a04dd04f8a40959027271bab992
 - name: github.com/mgutz/str
@@ -347,7 +347,7 @@ imports:
 - name: github.com/mitchellh/go-wordwrap
   version: ad45545899c7b13c020ea92b2072220eefad42b8
 - name: github.com/moby/moby
-  version: 683738900eec52f86b834234eeef054c4e135031
+  version: 3bd1e7b59b0bf4ee4e581e1d27c49aee7987f1f1
   subpackages:
   - pkg/term
 - name: github.com/modern-go/concurrent
@@ -363,7 +363,7 @@ imports:
   subpackages:
   - flowrate
 - name: github.com/ncw/swift
-  version: b2a7479cf26fa841ff90dd932d0221cb5c50782d
+  version: bd8b704d15b2f5357186ac39c863bd74eb837291
 - name: github.com/onsi/ginkgo
   version: fa5fabab2a1bfbd924faf4c067d07ae414e2aedf
   subpackages:
@@ -406,7 +406,7 @@ imports:
   - specs-go
   - specs-go/v1
 - name: github.com/packethost/packngo
-  version: b627120f2da509ca7ff76faf2bbdf6794d873616
+  version: b303a9eb9330feff3d3e5043a9c80b287cf36055
 - name: github.com/pborman/uuid
   version: e790cca94e6cc75c7064b1332e63811d4aae1a53
 - name: github.com/peterbourgon/diskv
@@ -444,7 +444,7 @@ imports:
   subpackages:
   - open
 - name: github.com/softlayer/softlayer-go
-  version: 693aaae36a81140fc5abfb56032c90e7cdc8cbd4
+  version: 260589d94c7d68760bf013731508a4f2a174584f
   subpackages:
   - config
   - datatypes
@@ -456,9 +456,7 @@ imports:
   subpackages:
   - doc
 - name: github.com/spf13/pflag
-  version: aca488055805e43a8c7755c10af3f6cbf753d2b4
-  repo: https://github.com/appscode/pflag.git
-  vcs: git
+  version: 947b89bd1b7dabfed991ac30e1a56f5193f0c88b
 - name: github.com/taoh/linodego
   version: d85493a2eaad404c21b1582ce1dc75e745a4ead5
   repo: https://github.com/appscode/linodego.git

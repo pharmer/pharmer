@@ -52,8 +52,6 @@ import:
 - package: github.com/spf13/cobra
   version: v0.0.3
 - package: github.com/spf13/pflag
-  repo: https://github.com/appscode/pflag.git
-  vcs: git
   version: master
 - package: golang.org/x/crypto
   version: 49796115aa4b964c318aad4f3084fdb41e9aa067
