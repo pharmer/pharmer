@@ -1,6 +1,6 @@
 {
   "name": "pharmer-data",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Static data files used by Pharmer",
   "main": "index.json",
   "scripts": {

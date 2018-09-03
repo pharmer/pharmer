@@ -916,6 +916,33 @@
           "prod": false,
           "qa": false
         }
+      },
+      {
+        "version": "1.11.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.1",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.2",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
       }
     ]
   },
@@ -6222,6 +6249,33 @@
           "prod": false,
           "qa": false
         }
+      },
+      {
+        "version": "1.11.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.1",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.2",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
       }
     ]
   },
@@ -6829,6 +6883,33 @@
           "dev": false,
           "prod": false,
           "qa": false
+        }
+      },
+      {
+        "version": "1.11.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.1",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.2",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
         }
       }
     ]
@@ -8233,6 +8314,33 @@
           "prod": false,
           "qa": false
         }
+      },
+      {
+        "version": "1.11.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.1",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.2",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
       }
     ]
   },
@@ -8427,6 +8535,33 @@
           "dev": true,
           "prod": true,
           "qa": true
+        }
+      },
+      {
+        "version": "1.11.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.1",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.2",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
         }
       }
     ]
@@ -8652,6 +8787,33 @@
           "dev": false,
           "prod": false,
           "qa": false
+        }
+      },
+      {
+        "version": "1.11.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.1",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.2",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
         }
       }
     ]
@@ -8913,6 +9075,33 @@
           "prod": true,
           "qa": true
         }
+      },
+      {
+        "version": "1.11.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.1",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.2",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
       }
     ]
   },
@@ -9171,6 +9360,33 @@
           "dev": false,
           "prod": false,
           "qa": false
+        }
+      },
+      {
+        "version": "1.11.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.1",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.2",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
         }
       }
     ]
@@ -9436,6 +9652,33 @@
           "dev": false,
           "prod": false,
           "qa": false
+        }
+      },
+      {
+        "version": "1.11.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.1",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.2",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
         }
       }
     ]
@@ -10283,6 +10526,33 @@
           "prod": true,
           "qa": true
         }
+      },
+      {
+        "version": "1.11.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.1",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.2",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
       }
     ]
   },
@@ -10752,6 +11022,33 @@
           "dev": false,
           "prod": false,
           "qa": false
+        }
+      },
+      {
+        "version": "1.11.0",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.1",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
+        }
+      },
+      {
+        "version": "1.11.2",
+        "envs": {
+          "dev": true,
+          "prod": true,
+          "qa": true,
+          "onebox": true
         }
       }
     ]
