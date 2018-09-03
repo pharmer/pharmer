@@ -4,7 +4,8 @@
     "envs": [
       "dev",
       "qa",
-      "prod"
+      "prod",
+      "onebox"
     ],
     "regions": [
       {
@@ -923,7 +924,8 @@
     "envs": [
       "dev",
       "qa",
-      "prod"
+      "prod",
+      "onebox"
     ],
     "regions": [
       {
@@ -6228,7 +6230,8 @@
     "envs": [
       "dev",
       "qa",
-      "prod"
+      "prod",
+      "onebox"
     ],
     "regions": [
       {
@@ -6835,7 +6838,8 @@
     "envs": [
       "dev",
       "qa",
-      "prod"
+      "prod",
+      "onebox"
     ],
     "regions": [
       {
@@ -8237,7 +8241,8 @@
     "envs": [
       "dev",
       "qa",
-      "prod"
+      "prod",
+      "onebox"
     ],
     "regions": [
       {
@@ -8431,7 +8436,8 @@
     "envs": [
       "dev",
       "qa",
-      "prod"
+      "prod",
+      "onebox"
     ],
     "regions": [
       {
@@ -8655,7 +8661,8 @@
     "envs": [
       "dev",
       "qa",
-      "prod"
+      "prod",
+      "onebox"
     ],
     "regions": [
       {
@@ -8914,7 +8921,8 @@
     "envs": [
       "dev",
       "qa",
-      "prod"
+      "prod",
+      "onebox"
     ],
     "regions": [
       {
@@ -9172,7 +9180,8 @@
     "envs": [
       "dev",
       "qa",
-      "prod"
+      "prod",
+      "onebox"
     ],
     "regions": [
       {
@@ -9436,7 +9445,8 @@
     "envs": [
       "dev",
       "qa",
-      "prod"
+      "prod",
+      "onebox"
     ],
     "regions": [
       {
@@ -10281,7 +10291,8 @@
     "envs": [
       "dev",
       "qa",
-      "prod"
+      "prod",
+      "onebox"
     ],
     "regions": [
       {
