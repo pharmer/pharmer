@@ -72,8 +72,8 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	managedClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
 	return &cloudConnector{
-		cluster: cluster,
-		ctx:     ctx,
+		cluster:                cluster,
+		ctx:                    ctx,
 		availabilitySetsClient: availabilitySetsClient,
 		groupsClient:           groupsClient,
 		managedClient:          managedClient,

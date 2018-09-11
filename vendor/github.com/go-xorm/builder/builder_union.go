@@ -5,21 +5,20 @@
 package builder
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
 
 func (b *Builder) unionWriteTo(w Writer) error {
-	if b.limitation != nil || b.cond != NewCond() ||
+	if b.limitation != nil || b.cond.IsValid() ||
 		b.orderBy != "" || b.having != "" || b.groupBy != "" {
-		return errors.New("builder in unionType should not have any conditional fields in it(like Where or Limit)")
+		return ErrNotUnexpectedUnionConditions
 	}
 
 	for idx, u := range b.unions {
 		current := u.builder
 		if current.optype != selectType {
-			return errors.New("UNION is only allowed among SELECT operations")
+			return ErrUnsupportedUnionMembers
 		}
 
 		if len(b.unions) == 1 {

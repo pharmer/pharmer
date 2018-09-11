@@ -104,8 +104,8 @@ func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, 
 			Colors: true,
 		},
 		Cluster: api.NamedCluster{
-			Name:   clusterName,
-			Server: cluster.APIServerURL(),
+			Name:                     clusterName,
+			Server:                   cluster.APIServerURL(),
 			CertificateAuthorityData: cert.EncodeCertPEM(CACert(cm.ctx)),
 		},
 		AuthInfo: api.NamedAuthInfo{
