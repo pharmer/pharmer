@@ -44,8 +44,8 @@ func encodeCluster(ctx context.Context, cluster *api.Cluster) (*container.Cluste
 	}
 
 	kluster := &container.Cluster{
-		ClusterIpv4Cidr: cluster.Spec.Networking.PodSubnet,
-		Name:            cluster.Name,
+		ClusterIpv4Cidr:       cluster.Spec.Networking.PodSubnet,
+		Name:                  cluster.Name,
 		InitialClusterVersion: cluster.Spec.KubernetesVersion,
 
 		MasterAuth: &container.MasterAuth{

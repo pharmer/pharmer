@@ -5,7 +5,6 @@
 package builder
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -16,8 +15,8 @@ func Select(cols ...string) *Builder {
 }
 
 func (b *Builder) selectWriteTo(w Writer) error {
-	if len(b.tableName) <= 0 {
-		return errors.New("no table indicated")
+	if len(b.tableName) <= 0 && !b.isNested {
+		return ErrNoTableName
 	}
 
 	// perform limit before writing to writer when b.dialect between ORACLE and MSSQL
@@ -51,6 +50,10 @@ func (b *Builder) selectWriteTo(w Writer) error {
 			return err
 		}
 	} else {
+		if b.cond.IsValid() && len(b.tableName) <= 0 {
+			return ErrUnnamedDerivedTable
+		}
+
 		switch b.subQuery.optype {
 		case selectType, unionType:
 			fmt.Fprint(w, " FROM (")
@@ -64,7 +67,7 @@ func (b *Builder) selectWriteTo(w Writer) error {
 				fmt.Fprintf(w, ") %v", b.tableName)
 			}
 		default:
-			return errors.New("SubQuery is limited in SELECT and UNION")
+			return ErrUnexpectedSubQuery
 		}
 	}
 

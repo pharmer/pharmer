@@ -43,6 +43,7 @@ type limit struct {
 type Builder struct {
 	optype
 	dialect    string
+	isNested   bool
 	tableName  string
 	subQuery   *Builder
 	cond       Cond
@@ -65,16 +66,31 @@ func Dialect(dialect string) *Builder {
 
 // Where sets where SQL
 func (b *Builder) Where(cond Cond) *Builder {
-	b.cond = b.cond.And(cond)
+	if b.cond.IsValid() {
+		b.cond = b.cond.And(cond)
+	} else {
+		b.cond = cond
+	}
 	return b
 }
 
-// From sets the name of table or the sub query's alias and itself
-func (b *Builder) From(tableName string, subQuery ...*Builder) *Builder {
-	b.tableName = tableName
+// From sets from subject(can be a table name in string or a builder pointer) and its alias
+func (b *Builder) From(subject interface{}, alias ...string) *Builder {
+	switch subject.(type) {
+	case *Builder:
+		b.subQuery = subject.(*Builder)
 
-	if len(subQuery) > 0 {
-		b.subQuery = subQuery[0]
+		if len(alias) > 0 {
+			b.tableName = alias[0]
+		} else {
+			b.isNested = true
+		}
+	case string:
+		b.tableName = subject.(string)
+
+		if len(alias) > 0 {
+			b.tableName = b.tableName + " " + alias[0]
+		}
 	}
 
 	return b
@@ -217,8 +233,8 @@ func (b *Builder) Delete(conds ...Cond) *Builder {
 // WriteTo implements Writer interface
 func (b *Builder) WriteTo(w Writer) error {
 	switch b.optype {
-	case condType:
-		return b.cond.WriteTo(w)
+	/*case condType:
+	return b.cond.WriteTo(w)*/
 	case selectType:
 		return b.selectWriteTo(w)
 	case insertType:

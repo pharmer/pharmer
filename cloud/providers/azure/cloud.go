@@ -111,8 +111,8 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	storageClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
 	return &cloudConnector{
-		cluster: cluster,
-		ctx:     ctx,
+		cluster:                 cluster,
+		ctx:                     ctx,
 		availabilitySetsClient:  availabilitySetsClient,
 		vmClient:                vmClient,
 		vmExtensionsClient:      vmExtensionsClient,
@@ -296,7 +296,7 @@ func (conn *cloudConnector) createNetworkSecurityRule(sg *network.SecurityGroup)
 	sshRule := network.SecurityRule{
 		Name: StringP(sshRuleName),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Access: network.SecurityRuleAccessAllow,
+			Access:                   network.SecurityRuleAccessAllow,
 			DestinationAddressPrefix: StringP("*"),
 			DestinationPortRange:     StringP("22"),
 			Direction:                network.SecurityRuleDirectionInbound,
@@ -315,7 +315,7 @@ func (conn *cloudConnector) createNetworkSecurityRule(sg *network.SecurityGroup)
 	sslRule := network.SecurityRule{
 		Name: StringP(sshRuleName),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Access: network.SecurityRuleAccessAllow,
+			Access:                   network.SecurityRuleAccessAllow,
 			DestinationAddressPrefix: StringP("*"),
 			DestinationPortRange:     StringP("443"),
 			Direction:                network.SecurityRuleDirectionInbound,
@@ -335,7 +335,7 @@ func (conn *cloudConnector) createNetworkSecurityRule(sg *network.SecurityGroup)
 	mastersslRule := network.SecurityRule{
 		Name: StringP(mastersslRuleName),
 		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Access: network.SecurityRuleAccessAllow,
+			Access:                   network.SecurityRuleAccessAllow,
 			DestinationAddressPrefix: StringP("*"),
 			DestinationPortRange:     StringP(fmt.Sprintf("%d", conn.cluster.Spec.API.BindPort)),
 			Direction:                network.SecurityRuleDirectionInbound,
