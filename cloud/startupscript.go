@@ -10,7 +10,7 @@ import (
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha2"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha3"
 )
 
 // https://github.com/pharmer/pharmer/issues/347
@@ -43,22 +43,19 @@ type TemplateData struct {
 	NodeName          string
 	ExternalProvider  bool
 
-	MasterConfiguration *kubeadmapi.MasterConfiguration
-	KubeletExtraArgs    map[string]string
+	InitConfiguration *kubeadmapi.InitConfiguration
+	JoinConfiguration *kubeadmapi.JoinConfiguration
+	KubeletExtraArgs  map[string]string
 }
 
 func (td TemplateData) MasterConfigurationYAML() (string, error) {
-	if td.MasterConfiguration == nil {
+	if td.InitConfiguration == nil {
 		return "", nil
 	}
 	var cb []byte
 	var err error
-	if td.IsVersionLessThan1_11() {
-		conf := Convert_Kubeadm_V1alpha2_To_V1alpha1(td.MasterConfiguration, td.KubeletExtraArgs["cloud-provider"])
-		cb, err = yaml.Marshal(conf)
-	} else {
-		cb, err = yaml.Marshal(td.MasterConfiguration)
-	}
+
+	cb, err = yaml.Marshal(td.InitConfiguration)
 
 	return string(cb), err
 
@@ -206,7 +203,6 @@ timedatectl set-timezone Etc/UTC
 {{ template "prepare-host" . }}
 {{ template "mount-master-pd" . }}
 
-{{ .KubeletExtraArgsFile }}
 
 rm -rf /usr/sbin/policy-rc.d
 systemctl enable docker kubelet nfs-utils

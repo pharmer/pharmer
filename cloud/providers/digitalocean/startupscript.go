@@ -8,9 +8,8 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha2"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha3"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
-	kubeproxyconfigv1alpha1 "k8s.io/kubernetes/pkg/proxy/apis/config/v1alpha1"
 )
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
@@ -53,36 +52,35 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		api.NodePoolKey: ng.Name,
 	}.String()
 
-	cfg := kubeadmapi.MasterConfiguration{
+	cfg := kubeadmapi.InitConfiguration{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1alpha2",
+			APIVersion: "kubeadm.k8s.io/v1alpha3",
 			Kind:       "MasterConfiguration",
 		},
-		API: kubeadmapi.API{
+		ClusterConfiguration: kubeadmapi.ClusterConfiguration{
+			Networking: kubeadmapi.Networking{
+				ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
+				PodSubnet:     cluster.Spec.Networking.PodSubnet,
+				DNSDomain:     cluster.Spec.Networking.DNSDomain,
+			},
+			KubernetesVersion: cluster.Spec.KubernetesVersion,
+			// "external": cloudprovider not supported for apiserver and controller-manager
+			// https://github.com/kubernetes/kubernetes/pull/50545
+			APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
+			ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
+			SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
+			APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
+			ClusterName:                cluster.Name,
+		},
+		NodeRegistration: kubeadmapi.NodeRegistrationOptions{
+			KubeletExtraArgs: td.KubeletExtraArgs,
+		},
+		APIEndpoint: kubeadmapi.APIEndpoint{
 			AdvertiseAddress: cluster.Spec.API.AdvertiseAddress,
 			BindPort:         cluster.Spec.API.BindPort,
 		},
-		Networking: kubeadmapi.Networking{
-			ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
-			PodSubnet:     cluster.Spec.Networking.PodSubnet,
-			DNSDomain:     cluster.Spec.Networking.DNSDomain,
-		},
-		//ClusterName: "kubernetes",
-		KubeProxy: kubeadmapi.KubeProxy{
-			Config: &kubeproxyconfigv1alpha1.KubeProxyConfiguration{
-				BindAddress: "0.0.0.0",
-				ClusterCIDR: cluster.Spec.Networking.PodSubnet,
-			},
-		},
-		KubernetesVersion: cluster.Spec.KubernetesVersion,
-		// "external": cloudprovider not supported for apiserver and controller-manager
-		// https://github.com/kubernetes/kubernetes/pull/50545
-		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
-		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
-		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
-		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
 	}
-	td.MasterConfiguration = &cfg
+	td.InitConfiguration = &cfg
 	return td
 }
 
