@@ -66,17 +66,19 @@ import:
 - package: gopkg.in/ini.v1
   version: v1.37.0
 - package: k8s.io/api
-  version: kubernetes-1.11.3
+  version: kubernetes-1.12.0
 - package: k8s.io/apimachinery
   repo: https://github.com/pharmer/apimachinery.git
   vcs: git
-  version: release-1.11.3
+  version: release-1.12.0
 - package: k8s.io/client-go
-  version: kubernetes-1.11.3
+  version: kubernetes-1.12.0
 - package: k8s.io/apiextensions-apiserver
-  version: kubernetes-1.11.3
+  version: kubernetes-1.12.0
+- package: k8s.io/cli-runtime
+  version: kubernetes-1.12.0
 - package: k8s.io/kubernetes
-  version: v1.11.3
+  version: v1.12.0
 - package: github.com/appscode/kutil
   version: release-8.0
 - package: github.com/gogo/protobuf

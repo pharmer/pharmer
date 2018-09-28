@@ -5,18 +5,13 @@
 package builder
 
 import (
+	"errors"
 	"fmt"
 )
 
-// Delete creates a delete Builder
-func Delete(conds ...Cond) *Builder {
-	builder := &Builder{cond: NewCond()}
-	return builder.Delete(conds...)
-}
-
 func (b *Builder) deleteWriteTo(w Writer) error {
 	if len(b.tableName) <= 0 {
-		return ErrNoTableName
+		return errors.New("no table indicated")
 	}
 
 	if _, err := fmt.Fprintf(w, "DELETE FROM %s WHERE ", b.tableName); err != nil {

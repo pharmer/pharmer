@@ -6,21 +6,16 @@ package builder
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 )
 
-// Insert creates an insert Builder
-func Insert(eq Eq) *Builder {
-	builder := &Builder{cond: NewCond()}
-	return builder.Insert(eq)
-}
-
 func (b *Builder) insertWriteTo(w Writer) error {
 	if len(b.tableName) <= 0 {
-		return ErrNoTableName
+		return errors.New("no table indicated")
 	}
 	if len(b.inserts) <= 0 {
-		return ErrNoColumnToInsert
+		return errors.New("no column to be update")
 	}
 
 	if _, err := fmt.Fprintf(w, "INSERT INTO %s (", b.tableName); err != nil {
@@ -31,12 +26,10 @@ func (b *Builder) insertWriteTo(w Writer) error {
 	var bs []byte
 	var valBuffer = bytes.NewBuffer(bs)
 	var i = 0
-
-	for _, col := range b.inserts.sortedKeys() {
-		value := b.inserts[col]
+	for col, value := range b.inserts {
 		fmt.Fprint(w, col)
 		if e, ok := value.(expr); ok {
-			fmt.Fprintf(valBuffer, "(%s)", e.sql)
+			fmt.Fprint(valBuffer, e.sql)
 			args = append(args, e.args...)
 		} else {
 			fmt.Fprint(valBuffer, "?")
