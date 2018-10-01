@@ -39,8 +39,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
-		td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
-		td.KubeletExtraArgs["keep-terminated-pod-volumes"] = "true"
+		//td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
+		//td.KubeletExtraArgs["keep-terminated-pod-volumes"] = "true"
 
 	}
 	return td
@@ -52,25 +52,10 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		api.NodePoolKey: ng.Name,
 	}.String()
 
-	cfg := kubeadmapi.InitConfiguration{
+	ifg := kubeadmapi.InitConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "kubeadm.k8s.io/v1alpha3",
-			Kind:       "MasterConfiguration",
-		},
-		ClusterConfiguration: kubeadmapi.ClusterConfiguration{
-			Networking: kubeadmapi.Networking{
-				ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
-				PodSubnet:     cluster.Spec.Networking.PodSubnet,
-				DNSDomain:     cluster.Spec.Networking.DNSDomain,
-			},
-			KubernetesVersion: cluster.Spec.KubernetesVersion,
-			// "external": cloudprovider not supported for apiserver and controller-manager
-			// https://github.com/kubernetes/kubernetes/pull/50545
-			APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
-			ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
-			SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
-			APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
-			ClusterName:                cluster.Name,
+			Kind:       "InitConfiguration",
 		},
 		NodeRegistration: kubeadmapi.NodeRegistrationOptions{
 			KubeletExtraArgs: td.KubeletExtraArgs,
@@ -80,7 +65,28 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			BindPort:         cluster.Spec.API.BindPort,
 		},
 	}
-	td.InitConfiguration = &cfg
+	td.InitConfiguration = &ifg
+	cfg := kubeadmapi.ClusterConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "kubeadm.k8s.io/v1alpha3",
+			Kind:       "ClusterConfiguration",
+		},
+		Networking: kubeadmapi.Networking{
+			ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
+			PodSubnet:     cluster.Spec.Networking.PodSubnet,
+			DNSDomain:     cluster.Spec.Networking.DNSDomain,
+		},
+		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		// "external": cloudprovider not supported for apiserver and controller-manager
+		// https://github.com/kubernetes/kubernetes/pull/50545
+		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
+		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
+		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
+		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
+		ClusterName:                cluster.Name,
+	}
+	td.ClusterConfiguration = &cfg
+
 	return td
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -211,6 +212,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	fmt.Println()
 	fmt.Println(script)
 	fmt.Println()
+	os.Exit(1)
 	req := &godo.DropletCreateRequest{
 		Name:   name,
 		Region: conn.cluster.Spec.Cloud.Zone,

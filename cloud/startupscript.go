@@ -2,7 +2,6 @@ package cloud
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 	"text/template"
 
@@ -19,6 +18,7 @@ var kubernetesCNIVersions = map[string]string{
 	"1.9.0":  "0.6.0",
 	"1.10.0": "0.6.0",
 	"1.11.0": "0.6.0",
+	"1.12.0": "0.6.0",
 }
 
 var prekVersions = map[string]string{
@@ -26,6 +26,7 @@ var prekVersions = map[string]string{
 	"1.9.0":  "1.9.0",
 	"1.10.0": "1.10.0",
 	"1.11.0": "1.11.0-alpha.1",
+	"1.12.0": "1.12.0-alpha.1",
 }
 
 type TemplateData struct {
@@ -43,12 +44,13 @@ type TemplateData struct {
 	NodeName          string
 	ExternalProvider  bool
 
-	InitConfiguration *kubeadmapi.InitConfiguration
-	JoinConfiguration *kubeadmapi.JoinConfiguration
-	KubeletExtraArgs  map[string]string
+	InitConfiguration    *kubeadmapi.InitConfiguration
+	ClusterConfiguration *kubeadmapi.ClusterConfiguration
+	JoinConfiguration    *kubeadmapi.JoinConfiguration
+	KubeletExtraArgs     map[string]string
 }
 
-func (td TemplateData) MasterConfigurationYAML() (string, error) {
+func (td TemplateData) InitConfigurationYAML() (string, error) {
 	if td.InitConfiguration == nil {
 		return "", nil
 	}
@@ -56,9 +58,17 @@ func (td TemplateData) MasterConfigurationYAML() (string, error) {
 	var err error
 
 	cb, err = yaml.Marshal(td.InitConfiguration)
-
 	return string(cb), err
+}
 
+func (td TemplateData) ClusterConfigurationYAML() (string, error) {
+	if td.ClusterConfiguration == nil {
+		return "", nil
+	}
+	var cb []byte
+	var err error
+	cb, err = yaml.Marshal(td.ClusterConfiguration)
+	return string(cb), err
 }
 
 func (td TemplateData) ForceKubeadmResetFlag() (string, error) {
@@ -67,20 +77,6 @@ func (td TemplateData) ForceKubeadmResetFlag() (string, error) {
 		return "-f", nil
 	}
 	return "", nil
-}
-
-func (td TemplateData) KubeletExtraArgsFile() (string, error) {
-	file := fmt.Sprintf(`cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
-[Service]
-Environment="KUBELET_EXTRA_ARGS=%s"
-EOF`, td.KubeletExtraArgsStr())
-	lv11 := td.IsVersionLessThan1_11()
-	if !lv11 {
-		file = fmt.Sprintf(`cat > /etc/default/kubelet <<EOF
-KUBELET_EXTRA_ARGS=%s
-EOF`, td.KubeletExtraArgsStr())
-	}
-	return file, nil
 }
 
 func (td TemplateData) IsVersionLessThan1_11() bool {
@@ -221,13 +217,15 @@ EOF
 
 mkdir -p /etc/kubernetes/kubeadm
 
-{{ if .MasterConfiguration }}
+{{ if .InitConfiguration }}
 cat > /etc/kubernetes/kubeadm/base.yaml <<EOF
-{{ .MasterConfigurationYAML }}
+{{ .InitConfigurationYAML }}
+---
+{{ .ClusterConfigurationYAML }}
 EOF
 {{ end }}
 
-pre-k merge master-config \
+pre-k merge init-config \
 	--config=/etc/kubernetes/kubeadm/base.yaml \
 	--apiserver-advertise-address=$(pre-k machine public-ips --all=false) \
 	--apiserver-cert-extra-sans=$(pre-k machine public-ips --routable) \
