@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"bytes"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha3"
 )
 
@@ -26,7 +28,7 @@ var prekVersions = map[string]string{
 	"1.9.0":  "1.9.0",
 	"1.10.0": "1.10.0",
 	"1.11.0": "1.11.0-alpha.1",
-	"1.12.0": "1.12.0-alpha.1",
+	"1.12.0": "1.12.0-alpha.2",
 }
 
 type TemplateData struct {
@@ -68,6 +70,38 @@ func (td TemplateData) ClusterConfigurationYAML() (string, error) {
 	var cb []byte
 	var err error
 	cb, err = yaml.Marshal(td.ClusterConfiguration)
+	return string(cb), err
+}
+
+func (td TemplateData) JoinConfigurationYAML() (string, error) {
+	apiAddress := strings.Split(td.APIServerAddress, ":")
+	if len(apiAddress) < 2 {
+		return "", errors.Errorf("Apiserver address is not correct")
+	}
+	apiPort, err := strconv.Atoi(apiAddress[1])
+	if err != nil {
+		return "", err
+	}
+
+	cfg := kubeadmapi.JoinConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "kubeadm.k8s.io/v1alpha3",
+			Kind:       "JoinConfiguration",
+		},
+		NodeRegistration: kubeadmapi.NodeRegistrationOptions{
+			KubeletExtraArgs: td.KubeletExtraArgs,
+		},
+		ClusterName: td.ClusterName,
+		Token:       td.KubeadmToken,
+		APIEndpoint: kubeadmapi.APIEndpoint{
+			AdvertiseAddress: apiAddress[0],
+			BindPort:         int32(apiPort),
+		},
+		DiscoveryTokenAPIServers:   []string{td.APIServerAddress},
+		DiscoveryTokenCACertHashes: []string{td.CAHash},
+	}
+
+	cb, err := yaml.Marshal(cfg)
 	return string(cb), err
 }
 
@@ -218,15 +252,20 @@ EOF
 mkdir -p /etc/kubernetes/kubeadm
 
 {{ if .InitConfiguration }}
-cat > /etc/kubernetes/kubeadm/base.yaml <<EOF
+cat > /etc/kubernetes/kubeadm/init.yaml <<EOF
 {{ .InitConfigurationYAML }}
----
+EOF
+{{ end }}
+
+{{ if .ClusterConfiguration }}
+cat > /etc/kubernetes/kubeadm/cluster.yaml <<EOF
 {{ .ClusterConfigurationYAML }}
 EOF
 {{ end }}
 
-pre-k merge init-config \
-	--config=/etc/kubernetes/kubeadm/base.yaml \
+pre-k merge config \
+	--init-config=/etc/kubernetes/kubeadm/init.yaml \
+    --cluster-config=/etc/kubernetes/kubeadm/cluster.yaml \
 	--apiserver-advertise-address=$(pre-k machine public-ips --all=false) \
 	--apiserver-cert-extra-sans=$(pre-k machine public-ips --routable) \
 	--apiserver-cert-extra-sans=$(pre-k machine private-ips) \
@@ -304,16 +343,21 @@ EOF
 {{ end }}
 {{ end }}
 
-{{ .KubeletExtraArgsFile }}
 
 systemctl daemon-reload
 rm -rf /usr/sbin/policy-rc.d
 systemctl enable docker kubelet nfs-utils
 systemctl start docker kubelet nfs-utils
 
+mkdir -p /etc/kubernetes/kubeadm
+
+cat > /etc/kubernetes/kubeadm/join.yaml <<EOF
+{{ .JoinConfigurationYAML }}
+EOF
+
 
 kubeadm reset {{ .ForceKubeadmResetFlag }}
-kubeadm join --token={{ .KubeadmToken }} --discovery-token-ca-cert-hash={{ .CAHash }} {{ .APIServerAddress }}
+kubeadm join --config=/etc/kubernetes/kubeadm/join.yaml
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("init-script").Parse(`#!/bin/bash
