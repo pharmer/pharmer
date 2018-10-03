@@ -8,7 +8,7 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha2"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha3"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 )
 
@@ -55,15 +55,28 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		HostPath:  "/etc/kubernetes/ccm",
 		MountPath: "/etc/kubernetes/ccm",
 	}
-	cfg := kubeadmapi.MasterConfiguration{
+	ifg := kubeadmapi.InitConfiguration{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1alpha2",
-			Kind:       "MasterConfiguration",
+			APIVersion: "kubeadm.k8s.io/v1alpha3",
+			Kind:       "InitConfiguration",
 		},
-		API: kubeadmapi.API{
+
+		NodeRegistration: kubeadmapi.NodeRegistrationOptions{
+			KubeletExtraArgs: td.KubeletExtraArgs,
+		},
+		APIEndpoint: kubeadmapi.APIEndpoint{
 			AdvertiseAddress: cluster.Spec.API.AdvertiseAddress,
 			BindPort:         cluster.Spec.API.BindPort,
 		},
+	}
+	td.InitConfiguration = &ifg
+
+	cfg := kubeadmapi.ClusterConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "kubeadm.k8s.io/v1alpha3",
+			Kind:       "ClusterConfiguration",
+		},
+
 		APIServerExtraVolumes:         []kubeadmapi.HostPathMount{hostPath},
 		ControllerManagerExtraVolumes: []kubeadmapi.HostPathMount{hostPath},
 		Networking: kubeadmapi.Networking{
@@ -73,14 +86,15 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		},
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		//CloudProvider:              cluster.Spec.Cloud.CloudProvider,
-		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
-		ControllerManagerExtraArgs: map[string]string{},
-		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
-		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
+		APIServerExtraArgs: cluster.Spec.APIServerExtraArgs,
+		ControllerManagerExtraArgs: map[string]string{
+			"cloud-provider": cluster.Spec.Cloud.CloudProvider,
+		},
+		SchedulerExtraArgs: cluster.Spec.SchedulerExtraArgs,
+		APIServerCertSANs:  cluster.Spec.APIServerCertSANs,
 	}
-	cfg.APIServerExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider
-	cfg.ControllerManagerExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider
-	td.MasterConfiguration = &cfg
+
+	td.ClusterConfiguration = &cfg
 	return td
 }
 
