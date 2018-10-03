@@ -9,9 +9,9 @@ import (
 	_ "github.com/pharmer/pharmer/cloud/providers/fake"
 	_ "github.com/pharmer/pharmer/cloud/providers/gce"
 	_ "github.com/pharmer/pharmer/cloud/providers/gke"
-	_ "github.com/pharmer/pharmer/cloud/providers/lightsail"
+	_ "github.com/pharmer/pharmer/cloud/providers/lightsail"*/
 	_ "github.com/pharmer/pharmer/cloud/providers/linode"
-	_ "github.com/pharmer/pharmer/cloud/providers/ovh"
+	/*_ "github.com/pharmer/pharmer/cloud/providers/ovh"
 	_ "github.com/pharmer/pharmer/cloud/providers/packet"
 	_ "github.com/pharmer/pharmer/cloud/providers/scaleway"
 	_ "github.com/pharmer/pharmer/cloud/providers/softlayer"
