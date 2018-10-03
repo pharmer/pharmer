@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	versionutil "k8s.io/kubernetes/pkg/util/version"
 )
@@ -110,7 +109,7 @@ type VersionGetter interface {
 	// MasterKubeadmVersion should return the version of the kubeadm CLI
 	KubeadmVersion() (string, *versionutil.Version, error)
 	// GetKubeDNSVersion returns the right kube-dns version for a specific k8s version
-	KubeDNSVersion() (string, error)
+	DeployedDNSAddon() (string, string, error)
 	// VersionFromCILabel should resolve CI labels like `latest`, `stable`, `stable-1.8`, etc. to real versions
 	VersionFromCILabel(string, string) (string, *versionutil.Version, error)
 	// KubeletVersions should return a map with a version and a number that describes how many kubelets there are for that version
@@ -170,6 +169,28 @@ func (g *KubeVersionGetter) ClusterVersion() (string, *versionutil.Version, erro
 	return clusterVersionInfo.String(), clusterVersion, nil
 }
 
+// DeployedDNSAddon returns the type of DNS addon currently deployed
+func (g *KubeVersionGetter) DeployedDNSAddon() (string, string, error) {
+	deploymentsClient := g.client.AppsV1().Deployments(metav1.NamespaceSystem)
+	deployments, err := deploymentsClient.List(metav1.ListOptions{LabelSelector: "k8s-app=kube-dns"})
+	if err != nil {
+		return "", "", fmt.Errorf("couldn't retrieve DNS addon deployments: %v", err)
+	}
+
+	switch len(deployments.Items) {
+	case 0:
+		return "", "", nil
+	case 1:
+		addonName := deployments.Items[0].Name
+		addonImage := deployments.Items[0].Spec.Template.Spec.Containers[0].Image
+		addonImageParts := strings.Split(addonImage, ":")
+		addonVersion := addonImageParts[len(addonImageParts)-1]
+		return addonName, addonVersion, nil
+	default:
+		return "", "", fmt.Errorf("multiple DNS addon deployments found: %v", deployments.Items)
+	}
+}
+
 // MasterKubeadmVersion gets kubeadm version
 func (g *KubeVersionGetter) KubeadmVersion() (string, *versionutil.Version, error) {
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
@@ -203,28 +224,6 @@ func (g *KubeVersionGetter) KubeadmVersion() (string, *versionutil.Version, erro
 	fmt.Println(fmt.Sprintf("[upgrade/versions] kubeadm version: %s", verStr))
 
 	return verStr, kubeadmVersion, nil
-}
-
-//k8s.io/kubernetes/cmd/kubeadm/app/phases/addons/dns/versions.go
-// Here we get the value from dns image. originally it was static
-func (g *KubeVersionGetter) KubeDNSVersion() (string, error) {
-	allDNS, err := g.client.CoreV1().Pods(metav1.NamespaceSystem).List(metav1.ListOptions{
-		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.KubeSystem_App: "kube-dns",
-		}).String(),
-	})
-	if err != nil {
-		return "", err
-	}
-	if len(allDNS.Items) == 0 {
-		return "", errors.Errorf("No DNS pod found")
-	}
-	dnsImage := allDNS.Items[0].Spec.Containers[0].Image
-	imageInfo := strings.Split(dnsImage, ":")
-	if len(imageInfo) != 2 {
-		return "", errors.Errorf("Couldn't parse dns version")
-	}
-	return imageInfo[1], nil
 }
 
 // VersionFromCILabel resolves a version label like "latest" or "stable" to an actual version using the public Kubernetes CI uploads
@@ -269,7 +268,8 @@ func computeKubeletVersions(nodes []core.Node) map[string]uint32 {
 }
 
 func getBranchFromVersion(version string) string {
-	return strings.TrimPrefix(version, "v")[:3]
+	v := versionutil.MustParseGeneric(version)
+	return fmt.Sprintf("%d.%d", v.Major(), v.Minor())
 }
 
 func patchVersionBranchExists(clusterVersion, stableVersion *versionutil.Version) bool {

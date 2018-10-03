@@ -27,8 +27,8 @@ var prekVersions = map[string]string{
 	"1.8.0":  "1.8.0",
 	"1.9.0":  "1.9.0",
 	"1.10.0": "1.10.0",
-	"1.11.0": "1.11.0-alpha.1",
-	"1.12.0": "1.12.0-alpha.2",
+	"1.11.0": "1.12.0-alpha.3",
+	"1.12.0": "1.12.0-alpha.3",
 }
 
 type TemplateData struct {
@@ -106,17 +106,25 @@ func (td TemplateData) JoinConfigurationYAML() (string, error) {
 }
 
 func (td TemplateData) ForceKubeadmResetFlag() (string, error) {
-	lv11 := td.IsVersionLessThan1_11()
+	lv11 := td.IsVersionLessThan("1.11.0")
 	if !lv11 {
 		return "-f", nil
 	}
 	return "", nil
 }
 
-func (td TemplateData) IsVersionLessThan1_11() bool {
+func (td TemplateData) IsVersionLessThan(currentVersion string) bool {
 	cv, _ := version.NewVersion(td.KubernetesVersion)
-	v11, _ := version.NewVersion("1.11.0")
+	v11, _ := version.NewVersion(currentVersion)
 	return cv.LessThan(v11)
+}
+
+func (td TemplateData) IsKubeadmV1Alpha3() bool {
+	return !td.IsVersionLessThan("1.12.0")
+}
+
+func (td TemplateData) IsVersionLessThan1_11() bool {
+	return td.IsVersionLessThan("1.11.0")
 }
 
 func (td TemplateData) UseKubeProxy1_11_0() bool {
@@ -155,6 +163,10 @@ func (td TemplateData) PackageList() (string, error) {
 	}
 	patch := v.Clone().ToMutator().ResetMetadata().ResetPrerelease().String()
 	minor := v.Clone().ToMutator().ResetMetadata().ResetPrerelease().ResetPatch().String()
+	kubeadmVersion := patch
+	if td.IsVersionLessThan("1.12.0") {
+		kubeadmVersion = "1.12.0"
+	}
 
 	pkgs := []string{
 		"cron",
@@ -168,7 +180,7 @@ func (td TemplateData) PackageList() (string, error) {
 		"socat",
 		"kubelet=" + patch + "*",
 		"kubectl=" + patch + "*",
-		"kubeadm=" + patch + "*",
+		"kubeadm=" + kubeadmVersion + "*",
 	}
 	if cni, found := kubernetesCNIVersions[minor]; !found {
 		return "", errors.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", td.KubernetesVersion)
@@ -251,26 +263,10 @@ EOF
 
 mkdir -p /etc/kubernetes/kubeadm
 
-{{ if .InitConfiguration }}
-cat > /etc/kubernetes/kubeadm/init.yaml <<EOF
-{{ .InitConfigurationYAML }}
-EOF
-{{ end }}
 
-{{ if .ClusterConfiguration }}
-cat > /etc/kubernetes/kubeadm/cluster.yaml <<EOF
-{{ .ClusterConfigurationYAML }}
-EOF
-{{ end }}
 
-pre-k merge config \
-	--init-config=/etc/kubernetes/kubeadm/init.yaml \
-    --cluster-config=/etc/kubernetes/kubeadm/cluster.yaml \
-	--apiserver-advertise-address=$(pre-k machine public-ips --all=false) \
-	--apiserver-cert-extra-sans=$(pre-k machine public-ips --routable) \
-	--apiserver-cert-extra-sans=$(pre-k machine private-ips) \
-	--node-name=${NODE_NAME:-} \
-	> /etc/kubernetes/kubeadm/config.yaml
+{{ template "pre-k" . }}
+
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 
 {{ if .UseKubeProxy1_11_0 }}
@@ -418,6 +414,29 @@ done
 `))
 	_ = template.Must(StartupScriptTemplate.New("install-storage-plugin").Parse(``))
 
+	_ = template.Must(StartupScriptTemplate.New("pre-k").Parse(`
+{{ if .InitConfiguration }}
+cat > /etc/kubernetes/kubeadm/init.yaml <<EOF
+{{ .InitConfigurationYAML }}
+EOF
+{{ end }}
+
+{{ if .ClusterConfiguration }}
+cat > /etc/kubernetes/kubeadm/cluster.yaml <<EOF
+{{ .ClusterConfigurationYAML }}
+EOF
+{{ end }}
+
+pre-k merge config \
+	--init-config=/etc/kubernetes/kubeadm/init.yaml \
+    --cluster-config=/etc/kubernetes/kubeadm/cluster.yaml \
+	--apiserver-advertise-address=$(pre-k machine public-ips --all=false) \
+	--apiserver-cert-extra-sans=$(pre-k machine public-ips --routable) \
+	--apiserver-cert-extra-sans=$(pre-k machine private-ips) \
+	--node-name=${NODE_NAME:-} \
+	> /etc/kubernetes/kubeadm/config.yaml	
+
+`))
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 {{ if .IsVersionLessThan1_11 }}
 kubectl apply \

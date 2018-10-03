@@ -16,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
 type GenericUpgradeManager struct {
@@ -49,7 +50,9 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 	// Get and output the current latest stable version
 	stableVersionStr, stableVersion, err := v.VersionFromCILabel("stable", "stable version")
 	if err != nil {
-		return nil, err
+		fmt.Printf("[upgrade/versions] WARNING: %v\n", err)
+		fmt.Println("[upgrade/versions] WARNING: Falling back to current kubeadm version as latest stable version")
+		stableVersionStr, stableVersion = kubeadmVersionStr, kubeadmVersion
 	}
 
 	// Get the kubelet versions in the cluster
@@ -58,14 +61,15 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 		return nil, err
 	}
 
-	kubeDNSVersion, err := v.KubeDNSVersion()
+	dnsType, dnsVersion, err := v.DeployedDNSAddon()
 	if err != nil {
 		return nil, err
 	}
 	// Construct a descriptor for the current state of the world
 	beforeState := api.ClusterState{
 		KubeVersion:     clusterVersionStr,
-		DNSVersion:      kubeDNSVersion,
+		DNSType:         dnsType,
+		DNSVersion:      dnsVersion,
 		KubeadmVersion:  kubeadmVersionStr,
 		KubeletVersions: kubeletVersions,
 	}
@@ -106,7 +110,8 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 				Before:      beforeState,
 				After: api.ClusterState{
 					KubeVersion:    patchVersionStr,
-					DNSVersion:     kubeDNSVersion,
+					DNSType:        api.CoreDNS,
+					DNSVersion:     kubeadmconstants.GetDNSVersion(api.CoreDNS),
 					KubeadmVersion: newKubeadmVer,
 					// KubeletVersions is unset here as it is not used anywhere in .After
 				},
@@ -119,7 +124,8 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 			Before:      beforeState,
 			After: api.ClusterState{
 				KubeVersion:    stableVersionStr,
-				DNSVersion:     kubeDNSVersion,
+				DNSType:        api.CoreDNS,
+				DNSVersion:     kubeadmconstants.GetDNSVersion(api.CoreDNS),
 				KubeadmVersion: stableVersionStr,
 				// KubeletVersions is unset here as it is not used anywhere in .After
 			},
@@ -192,7 +198,7 @@ func (upm *GenericUpgradeManager) PrintAvailableUpgrades(upgrades []*api.Upgrade
 		fmt.Fprintf(tabw, "Controller Manager\t%s\t%s\n", upgrade.Before.KubeVersion, upgrade.After.KubeVersion)
 		fmt.Fprintf(tabw, "Scheduler\t%s\t%s\n", upgrade.Before.KubeVersion, upgrade.After.KubeVersion)
 		fmt.Fprintf(tabw, "Kube Proxy\t%s\t%s\n", upgrade.Before.KubeVersion, upgrade.After.KubeVersion)
-		fmt.Fprintf(tabw, "Kube DNS\t%s\t%s\n", upgrade.Before.DNSVersion, upgrade.After.DNSVersion)
+		fmt.Fprintf(tabw, "Core DNS\t%s\t%s\n", upgrade.Before.DNSVersion, upgrade.After.DNSVersion)
 
 		// The tabwriter should be flushed at this stage as we have now put in all the required content for this time. This is required for the tabs' size to be correct.
 		tabw.Flush()
