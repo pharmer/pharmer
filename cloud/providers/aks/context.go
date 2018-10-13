@@ -2,21 +2,17 @@ package aks
 
 import (
 	"context"
-	"sync"
-
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
-	. "github.com/pharmer/pharmer/cloud"
-	"k8s.io/client-go/kubernetes"
-
-	//"fmt"
-	"k8s.io/client-go/rest"
-	//"k8s.io/client-go/util/cert"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/ghodss/yaml"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes" //"fmt"
+	"k8s.io/client-go/rest"       //"k8s.io/client-go/util/cert"
 	clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"
 )
 
@@ -69,7 +65,7 @@ func (cm *ClusterManager) GetAKSAdminClient() (kubernetes.Interface, error) {
 	if err != nil {
 		return nil, err
 	}
-	kubeconfig, err := base64.StdEncoding.DecodeString(*resp.KubeConfig)
+	kubeconfig, err := base64.StdEncoding.DecodeString(string(*resp.KubeConfig))
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +103,7 @@ func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, 
 	if err != nil {
 		return nil, err
 	}
-	kubeconfig, err := base64.StdEncoding.DecodeString(*resp.KubeConfig)
+	kubeconfig, err := base64.StdEncoding.DecodeString(string(*resp.KubeConfig))
 	if err != nil {
 		return nil, err
 	}

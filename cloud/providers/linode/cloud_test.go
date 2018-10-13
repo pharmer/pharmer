@@ -1,13 +1,10 @@
 package linode
 
 import (
-	"testing"
-
-	"github.com/taoh/linodego"
-
-	//"fmt"
 	"encoding/json"
 	"fmt"
+	"github.com/taoh/linodego" //"fmt"
+	"testing"
 )
 
 func TestInstances(t *testing.T) {

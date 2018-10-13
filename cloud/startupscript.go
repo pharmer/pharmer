@@ -2,7 +2,7 @@ package cloud
 
 import (
 	"bytes"
-	"fmt"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -10,7 +10,8 @@ import (
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha3"
 )
 
 // https://github.com/pharmer/pharmer/issues/347
@@ -19,13 +20,15 @@ var kubernetesCNIVersions = map[string]string{
 	"1.9.0":  "0.6.0",
 	"1.10.0": "0.6.0",
 	"1.11.0": "0.6.0",
+	"1.12.0": "0.6.0",
 }
 
 var prekVersions = map[string]string{
 	"1.8.0":  "1.8.0",
 	"1.9.0":  "1.9.0",
 	"1.10.0": "1.10.0",
-	"1.11.0": "1.11.0-alpha.1",
+	"1.11.0": "1.12.0-alpha.3",
+	"1.12.0": "1.12.0-alpha.3",
 }
 
 type TemplateData struct {
@@ -43,53 +46,85 @@ type TemplateData struct {
 	NodeName          string
 	ExternalProvider  bool
 
-	MasterConfiguration *kubeadmapi.MasterConfiguration
-	KubeletExtraArgs    map[string]string
+	InitConfiguration    *kubeadmapi.InitConfiguration
+	ClusterConfiguration *kubeadmapi.ClusterConfiguration
+	JoinConfiguration    *kubeadmapi.JoinConfiguration
+	KubeletExtraArgs     map[string]string
 }
 
-func (td TemplateData) MasterConfigurationYAML() (string, error) {
-	if td.MasterConfiguration == nil {
+func (td TemplateData) InitConfigurationYAML() (string, error) {
+	if td.InitConfiguration == nil {
 		return "", nil
 	}
 	var cb []byte
 	var err error
-	if td.IsVersionLessThan1_11() {
-		conf := Convert_Kubeadm_V1alpha2_To_V1alpha1(td.MasterConfiguration, td.KubeletExtraArgs["cloud-provider"])
-		cb, err = yaml.Marshal(conf)
-	} else {
-		cb, err = yaml.Marshal(td.MasterConfiguration)
+
+	cb, err = yaml.Marshal(td.InitConfiguration)
+	return string(cb), err
+}
+
+func (td TemplateData) ClusterConfigurationYAML() (string, error) {
+	if td.ClusterConfiguration == nil {
+		return "", nil
+	}
+	var cb []byte
+	var err error
+	cb, err = yaml.Marshal(td.ClusterConfiguration)
+	return string(cb), err
+}
+
+func (td TemplateData) JoinConfigurationYAML() (string, error) {
+	apiAddress := strings.Split(td.APIServerAddress, ":")
+	if len(apiAddress) < 2 {
+		return "", errors.Errorf("Apiserver address is not correct")
+	}
+	apiPort, err := strconv.Atoi(apiAddress[1])
+	if err != nil {
+		return "", err
 	}
 
-	return string(cb), err
+	cfg := kubeadmapi.JoinConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "kubeadm.k8s.io/v1alpha3",
+			Kind:       "JoinConfiguration",
+		},
+		NodeRegistration: kubeadmapi.NodeRegistrationOptions{
+			KubeletExtraArgs: td.KubeletExtraArgs,
+		},
+		ClusterName: td.ClusterName,
+		Token:       td.KubeadmToken,
+		APIEndpoint: kubeadmapi.APIEndpoint{
+			AdvertiseAddress: apiAddress[0],
+			BindPort:         int32(apiPort),
+		},
+		DiscoveryTokenAPIServers:   []string{td.APIServerAddress},
+		DiscoveryTokenCACertHashes: []string{td.CAHash},
+	}
 
+	cb, err := yaml.Marshal(cfg)
+	return string(cb), err
 }
 
 func (td TemplateData) ForceKubeadmResetFlag() (string, error) {
-	lv11 := td.IsVersionLessThan1_11()
+	lv11 := td.IsVersionLessThan("1.11.0")
 	if !lv11 {
 		return "-f", nil
 	}
 	return "", nil
 }
 
-func (td TemplateData) KubeletExtraArgsFile() (string, error) {
-	file := fmt.Sprintf(`cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
-[Service]
-Environment="KUBELET_EXTRA_ARGS=%s"
-EOF`, td.KubeletExtraArgsStr())
-	lv11 := td.IsVersionLessThan1_11()
-	if !lv11 {
-		file = fmt.Sprintf(`cat > /etc/default/kubelet <<EOF
-KUBELET_EXTRA_ARGS=%s
-EOF`, td.KubeletExtraArgsStr())
-	}
-	return file, nil
+func (td TemplateData) IsVersionLessThan(currentVersion string) bool {
+	cv, _ := version.NewVersion(td.KubernetesVersion)
+	v11, _ := version.NewVersion(currentVersion)
+	return cv.LessThan(v11)
+}
+
+func (td TemplateData) IsKubeadmV1Alpha3() bool {
+	return !td.IsVersionLessThan("1.12.0")
 }
 
 func (td TemplateData) IsVersionLessThan1_11() bool {
-	cv, _ := version.NewVersion(td.KubernetesVersion)
-	v11, _ := version.NewVersion("1.11.0")
-	return cv.LessThan(v11)
+	return td.IsVersionLessThan("1.11.0")
 }
 
 func (td TemplateData) UseKubeProxy1_11_0() bool {
@@ -128,6 +163,10 @@ func (td TemplateData) PackageList() (string, error) {
 	}
 	patch := v.Clone().ToMutator().ResetMetadata().ResetPrerelease().String()
 	minor := v.Clone().ToMutator().ResetMetadata().ResetPrerelease().ResetPatch().String()
+	kubeadmVersion := patch
+	if td.IsVersionLessThan("1.12.0") {
+		kubeadmVersion = "1.12.0"
+	}
 
 	pkgs := []string{
 		"cron",
@@ -141,7 +180,7 @@ func (td TemplateData) PackageList() (string, error) {
 		"socat",
 		"kubelet=" + patch + "*",
 		"kubectl=" + patch + "*",
-		"kubeadm=" + patch + "*",
+		"kubeadm=" + kubeadmVersion + "*",
 	}
 	if cni, found := kubernetesCNIVersions[minor]; !found {
 		return "", errors.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", td.KubernetesVersion)
@@ -206,7 +245,6 @@ timedatectl set-timezone Etc/UTC
 {{ template "prepare-host" . }}
 {{ template "mount-master-pd" . }}
 
-{{ .KubeletExtraArgsFile }}
 
 rm -rf /usr/sbin/policy-rc.d
 systemctl enable docker kubelet nfs-utils
@@ -225,19 +263,10 @@ EOF
 
 mkdir -p /etc/kubernetes/kubeadm
 
-{{ if .MasterConfiguration }}
-cat > /etc/kubernetes/kubeadm/base.yaml <<EOF
-{{ .MasterConfigurationYAML }}
-EOF
-{{ end }}
 
-pre-k merge master-config \
-	--config=/etc/kubernetes/kubeadm/base.yaml \
-	--apiserver-advertise-address=$(pre-k machine public-ips --all=false) \
-	--apiserver-cert-extra-sans=$(pre-k machine public-ips --routable) \
-	--apiserver-cert-extra-sans=$(pre-k machine private-ips) \
-	--node-name=${NODE_NAME:-} \
-	> /etc/kubernetes/kubeadm/config.yaml
+
+{{ template "pre-k" . }}
+
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 
 {{ if .UseKubeProxy1_11_0 }}
@@ -310,16 +339,21 @@ EOF
 {{ end }}
 {{ end }}
 
-{{ .KubeletExtraArgsFile }}
 
 systemctl daemon-reload
 rm -rf /usr/sbin/policy-rc.d
 systemctl enable docker kubelet nfs-utils
 systemctl start docker kubelet nfs-utils
 
+mkdir -p /etc/kubernetes/kubeadm
+
+cat > /etc/kubernetes/kubeadm/join.yaml <<EOF
+{{ .JoinConfigurationYAML }}
+EOF
+
 
 kubeadm reset {{ .ForceKubeadmResetFlag }}
-kubeadm join --token={{ .KubeadmToken }} --discovery-token-ca-cert-hash={{ .CAHash }} {{ .APIServerAddress }}
+kubeadm join --config=/etc/kubernetes/kubeadm/join.yaml
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("init-script").Parse(`#!/bin/bash
@@ -380,6 +414,29 @@ done
 `))
 	_ = template.Must(StartupScriptTemplate.New("install-storage-plugin").Parse(``))
 
+	_ = template.Must(StartupScriptTemplate.New("pre-k").Parse(`
+{{ if .InitConfiguration }}
+cat > /etc/kubernetes/kubeadm/init.yaml <<EOF
+{{ .InitConfigurationYAML }}
+EOF
+{{ end }}
+
+{{ if .ClusterConfiguration }}
+cat > /etc/kubernetes/kubeadm/cluster.yaml <<EOF
+{{ .ClusterConfigurationYAML }}
+EOF
+{{ end }}
+
+pre-k merge config \
+	--init-config=/etc/kubernetes/kubeadm/init.yaml \
+    --cluster-config=/etc/kubernetes/kubeadm/cluster.yaml \
+	--apiserver-advertise-address=$(pre-k machine public-ips --all=false) \
+	--apiserver-cert-extra-sans=$(pre-k machine public-ips --routable) \
+	--apiserver-cert-extra-sans=$(pre-k machine private-ips) \
+	--node-name=${NODE_NAME:-} \
+	> /etc/kubernetes/kubeadm/config.yaml	
+
+`))
 	_ = template.Must(StartupScriptTemplate.New("calico").Parse(`
 {{ if .IsVersionLessThan1_11 }}
 kubectl apply \

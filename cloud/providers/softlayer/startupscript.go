@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha2"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha3"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 )
 
@@ -76,14 +76,24 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		api.NodePoolKey: ng.Name,
 	}.String()
 
-	cfg := kubeadmapi.MasterConfiguration{
+	ifg := kubeadmapi.InitConfiguration{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1alpha1",
-			Kind:       "MasterConfiguration",
+			APIVersion: "kubeadm.k8s.io/v1alpha3",
+			Kind:       "InitConfiguration",
 		},
-		API: kubeadmapi.API{
+		NodeRegistration: kubeadmapi.NodeRegistrationOptions{
+			KubeletExtraArgs: td.KubeletExtraArgs,
+		},
+		APIEndpoint: kubeadmapi.APIEndpoint{
 			AdvertiseAddress: cluster.Spec.API.AdvertiseAddress,
 			BindPort:         cluster.Spec.API.BindPort,
+		},
+	}
+	td.InitConfiguration = &ifg
+	cfg := kubeadmapi.ClusterConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "kubeadm.k8s.io/v1alpha3",
+			Kind:       "ClusterConfiguration",
 		},
 		Networking: kubeadmapi.Networking{
 			ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
@@ -93,13 +103,13 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		// "external": cloudprovider not supported for apiserver and controller-manager
 		// https://github.com/kubernetes/kubernetes/pull/50545
-		//CloudProvider:              "",
 		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
+		ClusterName:                cluster.Name,
 	}
-	td.MasterConfiguration = &cfg
+	td.ClusterConfiguration = &cfg
 	return td
 }
 

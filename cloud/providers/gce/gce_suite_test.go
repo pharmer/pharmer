@@ -2,21 +2,17 @@ package gce
 
 import (
 	//go_ctx "context"
+	"encoding/json"
 	"fmt"
-	"testing"
-
-	//. "github.com/pharmer/pharmer/cloud/providers/gce"
+	"regexp"
+	"testing" //. "github.com/pharmer/pharmer/cloud/providers/gce"
 	//"github.com/pharmer/pharmer/config"
 	//"github.com/pharmer/pharmer/context"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 
-	//	"time"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega" //	"time"
 	//	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"encoding/json"
-	"regexp"
-
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 )
 

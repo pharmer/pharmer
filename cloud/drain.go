@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -16,11 +18,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	drain "k8s.io/kubernetes/pkg/kubectl/cmd"
-	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-
-	//"k8s.io/kubernetes/pkg/kubectl/scheme"
-	"io/ioutil"
+	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util" //"k8s.io/kubernetes/pkg/kubectl/scheme"
 )
 
 type NodeDrain struct {

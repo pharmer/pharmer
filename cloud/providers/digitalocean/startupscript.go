@@ -8,9 +8,8 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha2"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha3"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
-	kubeproxyconfigv1alpha1 "k8s.io/kubernetes/pkg/proxy/apis/kubeproxyconfig/v1alpha1"
 )
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
@@ -40,8 +39,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
-		td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
-		td.KubeletExtraArgs["keep-terminated-pod-volumes"] = "true"
+		//td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
+		//td.KubeletExtraArgs["keep-terminated-pod-volumes"] = "true"
 
 	}
 	return td
@@ -53,26 +52,29 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		api.NodePoolKey: ng.Name,
 	}.String()
 
-	cfg := kubeadmapi.MasterConfiguration{
+	ifg := kubeadmapi.InitConfiguration{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1alpha2",
-			Kind:       "MasterConfiguration",
+			APIVersion: "kubeadm.k8s.io/v1alpha3",
+			Kind:       "InitConfiguration",
 		},
-		API: kubeadmapi.API{
+		NodeRegistration: kubeadmapi.NodeRegistrationOptions{
+			KubeletExtraArgs: td.KubeletExtraArgs,
+		},
+		APIEndpoint: kubeadmapi.APIEndpoint{
 			AdvertiseAddress: cluster.Spec.API.AdvertiseAddress,
 			BindPort:         cluster.Spec.API.BindPort,
+		},
+	}
+	td.InitConfiguration = &ifg
+	cfg := kubeadmapi.ClusterConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "kubeadm.k8s.io/v1alpha3",
+			Kind:       "ClusterConfiguration",
 		},
 		Networking: kubeadmapi.Networking{
 			ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
 			PodSubnet:     cluster.Spec.Networking.PodSubnet,
 			DNSDomain:     cluster.Spec.Networking.DNSDomain,
-		},
-		//ClusterName: "kubernetes",
-		KubeProxy: kubeadmapi.KubeProxy{
-			Config: &kubeproxyconfigv1alpha1.KubeProxyConfiguration{
-				BindAddress: "0.0.0.0",
-				ClusterCIDR: cluster.Spec.Networking.PodSubnet,
-			},
 		},
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		// "external": cloudprovider not supported for apiserver and controller-manager
@@ -81,8 +83,10 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
 		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
 		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
+		ClusterName:                cluster.Name,
 	}
-	td.MasterConfiguration = &cfg
+	td.ClusterConfiguration = &cfg
+
 	return td
 }
 

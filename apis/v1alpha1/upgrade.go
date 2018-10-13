@@ -19,12 +19,14 @@ type Upgrade struct {
 type ClusterState struct {
 	// KubeVersion describes the version of the Kubernetes API Server, Controller Manager, Scheduler and Proxy.
 	KubeVersion string `json:"kubeVersion" protobuf:"bytes,1,opt,name=kubeVersion"`
+	// DNSType
+	DNSType string `json:"dnsType" protobuf:"bytes,2,opt,name=dnsType"`
 	// DNSVersion describes the version of the kube-dns images used and manifest version
-	DNSVersion string `json:"dnsVersion" protobuf:"bytes,2,opt,name=dnsVersion"`
+	DNSVersion string `json:"dnsVersion" protobuf:"bytes,3,opt,name=dnsVersion"`
 	// MasterKubeadmVersion describes the version of the kubeadm CLI
-	KubeadmVersion string `json:"kubeadmVersion" protobuf:"bytes,3,opt,name=kubeadmVersion"`
+	KubeadmVersion string `json:"kubeadmVersion" protobuf:"bytes,4,opt,name=kubeadmVersion"`
 	// KubeletVersions is a map with a version number linked to the amount of kubelets running that version in the cluster
-	KubeletVersions map[string]uint32 `json:"kubeletVersions" protobuf:"bytes,4,rep,name=kubeletVersions"`
+	KubeletVersions map[string]uint32 `json:"kubeletVersions" protobuf:"bytes,5,rep,name=kubeletVersions"`
 }
 
 // CanUpgradeKubelets returns whether an upgrade of any kubelet in the cluster is possible

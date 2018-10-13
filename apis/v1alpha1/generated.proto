@@ -213,14 +213,17 @@ message ClusterState {
   // KubeVersion describes the version of the Kubernetes API Server, Controller Manager, Scheduler and Proxy.
   optional string kubeVersion = 1;
 
+  // DNSType
+  optional string dnsType = 2;
+
   // DNSVersion describes the version of the kube-dns images used and manifest version
-  optional string dnsVersion = 2;
+  optional string dnsVersion = 3;
 
   // MasterKubeadmVersion describes the version of the kubeadm CLI
-  optional string kubeadmVersion = 3;
+  optional string kubeadmVersion = 4;
 
   // KubeletVersions is a map with a version number linked to the amount of kubelets running that version in the cluster
-  map<string, uint32> kubeletVersions = 4;
+  map<string, uint32> kubeletVersions = 5;
 }
 
 message ClusterStatus {
