@@ -531,8 +531,8 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, as compu
 					Version:   StringP(conn.cluster.Spec.Cloud.Azure.InstanceImageVersion),
 				},
 				OsDisk: &compute.OSDisk{
-					Caching:      compute.CachingTypesReadWrite,
-					CreateOption: compute.DiskCreateOptionTypesFromImage,
+					Caching:      compute.ReadWrite,
+					CreateOption: compute.FromImage,
 					Name:         StringP(conn.namer.BootDiskName(vmName)),
 					Vhd: &compute.VirtualHardDisk{
 						URI: StringP(conn.namer.BootDiskURI(sa, vmName)),

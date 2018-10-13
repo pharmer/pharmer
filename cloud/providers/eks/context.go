@@ -2,21 +2,17 @@ package eks
 
 import (
 	"context"
-	"sync"
-
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
-	. "github.com/pharmer/pharmer/cloud"
-	"k8s.io/client-go/kubernetes"
-
-	//"fmt"
-	"k8s.io/client-go/rest"
-	//"k8s.io/client-go/util/cert"
 	"encoding/base64"
 	"fmt"
+	"sync"
 
 	. "github.com/appscode/go/types"
 	_eks "github.com/aws/aws-sdk-go/service/eks"
+	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes" //"fmt"
+	"k8s.io/client-go/rest"       //"k8s.io/client-go/util/cert"
 )
 
 type ClusterManager struct {

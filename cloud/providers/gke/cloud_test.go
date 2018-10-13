@@ -1,10 +1,9 @@
 package gke
 
 import (
-	"testing"
-	//. "github.com/pharmer/pharmer/cloud"
 	"context"
 	"fmt"
+	"testing" //. "github.com/pharmer/pharmer/cloud"
 
 	"golang.org/x/oauth2/google"
 	container "google.golang.org/api/container/v1"

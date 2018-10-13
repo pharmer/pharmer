@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
 	"time"
 
@@ -17,10 +18,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	drain "k8s.io/kubernetes/pkg/kubectl/cmd"
-	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-
-	//"k8s.io/kubernetes/pkg/kubectl/scheme"
-	"io/ioutil"
+	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util" //"k8s.io/kubernetes/pkg/kubectl/scheme"
 )
 
 type NodeDrain struct {

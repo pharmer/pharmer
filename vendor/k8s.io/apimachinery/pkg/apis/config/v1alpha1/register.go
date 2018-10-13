@@ -21,11 +21,7 @@ import (
 )
 
 var (
-	// SchemeBuilder is the scheme builder with scheme init functions to run for this API package
-	SchemeBuilder runtime.SchemeBuilder
-	// localSchemeBuilder extends the SchemeBuilder instance with the external types. In this package,
-	// defaulting and conversion init funcs are registered as well.
+	SchemeBuilder      runtime.SchemeBuilder
 	localSchemeBuilder = &SchemeBuilder
-	// AddToScheme is a global function that registers this API group & version to a scheme
-	AddToScheme = localSchemeBuilder.AddToScheme
+	AddToScheme        = localSchemeBuilder.AddToScheme
 )

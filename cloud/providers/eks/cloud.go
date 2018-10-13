@@ -2,8 +2,10 @@ package eks
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strings"
+	"time"
 
 	. "github.com/appscode/go/types"
 	_aws "github.com/aws/aws-sdk-go/aws"
@@ -18,11 +20,7 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/wait"
-
-	//"github.com/pharmer/pharmer/cloud/providers/eks/assets"
-	"encoding/base64"
-	"time"
+	"k8s.io/apimachinery/pkg/util/wait" //"github.com/pharmer/pharmer/cloud/providers/eks/assets"
 )
 
 type cloudConnector struct {
