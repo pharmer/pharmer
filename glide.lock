@@ -1,5 +1,5 @@
-hash: e498af2a24ffad0073fb604b48d2fb925597aa2de1a1a460ea367be60453c6ba
-updated: 2018-10-26T11:56:02.571690928+06:00
+hash: c9fa60b1738ba7cc23d299e362df868f30151ccb3d51af88a97c55631ebcc6f7
+updated: 2018-10-26T12:41:08.939624122+06:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -7,7 +7,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/go
-  version: 8a3c3c370daef7a607db3ea2f47e6fb6f6d9ad46
+  version: a6d58457b39324ead2ffb1f24be7a0a638c9f112
   subpackages:
   - analytics
   - context
