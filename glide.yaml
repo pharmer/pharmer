@@ -12,7 +12,7 @@ import:
 - package: github.com/appscode/go-version
   version: master
 - package: github.com/appscode/go
-  version: ssh
+  version: master
 - package: github.com/taoh/linodego
   repo: https://github.com/appscode/linodego.git
   vcs: git
