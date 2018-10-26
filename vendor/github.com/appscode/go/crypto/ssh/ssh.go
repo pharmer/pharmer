@@ -80,6 +80,7 @@ func newClient(dialer sshDialer, user, host string, signer ssh.Signer, retry boo
 	config := &ssh.ClientConfig{
 		User: user,
 		Auth: []ssh.AuthMethod{ssh.PublicKeys(signer)},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 	client, err := dialer.Dial("tcp", host, config)
 	if err != nil && retry {
