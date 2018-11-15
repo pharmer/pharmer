@@ -27,6 +27,8 @@ type FakeStore struct {
 	certificates map[string]store.CertificateStore
 	sshKeys      map[string]store.SSHKeyStore
 
+	owner string
+
 	mux sync.Mutex
 }
 
@@ -40,17 +42,18 @@ func New() store.Interface {
 	}
 }
 
-func (s *FakeStore) Credentials() store.CredentialStore {
+func (s *FakeStore) Credentials(owner string) store.CredentialStore {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
 	if s.credentials == nil {
 		s.credentials = &credentialFileStore{container: map[string]*api.Credential{}}
 	}
+	s.owner = owner
 	return s.credentials
 }
 
-func (s *FakeStore) Clusters() store.ClusterStore {
+func (s *FakeStore) Clusters(owner string) store.ClusterStore {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 

@@ -51,7 +51,7 @@ func RunGetCluster(ctx context.Context, opts *options.ClusterGetConfig, out io.W
 
 	w := printer.GetNewTabWriter(out)
 
-	clusters, err := getClusterList(ctx, opts.Clusters)
+	clusters, err := getClusterList(ctx, opts.Clusters, opts.Owner)
 	if err != nil {
 		return err
 	}
@@ -66,10 +66,10 @@ func RunGetCluster(ctx context.Context, opts *options.ClusterGetConfig, out io.W
 	return nil
 }
 
-func getClusterList(ctx context.Context, clusters []string) (clusterList []*api.Cluster, err error) {
+func getClusterList(ctx context.Context, clusters []string, owner string) (clusterList []*api.Cluster, err error) {
 	if len(clusters) != 0 {
 		for _, arg := range clusters {
-			cluster, er2 := cloud.Store(ctx).Clusters().Get(arg)
+			cluster, er2 := cloud.Store(ctx).Clusters(owner).Get(arg)
 			if er2 != nil {
 				return nil, er2
 			}
@@ -77,7 +77,7 @@ func getClusterList(ctx context.Context, clusters []string) (clusterList []*api.
 		}
 
 	} else {
-		clusterList, err = cloud.Store(ctx).Clusters().List(metav1.ListOptions{})
+		clusterList, err = cloud.Store(ctx).Clusters(owner).List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}

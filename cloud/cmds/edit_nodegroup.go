@@ -67,14 +67,14 @@ func RunUpdateNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, 
 			return err
 		}
 
-		updated, err := cloud.Store(ctx).NodeGroups(clusterName).Get(local.Name)
+		updated, err := cloud.Store(ctx).NodeGroups(clusterName).With(opts.Owner).Get(local.Name)
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = local.ObjectMeta
 		updated.Spec = local.Spec
 
-		original, err := cloud.Store(ctx).NodeGroups(clusterName).Get(updated.Name)
+		original, err := cloud.Store(ctx).NodeGroups(clusterName).With(opts.Owner).Get(updated.Name)
 		if err != nil {
 			return err
 		}
@@ -85,14 +85,14 @@ func RunUpdateNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, 
 		return nil
 	}
 
-	original, err := cloud.Store(ctx).NodeGroups(clusterName).Get(opts.NgName)
+	original, err := cloud.Store(ctx).NodeGroups(clusterName).With(opts.Owner).Get(opts.NgName)
 	if err != nil {
 		return err
 	}
 
 	// Check if flags are provided to update
 	if opts.DoNotDelete {
-		updated, err := cloud.Store(ctx).NodeGroups(clusterName).Get(opts.NgName)
+		updated, err := cloud.Store(ctx).NodeGroups(clusterName).With(opts.Owner).Get(opts.NgName)
 		if err != nil {
 			return err
 		}

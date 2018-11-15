@@ -32,11 +32,11 @@ func NewCmdDeleteNodeGroup() *cobra.Command {
 			term.ExitOnError(err)
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			nodeGroups, err := GetNodeGroupList(ctx, opts.ClusterName, args...)
+			nodeGroups, err := GetNodeGroupList(ctx, opts.ClusterName, opts.Owner, args...)
 			term.ExitOnError(err)
 
 			for _, ng := range nodeGroups {
-				err := cloud.DeleteNG(ctx, opts.ClusterName, ng.Name)
+				err := cloud.DeleteNG(ctx, opts.ClusterName, ng.Name, opts.Owner)
 				term.ExitOnError(err)
 			}
 		},

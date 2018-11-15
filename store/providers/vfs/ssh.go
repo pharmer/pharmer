@@ -14,9 +14,15 @@ type sshKeyFileStore struct {
 	container stow.Container
 	prefix    string
 	cluster   string
+	owner     string
 }
 
 var _ store.SSHKeyStore = &sshKeyFileStore{}
+
+func (s *sshKeyFileStore) With(owner string) store.SSHKeyStore {
+	s.owner = owner
+	return s
+}
 
 func (s *sshKeyFileStore) resourceHome() string {
 	return filepath.Join(s.prefix, "clusters", s.cluster, "ssh")

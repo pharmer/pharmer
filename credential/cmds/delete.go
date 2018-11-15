@@ -34,7 +34,7 @@ func NewCmdDeleteCredential() *cobra.Command {
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
 			for _, cred := range opts.Credentials {
-				err := cloud.Store(ctx).Credentials().Delete(cred)
+				err := cloud.Store(ctx).Credentials(opts.Owner).Delete(cred)
 				term.ExitOnError(err)
 			}
 		},

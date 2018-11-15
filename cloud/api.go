@@ -19,6 +19,7 @@ type Interface interface {
 	SetDefaults(in *api.Cluster) error
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
+	SetOwner(owner string)
 	// GetAdminClient() (kubernetes.Interface, error)
 
 	// IsValid(cluster *api.Cluster) (bool, error)

@@ -230,12 +230,12 @@ func New(container stow.Container, prefix string) store.Interface {
 	return &FileStore{container: container, prefix: prefix}
 }
 
-func (s *FileStore) Credentials() store.CredentialStore {
-	return &credentialFileStore{container: s.container, prefix: s.prefix}
+func (s *FileStore) Credentials(owner string) store.CredentialStore {
+	return &credentialFileStore{container: s.container, prefix: s.prefix, owner: owner}
 }
 
-func (s *FileStore) Clusters() store.ClusterStore {
-	return &clusterFileStore{container: s.container, prefix: s.prefix}
+func (s *FileStore) Clusters(owner string) store.ClusterStore {
+	return &clusterFileStore{container: s.container, prefix: s.prefix, owner: owner}
 }
 
 func (s *FileStore) NodeGroups(cluster string) store.NodeGroupStore {

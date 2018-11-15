@@ -51,7 +51,7 @@ func RunGetCredential(ctx context.Context, opts *options.CredentialGetConfig, ou
 
 	w := printer.GetNewTabWriter(out)
 
-	credentials, err := getCredentialList(ctx, opts.Credentials)
+	credentials, err := getCredentialList(ctx, opts.Credentials, opts.Owner)
 	if err != nil {
 		return err
 	}
@@ -66,10 +66,10 @@ func RunGetCredential(ctx context.Context, opts *options.CredentialGetConfig, ou
 	return nil
 }
 
-func getCredentialList(ctx context.Context, args []string) (credentialList []*api.Credential, err error) {
+func getCredentialList(ctx context.Context, args []string, owner string) (credentialList []*api.Credential, err error) {
 	if len(args) != 0 {
 		for _, arg := range args {
-			credential, er2 := cloud.Store(ctx).Credentials().Get(arg)
+			credential, er2 := cloud.Store(ctx).Credentials(owner).Get(arg)
 			if er2 != nil {
 				return nil, er2
 			}
@@ -77,7 +77,7 @@ func getCredentialList(ctx context.Context, args []string) (credentialList []*ap
 		}
 
 	} else {
-		credentialList, err = cloud.Store(ctx).Credentials().List(metav1.ListOptions{})
+		credentialList, err = cloud.Store(ctx).Credentials(owner).List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}

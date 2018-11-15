@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/appscode/go/flags"
+	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -12,17 +13,20 @@ import (
 type NodeSSHConfig struct {
 	ClusterName string
 	NodeName    string
+	Owner       string
 }
 
 func NewNodeSSHConfig() *NodeSSHConfig {
 	return &NodeSSHConfig{
 		ClusterName: "",
 		NodeName:    "",
+		Owner:       utils.GetLocalOwner(),
 	}
 }
 
 func (c *NodeSSHConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.ClusterName, "cluster", "k", c.ClusterName, "Name of cluster")
+	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
 }
 
 func (c *NodeSSHConfig) ValidateFlags(cmd *cobra.Command, args []string) error {

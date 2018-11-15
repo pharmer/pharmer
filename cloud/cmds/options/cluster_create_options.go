@@ -5,6 +5,7 @@ import (
 
 	"github.com/appscode/go/flags"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -13,6 +14,7 @@ import (
 type ClusterCreateConfig struct {
 	Cluster *api.Cluster
 	Nodes   map[string]int
+	Owner   string
 }
 
 func NewClusterCreateConfig() *ClusterCreateConfig {
@@ -25,6 +27,7 @@ func NewClusterCreateConfig() *ClusterCreateConfig {
 			},
 		},
 		Nodes: map[string]int{},
+		Owner: utils.GetLocalOwner(),
 	}
 }
 
@@ -36,6 +39,7 @@ func (c *ClusterCreateConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.Cluster.Spec.Networking.NetworkProvider, "network-provider", c.Cluster.Spec.Networking.NetworkProvider, "Name of CNI plugin. Available options: calico, flannel, kubenet, weavenet")
 
 	fs.StringToIntVar(&c.Nodes, "nodes", c.Nodes, "Node set configuration")
+	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
 
 }
 

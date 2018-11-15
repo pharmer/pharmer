@@ -16,6 +16,7 @@ import (
 type credentialFileStore struct {
 	container stow.Container
 	prefix    string
+	owner     string
 }
 
 var _ store.CredentialStore = &credentialFileStore{}

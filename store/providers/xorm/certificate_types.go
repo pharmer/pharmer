@@ -18,10 +18,11 @@ type Certificate struct {
 	CreationTimestamp time.Time  `xorm:"bigint created 'creationTimestamp'"`
 	DateModified      time.Time  `xorm:"bigint updated 'dateModified'"`
 	DeletionTimestamp *time.Time `xorm:"bigint null 'deletionTimestamp'"`
+	ClusterId         int64      `xorm:"bigint not null 'clusterId'"`
 }
 
 func (Certificate) TableName() string {
-	return `"pharmer"."certificate"`
+	return `"certificate"`
 }
 
 func encodeCertificate(crt *x509.Certificate, key *rsa.PrivateKey) (*Certificate, error) {

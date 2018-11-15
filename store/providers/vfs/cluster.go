@@ -16,6 +16,7 @@ import (
 type clusterFileStore struct {
 	container stow.Container
 	prefix    string
+	owner     string
 }
 
 var _ store.ClusterStore = &clusterFileStore{}

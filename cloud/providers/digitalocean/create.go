@@ -24,6 +24,9 @@ func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (
 		//	DiskSize:      100,
 	}, nil
 }
+func (cm *ClusterManager) SetOwner(owner string) {
+	cm.owner = owner
+}
 
 func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	n := namer{cluster: cluster}

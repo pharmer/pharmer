@@ -66,25 +66,25 @@ func RunUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out,
 			return err
 		}
 
-		updated, err := cloud.Store(ctx).Clusters().Get(local.Name)
+		updated, err := cloud.Store(ctx).Clusters(opts.Owner).Get(local.Name)
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = local.ObjectMeta
 		updated.Spec = local.Spec
 
-		original, err := cloud.Store(ctx).Clusters().Get(updated.Name)
+		original, err := cloud.Store(ctx).Clusters(opts.Owner).Get(updated.Name)
 		if err != nil {
 			return err
 		}
-		if err := UpdateCluster(ctx, original, updated); err != nil {
+		if err := UpdateCluster(ctx, original, updated, opts.Owner); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`cluster "%s" replaced`, original.Name))
 		return nil
 	}
 
-	original, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
+	original, err := cloud.Store(ctx).Clusters(opts.Owner).Get(opts.ClusterName)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func RunUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out,
 	// Check if flags are provided to update
 	// TODO: Provide list of flag names. If any of them is provided, update
 	if opts.CheckForUpdateFlags() {
-		updated, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
+		updated, err := cloud.Store(ctx).Clusters(opts.Owner).Get(opts.ClusterName)
 		if err != nil {
 			return err
 		}
@@ -105,7 +105,7 @@ func RunUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out,
 			updated.Spec.KubernetesVersion = opts.KubernetesVersion
 		}
 
-		if err := UpdateCluster(ctx, original, updated); err != nil {
+		if err := UpdateCluster(ctx, original, updated, opts.Owner); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`cluster "%s" updated`, original.Name))
@@ -186,7 +186,7 @@ func editCluster(ctx context.Context, opts *options.ClusterEditConfig, original 
 
 			containsError = false
 
-			if err := UpdateCluster(ctx, original, updated); err != nil {
+			if err := UpdateCluster(ctx, original, updated, opts.Owner); err != nil {
 				return err
 			}
 
@@ -199,7 +199,7 @@ func editCluster(ctx context.Context, opts *options.ClusterEditConfig, original 
 	return editFn()
 }
 
-func UpdateCluster(ctx context.Context, original, updated *api.Cluster) error {
+func UpdateCluster(ctx context.Context, original, updated *api.Cluster, owner string) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
@@ -241,7 +241,7 @@ func UpdateCluster(ctx context.Context, original, updated *api.Cluster) error {
 		return err
 	}
 
-	_, err = cloud.UpdateSpec(ctx, updated)
+	_, err = cloud.UpdateSpec(ctx, updated, owner)
 	if err != nil {
 		return err
 	}

@@ -20,10 +20,11 @@ type Credential struct {
 	CreationTimestamp time.Time  `xorm:"bigint created 'creationTimestamp'"`
 	DateModified      time.Time  `xorm:"bigint updated 'dateModified'"`
 	DeletionTimestamp *time.Time `xorm:"bigint null 'deletionTimestamp'"`
+	OwnerId           string     `xorm:"text null 'ownerId'"`
 }
 
 func (Credential) TableName() string {
-	return `"pharmer"."credential"`
+	return `"credential"`
 }
 
 func encodeCredential(in *api.Credential) (*Credential, error) {

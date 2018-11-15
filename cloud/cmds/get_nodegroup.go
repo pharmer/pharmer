@@ -59,7 +59,7 @@ func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out 
 	if clusterName != "" {
 		clusterList = append(clusterList, clusterName)
 	} else {
-		clusters, err := cloud.Store(ctx).Clusters().List(metav1.ListOptions{})
+		clusters, err := cloud.Store(ctx).Clusters(opts.Owner).List(metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
@@ -69,7 +69,7 @@ func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out 
 	}
 
 	for _, cluster := range clusterList {
-		nodegroups, err := GetNodeGroupList(ctx, cluster, opts.NodeGroups...)
+		nodegroups, err := GetNodeGroupList(ctx, cluster, opts.Owner, opts.NodeGroups...)
 		if err != nil {
 			return err
 		}
@@ -90,10 +90,10 @@ func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out 
 	return nil
 }
 
-func GetNodeGroupList(ctx context.Context, cluster string, args ...string) (nodeGroupList []*api.NodeGroup, err error) {
+func GetNodeGroupList(ctx context.Context, cluster, owner string, args ...string) (nodeGroupList []*api.NodeGroup, err error) {
 	if len(args) != 0 {
 		for _, arg := range args {
-			nodeGroup, er2 := cloud.Store(ctx).NodeGroups(cluster).Get(arg)
+			nodeGroup, er2 := cloud.Store(ctx).NodeGroups(cluster).With(owner).Get(arg)
 			if er2 != nil {
 				return nil, er2
 			}

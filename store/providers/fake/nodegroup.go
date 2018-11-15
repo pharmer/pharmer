@@ -14,10 +14,16 @@ type nodeGroupFileStore struct {
 	container map[string]*api.NodeGroup
 	cluster   string
 
-	mux sync.Mutex
+	owner string
+	mux   sync.Mutex
 }
 
 var _ store.NodeGroupStore = &nodeGroupFileStore{}
+
+func (s *nodeGroupFileStore) With(owner string) store.NodeGroupStore {
+	s.owner = owner
+	return s
+}
 
 func (s *nodeGroupFileStore) resourceHome() string {
 	return filepath.Join("clusters", s.cluster, "nodeGroups")

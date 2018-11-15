@@ -14,11 +14,17 @@ type certificateFileStore struct {
 	certs   map[string]*x509.Certificate
 	keys    map[string]*rsa.PrivateKey
 	cluster string
+	owner   string
 
 	mux sync.Mutex
 }
 
 var _ store.CertificateStore = &certificateFileStore{}
+
+func (s *certificateFileStore) With(owner string) store.CertificateStore {
+	s.owner = owner
+	return s
+}
 
 func (s *certificateFileStore) resourceHome() string {
 	return filepath.Join("clusters", s.cluster, "pki")

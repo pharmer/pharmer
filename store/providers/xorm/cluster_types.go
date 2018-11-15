@@ -20,10 +20,11 @@ type Cluster struct {
 	CreationTimestamp time.Time  `xorm:"bigint created 'creationTimestamp'"`
 	DateModified      time.Time  `xorm:"bigint updated 'dateModified'"`
 	DeletionTimestamp *time.Time `xorm:"bigint null 'deletionTimestamp'"`
+	OwnerId           string     `xorm:"text  null 'ownerId'"`
 }
 
 func (Cluster) TableName() string {
-	return `"pharmer"."cluster"`
+	return `"cluster"`
 }
 
 func encodeCluster(in *api.Cluster) (*Cluster, error) {

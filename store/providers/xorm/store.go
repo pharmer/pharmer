@@ -43,12 +43,12 @@ func New(engine *xorm.Engine) store.Interface {
 	return &XormStore{engine: engine}
 }
 
-func (s *XormStore) Credentials() store.CredentialStore {
-	return &credentialXormStore{engine: s.engine}
+func (s *XormStore) Credentials(owner string) store.CredentialStore {
+	return &credentialXormStore{engine: s.engine, owner: owner}
 }
 
-func (s *XormStore) Clusters() store.ClusterStore {
-	return &clusterXormStore{engine: s.engine}
+func (s *XormStore) Clusters(owner string) store.ClusterStore {
+	return &clusterXormStore{engine: s.engine, owner: owner}
 }
 
 func (s *XormStore) NodeGroups(cluster string) store.NodeGroupStore {

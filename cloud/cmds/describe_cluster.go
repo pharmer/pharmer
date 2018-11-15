@@ -48,7 +48,7 @@ func RunDescribeCluster(ctx context.Context, opts *options.ClusterDescribeConfig
 	rDescriber := describer.NewDescriber(ctx)
 
 	first := true
-	clusters, err := getClusterList(ctx, opts.Clusters)
+	clusters, err := getClusterList(ctx, opts.Clusters, opts.Owner)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func RunDescribeCluster(ctx context.Context, opts *options.ClusterDescribeConfig
 			fmt.Fprintf(out, "\n\n%s", s)
 		}
 
-		if resp, err := cloud.CheckForUpdates(ctx, cluster.Name); err == nil {
+		if resp, err := cloud.CheckForUpdates(ctx, cluster.Name, opts.Owner); err == nil {
 			term.Println(resp)
 		}
 	}
