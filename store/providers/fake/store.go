@@ -44,7 +44,7 @@ func New() store.Interface {
 
 func (s *FakeStore) Owner(id string) store.ResourceInterface {
 	ret := *s
-	s.owner = id
+	ret.owner = id
 	return &ret
 }
 

@@ -233,7 +233,7 @@ func New(container stow.Container, prefix string) store.Interface {
 
 func (s *FileStore) Owner(id string) store.ResourceInterface {
 	ret := *s
-	s.owner = id
+	ret.owner = id
 	return &ret
 }
 

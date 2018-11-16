@@ -46,7 +46,7 @@ func New(engine *xorm.Engine) store.Interface {
 
 func (s *XormStore) Owner(id string) store.ResourceInterface {
 	ret := *s
-	s.owner = id
+	ret.owner = id
 	return &ret
 }
 
