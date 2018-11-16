@@ -17,6 +17,8 @@ type ClusterManager struct {
 	namer namer
 
 	m sync.Mutex
+
+	owner string
 }
 
 var _ Interface = &ClusterManager{}

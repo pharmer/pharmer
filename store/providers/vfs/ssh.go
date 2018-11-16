@@ -19,11 +19,6 @@ type sshKeyFileStore struct {
 
 var _ store.SSHKeyStore = &sshKeyFileStore{}
 
-func (s *sshKeyFileStore) With(owner string) store.SSHKeyStore {
-	s.owner = owner
-	return s
-}
-
 func (s *sshKeyFileStore) resourceHome() string {
 	return filepath.Join(s.prefix, "clusters", s.owner, s.cluster, "ssh")
 }

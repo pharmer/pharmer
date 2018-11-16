@@ -66,14 +66,14 @@ func RunUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out,
 			return err
 		}
 
-		updated, err := cloud.Store(ctx).Clusters(opts.Owner).Get(local.Name)
+		updated, err := cloud.Store(ctx).Owner(opts.Owner).Clusters().Get(local.Name)
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = local.ObjectMeta
 		updated.Spec = local.Spec
 
-		original, err := cloud.Store(ctx).Clusters(opts.Owner).Get(updated.Name)
+		original, err := cloud.Store(ctx).Owner(opts.Owner).Clusters().Get(updated.Name)
 		if err != nil {
 			return err
 		}
@@ -84,7 +84,7 @@ func RunUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out,
 		return nil
 	}
 
-	original, err := cloud.Store(ctx).Clusters(opts.Owner).Get(opts.ClusterName)
+	original, err := cloud.Store(ctx).Owner(opts.Owner).Clusters().Get(opts.ClusterName)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func RunUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out,
 	// Check if flags are provided to update
 	// TODO: Provide list of flag names. If any of them is provided, update
 	if opts.CheckForUpdateFlags() {
-		updated, err := cloud.Store(ctx).Clusters(opts.Owner).Get(opts.ClusterName)
+		updated, err := cloud.Store(ctx).Owner(opts.Owner).Clusters().Get(opts.ClusterName)
 		if err != nil {
 			return err
 		}

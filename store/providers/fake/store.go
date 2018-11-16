@@ -42,18 +42,24 @@ func New() store.Interface {
 	}
 }
 
-func (s *FakeStore) Credentials(owner string) store.CredentialStore {
+func (s *FakeStore) Owner(id string) store.ResourceInterface {
+	ret := *s
+	s.owner = id
+	return &ret
+}
+
+func (s *FakeStore) Credentials() store.CredentialStore {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
 	if s.credentials == nil {
 		s.credentials = &credentialFileStore{container: map[string]*api.Credential{}}
 	}
-	s.owner = owner
+
 	return s.credentials
 }
 
-func (s *FakeStore) Clusters(owner string) store.ClusterStore {
+func (s *FakeStore) Clusters() store.ClusterStore {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 

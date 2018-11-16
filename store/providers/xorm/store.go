@@ -35,6 +35,7 @@ func init() {
 
 type XormStore struct {
 	engine *xorm.Engine
+	owner  string
 }
 
 var _ store.Interface = &XormStore{}
@@ -43,24 +44,30 @@ func New(engine *xorm.Engine) store.Interface {
 	return &XormStore{engine: engine}
 }
 
-func (s *XormStore) Credentials(owner string) store.CredentialStore {
-	return &credentialXormStore{engine: s.engine, owner: owner}
+func (s *XormStore) Owner(id string) store.ResourceInterface {
+	ret := *s
+	s.owner = id
+	return &ret
 }
 
-func (s *XormStore) Clusters(owner string) store.ClusterStore {
-	return &clusterXormStore{engine: s.engine, owner: owner}
+func (s *XormStore) Credentials() store.CredentialStore {
+	return &credentialXormStore{engine: s.engine}
+}
+
+func (s *XormStore) Clusters() store.ClusterStore {
+	return &clusterXormStore{engine: s.engine, owner: s.owner}
 }
 
 func (s *XormStore) NodeGroups(cluster string) store.NodeGroupStore {
-	return &nodeGroupXormStore{engine: s.engine, cluster: cluster}
+	return &nodeGroupXormStore{engine: s.engine, cluster: cluster, owner: s.owner}
 }
 
 func (s *XormStore) Certificates(cluster string) store.CertificateStore {
-	return &certificateXormStore{engine: s.engine, cluster: cluster}
+	return &certificateXormStore{engine: s.engine, cluster: cluster, owner: s.owner}
 }
 
 func (s *XormStore) SSHKeys(cluster string) store.SSHKeyStore {
-	return &sshKeyXormStore{engine: s.engine, cluster: cluster}
+	return &sshKeyXormStore{engine: s.engine, cluster: cluster, owner: s.owner}
 }
 
 // Connects to any databse using provided credentials

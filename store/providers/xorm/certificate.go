@@ -19,11 +19,6 @@ type certificateXormStore struct {
 
 var _ store.CertificateStore = &certificateXormStore{}
 
-func (s *certificateXormStore) With(owner string) store.CertificateStore {
-	s.owner = owner
-	return s
-}
-
 func (s *certificateXormStore) Get(name string) (*x509.Certificate, *rsa.PrivateKey, error) {
 	if s.cluster == "" {
 		return nil, nil, errors.New("missing cluster name")

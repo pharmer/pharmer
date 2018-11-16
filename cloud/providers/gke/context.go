@@ -25,6 +25,8 @@ type ClusterManager struct {
 	conn    *cloudConnector
 	namer   namer
 	m       sync.Mutex
+
+	owner string
 }
 
 var _ Interface = &ClusterManager{}
@@ -52,7 +54,7 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 		return kc, nil
 	}
 
-	kc, err := NewGKEAdminClient(cm.ctx, cm.cluster)
+	kc, err := NewGKEAdminClient(cm.ctx, cm.cluster, cm.owner)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +62,8 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 	return kc, nil
 }
 
-func NewGKEAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes.Interface, error) {
-	adminCert, adminKey, err := GetAdminCertificate(ctx, cluster)
+func NewGKEAdminClient(ctx context.Context, cluster *api.Cluster, owner string) (kubernetes.Interface, error) {
+	adminCert, adminKey, err := GetAdminCertificate(ctx, cluster, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +87,7 @@ func NewGKEAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes.In
 
 func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
 	var err error
-	cm.ctx, err = LoadCACertificates(cm.ctx, cluster)
+	cm.ctx, err = LoadCACertificates(cm.ctx, cluster, cm.owner)
 	if err != nil {
 		return nil, err
 	}

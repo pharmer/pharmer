@@ -69,7 +69,7 @@ func RunGetCluster(ctx context.Context, opts *options.ClusterGetConfig, out io.W
 func getClusterList(ctx context.Context, clusters []string, owner string) (clusterList []*api.Cluster, err error) {
 	if len(clusters) != 0 {
 		for _, arg := range clusters {
-			cluster, er2 := cloud.Store(ctx).Clusters(owner).Get(arg)
+			cluster, er2 := cloud.Store(ctx).Owner(owner).Clusters().Get(arg)
 			if er2 != nil {
 				return nil, er2
 			}
@@ -77,7 +77,7 @@ func getClusterList(ctx context.Context, clusters []string, owner string) (clust
 		}
 
 	} else {
-		clusterList, err = cloud.Store(ctx).Clusters(owner).List(metav1.ListOptions{})
+		clusterList, err = cloud.Store(ctx).Owner(owner).Clusters().List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}

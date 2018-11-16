@@ -22,6 +22,8 @@ type ClusterManager struct {
 	// Deprecated
 	namer namer
 	m     sync.Mutex
+
+	owner string
 }
 
 var _ Interface = &ClusterManager{}

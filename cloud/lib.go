@@ -18,11 +18,11 @@ import (
 var managedProviders = sets.NewString("aks", "gke", "eks")
 
 func List(ctx context.Context, opts metav1.ListOptions, owner string) ([]*api.Cluster, error) {
-	return Store(ctx).Clusters(owner).List(opts)
+	return Store(ctx).Owner(owner).Clusters().List(opts)
 }
 
 func Get(ctx context.Context, name string, owner string) (*api.Cluster, error) {
-	return Store(ctx).Clusters(owner).Get(name)
+	return Store(ctx).Owner(owner).Clusters().Get(name)
 }
 
 func Create(ctx context.Context, cluster *api.Cluster, owner string) (*api.Cluster, error) {
@@ -34,7 +34,7 @@ func Create(ctx context.Context, cluster *api.Cluster, owner string) (*api.Clust
 		return nil, errors.New("missing cluster version")
 	}
 
-	_, err := Store(ctx).Clusters(owner).Get(cluster.Name)
+	_, err := Store(ctx).Owner(owner).Clusters().Get(cluster.Name)
 	if err == nil {
 		return nil, errors.Errorf("cluster exists with name `%s`", cluster.Name)
 	}
@@ -46,7 +46,7 @@ func Create(ctx context.Context, cluster *api.Cluster, owner string) (*api.Clust
 	if err = cm.SetDefaults(cluster); err != nil {
 		return nil, err
 	}
-	if cluster, err = Store(ctx).Clusters(owner).Create(cluster); err != nil {
+	if cluster, err = Store(ctx).Owner(owner).Clusters().Create(cluster); err != nil {
 		return nil, err
 	}
 
@@ -61,7 +61,7 @@ func Create(ctx context.Context, cluster *api.Cluster, owner string) (*api.Clust
 			return nil, err
 		}
 	}
-	if _, err = Store(ctx).Clusters(owner).Update(cluster); err != nil {
+	if _, err = Store(ctx).Owner(owner).Clusters().Update(cluster); err != nil {
 		return nil, err
 	}
 	return cluster, nil
@@ -106,7 +106,7 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, owner, role, sku
 		ig.Spec.Template.Spec.SpotPriceMax = spotPriceMax
 	}
 
-	_, err = Store(ctx).NodeGroups(cluster.Name).With(owner).Create(&ig)
+	_, err = Store(ctx).Owner(owner).NodeGroups(cluster.Name).Create(&ig)
 
 	return err
 }
@@ -116,14 +116,14 @@ func Delete(ctx context.Context, name string, owner string) (*api.Cluster, error
 		return nil, errors.New("missing cluster name")
 	}
 
-	cluster, err := Store(ctx).Clusters(owner).Get(name)
+	cluster, err := Store(ctx).Owner(owner).Clusters().Get(name)
 	if err != nil {
 		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
 	cluster.DeletionTimestamp = &metav1.Time{Time: time.Now()}
 	cluster.Status.Phase = api.ClusterDeleting
 
-	return Store(ctx).Clusters(owner).Update(cluster)
+	return Store(ctx).Owner(owner).Clusters().Update(cluster)
 }
 
 func DeleteNG(ctx context.Context, clusterName, nodeGroupName string, owner string) error {
@@ -134,7 +134,7 @@ func DeleteNG(ctx context.Context, clusterName, nodeGroupName string, owner stri
 		return errors.New("missing nodegroup name")
 	}
 
-	if _, err := Store(ctx).Clusters(owner).Get(clusterName); err != nil {
+	if _, err := Store(ctx).Owner(owner).Clusters().Get(clusterName); err != nil {
 		return errors.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
 	}
 
@@ -233,7 +233,7 @@ func Apply(ctx context.Context, opts *options.ApplyConfig) ([]api.Action, error)
 		return nil, errors.New("missing cluster name")
 	}
 
-	cluster, err := Store(ctx).Clusters(opts.Owner).Get(opts.ClusterName)
+	cluster, err := Store(ctx).Owner(opts.Owner).Clusters().Get(opts.ClusterName)
 	if err != nil {
 		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", opts.ClusterName, err)
 	}
@@ -252,7 +252,7 @@ func CheckForUpdates(ctx context.Context, name, owner string) (string, error) {
 		return "", errors.New("missing cluster name")
 	}
 
-	cluster, err := Store(ctx).Clusters(owner).Get(name)
+	cluster, err := Store(ctx).Owner(owner).Clusters().Get(name)
 	if err != nil {
 		return "", errors.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
@@ -297,12 +297,12 @@ func UpdateSpec(ctx context.Context, cluster *api.Cluster, owner string) (*api.C
 		return nil, errors.New("missing cluster version")
 	}
 
-	existing, err := Store(ctx).Clusters(owner).Get(cluster.Name)
+	existing, err := Store(ctx).Owner(owner).Clusters().Get(cluster.Name)
 	if err != nil {
 		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", cluster.Name, err)
 	}
 	cluster.Status = existing.Status
 	cluster.Generation = time.Now().UnixNano()
 
-	return Store(ctx).Clusters(owner).Update(cluster)
+	return Store(ctx).Owner(owner).Clusters().Update(cluster)
 }

@@ -22,11 +22,6 @@ type certificateFileStore struct {
 
 var _ store.CertificateStore = &certificateFileStore{}
 
-func (s *certificateFileStore) With(owner string) store.CertificateStore {
-	s.owner = owner
-	return s
-}
-
 func (s *certificateFileStore) resourceHome() string {
 	return filepath.Join(s.owner, s.prefix, "clusters", s.cluster, "pki")
 }

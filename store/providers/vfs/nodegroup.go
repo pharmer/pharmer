@@ -30,10 +30,6 @@ func (s *nodeGroupFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *nodeGroupFileStore) With(owner string) store.NodeGroupStore {
-	s.owner = owner
-	return s
-}
 func (s *nodeGroupFileStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, error) {
 	result := make([]*api.NodeGroup, 0)
 	cursor := stow.CursorStart

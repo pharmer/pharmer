@@ -222,6 +222,7 @@ func init() {
 type FileStore struct {
 	container stow.Container
 	prefix    string
+	owner     string
 }
 
 var _ store.Interface = &FileStore{}
@@ -230,22 +231,28 @@ func New(container stow.Container, prefix string) store.Interface {
 	return &FileStore{container: container, prefix: prefix}
 }
 
-func (s *FileStore) Credentials(owner string) store.CredentialStore {
-	return &credentialFileStore{container: s.container, prefix: s.prefix, owner: owner}
+func (s *FileStore) Owner(id string) store.ResourceInterface {
+	ret := *s
+	s.owner = id
+	return &ret
 }
 
-func (s *FileStore) Clusters(owner string) store.ClusterStore {
-	return &clusterFileStore{container: s.container, prefix: s.prefix, owner: owner}
+func (s *FileStore) Credentials() store.CredentialStore {
+	return &credentialFileStore{container: s.container, prefix: s.prefix, owner: s.owner}
+}
+
+func (s *FileStore) Clusters() store.ClusterStore {
+	return &clusterFileStore{container: s.container, prefix: s.prefix, owner: s.owner}
 }
 
 func (s *FileStore) NodeGroups(cluster string) store.NodeGroupStore {
-	return &nodeGroupFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
+	return &nodeGroupFileStore{container: s.container, prefix: s.prefix, cluster: cluster, owner: s.owner}
 }
 
 func (s *FileStore) Certificates(cluster string) store.CertificateStore {
-	return &certificateFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
+	return &certificateFileStore{container: s.container, prefix: s.prefix, cluster: cluster, owner: s.owner}
 }
 
 func (s *FileStore) SSHKeys(cluster string) store.SSHKeyStore {
-	return &sshKeyFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
+	return &sshKeyFileStore{container: s.container, prefix: s.prefix, cluster: cluster, owner: s.owner}
 }

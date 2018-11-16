@@ -18,11 +18,6 @@ type nodeGroupXormStore struct {
 
 var _ store.NodeGroupStore = &nodeGroupXormStore{}
 
-func (s *nodeGroupXormStore) With(owner string) store.NodeGroupStore {
-	s.owner = owner
-	return s
-}
-
 func (s *nodeGroupXormStore) List(opts metav1.ListOptions) ([]*api.NodeGroup, error) {
 	cluster, err := s.getCluster()
 	if err != nil {

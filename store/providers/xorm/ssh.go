@@ -15,11 +15,6 @@ type sshKeyXormStore struct {
 
 var _ store.SSHKeyStore = &sshKeyXormStore{}
 
-func (s *sshKeyXormStore) With(owner string) store.SSHKeyStore {
-	s.owner = owner
-	return s
-}
-
 func (s *sshKeyXormStore) Get(name string) ([]byte, []byte, error) {
 	if s.cluster == "" {
 		return nil, nil, errors.New("missing cluster name")

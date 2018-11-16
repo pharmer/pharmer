@@ -12,9 +12,14 @@ import (
 var ErrNotImplemented = errors.New("not implemented")
 
 type Interface interface {
-	Credentials(owner string) CredentialStore
+	Owner(string) ResourceInterface
+	ResourceInterface
+}
 
-	Clusters(owner string) ClusterStore
+type ResourceInterface interface {
+	Credentials() CredentialStore
+
+	Clusters() ClusterStore
 	NodeGroups(cluster string) NodeGroupStore
 	Certificates(cluster string) CertificateStore
 	SSHKeys(cluster string) SSHKeyStore
@@ -38,7 +43,6 @@ type ClusterStore interface {
 }
 
 type NodeGroupStore interface {
-	With(owner string) NodeGroupStore
 	List(opts metav1.ListOptions) ([]*api.NodeGroup, error)
 	Get(name string) (*api.NodeGroup, error)
 	Create(obj *api.NodeGroup) (*api.NodeGroup, error)
@@ -48,14 +52,12 @@ type NodeGroupStore interface {
 }
 
 type CertificateStore interface {
-	With(owner string) CertificateStore
 	Get(name string) (*x509.Certificate, *rsa.PrivateKey, error)
 	Create(name string, crt *x509.Certificate, key *rsa.PrivateKey) error
 	Delete(name string) error
 }
 
 type SSHKeyStore interface {
-	With(owner string) SSHKeyStore
 	Get(name string) (pubKey, privKey []byte, err error)
 	Create(name string, pubKey, privKey []byte) error
 	Delete(name string) error
