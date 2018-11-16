@@ -22,7 +22,7 @@ type credentialFileStore struct {
 var _ store.CredentialStore = &credentialFileStore{}
 
 func (s *credentialFileStore) resourceHome() string {
-	return filepath.Join(s.prefix, "credentials")
+	return filepath.Join(s.owner, s.prefix, "credentials")
 }
 
 func (s *credentialFileStore) resourceID(name string) string {

@@ -123,5 +123,5 @@ func GetLocalOwner() string {
 	if err != nil {
 		panic(err)
 	}
-	return u.Uid
+	return u.Name
 }

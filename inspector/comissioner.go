@@ -18,17 +18,19 @@ type Inspector struct {
 	client  kubernetes.Interface
 	cluster *api.Cluster
 	config  *rest.Config
+
+	owner string
 }
 
-func New(ctx context.Context, cluster *api.Cluster) (*Inspector, error) {
+func New(ctx context.Context, cluster *api.Cluster, owner string) (*Inspector, error) {
 	if cluster.Spec.Cloud.CloudProvider == "" {
 		return nil, errors.Errorf("cluster %v has no provider", cluster.Name)
 	}
 	var err error
-	if ctx, err = LoadCACertificates(ctx, cluster); err != nil {
+	if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
 		return nil, err
 	}
-	if ctx, err = LoadSSHKey(ctx, cluster); err != nil {
+	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
 		return nil, err
 	}
 	kc, err := NewAdminClient(ctx, cluster)
@@ -36,7 +38,7 @@ func New(ctx context.Context, cluster *api.Cluster) (*Inspector, error) {
 		return nil, err
 	}
 
-	adminConfig, err := GetAdminConfig(ctx, cluster)
+	adminConfig, err := GetAdminConfig(ctx, cluster, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +49,7 @@ func New(ctx context.Context, cluster *api.Cluster) (*Inspector, error) {
 		return nil, err
 	}
 
-	return &Inspector{ctx: ctx, client: kc, cluster: cluster, config: restConfig}, nil
+	return &Inspector{ctx: ctx, client: kc, cluster: cluster, config: restConfig, owner: owner}, nil
 }
 
 func (i *Inspector) NativeCheck() error {

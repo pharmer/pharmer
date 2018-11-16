@@ -12,10 +12,10 @@ import (
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
-func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
+func CreateCACertificates(ctx context.Context, cluster *api.Cluster, owner string) (context.Context, error) {
 	Logger(ctx).Infoln("Generating CA certificate for cluster")
 
-	certStore := Store(ctx).Certificates(cluster.Name)
+	certStore := Store(ctx).Certificates(cluster.Name).With(owner)
 
 	// -----------------------------------------------
 	if cluster.Spec.CACertName == "" {
@@ -60,8 +60,8 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Co
 	return ctx, nil
 }
 
-func LoadCACertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
-	certStore := Store(ctx).Certificates(cluster.Name)
+func LoadCACertificates(ctx context.Context, cluster *api.Cluster, owner string) (context.Context, error) {
+	certStore := Store(ctx).Certificates(cluster.Name).With(owner)
 
 	caCert, caKey, err := certStore.Get(cluster.Spec.CACertName)
 	if err != nil {
@@ -98,8 +98,8 @@ func CreateAdminCertificate(ctx context.Context) (*x509.Certificate, *rsa.Privat
 	return adminCert, adminKey, nil
 }
 
-func GetAdminCertificate(ctx context.Context, cluster *api.Cluster) (*x509.Certificate, *rsa.PrivateKey, error) {
-	certStore := Store(ctx).Certificates(cluster.Name)
+func GetAdminCertificate(ctx context.Context, cluster *api.Cluster, owner string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	certStore := Store(ctx).Certificates(cluster.Name).With(owner)
 	admCert, admKey, err := certStore.Get("admin")
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to get admin certificates. Reason: %v", err)
@@ -107,21 +107,21 @@ func GetAdminCertificate(ctx context.Context, cluster *api.Cluster) (*x509.Certi
 	return admCert, admKey, nil
 }
 
-func CreateSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
+func CreateSSHKey(ctx context.Context, cluster *api.Cluster, owner string) (context.Context, error) {
 	sshKey, err := ssh.NewSSHKeyPair()
 	if err != nil {
 		return ctx, err
 	}
 	ctx = context.WithValue(ctx, paramSSHKey{}, sshKey)
-	err = Store(ctx).SSHKeys(cluster.Name).Create(cluster.Spec.Cloud.SSHKeyName, sshKey.PublicKey, sshKey.PrivateKey)
+	err = Store(ctx).SSHKeys(cluster.Name).With(owner).Create(cluster.Spec.Cloud.SSHKeyName, sshKey.PublicKey, sshKey.PrivateKey)
 	if err != nil {
 		return ctx, err
 	}
 	return ctx, nil
 }
 
-func LoadSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
-	publicKey, privateKey, err := Store(ctx).SSHKeys(cluster.Name).Get(cluster.Spec.Cloud.SSHKeyName)
+func LoadSSHKey(ctx context.Context, cluster *api.Cluster, owner string) (context.Context, error) {
+	publicKey, privateKey, err := Store(ctx).SSHKeys(cluster.Name).With(owner).Get(cluster.Spec.Cloud.SSHKeyName)
 	if err != nil {
 		return ctx, errors.Errorf("failed to get SSH key. Reason: %v", err)
 	}

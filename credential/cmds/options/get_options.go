@@ -21,7 +21,7 @@ func NewCredentialGetConfig() *CredentialGetConfig {
 
 func (c *CredentialGetConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.Output, "output", "o", c.Output, "Output format. One of: json|yaml|wide")
-	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
+	fs.StringVarP(&c.Owner, "owner", "", c.Owner, "Current user id")
 }
 
 func (c *CredentialGetConfig) ValidateFlags(cmd *cobra.Command, args []string) error {

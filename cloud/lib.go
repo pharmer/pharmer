@@ -50,14 +50,14 @@ func Create(ctx context.Context, cluster *api.Cluster, owner string) (*api.Clust
 		return nil, err
 	}
 
-	if ctx, err = CreateCACertificates(ctx, cluster); err != nil {
+	if ctx, err = CreateCACertificates(ctx, cluster, owner); err != nil {
 		return nil, err
 	}
-	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
+	if ctx, err = CreateSSHKey(ctx, cluster, owner); err != nil {
 		return nil, err
 	}
 	if !managedProviders.Has(cluster.Spec.Cloud.CloudProvider) {
-		if err = CreateNodeGroup(ctx, cluster, api.RoleMaster, "", api.NodeTypeRegular, 1, float64(0)); err != nil {
+		if err = CreateNodeGroup(ctx, cluster, owner, api.RoleMaster, "", api.NodeTypeRegular, 1, float64(0)); err != nil {
 			return nil, err
 		}
 	}
@@ -67,7 +67,7 @@ func Create(ctx context.Context, cluster *api.Cluster, owner string) (*api.Clust
 	return cluster, nil
 }
 
-func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string, nodeType api.NodeType, count int, spotPriceMax float64) error {
+func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, owner, role, sku string, nodeType api.NodeType, count int, spotPriceMax float64) error {
 	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
 	if err != nil {
 		return err
@@ -106,7 +106,7 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string
 		ig.Spec.Template.Spec.SpotPriceMax = spotPriceMax
 	}
 
-	_, err = Store(ctx).NodeGroups(cluster.Name).Create(&ig)
+	_, err = Store(ctx).NodeGroups(cluster.Name).With(owner).Create(&ig)
 
 	return err
 }
@@ -152,9 +152,9 @@ func DeleteNG(ctx context.Context, clusterName, nodeGroupName string, owner stri
 	return nil
 }
 
-func GetSSHConfig(ctx context.Context, nodeName string, cluster *api.Cluster) (*api.SSHConfig, error) {
+func GetSSHConfig(ctx context.Context, owner, nodeName string, cluster *api.Cluster) (*api.SSHConfig, error) {
 	var err error
-	ctx, err = LoadCACertificates(ctx, cluster)
+	ctx, err = LoadCACertificates(ctx, cluster, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func GetSSHConfig(ctx context.Context, nodeName string, cluster *api.Cluster) (*
 	if err != nil {
 		return nil, err
 	}
-	ctx, err = LoadSSHKey(ctx, cluster)
+	ctx, err = LoadSSHKey(ctx, cluster, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func GetSSHConfig(ctx context.Context, nodeName string, cluster *api.Cluster) (*
 	return cm.GetSSHConfig(cluster, node)
 }
 
-func GetAdminConfig(ctx context.Context, cluster *api.Cluster) (*api.KubeConfig, error) {
+func GetAdminConfig(ctx context.Context, cluster *api.Cluster, owner string) (*api.KubeConfig, error) {
 	if managedProviders.Has(cluster.Spec.Cloud.CloudProvider) {
 		cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
 		if err != nil {
@@ -187,7 +187,7 @@ func GetAdminConfig(ctx context.Context, cluster *api.Cluster) (*api.KubeConfig,
 		return cm.GetKubeConfig(cluster)
 	}
 	var err error
-	ctx, err = LoadCACertificates(ctx, cluster)
+	ctx, err = LoadCACertificates(ctx, cluster, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -265,10 +265,10 @@ func CheckForUpdates(ctx context.Context, name, owner string) (string, error) {
 	if cluster.Status.Phase == api.ClusterDeleted {
 		return "", nil
 	}
-	if ctx, err = LoadCACertificates(ctx, cluster); err != nil {
+	if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
 		return "", err
 	}
-	if ctx, err = LoadSSHKey(ctx, cluster); err != nil {
+	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
 		return "", err
 	}
 	kc, err := NewAdminClient(ctx, cluster)

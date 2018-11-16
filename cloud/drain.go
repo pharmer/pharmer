@@ -57,7 +57,7 @@ func (r *restClientGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
 	return clientcmd.NewDefaultClientConfig(*r.config, &clientcmd.ConfigOverrides{})
 }
 
-func NewNodeDrain(ctx context.Context, kc kubernetes.Interface, cluster *api.Cluster) (NodeDrain, error) {
+func NewNodeDrain(ctx context.Context, kc kubernetes.Interface, cluster *api.Cluster, owner string) (NodeDrain, error) {
 	do := drain.NewDrainOptions(nil, genericclioptions.IOStreams{
 		In:     os.Stdin,
 		Out:    ioutil.Discard,
@@ -70,7 +70,7 @@ func NewNodeDrain(ctx context.Context, kc kubernetes.Interface, cluster *api.Clu
 
 	do.Timeout = 0
 
-	c1, err := GetAdminConfig(ctx, cluster)
+	c1, err := GetAdminConfig(ctx, cluster, owner)
 	if err != nil {
 		return NodeDrain{}, err
 	}

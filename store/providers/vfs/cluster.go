@@ -22,7 +22,7 @@ type clusterFileStore struct {
 var _ store.ClusterStore = &clusterFileStore{}
 
 func (s *clusterFileStore) resourceHome() string {
-	return filepath.Join(s.prefix, "clusters")
+	return filepath.Join(s.owner, s.prefix, "clusters")
 }
 
 func (s *clusterFileStore) resourceID(name string) string {

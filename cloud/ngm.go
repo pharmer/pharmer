@@ -24,11 +24,13 @@ type GenericNodeGroupManager struct {
 	preHook HookFunc
 	// gcHook is used to garbage collect when all nodes of a NodeGroup is deleted. This can be used to delete things like startup script.
 	gcHook HookFunc
+
+	owner string
 }
 
 var _ NodeGroupManager = &GenericNodeGroupManager{}
 
-func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster, token string, initHook HookFunc, gcHook HookFunc) NodeGroupManager {
+func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster, owner, token string, initHook HookFunc, gcHook HookFunc) NodeGroupManager {
 	return &GenericNodeGroupManager{
 		ctx:     ctx,
 		ng:      ng,
@@ -38,6 +40,7 @@ func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceMana
 		token:   token,
 		preHook: initHook,
 		gcHook:  gcHook,
+		owner:   owner,
 	}
 }
 
@@ -140,7 +143,7 @@ func (igm *GenericNodeGroupManager) AddNodes(count int64) error {
 }
 
 func (igm *GenericNodeGroupManager) DeleteNodes(nodes []core.Node) error {
-	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.cluster)
+	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.cluster, igm.owner)
 	if err != nil {
 		return err
 	}

@@ -58,7 +58,7 @@ func (i *Inspector) runNodeExecutor(podName, podIp, namespace, containerName str
 }
 
 func (i *Inspector) runMasterExecutor(masterNode core.Node, podIp string) error {
-	sshCfg, err := GetSSHConfig(i.ctx, masterNode.Name, i.cluster)
+	sshCfg, err := GetSSHConfig(i.ctx, i.owner, masterNode.Name, i.cluster)
 	if err != nil {
 		return err
 	}

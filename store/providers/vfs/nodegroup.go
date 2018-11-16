@@ -23,7 +23,7 @@ type nodeGroupFileStore struct {
 var _ store.NodeGroupStore = &nodeGroupFileStore{}
 
 func (s *nodeGroupFileStore) resourceHome() string {
-	return filepath.Join(s.prefix, "clusters", s.cluster, "nodegroups")
+	return filepath.Join(s.owner, s.prefix, "clusters", s.cluster, "nodegroups")
 }
 
 func (s *nodeGroupFileStore) resourceID(name string) string {
