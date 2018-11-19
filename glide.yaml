@@ -111,6 +111,8 @@ import:
   version: v1.1.1
 - package: k8s.io/kube-openapi
   version: 0cf8f7e6ed1d2e3d47d02e3b6e559369af24d803
+- package: cloud.google.com/go
+  version: v0.33.1
 testImport:
 - package: github.com/stretchr/testify
   version: v1.1.4
