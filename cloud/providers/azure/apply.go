@@ -35,7 +35,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster, cm.owner); err != nil {
 		return nil, err
 	}
-	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+	if cm.conn, err = NewConnector(cm.ctx, cm.cluster, cm.owner); err != nil {
 		return nil, err
 	}
 	cm.conn.namer = cm.namer
@@ -351,7 +351,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 		if !dryRun {
 			var script string
-			if script, err = cm.conn.renderStartupScript(masterNG, ""); err != nil {
+			if script, err = cm.conn.renderStartupScript(masterNG, cm.owner, ""); err != nil {
 				return
 			}
 
@@ -399,6 +399,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Resource: "Master Instance",
 			Message:  fmt.Sprintf("Found master instance with name %v", cm.namer.MasterName()),
 		})
+		return
 	}
 
 	return

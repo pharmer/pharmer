@@ -15,7 +15,7 @@ import (
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 )
 
-func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
+func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, owner, token string) TemplateData {
 	td := TemplateData{
 		ClusterName:       cluster.Name,
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
@@ -46,7 +46,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 			panic(errors.New("no cloud controller manager credential found"))
 		}
 
-		cred, err := Store(ctx).Credentials().Get(cluster.Spec.Cloud.CCMCredentialName)
+		cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Cloud.CCMCredentialName)
 		if err != nil {
 			panic(err)
 		}
@@ -84,8 +84,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 	return td
 }
 
-func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup) TemplateData {
-	td := newNodeTemplateData(ctx, cluster, ng, "")
+func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, owner string) TemplateData {
+	td := newNodeTemplateData(ctx, cluster, ng, owner, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: ng.Name,
 	}.String()
@@ -155,7 +155,7 @@ ensure_basic_networking
 `
 )
 
-func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string) (string, error) {
+func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, owner, token string) (string, error) {
 	tpl, err := StartupScriptTemplate.Clone()
 	if err != nil {
 		return "", err
@@ -167,11 +167,11 @@ func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string)
 
 	var script bytes.Buffer
 	if ng.Role() == api.RoleMaster {
-		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng, owner)); err != nil {
 			return "", err
 		}
 	} else {
-		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, owner, token)); err != nil {
 			return "", err
 		}
 	}

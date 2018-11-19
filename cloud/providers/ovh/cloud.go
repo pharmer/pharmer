@@ -179,6 +179,9 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	}
 
 	script, err := conn.renderStartupScript(ng, token)
+	if err != nil {
+		return nil, err
+	}
 
 	opts := servers.CreateOpts{
 		Name:      name,

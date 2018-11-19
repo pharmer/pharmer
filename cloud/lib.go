@@ -138,14 +138,14 @@ func DeleteNG(ctx context.Context, clusterName, nodeGroupName string, owner stri
 		return errors.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
 	}
 
-	nodeGroup, err := Store(ctx).NodeGroups(clusterName).Get(nodeGroupName)
+	nodeGroup, err := Store(ctx).Owner(owner).NodeGroups(clusterName).Get(nodeGroupName)
 	if err != nil {
 		return errors.Errorf(`nodegroup not found`)
 	}
 
 	if !nodeGroup.IsMaster() {
 		nodeGroup.DeletionTimestamp = &metav1.Time{Time: time.Now()}
-		_, err := Store(ctx).NodeGroups(clusterName).Update(nodeGroup)
+		_, err := Store(ctx).Owner(owner).NodeGroups(clusterName).Update(nodeGroup)
 		return err
 	}
 

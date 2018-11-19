@@ -15,8 +15,8 @@ import (
 	"k8s.io/client-go/util/cert"
 )
 
-func encodeCluster(ctx context.Context, cluster *api.Cluster) (*container.Cluster, error) {
-	nodeGroups, err := Store(ctx).NodeGroups(cluster.Name).List(metav1.ListOptions{})
+func encodeCluster(ctx context.Context, cluster *api.Cluster, owner string) (*container.Cluster, error) {
+	nodeGroups, err := Store(ctx).Owner(owner).NodeGroups(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		err = errors.Wrap(err, ID(ctx))
 		return nil, err

@@ -84,7 +84,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 	cluster, _ = cm.conn.containerService.Projects.Zones.Clusters.Get(cm.conn.cluster.Spec.Cloud.Project, cm.conn.cluster.Spec.Cloud.Zone, cm.cluster.Name).Do()
 	if cluster == nil && !dryRun {
-		if cluster, err = encodeCluster(cm.ctx, cm.cluster); err != nil {
+		if cluster, err = encodeCluster(cm.ctx, cm.cluster, cm.owner); err != nil {
 			return acts, err
 		}
 

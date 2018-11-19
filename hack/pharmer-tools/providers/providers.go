@@ -99,6 +99,9 @@ func GetCloudData(cloudInterface CloudInterface) (*data.CloudData, error) {
 func WriteCloudData(cloudData *data.CloudData, fileName string) error {
 	cloudData = util.SortCloudData(cloudData)
 	dataBytes, err := json.MarshalIndent(cloudData, "", "  ")
+	if err != nil {
+		return err
+	}
 	dir, err := util.GetWriteDir()
 	if err != nil {
 		return err

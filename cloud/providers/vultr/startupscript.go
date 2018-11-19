@@ -112,7 +112,6 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 	}
 	td.ClusterConfiguration = &cfg
 	return td
-	return td
 }
 
 var (

@@ -238,7 +238,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 			// need to run ccm
-			if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
+			if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster, cm.owner); err != nil {
 				return
 			}
 

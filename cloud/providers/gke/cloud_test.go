@@ -18,7 +18,8 @@ func TestCL(t *testing.T) {
 		container.CloudPlatformScope)
 	fmt.Println(err)
 	client := conf.Client(context.Background())
-	containerService, err := container.New(client)
+	containerService, _ := container.New(client)
+
 	resp, err := containerService.Projects.Zones.Clusters.Get(project, "us-central1-f", "gk5").Context(context.Background()).Do()
 	fmt.Println(resp, err)
 }

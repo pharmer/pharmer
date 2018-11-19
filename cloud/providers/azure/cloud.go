@@ -36,6 +36,8 @@ type cloudConnector struct {
 	cluster *api.Cluster
 	namer   namer
 
+	owner string
+
 	availabilitySetsClient  compute.AvailabilitySetsClient
 	vmClient                compute.VirtualMachinesClient
 	vmExtensionsClient      compute.VirtualMachineExtensionsClient
@@ -50,7 +52,7 @@ type cloudConnector struct {
 	storageClient           storage.AccountsClient
 }
 
-func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
+func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
 	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
 	if err != nil {
 		return nil, err
@@ -125,6 +127,8 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		routeTablesClient:       routeTablesClient,
 		interfacesClient:        interfacesClient,
 		storageClient:           storageClient,
+
+		owner: owner,
 	}, nil
 }
 
@@ -653,7 +657,7 @@ func (conn *cloudConnector) StartNode(nodeName, token string, as compute.Availab
 		return ki, errors.Wrap(err, ID(conn.ctx))
 	}
 
-	script, err := conn.renderStartupScript(ng, token)
+	script, err := conn.renderStartupScript(ng, conn.owner, token)
 	if err != nil {
 		return ki, err
 	}

@@ -70,6 +70,9 @@ func (s *sshKeyXormStore) Create(name string, pubKey, privKey []byte) error {
 		return err
 	}
 	sshKey, err = encodeSSHKey(pubKey, privKey)
+	if err != nil {
+		return err
+	}
 	sshKey.Name = name
 	sshKey.ClusterName = s.cluster
 	sshKey.UID = string(uuid.NewUUID())

@@ -101,7 +101,7 @@ func GetNodeGroupList(ctx context.Context, cluster, owner string, args ...string
 		}
 
 	} else {
-		nodeGroupList, err = cloud.Store(ctx).NodeGroups(cluster).List(metav1.ListOptions{})
+		nodeGroupList, err = cloud.Store(ctx).Owner(owner).NodeGroups(cluster).List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}
