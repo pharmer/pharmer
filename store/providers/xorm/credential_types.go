@@ -24,7 +24,7 @@ type Credential struct {
 }
 
 func (Credential) TableName() string {
-	return `"credential"`
+	return `"cluster_credential"`
 }
 
 func encodeCredential(in *api.Credential) (*Credential, error) {

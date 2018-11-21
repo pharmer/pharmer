@@ -136,7 +136,7 @@ func (s *nodeGroupXormStore) Update(obj *api.NodeGroup) (*api.NodeGroup, error) 
 		return nil, err
 	}
 	ng.ClusterId = cluster.Id
-	_, err = s.engine.Where(`name = ? AND "clusterName" = ? AND "clusterId"" = ?"`, obj.Name, cluster.Name, cluster.Id).Update(ng)
+	_, err = s.engine.Where(`name = ? AND "clusterName" = ? AND "clusterId" = ?`, obj.Name, cluster.Name, cluster.Id).Update(ng)
 	return obj, err
 }
 

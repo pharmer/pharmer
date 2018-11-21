@@ -18,7 +18,7 @@ type SSHKey struct {
 }
 
 func (SSHKey) TableName() string {
-	return `"pharmer"."sshKey"`
+	return `"cluster_sshKey"`
 }
 
 func encodeSSHKey(pub, priv []byte) (*SSHKey, error) {

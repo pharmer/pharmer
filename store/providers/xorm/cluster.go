@@ -8,6 +8,7 @@ import (
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strconv"
 )
 
 type clusterXormStore struct {
@@ -21,7 +22,7 @@ func (s *clusterXormStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 	result := make([]*api.Cluster, 0)
 	var clusters []Cluster
 
-	err := s.engine.Where("owner_id=?", s.owner).Find(&clusters)
+	err := s.engine.Where(`"ownerId"=?`, s.owner).Find(&clusters)
 	if err != nil {
 		return nil, err
 	}
@@ -43,6 +44,13 @@ func (s *clusterXormStore) Get(name string) (*api.Cluster, error) {
 	}
 
 	cluster := &Cluster{Name: name, OwnerId: s.owner}
+	if s.owner == "" {
+		id, err := strconv.Atoi(name)
+		if err != nil {
+			return nil, err
+		}
+		cluster = &Cluster{Id: int64(id)}
+	}
 	found, err := s.engine.Get(cluster)
 	if err != nil {
 		return nil, errors.Errorf("reason: %v", err)

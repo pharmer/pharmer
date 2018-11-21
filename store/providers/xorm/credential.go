@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"strconv"
 )
 
 type credentialXormStore struct {
@@ -21,7 +22,7 @@ var _ store.CredentialStore = &credentialXormStore{}
 func (s *credentialXormStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
 	result := make([]*api.Credential, 0)
 	var credentials []Credential
-	err := s.engine.Where("owner_id=?", s.owner).Find(&credentials)
+	err := s.engine.Where(`"ownerId"=?`, s.owner).Find(&credentials)
 	if err != nil {
 		return nil, err
 	}
@@ -43,6 +44,13 @@ func (s *credentialXormStore) Get(name string) (*api.Credential, error) {
 	cred := &Credential{
 		Name:    name,
 		OwnerId: s.owner,
+	}
+	if s.owner == "" {
+		id, err := strconv.Atoi(name)
+		if err != nil {
+			return nil, err
+		}
+		cred = &Credential{Id: int64(id)}
 	}
 
 	found, err := s.engine.Get(cred)
@@ -108,7 +116,7 @@ func (s *credentialXormStore) Update(obj *api.Credential) (*api.Credential, erro
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.engine.Where(`name = ?`, cred.Name).Where("owner_id=?", s.owner).Update(cred)
+	_, err = s.engine.Where(`name = ?`, cred.Name).Where(`"ownerId"=?`, s.owner).Update(cred)
 	return obj, err
 }
 

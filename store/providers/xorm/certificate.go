@@ -79,6 +79,7 @@ func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *r
 	if err != nil {
 		return err
 	}
+	certificate.ClusterId = cluster.Id
 	certificate.Name = name
 	certificate.ClusterName = s.cluster
 	certificate.UID = string(uuid.NewUUID())
@@ -119,3 +120,4 @@ func (s *certificateXormStore) getCluster() (*Cluster, error) {
 	}
 	return cluster, nil
 }
+
