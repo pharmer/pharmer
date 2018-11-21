@@ -8,7 +8,7 @@ import (
 
 //https://github.com/kubernetes/kubernetes/blob/aa1dc9db3532dfbf09e45c8e3786a648cd217417/cmd/kubeadm/app/phases/upgrade/compute.go#L28
 type Upgrade struct {
-	metav1.TypeMeta `json:",inline,omitempty,omitempty"`
+	metav1.TypeMeta `json:",inline"`
 
 	Description string       `json:"description" protobuf:"bytes,1,opt,name=description"`
 	Before      ClusterState `json:"before" protobuf:"bytes,2,opt,name=before"`

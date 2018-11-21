@@ -9,7 +9,7 @@ import (
 // Config holds the information needed to build connect to remote kubernetes clusters as a given user
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KubeConfig struct {
-	metav1.TypeMeta `json:",inline,omitempty,omitempty"`
+	metav1.TypeMeta `json:",inline"`
 	// Preferences holds general information to be use for cli interactions
 	Preferences Preferences `json:"preferences" protobuf:"bytes,1,opt,name=preferences"`
 	// Clusters is a map of referencable names to cluster configs
