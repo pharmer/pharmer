@@ -1,6 +1,7 @@
 package xorm
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/go-xorm/xorm"
@@ -9,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"strconv"
 )
 
 type credentialXormStore struct {

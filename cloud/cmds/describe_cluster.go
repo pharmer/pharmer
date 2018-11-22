@@ -45,7 +45,7 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 }
 
 func RunDescribeCluster(ctx context.Context, opts *options.ClusterDescribeConfig, out io.Writer) error {
-	rDescriber := describer.NewDescriber(ctx)
+	rDescriber := describer.NewDescriber(ctx, opts.Owner)
 
 	first := true
 	clusters, err := getClusterList(ctx, opts.Clusters, opts.Owner)

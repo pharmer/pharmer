@@ -120,4 +120,3 @@ func (s *certificateXormStore) getCluster() (*Cluster, error) {
 	}
 	return cluster, nil
 }
-

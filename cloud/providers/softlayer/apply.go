@@ -62,13 +62,13 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 
 	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		nodeGroups, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+		nodeGroups, err := Store(cm.ctx).Owner(cm.owner).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
 		for _, ng := range nodeGroups {
 			ng.Spec.Nodes = 0
-			_, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(ng)
+			_, err := Store(cm.ctx).Owner(cm.owner).NodeGroups(cm.cluster.Name).Update(ng)
 			if err != nil {
 				return nil, err
 			}
@@ -124,7 +124,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 	// -------------------------------------------------------------------ASSETS
 	var nodeGroups []*api.NodeGroup
-	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err = Store(cm.ctx).Owner(cm.owner).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
@@ -135,7 +135,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 	if masterNG.Spec.Template.Spec.SKU == "" {
 		masterNG.Spec.Template.Spec.SKU = "2c2m"
-		masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(masterNG)
+		masterNG, err = Store(cm.ctx).Owner(cm.owner).NodeGroups(cm.cluster.Name).Update(masterNG)
 		if err != nil {
 			return
 		}
@@ -178,7 +178,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			}
 
 			masterNG.Status.Nodes = 1
-			masterNG, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).UpdateStatus(masterNG)
+			masterNG, err = Store(cm.ctx).Owner(cm.owner).NodeGroups(cm.cluster.Name).UpdateStatus(masterNG)
 			if err != nil {
 				return
 			}
@@ -208,7 +208,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 // Scales up/down regular node groups
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
 	var nodeGroups []*api.NodeGroup
-	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err = Store(cm.ctx).Owner(cm.owner).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
@@ -321,7 +321,7 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 		return
 	}
 
-	upm := NewUpgradeManager(cm.ctx, cm, kc, cm.cluster)
+	upm := NewUpgradeManager(cm.ctx, cm, kc, cm.cluster, cm.owner)
 	a, err := upm.Apply(dryRun)
 	if err != nil {
 		return

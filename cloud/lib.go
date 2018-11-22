@@ -279,7 +279,7 @@ func CheckForUpdates(ctx context.Context, name, owner string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	upm := NewUpgradeManager(ctx, cm, kc, cluster)
+	upm := NewUpgradeManager(ctx, cm, kc, cluster, owner)
 	upgrades, err := upm.GetAvailableUpgrades()
 	if err != nil {
 		return "", err

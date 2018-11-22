@@ -51,7 +51,7 @@ func (s *XormStore) Owner(id string) store.ResourceInterface {
 }
 
 func (s *XormStore) Credentials() store.CredentialStore {
-	return &credentialXormStore{engine: s.engine, owner:s.owner}
+	return &credentialXormStore{engine: s.engine, owner: s.owner}
 }
 
 func (s *XormStore) Clusters() store.ClusterStore {

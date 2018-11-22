@@ -14,7 +14,7 @@ type SSHKey struct {
 	CreationTimestamp time.Time  `xorm:"bigint created 'creationTimestamp'"`
 	DateModified      time.Time  `xorm:"bigint updated 'dateModified'"`
 	DeletionTimestamp *time.Time `xorm:"bigint null 'deletionTimestamp'"`
-	ClusterId         int64      `xorm:"bigint not null 'cluster_id'"`
+	ClusterId         int64      `xorm:"bigint not null 'clusterId'"`
 }
 
 func (SSHKey) TableName() string {

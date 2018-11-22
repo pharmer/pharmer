@@ -24,12 +24,14 @@ type GenericUpgradeManager struct {
 	ssh     SSHGetter
 	kc      kubernetes.Interface
 	cluster *api.Cluster
+
+	owner string
 }
 
 var _ UpgradeManager = &GenericUpgradeManager{}
 
-func NewUpgradeManager(ctx context.Context, ssh SSHGetter, kc kubernetes.Interface, cluster *api.Cluster) UpgradeManager {
-	return &GenericUpgradeManager{ctx: ctx, ssh: ssh, kc: kc, cluster: cluster}
+func NewUpgradeManager(ctx context.Context, ssh SSHGetter, kc kubernetes.Interface, cluster *api.Cluster, owner string) UpgradeManager {
+	return &GenericUpgradeManager{ctx: ctx, ssh: ssh, kc: kc, cluster: cluster, owner: owner}
 }
 
 func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error) {
@@ -239,7 +241,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 	}
 
 	var nodeGroups []*api.NodeGroup
-	if nodeGroups, err = Store(upm.ctx).NodeGroups(upm.cluster.Name).List(metav1.ListOptions{}); err != nil {
+	if nodeGroups, err = Store(upm.ctx).Owner(upm.owner).NodeGroups(upm.cluster.Name).List(metav1.ListOptions{}); err != nil {
 		return
 	}
 	acts = append(acts, api.Action{

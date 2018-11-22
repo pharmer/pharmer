@@ -14,8 +14,8 @@ type Describer interface {
 	Describe(object runtime.Object, describerSettings *printers.DescriberSettings) (output string, err error)
 }
 
-func NewDescriber(ctx context.Context) Describer {
-	return newHumanReadableDescriber(ctx)
+func NewDescriber(ctx context.Context, owner string) Describer {
+	return newHumanReadableDescriber(ctx, owner)
 }
 
 type handlerEntry struct {
@@ -26,12 +26,14 @@ type handlerEntry struct {
 type humanReadableDescriber struct {
 	handlerMap map[reflect.Type]*handlerEntry
 	ctx        context.Context
+	owner      string
 }
 
-func newHumanReadableDescriber(ctx context.Context) *humanReadableDescriber {
+func newHumanReadableDescriber(ctx context.Context, owner string) *humanReadableDescriber {
 	describer := &humanReadableDescriber{
 		handlerMap: make(map[reflect.Type]*handlerEntry),
 		ctx:        ctx,
+		owner:      owner,
 	}
 	describer.addDefaultHandlers()
 	return describer

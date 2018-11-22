@@ -1,6 +1,7 @@
 package xorm
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/go-xorm/xorm"
@@ -8,7 +9,6 @@ import (
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strconv"
 )
 
 type clusterXormStore struct {
@@ -155,6 +155,6 @@ func (s *clusterXormStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.engine.Where(`name = ?`, obj.Name).Where("owner_id=?", s.owner).Update(updated)
+	_, err = s.engine.Where(`name = ?`, obj.Name).Where(`"ownerId"=?`, s.owner).Update(updated)
 	return existing, err
 }

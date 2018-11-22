@@ -20,7 +20,7 @@ type sshKeyFileStore struct {
 var _ store.SSHKeyStore = &sshKeyFileStore{}
 
 func (s *sshKeyFileStore) resourceHome() string {
-	return filepath.Join(s.prefix, "clusters", s.owner, s.cluster, "ssh")
+	return filepath.Join(s.owner, s.prefix, "clusters", s.cluster, "ssh")
 }
 
 func (s *sshKeyFileStore) pubKeyID(name string) string {
