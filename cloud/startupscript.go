@@ -6,12 +6,12 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/appscode/go-version"
+	version "github.com/appscode/go-version"
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha3"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 )
 
 // https://github.com/pharmer/pharmer/issues/347
@@ -21,6 +21,7 @@ var kubernetesCNIVersions = map[string]string{
 	"1.10.0": "0.6.0",
 	"1.11.0": "0.6.0",
 	"1.12.0": "0.6.0",
+	"1.13.0": "0.6.0",
 }
 
 var prekVersions = map[string]string{
@@ -29,6 +30,7 @@ var prekVersions = map[string]string{
 	"1.10.0": "1.10.0",
 	"1.11.0": "1.12.0-alpha.3",
 	"1.12.0": "1.12.0-alpha.3",
+	"1.13.0": "1.13.0-1",
 }
 
 type TemplateData struct {
@@ -85,20 +87,25 @@ func (td TemplateData) JoinConfigurationYAML() (string, error) {
 
 	cfg := kubeadmapi.JoinConfiguration{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1alpha3",
+			APIVersion: "kubeadm.k8s.io/v1beta1",
 			Kind:       "JoinConfiguration",
 		},
 		NodeRegistration: kubeadmapi.NodeRegistrationOptions{
 			KubeletExtraArgs: td.KubeletExtraArgs,
 		},
-		ClusterName: td.ClusterName,
-		Token:       td.KubeadmToken,
-		APIEndpoint: kubeadmapi.APIEndpoint{
-			AdvertiseAddress: apiAddress[0],
-			BindPort:         int32(apiPort),
+		Discovery: kubeadmapi.Discovery{
+			BootstrapToken: &kubeadmapi.BootstrapTokenDiscovery{
+				Token:             td.KubeadmToken,
+				APIServerEndpoint: td.APIServerAddress,
+				CACertHashes:      []string{td.CAHash},
+			},
 		},
-		DiscoveryTokenAPIServers:   []string{td.APIServerAddress},
-		DiscoveryTokenCACertHashes: []string{td.CAHash},
+		ControlPlane: &kubeadmapi.JoinControlPlane{
+			LocalAPIEndpoint: kubeadmapi.APIEndpoint{
+				AdvertiseAddress: apiAddress[0],
+				BindPort:         int32(apiPort),
+			},
+		},
 	}
 
 	cb, err := yaml.Marshal(cfg)

@@ -1,7 +1,7 @@
 package data
 
 import (
-	"github.com/appscode/go-version"
+	version "github.com/appscode/go-version"
 	_env "github.com/appscode/go/env"
 )
 

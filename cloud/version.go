@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	versionutil "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/client-go/kubernetes"
-	versionutil "k8s.io/kubernetes/pkg/util/version"
 )
 
 var (

@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	drain "k8s.io/kubernetes/pkg/kubectl/cmd"
+	"k8s.io/kubernetes/pkg/kubectl/cmd/drain"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util" //"k8s.io/kubernetes/pkg/kubectl/scheme"
 )
 

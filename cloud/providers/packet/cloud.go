@@ -44,7 +44,7 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		attempt++
 
-		server, _, err := conn.client.Devices.Get(deviceID)
+		server, _, err := conn.client.Devices.Get(deviceID, &packngo.GetOptions{})
 		if err != nil {
 			return false, nil
 		}
@@ -60,7 +60,7 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 
 func (conn *cloudConnector) getPublicKey() (bool, string, error) {
 	if conn.cluster.Status.Cloud.SShKeyExternalID != "" {
-		key, resp, err := conn.client.SSHKeys.Get(conn.cluster.Status.Cloud.SShKeyExternalID)
+		key, resp, err := conn.client.SSHKeys.Get(conn.cluster.Status.Cloud.SShKeyExternalID, &packngo.GetOptions{})
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return false, "", nil
 		}
@@ -131,7 +131,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 		return nil, err
 	}
 
-	host, _, err := conn.client.Devices.Get(server.ID)
+	host, _, err := conn.client.Devices.Get(server.ID, &packngo.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

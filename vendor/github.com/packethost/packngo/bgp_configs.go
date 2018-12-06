@@ -6,7 +6,7 @@ var bgpConfigBasePath = "/bgp-config"
 
 // BGPConfigService interface defines available BGP config methods
 type BGPConfigService interface {
-	Get(projectID string) (*BGPConfig, *Response, error)
+	Get(projectID string, getOpt *GetOptions) (*BGPConfig, *Response, error)
 	Create(string, CreateBGPConfigRequest) (*Response, error)
 	// Delete(configID string) (resp *Response, err error) TODO: Not in Packet API
 }
@@ -26,18 +26,18 @@ type CreateBGPConfigRequest struct {
 
 // BGPConfig represents a Packet BGP Config
 type BGPConfig struct {
-	ID             string     `json:"id,omitempty"`
-	Status         string     `json:"status,omitempty"`
-	DeploymentType string     `json:"deployment_type,omitempty"`
-	Asn            int        `json:"asn,omitempty"`
-	RouteObject    string     `json:"route_object,omitempty"`
-	Md5            string     `json:"md5,omitempty"`
-	MaxPrefix      int        `json:"max_prefix,omitempty"`
-	Project        Project    `json:"project,omitempty"`
-	CreatedAt      Timestamp  `json:"created_at,omitempty"`
-	RequestedAt    Timestamp  `json:"requested_at,omitempty"`
-	Session        BGPSession `json:"session,omitempty"`
-	Href           string     `json:"href,omitempty"`
+	ID             string       `json:"id,omitempty"`
+	Status         string       `json:"status,omitempty"`
+	DeploymentType string       `json:"deployment_type,omitempty"`
+	Asn            int          `json:"asn,omitempty"`
+	RouteObject    string       `json:"route_object,omitempty"`
+	Md5            string       `json:"md5,omitempty"`
+	MaxPrefix      int          `json:"max_prefix,omitempty"`
+	Project        Project      `json:"project,omitempty"`
+	CreatedAt      Timestamp    `json:"created_at,omitempty"`
+	RequestedAt    Timestamp    `json:"requested_at,omitempty"`
+	Sessions       []BGPSession `json:"sessions,omitempty"`
+	Href           string       `json:"href,omitempty"`
 }
 
 // Create function
@@ -53,8 +53,10 @@ func (s *BGPConfigServiceOp) Create(projectID string, request CreateBGPConfigReq
 }
 
 // Get function
-func (s *BGPConfigServiceOp) Get(projectID string) (bgpConfig *BGPConfig, resp *Response, err error) {
-	path := fmt.Sprintf("%s/%s%s", projectBasePath, projectID, bgpConfigBasePath)
+func (s *BGPConfigServiceOp) Get(projectID string, getOpt *GetOptions) (bgpConfig *BGPConfig, resp *Response, err error) {
+	params := createGetOptionsURL(getOpt)
+
+	path := fmt.Sprintf("%s/%s%s?%s", projectBasePath, projectID, bgpConfigBasePath, params)
 
 	subset := new(BGPConfig)
 

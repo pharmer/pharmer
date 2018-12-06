@@ -7,11 +7,11 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/kubernetes/pkg/printers"
+	"k8s.io/kubernetes/pkg/kubectl/describe"
 )
 
 type Describer interface {
-	Describe(object runtime.Object, describerSettings *printers.DescriberSettings) (output string, err error)
+	Describe(object runtime.Object, describerSettings describe.DescriberSettings) (output string, err error)
 }
 
 func NewDescriber(ctx context.Context) Describer {
@@ -66,7 +66,7 @@ func (h *humanReadableDescriber) validateDescribeHandlerFunc(describeFunc reflec
 			"Must accept 2 parameters and return 2 value.")
 	}
 
-	if funcType.In(1) != reflect.TypeOf((*printers.DescriberSettings)(nil)) ||
+	if funcType.In(1) != reflect.TypeOf((*describe.DescriberSettings)(nil)) ||
 		funcType.Out(0) != reflect.TypeOf((string)("")) ||
 		funcType.Out(1) != reflect.TypeOf((*error)(nil)).Elem() {
 		return errors.Errorf("invalid describe handler. The expected signature is: "+
@@ -75,7 +75,7 @@ func (h *humanReadableDescriber) validateDescribeHandlerFunc(describeFunc reflec
 	return nil
 }
 
-func (h *humanReadableDescriber) Describe(obj runtime.Object, describerSettings *printers.DescriberSettings) (string, error) {
+func (h *humanReadableDescriber) Describe(obj runtime.Object, describerSettings describe.DescriberSettings) (string, error) {
 	t := reflect.TypeOf(obj)
 	if handler := h.handlerMap[t]; handler != nil {
 		args := []reflect.Value{reflect.ValueOf(obj), reflect.ValueOf(describerSettings)}
