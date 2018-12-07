@@ -66,7 +66,7 @@ func (h *humanReadableDescriber) validateDescribeHandlerFunc(describeFunc reflec
 			"Must accept 2 parameters and return 2 value.")
 	}
 
-	if funcType.In(1) != reflect.TypeOf((*describe.DescriberSettings)(nil)) ||
+	if funcType.In(1) != reflect.TypeOf((describe.DescriberSettings)(describe.DescriberSettings{})) ||
 		funcType.Out(0) != reflect.TypeOf((string)("")) ||
 		funcType.Out(1) != reflect.TypeOf((*error)(nil)).Elem() {
 		return errors.Errorf("invalid describe handler. The expected signature is: "+
@@ -87,5 +87,5 @@ func (h *humanReadableDescriber) Describe(obj runtime.Object, describerSettings 
 		return resultValue[0].Interface().(string), nil
 	}
 
-	return "", errors.Errorf(`kubedb doesn't support: "%v"`, t)
+	return "", errors.Errorf(`pharmer doesn't support: "%v"`, t)
 }

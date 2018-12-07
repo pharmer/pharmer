@@ -55,8 +55,17 @@ This project is spread over 5 repositories:
  - [Create & manage a Kubernetes cluster in Scaleway](/docs/cloud/scaleway/README.md)
  - [Create & manage a Kubernetes cluster in Vultr](/docs/cloud/vultr/README.md)
 
-## Supported Versions
-Kubernetes 1.9+
+## Supported Versions Matrix
+
+
+
+
+| pharmer version | k8s 1.9.x | k8s 1.10.x | k8s 1.11.x | k8s 1.12.x | k8s 1.13.x |
+|-----------------|-----------|------------|------------|------------|-------------
+| 0.2.0           | &#10007;  | &#10007;   | &#10007;   | &#10003;   | &#10003;
+| 0.1.1           | &#10007;  | &#10007;   | &#10003;   | &#10003;   | &#10007;
+| 0.1.0-rc.5      | &#10007;  | &#10003;   | &#10003;   | &#10007;   | &#10007;
+| 0.1.0-rc.4      | &#10003;  | &#10003;   | &#10007;   | &#10007;   | &#10007;
 
 ## Contribution guidelines
 Want to help improve Pharmer? Please start [here](/CONTRIBUTING.md).

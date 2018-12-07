@@ -13,7 +13,7 @@ import (
 
 const statusUnknown = "Unknown"
 
-func (d *humanReadableDescriber) describeCluster(item *api.Cluster, describerSettings *describe.DescriberSettings) (string, error) {
+func (d *humanReadableDescriber) describeCluster(item *api.Cluster, describerSettings describe.DescriberSettings) (string, error) {
 
 	nodeGroups, err := cloud.Store(d.ctx).NodeGroups(item.Name).List(metav1.ListOptions{})
 	if err != nil {

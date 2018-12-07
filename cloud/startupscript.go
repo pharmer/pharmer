@@ -61,7 +61,13 @@ func (td TemplateData) InitConfigurationYAML() (string, error) {
 	var cb []byte
 	var err error
 
-	cb, err = yaml.Marshal(td.InitConfiguration)
+	if td.IsVersionLessThan1_13() {
+		conf := ConvertInitConfigFromV1bet1ToV1alpha3(td.InitConfiguration)
+		cb, err = yaml.Marshal(conf)
+	} else {
+		cb, err = yaml.Marshal(td.InitConfiguration)
+	}
+
 	return string(cb), err
 }
 
@@ -71,7 +77,12 @@ func (td TemplateData) ClusterConfigurationYAML() (string, error) {
 	}
 	var cb []byte
 	var err error
-	cb, err = yaml.Marshal(td.ClusterConfiguration)
+	if td.IsVersionLessThan1_13() {
+		conf := ConvertClusterConfigFromV1beta1ToV1alpha3(td.ClusterConfiguration)
+		cb, err = yaml.Marshal(conf)
+	} else {
+		cb, err = yaml.Marshal(td.ClusterConfiguration)
+	}
 	return string(cb), err
 }
 
@@ -84,6 +95,7 @@ func (td TemplateData) JoinConfigurationYAML() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	var cb []byte
 
 	cfg := kubeadmapi.JoinConfiguration{
 		TypeMeta: metav1.TypeMeta{
@@ -100,15 +112,15 @@ func (td TemplateData) JoinConfigurationYAML() (string, error) {
 				CACertHashes:      []string{td.CAHash},
 			},
 		},
-		ControlPlane: &kubeadmapi.JoinControlPlane{
-			LocalAPIEndpoint: kubeadmapi.APIEndpoint{
-				AdvertiseAddress: apiAddress[0],
-				BindPort:         int32(apiPort),
-			},
-		},
 	}
-
-	cb, err := yaml.Marshal(cfg)
+	cb, err = yaml.Marshal(cfg)
+	if td.IsVersionLessThan1_13() {
+		conf := ConvertJoinConfigFromV1beta1ToV1alpha3(&cfg)
+		conf.ClusterName = td.ClusterName
+		conf.APIEndpoint.AdvertiseAddress = apiAddress[0]
+		conf.APIEndpoint.BindPort = int32(apiPort)
+		cb, err = yaml.Marshal(conf)
+	}
 	return string(cb), err
 }
 
@@ -124,6 +136,10 @@ func (td TemplateData) IsVersionLessThan(currentVersion string) bool {
 	cv, _ := version.NewVersion(td.KubernetesVersion)
 	v11, _ := version.NewVersion(currentVersion)
 	return cv.LessThan(v11)
+}
+
+func (td TemplateData) IsVersionLessThan1_13() bool {
+	return td.IsVersionLessThan("1.13.0")
 }
 
 func (td TemplateData) IsKubeadmV1Alpha3() bool {
