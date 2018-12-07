@@ -18,6 +18,9 @@ func NewClient(scalewayToken, organization string) (*Client, error) {
 	g := &Client{}
 	var err error
 	g.ParClient, err = scaleway.NewScalewayAPI(organization, scalewayToken, "gen-data", "par1")
+	if err != nil {
+		return nil, err
+	}
 	g.AmsClient, err = scaleway.NewScalewayAPI(organization, scalewayToken, "gen-data", "ams1")
 	if err != nil {
 		return nil, err
