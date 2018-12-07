@@ -19,6 +19,7 @@ func TestCL(t *testing.T) {
 	fmt.Println(err)
 	client := conf.Client(context.Background())
 	containerService, err := container.New(client)
+	fmt.Println(err)
 	resp, err := containerService.Projects.Zones.Clusters.Get(project, "us-central1-f", "gk5").Context(context.Background()).Do()
 	fmt.Println(resp, err)
 }

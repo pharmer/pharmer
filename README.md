@@ -57,9 +57,6 @@ This project is spread over 5 repositories:
 
 ## Supported Versions Matrix
 
-
-
-
 | pharmer version | k8s 1.9.x | k8s 1.10.x | k8s 1.11.x | k8s 1.12.x | k8s 1.13.x |
 |-----------------|-----------|------------|------------|------------|-------------
 | 0.2.0           | &#10007;  | &#10007;   | &#10007;   | &#10003;   | &#10003;
