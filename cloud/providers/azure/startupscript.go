@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha3"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 )
 
@@ -97,14 +97,14 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 	}
 	ifg := kubeadmapi.InitConfiguration{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1alpha3",
+			APIVersion: "kubeadm.k8s.io/v1beta1",
 			Kind:       "InitConfiguration",
 		},
 
 		NodeRegistration: kubeadmapi.NodeRegistrationOptions{
 			KubeletExtraArgs: td.KubeletExtraArgs,
 		},
-		APIEndpoint: kubeadmapi.APIEndpoint{
+		LocalAPIEndpoint: kubeadmapi.APIEndpoint{
 			AdvertiseAddress: cluster.Spec.API.AdvertiseAddress,
 			BindPort:         cluster.Spec.API.BindPort,
 		},
@@ -113,12 +113,10 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 
 	cfg := kubeadmapi.ClusterConfiguration{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1alpha3",
+			APIVersion: "kubeadm.k8s.io/v1beta1",
 			Kind:       "ClusterConfiguration",
 		},
 
-		APIServerExtraVolumes:         []kubeadmapi.HostPathMount{hostPath},
-		ControllerManagerExtraVolumes: []kubeadmapi.HostPathMount{hostPath},
 		Networking: kubeadmapi.Networking{
 			ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
 			PodSubnet:     cluster.Spec.Networking.PodSubnet,
@@ -126,10 +124,20 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 		},
 		KubernetesVersion: cluster.Spec.KubernetesVersion,
 		//CloudProvider:              cluster.Spec.Cloud.CloudProvider,
-		APIServerExtraArgs:         cluster.Spec.APIServerExtraArgs,
-		ControllerManagerExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
-		SchedulerExtraArgs:         cluster.Spec.SchedulerExtraArgs,
-		APIServerCertSANs:          cluster.Spec.APIServerCertSANs,
+		APIServer: kubeadmapi.APIServer{
+			ControlPlaneComponent: kubeadmapi.ControlPlaneComponent{
+				ExtraArgs:    cluster.Spec.APIServerExtraArgs,
+				ExtraVolumes: []kubeadmapi.HostPathMount{hostPath},
+			},
+			CertSANs: cluster.Spec.APIServerCertSANs,
+		},
+		ControllerManager: kubeadmapi.ControlPlaneComponent{
+			ExtraArgs:    cluster.Spec.ControllerManagerExtraArgs,
+			ExtraVolumes: []kubeadmapi.HostPathMount{hostPath},
+		},
+		Scheduler: kubeadmapi.ControlPlaneComponent{
+			ExtraArgs: cluster.Spec.SchedulerExtraArgs,
+		},
 	}
 
 	td.ClusterConfiguration = &cfg

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/appscode/go-version"
+	version "github.com/appscode/go-version"
 	"github.com/appscode/go/log"
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/cmds/options"
@@ -99,6 +99,9 @@ func GetCloudData(cloudInterface CloudInterface) (*data.CloudData, error) {
 func WriteCloudData(cloudData *data.CloudData, fileName string) error {
 	cloudData = util.SortCloudData(cloudData)
 	dataBytes, err := json.MarshalIndent(cloudData, "", "  ")
+	if err != nil {
+		return nil, err
+	}
 	dir, err := util.GetWriteDir()
 	if err != nil {
 		return err

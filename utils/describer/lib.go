@@ -52,7 +52,6 @@ func printLabelsMultilineWithIndent(out io.Writer, initialIndent, title, innerIn
 			fmt.Fprint(out, innerIndent)
 		}
 		fmt.Fprintf(out, "%s=%s\n", key, labels[key])
-		i++
 	}
 }
 

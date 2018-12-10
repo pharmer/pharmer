@@ -12,7 +12,7 @@ import (
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/utils/describer"
 	"github.com/spf13/cobra"
-	"k8s.io/kubernetes/pkg/printers"
+	"k8s.io/kubernetes/pkg/kubectl/describe"
 )
 
 func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
@@ -54,7 +54,7 @@ func RunDescribeCluster(ctx context.Context, opts *options.ClusterDescribeConfig
 	}
 
 	for _, cluster := range clusters {
-		s, err := rDescriber.Describe(cluster, &printers.DescriberSettings{})
+		s, err := rDescriber.Describe(cluster, describe.DescriberSettings{})
 		if err != nil {
 			continue
 		}

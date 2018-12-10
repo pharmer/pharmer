@@ -1,9 +1,9 @@
 package: github.com/pharmer/pharmer
 import:
 - package: github.com/Azure/azure-sdk-for-go
-  version: v19.0.0
+  version: v21.3.0
 - package: github.com/Azure/go-autorest
-  version: v10.14.0
+  version: v11.1.0
 - package: github.com/JamesClonk/vultr
   version: 1.15.0
 - package: github.com/appscode/go-dns
@@ -66,21 +66,23 @@ import:
 - package: gopkg.in/ini.v1
   version: v1.37.0
 - package: k8s.io/api
-  version: kubernetes-1.12.0
+  version: kubernetes-1.13.0
 - package: k8s.io/apimachinery
   repo: https://github.com/kmodules/apimachinery.git
   vcs: git
-  version: ac-1.12.0
+  version: ac-1.13.0
 - package: k8s.io/client-go
-  version: v9.0.0
+  version: v10.0.0
 - package: k8s.io/apiextensions-apiserver
-  version: kubernetes-1.12.0
+  version: kubernetes-1.13.0
 - package: k8s.io/cli-runtime
-  version: kubernetes-1.12.0
+  version: kubernetes-1.13.0
 - package: k8s.io/kubernetes
-  version: v1.12.0
+  version: v1.13.0
+- package: k8s.io/cluster-bootstrap
+  version: kubernetes-1.13.0
 - package: github.com/appscode/kutil
-  version: release-9.0
+  version: k-1.13.0
 - package: github.com/gogo/protobuf
   version: v1.1.0
 - package: github.com/golang/protobuf
