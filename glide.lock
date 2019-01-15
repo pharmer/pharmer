@@ -1,5 +1,5 @@
-hash: becb5755d9aafbff5dfb7d74bcf89b9215776ad4c2051deb805568e841ff6980
-updated: 2018-12-07T15:26:20.58790893+06:00
+hash: 0a5317fc50c35126c97683952716531ab0902f63bbff31174b1e9c2173c3214c
+updated: 2019-01-15T17:12:07.906708799+06:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -7,7 +7,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/go
-  version: aa0a55d74dac66f9b9bec9c0e7b67944115a3f44
+  version: 52eaa8008e2e5fe8df77ac6fb2fd45e3ea2ae47c
   subpackages:
   - analytics
   - context
@@ -33,6 +33,8 @@ imports:
   version: c038e08b19b1c760484d443de8958880e35bd879
 - name: github.com/appscode/go-version
   version: 7aba545c679b0f45679eeb406dc662d2c8a04c26
+- name: github.com/appscode/jsonpatch
+  version: 5af499cf01c842bfdd7761a433fc90525ccd6836
 - name: github.com/appscode/kutil
   version: 2fd5d84269717906c36d56306c4693e68c1773b8
   subpackages:
@@ -120,6 +122,10 @@ imports:
   - autorest/validation
   - logger
   - version
+- name: github.com/beorn7/perks
+  version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
+  subpackages:
+  - quantile
 - name: github.com/cenkalti/backoff
   version: 61153c768f31ee5f130071d08fc82b85208528de
 - name: github.com/chai2010/gettext-go
@@ -167,6 +173,8 @@ imports:
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
 - name: github.com/go-ini/ini
   version: 300e940a926eb277d3901b20bdfcc54928ad3642
+- name: github.com/go-logr/logr
+  version: 9fb12b3b21c5415d16ac18dc5cd42c1cfdd40c4e
 - name: github.com/go-openapi/jsonpointer
   version: ef5f0afec364d3b9396b7b77b43dbe26bf1f8004
 - name: github.com/go-openapi/jsonreference
@@ -190,6 +198,10 @@ imports:
   - sortkeys
 - name: github.com/golang/glog
   version: 44145f04b68cf362d9c4df2182967c2275eaefed
+- name: github.com/golang/groupcache
+  version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
+  subpackages:
+  - lru
 - name: github.com/golang/protobuf
   version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
@@ -234,7 +246,7 @@ imports:
 - name: github.com/gorilla/websocket
   version: 2d1e4548da234d9cb742cc3628556fef86aafbac
 - name: github.com/graymeta/stow
-  version: 1849a82ac7fbd3e5cb144bcc711544e90903eac4
+  version: 8020e152292b2cdbdca30274fec24e18905f254d
   repo: https://github.com/appscode/stow.git
   vcs: git
   subpackages:
@@ -251,6 +263,12 @@ imports:
   version: 222f010658cca4619115dfe10279480c6621001e
   repo: https://github.com/appscode/grpc-gateway.git
   vcs: git
+- name: github.com/hashicorp/go-version
+  version: d40cf49b3a77bba84a7afdbd7f1dc295d114efb1
+- name: github.com/hashicorp/golang-lru
+  version: a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4
+  subpackages:
+  - simplelru
 - name: github.com/howeyc/gopass
   version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
 - name: github.com/imdario/mergo
@@ -287,6 +305,10 @@ imports:
   version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
 - name: github.com/mattn/go-isatty
   version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
+- name: github.com/matttproud/golang_protobuf_extensions
+  version: c12348ce28de40eed0136aa2b644d0ee0650e56c
+  subpackages:
+  - pbutil
 - name: github.com/mgutz/ansi
   version: 9520e82c474b0a04dd04f8a40959027271bab992
 - name: github.com/mgutz/str
@@ -294,7 +316,7 @@ imports:
 - name: github.com/mitchellh/go-wordwrap
   version: ad45545899c7b13c020ea92b2072220eefad42b8
 - name: github.com/moby/moby
-  version: 5a9cb68eb3ac3a195ab08c6b3c3a4f1ec18ebf9e
+  version: 8422e6f6fa04eb8ee805a98067ee490a86ce3b98
   subpackages:
   - pkg/term
 - name: github.com/modern-go/concurrent
@@ -306,7 +328,7 @@ imports:
 - name: github.com/moul/gotty-client
   version: c1b82f1af3ebb2febba268415cb1c90686078f80
 - name: github.com/ncw/swift
-  version: 6f342da371d063863f2f354f183e4ab0ef72d287
+  version: 3d63426e3fec66c303577c2257565bd19a5ca3bc
 - name: github.com/onsi/ginkgo
   version: fa5fabab2a1bfbd924faf4c067d07ae414e2aedf
   subpackages:
@@ -342,13 +364,32 @@ imports:
   - matchers/support/goraph/util
   - types
 - name: github.com/packethost/packngo
-  version: b36133050ae5b072233083a26657db33f4e46560
+  version: ac48ed405c2d6480787a1e13712d3c4b058f3784
 - name: github.com/pborman/uuid
   version: e790cca94e6cc75c7064b1332e63811d4aae1a53
 - name: github.com/peterbourgon/diskv
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
+- name: github.com/prometheus/client_golang
+  version: e7e903064f5e9eb5da98208bae10b475d4db0f8c
+  subpackages:
+  - prometheus
+  - prometheus/promhttp
+- name: github.com/prometheus/client_model
+  version: fa8ad6fec33561be4280a8f0514318c79d7f6cb6
+  subpackages:
+  - go
+- name: github.com/prometheus/common
+  version: 13ba4ddd0caa9c28ca7b7bffe1dfa9ed8d5ef207
+  subpackages:
+  - expfmt
+  - internal/bitbucket.org/ww/goautoneg
+  - model
+- name: github.com/prometheus/procfs
+  version: 65c1f6f8f0fc1e2185eb9863a3bc751496404259
+  subpackages:
+  - xfs
 - name: github.com/PuerkitoBio/purell
   version: 8a290539e2e8629dbc4e6bad948158f790ec31f4
 - name: github.com/PuerkitoBio/urlesc
@@ -374,7 +415,7 @@ imports:
 - name: github.com/sirupsen/logrus
   version: 89742aefa4b206dcf400792f3bd35b542998eb3b
 - name: github.com/skratchdot/open-golang
-  version: 75fb7ed4208cf72d323d7d02fd1a5964a7a9073c
+  version: a2dfa6d0dab6634ecf39251031a3d52db73b5c7e
   subpackages:
   - open
 - name: github.com/softlayer/softlayer-go
@@ -557,6 +598,7 @@ imports:
   - pkg/apis/meta/v1
   - pkg/apis/meta/v1/unstructured
   - pkg/apis/meta/v1/unstructured/unstructuredscheme
+  - pkg/apis/meta/v1/validation
   - pkg/apis/meta/v1beta1
   - pkg/conversion
   - pkg/conversion/queryparams
@@ -572,7 +614,9 @@ imports:
   - pkg/runtime/serializer/versioning
   - pkg/selection
   - pkg/types
+  - pkg/util/cache
   - pkg/util/clock
+  - pkg/util/diff
   - pkg/util/errors
   - pkg/util/framer
   - pkg/util/httpstream
@@ -774,15 +818,21 @@ imports:
   - scale/scheme/extensionsv1beta1
   - third_party/forked/golang/template
   - tools/auth
+  - tools/cache
   - tools/clientcmd
   - tools/clientcmd/api
   - tools/clientcmd/api/latest
   - tools/clientcmd/api/v1
+  - tools/leaderelection
+  - tools/leaderelection/resourcelock
   - tools/metrics
+  - tools/pager
+  - tools/record
   - tools/reference
   - tools/remotecommand
   - transport
   - transport/spdy
+  - util/buffer
   - util/cert
   - util/connrotation
   - util/exec
@@ -790,6 +840,8 @@ imports:
   - util/homedir
   - util/integer
   - util/jsonpath
+  - util/retry
+  - util/workqueue
 - name: k8s.io/cluster-bootstrap
   version: 2d1c733eadd09769030d7de1273e20a53aab14d7
   subpackages:
@@ -839,6 +891,48 @@ imports:
   - exec
   - exec/testing
   - pointer
+- name: sigs.k8s.io/cluster-api
+  version: 45f1c93260140936c610e56575d7505ba3d52444
+  subpackages:
+  - pkg/apis/cluster/common
+  - pkg/apis/cluster/v1alpha1
+  - pkg/client/clientset_generated/clientset
+  - pkg/client/clientset_generated/clientset/scheme
+  - pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1
+  - pkg/controller/config
+  - pkg/controller/error
+  - pkg/controller/machine
+  - pkg/util
+- name: sigs.k8s.io/controller-runtime
+  version: 0dd6edb02bf23e3669a3edc50ef00a38719173b0
+  subpackages:
+  - pkg/cache
+  - pkg/cache/internal
+  - pkg/client
+  - pkg/client/apiutil
+  - pkg/controller
+  - pkg/event
+  - pkg/handler
+  - pkg/internal/controller
+  - pkg/internal/controller/metrics
+  - pkg/internal/log
+  - pkg/internal/recorder
+  - pkg/leaderelection
+  - pkg/log
+  - pkg/manager
+  - pkg/metrics
+  - pkg/patch
+  - pkg/predicate
+  - pkg/reconcile
+  - pkg/recorder
+  - pkg/runtime/inject
+  - pkg/runtime/scheme
+  - pkg/source
+  - pkg/source/internal
+  - pkg/webhook/admission
+  - pkg/webhook/admission/types
+  - pkg/webhook/internal/metrics
+  - pkg/webhook/types
 - name: sigs.k8s.io/yaml
   version: fd68e9863619f6ec2fdd8625fe1f02e7c877e480
 testImports:

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/appscode/go/term"
+	apiv1 "github.com/pharmer/pharmer/apis/v1beta1"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
@@ -48,7 +49,7 @@ func CreateNodeGroups(ctx context.Context, opts *options.NodeGroupCreateConfig) 
 	cluster, err := cloud.Get(ctx, opts.ClusterName)
 	term.ExitOnError(err)
 	for sku, count := range opts.Nodes {
-		err := cloud.CreateNodeGroup(ctx, cluster, api.RoleNode, sku, api.NodeType(opts.NodeType), count, opts.SpotPriceMax)
+		err := cloud.CreateNodeGroup(ctx, cluster, sku, apiv1.NodeType(opts.NodeType), int32(count), opts.SpotPriceMax)
 		term.ExitOnError(err)
 	}
 }

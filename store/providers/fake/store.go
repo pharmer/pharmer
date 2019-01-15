@@ -6,8 +6,10 @@ import (
 	"crypto/x509"
 	"sync"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
+	apiAlpha "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/store"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
@@ -24,6 +26,7 @@ type FakeStore struct {
 	credentials  store.CredentialStore
 	clusters     store.ClusterStore
 	nodeGroups   map[string]store.NodeGroupStore
+	machineSet   map[string]store.MachineSetStore
 	certificates map[string]store.CertificateStore
 	sshKeys      map[string]store.SSHKeyStore
 
@@ -35,6 +38,7 @@ var _ store.Interface = &FakeStore{}
 func New() store.Interface {
 	return &FakeStore{
 		nodeGroups:   map[string]store.NodeGroupStore{},
+		machineSet:   map[string]store.MachineSetStore{},
 		certificates: map[string]store.CertificateStore{},
 		sshKeys:      map[string]store.SSHKeyStore{},
 	}
@@ -65,9 +69,18 @@ func (s *FakeStore) NodeGroups(cluster string) store.NodeGroupStore {
 	defer s.mux.Unlock()
 
 	if _, found := s.nodeGroups[cluster]; !found {
-		s.nodeGroups[cluster] = &nodeGroupFileStore{container: map[string]*api.NodeGroup{}, cluster: cluster}
+		s.nodeGroups[cluster] = &nodeGroupFileStore{container: map[string]*apiAlpha.NodeGroup{}, cluster: cluster}
 	}
 	return s.nodeGroups[cluster]
+}
+
+func (s *FakeStore) MachineSet(cluster string) store.MachineSetStore {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	if _, found := s.machineSet[cluster]; !found {
+		s.machineSet[cluster] = &machineSetFileStore{container: map[string]*clusterv1.MachineSet{}, cluster: cluster}
+	}
+	return s.machineSet[cluster]
 }
 
 func (s *FakeStore) Certificates(cluster string) store.CertificateStore {

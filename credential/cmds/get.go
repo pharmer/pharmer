@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential/cmds/options"

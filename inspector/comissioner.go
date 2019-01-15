@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
@@ -21,7 +21,7 @@ type Inspector struct {
 }
 
 func New(ctx context.Context, cluster *api.Cluster) (*Inspector, error) {
-	if cluster.Spec.Cloud.CloudProvider == "" {
+	if cluster.ProviderConfig().CloudProvider == "" {
 		return nil, errors.Errorf("cluster %v has no provider", cluster.Name)
 	}
 	var err error

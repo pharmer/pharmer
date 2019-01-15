@@ -12,6 +12,7 @@ import (
 	"github.com/pharmer/pharmer/utils/printer"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
@@ -88,6 +89,24 @@ func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out 
 
 	w.Flush()
 	return nil
+}
+
+func GetMachineSetList(ctx context.Context, cluster string, args ...string) (machineSetList []*clusterv1.MachineSet, err error) {
+	if len(args) != 0 {
+		for _, arg := range args {
+			ms, er2 := cloud.Store(ctx).MachineSet(cluster).Get(arg)
+			if err != nil {
+				return nil, er2
+			}
+			machineSetList = append(machineSetList, ms)
+		}
+	} else {
+		machineSetList, err = cloud.Store(ctx).MachineSet(cluster).List(metav1.ListOptions{})
+		if err != nil {
+			return
+		}
+	}
+	return
 }
 
 func GetNodeGroupList(ctx context.Context, cluster string, args ...string) (nodeGroupList []*api.NodeGroup, err error) {

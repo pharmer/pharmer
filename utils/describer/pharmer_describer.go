@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"io"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
+	apialpha "github.com/pharmer/pharmer/apis/v1alpha1"
 	"github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/kubectl/describe"
@@ -28,7 +29,7 @@ func (d *humanReadableDescriber) describeCluster(item *api.Cluster, describerSet
 	})
 }
 
-func describeNodeGroups(nodeGroups []*api.NodeGroup, out io.Writer) {
+func describeNodeGroups(nodeGroups []*apialpha.NodeGroup, out io.Writer) {
 	if len(nodeGroups) == 0 {
 		fmt.Fprint(out, "No NodeGroup.\n")
 		return
