@@ -22,20 +22,20 @@ import (
 
 var managedProviders = sets.NewString("aks", "gke", "eks")
 
-func List(ctx context.Context, opts metav1.ListOptions) ([]*clusterapi.Cluster, error) {
+func List(ctx context.Context, opts metav1.ListOptions) ([]*api.Cluster, error) {
 	return Store(ctx).Clusters().List(opts)
 }
 
-func Get(ctx context.Context, name string) (*clusterapi.Cluster, error) {
+func Get(ctx context.Context, name string) (*api.Cluster, error) {
 	return Store(ctx).Clusters().Get(name)
 }
 
-func Create(ctx context.Context, kube *api.Kube, cluster *clusterapi.Cluster, config *api.ClusterProviderConfig) (*api.Cluster, error) {
+func Create(ctx context.Context, cluster *api.Cluster, config *api.ClusterProviderConfig) (*api.Cluster, error) {
 	if cluster == nil {
 		return nil, errors.New("missing cluster")
 	} else if cluster.Name == "" {
 		return nil, errors.New("missing cluster name")
-	} else if kube.Spec.KubernetesVersion == "" {
+	} else if config.KubernetesVersion == "" {
 		return nil, errors.New("missing cluster version")
 	}
 
@@ -44,7 +44,7 @@ func Create(ctx context.Context, kube *api.Kube, cluster *clusterapi.Cluster, co
 		return nil, errors.Errorf("cluster exists with name `%s`", cluster.Name)
 	}
 
-	cm, err := GetCloudManager(config.CloudProvider, ctx)
+	cm, err := GetCloudManager(config.Cloud.CloudProvider, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -56,10 +56,10 @@ func Create(ctx context.Context, kube *api.Kube, cluster *clusterapi.Cluster, co
 		return nil, err
 	}
 
-	if ctx, err = CreateCACertificates(ctx, kube); err != nil {
+	if ctx, err = CreateCACertificates(ctx, cluster); err != nil {
 		return nil, err
 	}
-	if ctx, err = CreateApiserverCertificates(ctx, cluster); err != nil {
+	/*if ctx, err = CreateApiserverCertificates(ctx, cluster); err != nil {
 		return nil, err
 	}
 	if ctx, err = CreateServiceAccountKey(ctx, cluster); err != nil {
@@ -67,24 +67,24 @@ func Create(ctx context.Context, kube *api.Kube, cluster *clusterapi.Cluster, co
 	}
 	if ctx, err = CreateEtcdCertificates(ctx, cluster); err != nil {
 		return nil, err
-	}
+	}*/
 	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
 		return nil, err
 	}
-	if !managedProviders.Has(cluster.ProviderConfig().CloudProvider) {
+	/*if !managedProviders.Has(cluster.ProviderConfig().CloudProvider) {
 		masters, err := CreateMasterMachines(ctx, cluster, haNode)
 		if err != nil {
 			return nil, err
 		}
 		cluster.Spec.Masters = masters
-	}
+	}*/
 	if _, err = Store(ctx).Clusters().Update(cluster); err != nil {
 		return nil, err
 	}
 	return cluster, nil
 }
 
-func CreateMasterMachines(ctx context.Context, cluster *api.Cluster, count int32) ([]*clusterv1.Machine, error) {
+func CreateMasterMachines(ctx context.Context, cluster *api.Cluster, count int32) ([]*clusterapi.Machine, error) {
 	cm, err := GetCloudManager(cluster.ProviderConfig().CloudProvider, ctx)
 	if err != nil {
 		return nil, err

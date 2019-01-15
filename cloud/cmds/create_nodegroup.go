@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/appscode/go/term"
-	apiv1 "github.com/pharmer/pharmer/apis/v1beta1"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	apiv1 "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"

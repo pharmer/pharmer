@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"github.com/spf13/cobra"
-
 	"sigs.k8s.io/cluster-api/pkg/controller/config"
 )
 
@@ -35,12 +34,12 @@ func newCmdController() *cobra.Command {
 			term.ExitOnError(err)*/
 
 			//actuator, err :=
-		//	shutdown := make(chan struct{})
+			//	shutdown := make(chan struct{})
 			//si := sharedinformers.NewSharedInformers(conf, shutdown)
 			//	mc := machineset.NewMachineSetController(conf, si)
 			//go mc.Run(make(chan struct{}))
 
-		//	c := machine.NewMachineController(conf, si, cm)
+			//	c := machine.NewMachineController(conf, si, cm)
 			//c.RunAsync(shutdown)
 
 			select {}

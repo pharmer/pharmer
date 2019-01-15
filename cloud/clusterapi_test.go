@@ -8,13 +8,11 @@ import (
 	"testing"
 
 	_env "github.com/appscode/go/env"
+
 	//"github.com/kubernetes-incubator/apiserver-builder/pkg/controller"
 	"github.com/pharmer/pharmer/config"
 	core "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/homedir"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
 
 func TestCreateApiserver(t *testing.T) {

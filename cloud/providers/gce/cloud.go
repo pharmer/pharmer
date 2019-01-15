@@ -758,7 +758,7 @@ func (conn *cloudConnector) createNodeGroup(ng *api.NodeGroup) (string, error) {
 	return r1.Name, nil
 }
 
-// Not used since Kube 1.3
+// Not used since Cluster 1.3
 /*func (conn *cloudConnector) createAutoscaler(ng *api.NodeGroup) (string, error) {
 	target := fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%v/zones/%v/instanceGroupManagers/%v", conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, ng.Name)
 

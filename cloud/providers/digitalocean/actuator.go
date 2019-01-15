@@ -3,6 +3,7 @@ package digitalocean
 import (
 	. "github.com/pharmer/pharmer/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+
 	//	"k8s.io/client-go/kubernetes"
 	"fmt"
 	"reflect"

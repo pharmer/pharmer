@@ -10,20 +10,17 @@ import (
 
 	semver "github.com/hashicorp/go-version"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+
 	//	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
-
 )
 
 type GenericUpgradeManager struct {
@@ -211,7 +208,7 @@ func (upm *GenericUpgradeManager) PrintAvailableUpgrades(upgrades []*api.Upgrade
 		fmt.Fprintf(tabw, "API Server\t%s\t%s\n", upgrade.Before.KubeVersion, upgrade.After.KubeVersion)
 		fmt.Fprintf(tabw, "Controller Manager\t%s\t%s\n", upgrade.Before.KubeVersion, upgrade.After.KubeVersion)
 		fmt.Fprintf(tabw, "Scheduler\t%s\t%s\n", upgrade.Before.KubeVersion, upgrade.After.KubeVersion)
-		fmt.Fprintf(tabw, "Kube Proxy\t%s\t%s\n", upgrade.Before.KubeVersion, upgrade.After.KubeVersion)
+		fmt.Fprintf(tabw, "Cluster Proxy\t%s\t%s\n", upgrade.Before.KubeVersion, upgrade.After.KubeVersion)
 		fmt.Fprintf(tabw, "Core DNS\t%s\t%s\n", upgrade.Before.DNSVersion, upgrade.After.DNSVersion)
 
 		// The tabwriter should be flushed at this stage as we have now put in all the required content for this time. This is required for the tabs' size to be correct.

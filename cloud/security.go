@@ -6,17 +6,14 @@ import (
 	"crypto/x509"
 	"fmt"
 
-
 	"github.com/appscode/go/crypto/ssh"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
-
 	"k8s.io/client-go/util/cert"
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	"k8s.io/kubernetes/pkg/apis/core"
 )
 
-func CreateCACertificates(ctx context.Context, cluster *api.Kube) (context.Context, error) {
+func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
 	Logger(ctx).Infoln("Generating CA certificate for cluster")
 
 	certStore := Store(ctx).Certificates(cluster.Name)
@@ -64,7 +61,7 @@ func CreateCACertificates(ctx context.Context, cluster *api.Kube) (context.Conte
 	return ctx, nil
 }
 
-func CreateServiceAccountKey(ctx context.Context, cluster *api.Kube) (context.Context, error) {
+func CreateServiceAccountKey(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
 	Logger(ctx).Infoln("Generating Service account signing key for cluster")
 	certStore := Store(ctx).Certificates(cluster.Name)
 
@@ -90,7 +87,7 @@ func CreateServiceAccountKey(ctx context.Context, cluster *api.Kube) (context.Co
 	return ctx, nil
 }
 
-/*func CreateApiserverCertificates(ctx context.Context, cluster *api.Kube) (context.Context, error) {
+/*func CreateApiserverCertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
 	Logger(ctx).Infoln("Generating Apiserver certificate for cluster")
 
 	const name = "clusterapi"
@@ -130,7 +127,7 @@ func CreateServiceAccountKey(ctx context.Context, cluster *api.Kube) (context.Co
 	return ctx, nil
 }
 */
-func CreateEtcdCertificates(ctx context.Context, cluster *api.Kube) (context.Context, error) {
+func CreateEtcdCertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
 	Logger(ctx).Infoln("Generating ETCD CA certificate for etcd")
 
 	certStore := Store(ctx).Certificates(cluster.Name)
@@ -155,7 +152,7 @@ func CreateEtcdCertificates(ctx context.Context, cluster *api.Kube) (context.Con
 	return ctx, nil
 }
 
-func LoadCACertificates(ctx context.Context, cluster *api.Kube) (context.Context, error) {
+func LoadCACertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
 	certStore := Store(ctx).Certificates(cluster.Name)
 
 	caCert, caKey, err := certStore.Get(cluster.Spec.CACertName)
@@ -175,7 +172,7 @@ func LoadCACertificates(ctx context.Context, cluster *api.Kube) (context.Context
 	return ctx, nil
 }
 
-func LoadApiserverCertificate(ctx context.Context, cluster *api.Kube) (context.Context, error) {
+func LoadApiserverCertificate(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
 	certStore := Store(ctx).Certificates(cluster.Name)
 	apiserverCaCert, apiserverCaKey, err := certStore.Get(kubeadmconst.APIServerCertAndKeyBaseName + "-ca")
 	if err != nil {
@@ -194,7 +191,7 @@ func LoadApiserverCertificate(ctx context.Context, cluster *api.Kube) (context.C
 	return ctx, nil
 }
 
-func LoadSaKey(ctx context.Context, cluster *api.Kube) (context.Context, error) {
+func LoadSaKey(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
 	certStore := Store(ctx).Certificates(cluster.Name)
 	cert, key, err := certStore.Get(kubeadmconst.ServiceAccountKeyBaseName)
 	if err != nil {
@@ -205,7 +202,7 @@ func LoadSaKey(ctx context.Context, cluster *api.Kube) (context.Context, error) 
 	return ctx, nil
 }
 
-func LoadEtcdCertificate(ctx context.Context, cluster *api.Kube) (context.Context, error) {
+func LoadEtcdCertificate(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
 	certStore := Store(ctx).Certificates(cluster.Name)
 	etcdCaCert, etcdCaKey, err := certStore.Get(EtcdCACertAndKeyBaseName)
 	if err != nil {
@@ -235,7 +232,7 @@ func CreateAdminCertificate(ctx context.Context) (*x509.Certificate, *rsa.Privat
 	return adminCert, adminKey, nil
 }
 
-func GetAdminCertificate(ctx context.Context, cluster *api.Kube) (*x509.Certificate, *rsa.PrivateKey, error) {
+func GetAdminCertificate(ctx context.Context, cluster *api.Cluster) (*x509.Certificate, *rsa.PrivateKey, error) {
 	certStore := Store(ctx).Certificates(cluster.Name)
 	admCert, admKey, err := certStore.Get("admin")
 	if err != nil {

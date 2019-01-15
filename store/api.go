@@ -4,8 +4,8 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 
-	apiv1 "github.com/pharmer/pharmer/apis/v1beta1"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	apiv1 "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"

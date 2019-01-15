@@ -82,7 +82,7 @@ func UseCluster(ctx context.Context, opts *options.ClusterUseConfig, konf *api.K
 
 func toCluster(desired api.NamedCluster) *clientcmdapi.Cluster {
 	return &clientcmdapi.Cluster{
-		Server: desired.Server,
+		Server:                   desired.Server,
 		CertificateAuthorityData: append([]byte(nil), desired.CertificateAuthorityData...),
 	}
 }

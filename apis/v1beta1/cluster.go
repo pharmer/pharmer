@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hashicorp/go-version"
-	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
@@ -14,24 +12,28 @@ import (
 
 const (
 	ResourceCodeCluster = ""
-	ResourceKi ,ndCluster = "Cluster"
+	ResourceKindCluster = "Cluster"
 	ResourceNameCluster = "cluster"
 	ResourceTypeCluster = "clusters"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type Kube struct {
+type Cluster struct {
 	metav1.TypeMeta   `json:",inline,omitempty,omitempty"`
 	metav1.ObjectMeta `json:"metadata,omitempty,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-	Spec              KubeSpec   `json:"spec,omitempty,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Spec              PharmerClusterSpec   `json:"spec,omitempty,omitempty" protobuf:"bytes,2,opt,name=spec"`
 	Status            PharmerClusterStatus `json:"status,omitempty,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
-type KubeSpec struct {
+type PharmerClusterSpec struct {
+	ClusterAPI *clusterapi.Cluster `json:"clusterAPI,omitempty" protobuf:"bytes,1,opt,name=clusterApi"`
+}
+
+type ClusterProviderConfig struct {
 	// +optional
+	Cloud                      CloudSpec         `json:"cloud" protobuf:"bytes,1,opt,name=cloud"`
 	KubernetesVersion          string            `json:"kubernetesVersion,omitempty" protobuf:"bytes,4,opt,name=kubernetesVersion"`
-	CloudProvider        string      `json:"cloudProvider,omitempty" protobuf:"bytes,1,opt,name=cloudProvider"`
 	CACertName                 string            `json:"caCertName,omitempty" protobuf:"bytes,6,opt,name=caCertName"`
 	FrontProxyCACertName       string            `json:"frontProxyCACertName,omitempty" protobuf:"bytes,7,opt,name=frontProxyCACertName"`
 	CredentialName             string            `json:"credentialName,omitempty" protobuf:"bytes,8,opt,name=credentialName"`
@@ -50,22 +52,22 @@ type API struct {
 	BindPort int32 `json:"bindPort" protobuf:"varint,2,opt,name=bindPort"`
 }
 
-type ClusterProviderConfig struct {
-	CloudProvider        string      `json:"cloudProvider,omitempty" protobuf:"bytes,1,opt,name=cloudProvider"`
-	Project              string      `json:"project,omitempty" protobuf:"bytes,2,opt,name=project"`
-	Region               string      `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
-	Zone                 string      `json:"zone,omitempty" protobuf:"bytes,4,opt,name=zone"` // master needs it for ossec
-	InstanceImage        string      `json:"instanceImage,omitempty" protobuf:"bytes,5,opt,name=instanceImage"`
-	OS                   string      `json:"os,omitempty" protobuf:"bytes,6,opt,name=os"`
-	InstanceImageProject string      `json:"instanceImageProject,omitempty" protobuf:"bytes,7,opt,name=instanceImageProject"`
-	NetworkProvider      string      `json:"networkProvider,omitempty" protobuf:"bytes,8,opt,name=networkProvider"` // kubenet, flannel, calico, opencontrail
-	CCMCredentialName    string      `json:"ccmCredentialName,omitempty" protobuf:"bytes,9,opt,name=ccmCredentialName"`
-	SSHKeyName           string      `json:"sshKeyName,omitempty" protobuf:"bytes,10,opt,name=sshKeyName"`
-	AWS                  *AWSSpec    `json:"aws,omitempty" protobuf:"bytes,11,opt,name=aws"`
-	GCE                  *GoogleSpec `json:"gce,omitempty" protobuf:"bytes,12,opt,name=gce"`
-	Azure                *AzureSpec  `json:"azure,omitempty" protobuf:"bytes,13,opt,name=azure"`
-	Linode               *LinodeSpec `json:"linode,omitempty" protobuf:"bytes,14,opt,name=linode"`
-	GKE                  *GKESpec    `json:"gke,omitempty" protobuf:"bytes,15,opt,name=gke"`
+type CloudSpec struct {
+	CloudProvider        string                             `json:"cloudProvider,omitempty" protobuf:"bytes,1,opt,name=cloudProvider"`
+	Project              string                             `json:"project,omitempty" protobuf:"bytes,2,opt,name=project"`
+	Region               string                             `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
+	Zone                 string                             `json:"zone,omitempty" protobuf:"bytes,4,opt,name=zone"` // master needs it for ossec
+	InstanceImage        string                             `json:"instanceImage,omitempty" protobuf:"bytes,5,opt,name=instanceImage"`
+	OS                   string                             `json:"os,omitempty" protobuf:"bytes,6,opt,name=os"`
+	InstanceImageProject string                             `json:"instanceImageProject,omitempty" protobuf:"bytes,7,opt,name=instanceImageProject"`
+	NetworkProvider      string                             `json:"networkProvider,omitempty" protobuf:"bytes,8,opt,name=networkProvider"` // kubenet, flannel, calico, opencontrail
+	CCMCredentialName    string                             `json:"ccmCredentialName,omitempty" protobuf:"bytes,9,opt,name=ccmCredentialName"`
+	SSHKeyName           string                             `json:"sshKeyName,omitempty" protobuf:"bytes,10,opt,name=sshKeyName"`
+	AWS                  *AWSSpec                           `json:"aws,omitempty" protobuf:"bytes,11,opt,name=aws"`
+	GCE                  *GoogleSpec                        `json:"gce,omitempty" protobuf:"bytes,12,opt,name=gce"`
+	Azure                *AzureSpec                         `json:"azure,omitempty" protobuf:"bytes,13,opt,name=azure"`
+	Linode               *LinodeSpec                        `json:"linode,omitempty" protobuf:"bytes,14,opt,name=linode"`
+	GKE                  *GKESpec                           `json:"gke,omitempty" protobuf:"bytes,15,opt,name=gke"`
 	DigitalOcean         *DigitalOceanMachineProviderConfig `json:"digitalocean,omitempty"`
 }
 
@@ -131,9 +133,9 @@ type CloudStatus struct {
 }
 
 type PharmerClusterStatus struct {
-	Phase        ClusterPhase       `json:"phase,omitempty,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=ClusterPhase"`
-	Reason       string             `json:"reason,omitempty,omitempty" protobuf:"bytes,2,opt,name=reason"`
-	Cloud        CloudStatus        `json:"cloud,omitempty" protobuf:"bytes,4,opt,name=cloud"`
+	Phase  ClusterPhase `json:"phase,omitempty,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=ClusterPhase"`
+	Reason string       `json:"reason,omitempty,omitempty" protobuf:"bytes,2,opt,name=reason"`
+	Cloud  CloudStatus  `json:"cloud,omitempty" protobuf:"bytes,4,opt,name=cloud"`
 	//ReservedIPs  []ReservedIP       `json:"reservedIP,omitempty" protobuf:"bytes,6,rep,name=reservedIP"`
 }
 
@@ -143,10 +145,9 @@ type ReservedIP struct {
 	Name string `json:"name,omitempty" protobuf:"bytes,3,opt,name=name"`
 }
 
-/*
-func (c *Kube) ProviderConfig() *ClusterProviderConfig {
+func (c *Cluster) ProviderConfig() *ClusterProviderConfig {
 	//providerConfig providerConfig
-	raw := c.Spec.ClusterAPI.Spec.ProviderConfig.Value.Raw
+	raw := c.Spec.ClusterAPI.Spec.ProviderSpec.Value.Raw
 	providerConfig := &ClusterProviderConfig{}
 	err := json.Unmarshal(raw, providerConfig)
 	if err != nil {
@@ -155,22 +156,22 @@ func (c *Kube) ProviderConfig() *ClusterProviderConfig {
 	return providerConfig
 }
 
-func (c *Kube) SetProviderConfig(config *ClusterProviderConfig) error {
+func (c *Cluster) SetProviderConfig(config *ClusterProviderConfig) error {
 	bytes, err := json.Marshal(config)
 	if err != nil {
 		fmt.Println("Unable to marshal provider config: %v", err)
 		return err
 	}
-	c.Spec.ClusterAPI.Spec.ProviderConfig = clusterv1.ProviderConfig{
+	c.Spec.ClusterAPI.Spec.ProviderSpec = clusterapi.ProviderSpec{
 		Value: &runtime.RawExtension{
 			Raw: bytes,
 		},
 	}
 	return nil
 }
-*/
+
 /*
-func (c *Kube) APIServerURL() string {
+func (c *Cluster) APIServerURL() string {
 	endpoints := c.Spec.ClusterAPI.Status.APIEndpoints
 	if len(endpoints) == 0 {
 		return ""
@@ -207,47 +208,47 @@ func (c *Cluster) SetClusterApiEndpoints() error {
 }
 */
 /*func (c *Cluster) APIServerAddress() string {
-	endpoints := c.Spec.ClusterAPI.Status.APIEndpoints
-	if len(endpoints) == 0 {
-		return ""
-	}
-	ep := endpoints[0]
-	if ep.Port == 0 {
-		return ep.Host
-	} else {
-		return fmt.Sprintf("%s:%d", ep.Host, ep.Port)
-	}
+endpoints := c.Spec.ClusterAPI.Status.APIEndpoints
+if len(endpoints) == 0 {
+	return ""
+}
+ep := endpoints[0]
+if ep.Port == 0 {
+	return ep.Host
+} else {
+	return fmt.Sprintf("%s:%d", ep.Host, ep.Port)
+}
 
-	/*m := map[core.NodeAddressType]string{}
-	for _, addr := range c.Status.APIAddresses {
-		m[addr.Type] = fmt.Sprintf("%s:%d", addr.Address, c.Spec.API.BindPort)
+/*m := map[core.NodeAddressType]string{}
+for _, addr := range c.Status.APIAddresses {
+	m[addr.Type] = fmt.Sprintf("%s:%d", addr.Address, c.Spec.API.BindPort)
+}
+// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
+addrTypes := []core.NodeAddressType{
+	core.NodeInternalDNS,
+	core.NodeInternalIP,
+	core.NodeExternalDNS,
+	core.NodeExternalIP,
+}
+if pat, found := c.Spec.APIServerExtraArgs["kubelet-preferred-address-types"]; found {
+	ats := strings.Split(pat, ",")
+	addrTypes = make([]core.NodeAddressType, len(ats))
+	for i, at := range ats {
+		addrTypes[i] = core.NodeAddressType(at)
 	}
-	// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
-	addrTypes := []core.NodeAddressType{
-		core.NodeInternalDNS,
-		core.NodeInternalIP,
-		core.NodeExternalDNS,
-		core.NodeExternalIP,
-	}
-	if pat, found := c.Spec.APIServerExtraArgs["kubelet-preferred-address-types"]; found {
-		ats := strings.Split(pat, ",")
-		addrTypes = make([]core.NodeAddressType, len(ats))
-		for i, at := range ats {
-			addrTypes[i] = core.NodeAddressType(at)
-		}
-	}
+}
 
-	for _, at := range addrTypes {
-		if u, found := m[at]; found {
-			return u
-		}
+for _, at := range addrTypes {
+	if u, found := m[at]; found {
+		return u
 	}
-	return ""*/
+}
+return ""*/
 /*
 }
 
 */
-func (c *Kube) SetNetworkingDefaults(cluster *clusterapi.Cluster, provider string) {
+func (c *Cluster) SetNetworkingDefaults(cluster *clusterapi.Cluster, provider string) {
 	clusterSpec := &cluster.Spec
 	if len(clusterSpec.ClusterNetwork.Services.CIDRBlocks) == 0 {
 		cluster.Spec.ClusterNetwork.Services.CIDRBlocks = []string{kubeadmapi.DefaultServicesSubnet}
@@ -269,6 +270,7 @@ func (c *Kube) SetNetworkingDefaults(cluster *clusterapi.Cluster, provider strin
 		cluster.Spec.ClusterNetwork.Pods.CIDRBlocks = []string{podSubnet}
 	}
 }
+
 /*
 func (c *Cluster) IsMinorVersion(in string) bool {
 	v, err := version.NewVersion(c.Spec.KubernetesVersion)

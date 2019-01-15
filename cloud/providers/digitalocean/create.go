@@ -8,13 +8,10 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Kube, sku string) (api.NodeSpec, error) {
+func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
 	if sku == "" {
 		sku = "2gb"
 	}
@@ -26,7 +23,7 @@ func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Kube, sku string) (api
 
 }
 
-func (cm *ClusterManager) SetDefaultCluster(kube *api.Kube, cluster *clusterapi.Cluster, config *api.ClusterProviderConfig) error {
+func (cm *ClusterManager) SetDefaultCluster(kube *api.Cluster, cluster *clusterapi.Cluster, config *api.ClusterProviderConfig) error {
 	n := namer{cluster: cluster}
 
 	if err := api.AssignTypeKind(cluster); err != nil {
@@ -36,7 +33,6 @@ func (cm *ClusterManager) SetDefaultCluster(kube *api.Kube, cluster *clusterapi.
 	config.SSHKeyName = n.GenSSHKeyExternalID()
 	//cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	config.InstanceImage = "ubuntu-16-04-x64"
-
 
 	//cluster.InitializeClusterApi()
 	kube.SetNetworkingDefaults(cluster, config.NetworkProvider)
@@ -52,26 +48,25 @@ func (cm *ClusterManager) SetDefaultCluster(kube *api.Kube, cluster *clusterapi.
 		//	"endpoint-reconciler-type": "lease",
 	}
 
-
 	// Init status
 	kube.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,
 	}
 
 	// add provider config to cluster
-	kube.SetProviderConfig(config)
+	kube.SetDigitalOceanProviderConfig(cluster, config)
 
 	return nil
 }
-func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
+func (cm *ClusterManager) SetDefaults(cluster *clusterapi.Cluster) error {
 	return nil
 }
 
-func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
+func (cm *ClusterManager) IsValid(cluster *clusterapi.Cluster) (bool, error) {
 	return false, ErrNotImplemented
 }
 
-func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
+func (cm *ClusterManager) GetSSHConfig(cluster *clusterapi.Cluster, node *core.Node) (*api.SSHConfig, error) {
 	cfg := &api.SSHConfig{
 		PrivateKey: SSHKey(cm.ctx).PrivateKey,
 		User:       "root",

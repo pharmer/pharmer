@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Pharmer Authors.
+Copyright 2019 The Pharmer Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 func (m *API) Reset()      { *m = API{} }
 func (*API) ProtoMessage() {}
 func (*API) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{0}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{0}
 }
 func (m *API) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -75,7 +75,7 @@ var xxx_messageInfo_API proto.InternalMessageInfo
 func (m *AWSSpec) Reset()      { *m = AWSSpec{} }
 func (*AWSSpec) ProtoMessage() {}
 func (*AWSSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{1}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{1}
 }
 func (m *AWSSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -103,7 +103,7 @@ var xxx_messageInfo_AWSSpec proto.InternalMessageInfo
 func (m *AWSStatus) Reset()      { *m = AWSStatus{} }
 func (*AWSStatus) ProtoMessage() {}
 func (*AWSStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{2}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{2}
 }
 func (m *AWSStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -131,7 +131,7 @@ var xxx_messageInfo_AWSStatus proto.InternalMessageInfo
 func (m *Action) Reset()      { *m = Action{} }
 func (*Action) ProtoMessage() {}
 func (*Action) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{3}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{3}
 }
 func (m *Action) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -159,7 +159,7 @@ var xxx_messageInfo_Action proto.InternalMessageInfo
 func (m *AzureCloudConfig) Reset()      { *m = AzureCloudConfig{} }
 func (*AzureCloudConfig) ProtoMessage() {}
 func (*AzureCloudConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{4}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{4}
 }
 func (m *AzureCloudConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -187,7 +187,7 @@ var xxx_messageInfo_AzureCloudConfig proto.InternalMessageInfo
 func (m *AzureSpec) Reset()      { *m = AzureSpec{} }
 func (*AzureSpec) ProtoMessage() {}
 func (*AzureSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{5}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{5}
 }
 func (m *AzureSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -215,7 +215,7 @@ var xxx_messageInfo_AzureSpec proto.InternalMessageInfo
 func (m *AzureStorageSpec) Reset()      { *m = AzureStorageSpec{} }
 func (*AzureStorageSpec) ProtoMessage() {}
 func (*AzureStorageSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{6}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{6}
 }
 func (m *AzureStorageSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -243,7 +243,7 @@ var xxx_messageInfo_AzureStorageSpec proto.InternalMessageInfo
 func (m *CloudSpec) Reset()      { *m = CloudSpec{} }
 func (*CloudSpec) ProtoMessage() {}
 func (*CloudSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{7}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{7}
 }
 func (m *CloudSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -271,7 +271,7 @@ var xxx_messageInfo_CloudSpec proto.InternalMessageInfo
 func (m *CloudStatus) Reset()      { *m = CloudStatus{} }
 func (*CloudStatus) ProtoMessage() {}
 func (*CloudStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{8}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{8}
 }
 func (m *CloudStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -299,7 +299,7 @@ var xxx_messageInfo_CloudStatus proto.InternalMessageInfo
 func (m *Cluster) Reset()      { *m = Cluster{} }
 func (*Cluster) ProtoMessage() {}
 func (*Cluster) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{9}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{9}
 }
 func (m *Cluster) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -327,7 +327,7 @@ var xxx_messageInfo_Cluster proto.InternalMessageInfo
 func (m *ClusterSpec) Reset()      { *m = ClusterSpec{} }
 func (*ClusterSpec) ProtoMessage() {}
 func (*ClusterSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{10}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{10}
 }
 func (m *ClusterSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -355,7 +355,7 @@ var xxx_messageInfo_ClusterSpec proto.InternalMessageInfo
 func (m *ClusterState) Reset()      { *m = ClusterState{} }
 func (*ClusterState) ProtoMessage() {}
 func (*ClusterState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{11}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{11}
 }
 func (m *ClusterState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -383,7 +383,7 @@ var xxx_messageInfo_ClusterState proto.InternalMessageInfo
 func (m *ClusterStatus) Reset()      { *m = ClusterStatus{} }
 func (*ClusterStatus) ProtoMessage() {}
 func (*ClusterStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{12}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{12}
 }
 func (m *ClusterStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -411,7 +411,7 @@ var xxx_messageInfo_ClusterStatus proto.InternalMessageInfo
 func (m *Credential) Reset()      { *m = Credential{} }
 func (*Credential) ProtoMessage() {}
 func (*Credential) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{13}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{13}
 }
 func (m *Credential) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -439,7 +439,7 @@ var xxx_messageInfo_Credential proto.InternalMessageInfo
 func (m *CredentialSpec) Reset()      { *m = CredentialSpec{} }
 func (*CredentialSpec) ProtoMessage() {}
 func (*CredentialSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{14}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{14}
 }
 func (m *CredentialSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -467,7 +467,7 @@ var xxx_messageInfo_CredentialSpec proto.InternalMessageInfo
 func (m *EKSStatus) Reset()      { *m = EKSStatus{} }
 func (*EKSStatus) ProtoMessage() {}
 func (*EKSStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{15}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{15}
 }
 func (m *EKSStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -495,7 +495,7 @@ var xxx_messageInfo_EKSStatus proto.InternalMessageInfo
 func (m *ExecConfig) Reset()      { *m = ExecConfig{} }
 func (*ExecConfig) ProtoMessage() {}
 func (*ExecConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{16}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{16}
 }
 func (m *ExecConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -523,7 +523,7 @@ var xxx_messageInfo_ExecConfig proto.InternalMessageInfo
 func (m *ExecEnvVar) Reset()      { *m = ExecEnvVar{} }
 func (*ExecEnvVar) ProtoMessage() {}
 func (*ExecEnvVar) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{17}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{17}
 }
 func (m *ExecEnvVar) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -551,7 +551,7 @@ var xxx_messageInfo_ExecEnvVar proto.InternalMessageInfo
 func (m *GCECloudConfig) Reset()      { *m = GCECloudConfig{} }
 func (*GCECloudConfig) ProtoMessage() {}
 func (*GCECloudConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{18}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{18}
 }
 func (m *GCECloudConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -579,7 +579,7 @@ var xxx_messageInfo_GCECloudConfig proto.InternalMessageInfo
 func (m *GCSSpec) Reset()      { *m = GCSSpec{} }
 func (*GCSSpec) ProtoMessage() {}
 func (*GCSSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{19}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{19}
 }
 func (m *GCSSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -607,7 +607,7 @@ var xxx_messageInfo_GCSSpec proto.InternalMessageInfo
 func (m *GKESpec) Reset()      { *m = GKESpec{} }
 func (*GKESpec) ProtoMessage() {}
 func (*GKESpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{20}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{20}
 }
 func (m *GKESpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -635,7 +635,7 @@ var xxx_messageInfo_GKESpec proto.InternalMessageInfo
 func (m *GoogleSpec) Reset()      { *m = GoogleSpec{} }
 func (*GoogleSpec) ProtoMessage() {}
 func (*GoogleSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{21}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{21}
 }
 func (m *GoogleSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -663,7 +663,7 @@ var xxx_messageInfo_GoogleSpec proto.InternalMessageInfo
 func (m *KubeConfig) Reset()      { *m = KubeConfig{} }
 func (*KubeConfig) ProtoMessage() {}
 func (*KubeConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{22}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{22}
 }
 func (m *KubeConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -691,7 +691,7 @@ var xxx_messageInfo_KubeConfig proto.InternalMessageInfo
 func (m *LightsailCloudConfig) Reset()      { *m = LightsailCloudConfig{} }
 func (*LightsailCloudConfig) ProtoMessage() {}
 func (*LightsailCloudConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{23}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{23}
 }
 func (m *LightsailCloudConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -719,7 +719,7 @@ var xxx_messageInfo_LightsailCloudConfig proto.InternalMessageInfo
 func (m *LinodeCloudConfig) Reset()      { *m = LinodeCloudConfig{} }
 func (*LinodeCloudConfig) ProtoMessage() {}
 func (*LinodeCloudConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{24}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{24}
 }
 func (m *LinodeCloudConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -747,7 +747,7 @@ var xxx_messageInfo_LinodeCloudConfig proto.InternalMessageInfo
 func (m *LinodeSpec) Reset()      { *m = LinodeSpec{} }
 func (*LinodeSpec) ProtoMessage() {}
 func (*LinodeSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{25}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{25}
 }
 func (m *LinodeSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -775,7 +775,7 @@ var xxx_messageInfo_LinodeSpec proto.InternalMessageInfo
 func (m *LocalSpec) Reset()      { *m = LocalSpec{} }
 func (*LocalSpec) ProtoMessage() {}
 func (*LocalSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{26}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{26}
 }
 func (m *LocalSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -803,7 +803,7 @@ var xxx_messageInfo_LocalSpec proto.InternalMessageInfo
 func (m *NamedAuthInfo) Reset()      { *m = NamedAuthInfo{} }
 func (*NamedAuthInfo) ProtoMessage() {}
 func (*NamedAuthInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{27}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{27}
 }
 func (m *NamedAuthInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -831,7 +831,7 @@ var xxx_messageInfo_NamedAuthInfo proto.InternalMessageInfo
 func (m *NamedCluster) Reset()      { *m = NamedCluster{} }
 func (*NamedCluster) ProtoMessage() {}
 func (*NamedCluster) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{28}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{28}
 }
 func (m *NamedCluster) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -859,7 +859,7 @@ var xxx_messageInfo_NamedCluster proto.InternalMessageInfo
 func (m *NamedContext) Reset()      { *m = NamedContext{} }
 func (*NamedContext) ProtoMessage() {}
 func (*NamedContext) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{29}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{29}
 }
 func (m *NamedContext) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -887,7 +887,7 @@ var xxx_messageInfo_NamedContext proto.InternalMessageInfo
 func (m *Networking) Reset()      { *m = Networking{} }
 func (*Networking) ProtoMessage() {}
 func (*Networking) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{30}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{30}
 }
 func (m *Networking) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -915,7 +915,7 @@ var xxx_messageInfo_Networking proto.InternalMessageInfo
 func (m *NodeGroup) Reset()      { *m = NodeGroup{} }
 func (*NodeGroup) ProtoMessage() {}
 func (*NodeGroup) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{31}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{31}
 }
 func (m *NodeGroup) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -943,7 +943,7 @@ var xxx_messageInfo_NodeGroup proto.InternalMessageInfo
 func (m *NodeGroupSpec) Reset()      { *m = NodeGroupSpec{} }
 func (*NodeGroupSpec) ProtoMessage() {}
 func (*NodeGroupSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{32}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{32}
 }
 func (m *NodeGroupSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -971,7 +971,7 @@ var xxx_messageInfo_NodeGroupSpec proto.InternalMessageInfo
 func (m *NodeGroupStatus) Reset()      { *m = NodeGroupStatus{} }
 func (*NodeGroupStatus) ProtoMessage() {}
 func (*NodeGroupStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{33}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{33}
 }
 func (m *NodeGroupStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -999,7 +999,7 @@ var xxx_messageInfo_NodeGroupStatus proto.InternalMessageInfo
 func (m *NodeInfo) Reset()      { *m = NodeInfo{} }
 func (*NodeInfo) ProtoMessage() {}
 func (*NodeInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{34}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{34}
 }
 func (m *NodeInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1027,7 +1027,7 @@ var xxx_messageInfo_NodeInfo proto.InternalMessageInfo
 func (m *NodeSpec) Reset()      { *m = NodeSpec{} }
 func (*NodeSpec) ProtoMessage() {}
 func (*NodeSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{35}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{35}
 }
 func (m *NodeSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1055,7 +1055,7 @@ var xxx_messageInfo_NodeSpec proto.InternalMessageInfo
 func (m *NodeTemplateSpec) Reset()      { *m = NodeTemplateSpec{} }
 func (*NodeTemplateSpec) ProtoMessage() {}
 func (*NodeTemplateSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{36}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{36}
 }
 func (m *NodeTemplateSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1083,7 +1083,7 @@ var xxx_messageInfo_NodeTemplateSpec proto.InternalMessageInfo
 func (m *NullNameGenerator) Reset()      { *m = NullNameGenerator{} }
 func (*NullNameGenerator) ProtoMessage() {}
 func (*NullNameGenerator) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{37}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{37}
 }
 func (m *NullNameGenerator) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1111,7 +1111,7 @@ var xxx_messageInfo_NullNameGenerator proto.InternalMessageInfo
 func (m *OVHCloudConfig) Reset()      { *m = OVHCloudConfig{} }
 func (*OVHCloudConfig) ProtoMessage() {}
 func (*OVHCloudConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{38}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{38}
 }
 func (m *OVHCloudConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1139,7 +1139,7 @@ var xxx_messageInfo_OVHCloudConfig proto.InternalMessageInfo
 func (m *PacketCloudConfig) Reset()      { *m = PacketCloudConfig{} }
 func (*PacketCloudConfig) ProtoMessage() {}
 func (*PacketCloudConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{39}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{39}
 }
 func (m *PacketCloudConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1167,7 +1167,7 @@ var xxx_messageInfo_PacketCloudConfig proto.InternalMessageInfo
 func (m *PharmerConfig) Reset()      { *m = PharmerConfig{} }
 func (*PharmerConfig) ProtoMessage() {}
 func (*PharmerConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{40}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{40}
 }
 func (m *PharmerConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1195,7 +1195,7 @@ var xxx_messageInfo_PharmerConfig proto.InternalMessageInfo
 func (m *PostgresSpec) Reset()      { *m = PostgresSpec{} }
 func (*PostgresSpec) ProtoMessage() {}
 func (*PostgresSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{41}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{41}
 }
 func (m *PostgresSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1223,7 +1223,7 @@ var xxx_messageInfo_PostgresSpec proto.InternalMessageInfo
 func (m *Preferences) Reset()      { *m = Preferences{} }
 func (*Preferences) ProtoMessage() {}
 func (*Preferences) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{42}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{42}
 }
 func (m *Preferences) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1251,7 +1251,7 @@ var xxx_messageInfo_Preferences proto.InternalMessageInfo
 func (m *ReservedIP) Reset()      { *m = ReservedIP{} }
 func (*ReservedIP) ProtoMessage() {}
 func (*ReservedIP) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{43}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{43}
 }
 func (m *ReservedIP) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1279,7 +1279,7 @@ var xxx_messageInfo_ReservedIP proto.InternalMessageInfo
 func (m *S3Spec) Reset()      { *m = S3Spec{} }
 func (*S3Spec) ProtoMessage() {}
 func (*S3Spec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{44}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{44}
 }
 func (m *S3Spec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1307,7 +1307,7 @@ var xxx_messageInfo_S3Spec proto.InternalMessageInfo
 func (m *SSHConfig) Reset()      { *m = SSHConfig{} }
 func (*SSHConfig) ProtoMessage() {}
 func (*SSHConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{45}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{45}
 }
 func (m *SSHConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1335,7 +1335,7 @@ var xxx_messageInfo_SSHConfig proto.InternalMessageInfo
 func (m *ScalewayCloudConfig) Reset()      { *m = ScalewayCloudConfig{} }
 func (*ScalewayCloudConfig) ProtoMessage() {}
 func (*ScalewayCloudConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{46}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{46}
 }
 func (m *ScalewayCloudConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1363,7 +1363,7 @@ var xxx_messageInfo_ScalewayCloudConfig proto.InternalMessageInfo
 func (m *SoftlayerCloudConfig) Reset()      { *m = SoftlayerCloudConfig{} }
 func (*SoftlayerCloudConfig) ProtoMessage() {}
 func (*SoftlayerCloudConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{47}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{47}
 }
 func (m *SoftlayerCloudConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1391,7 +1391,7 @@ var xxx_messageInfo_SoftlayerCloudConfig proto.InternalMessageInfo
 func (m *StorageBackend) Reset()      { *m = StorageBackend{} }
 func (*StorageBackend) ProtoMessage() {}
 func (*StorageBackend) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{48}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{48}
 }
 func (m *StorageBackend) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1419,7 +1419,7 @@ var xxx_messageInfo_StorageBackend proto.InternalMessageInfo
 func (m *SwiftSpec) Reset()      { *m = SwiftSpec{} }
 func (*SwiftSpec) ProtoMessage() {}
 func (*SwiftSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{49}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{49}
 }
 func (m *SwiftSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1447,7 +1447,7 @@ var xxx_messageInfo_SwiftSpec proto.InternalMessageInfo
 func (m *Upgrade) Reset()      { *m = Upgrade{} }
 func (*Upgrade) ProtoMessage() {}
 func (*Upgrade) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{50}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{50}
 }
 func (m *Upgrade) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1475,7 +1475,7 @@ var xxx_messageInfo_Upgrade proto.InternalMessageInfo
 func (m *VultrCloudConfig) Reset()      { *m = VultrCloudConfig{} }
 func (*VultrCloudConfig) ProtoMessage() {}
 func (*VultrCloudConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_generated_e04a343797501785, []int{51}
+	return fileDescriptor_generated_223d87e1fbfe666c, []int{51}
 }
 func (m *VultrCloudConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -14996,10 +14996,10 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("github.com/pharmer/pharmer/apis/v1alpha1/generated.proto", fileDescriptor_generated_e04a343797501785)
+	proto.RegisterFile("github.com/pharmer/pharmer/apis/v1alpha1/generated.proto", fileDescriptor_generated_223d87e1fbfe666c)
 }
 
-var fileDescriptor_generated_e04a343797501785 = []byte{
+var fileDescriptor_generated_223d87e1fbfe666c = []byte{
 	// 4149 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x3b, 0x4d, 0x6f, 0x24, 0xc7,
 	0x75, 0xea, 0xf9, 0xe0, 0x70, 0x1e, 0x3f, 0x96, 0x6c, 0xed, 0x46, 0x63, 0x42, 0x26, 0x17, 0xed,

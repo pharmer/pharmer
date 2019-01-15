@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -33,16 +34,17 @@ func NewCmdCreateCluster() *cobra.Command {
 				term.Fatalln(err)
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			cluster, err := cloud.Create(ctx, opts.Kube, opts.Cluster, opts.ProviderConfig)
+			cluster, err := cloud.Create(ctx, opts.Cluster, opts.ProviderConfig)
 			if err != nil {
 				term.Fatalln(err)
 			}
-			if len(opts.Nodes) > 0 {
+			fmt.Println(cluster)
+			/*if len(opts.Nodes) > 0 {
 				nodeOpts := options.NewNodeGroupCreateConfig()
 				nodeOpts.ClusterName = cluster.Name
 				nodeOpts.Nodes = opts.Nodes
 				CreateNodeGroups(ctx, nodeOpts)
-			}
+			}*/
 		},
 	}
 	opts.AddFlags(cmd.Flags())

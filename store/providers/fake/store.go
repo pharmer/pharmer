@@ -6,8 +6,8 @@ import (
 	"crypto/x509"
 	"sync"
 
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	apiAlpha "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )

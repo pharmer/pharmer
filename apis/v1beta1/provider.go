@@ -1,16 +1,20 @@
 package v1beta1
 
 import (
+	"encoding/json"
 	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
-	DigitalOceanProviderGroupName="digitaloceanproviderconfig"
-	DigitalOceanProviderKind="digitaloceanproviderconfig"
+	DigitalOceanProviderGroupName  = "digitaloceanproviderconfig"
+	DigitalOceanProviderKind       = "digitaloceanproviderconfig"
+	DigitalOceanProviderApiVersion = "v1alpha1"
 )
+
 // DigitalOceanMachineProviderConfig contains Config for DigitalOcean machines.
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type DigitalOceanMachineProviderConfig struct {
@@ -28,11 +32,10 @@ type DigitalOceanMachineProviderConfig struct {
 	Monitoring        bool `json:"monitoring,omitempty"`
 }
 
-
-func (c *Kube) DigitalOceanProviderConfig() *ClusterProviderConfig {
+func (c *Cluster) DigitalOceanProviderConfig(cluster *clusterapi.Cluster) *DigitalOceanMachineProviderConfig {
 	//providerConfig providerConfig
-	raw := c.Spec.ClusterAPI.Spec.ProviderConfig.Value.Raw
-	providerConfig := &ClusterProviderConfig{}
+	raw := cluster.Spec.ProviderSpec.Value.Raw
+	providerConfig := &DigitalOceanMachineProviderConfig{}
 	err := json.Unmarshal(raw, providerConfig)
 	if err != nil {
 		fmt.Println("Unable to unmarshal provider config: %v", err)
@@ -40,13 +43,19 @@ func (c *Kube) DigitalOceanProviderConfig() *ClusterProviderConfig {
 	return providerConfig
 }
 
-func (c *Kube) SetDigitalOceanProviderConfig(cluster *clusterapi.Cluster, config *ClusterProviderConfig) error {
-	bytes, err := json.Marshal(config)
+func (c *Cluster) SetDigitalOceanProviderConfig(cluster *clusterapi.Cluster, config *ClusterProviderConfig) error {
+	conf := &DigitalOceanMachineProviderConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: DigitalOceanProviderGroupName + "/" + DigitalOceanProviderApiVersion,
+			Kind:       DigitalOceanProviderKind,
+		},
+	}
+	bytes, err := json.Marshal(conf)
 	if err != nil {
 		fmt.Println("Unable to marshal provider config: %v", err)
 		return err
 	}
-	cluster.Spec.ProviderConfig = clusterapi.ProviderConfig{
+	cluster.Spec.ProviderSpec = clusterapi.ProviderSpec{
 		Value: &runtime.RawExtension{
 			Raw: bytes,
 		},
