@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,22 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package log contains utilities for fetching a new logger
-// when one is not already available.
-// Deprecated: use pkg/log
-package log
-
-import (
-	"github.com/go-logr/logr"
-
-	"sigs.k8s.io/controller-runtime/pkg/log"
-)
-
-var (
-	// RuntimeLog is a base parent logger for use inside controller-runtime.
-	RuntimeLog logr.Logger
-)
-
-func init() {
-	RuntimeLog = log.Log.WithName("controller-runtime")
-}
+// Package config contains libraries for initializing rest configs for talking to the Kubernetes API
+package config

@@ -1,52 +1,98 @@
 package digitalocean
 
 import (
+	"context"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pkg/errors"
+	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"strings"
+	"time"
 
 	//	"k8s.io/client-go/kubernetes"
 	"fmt"
-	"reflect"
-	"strconv"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/cluster-api/pkg/kubeadm"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	"github.com/ghodss/yaml"
 )
 
-type Actuator struct {
-	machineClient client.MachineInterface
-	scheme        *runtime.Scheme
-	codecFactory  *serializer.CodecFactory
+type DOClientKubeadm interface {
+	TokenCreate(params kubeadm.TokenCreateParams) (string, error)
 }
 
-func (cm *ClusterManager) InitializeActuator(machineClient client.MachineInterface) error {
-	scheme, codecFactory, err := api.NewSchemeAndCodecs()
+type DOClientMachineSetupConfigGetter interface {
+	GetMachineSetupConfig() (MachineSetupConfig, error)
+}
+
+
+type MachineActuator struct {
+	cm ClusterManager
+	client                   client.Client
+	kubeadm                  DOClientKubeadm
+	machineSetupConfigGetter DOClientMachineSetupConfigGetter
+	eventRecorder            record.EventRecorder
+	scheme                   *runtime.Scheme
+}
+func NewMachineActuator()  {
+
+}
+
+func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+	if do.machineSetupConfigGetter == nil {
+		return errors.New("a valid machineSetupConfigGetter is required")
+	}
+	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
+	if err != nil {
+		return fmt.Errorf("error decoding provided machineConfig: %v", err)
+	}
+
+
+
+	if err := do.cm.PrepareCloud(cluster.Name); err != nil {
+		return err
+	}
+	exists, err := do.cm.Exists(machine)
 	if err != nil {
 		return err
 	}
-	cm.actuator = &Actuator{
-		machineClient: machineClient,
-		scheme:        scheme,
-		codecFactory:  codecFactory,
+
+	if exists {
+		Logger(do.cm.ctx).Infoln("Skipped creating a machine that already exists.")
+		return nil
 	}
 
-	return nil
-}
-
-func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	Logger(cm.ctx).Infoln("call for creating machine")
-	if err := cm.PrepareCloud(cluster.Name); err != nil {
-		return err
-	}
-	exists, err := cm.Exists(machine)
+	token, err := do.getKubeadmToken()
 	if err != nil {
 		return err
 	}
-	if !exists {
+	var parsedMetadata string
+	configParams := &ConfigParams{
+		Image:    machineConfig.Image,
+		Versions: machine.Spec.Versions,
+	}
+	machineSetupConfig, err := do.machineSetupConfigGetter.GetMachineSetupConfig()
+	if err != nil {
+		return err
+	}
+	metadata, err := machineSetupConfig.GetUserdata(configParams)
+	if err != nil {
+		return err
+	}
+
+	if api.IsMaster(machine) {
+		parsedMetadata, err = masterUserdata(cluster, machine, do.certificateAuthority, machineConfig.Image, token, metadata)
+		if err != nil {
+			return err
+		}
+	} else {
+		parsedMetadata, err = nodeUserdata(cluster, machine, machineConfig.Image, token, metadata)
+		if err != nil {
+			return err
+		}
+	}
 		token := ""
 		if !IsMaster(machine) {
 			kc, err := cm.GetAdminClient()
@@ -107,15 +153,47 @@ func (cm *ClusterManager) Create(cluster *clusterv1.Cluster, machine *clusterv1.
 		if cm.actuator.machineClient != nil {
 			return cm.updateAnnotations(machine)
 		}
-	} else {
-		Logger(cm.ctx).Infoln("Skipped creating a machine that already exists.")
-	}
 	return nil
+}
+
+func (do *MachineActuator) validateMachine(providerConfig *api.DigitalOceanMachineProviderConfig) error {
+	if len(providerConfig.Image) == 0 {
+		return errors.New("image slug must be provided")
+	}
+	if len(providerConfig.Region) == 0 {
+		return errors.New("region must be provided")
+	}
+	if len(providerConfig.Size) == 0 {
+		return errors.New("size must be provided")
+	}
+
+	return nil
+}
+
+func (do *MachineActuator) getKubeadmToken() (string, error) {
+	tokenParams := kubeadm.TokenCreateParams{
+		Ttl: time.Duration(30) * time.Minute,
+	}
+
+	token, err := do.kubeadm.TokenCreate(tokenParams)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(token), nil
+}
+
+func machineProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*api.DigitalOceanMachineProviderConfig, error) {
+	var config api.DigitalOceanMachineProviderConfig
+	if err := yaml.Unmarshal(providerSpec.Value.Raw, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
 }
 
 func (cm *ClusterManager) Delete(machine *clusterv1.Machine) error {
 	Logger(cm.ctx).Infoln("call for deleting machine")
-	clusterName := machine.ClusterName
+	/*clusterName := machine.ClusterName
 	if _, found := machine.Labels[api.PharmerCluster]; found {
 		clusterName = machine.Labels[api.PharmerCluster]
 	}
@@ -150,14 +228,15 @@ func (cm *ClusterManager) Delete(machine *clusterv1.Machine) error {
 		machine.ObjectMeta.Finalizers = Filter(machine.ObjectMeta.Finalizers, clusterv1.MachineFinalizer)
 		_, err = cm.actuator.machineClient.Update(machine)
 		return err
-	}
+	}*/
 
 	return nil
 }
 
 func (cm *ClusterManager) Update(cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
 	Logger(cm.ctx).Infoln("call for updating machine")
-	if err := cm.PrepareCloud(cluster.Name); err != nil {
+	return nil
+	/*if err := cm.PrepareCloud(cluster.Name); err != nil {
 		return err
 	}
 
@@ -201,7 +280,7 @@ func (cm *ClusterManager) Update(cluster *clusterv1.Cluster, goalMachine *cluste
 			return err
 		}
 	}
-	return cm.updateInstanceStatus(goalMachine)
+	return cm.updateInstanceStatus(goalMachine)*/
 }
 
 func (cm *ClusterManager) Exists(machine *clusterv1.Machine) (bool, error) {
@@ -221,9 +300,10 @@ func (cm *ClusterManager) Exists(machine *clusterv1.Machine) (bool, error) {
 }
 
 func (cm *ClusterManager) updateAnnotations(machine *clusterv1.Machine) error {
-	//	config, err := cloud.GetProviderconfig(cm.codecFactory, machine.Spec.ProviderConfig)
-	name := machine.ObjectMeta.Name
-	zone := cm.cluster.ProviderConfig().Zone
+	//	config, err := cloud.GetProviderconfig(cm.codecFactory, machine.Spec.ClusterConfig)
+	return nil
+	/*name := machine.ObjectMeta.Name
+	zone := cm.cluster.ClusterConfig().Zone
 
 	if machine.ObjectMeta.Annotations == nil {
 		machine.ObjectMeta.Annotations = make(map[string]string)
@@ -235,13 +315,14 @@ func (cm *ClusterManager) updateAnnotations(machine *clusterv1.Machine) error {
 	if err != nil {
 		return err
 	}
-	return cm.updateInstanceStatus(machine)
+	return cm.updateInstanceStatus(machine)*/
 }
 
 // Sets the status of the instance identified by the given machine to the given machine
 func (cm *ClusterManager) updateInstanceStatus(machine *clusterv1.Machine) error {
 	fmt.Println("updating instance status")
-	sm := NewStatusManager(cm.actuator.machineClient, cm.actuator.scheme)
+	return nil
+	/*sm := NewStatusManager(cm.actuator.machineClient, cm.actuator.scheme)
 	status := sm.Initialize(machine)
 	currentMachine, err := GetCurrentMachineIfExists(cm.actuator.machineClient, machine)
 	if err != nil {
@@ -259,16 +340,17 @@ func (cm *ClusterManager) updateInstanceStatus(machine *clusterv1.Machine) error
 	}
 
 	_, err = cm.actuator.machineClient.Update(m)
-	return err
+	return err*/
 }
 
 // The two machines differ in a way that requires an update
 func (cm *ClusterManager) requiresUpdate(a *clusterv1.Machine, b *clusterv1.Machine) bool {
 	// Do not want status changes. Do want changes that impact machine provisioning
-	return !reflect.DeepEqual(a.Spec.ObjectMeta, b.Spec.ObjectMeta) ||
-		!reflect.DeepEqual(a.Spec.ProviderConfig, b.Spec.ProviderConfig) ||
-		!reflect.DeepEqual(a.Spec.Roles, b.Spec.Roles) ||
-		!reflect.DeepEqual(a.Spec.Versions, b.Spec.Versions) ||
-		a.ObjectMeta.Name != b.ObjectMeta.Name ||
-		a.ObjectMeta.UID != b.ObjectMeta.UID
+	return false
+	/*return !reflect.DeepEqual(a.Spec.ObjectMeta, b.Spec.ObjectMeta) ||
+	!reflect.DeepEqual(a.Spec.ProviderConfig, b.Spec.ProviderConfig) ||
+	!reflect.DeepEqual(a.Spec.Roles, b.Spec.Roles) ||
+	!reflect.DeepEqual(a.Spec.Versions, b.Spec.Versions) ||
+	a.ObjectMeta.Name != b.ObjectMeta.Name ||
+	a.ObjectMeta.UID != b.ObjectMeta.UID*/
 }

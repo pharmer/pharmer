@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"strings"
 	"text/tabwriter"
 
-	semver "github.com/hashicorp/go-version"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,7 +15,6 @@ import (
 
 	//	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
@@ -68,15 +64,15 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 		return nil, err
 	}
 
-	dnsType, dnsVersion, err := v.DeployedDNSAddon()
+	/*dnsType, dnsVersion, err := v.DeployedDNSAddon()
 	if err != nil {
 		return nil, err
-	}
+	}*/
 	// Construct a descriptor for the current state of the world
 	beforeState := api.ClusterState{
-		KubeVersion:     clusterVersionStr,
-		DNSType:         dnsType,
-		DNSVersion:      dnsVersion,
+		KubeVersion: clusterVersionStr,
+		//DNSType:         dnsType,
+		//DNSVersion:      dnsVersion,
 		KubeadmVersion:  kubeadmVersionStr,
 		KubeletVersions: kubeletVersions,
 	}
@@ -116,9 +112,9 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 				Description: description,
 				Before:      beforeState,
 				After: api.ClusterState{
-					KubeVersion:    patchVersionStr,
-					DNSType:        api.CoreDNS,
-					DNSVersion:     kubeadmconstants.GetDNSVersion(api.CoreDNS),
+					KubeVersion: patchVersionStr,
+					//DNSType:        api.CoreDNS,
+					//	DNSVersion:     kubeadmconstants.GetDNSVersion(api.CoreDNS),
 					KubeadmVersion: newKubeadmVer,
 					// KubeletVersions is unset here as it is not used anywhere in .After
 				},
@@ -130,9 +126,9 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 			Description: "stable version",
 			Before:      beforeState,
 			After: api.ClusterState{
-				KubeVersion:    stableVersionStr,
-				DNSType:        api.CoreDNS,
-				DNSVersion:     kubeadmconstants.GetDNSVersion(api.CoreDNS),
+				KubeVersion: stableVersionStr,
+				//DNSType:        api.CoreDNS,
+				//DNSVersion:     kubeadmconstants.GetDNSVersion(api.CoreDNS),
 				KubeadmVersion: stableVersionStr,
 				// KubeletVersions is unset here as it is not used anywhere in .After
 			},
@@ -232,7 +228,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 	acts = append(acts, api.Action{
 		Action:   api.ActionUpdate,
 		Resource: "Master upgrade",
-		Message:  fmt.Sprintf("Master instance will be upgraded to %v", upm.cluster.Spec.KubernetesVersion),
+		Message:  fmt.Sprintf("Master instance will be upgraded to %v", upm.cluster.ClusterConfig().KubernetesVersion),
 	})
 	upm.clientSet, err = NewClusterApiClient(upm.ctx, upm.cluster)
 	if err != nil {
@@ -245,29 +241,30 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 			return acts, err
 		}
 		for _, machine := range machineList.Items {
-			if IsMaster(&machine) {
+			fmt.Println(machine)
+			/*if IsMaster(&machine) {
 				machine.Spec.Versions.ControlPlane = upm.cluster.Spec.KubernetesVersion
 				_, err = upm.client.Machines(core.NamespaceDefault).Update(&machine)
 				if err != nil {
 					return acts, err
 				}
-			}
+			}*/
 		}
 
-		desiredVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
-		if err = WaitForReadyMasterVersion(upm.ctx, upm.kc, desiredVersion); err != nil {
-			return
-		}
-		// wait for nodes to start
-		if err = WaitForReadyMaster(upm.ctx, upm.kc); err != nil {
-			return
-		}
+		/*	desiredVersion, _ := semver.NewVersion(upm.cluster.ClusterConfig().KubernetesVersion)
+			if err = WaitForReadyMasterVersion(upm.ctx, upm.kc, desiredVersion); err != nil {
+				return
+			}
+			// wait for nodes to start
+			if err = WaitForReadyMaster(upm.ctx, upm.kc); err != nil {
+				return
+			}*/
 	}
 
 	acts = append(acts, api.Action{
 		Action:   api.ActionUpdate,
 		Resource: "Node group upgrade",
-		Message:  fmt.Sprintf("Node group will be upgraded to %v", upm.cluster.Spec.KubernetesVersion),
+		Message:  fmt.Sprintf("Node group will be upgraded to %v", upm.cluster.ClusterConfig().KubernetesVersion),
 	})
 	if !dryRun {
 		machineSetList, err := upm.client.MachineSets(core.NamespaceDefault).List(metav1.ListOptions{})
@@ -276,7 +273,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 		}
 
 		for _, ms := range machineSetList.Items {
-			ms.Spec.Template.Spec.Versions.ControlPlane = upm.cluster.Spec.KubernetesVersion
+			ms.Spec.Template.Spec.Versions.ControlPlane = upm.cluster.ClusterConfig().KubernetesVersion
 			_, err := upm.client.MachineSets(core.NamespaceDefault).Update(&ms)
 			if err != nil {
 				return acts, err
@@ -288,7 +285,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 
 func (upm *GenericUpgradeManager) MasterUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error {
 	// ref: https://stackoverflow.com/a/2831449/244009
-	steps := []string{
+	/*steps := []string{
 		`echo "#!/bin/bash" > /usr/bin/pharmer.sh`,
 		`echo "set -xeou pipefail" >> /usr/bin/pharmer.sh`,
 		`echo "export DEBIAN_FRONTEND=noninteractive" >> /usr/bin/pharmer.sh`,
@@ -337,12 +334,12 @@ func (upm *GenericUpgradeManager) MasterUpgrade(oldMachine *clusterv1.Machine, n
 	if _, err := upm.ExecuteSSHCommand(cmd, oldMachine); err != nil {
 
 		return err
-	}
+	}*/
 	return nil
 }
 
 func (upm *GenericUpgradeManager) NodeUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) (err error) {
-	if oldMachine.Spec.Versions.ControlPlane != newMachine.Spec.Versions.ControlPlane {
+	/*if oldMachine.Spec.Versions.ControlPlane != newMachine.Spec.Versions.ControlPlane {
 		desiredVersion, _ := semver.NewVersion(oldMachine.Spec.Versions.ControlPlane)
 		currentVersion, _ := semver.NewVersion(newMachine.Spec.Versions.ControlPlane)
 		if !desiredVersion.Equal(currentVersion) {
@@ -395,7 +392,7 @@ func (upm *GenericUpgradeManager) NodeUpgrade(oldMachine *clusterv1.Machine, new
 			}
 		}
 
-	}
+	}*/
 	return nil
 }
 

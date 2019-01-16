@@ -2,7 +2,7 @@ package v1beta1
 
 import (
 	"github.com/pkg/errors"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func AssignTypeKind(v interface{}) error {
@@ -25,7 +25,19 @@ func AssignTypeKind(v interface{}) error {
 		}
 		u.Kind = "Credential"
 		return nil
-	case *clusterv1.MachineSet:
+	case *clusterapi.Cluster:
+		if u.APIVersion == "" {
+			u.APIVersion = "cluster.k8s.io/v1alpha1"
+		}
+		u.Kind = "Cluster"
+		return nil
+	case *clusterapi.Machine:
+		if u.APIVersion == "" {
+			u.APIVersion = "cluster.k8s.io/v1alpha1"
+		}
+		u.Kind = "Machine"
+		return nil
+	case *clusterapi.MachineSet:
 		if u.APIVersion == "" {
 			u.APIVersion = "cluster.k8s.io/v1alpha1"
 		}

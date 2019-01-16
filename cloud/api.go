@@ -4,9 +4,10 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
-	"sigs.k8s.io/cluster-api/pkg/controller/machine"
 )
 
 var (
@@ -16,14 +17,14 @@ var (
 )
 
 type Interface interface {
-	machine.Actuator
+	//machine.Actuator
 
 	SSHGetter
 	ProviderKubeConfig
 	GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error)
 	//GetDefaultMachineSpec(cluster *api.Cluster, sku string) ()
 	SetDefaults(in *api.Cluster) error
-	SetDefaultCluster(in *api.Cluster, conf *api.ClusterProviderConfig) error
+	SetDefaultCluster(in *api.Cluster, conf *api.ClusterConfig) error
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
 	// GetAdminClient() (kubernetes.Interface, error)
@@ -34,7 +35,8 @@ type Interface interface {
 	// Scale(req *proto.ClusterReconfigureRequest) error
 	// GetInstance(md *api.InstanceStatus) (*api.Instance, error)
 
-	InitializeActuator(client.MachineInterface) error
+	GetDefaultProviderSpec(cluster *api.Cluster, sku string) (clusterv1.ProviderSpec, error)
+	InitializeActuator(client.ClusterV1alpha1Interface, record.EventRecorder, *runtime.Scheme) error
 }
 
 type SSHGetter interface {

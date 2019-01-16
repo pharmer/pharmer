@@ -3,7 +3,6 @@ package digitalocean
 import (
 	//"context"
 	"fmt"
-	"strings"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
@@ -31,9 +30,9 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	if err = cm.PrepareCloud(in.Name); err != nil {
 		return nil, err
 	}
-	if err = cm.InitializeActuator(nil); err != nil {
+	/*if err = cm.InitializeActuator(nil); err != nil {
 		return nil, err
-	}
+	}*/
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
 	}
@@ -143,30 +142,18 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 	// -------------------------------------------------------------------ASSETS
 
-	var masterNG []*clusterv1.Machine
-	masterNG, err = FindMasterMachines(cm.cluster)
+	var machines []*clusterv1.Machine
+	machines, err = Store(cm.ctx).Machine(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
-	var lbIp string
-	haSetup := IsHASetup(cm.cluster)
-	if haSetup {
-		Logger(cm.ctx).Info("Creating loadbalancer")
-		lbIp, err = cm.conn.createLoadBalancer(cm.ctx, cm.namer.LoadBalancerName())
-		if err != nil {
-			return
-		}
-		Logger(cm.ctx).Infof("Created loadbalancer lbIp = %v", lbIp)
-		for m := range cm.cluster.Spec.Masters {
-			cm.cluster.Spec.Masters[m].Labels[api.PharmerHASetup] = "true"
-			cm.cluster.Spec.Masters[m].Labels[api.PharmerLoadBalancerIP] = lbIp
-		}
-		Store(cm.ctx).Clusters().Update(cm.cluster)
+
+	masterMachine, err := api.GetMasterMachine(machines)
+	if err != nil {
+		return
 	}
 
-	leaderMaster := masterNG[0]
-
-	if d, _ := cm.conn.instanceIfExists(leaderMaster); d == nil {
+	if d, _ := cm.conn.instanceIfExists(masterMachine); d == nil {
 		Logger(cm.ctx).Info("Creating master instance")
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
@@ -174,7 +161,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Master instance %s will be created", cm.namer.MasterName()),
 		})
 		if !dryRun {
-			if err = cm.Create(cm.cluster.Spec.ClusterAPI, leaderMaster); err != nil {
+			if err = cm.Create(cm.cluster.Spec.ClusterAPI, masterMachine); err != nil {
 				return
 			}
 
@@ -183,22 +170,10 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("master instance %v already exist", leaderMaster.Name),
+			Message:  fmt.Sprintf("master instance %v already exist", masterMachine.Name),
 		})
 	}
 
-	if haSetup {
-		cm.cluster.Spec.ClusterAPI.Status.APIEndpoints = []clusterv1.APIEndpoint{
-			{
-				Host: lbIp,
-				Port: int(cm.cluster.Spec.API.BindPort),
-			},
-		}
-
-	}
-	for m := range cm.cluster.Spec.Masters {
-		cm.cluster.Spec.Masters[m].Labels[api.EtcdServerAddress] = strings.Join(cm.cluster.Spec.ETCDServers, ",")
-	}
 	Store(cm.ctx).Clusters().Update(cm.cluster)
 
 	var kc kubernetes.Interface
@@ -222,13 +197,13 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	ca, err := NewClusterApi(cm.ctx, cm.cluster, kc)
+	/*ca, err := NewClusterApi(cm.ctx, cm.cluster, kc)
 	if err != nil {
 		return acts, err
 	}
 	if err := ca.Apply(); err != nil {
 		return acts, err
-	}
+	}*/
 	return acts, err
 }
 
@@ -363,10 +338,10 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 			Message:  "Public key not found",
 		})
 	}
-	if IsHASetup(cm.cluster) {
+	/*if IsHASetup(cm.cluster) {
 		cm.conn.deleteLoadBalancer(cm.ctx, cm.namer.LoadBalancerName())
 	}
-
+	*/
 	// Failed
 	cm.cluster.Status.Phase = api.ClusterDeleted
 	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
@@ -379,7 +354,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 }
 
 func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err error) {
-	var kc kubernetes.Interface
+	/*var kc kubernetes.Interface
 	if kc, err = cm.GetAdminClient(); err != nil {
 		return
 	}
@@ -395,6 +370,6 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 			return
 		}
-	}
+	}*/
 	return
 }

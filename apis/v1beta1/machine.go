@@ -1,7 +1,10 @@
 package v1beta1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type IPType string
@@ -44,4 +47,24 @@ type NodeInfo struct {
 type MachineProviderConfig struct {
 	Name   string   `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 	Config NodeSpec `json:"config,omitempty" protobuf:"bytes,2,opt,name=config"`
+}
+
+func GetMasterMachine(machines []*clusterapi.Machine) (*clusterapi.Machine, error) {
+	//nodes := []*clusterapi.Machine{}
+	masters := []*clusterapi.Machine{}
+	for _, machine := range machines {
+		if IsMaster(machine) {
+			masters = append(masters, machine)
+		} else {
+			//nodes = append(nodes, machine)
+		}
+	}
+	if len(masters) != 1 {
+		return nil, fmt.Errorf("expected one master, got: %v", len(masters))
+	}
+	return masters[0], nil
+}
+
+func IsMaster(machine *clusterapi.Machine) bool {
+	return machine.Spec.Versions.ControlPlane != ""
 }

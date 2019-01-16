@@ -1,6 +1,7 @@
 package digitalocean
 
 import (
+	"encoding/json"
 	"net"
 	"strings"
 
@@ -8,6 +9,7 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -23,23 +25,57 @@ func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (
 
 }
 
-func (cm *ClusterManager) SetDefaultCluster(kube *api.Cluster, cluster *clusterapi.Cluster, config *api.ClusterProviderConfig) error {
+func (cm *ClusterManager) GetDefaultProviderSpec(cluster *api.Cluster, sku string) (clusterapi.ProviderSpec, error) {
+	if sku == "" {
+		sku = "2gb"
+	}
+	config := cluster.Spec.Config
+	spec := &api.DigitalOceanMachineProviderConfig{
+		Region: config.Cloud.Region,
+		Size:   sku,
+		Image:  config.Cloud.InstanceImage,
+		Tags:   []string{"KubernetesCluster:" + cluster.Name},
+		SSHPublicKeys: []string{
+			string(SSHKey(cm.ctx).PublicKey),
+		},
+		PrivateNetworking: true,
+		Backups:           false,
+		IPv6:              false,
+		Monitoring:        true,
+	}
+
+	providerSpecValue, err := json.Marshal(spec)
+	if err != nil {
+		return clusterapi.ProviderSpec{}, err
+	}
+
+	return clusterapi.ProviderSpec{
+		Value: &runtime.RawExtension{
+			Raw: providerSpecValue,
+		},
+	}, nil
+}
+
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
 	n := namer{cluster: cluster}
 
 	if err := api.AssignTypeKind(cluster); err != nil {
 		return err
 	}
-	config.Region = config.Zone
-	config.SSHKeyName = n.GenSSHKeyExternalID()
+	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
+		return err
+	}
+	config.Cloud.Region = config.Cloud.Zone
+	config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
 	//cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
-	config.InstanceImage = "ubuntu-16-04-x64"
+	config.Cloud.InstanceImage = "ubuntu-16-04-x64"
 
 	//cluster.InitializeClusterApi()
-	kube.SetNetworkingDefaults(cluster, config.NetworkProvider)
+	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
 
 	//kube.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
-	kube.Spec.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
-	kube.Spec.APIServerExtraArgs = map[string]string{
+	config.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
+	config.APIServerExtraArgs = map[string]string{
 		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
 		"kubelet-preferred-address-types": strings.Join([]string{
 			string(core.NodeInternalIP),
@@ -49,24 +85,22 @@ func (cm *ClusterManager) SetDefaultCluster(kube *api.Cluster, cluster *clustera
 	}
 
 	// Init status
-	kube.Status = api.PharmerClusterStatus{
+	cluster.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,
 	}
 
 	// add provider config to cluster
-	kube.SetDigitalOceanProviderConfig(cluster, config)
-
-	return nil
+	return cluster.SetDigitalOceanProviderConfig(cluster.Spec.ClusterAPI, config)
 }
-func (cm *ClusterManager) SetDefaults(cluster *clusterapi.Cluster) error {
+func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	return nil
 }
 
-func (cm *ClusterManager) IsValid(cluster *clusterapi.Cluster) (bool, error) {
+func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, ErrNotImplemented
 }
 
-func (cm *ClusterManager) GetSSHConfig(cluster *clusterapi.Cluster, node *core.Node) (*api.SSHConfig, error) {
+func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
 	cfg := &api.SSHConfig{
 		PrivateKey: SSHKey(cm.ctx).PrivateKey,
 		User:       "root",

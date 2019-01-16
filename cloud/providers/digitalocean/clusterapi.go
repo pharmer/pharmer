@@ -1,0 +1,5 @@
+package digitalocean
+
+const ClusterAPIProviderComponentsTemplate = `
+
+`

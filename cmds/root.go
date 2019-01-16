@@ -8,12 +8,9 @@ import (
 	"strings"
 
 	"github.com/appscode/go/analytics"
-	v "github.com/appscode/go/version"
 	ga "github.com/jpillora/go-ogle-analytics"
-	cpCmd "github.com/pharmer/pharmer/cloud/cmds"
 	_ "github.com/pharmer/pharmer/cloud/providers"
 	"github.com/pharmer/pharmer/config"
-	cfgCmd "github.com/pharmer/pharmer/config/cmds"
 	"github.com/pharmer/pharmer/data/files"
 	_ "github.com/pharmer/pharmer/store/providers"
 	"github.com/spf13/cobra"
@@ -61,7 +58,7 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 	flag.CommandLine.Parse([]string{})
 
 	rootCmd.AddCommand(newCmdCreate())
-	rootCmd.AddCommand(newCmdGet(out))
+	/*rootCmd.AddCommand(newCmdGet(out))
 	rootCmd.AddCommand(newCmdDelete())
 	rootCmd.AddCommand(newCmdDescribe(out))
 	rootCmd.AddCommand(newCmdEdit(out, err))
@@ -73,7 +70,7 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 	rootCmd.AddCommand(cfgCmd.NewCmdConfig())
 	rootCmd.AddCommand(cpCmd.NewCmdApply())
 	rootCmd.AddCommand(v.NewCmdVersion())
-
+	*/
 	rootCmd.AddCommand(newCmdController())
 
 	return rootCmd

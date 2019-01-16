@@ -1,5 +1,5 @@
-hash: 0a5317fc50c35126c97683952716531ab0902f63bbff31174b1e9c2173c3214c
-updated: 2019-01-15T17:12:07.906708799+06:00
+hash: cb39be517f593f5db7a65bd22a026de0de1c38d70836ce50ed9d3168a9978cec
+updated: 2019-01-16T13:16:51.238686101+06:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -33,8 +33,6 @@ imports:
   version: c038e08b19b1c760484d443de8958880e35bd879
 - name: github.com/appscode/go-version
   version: 7aba545c679b0f45679eeb406dc662d2c8a04c26
-- name: github.com/appscode/jsonpatch
-  version: 5af499cf01c842bfdd7761a433fc90525ccd6836
 - name: github.com/appscode/kutil
   version: 2fd5d84269717906c36d56306c4693e68c1773b8
   subpackages:
@@ -175,6 +173,8 @@ imports:
   version: 300e940a926eb277d3901b20bdfcc54928ad3642
 - name: github.com/go-logr/logr
   version: 9fb12b3b21c5415d16ac18dc5cd42c1cfdd40c4e
+- name: github.com/go-logr/zapr
+  version: 7536572e8d55209135cd5e7ccf7fce43dca217ab
 - name: github.com/go-openapi/jsonpointer
   version: ef5f0afec364d3b9396b7b77b43dbe26bf1f8004
 - name: github.com/go-openapi/jsonreference
@@ -301,6 +301,8 @@ imports:
   version: bb23615498cded5e105af4ce27de75b089cbe851
 - name: github.com/marstr/guid
   version: 8bdf7d1a087ccc975cf37dd6507da50698fd19ca
+- name: github.com/mattbaird/jsonpatch
+  version: 81af80346b1a01caae0cbc27fd3c1ba5b11e189f
 - name: github.com/mattn/go-colorable
   version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
 - name: github.com/mattn/go-isatty
@@ -372,9 +374,10 @@ imports:
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/prometheus/client_golang
-  version: e7e903064f5e9eb5da98208bae10b475d4db0f8c
+  version: 505eaef017263e299324067d40ca2c48f6a2cf50
   subpackages:
   - prometheus
+  - prometheus/internal
   - prometheus/promhttp
 - name: github.com/prometheus/client_model
   version: fa8ad6fec33561be4280a8f0514318c79d7f6cb6
@@ -438,6 +441,18 @@ imports:
   vcs: git
 - name: github.com/tent/http-link-go
   version: ac974c61c2f990f4115b119354b5e0b47550e888
+- name: go.uber.org/atomic
+  version: 8dc6146f7569370a472715e178d8ae31172ee6da
+- name: go.uber.org/multierr
+  version: ddea229ff1dff9e6fe8a6c0344ac73b09e81fce5
+- name: go.uber.org/zap
+  version: 67bc79d13d155c02fd008f721863ff8cc5f30659
+  subpackages:
+  - buffer
+  - internal/bufferpool
+  - internal/color
+  - internal/exit
+  - zapcore
 - name: golang.org/x/crypto
   version: de0752318171da717af4ce24d0a2e8626afaeb11
   subpackages:
@@ -892,8 +907,9 @@ imports:
   - exec/testing
   - pointer
 - name: sigs.k8s.io/cluster-api
-  version: 45f1c93260140936c610e56575d7505ba3d52444
+  version: 750b02221cd5c61afaf86d4a6f8e69c37266a681
   subpackages:
+  - pkg/apis
   - pkg/apis/cluster/common
   - pkg/apis/cluster/v1alpha1
   - pkg/client/clientset_generated/clientset
@@ -904,21 +920,20 @@ imports:
   - pkg/controller/machine
   - pkg/util
 - name: sigs.k8s.io/controller-runtime
-  version: 0dd6edb02bf23e3669a3edc50ef00a38719173b0
+  version: f6f0bc9611363b43664d08fb097ab13243ef621d
   subpackages:
   - pkg/cache
   - pkg/cache/internal
   - pkg/client
   - pkg/client/apiutil
+  - pkg/client/config
   - pkg/controller
   - pkg/event
   - pkg/handler
   - pkg/internal/controller
   - pkg/internal/controller/metrics
-  - pkg/internal/log
   - pkg/internal/recorder
   - pkg/leaderelection
-  - pkg/log
   - pkg/manager
   - pkg/metrics
   - pkg/patch
@@ -926,7 +941,9 @@ imports:
   - pkg/reconcile
   - pkg/recorder
   - pkg/runtime/inject
+  - pkg/runtime/log
   - pkg/runtime/scheme
+  - pkg/runtime/signals
   - pkg/source
   - pkg/source/internal
   - pkg/webhook/admission

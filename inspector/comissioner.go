@@ -21,7 +21,7 @@ type Inspector struct {
 }
 
 func New(ctx context.Context, cluster *api.Cluster) (*Inspector, error) {
-	if cluster.ProviderConfig().CloudProvider == "" {
+	if cluster.ClusterConfig().Cloud.CloudProvider == "" {
 		return nil, errors.Errorf("cluster %v has no provider", cluster.Name)
 	}
 	var err error

@@ -7,6 +7,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 )
 
 type ClusterManager struct {
@@ -30,6 +31,7 @@ const (
 
 func init() {
 	RegisterCloudManager(UID, func(ctx context.Context) (Interface, error) { return New(ctx), nil })
+	common.RegisterClusterProvisioner(UID, NewActuator(ActuatorParams{}))
 }
 
 func New(ctx context.Context) Interface {

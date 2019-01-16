@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,21 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package log contains utilities for fetching a new logger
-// when one is not already available.
-// Deprecated: use pkg/log
-package log
+package signals
 
 import (
-	"github.com/go-logr/logr"
+	"os"
 )
 
-// SetLogger sets a concrete logging implementation for all deferred Loggers.
-func SetLogger(l logr.Logger) {
-	Log.Fulfill(l)
-}
-
-// Log is the base logger used by kubebuilder.  It delegates
-// to another logr.Logger.  You *must* call SetLogger to
-// get any actual logging.
-var Log = NewDelegatingLogger(NullLogger{})
+var shutdownSignals = []os.Signal{os.Interrupt}

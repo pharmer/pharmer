@@ -1,14 +1,10 @@
 package cloud
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"text/template"
-	"time"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
@@ -98,12 +94,12 @@ func (ca *ClusterApi) Apply() error {
 	}
 
 	Logger(ca.ctx).Infof("Adding master machines...")
-	for _, master := range ca.cluster.Spec.Masters {
+	/*for _, master := range ca.cluster.Spec.Masters {
 		if _, err := ca.client.Machines(core.NamespaceDefault).Create(master); err != nil {
 			return err
 		}
 	}
-
+	*/
 	return nil
 }
 
@@ -126,9 +122,9 @@ func (ca *ClusterApi) CreateMachineController() error {
 }
 
 func (ca *ClusterApi) CreatePharmerSecret() error {
-	providerConfig := ca.cluster.ProviderConfig()
+	providerConfig := ca.cluster.ClusterConfig()
 
-	cred, err := Store(ca.ctx).Credentials().Get(ca.cluster.Spec.CredentialName)
+	cred, err := Store(ca.ctx).Credentials().Get(ca.cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return err
 	}
@@ -137,7 +133,7 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 		return err
 	}
 	if err = CreateSecret(ca.kc, "pharmer-cred", map[string][]byte{
-		fmt.Sprintf("%v.json", ca.cluster.Spec.CredentialName): credData,
+		fmt.Sprintf("%v.json", ca.cluster.ClusterConfig().CredentialName): credData,
 	}); err != nil {
 		return err
 	}
@@ -152,13 +148,13 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 		return err
 	}
 
-	publicKey, privateKey, err := Store(ca.ctx).SSHKeys(ca.cluster.Name).Get(ca.cluster.ProviderConfig().SSHKeyName)
+	publicKey, privateKey, err := Store(ca.ctx).SSHKeys(ca.cluster.Name).Get(ca.cluster.ClusterConfig().Cloud.SSHKeyName)
 	if err != nil {
 		return err
 	}
 	if err = CreateSecret(ca.kc, "pharmer-ssh", map[string][]byte{
-		fmt.Sprintf("id_%v", providerConfig.SSHKeyName):     privateKey,
-		fmt.Sprintf("id_%v.pub", providerConfig.SSHKeyName): publicKey,
+		fmt.Sprintf("id_%v", providerConfig.Cloud.SSHKeyName):     privateKey,
+		fmt.Sprintf("id_%v.pub", providerConfig.Cloud.SSHKeyName): publicKey,
 	}); err != nil {
 		return err
 	}
@@ -210,7 +206,8 @@ func (ca *ClusterApi) CreateExtApiServerRoleBinding() error {
 }
 
 func (ca *ClusterApi) CreateApiServerAndController() error {
-	tmpl, err := template.New("config").Parse(ClusterAPIDeployConfigTemplate)
+	return nil
+	/*tmpl, err := template.New("config").Parse(ClusterAPIDeployConfigTemplate)
 	if err != nil {
 		return err
 	}
@@ -232,7 +229,7 @@ func (ca *ClusterApi) CreateApiServerAndController() error {
 		CABundle:               base64.StdEncoding.EncodeToString(cert.EncodeCertPEM(ApiServerCaCert(ca.ctx))),
 		TLSCrt:                 base64.StdEncoding.EncodeToString(cert.EncodeCertPEM(ApiServerCert(ca.ctx))),
 		TLSKey:                 base64.StdEncoding.EncodeToString(cert.EncodePrivateKeyPEM(ApiServerKey(ca.ctx))),
-		Provider:               ca.cluster.ProviderConfig().CloudProvider,
+		Provider:               ca.cluster.ClusterConfig().CloudProvider,
 		MasterCount:            len(masterNG),
 	})
 	if err != nil {
@@ -257,7 +254,7 @@ func (ca *ClusterApi) CreateApiServerAndController() error {
 	} else {
 		return nil
 	}
-
+	*/
 }
 
 func deployConfig(manifest []byte) error {

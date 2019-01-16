@@ -1,6 +1,5 @@
 package v1beta1
 
-/*
 import (
 	"encoding/json"
 	"fmt"
@@ -12,7 +11,7 @@ import (
 
 const (
 	DigitalOceanProviderGroupName  = "digitaloceanproviderconfig"
-	DigitalOceanProviderKind       = "digitaloceanproviderconfig"
+	DigitalOceanProviderKind       = "DigitaloceanClusterProviderConfig"
 	DigitalOceanProviderApiVersion = "v1alpha1"
 )
 
@@ -44,7 +43,7 @@ func (c *Cluster) DigitalOceanProviderConfig(cluster *clusterapi.Cluster) *Digit
 	return providerConfig
 }
 
-func (c *Cluster) SetDigitalOceanProviderConfig(cluster *clusterapi.Cluster, config *ClusterProviderConfig) error {
+func (c *Cluster) SetDigitalOceanProviderConfig(cluster *clusterapi.Cluster, config *ClusterConfig) error {
 	conf := &DigitalOceanMachineProviderConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: DigitalOceanProviderGroupName + "/" + DigitalOceanProviderApiVersion,
@@ -63,4 +62,3 @@ func (c *Cluster) SetDigitalOceanProviderConfig(cluster *clusterapi.Cluster, con
 	}
 	return nil
 }
-*/

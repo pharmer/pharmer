@@ -27,6 +27,7 @@ type FakeStore struct {
 	clusters     store.ClusterStore
 	nodeGroups   map[string]store.NodeGroupStore
 	machineSet   map[string]store.MachineSetStore
+	machine      map[string]store.MachineStore
 	certificates map[string]store.CertificateStore
 	sshKeys      map[string]store.SSHKeyStore
 
@@ -39,6 +40,7 @@ func New() store.Interface {
 	return &FakeStore{
 		nodeGroups:   map[string]store.NodeGroupStore{},
 		machineSet:   map[string]store.MachineSetStore{},
+		machine:      map[string]store.MachineStore{},
 		certificates: map[string]store.CertificateStore{},
 		sshKeys:      map[string]store.SSHKeyStore{},
 	}
@@ -81,6 +83,15 @@ func (s *FakeStore) MachineSet(cluster string) store.MachineSetStore {
 		s.machineSet[cluster] = &machineSetFileStore{container: map[string]*clusterv1.MachineSet{}, cluster: cluster}
 	}
 	return s.machineSet[cluster]
+}
+
+func (s *FakeStore) Machine(cluster string) store.MachineStore {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	if _, found := s.machineSet[cluster]; !found {
+		s.machine[cluster] = &machineFileStore{container: map[string]*clusterv1.Machine{}, cluster: cluster}
+	}
+	return s.machine[cluster]
 }
 
 func (s *FakeStore) Certificates(cluster string) store.CertificateStore {

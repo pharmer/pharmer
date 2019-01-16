@@ -3,34 +3,31 @@ package digitalocean
 import (
 	"bytes"
 	"context"
-	"fmt"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine, token string) TemplateData {
 	td := TemplateData{
-		ClusterName:       cluster.Name,
-		KubernetesVersion: cluster.Spec.KubernetesVersion,
-		KubeadmToken:      token,
-		CAHash:            pubkeypin.Hash(CACert(ctx)),
-		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
-		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
-		APIServerAddress:  cluster.APIServerAddress(),
-		NetworkProvider:   cluster.ProviderConfig().NetworkProvider,
-		Provider:          cluster.ProviderConfig().CloudProvider,
-		ExternalProvider:  true, // DigitalOcean uses out-of-tree CCM
+		ClusterName: cluster.Name,
+		//KubernetesVersion: cluster.Spec.KubernetesVersion,
+		KubeadmToken:     token,
+		CAHash:           pubkeypin.Hash(CACert(ctx)),
+		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		SAKey:            string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
+		FrontProxyKey:    string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		ETCDCAKey:        string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
+		APIServerAddress: cluster.APIServerAddress(),
+		//NetworkProvider:   cluster.ClusterConfig().NetworkProvider,
+		//Provider:          cluster.ClusterConfig().CloudProvider,
+		ExternalProvider: true, // DigitalOcean uses out-of-tree CCM
 	}
 	{
-		td.KubeletExtraArgs = map[string]string{}
+		/*td.KubeletExtraArgs = map[string]string{}
 		for k, v := range cluster.Spec.KubeletExtraArgs {
 			td.KubeletExtraArgs[k] = v
 		}
@@ -41,7 +38,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		}
 		for k, v := range machineConfig.Config.KubeletExtraArgs {
 			td.KubeletExtraArgs[k] = v
-		}
+		}*/
 		td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 			api.NodePoolKey: machine.Name,
 			api.RoleNodeKey: "",
@@ -57,7 +54,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 
 func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine) TemplateData {
 	td := newNodeTemplateData(ctx, cluster, machine, "")
-	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
+	/*td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
 	}.String()
 
@@ -107,7 +104,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 		},
 		ClusterName: cluster.Name,
 	}
-	td.ClusterConfiguration = &cfg
+	td.ClusterConfiguration = &cfg*/
 
 	return td
 }
@@ -171,7 +168,7 @@ func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *c
 	}
 
 	var script bytes.Buffer
-	if IsMaster(machine) {
+	/*if IsMaster(machine) {
 		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, machine)); err != nil {
 			return "", err
 		}
@@ -179,6 +176,6 @@ func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *c
 		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, machine, token)); err != nil {
 			return "", err
 		}
-	}
+	}*/
 	return script.String(), nil
 }

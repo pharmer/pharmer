@@ -31,13 +31,13 @@ type cloudConnector struct {
 var _ InstanceManager = &cloudConnector{}
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	cred, err := Store(ctx).Credentials().Get(cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
 	}
 	typed := credential.DigitalOcean{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.ClusterConfig().CredentialName)
 	}
 	oauthClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: typed.Token(),
@@ -48,7 +48,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		client:  godo.NewClient(oauthClient),
 	}
 	if ok, msg := conn.IsUnauthorized(); !ok {
-		return nil, errors.Errorf("credential `%s` does not have necessary autheorization. Reason: %s", cluster.Spec.CredentialName, msg)
+		return nil, errors.Errorf("credential `%s` does not have necessary autheorization. Reason: %s", cluster.ClusterConfig().CredentialName, msg)
 	}
 	return &conn, nil
 }
@@ -77,15 +77,15 @@ func (cm *ClusterManager) PrepareCloud(clusterName string) error {
 	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
-	if cm.ctx, err = LoadEtcdCertificate(cm.ctx, cm.cluster); err != nil {
+	/*if cm.ctx, err = LoadEtcdCertificate(cm.ctx, cm.cluster); err != nil {
 		return err
-	}
+	}*/
 	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
-	if cm.ctx, err = LoadSaKey(cm.ctx, cm.cluster); err != nil {
+	/*if cm.ctx, err = LoadSaKey(cm.ctx, cm.cluster); err != nil {
 		return err
-	}
+	}*/
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func (conn *cloudConnector) getReserveIP(ip string) (bool, error) {
 
 func (conn *cloudConnector) createReserveIP() (string, error) {
 	fip, _, err := conn.client.FloatingIPs.Create(context.TODO(), &godo.FloatingIPCreateRequest{
-		Region: conn.cluster.ProviderConfig().Region,
+		Region: conn.cluster.ClusterConfig().Cloud.Region,
 	})
 	if err != nil {
 		return "", err
@@ -234,7 +234,8 @@ func (conn *cloudConnector) releaseReservedIP(ip string) error {
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error) {
-	script, err := conn.renderStartupScript(cluster, machine, token)
+	return &api.NodeInfo{}, nil
+	/*script, err := conn.renderStartupScript(cluster, machine, token)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +243,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 	fmt.Println()
 	fmt.Println(script)
 	fmt.Println()
-	clusterConfig := cluster.ProviderConfig()
+	clusterConfig := cluster.ClusterConfig()
 	machineConfig, err := cluster.MachineProviderConfig(machine)
 	if err != nil {
 		return nil, err
@@ -299,7 +300,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 	if err != nil {
 		return nil, err
 	}
-	return &node, nil
+	return &node, nil*/
 }
 
 func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*godo.Droplet, error) {
@@ -463,12 +464,12 @@ func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*godo.LoadB
 	//algorithm := "round_robin"
 
 	//	redirectHttpToHttps := getRedirectHttpToHttps(service)
-	clusterConfig := conn.cluster.ProviderConfig()
+	clusterConfig := conn.cluster.ClusterConfig()
 
 	return &godo.LoadBalancerRequest{
 		Name:                lbName,
 		DropletIDs:          []int{},
-		Region:              clusterConfig.Region,
+		Region:              clusterConfig.Cloud.Region,
 		ForwardingRules:     forwardingRules,
 		HealthCheck:         healthCheck,
 		StickySessions:      stickySessions,

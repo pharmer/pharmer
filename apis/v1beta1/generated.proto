@@ -242,14 +242,13 @@ message CloudStatus {
 message Cluster {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1 [(gogoproto.customname) = "ObjectMeta", (gogoproto.nullable) = false];
 
-  optional Cluster clusterApi = 2 [(gogoproto.customname) = "ClusterAPI"];
+  optional PharmerClusterSpec spec = 2 [(gogoproto.customname) = "Spec", (gogoproto.nullable) = false];
+
+  optional PharmerClusterStatus status = 3 [(gogoproto.customname) = "Status", (gogoproto.nullable) = false];
 }
 
-message ClusterProviderConfig {
-  // +optional
+message ClusterConfig {
   optional CloudSpec cloud = 1 [(gogoproto.customname) = "Cloud", (gogoproto.nullable) = false];
-
-  optional API api = 3 [(gogoproto.customname) = "API", (gogoproto.nullable) = false];
 
   optional string kubernetesVersion = 4 [(gogoproto.customname) = "KubernetesVersion", (gogoproto.nullable) = false];
 
@@ -299,6 +298,28 @@ message CredentialSpec {
   optional string provider = 1 [(gogoproto.customname) = "Provider", (gogoproto.nullable) = false];
 
   map<string, string> data = 2 [(gogoproto.customname) = "Data", (gogoproto.nullable) = false];
+}
+
+// DigitalOceanMachineProviderConfig contains Config for DigitalOcean machines.
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message DigitalOceanMachineProviderConfig {
+  optional string region = 1 [(gogoproto.customname) = "Region", (gogoproto.nullable) = false];
+
+  optional string size = 2 [(gogoproto.customname) = "Size", (gogoproto.nullable) = false];
+
+  optional string image = 3 [(gogoproto.customname) = "Image", (gogoproto.nullable) = false];
+
+  repeated string tags = 4 [(gogoproto.customname) = "Tags"];
+
+  repeated string sshPublicKeys = 5 [(gogoproto.customname) = "SSHPublicKeys"];
+
+  optional bool private_networking = 6 [(gogoproto.customname) = "PrivateNetworking", (gogoproto.nullable) = false];
+
+  optional bool backups = 7 [(gogoproto.customname) = "Backups", (gogoproto.nullable) = false];
+
+  optional bool ipv6 = 8 [(gogoproto.customname) = "IPv6", (gogoproto.nullable) = false];
+
+  optional bool monitoring = 9 [(gogoproto.customname) = "Monitoring", (gogoproto.nullable) = false];
 }
 
 message GCSSpec {
@@ -430,6 +451,10 @@ message NodeSpec {
 }
 
 message NullNameGenerator {
+}
+
+message PharmerClusterSpec {
+  optional Cluster clusterApi = 2 [(gogoproto.customname) = "ClusterAPI"];
 }
 
 message PharmerClusterStatus {

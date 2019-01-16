@@ -18,6 +18,7 @@ type Interface interface {
 
 	Clusters() ClusterStore
 	NodeGroups(cluster string) NodeGroupStore
+	Machine(cluster string) MachineStore
 	MachineSet(cluster string) MachineSetStore
 	Certificates(cluster string) CertificateStore
 	SSHKeys(cluster string) SSHKeyStore
@@ -47,6 +48,15 @@ type NodeGroupStore interface {
 	Update(obj *api.NodeGroup) (*api.NodeGroup, error)
 	Delete(name string) error
 	UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error)
+}
+
+type MachineStore interface {
+	List(opts metav1.ListOptions) ([]*clusterv1.Machine, error)
+	Get(name string) (*clusterv1.Machine, error)
+	Create(obj *clusterv1.Machine) (*clusterv1.Machine, error)
+	Update(obj *clusterv1.Machine) (*clusterv1.Machine, error)
+	Delete(name string) error
+	UpdateStatus(obj *clusterv1.Machine) (*clusterv1.Machine, error)
 }
 
 type MachineSetStore interface {

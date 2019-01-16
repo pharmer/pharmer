@@ -22,7 +22,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/cert"
-	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
@@ -52,26 +51,6 @@ func FindMasterNodeGroup(nodeGroups []*apiAlpha.NodeGroup) (*apiAlpha.NodeGroup,
 	return nil, ErrNoMasterNG
 }
 
-func FindMasterMachines(cluster *api.Cluster) ([]*clusterv1.Machine, error) {
-	if len(cluster.Spec.Masters) == 0 {
-		return nil, fmt.Errorf("master machine not found")
-	}
-	return cluster.Spec.Masters, nil
-}
-
-func RoleContains(a clustercommon.MachineRole, list []clustercommon.MachineRole) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
-
-func IsMaster(machine *clusterv1.Machine) bool {
-	return RoleContains(clustercommon.MasterRole, machine.Spec.Roles)
-}
-
 func IsNodeReady(node *core.Node) bool {
 	for _, condition := range node.Status.Conditions {
 		if condition.Type == core.NodeReady {
@@ -80,14 +59,6 @@ func IsNodeReady(node *core.Node) bool {
 	}
 
 	return false
-}
-
-func IsHASetup(cluster *api.Cluster) bool {
-	masters, err := FindMasterMachines(cluster)
-	if err != nil {
-		return false
-	}
-	return len(masters) > 1
 }
 
 // WARNING:
@@ -251,13 +222,14 @@ func DeleteDyanamicVolumes(client kubernetes.Interface) error {
 }
 
 func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cluster *api.Cluster) error {
-	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	return nil
+	/*cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
 	if err != nil {
 		return err
 	}
 	secret := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: cluster.ProviderConfig().CloudProvider,
+			Name: cluster.ClusterConfig().CloudProvider,
 		},
 		StringData: cred.Spec.Data,
 		Type:       core.SecretTypeOpaque,
@@ -266,7 +238,7 @@ func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cl
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		_, err := client.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
 		return err == nil, nil
-	})
+	})*/
 }
 
 func NewClusterApiClient(ctx context.Context, cluster *api.Cluster) (*clientset.Clientset, error) {
