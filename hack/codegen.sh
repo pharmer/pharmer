@@ -18,7 +18,7 @@ docker run --rm -ti -u $(id -u):$(id -g) \
   appscode/gengo:release-1.12 deepcopy-gen \
   --v 1 --logtostderr \
   --go-header-file "hack/gengo/boilerplate.go.txt" \
-  --input-dirs "$PACKAGE_NAME/apis/v1alpha1" \
+  --input-dirs "$PACKAGE_NAME/apis/v1beta1" \
   --output-file-base zz_generated.deepcopy
 
 # Generate protobuf definitions
@@ -28,7 +28,7 @@ docker run --rm -ti -u $(id -u):$(id -g) \
   appscode/protoc:release-1.12 go-to-protobuf \
   --go-header-file "hack/gengo/boilerplate.go.txt" \
   --proto-import=/go/src/github.com/pharmer/pharmer/vendor \
-  --packages=-k8s.io/api/core/v1,github.com/pharmer/pharmer/apis/v1alpha1 \
+  --packages=-k8s.io/api/core/v1,github.com/pharmer/pharmer/apis/v1beta1 \
   --apimachinery-packages=-k8s.io/apimachinery/pkg/apis/meta/v1
 
 popd

@@ -22,18 +22,17 @@ const (
 type Cluster struct {
 	metav1.TypeMeta   `json:",inline,omitempty,omitempty"`
 	metav1.ObjectMeta `json:"metadata,omitempty,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-	Spec              PharmerClusterSpec   `json:"spec,omitempty,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	ClusterAPI *clusterapi.Cluster `json:"clusterApi,omitempty" protobuf:"bytes,2,opt,name=clusterApi"`
 	Status            PharmerClusterStatus `json:"status,omitempty,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
-type PharmerClusterSpec struct {
-	ClusterAPI *clusterapi.Cluster `json:"clusterAPI,omitempty" protobuf:"bytes,1,opt,name=clusterApi"`
-}
 
 type ClusterProviderConfig struct {
 	// +optional
 	Cloud                      CloudSpec         `json:"cloud" protobuf:"bytes,1,opt,name=cloud"`
+	API                        API               `json:"api" protobuf:"bytes,3,opt,name=api"`
 	KubernetesVersion          string            `json:"kubernetesVersion,omitempty" protobuf:"bytes,4,opt,name=kubernetesVersion"`
+	Locked                     bool              `json:"locked,omitempty" protobuf:"varint,5,opt,name=locked"`
 	CACertName                 string            `json:"caCertName,omitempty" protobuf:"bytes,6,opt,name=caCertName"`
 	FrontProxyCACertName       string            `json:"frontProxyCACertName,omitempty" protobuf:"bytes,7,opt,name=frontProxyCACertName"`
 	CredentialName             string            `json:"credentialName,omitempty" protobuf:"bytes,8,opt,name=credentialName"`
@@ -68,7 +67,7 @@ type CloudSpec struct {
 	Azure                *AzureSpec                         `json:"azure,omitempty" protobuf:"bytes,13,opt,name=azure"`
 	Linode               *LinodeSpec                        `json:"linode,omitempty" protobuf:"bytes,14,opt,name=linode"`
 	GKE                  *GKESpec                           `json:"gke,omitempty" protobuf:"bytes,15,opt,name=gke"`
-	DigitalOcean         *DigitalOceanMachineProviderConfig `json:"digitalocean,omitempty"`
+	//DigitalOcean         *DigitalOceanMachineProviderConfig `json:"digitalocean,omitempty" protobuf:"bytes,16,opt,name=digitalocean"`
 }
 
 type AWSSpec struct {

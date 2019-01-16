@@ -1,5 +1,6 @@
 package v1beta1
 
+/*
 import (
 	"encoding/json"
 	"fmt"
@@ -62,3 +63,4 @@ func (c *Cluster) SetDigitalOceanProviderConfig(cluster *clusterapi.Cluster, con
 	}
 	return nil
 }
+*/
