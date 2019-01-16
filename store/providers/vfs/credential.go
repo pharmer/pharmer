@@ -135,5 +135,9 @@ func (s *credentialFileStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing credential name")
 	}
-	return s.container.RemoveItem(s.resourceID(name))
+	item, err := s.container.Item(s.resourceID(name))
+	if err != nil {
+		return err
+	}
+	return s.container.RemoveItem(item.ID())
 }
