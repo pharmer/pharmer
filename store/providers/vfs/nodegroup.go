@@ -149,7 +149,15 @@ func (s *nodeGroupFileStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing node group name")
 	}
-	return s.container.RemoveItem(s.resourceID(name))
+
+	resourceID := s.resourceID(name)
+
+	item, err := s.container.Item(resourceID)
+	if err != nil {
+		return errors.Errorf("failed to get item %s. Reason: %v", item.Name(), err)
+	}
+
+	return s.container.RemoveItem(item.ID())
 }
 
 func (s *nodeGroupFileStore) UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error) {

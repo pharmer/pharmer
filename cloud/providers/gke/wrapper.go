@@ -74,7 +74,9 @@ func (cm *ClusterManager) StoreCertificate(cluster *container.Cluster) error {
 	certStore := Store(cm.ctx).Certificates(cluster.Name)
 	_, caKey, err := certStore.Get(cm.cluster.Spec.CACertName)
 	if err == nil {
-		certStore.Delete(cm.cluster.Spec.CACertName)
+		if err := certStore.Delete(cm.cluster.Spec.CACertName); err != nil {
+			return err
+		}
 	}
 	caCert, err := base64.StdEncoding.DecodeString(cluster.MasterAuth.ClusterCaCertificate)
 	if err != nil {
