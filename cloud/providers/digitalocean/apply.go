@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/phases"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
@@ -27,9 +28,11 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 		return nil, nil
 	}
 	cm.cluster = in
-	if err = cm.PrepareCloud(in.Name); err != nil {
+
+	if cm.conn, err = PrepareCloud(cm.ctx, in.Name); err != nil {
 		return nil, err
 	}
+
 	/*if err = cm.InitializeActuator(nil); err != nil {
 		return nil, err
 	}*/
@@ -153,16 +156,35 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
+	nodeAddresses := make([]core.NodeAddress, 0)
+
 	if d, _ := cm.conn.instanceIfExists(masterMachine); d == nil {
 		Logger(cm.ctx).Info("Creating master instance")
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("Master instance %s will be created", cm.namer.MasterName()),
+			Message:  fmt.Sprintf("Master instance %s will be created", masterMachine.Name),
 		})
 		if !dryRun {
-			if err = cm.Create(cm.cluster.Spec.ClusterAPI, masterMachine); err != nil {
+			var masterServer *api.NodeInfo
+
+			masterServer, err = cm.conn.CreateInstance(cm.cluster, masterMachine, "")
+			if err != nil {
 				return
+			}
+
+			if masterServer.PrivateIP != "" {
+				nodeAddresses = append(nodeAddresses, core.NodeAddress{
+					Type:    core.NodeInternalIP,
+					Address: masterServer.PrivateIP,
+				})
+			}
+
+			if masterServer.PublicIP != "" {
+				nodeAddresses = append(nodeAddresses, core.NodeAddress{
+					Type:    core.NodeExternalIP,
+					Address: masterServer.PublicIP,
+				})
 			}
 
 		}
@@ -174,7 +196,13 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 	}
 
-	Store(cm.ctx).Clusters().Update(cm.cluster)
+	if err = cm.cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
+		return
+	}
+
+	if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
+		return
+	}
 
 	var kc kubernetes.Interface
 	kc, err = cm.GetAdminClient()
@@ -194,6 +222,26 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 	// need to run ccm
 	if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
+		return
+	}
+
+	bootstrapClient, err := GetBooststrapClient(cm.ctx, cm.cluster)
+	if err != nil {
+		return
+	}
+
+	if err = phases.ApplyClusterAPIComponents(bootstrapClient, ClusterAPIDeployConfigTemplate); err != nil {
+		return
+	}
+
+	if err = phases.ApplyCluster(bootstrapClient, cm.cluster.Spec.ClusterAPI); err != nil {
+		return
+	}
+	namespace := cm.cluster.Spec.ClusterAPI.Namespace
+	if namespace == "" {
+		namespace = bootstrapClient.GetContextNamespace()
+	}
+	if err = phases.ApplyMachines(bootstrapClient, namespace, []*clusterv1.Machine{masterMachine}); err != nil {
 		return
 	}
 

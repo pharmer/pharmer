@@ -4,10 +4,8 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 var (
@@ -36,7 +34,9 @@ type Interface interface {
 	// GetInstance(md *api.InstanceStatus) (*api.Instance, error)
 
 	GetDefaultProviderSpec(cluster *api.Cluster, sku string) (clusterv1.ProviderSpec, error)
-	InitializeActuator(client.ClusterV1alpha1Interface, record.EventRecorder, *runtime.Scheme) error
+	InitializeMachineActuator(mgr manager.Manager) error
+
+	AddToManager(m manager.Manager) error
 }
 
 type SSHGetter interface {

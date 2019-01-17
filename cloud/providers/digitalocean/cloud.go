@@ -66,31 +66,33 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 	return true, ""
 }
 
-func (cm *ClusterManager) PrepareCloud(clusterName string) error {
+func PrepareCloud(ctx context.Context, clusterName string) (*cloudConnector, error) {
 	var err error
-	cluster, err := Store(cm.ctx).Clusters().Get(clusterName)
+	var conn *cloudConnector
+	cluster, err := Store(ctx).Clusters().Get(clusterName)
 	if err != nil {
-		return fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
+		return conn, fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
 	}
-	cm.cluster = cluster
+	//cm.cluster = cluster
 
-	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
-		return err
+	if ctx, err = LoadCACertificates(ctx, cluster); err != nil {
+		return conn, err
 	}
 	/*if cm.ctx, err = LoadEtcdCertificate(cm.ctx, cm.cluster); err != nil {
 		return err
 	}*/
-	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
-		return err
+	if ctx, err = LoadSSHKey(ctx, cluster); err != nil {
+		return conn, err
 	}
 	/*if cm.ctx, err = LoadSaKey(cm.ctx, cm.cluster); err != nil {
 		return err
 	}*/
-	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
-		return err
+
+	if conn, err = NewConnector(ctx, cluster); err != nil {
+		return nil, err
 	}
-	cm.namer = namer{cluster: cm.cluster}
-	return nil
+	//cm.namer = namer{cluster: cm.cluster}
+	return conn, nil
 }
 
 func (conn *cloudConnector) WaitForInstance(id int, status string) error {
@@ -234,8 +236,7 @@ func (conn *cloudConnector) releaseReservedIP(ip string) error {
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error) {
-	return &api.NodeInfo{}, nil
-	/*script, err := conn.renderStartupScript(cluster, machine, token)
+	script, err := conn.renderStartupScript(cluster, machine, token)
 	if err != nil {
 		return nil, err
 	}
@@ -243,16 +244,16 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 	fmt.Println()
 	fmt.Println(script)
 	fmt.Println()
-	clusterConfig := cluster.ClusterConfig()
-	machineConfig, err := cluster.MachineProviderConfig(machine)
+
+	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return nil, err
 	}
 	req := &godo.DropletCreateRequest{
 		Name:   machine.Name,
-		Region: clusterConfig.Zone,
-		Size:   machineConfig.Config.SKU,
-		Image:  godo.DropletCreateImage{Slug: clusterConfig.InstanceImage},
+		Region: machineConfig.Region,
+		Size:   machineConfig.Size,
+		Image:  godo.DropletCreateImage{Slug: machineConfig.Image},
 		SSHKeys: []godo.DropletCreateSSHKey{
 			{Fingerprint: SSHKey(conn.ctx).OpensshFingerprint},
 			{Fingerprint: "0d:ff:0d:86:0c:f1:47:1d:85:67:1e:73:c6:0e:46:17"}, // tamal@beast
@@ -300,10 +301,12 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 	if err != nil {
 		return nil, err
 	}
-	return &node, nil*/
+	return &node, nil
 }
 
 func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*godo.Droplet, error) {
+	//identifyingMachine := machine
+
 	droplets, _, err := conn.client.Droplets.List(oauth2.NoContext, &godo.ListOptions{})
 	if err != nil {
 		return nil, err

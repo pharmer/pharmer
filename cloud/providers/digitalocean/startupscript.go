@@ -6,39 +6,34 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine, token string) TemplateData {
 	td := TemplateData{
-		ClusterName: cluster.Name,
-		//KubernetesVersion: cluster.Spec.KubernetesVersion,
-		KubeadmToken:     token,
-		CAHash:           pubkeypin.Hash(CACert(ctx)),
-		CAKey:            string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		SAKey:            string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
-		FrontProxyKey:    string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		ETCDCAKey:        string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
+		ClusterName:       cluster.Name,
+		KubernetesVersion: machine.Spec.Versions.ControlPlane,
+		KubeadmToken:      token,
+		CAHash:            pubkeypin.Hash(CACert(ctx)),
+		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		//SAKey:            string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
+		FrontProxyKey: string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		//ETCDCAKey:        string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
 		APIServerAddress: cluster.APIServerAddress(),
-		//NetworkProvider:   cluster.ClusterConfig().NetworkProvider,
+		NetworkProvider:  cluster.ClusterConfig().Cloud.NetworkProvider,
 		//Provider:          cluster.ClusterConfig().CloudProvider,
 		ExternalProvider: true, // DigitalOcean uses out-of-tree CCM
 	}
 	{
-		/*td.KubeletExtraArgs = map[string]string{}
-		for k, v := range cluster.Spec.KubeletExtraArgs {
+		td.KubeletExtraArgs = map[string]string{}
+		for k, v := range cluster.Spec.Config.KubeletExtraArgs {
 			td.KubeletExtraArgs[k] = v
 		}
-		fmt.Println(machine)
-		machineConfig, err := cluster.MachineProviderConfig(machine)
-		if err != nil {
-			panic(err)
-		}
-		for k, v := range machineConfig.Config.KubeletExtraArgs {
-			td.KubeletExtraArgs[k] = v
-		}*/
 		td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 			api.NodePoolKey: machine.Name,
 			api.RoleNodeKey: "",
@@ -49,12 +44,13 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		//td.KubeletExtraArgs["keep-terminated-pod-volumes"] = "true"
 
 	}
+
 	return td
 }
 
 func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine) TemplateData {
 	td := newNodeTemplateData(ctx, cluster, machine, "")
-	/*td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
+	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
 	}.String()
 
@@ -67,8 +63,8 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 			KubeletExtraArgs: td.KubeletExtraArgs,
 		},
 		LocalAPIEndpoint: kubeadmapi.APIEndpoint{
-			AdvertiseAddress: cluster.Spec.API.AdvertiseAddress,
-			BindPort:         cluster.Spec.API.BindPort,
+			//AdvertiseAddress: machine.Status,
+			BindPort: 6443, //        cluster.Spec.API.BindPort,
 		},
 	}
 	td.InitConfiguration = &ifg
@@ -82,29 +78,25 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 			PodSubnet:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
 			DNSDomain:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.ServiceDomain,
 		},
-		KubernetesVersion: cluster.Spec.KubernetesVersion,
-		Etcd: kubeadmapi.Etcd{
-			Image: EtcdImage,
-			//ExtraArgs: extraArgs,
-		},
-		CertificatesDir: "/etc/kubernetes/pki",
+		KubernetesVersion: cluster.Spec.Config.KubernetesVersion,
+		CertificatesDir:   "/etc/kubernetes/pki",
 		// "external": cloudprovider not supported for apiserver and controller-manager
 		// https://github.com/kubernetes/kubernetes/pull/50545
 		APIServer: kubeadmapi.APIServer{
 			ControlPlaneComponent: kubeadmapi.ControlPlaneComponent{
-				ExtraArgs: cluster.Spec.APIServerExtraArgs,
+				ExtraArgs: cluster.Spec.Config.APIServerExtraArgs,
 			},
-			CertSANs: cluster.Spec.APIServerCertSANs,
+			CertSANs: cluster.Spec.Config.APIServerCertSANs,
 		},
 		ControllerManager: kubeadmapi.ControlPlaneComponent{
-			ExtraArgs: cluster.Spec.ControllerManagerExtraArgs,
+			ExtraArgs: cluster.Spec.Config.ControllerManagerExtraArgs,
 		},
 		Scheduler: kubeadmapi.ControlPlaneComponent{
-			ExtraArgs: cluster.Spec.SchedulerExtraArgs,
+			ExtraArgs: cluster.Spec.Config.SchedulerExtraArgs,
 		},
 		ClusterName: cluster.Name,
 	}
-	td.ClusterConfiguration = &cfg*/
+	td.ClusterConfiguration = &cfg
 
 	return td
 }
@@ -168,14 +160,14 @@ func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *c
 	}
 
 	var script bytes.Buffer
-	/*if IsMaster(machine) {
-		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, machine)); err != nil {
+	if util.IsMaster(machine) {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, cluster, machine)); err != nil {
 			return "", err
 		}
 	} else {
-		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, machine, token)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, cluster, machine, token)); err != nil {
 			return "", err
 		}
-	}*/
+	}
 	return script.String(), nil
 }

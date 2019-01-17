@@ -15,7 +15,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -81,7 +83,8 @@ func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
 		}
 	}
 
-	return cluster, nil
+	return Store(ctx).Clusters().Update(cluster)
+
 }
 
 func CreateMasterMachines(ctx context.Context, cluster *api.Cluster) (*clusterapi.Machine, error) {
@@ -396,4 +399,21 @@ func UpdateSpec(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error)
 	cluster.Generation = time.Now().UnixNano()
 
 	return Store(ctx).Clusters().Update(cluster)
+}
+
+func GetBooststrapClient(ctx context.Context, cluster *api.Cluster) (clusterclient.Client, error) {
+	clientFactory := clusterclient.NewFactory()
+	kubeConifg, err := GetAdminConfig(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	config := api.Convert_KubeConfig_To_Config(kubeConifg)
+	data, err := clientcmd.Write(*config)
+	bootstrapClient, err := clientFactory.NewClientFromKubeconfig(string(data))
+	if err != nil {
+		return nil, fmt.Errorf("unable to create bootstrap client: %v", err)
+	}
+	return bootstrapClient, nil
+
 }

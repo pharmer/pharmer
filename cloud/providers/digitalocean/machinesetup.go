@@ -6,9 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-
 	"github.com/ghodss/yaml"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 // MachineSetupConfig interface is used to operate with the machine userdata.

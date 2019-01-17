@@ -3,6 +3,7 @@ package v1beta1
 import (
 	"fmt"
 
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -13,6 +14,8 @@ const (
 	ResourceKindCluster = "Cluster"
 	ResourceNameCluster = "cluster"
 	ResourceTypeCluster = "clusters"
+
+	DefaultKubernetesBindPort = 6443
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -174,38 +177,37 @@ func (c *Cluster) SetClusterConfig(config *ClusterConfig) error {
 }
 */
 func (c *Cluster) APIServerURL() string {
-	endpoints := c.Spec.ClusterAPI.Status.APIEndpoints
-	if len(endpoints) == 0 {
-		return ""
+	for _, addr := range c.Spec.ClusterAPI.Status.APIEndpoints {
+		if addr.Port == 0 {
+			return fmt.Sprintf("https://%s", addr.Host)
+		} else {
+			return fmt.Sprintf("https://%s:%d", addr.Host, addr.Port)
+		}
+
 	}
-	ep := endpoints[0]
-	if ep.Port == 0 {
-		return fmt.Sprintf("https://%s", ep.Host)
-	} else {
-		return fmt.Sprintf("https://%s:%d", ep.Host, ep.Port)
-	}
+	return ""
 }
 
-func (c *Cluster) SetClusterApiEndpoints() error {
-	/*m := map[core.NodeAddressType]string{}
-	for _, addr := range c.Status.APIAddresses {
-		//m[addr.Type] = addr.Address
+func (c *Cluster) SetClusterApiEndpoints(addresses []core.NodeAddress) error {
+	m := map[core.NodeAddressType]string{}
+	for _, addr := range addresses {
+		m[addr.Type] = addr.Address
 
 	}
 	if u, found := m[core.NodeExternalIP]; found {
 		c.Spec.ClusterAPI.Status.APIEndpoints = append(c.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
 			Host: u,
-			Port: int(c.Spec.API.BindPort),
+			Port: int(DefaultKubernetesBindPort),
 		})
 		return nil
 	}
 	if u, found := m[core.NodeExternalDNS]; found {
 		c.Spec.ClusterAPI.Status.APIEndpoints = append(c.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
 			Host: u,
-			Port: int(c.Spec.API.BindPort),
+			Port: int(DefaultKubernetesBindPort),
 		})
 		return nil
-	}*/
+	}
 	return fmt.Errorf("No cluster api endpoint found")
 }
 

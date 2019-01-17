@@ -77,6 +77,7 @@ func (ca *ClusterApi) Apply() error {
 	if err := waitForServiceAccount(ca.ctx, ca.kc); err != nil {
 		return err
 	}
+
 	Logger(ca.ctx).Infof("Deploying the addon apiserver and controller manager...")
 	if err := ca.CreateMachineController(); err != nil {
 		return fmt.Errorf("can't create machine controller: %v", err)
@@ -279,198 +280,159 @@ func deployConfig(manifest []byte) error {
 }
 
 const ClusterAPIDeployConfigTemplate = `
-apiVersion: apiregistration.k8s.io/v1beta1
-kind: APIService
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
-  name: v1alpha1.cluster.k8s.io
-  labels:
-    api: clusterapi
-    apiserver: "true"
-spec:
-  version: v1alpha1
-  group: cluster.k8s.io
-  groupPriorityMinimum: 2000
-  priority: 200
-  service:
-    name: clusterapi
-    namespace: default
-  versionPriority: 10
-  caBundle: {{ .CABundle }}
+  creationTimestamp: null
+  name: cluster-api-manager-role
+rules:
+- apiGroups:
+  - cluster.k8s.io
+  resources:
+  - clusters
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - cluster.k8s.io
+  resources:
+  - machines
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - cluster.k8s.io
+  resources:
+  - machinedeployments
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - cluster.k8s.io
+  resources:
+  - machinesets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - cluster.k8s.io
+  resources:
+  - machines
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - cluster.k8s.io
+  resources:
+  - machines
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  name: cluster-api-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-api-manager-role
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: cluster-api-system
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: clusterapi
-  namespace: default
   labels:
-    api: clusterapi
-    apiserver: "true"
+    control-plane: controller-manager
+    controller-tools.k8s.io: "1.0"
+  name: cluster-api-controller-manager-service
+  namespace: cluster-api-system
 spec:
   ports:
   - port: 443
-    protocol: TCP
-    targetPort: 443
   selector:
-    api: clusterapi
-    apiserver: "true"
+    control-plane: controller-manager
+    controller-tools.k8s.io: "1.0"
 ---
-apiVersion: extensions/v1beta1
-kind: DaemonSet
-metadata:
-  name: clusterapi
-  namespace: default
-  labels:
-    api: clusterapi
-    apiserver: "true"
-  annotations:
-    scheduler.alpha.kubernetes.io/critical-pod: ''
-spec:
-  template:
-    metadata:
-      labels:
-        api: clusterapi
-        apiserver: "true"
-    spec:
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
-      tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/master
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - effect: NoExecute
-        key: node.alpha.kubernetes.io/notReady
-        operator: Exists
-      - effect: NoExecute
-        key: node.alpha.kubernetes.io/unreachable
-        operator: Exists
-      containers:
-      - name: apiserver
-        image: {{ .APIServerImage }}
-        imagePullPolicy: Always
-        volumeMounts:
-        - name: cluster-apiserver-certs
-          mountPath: /apiserver.local.config/certificates
-          readOnly: true
-        - name: config
-          mountPath: /etc/kubernetes
-        - name: certs
-          mountPath: /etc/ssl/certs
-        command:
-        - "./apiserver"
-        args:
-        - "--etcd-servers=http://etcd-clusterapi-svc:2379"
-        - "--tls-cert-file=/apiserver.local.config/certificates/tls.crt"
-        - "--tls-private-key-file=/apiserver.local.config/certificates/tls.key"
-        - "--audit-log-path=-"
-        - "--audit-log-maxage=0"
-        - "--audit-log-maxbackup=0"
-        - "--authorization-kubeconfig=/etc/kubernetes/admin.conf"
-        - "--authentication-kubeconfig=/etc/kubernetes/admin.conf"
-        - "--kubeconfig=/etc/kubernetes/admin.conf"
-        resources:
-          requests:
-            cpu: 100m
-            memory: 20Mi
-          limits:
-            cpu: 100m
-            memory: 30Mi
-      - name: controller-manager
-        image: {{ .ControllerManagerImage }}
-        imagePullPolicy: Always
-        volumeMounts:
-          - name: config
-            mountPath: /etc/kubernetes
-          - name: certs
-            mountPath: /etc/ssl/certs
-        command:
-        - "./controller-manager"
-        args:
-        - --kubeconfig=/etc/kubernetes/admin.conf
-        resources:
-          requests:
-            cpu: 100m
-            memory: 20Mi
-          limits:
-            cpu: 100m
-            memory: 30Mi
-      - name: machine-controller
-        image: {{ .MachineControllerImage }}
-        imagePullPolicy: Always
-        volumeMounts:
-          - name: config
-            mountPath: /etc/kubernetes
-          - name: certs
-            mountPath: /etc/ssl/certs
-          - name: sshkeys
-            mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/ssh
-          - name: certificates
-            mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/pki
-          - name: etcd-cert
-            mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/pki/etcd
-          - name: cluster
-            mountPath: /root/.pharmer/store.d/clusters
-          - name: credential
-            mountPath: /root/.pharmer/store.d/credentials
-        args:
-        - controller
-        - --kubeconfig=/etc/kubernetes/admin.conf
-        - --provider={{ .Provider }}
-        - --v=5
-        resources:
-          requests:
-            cpu: 100m
-            memory: 20Mi
-          limits:
-            cpu: 100m
-            memory: 30Mi
-      volumes:
-      - name: cluster-apiserver-certs
-        secret:
-          secretName: cluster-apiserver-certs
-      - name: config
-        hostPath:
-          path: /etc/kubernetes
-      - name: certs
-        hostPath:
-          path: /etc/ssl/certs
-      - name: sshkeys
-        secret:
-          secretName: pharmer-ssh
-          defaultMode: 256
-      - name: certificates
-        secret:
-          secretName: pharmer-certificate
-          defaultMode: 256
-      - name: etcd-cert
-        secret:
-          secretName: pharmer-etcd
-          defaultMode: 256
-      - name: cluster
-        secret:
-          secretName: pharmer-cluster
-          defaultMode: 256
-      - name: credential
-        secret:
-          secretName: pharmer-cred
-          defaultMode: 256
-
----
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: etcd-clusterapi
-  namespace: default
+  labels:
+    control-plane: controller-manager
+    controller-tools.k8s.io: "1.0"
+  name: cluster-api-controller-manager
+  namespace: cluster-api-system
 spec:
-  serviceName: "etcd"
-  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+      controller-tools.k8s.io: "1.0"
+  serviceName: cluster-api-controller-manager-service
   template:
     metadata:
       labels:
-        app: etcd
+        control-plane: controller-manager
+        controller-tools.k8s.io: "1.0"
     spec:
-      nodeSelector:
-        node-role.kubernetes.io/master: ""
+      containers:
+      - command:
+        - /manager
+        image: gcr.io/k8s-cluster-api/cluster-api-controller:latest
+        name: manager
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+      terminationGracePeriodSeconds: 10
       tolerations:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master
@@ -482,81 +444,4 @@ spec:
       - effect: NoExecute
         key: node.alpha.kubernetes.io/unreachable
         operator: Exists
-      volumes:
-      - hostPath:
-          path: /var/lib/etcd2
-          type: DirectoryOrCreate
-        name: etcd-data-dir
-      terminationGracePeriodSeconds: 10
-      containers:
-      - name: etcd
-        image: quay.io/coreos/etcd:latest
-        imagePullPolicy: Always
-        resources:
-          requests:
-            cpu: 100m
-            memory: 20Mi
-          limits:
-            cpu: 100m
-            memory: 30Mi
-        env:
-        - name: ETCD_DATA_DIR
-          value: /etcd-data-dir
-        command:
-        - /usr/local/bin/etcd
-        - --listen-client-urls
-        - http://0.0.0.0:2379
-        - --advertise-client-urls
-        - http://localhost:2379
-        ports:
-        - containerPort: 2379
-        volumeMounts:
-        - name: etcd-data-dir
-          mountPath: /etcd-data-dir
-        readinessProbe:
-          httpGet:
-            port: 2379
-            path: /health
-          failureThreshold: 3
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 10
-        livenessProbe:
-          httpGet:
-            port: 2379
-            path: /health
-          failureThreshold: 8
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 15
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: etcd-clusterapi-svc
-  namespace: default
-  labels:
-    app: etcd
-spec:
-  ports:
-  - port: 2379
-    name: etcd
-    targetPort: 2379
-  selector:
-    app: etcd
----
-apiVersion: v1
-kind: Secret
-type: kubernetes.io/tls
-metadata:
-  name: cluster-apiserver-certs
-  namespace: default
-  labels:
-    api: clusterapi
-    apiserver: "true"
-data:
-  tls.crt: {{ .TLSCrt }}
-  tls.key: {{ .TLSKey }}
 `

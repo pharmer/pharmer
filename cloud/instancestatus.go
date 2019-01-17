@@ -2,13 +2,14 @@ package cloud
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/util"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Long term, we should retrieve the current status by asking k8s, gce etc. for all the needed info.
@@ -20,12 +21,12 @@ const InstanceStatusAnnotationKey = "instance-status"
 type instanceStatus *clusterv1.Machine
 
 type StatusManager struct {
-	machineClient client.MachineInterface
-	scheme        *runtime.Scheme
+	client client.Client
+	scheme *runtime.Scheme
 }
 
-func NewStatusManager(machineClient client.MachineInterface, scheme *runtime.Scheme) *StatusManager {
-	return &StatusManager{machineClient, scheme}
+func NewStatusManager(client client.Client, scheme *runtime.Scheme) *StatusManager {
+	return &StatusManager{client, scheme}
 }
 
 func (sm *StatusManager) Initialize(machine *clusterv1.Machine) instanceStatus {
@@ -34,7 +35,10 @@ func (sm *StatusManager) Initialize(machine *clusterv1.Machine) instanceStatus {
 
 // Get the status of the instance identified by the given machine
 func (sm *StatusManager) InstanceStatus(machine *clusterv1.Machine) (instanceStatus, error) {
-	currentMachine, err := GetCurrentMachineIfExists(sm.machineClient, machine)
+	if sm.client == nil {
+		return nil, nil
+	}
+	currentMachine, err := util.GetMachineIfExists(sm.client, machine.ObjectMeta.Namespace, machine.ObjectMeta.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -43,13 +47,16 @@ func (sm *StatusManager) InstanceStatus(machine *clusterv1.Machine) (instanceSta
 		// The current status no longer exists because the matching CRD has been deleted (or does not exist yet ie. bootstrapping)
 		return nil, nil
 	}
-	return sm.MachineInstanceStatus(currentMachine)
+	return sm.machineInstanceStatus(currentMachine)
 }
 
 // Sets the status of the instance identified by the given machine to the given machine
 func (sm *StatusManager) updateInstanceStatus(machine *clusterv1.Machine) error {
+	if sm.client == nil {
+		return nil
+	}
 	status := instanceStatus(machine)
-	currentMachine, err := GetCurrentMachineIfExists(sm.machineClient, machine)
+	currentMachine, err := util.GetMachineIfExists(sm.client, machine.ObjectMeta.Namespace, machine.ObjectMeta.Name)
 	if err != nil {
 		return err
 	}
@@ -64,12 +71,11 @@ func (sm *StatusManager) updateInstanceStatus(machine *clusterv1.Machine) error 
 		return err
 	}
 
-	_, err = sm.machineClient.Update(m)
-	return err
+	return sm.client.Update(context.Background(), m)
 }
 
 // Gets the state of the instance stored on the given machine CRD
-func (sm *StatusManager) MachineInstanceStatus(machine *clusterv1.Machine) (instanceStatus, error) {
+func (sm *StatusManager) machineInstanceStatus(machine *clusterv1.Machine) (instanceStatus, error) {
 	if machine.ObjectMeta.Annotations == nil {
 		// No state
 		return nil, nil
@@ -83,7 +89,8 @@ func (sm *StatusManager) MachineInstanceStatus(machine *clusterv1.Machine) (inst
 
 	serializer := json.NewSerializer(json.DefaultMetaFactory, sm.scheme, sm.scheme, false)
 	var status clusterv1.Machine
-	_, _, err := serializer.Decode([]byte(a), &schema.GroupVersionKind{Group: "", Version: "cluster.k8s.io/v1alpha1", Kind: "Machine"}, &status)
+	dvk := clusterv1.SchemeGroupVersion.WithKind("Machine")
+	_, _, err := serializer.Decode([]byte(a), &dvk, &status)
 	if err != nil {
 		return nil, fmt.Errorf("decoding failure: %v", err)
 	}

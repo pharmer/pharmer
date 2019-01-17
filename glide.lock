@@ -1,5 +1,5 @@
 hash: cb39be517f593f5db7a65bd22a026de0de1c38d70836ce50ed9d3168a9978cec
-updated: 2019-01-16T13:16:51.238686101+06:00
+updated: 2019-01-17T18:23:13.714649655+06:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -263,8 +263,6 @@ imports:
   version: 222f010658cca4619115dfe10279480c6621001e
   repo: https://github.com/appscode/grpc-gateway.git
   vcs: git
-- name: github.com/hashicorp/go-version
-  version: d40cf49b3a77bba84a7afdbd7f1dc295d114efb1
 - name: github.com/hashicorp/golang-lru
   version: a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4
   subpackages:
@@ -524,6 +522,7 @@ imports:
 - name: google.golang.org/api
   version: 3639d6d93f377f39a1de765fa4ef37b3c7ca8bd9
   subpackages:
+  - cloudbilling/v1
   - cloudresourcemanager/v1
   - compute/v1
   - container/v1
@@ -532,6 +531,7 @@ imports:
   - googleapi/internal/uritemplates
   - iam/v1
   - replicapoolupdater/v1beta1
+  - servicemanagement/v1
   - storage/v1
 - name: google.golang.org/appengine
   version: 4f7eeb5305a4ba1966344836ba4af9996b7b4e05
@@ -552,10 +552,18 @@ imports:
   subpackages:
   - core
   - terminal
+- name: gopkg.in/gcfg.v1
+  version: 27e4946190b4a327b539185f2b5b1f7c84730728
+  subpackages:
+  - scanner
+  - token
+  - types
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/ini.v1
   version: 06f5f3d67269ccec1fe5fe4134ba6e982984f7f5
+- name: gopkg.in/warnings.v0
+  version: 8a331561fe74dadba6edfc59f3be66c22c3b065d
 - name: gopkg.in/yaml.v2
   version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
 - name: k8s.io/api
@@ -907,18 +915,36 @@ imports:
   - exec/testing
   - pointer
 - name: sigs.k8s.io/cluster-api
-  version: 750b02221cd5c61afaf86d4a6f8e69c37266a681
+  version: 361d0e2093c644834ca3faa38360203da04446d8
   subpackages:
+  - cmd/clusterctl/clientcmd
+  - cmd/clusterctl/clusterdeployer/bootstrap
+  - cmd/clusterctl/clusterdeployer/clusterclient
+  - cmd/clusterctl/phases
   - pkg/apis
   - pkg/apis/cluster/common
   - pkg/apis/cluster/v1alpha1
+  - pkg/cert
   - pkg/client/clientset_generated/clientset
   - pkg/client/clientset_generated/clientset/scheme
   - pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1
+  - pkg/cmd-runner
+  - pkg/controller/cluster
   - pkg/controller/config
   - pkg/controller/error
   - pkg/controller/machine
+  - pkg/errors
+  - pkg/kubeadm
   - pkg/util
+- name: sigs.k8s.io/cluster-api-provider-gcp
+  version: 81b13a04837b71cc0a3db61ce8bc32d5c9c48425
+  subpackages:
+  - pkg/apis/gceproviderconfig/v1alpha1
+  - pkg/cloud/google
+  - pkg/cloud/google/clients
+  - pkg/cloud/google/clients/errors
+  - pkg/cloud/google/config
+  - pkg/cloud/google/machinesetup
 - name: sigs.k8s.io/controller-runtime
   version: f6f0bc9611363b43664d08fb097ab13243ef621d
   subpackages:

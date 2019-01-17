@@ -19,40 +19,40 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster) (context.Co
 	certStore := Store(ctx).Certificates(cluster.Name)
 
 	// -----------------------------------------------
-	if cluster.ClusterConfig().CACertName == "" {
-		cluster.ClusterConfig().CACertName = kubeadmconst.CACertAndKeyBaseName
+	if cluster.Spec.Config.CACertName == "" {
+		cluster.Spec.Config.CACertName = kubeadmconst.CACertAndKeyBaseName
 
 		caKey, err := cert.NewPrivateKey()
 		if err != nil {
 			return ctx, errors.Errorf("failed to generate private key. Reason: %v", err)
 		}
-		caCert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: cluster.ClusterConfig().CACertName}, caKey)
+		caCert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: cluster.Spec.Config.CACertName}, caKey)
 		if err != nil {
 			return ctx, errors.Errorf("failed to generate self-signed certificate. Reason: %v", err)
 		}
 
 		ctx = context.WithValue(ctx, paramCACert{}, caCert)
 		ctx = context.WithValue(ctx, paramCAKey{}, caKey)
-		if err = certStore.Create(cluster.ClusterConfig().CACertName, caCert, caKey); err != nil {
+		if err = certStore.Create(cluster.Spec.Config.CACertName, caCert, caKey); err != nil {
 			return ctx, err
 		}
 	}
 
 	// -----------------------------------------------
-	if cluster.ClusterConfig().FrontProxyCACertName == "" {
-		cluster.ClusterConfig().FrontProxyCACertName = kubeadmconst.FrontProxyCACertAndKeyBaseName
+	if cluster.Spec.Config.FrontProxyCACertName == "" {
+		cluster.Spec.Config.FrontProxyCACertName = kubeadmconst.FrontProxyCACertAndKeyBaseName
 		frontProxyCAKey, err := cert.NewPrivateKey()
 		if err != nil {
 			return ctx, errors.Errorf("failed to generate private key. Reason: %v", err)
 		}
-		frontProxyCACert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: cluster.ClusterConfig().CACertName}, frontProxyCAKey)
+		frontProxyCACert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: cluster.Spec.Config.CACertName}, frontProxyCAKey)
 		if err != nil {
 			return ctx, errors.Errorf("failed to generate self-signed certificate. Reason: %v", err)
 		}
 
 		ctx = context.WithValue(ctx, paramFrontProxyCACert{}, frontProxyCACert)
 		ctx = context.WithValue(ctx, paramFrontProxyCAKey{}, frontProxyCAKey)
-		if err = certStore.Create(cluster.ClusterConfig().FrontProxyCACertName, frontProxyCACert, frontProxyCAKey); err != nil {
+		if err = certStore.Create(cluster.Spec.Config.FrontProxyCACertName, frontProxyCACert, frontProxyCAKey); err != nil {
 			return ctx, err
 		}
 	}
@@ -155,14 +155,14 @@ func CreateEtcdCertificates(ctx context.Context, cluster *api.Cluster) (context.
 func LoadCACertificates(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
 	certStore := Store(ctx).Certificates(cluster.Name)
 
-	caCert, caKey, err := certStore.Get(cluster.ClusterConfig().CACertName)
+	caCert, caKey, err := certStore.Get(cluster.Spec.Config.CACertName)
 	if err != nil {
 		return ctx, errors.Errorf("failed to get CA certificates. Reason: %v", err)
 	}
 	ctx = context.WithValue(ctx, paramCACert{}, caCert)
 	ctx = context.WithValue(ctx, paramCAKey{}, caKey)
 
-	frontProxyCACert, frontProxyCAKey, err := certStore.Get(cluster.ClusterConfig().FrontProxyCACertName)
+	frontProxyCACert, frontProxyCAKey, err := certStore.Get(cluster.Spec.Config.FrontProxyCACertName)
 	if err != nil {
 		return ctx, errors.Errorf("failed to get front proxy CA certificates. Reason: %v", err)
 	}
@@ -247,7 +247,7 @@ func CreateSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, e
 		return ctx, err
 	}
 	ctx = context.WithValue(ctx, paramSSHKey{}, sshKey)
-	err = Store(ctx).SSHKeys(cluster.Name).Create(cluster.ClusterConfig().Cloud.SSHKeyName, sshKey.PublicKey, sshKey.PrivateKey)
+	err = Store(ctx).SSHKeys(cluster.Name).Create(cluster.Spec.Config.Cloud.SSHKeyName, sshKey.PublicKey, sshKey.PrivateKey)
 	if err != nil {
 		return ctx, err
 	}
@@ -255,7 +255,7 @@ func CreateSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, e
 }
 
 func LoadSSHKey(ctx context.Context, cluster *api.Cluster) (context.Context, error) {
-	publicKey, privateKey, err := Store(ctx).SSHKeys(cluster.Name).Get(cluster.ClusterConfig().Cloud.SSHKeyName)
+	publicKey, privateKey, err := Store(ctx).SSHKeys(cluster.Name).Get(cluster.Spec.Config.Cloud.SSHKeyName)
 	if err != nil {
 		return ctx, errors.Errorf("failed to get SSH key. Reason: %v", err)
 	}
