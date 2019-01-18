@@ -11,6 +11,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/machine"
 	"sigs.k8s.io/cluster-api/pkg/util"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	//	"k8s.io/client-go/kubernetes"
 	"fmt"
@@ -23,7 +24,6 @@ import (
 	//kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"sigs.k8s.io/cluster-api/pkg/kubeadm"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 const (
@@ -33,8 +33,14 @@ const (
 
 func init() {
 	// AddToManagerFuncs is a list of functions to create controllers and add them to a manager.
-	AddToManagerFuncs = append(AddToManagerFuncs, func(m manager.Manager) error {
-		return machine.AddWithActuator(m, &MachineActuator{})
+	AddToManagerFuncs = append(AddToManagerFuncs, func(ctx context.Context, m manager.Manager) error {
+		actuator := NewMachineActuator(MachineActuatorParams{
+			Ctx:           ctx,
+			EventRecorder: m.GetRecorder(Recorder),
+			Client:        m.GetClient(),
+			Scheme:        m.GetScheme(),
+		})
+		return machine.AddWithActuator(m, actuator)
 	})
 }
 
@@ -84,6 +90,7 @@ func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster,
 	if err != nil {
 		return fmt.Errorf("error decoding provided machineConfig: %v", err)
 	}*/
+	fmt.Println("call for deleting machine", machine.Name)
 	var err error
 
 	if do.conn, err = PrepareCloud(do.ctx, cluster.Name); err != nil {
@@ -95,7 +102,7 @@ func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster,
 	}
 
 	if exists {
-		Logger(do.ctx).Infoln("Skipped creating a machine that already exists.")
+		fmt.Println("Skipped creating a machine that already exists.")
 		return nil
 	}
 
@@ -186,7 +193,7 @@ func machineProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*api.
 }
 
 func (do *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	Logger(do.ctx).Infoln("call for deleting machine")
+	fmt.Println("call for deleting machine")
 	clusterName := machine.ClusterName
 	if _, found := machine.Labels[api.PharmerCluster]; found {
 		clusterName = machine.Labels[api.PharmerCluster]
@@ -197,16 +204,16 @@ func (do *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster,
 	}
 	instance, err := do.conn.instanceIfExists(machine)
 	if err != nil {
-		return err
+		// SKIp error
 	}
 
 	if instance == nil {
-		Logger(do.ctx).Infof("Skipped deleting a VM that is already deleted.\n")
+		fmt.Println("Skipped deleting a VM that is already deleted.\n")
 		return nil
 	}
 
 	if err = do.conn.DeleteInstanceByProviderID(machine.Name); err != nil {
-		Logger(do.ctx).Infoln("errror on deleting %v", err)
+		fmt.Println("errror on deleting %v", err)
 	}
 
 	do.eventRecorder.Eventf(machine, corev1.EventTypeNormal, "Deleted", "Deleted Machine %v", machine.Name)
@@ -215,7 +222,7 @@ func (do *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster,
 }
 
 func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
-	Logger(do.ctx).Infoln("call for updating machine")
+	fmt.Println("call for updating machine")
 
 	return nil
 	/*var err error
@@ -245,7 +252,7 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 			return err
 		}
 		if instance != nil {
-			Logger(do.ctx).Infof("Populating current state for boostrap machine %v", goalMachine.ObjectMeta.Name)
+			fmt.Println("Populating current state for boostrap machine %v", goalMachine.ObjectMeta.Name)
 			return do.updateAnnotations(goalMachine)
 		} else {
 			return fmt.Errorf("cannot retrieve current state to update machine %v", goalMachine.ObjectMeta.Name)
@@ -280,9 +287,9 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 	return cm.updateInstanceStatus(goalMachine)*/
 }
 
-func (do *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	//Logger(cm.ctx).Infoln("call for checking machine existence")
-	clusterName := machine.ClusterName
+func (do *MachineActuator) Exists(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
+	fmt.Println("call for checking machine existence", machine.Name)
+	clusterName := cluster.Name
 	if _, found := machine.Labels[api.PharmerCluster]; found {
 		clusterName = machine.Labels[api.PharmerCluster]
 	}
@@ -291,6 +298,7 @@ func (do *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluste
 		return false, err
 	}
 	i, err := do.conn.instanceIfExists(machine)
+	fmt.Println(err)
 	if err != nil {
 		return false, nil
 	}
@@ -347,7 +355,7 @@ func (do *MachineActuator) updateInstanceStatus(machine *clusterv1.Machine) erro
 func (do *MachineActuator) requiresUpdate(a *clusterv1.Machine, b *clusterv1.Machine) bool {
 	// Do not want status changes. Do want changes that impact machine provisioning
 	return false
-	/*return !reflect.DeepEqual(a.Spec.ObjectMeta, b.Spec.ObjectMeta) ||
+	/*return !reflect.DeepEqual(a.Spec.ObjectMeta, b.Spec.ObjectMeta) ||bpl
 	!reflect.DeepEqual(a.Spec.ProviderConfig, b.Spec.ProviderConfig) ||
 	!reflect.DeepEqual(a.Spec.Roles, b.Spec.Roles) ||
 	!reflect.DeepEqual(a.Spec.Versions, b.Spec.Versions) ||

@@ -222,14 +222,13 @@ func DeleteDyanamicVolumes(client kubernetes.Interface) error {
 }
 
 func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cluster *api.Cluster) error {
-	return nil
-	/*cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	cred, err := Store(ctx).Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return err
 	}
 	secret := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: cluster.ClusterConfig().CloudProvider,
+			Name: cluster.ClusterConfig().Cloud.CloudProvider,
 		},
 		StringData: cred.Spec.Data,
 		Type:       core.SecretTypeOpaque,
@@ -238,7 +237,7 @@ func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cl
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		_, err := client.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
 		return err == nil, nil
-	})*/
+	})
 }
 
 func NewClusterApiClient(ctx context.Context, cluster *api.Cluster) (*clientset.Clientset, error) {
@@ -313,15 +312,32 @@ func GetMachineIfExists(machineClient client.MachineInterface, name string, uid 
 	return machine, nil
 }
 
-func CreateSecret(kc kubernetes.Interface, name string, data map[string][]byte) error {
+func CreateSecret(kc kubernetes.Interface, name, namespace string, data map[string][]byte) error {
 	secret := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name:      name,
+			Namespace: namespace,
 		},
 		Data: data,
 	}
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := kc.CoreV1().Secrets(metav1.NamespaceDefault).Create(secret)
+		_, err := kc.CoreV1().Secrets(namespace).Create(secret)
+		fmt.Println(err)
+		return err == nil, nil
+	})
+}
+
+func CreateNamespace(kc kubernetes.Interface, namespace string) error {
+	ns := &core.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+			Labels: map[string]string{
+				"controller-tools.k8s.io": "1.0",
+			},
+		},
+	}
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		_, err := kc.CoreV1().Namespaces().Create(ns)
 		fmt.Println(err)
 		return err == nil, nil
 	})

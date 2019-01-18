@@ -26,7 +26,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		//ETCDCAKey:        string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
 		APIServerAddress: cluster.APIServerAddress(),
 		NetworkProvider:  cluster.ClusterConfig().Cloud.NetworkProvider,
-		//Provider:          cluster.ClusterConfig().CloudProvider,
+		Provider:         cluster.ClusterConfig().Cloud.CloudProvider,
 		ExternalProvider: true, // DigitalOcean uses out-of-tree CCM
 	}
 	{

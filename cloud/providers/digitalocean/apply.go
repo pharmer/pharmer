@@ -156,8 +156,6 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	nodeAddresses := make([]core.NodeAddress, 0)
-
 	if d, _ := cm.conn.instanceIfExists(masterMachine); d == nil {
 		Logger(cm.ctx).Info("Creating master instance")
 		acts = append(acts, api.Action{
@@ -167,7 +165,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 		if !dryRun {
 			var masterServer *api.NodeInfo
-
+			nodeAddresses := make([]core.NodeAddress, 0)
 			masterServer, err = cm.conn.CreateInstance(cm.cluster, masterMachine, "")
 			if err != nil {
 				return
@@ -186,6 +184,9 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 					Address: masterServer.PublicIP,
 				})
 			}
+			if err = cm.cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
+				return
+			}
 
 		}
 	} else {
@@ -194,10 +195,6 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Resource: "MasterInstance",
 			Message:  fmt.Sprintf("master instance %v already exist", masterMachine.Name),
 		})
-	}
-
-	if err = cm.cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
-		return
 	}
 
 	if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
@@ -225,8 +222,20 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
+	ca, err := NewClusterApi(cm.ctx, cm.cluster, "do-provider-system", kc)
+	if err != nil {
+		return acts, err
+	}
+	if err := ca.Apply(); err != nil {
+		return acts, err
+	}
+
 	bootstrapClient, err := GetBooststrapClient(cm.ctx, cm.cluster)
 	if err != nil {
+		return
+	}
+
+	if err = bootstrapClient.Apply(ClusterAPIDOProviderComponentsTemplate); err != nil {
 		return
 	}
 
@@ -244,14 +253,6 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	if err = phases.ApplyMachines(bootstrapClient, namespace, []*clusterv1.Machine{masterMachine}); err != nil {
 		return
 	}
-
-	/*ca, err := NewClusterApi(cm.ctx, cm.cluster, kc)
-	if err != nil {
-		return acts, err
-	}
-	if err := ca.Apply(); err != nil {
-		return acts, err
-	}*/
 	return acts, err
 }
 

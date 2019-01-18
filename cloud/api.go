@@ -1,6 +1,8 @@
 package cloud
 
 import (
+	"context"
+
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
@@ -36,7 +38,7 @@ type Interface interface {
 	GetDefaultProviderSpec(cluster *api.Cluster, sku string) (clusterv1.ProviderSpec, error)
 	InitializeMachineActuator(mgr manager.Manager) error
 
-	AddToManager(m manager.Manager) error
+	AddToManager(ctx context.Context, m manager.Manager) error
 }
 
 type SSHGetter interface {

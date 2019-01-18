@@ -1,6 +1,7 @@
 package digitalocean
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -13,27 +14,36 @@ import (
 
 func init() {
 	// AddToManagerFuncs is a list of functions to create controllers and add them to a manager.
-	AddToManagerFuncs = append(AddToManagerFuncs, func(m manager.Manager) error {
-		actuator := NewActuator(m, ClusterActuatorParams{})
+	AddToManagerFuncs = append(AddToManagerFuncs, func(ctx context.Context, m manager.Manager) error {
+		actuator := NewClusterActuator(m, ClusterActuatorParams{
+			Ctx:           ctx,
+			EventRecorder: m.GetRecorder(Recorder),
+			Scheme:        m.GetScheme(),
+		})
 		return cluster.AddWithActuator(m, actuator)
 	})
 
 }
 
 type ClusterActuator struct {
+	ctx           context.Context
 	client        client.Client
 	eventRecorder record.EventRecorder
 	scheme        *runtime.Scheme
 }
 
 type ClusterActuatorParams struct {
+	Ctx           context.Context
 	EventRecorder record.EventRecorder
 	Scheme        *runtime.Scheme
 }
 
-func NewActuator(m manager.Manager, params ClusterActuatorParams) *ClusterActuator {
+func NewClusterActuator(m manager.Manager, params ClusterActuatorParams) *ClusterActuator {
 	return &ClusterActuator{
-		client: m.GetClient(),
+		ctx:           params.Ctx,
+		client:        m.GetClient(),
+		eventRecorder: params.EventRecorder,
+		scheme:        params.Scheme,
 	}
 }
 

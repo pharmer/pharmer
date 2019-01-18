@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"fmt"
 )
 
 const NodeNameEnvVar = "NODE_NAME"
@@ -163,6 +164,7 @@ func (r *ReconcileMachine) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	exist, err := r.actuator.Exists(ctx, cluster, m)
+	fmt.Println(err, "*********************************", exist)
 	if err != nil {
 		klog.Errorf("Error checking existence of machine instance for machine object %v; %v", name, err)
 		return reconcile.Result{}, err
@@ -180,7 +182,9 @@ func (r *ReconcileMachine) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 	// Machine resource created. Machine does not yet exist.
 	klog.Infof("Reconciling machine object %v triggers idempotent create.", m.ObjectMeta.Name)
+	fmt.Println("CCCCCCCCCCCCCCCCCCCCc")
 	if err := r.create(ctx, m); err != nil {
+		fmt.Println(err, "%%%%%%%%%%%%%%%%%%%")
 		klog.Warningf("unable to create machine %v: %v", name, err)
 		if requeueErr, ok := err.(*controllerError.RequeueAfterError); ok {
 			klog.Infof("Actuator returned requeue-after error: %v", requeueErr)

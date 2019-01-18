@@ -1,0 +1,22 @@
+apiVersion: "cluster.k8s.io/v1alpha1"
+kind: Machine
+metadata:
+  name: digitalocean-node
+  namespace: default
+  labels:
+    node-role.kubernetes.io/node: ""
+    set: node
+spec:
+  providerSpec:
+    value:
+      image: ubuntu-16-04-x64
+      monitoring: true
+      private_networking: true
+      region: nyc3
+      size: 2gb
+      sshPublicKeys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDj7mu93FiyYbqX2X/WnQrIxvf/uNU8q126oW2TC3scJWrAUefqZxRkuiRma+DSNtxmzPaxfsSjIJhtRg6pwXbeTovH2sx2fyoAXksA0kqvvXRZIE4FM23MHJCML9zAgVj50zUdPHpeguT6EGqBwqS4ZBtajx9C+JOXqu36JBCwOb2WViVoXTi+UoFxyGnm5e2HO5JokxjgHtWAYC/Bu37Jc9hgR4W1z7rHNnSQ2RwDsaXJYmnoXMnqbVWD7eZnXAIMe3Tve6+QfIprNXHpn4Ntt6F0Eu4LCTJHJWp4YcMyPlcU+DcygoVpOKNRNhizOaLi1dhTW4yV0Masc5Ez32Wb
+      tags:
+      - KubernetesCluster:capi11
+  versions:
+    kubelet: 1.11.3

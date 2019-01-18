@@ -7,26 +7,23 @@ import (
 	"os/exec"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud/cmds/options"
-	core "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/cert"
 	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
-	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ClusterApi struct {
 	ctx     context.Context
 	cluster *api.Cluster
 
+	namespace string
 	token     string
 	kc        kubernetes.Interface
-	client    v1alpha1.ClusterV1alpha1Interface
-	clientSet clientset.Interface
+	client    client.Client
 }
 
 type ApiServerTemplate struct {
@@ -50,40 +47,24 @@ const (
 	BasePath = ".pharmer/config.d"
 )
 
-func NewClusterApi(ctx context.Context, cluster *api.Cluster, kc kubernetes.Interface) (*ClusterApi, error) {
-	c, err := NewClusterApiClient(ctx, cluster)
-	if err != nil {
-		return nil, err
-	}
+func NewClusterApi(ctx context.Context, cluster *api.Cluster, namespace string, kc kubernetes.Interface) (*ClusterApi, error) {
 	var token string
+	var err error
 	if token, err = GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration); err != nil {
 		return nil, err
 	}
 
-	return &ClusterApi{ctx: ctx, cluster: cluster, kc: kc, token: token, client: c.ClusterV1alpha1(), clientSet: c}, nil
+	return &ClusterApi{ctx: ctx, cluster: cluster, namespace: namespace, kc: kc, token: token}, nil
 }
 
 func (ca *ClusterApi) Apply() error {
-	Logger(ca.ctx).Infoln("using cluster locally")
-	c2, err := GetAdminConfig(ca.ctx, ca.cluster)
-	if err != nil {
-		Logger(ca.ctx).Infoln("error on using cluster", err)
-		return err
-	}
-	opt := options.NewClusterUseConfig()
-	opt.ClusterName = ca.cluster.Name
-	UseCluster(ca.ctx, opt, c2)
-
-	if err := waitForServiceAccount(ca.ctx, ca.kc); err != nil {
-		return err
-	}
 
 	Logger(ca.ctx).Infof("Deploying the addon apiserver and controller manager...")
 	if err := ca.CreateMachineController(); err != nil {
 		return fmt.Errorf("can't create machine controller: %v", err)
 	}
 
-	if err := waitForClusterResourceReady(ca.ctx, ca.clientSet); err != nil {
+	/*if err := waitForClusterResourceReady(ca.ctx, ca.clientSet); err != nil {
 		return err
 	}
 	if _, err := ca.client.Clusters(core.NamespaceDefault).Create(ca.cluster.Spec.ClusterAPI); err != nil {
@@ -93,7 +74,7 @@ func (ca *ClusterApi) Apply() error {
 	if _, err := ca.client.Clusters(core.NamespaceDefault).UpdateStatus(ca.cluster.Spec.ClusterAPI); err != nil {
 		return err
 	}
-
+	*/
 	Logger(ca.ctx).Infof("Adding master machines...")
 	/*for _, master := range ca.cluster.Spec.Masters {
 		if _, err := ca.client.Machines(core.NamespaceDefault).Create(master); err != nil {
@@ -110,7 +91,7 @@ func (ca *ClusterApi) CreateMachineController() error {
 		return err
 	}
 
-	Logger(ca.ctx).Infoln("creating cluster api rolebinding")
+	/*Logger(ca.ctx).Infoln("creating cluster api rolebinding")
 	if err := ca.CreateExtApiServerRoleBinding(); err != nil {
 		return err
 	}
@@ -118,7 +99,7 @@ func (ca *ClusterApi) CreateMachineController() error {
 	Logger(ca.ctx).Infoln("creating apiserver and controller")
 	if err := ca.CreateApiServerAndController(); err != nil {
 		return err
-	}
+	}*/
 	return nil
 }
 
@@ -133,7 +114,11 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 	if err != nil {
 		return err
 	}
-	if err = CreateSecret(ca.kc, "pharmer-cred", map[string][]byte{
+
+	err = CreateNamespace(ca.kc, ca.namespace)
+	fmt.Println(err)
+
+	if err = CreateSecret(ca.kc, "pharmer-cred", ca.namespace, map[string][]byte{
 		fmt.Sprintf("%v.json", ca.cluster.ClusterConfig().CredentialName): credData,
 	}); err != nil {
 		return err
@@ -143,7 +128,7 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 	if err != nil {
 		return err
 	}
-	if err = CreateSecret(ca.kc, "pharmer-cluster", map[string][]byte{
+	if err = CreateSecret(ca.kc, "pharmer-cluster", ca.namespace, map[string][]byte{
 		fmt.Sprintf("%v.json", ca.cluster.Name): cluster,
 	}); err != nil {
 		return err
@@ -153,30 +138,30 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 	if err != nil {
 		return err
 	}
-	if err = CreateSecret(ca.kc, "pharmer-ssh", map[string][]byte{
+	if err = CreateSecret(ca.kc, "pharmer-ssh", ca.namespace, map[string][]byte{
 		fmt.Sprintf("id_%v", providerConfig.Cloud.SSHKeyName):     privateKey,
 		fmt.Sprintf("id_%v.pub", providerConfig.Cloud.SSHKeyName): publicKey,
 	}); err != nil {
 		return err
 	}
 
-	if err = CreateSecret(ca.kc, "pharmer-certificate", map[string][]byte{
+	if err = CreateSecret(ca.kc, "pharmer-certificate", ca.namespace, map[string][]byte{
 		"ca.crt":             cert.EncodeCertPEM(CACert(ca.ctx)),
 		"ca.key":             cert.EncodePrivateKeyPEM(CAKey(ca.ctx)),
 		"front-proxy-ca.crt": cert.EncodeCertPEM(FrontProxyCACert(ca.ctx)),
 		"front-proxy-ca.key": cert.EncodePrivateKeyPEM(FrontProxyCAKey(ca.ctx)),
-		"sa.crt":             cert.EncodeCertPEM(SaCert(ca.ctx)),
-		"sa.key":             cert.EncodePrivateKeyPEM(SaKey(ca.ctx)),
+		//"sa.crt":             cert.EncodeCertPEM(SaCert(ca.ctx)),
+		//"sa.key":             cert.EncodePrivateKeyPEM(SaKey(ca.ctx)),
 	}); err != nil {
 		return err
 	}
 
-	if err = CreateSecret(ca.kc, "pharmer-etcd", map[string][]byte{
+	/*if err = CreateSecret(ca.kc, "pharmer-etcd", map[string][]byte{
 		"ca.crt": cert.EncodeCertPEM(EtcdCaCert(ca.ctx)),
 		"ca.key": cert.EncodePrivateKeyPEM(EtcdCaKey(ca.ctx)),
 	}); err != nil {
 		return err
-	}
+	}*/
 
 	return nil
 }
@@ -280,6 +265,13 @@ func deployConfig(manifest []byte) error {
 }
 
 const ClusterAPIDeployConfigTemplate = `
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: cluster-api-system
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:

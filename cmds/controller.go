@@ -63,7 +63,7 @@ func newCmdController() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			if err := cm.AddToManager(mgr); err != nil {
+			if err := cm.AddToManager(ctx, mgr); err != nil {
 				term.Fatalln(err)
 			}
 

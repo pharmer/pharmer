@@ -41,12 +41,21 @@ build_docker() {
     chmod 755 machine-controller
 
     cat >Dockerfile <<EOL
-FROM alpine
+FROM ubuntu:latest as kubeadm
+RUN apt-get update
+RUN apt-get install -y curl
+RUN curl -fsSL https://dl.k8s.io/release/v1.12.3/bin/linux/amd64/kubeadm > /usr/bin/kubeadm
+RUN chmod a+rx /usr/bin/kubeadm
+
+FROM ubuntu:latest
+WORKDIR /
 
 RUN set -x \
-  && apk add --update --no-cache ca-certificates tzdata curl openssl
+   && apt update \
+  && apt install  -y curl
 
 COPY machine-controller /usr/bin/machine-controller
+COPY --from=kubeadm /usr/bin/kubeadm /usr/bin/kubeadm
 
 ENTRYPOINT ["machine-controller"]
 EOL
