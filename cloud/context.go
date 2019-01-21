@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"crypto/x509"
+	"github.com/pharmer/pharmer/cloud/machinesetup"
 
 	"github.com/appscode/go/crypto/ssh"
 	_env "github.com/appscode/go/env"
@@ -40,6 +41,8 @@ type paramK8sClient struct{}
 type paramSaKey struct{}
 type paramSaCert struct{}
 
+type paramMachineSetup struct {}
+
 func Env(ctx context.Context) _env.Environment {
 	return ctx.Value(paramEnv{}).(_env.Environment)
 }
@@ -57,6 +60,17 @@ func WithStore(parent context.Context, v store.Interface) context.Context {
 		panic("nil store")
 	}
 	return context.WithValue(parent, paramStore{}, v)
+}
+
+func MachineSetup(ctx context.Context) *machinesetup.ConfigWatch  {
+	return ctx.Value(paramMachineSetup{}).(*machinesetup.ConfigWatch)
+}
+
+func WithMachineSetup(parent context.Context, v *machinesetup.ConfigWatch) context.Context  {
+	if v == nil {
+		panic("nil machine setup")
+	}
+	return context.WithValue(parent, paramMachineSetup{}, v)
 }
 
 func Logger(ctx context.Context) api.Logger {

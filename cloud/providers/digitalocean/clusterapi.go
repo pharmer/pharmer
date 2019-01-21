@@ -46,6 +46,7 @@ spec:
       containers:
       - args:
         - controller
+        - --provider={{ .Provider }}
         - --kubeconfig=/etc/kubernets/admin.conf 
         env:
         image: pharmer/machine-controller:clusterapi
@@ -63,11 +64,9 @@ spec:
         - mountPath: /etc/ssl/certs
           name: certs
         - name: sshkeys
-          mountPath: /root/.pharmer/store.d/clusters/capi11/ssh
+          mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}ssh
         - name: certificates
-          mountPath: /root/.pharmer/store.d/clusters/capi11/pki
-        - name: etcd-cert
-          mountPath: /root/.pharmer/store.d/clusters/capi11/pki/etcd
+          mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/pki
         - name: cluster
           mountPath: /root/.pharmer/store.d/clusters
         - name: credential

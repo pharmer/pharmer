@@ -2,6 +2,8 @@ package digitalocean
 
 import (
 	"context"
+	"github.com/pharmer/pharmer/cloud/machinesetup"
+	"reflect"
 	"strings"
 	"time"
 
@@ -49,7 +51,7 @@ type DOClientKubeadm interface {
 }
 
 type DOClientMachineSetupConfigGetter interface {
-	GetMachineSetupConfig() (MachineSetupConfig, error)
+	GetMachineSetupConfig() (machinesetup.MachineSetupConfig, error)
 }
 
 type MachineActuator struct {
@@ -57,7 +59,7 @@ type MachineActuator struct {
 	conn    *cloudConnector
 	client  client.Client
 	kubeadm DOClientKubeadm
-	//machineSetupConfigGetter DOClientMachineSetupConfigGetter
+	machineSetupConfigGetter DOClientMachineSetupConfigGetter
 	eventRecorder record.EventRecorder
 	scheme        *runtime.Scheme
 }
@@ -69,6 +71,8 @@ type MachineActuatorParams struct {
 	CloudConnector *cloudConnector
 	EventRecorder  record.EventRecorder
 	Scheme         *runtime.Scheme
+	//MachineSetupConfigGetter DOClientMachineSetupConfigGetter
+
 }
 
 func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
@@ -79,19 +83,39 @@ func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
 		kubeadm:       getKubeadm(params),
 		eventRecorder: params.EventRecorder,
 		scheme:        params.Scheme,
+		//machineSetupConfigGetter: MachineSetup(params.Ctx),
 	}
 }
 
 func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+	Logger(do.ctx).Infoln("call for creating machine", machine.Name)
 	/*if do.machineSetupConfigGetter == nil {
 		return errors.New("a valid machineSetupConfigGetter is required")
 	}*/
-	/*machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
+	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return fmt.Errorf("error decoding provided machineConfig: %v", err)
+	}
+
+	if verr := do.validateMachine(machineConfig); err != nil {
+		return verr
+	}
+
+	/*configParams := &machinesetup.ConfigParams{
+		Image: machineConfig.Image,
+		Roles: []api.MachineRole{api.GetMachineRole(machine)},
+		Versions: machine.Spec.Versions,
+
+	}
+
+	machineSetupConfig, err := do.machineSetupConfigGetter.GetMachineSetupConfig()
+	if err != nil {
+		return err
+	}
+	metadata, err := machineSetupConfig.GetMetadata(configParams)
+	if err != nil {
+		return err
 	}*/
-	fmt.Println("call for deleting machine", machine.Name)
-	var err error
 
 	if do.conn, err = PrepareCloud(do.ctx, cluster.Name); err != nil {
 		return err
@@ -194,7 +218,7 @@ func machineProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*api.
 
 func (do *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	fmt.Println("call for deleting machine")
-	clusterName := machine.ClusterName
+	clusterName := cluster.Name
 	if _, found := machine.Labels[api.PharmerCluster]; found {
 		clusterName = machine.Labels[api.PharmerCluster]
 	}
@@ -206,13 +230,13 @@ func (do *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster,
 	if err != nil {
 		// SKIp error
 	}
-
 	if instance == nil {
 		fmt.Println("Skipped deleting a VM that is already deleted.\n")
 		return nil
 	}
+	dropletId := fmt.Sprintf("digitalocean://%v", instance.ID)
 
-	if err = do.conn.DeleteInstanceByProviderID(machine.Name); err != nil {
+	if err = do.conn.DeleteInstanceByProviderID(dropletId); err != nil {
 		fmt.Println("errror on deleting %v", err)
 	}
 
@@ -224,8 +248,7 @@ func (do *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster,
 func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
 	fmt.Println("call for updating machine")
 
-	return nil
-	/*var err error
+	var err error
 	if do.conn, err = PrepareCloud(do.ctx, cluster.Name); err != nil {
 		return err
 	}
@@ -259,32 +282,33 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		}
 	}
 
-	currentConfig, err := machineProviderFromProviderSpec(currentMachine.Spec.ProviderSpec)
+	/*currentConfig, err := machineProviderFromProviderSpec(currentMachine.Spec.ProviderSpec)
 	if err != nil {
 		return err
-	}
+	}*/
 	if !do.requiresUpdate(currentMachine, goalMachine) {
 		return nil
 	}
-	kc, err := cm.GetAdminClient()
+	/*kc, err := cm.GetAdminClient()
 	if err != nil {
 		return err
 	}
 
+
 	upm := NewUpgradeManager(do.ctx, do.conn, kc, do.conn.cluster)
-	if IsMaster(currentMachine) {
-		Logger(cm.ctx).Infof("Doing an in-place upgrade for master.\n")
+	if util.IsMaster(currentMachine) {
+		Logger(do.ctx).Infof("Doing an in-place upgrade for master.\n")
 		if err := upm.MasterUpgrade(currentMachine, goalMachine); err != nil {
 			return err
 		}
 	} else {
 		//TODO(): Do we replace node or inplace upgrade?
-		Logger(cm.ctx).Infof("Doing an in-place upgrade for master.\n")
+		Logger(do.ctx).Infof("Doing an in-place upgrade for master.\n")
 		if err := upm.NodeUpgrade(currentMachine, goalMachine); err != nil {
 			return err
 		}
-	}
-	return cm.updateInstanceStatus(goalMachine)*/
+	}*/
+	return do.updateInstanceStatus(goalMachine)
 }
 
 func (do *MachineActuator) Exists(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
@@ -354,13 +378,10 @@ func (do *MachineActuator) updateInstanceStatus(machine *clusterv1.Machine) erro
 // The two machines differ in a way that requires an update
 func (do *MachineActuator) requiresUpdate(a *clusterv1.Machine, b *clusterv1.Machine) bool {
 	// Do not want status changes. Do want changes that impact machine provisioning
-	return false
-	/*return !reflect.DeepEqual(a.Spec.ObjectMeta, b.Spec.ObjectMeta) ||bpl
-	!reflect.DeepEqual(a.Spec.ProviderConfig, b.Spec.ProviderConfig) ||
-	!reflect.DeepEqual(a.Spec.Roles, b.Spec.Roles) ||
+	return !reflect.DeepEqual(a.Spec.ObjectMeta, b.Spec.ObjectMeta) ||
+	!reflect.DeepEqual(a.Spec.ProviderSpec, b.Spec.ProviderSpec) ||
 	!reflect.DeepEqual(a.Spec.Versions, b.Spec.Versions) ||
-	a.ObjectMeta.Name != b.ObjectMeta.Name ||
-	a.ObjectMeta.UID != b.ObjectMeta.UID*/
+	a.ObjectMeta.Name != b.ObjectMeta.Name
 }
 
 func getKubeadm(params MachineActuatorParams) DOClientKubeadm {

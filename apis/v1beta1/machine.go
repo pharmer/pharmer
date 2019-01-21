@@ -2,6 +2,7 @@ package v1beta1
 
 import (
 	"fmt"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -22,6 +23,23 @@ const (
 
 	MachineSlecetor = "cloud.appscode.com/mg"
 )
+
+type MachineRole string
+
+const (
+	MasterRole MachineRole = "Master"
+	NodeRole   MachineRole = "Node"
+)
+
+func GetMachineRole(machine *clusterapi.Machine) MachineRole {
+	if _, found := machine.Labels["set"]; found {
+		l := machine.Labels["set"]
+		if strings.ToLower(l) == "master" {
+			return MasterRole
+		}
+	}
+	return NodeRole
+}
 
 type NodeSpec struct {
 	SKU              string            `json:"sku,omitempty" protobuf:"bytes,1,opt,name=sku"`

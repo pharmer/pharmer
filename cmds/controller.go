@@ -3,7 +3,6 @@ package cmds
 import (
 	"context"
 	"fmt"
-
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
 	pharmerConf "github.com/pharmer/pharmer/config"
@@ -16,6 +15,7 @@ import (
 
 func newCmdController() *cobra.Command {
 	//s := config.
+	machineSetupConfig := "/etc/machinesetup/machine_setup_configs.yaml"
 	provider := "digitalocean"
 	cmd := &cobra.Command{
 		Use:               "controller",
@@ -45,7 +45,13 @@ func newCmdController() *cobra.Command {
 
 			fmt.Println(provider)
 
+
 			ctx := cloud.NewContext(context.Background(), cfg, pharmerConf.GetEnv(cmd.Flags()))
+
+			/*configWatch, err := machinesetup.NewConfigWatch(machineSetupConfig)
+			term.ExitOnError(err)
+			ctx = cloud.WithMachineSetup(ctx, configWatch)*/
+
 			cm, err := cloud.GetCloudManager(provider, ctx)
 			term.ExitOnError(err)
 
@@ -82,6 +88,7 @@ func newCmdController() *cobra.Command {
 		},
 	}
 	//s.AddFlags(cmd.Flags())
+	cmd.Flags().StringVar(&machineSetupConfig, "machine-setup-config", machineSetupConfig, "path to the machine setup config")
 	cmd.Flags().StringVar(&provider, "provider", provider, "Cloud provider name")
 	return cmd
 }

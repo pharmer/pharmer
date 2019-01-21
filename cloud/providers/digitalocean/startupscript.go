@@ -45,6 +45,10 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 
 	}
 
+	if machine.Spec.Versions.ControlPlane == "" {
+		td.KubernetesVersion = machine.Spec.Versions.Kubelet
+	}
+
 	return td
 }
 
@@ -170,4 +174,8 @@ func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *c
 		}
 	}
 	return script.String(), nil
+}
+
+func (conn *cloudConnector) createStartupScript(cluster *api.Cluster)  {
+
 }

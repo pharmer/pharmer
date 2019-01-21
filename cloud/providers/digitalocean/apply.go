@@ -166,7 +166,18 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		if !dryRun {
 			var masterServer *api.NodeInfo
 			nodeAddresses := make([]core.NodeAddress, 0)
-			masterServer, err = cm.conn.CreateInstance(cm.cluster, masterMachine, "")
+
+			script, err := cm.conn.renderStartupScript(cm.cluster, masterMachine, "")
+			if err != nil {
+				return nil, err
+			}
+
+			fmt.Println()
+			fmt.Println(script)
+			fmt.Println()
+
+
+			masterServer, err = cm.conn.CreateInstance(cm.cluster, masterMachine, script)
 			if err != nil {
 				return
 			}

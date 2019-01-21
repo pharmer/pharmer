@@ -19,4 +19,4 @@ spec:
       tags:
       - KubernetesCluster:capi11
   versions:
-    kubelet: 1.11.3
+    kubelet: 1.12.3
