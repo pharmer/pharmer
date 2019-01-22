@@ -47,16 +47,6 @@ func NewClusterActuator(m manager.Manager, params ClusterActuatorParams) *Cluste
 	}
 }
 
-/*func (cm *ClusterManager) InitializeActuator(client client.ClusterV1alpha1Interface, rec record.EventRecorder, scheme *runtime.Scheme) error {
-	cm.actuator = &ClusterActuator{
-		client:        client,
-		eventRecorder: rec,
-		scheme:        scheme,
-	}
-	fmt.Println("ClusterActuator initialized")
-
-	return nil
-}*/
 
 func (cm *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
 	fmt.Println("Reconciling cluster %v", cluster.Name)

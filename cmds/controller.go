@@ -24,19 +24,11 @@ func newCmdController() *cobra.Command {
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			conf := config.GetConfigOrDie()
-
 			mgr, err := manager.New(conf, manager.Options{})
 			if err != nil {
 				term.Fatalln(err)
 			}
 
-			/*client, err := clientset.NewForConfig(conf)
-			if err != nil {
-				term.Fatalln(err)
-			}*/
-
-			// Initialize event recorder.
-			//record.InitFromRecorder(mgr.GetRecorder("pharmer-controller"))
 
 			// Initialize cluster actuator.
 
@@ -48,9 +40,6 @@ func newCmdController() *cobra.Command {
 
 			ctx := cloud.NewContext(context.Background(), cfg, pharmerConf.GetEnv(cmd.Flags()))
 
-			/*configWatch, err := machinesetup.NewConfigWatch(machineSetupConfig)
-			term.ExitOnError(err)
-			ctx = cloud.WithMachineSetup(ctx, configWatch)*/
 
 			cm, err := cloud.GetCloudManager(provider, ctx)
 			term.ExitOnError(err)
@@ -58,13 +47,7 @@ func newCmdController() *cobra.Command {
 			err = cm.InitializeMachineActuator(mgr)
 			term.ExitOnError(err)
 
-			/*err = cm.InitializeActuator(client.ClusterV1alpha1(), mgr.GetRecorder("pharmer-controller"), mgr.GetScheme())
-			term.ExitOnError(err)*/
 
-			/*if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
-				klog.Fatal(err)
-			}
-			*/
 			if err := clusterapis.AddToScheme(mgr.GetScheme()); err != nil {
 				term.Fatalln(err)
 			}
@@ -73,14 +56,6 @@ func newCmdController() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			//actuator, err :=
-			//	shutdown := make(chan struct{})
-			//si := sharedinformers.NewSharedInformers(conf, shutdown)
-			//	mc := machineset.NewMachineSetController(conf, si)
-			//go mc.Run(make(chan struct{}))
-
-			//	c := machine.NewMachineController(conf, si, cm)
-			//c.RunAsync(shutdown)
 
 			if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 				term.Printf("Failed to run manager: %v", err)

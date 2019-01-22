@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/mergepatch"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	kyaml "k8s.io/apimachinery/pkg/util/yaml"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
@@ -62,19 +63,19 @@ func RunUpdateNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, 
 	if opts.File != "" {
 		fileName := opts.File
 
-		var local *api.NodeGroup
+		var local *clusterv1.MachineSet
 		if err := cloud.ReadFileAs(fileName, &local); err != nil {
 			return err
 		}
 
-		updated, err := cloud.Store(ctx).NodeGroups(clusterName).Get(local.Name)
+		updated, err := cloud.Store(ctx).MachineSet(clusterName).Get(local.Name)
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = local.ObjectMeta
 		updated.Spec = local.Spec
 
-		original, err := cloud.Store(ctx).NodeGroups(clusterName).Get(updated.Name)
+		original, err := cloud.Store(ctx).MachineSet(clusterName).Get(updated.Name)
 		if err != nil {
 			return err
 		}
@@ -85,14 +86,14 @@ func RunUpdateNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, 
 		return nil
 	}
 
-	original, err := cloud.Store(ctx).NodeGroups(clusterName).Get(opts.NgName)
+	original, err := cloud.Store(ctx).MachineSet(clusterName).Get(opts.NgName)
 	if err != nil {
 		return err
 	}
 
 	// Check if flags are provided to update
 	if opts.DoNotDelete {
-		updated, err := cloud.Store(ctx).NodeGroups(clusterName).Get(opts.NgName)
+		updated, err := cloud.Store(ctx).MachineSet(clusterName).Get(opts.NgName)
 		if err != nil {
 			return err
 		}
@@ -107,7 +108,7 @@ func RunUpdateNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, 
 	return editNodeGroup(ctx, opts, original, errOut)
 }
 
-func editNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, original *api.NodeGroup, errOut io.Writer) error {
+func editNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, original *clusterv1.MachineSet, errOut io.Writer) error {
 
 	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
@@ -169,7 +170,7 @@ func editNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, origi
 				return nil
 			}
 
-			var updated *api.NodeGroup
+			var updated *clusterv1.MachineSet
 			err = yaml.Unmarshal(editor.StripComments(edited), &updated)
 			if err != nil {
 				containsError = true
@@ -192,7 +193,7 @@ func editNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, origi
 	return editFn()
 }
 
-func UpdateNodeGroup(ctx context.Context, original, updated *api.NodeGroup, clusterName string) error {
+func UpdateNodeGroup(ctx context.Context, original, updated *clusterv1.MachineSet, clusterName string) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
@@ -234,7 +235,7 @@ func UpdateNodeGroup(ctx context.Context, original, updated *api.NodeGroup, clus
 		return err
 	}
 
-	_, err = cloud.Store(ctx).NodeGroups(clusterName).Update(updated)
+	_, err = cloud.Store(ctx).MachineSet(clusterName).Update(updated)
 	if err != nil {
 		return err
 	}

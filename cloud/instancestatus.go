@@ -7,6 +7,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/kubernetes/pkg/apis/core"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,25 +39,34 @@ func (sm *StatusManager) InstanceStatus(machine *clusterv1.Machine) (instanceSta
 	if sm.client == nil {
 		return nil, nil
 	}
-	currentMachine, err := util.GetMachineIfExists(sm.client, machine.ObjectMeta.Namespace, machine.ObjectMeta.Name)
+	namespace := machine.Namespace
+	if machine.Namespace == "" {
+		namespace = core.NamespaceDefault
+	}
+	currentMachine, err := util.GetMachineIfExists(sm.client, namespace, machine.ObjectMeta.Name)
 	if err != nil {
 		return nil, err
 	}
 
 	if currentMachine == nil {
 		// The current status no longer exists because the matching CRD has been deleted (or does not exist yet ie. bootstrapping)
-		return nil, nil
+		return nil, fmt.Errorf("Machine %v not found", machine.Name)
 	}
 	return sm.machineInstanceStatus(currentMachine)
 }
 
 // Sets the status of the instance identified by the given machine to the given machine
-func (sm *StatusManager) updateInstanceStatus(machine *clusterv1.Machine) error {
+func (sm *StatusManager) UpdateInstanceStatus(machine *clusterv1.Machine) error {
 	if sm.client == nil {
 		return nil
 	}
+	namespace := machine.Namespace
+	if machine.Namespace == "" {
+		namespace = core.NamespaceDefault
+	}
+
 	status := instanceStatus(machine)
-	currentMachine, err := util.GetMachineIfExists(sm.client, machine.ObjectMeta.Namespace, machine.ObjectMeta.Name)
+	currentMachine, err := util.GetMachineIfExists(sm.client, namespace, machine.ObjectMeta.Name)
 	if err != nil {
 		return err
 	}
@@ -76,7 +86,7 @@ func (sm *StatusManager) updateInstanceStatus(machine *clusterv1.Machine) error 
 
 // Gets the state of the instance stored on the given machine CRD
 func (sm *StatusManager) machineInstanceStatus(machine *clusterv1.Machine) (instanceStatus, error) {
-	if machine.ObjectMeta.Annotations == nil {
+	if machine.Annotations == nil {
 		// No state
 		return nil, nil
 	}
@@ -101,6 +111,9 @@ func (sm *StatusManager) machineInstanceStatus(machine *clusterv1.Machine) (inst
 // Applies the state of an instance onto a given machine CRD
 func (sm *StatusManager) SetMachineInstanceStatus(machine *clusterv1.Machine, status instanceStatus) (*clusterv1.Machine, error) {
 	// Avoid status within status within status ...
+	if status.ObjectMeta.Annotations == nil {
+		status.ObjectMeta.Annotations = make(map[string]string)
+	}
 	status.ObjectMeta.Annotations[InstanceStatusAnnotationKey] = ""
 
 	serializer := json.NewSerializer(json.DefaultMetaFactory, sm.scheme, sm.scheme, false)

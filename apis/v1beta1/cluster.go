@@ -151,31 +151,6 @@ func (c *Cluster) ClusterConfig() *ClusterConfig {
 	return c.Spec.Config
 }
 
-/*func (c *Cluster) ClusterConfig() *ClusterConfig {
-	//providerConfig providerConfig
-	raw := c.Spec.ClusterAPI.Spec.ProviderSpec.Value.Raw
-	providerConfig := &ClusterConfig{}
-	err := json.Unmarshal(raw, providerConfig)
-	if err != nil {
-		fmt.Println("Unable to unmarshal provider config: %v", err)
-	}
-	return providerConfig
-}
-
-func (c *Cluster) SetClusterConfig(config *ClusterConfig) error {
-	bytes, err := json.Marshal(config)
-	if err != nil {
-		fmt.Println("Unable to marshal provider config: %v", err)
-		return err
-	}
-	c.Spec.ClusterAPI.Spec.ProviderSpec = clusterapi.ProviderSpec{
-		Value: &runtime.RawExtension{
-			Raw: bytes,
-		},
-	}
-	return nil
-}
-*/
 func (c *Cluster) APIServerURL() string {
 	for _, addr := range c.Spec.ClusterAPI.Status.APIEndpoints {
 		if addr.Port == 0 {
@@ -223,32 +198,6 @@ func (c *Cluster) APIServerAddress() string {
 		return fmt.Sprintf("%s:%d", ep.Host, ep.Port)
 	}
 
-	/*m := map[core.NodeAddressType]string{}
-	  for _, addr := range c.Status.APIAddresses {
-	  	m[addr.Type] = fmt.Sprintf("%s:%d", addr.Address, c.Spec.API.BindPort)
-	  }
-	  // ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
-	  addrTypes := []core.NodeAddressType{
-	  	core.NodeInternalDNS,
-	  	core.NodeInternalIP,
-	  	core.NodeExternalDNS,
-	  	core.NodeExternalIP,
-	  }
-	  if pat, found := c.Spec.APIServerExtraArgs["kubelet-preferred-address-types"]; found {
-	  	ats := strings.Split(pat, ",")
-	  	addrTypes = make([]core.NodeAddressType, len(ats))
-	  	for i, at := range ats {
-	  		addrTypes[i] = core.NodeAddressType(at)
-	  	}
-	  }
-
-	  for _, at := range addrTypes {
-	  	if u, found := m[at]; found {
-	  		return u
-	  	}
-	  }
-	  return ""*/
-
 }
 
 func (c *Cluster) SetNetworkingDefaults(provider string) {
@@ -273,38 +222,3 @@ func (c *Cluster) SetNetworkingDefaults(provider string) {
 		clusterSpec.ClusterNetwork.Pods.CIDRBlocks = []string{podSubnet}
 	}
 }
-
-/*
-func (c *Cluster) IsMinorVersion(in string) bool {
-	v, err := version.NewVersion(c.Spec.KubernetesVersion)
-	if err != nil {
-		return false
-	}
-	minor := v.ToMutator().ResetMetadata().ResetPrerelease().ResetPatch().String()
-
-	inVer, err := version.NewVersion(in)
-	if err != nil {
-		return false
-	}
-	return inVer.String() == minor
-}
-
-func (c *Cluster) InitializeClusterApi() {
-	c.Spec.ClusterAPI = &clusterv1.Cluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: c.Name,
-		},
-		Spec: clusterv1.ClusterSpec{},
-	}
-}
-
-func (c *Cluster) MachineProviderConfig(machine *clusterv1.Machine) (*MachineProviderConfig, error) {
-	providerConfig := &MachineProviderConfig{}
-	raw := machine.Spec.ClusterConfig.Value.Raw
-	err := json.Unmarshal(raw, providerConfig)
-	if err != nil {
-		return nil, err
-	}
-	return providerConfig, nil
-}
-*/

@@ -5,34 +5,37 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"text/tabwriter"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"golang.org/x/crypto/ssh"
-	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 
 	//	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
-	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+
+	//client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	semver "github.com/appscode/go-version"
+	"github.com/pkg/errors"
 )
 
 type GenericUpgradeManager struct {
-	ctx     context.Context
-	ssh     SSHGetter
+	ctx context.Context
+	//ssh     SSHGetter
 	kc      kubernetes.Interface
 	cluster *api.Cluster
 
-	client    client.ClusterV1alpha1Interface
+	//client    client.ClusterV1alpha1Interface
 	clientSet clientset.Interface
 }
 
 var _ UpgradeManager = &GenericUpgradeManager{}
 
-func NewUpgradeManager(ctx context.Context, ssh SSHGetter, kc kubernetes.Interface, cluster *api.Cluster) UpgradeManager {
-	return &GenericUpgradeManager{ctx: ctx, ssh: ssh, kc: kc, cluster: cluster}
+func NewUpgradeManager(ctx context.Context, kc kubernetes.Interface, cluster *api.Cluster) UpgradeManager {
+	return &GenericUpgradeManager{ctx: ctx, kc: kc, cluster: cluster}
 }
 
 func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error) {
@@ -143,7 +146,7 @@ func (upm *GenericUpgradeManager) ExecuteSSHCommand(command string, machine *clu
 	if err != nil {
 		return "", err
 	}
-	cfg, err := upm.ssh.GetSSHConfig(upm.cluster, node)
+	cfg, err := GetSSHConfig(upm.ctx, node.Name, upm.cluster)
 	if err != nil {
 		return "", err
 	}
@@ -233,7 +236,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 	/*upm.clientSet, err = NewClusterApiClient(upm.ctx, upm.cluster)
 	if err != nil {
 		return
-	}*/
+	}
 	upm.client = upm.clientSet.ClusterV1alpha1()
 	if !dryRun {
 		machineList, err := upm.client.Machines(core.NamespaceDefault).List(metav1.ListOptions{})
@@ -242,23 +245,23 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 		}
 		for _, machine := range machineList.Items {
 			fmt.Println(machine)
-			/*if IsMaster(&machine) {
+			if IsMaster(&machine) {
 				machine.Spec.Versions.ControlPlane = upm.cluster.Spec.KubernetesVersion
 				_, err = upm.client.Machines(core.NamespaceDefault).Update(&machine)
 				if err != nil {
 					return acts, err
 				}
-			}*/
+			}
 		}
 
-		/*	desiredVersion, _ := semver.NewVersion(upm.cluster.ClusterConfig().KubernetesVersion)
+			desiredVersion, _ := semver.NewVersion(upm.cluster.ClusterConfig().KubernetesVersion)
 			if err = WaitForReadyMasterVersion(upm.ctx, upm.kc, desiredVersion); err != nil {
 				return
 			}
 			// wait for nodes to start
 			if err = WaitForReadyMaster(upm.ctx, upm.kc); err != nil {
 				return
-			}*/
+			}
 	}
 
 	acts = append(acts, api.Action{
@@ -279,13 +282,13 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 				return acts, err
 			}
 		}
-	}
+	}*/
 	return acts, nil
 }
 
 func (upm *GenericUpgradeManager) MasterUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error {
 	// ref: https://stackoverflow.com/a/2831449/244009
-	/*steps := []string{
+	steps := []string{
 		`echo "#!/bin/bash" > /usr/bin/pharmer.sh`,
 		`echo "set -xeou pipefail" >> /usr/bin/pharmer.sh`,
 		`echo "export DEBIAN_FRONTEND=noninteractive" >> /usr/bin/pharmer.sh`,
@@ -334,13 +337,18 @@ func (upm *GenericUpgradeManager) MasterUpgrade(oldMachine *clusterv1.Machine, n
 	if _, err := upm.ExecuteSSHCommand(cmd, oldMachine); err != nil {
 
 		return err
-	}*/
+	}
 	return nil
 }
 
 func (upm *GenericUpgradeManager) NodeUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) (err error) {
-	/*if oldMachine.Spec.Versions.ControlPlane != newMachine.Spec.Versions.ControlPlane {
+	if oldMachine.Spec.Versions.ControlPlane != newMachine.Spec.Versions.ControlPlane {
 		desiredVersion, _ := semver.NewVersion(oldMachine.Spec.Versions.ControlPlane)
+		v11, err := semver.NewVersion("1.11.0")
+		if err != nil {
+			return err
+		}
+
 		currentVersion, _ := semver.NewVersion(newMachine.Spec.Versions.ControlPlane)
 		if !desiredVersion.Equal(currentVersion) {
 			patch := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().String()
@@ -392,7 +400,7 @@ func (upm *GenericUpgradeManager) NodeUpgrade(oldMachine *clusterv1.Machine, new
 			}
 		}
 
-	}*/
+	}
 	return nil
 }
 

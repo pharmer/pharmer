@@ -454,7 +454,9 @@ message NullNameGenerator {
 }
 
 message PharmerClusterSpec {
-  optional Cluster clusterApi = 2 [(gogoproto.customname) = "ClusterAPI"];
+  optional Cluster clusterApi = 1 [(gogoproto.customname) = "ClusterAPI"];
+
+  optional ClusterConfig config = 2 [(gogoproto.customname) = "Config"];
 }
 
 message PharmerClusterStatus {

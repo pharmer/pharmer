@@ -3,6 +3,8 @@ package digitalocean
 import (
 	"encoding/json"
 
+	ptr "github.com/appscode/go-ptr"
+	semver "github.com/appscode/go-version"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 
 	//"context"
@@ -65,13 +67,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 
 	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		nodeGroups, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+		nodeGroups, err := Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
+
 		for _, ng := range nodeGroups {
-			ng.Spec.Nodes = 0
-			_, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(ng)
+			ng.Spec.Replicas = ptr.Int32P(int32(0))
+			_, err := Store(cm.ctx).MachineSet(cm.cluster.Name).Update(ng)
 			if err != nil {
 				return nil, err
 			}
@@ -232,6 +235,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	if err := ca.Apply(); err != nil {
 		return acts, err
 	}
+
 	return acts, err
 }
 
@@ -289,31 +293,6 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 				return
 			}
 		}
-
-		/*if ms.DeletionTimestamp != nil {
-			if err = cs.Delete(cm.ctx, ms); err != nil {
-				return
-			}
-
-		}
-		found := &clusterv1.MachineSet{}
-		err = cs.Get(cm.ctx, types.NamespacedName{Name: ms.Name, Namespace: core.NamespaceDefault}, found)
-		if kerr.IsNotFound(err) {
-			err = cs.Create(cm.ctx, ms)
-			if err != nil {
-				return
-			}
-		} else {
-			if err = cs.Update(cm.ctx, ms); err != nil {
-				return
-			}
-
-			//patch makes provider config null :(. TODO(): why??
-			/*if _, err = PatchMachineSet(cs, msc, ms); err != nil {
-				return
-			}
-		}*/
-
 	}
 
 	return
@@ -349,7 +328,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionDelete,
 			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("Will delete master instance with name %v", cm.namer.MasterName()),
+			Message:  fmt.Sprintf("Will delete master instance with name %v-master", cm.cluster.Name),
 		})
 		if !dryRun {
 			for _, mi := range masterInstances.Items {
@@ -419,22 +398,66 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 }
 
 func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err error) {
-	/*var kc kubernetes.Interface
+	var kc kubernetes.Interface
 	if kc, err = cm.GetAdminClient(); err != nil {
 		return
 	}
 
-	upm := NewUpgradeManager(cm.ctx, cm, kc, cm.cluster)
-	a, err := upm.Apply(dryRun)
+	var masterMachine *clusterv1.Machine
+	masterName := fmt.Sprintf("%v-master", cm.cluster.Name)
+	masterMachine, err = Store(cm.ctx).Machine(cm.cluster.Name).Get(masterName)
+	if err != nil {
+		return nil, err
+	}
+
+	masterMachine.Spec.Versions.ControlPlane = cm.cluster.Spec.Config.KubernetesVersion
+	masterMachine.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
+
+	var bc clusterclient.Client
+	bc, err = GetBooststrapClient(cm.ctx, cm.cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	var data []byte
+	if data, err = json.Marshal(masterMachine); err != nil {
+		return
+	}
+	if err = bc.Apply(string(data)); err != nil {
+		return
+	}
+
+	// Wait until master updated
+	desiredVersion, _ := semver.NewVersion(cm.cluster.ClusterConfig().KubernetesVersion)
+	if err = WaitForReadyMasterVersion(cm.ctx, kc, desiredVersion); err != nil {
+		return
+	}
+	// wait for nodes to start
+	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
+		return
+	}
+
+	var machineSets []*clusterv1.MachineSet
+	machineSets, err = Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
-	acts = append(acts, a...)
+
+	for _, machineSet := range machineSets {
+		machineSet.Spec.Template.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
+		if data, err = json.Marshal(machineSet); err != nil {
+			return
+		}
+		if err = bc.Apply(string(data)); err != nil {
+			return
+		}
+	}
+
 	if !dryRun {
 		cm.cluster.Status.Phase = api.ClusterReady
 		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 			return
 		}
-	}*/
+	}
 	return
 }

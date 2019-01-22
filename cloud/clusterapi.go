@@ -81,6 +81,10 @@ func (ca *ClusterApi) Apply() error {
 	if err != nil {
 		return err
 	}
+
+	masterMachine.Annotations = make(map[string]string)
+	masterMachine.Annotations[InstanceStatusAnnotationKey] = ""
+
 	Logger(ca.ctx).Infof("Adding master machines...")
 	if err := phases.ApplyMachines(ca.bootstrapClient, namespace, []*clusterv1.Machine{masterMachine}); err != nil {
 		return err
@@ -228,6 +232,8 @@ spec:
         control-plane: controller-manager
         controller-tools.k8s.io: "1.0"
     spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
       containers:
       - args:
         - controller

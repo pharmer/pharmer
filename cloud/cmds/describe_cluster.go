@@ -67,6 +67,8 @@ func RunDescribeCluster(ctx context.Context, opts *options.ClusterDescribeConfig
 
 		if resp, err := cloud.CheckForUpdates(ctx, cluster.Name); err == nil {
 			term.Println(resp)
+		} else {
+			term.ExitOnError(err)
 		}
 	}
 

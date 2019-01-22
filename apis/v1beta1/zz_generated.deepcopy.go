@@ -655,6 +655,11 @@ func (in *PharmerClusterSpec) DeepCopyInto(out *PharmerClusterSpec) {
 		*out = new(v1alpha1.Cluster)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Config != nil {
+		in, out := &in.Config, &out.Config
+		*out = new(ClusterConfig)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

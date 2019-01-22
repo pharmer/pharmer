@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
@@ -101,8 +101,8 @@ func CreateMasterMachines(ctx context.Context, cluster *api.Cluster) (*clusterap
 	}*/
 	machine := &clusterapi.Machine{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:              fmt.Sprintf("%v-master", cluster.Name),
-			UID:               uuid.NewUUID(),
+			Name: fmt.Sprintf("%v-master", cluster.Name),
+			//	UID:               uuid.NewUUID(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 			Labels: map[string]string{
 				"set":             "master",
@@ -361,11 +361,8 @@ func CheckForUpdates(ctx context.Context, name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cm, err := GetCloudManager(cluster.ClusterConfig().Cloud.CloudProvider, ctx)
-	if err != nil {
-		return "", err
-	}
-	upm := NewUpgradeManager(ctx, cm, kc, cluster)
+
+	upm := NewUpgradeManager(ctx, kc, cluster)
 	upgrades, err := upm.GetAvailableUpgrades()
 	if err != nil {
 		return "", err
@@ -407,5 +404,24 @@ func GetBooststrapClient(ctx context.Context, cluster *api.Cluster) (clusterclie
 		return nil, fmt.Errorf("unable to create bootstrap client: %v", err)
 	}
 	return bootstrapClient, nil
-
 }
+
+func GetKubernetesClient(ctx context.Context, cluster *api.Cluster) (kubernetes.Interface, error) {
+	kubeConifg, err := GetAdminConfig(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	config := api.NewRestConfig(kubeConifg)
+
+	return kubernetes.NewForConfig(config)
+}
+
+/*func GetSSHConfig(ctx context.Context, hostip string) *api.SSHConfig {
+	return &api.SSHConfig{
+		PrivateKey: SSHKey(ctx).PrivateKey,
+		User:       "root",
+		HostPort:   int32(22),
+		HostIP: hostip,
+	}
+}*/
