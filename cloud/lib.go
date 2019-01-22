@@ -2,7 +2,6 @@ package cloud
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -12,7 +11,6 @@ import (
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/tools/clientcmd"
@@ -125,28 +123,24 @@ func CreateMasterMachines(ctx context.Context, cluster *api.Cluster) (*clusterap
 }
 
 func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, sku string, nodeType api.NodeType, count int32, spotPriceMax float64) error {
+	var err error
+	if ctx, err = LoadSSHKey(ctx, cluster); err != nil {
+		return err
+	}
 	cm, err := GetCloudManager(cluster.ClusterConfig().Cloud.CloudProvider, ctx)
 	if err != nil {
 		return err
 	}
 
-	spec, err := cm.GetDefaultNodeSpec(cluster, sku)
+	providerSpec, err := cm.GetDefaultProviderSpec(cluster, sku)
 	if err != nil {
 		return err
 	}
 
-	spec.Type = nodeType
+	/*spec.Type = nodeType
 	if nodeType == api.NodeTypeSpot {
 		spec.SpotPriceMax = spotPriceMax
-	}
-	nodeConf := api.MachineProviderConfig{
-		Name:   "",
-		Config: spec,
-	}
-	providerConfValue, err := json.Marshal(nodeConf)
-	if err != nil {
-		return err
-	}
+	}*/
 
 	ig := clusterapi.MachineSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -167,17 +161,14 @@ func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, sku string, node
 						api.PharmerCluster:  cluster.Name,
 						api.RoleNodeKey:     "",
 						api.MachineSlecetor: sku,
+						"set":               "node",
 					},
 					CreationTimestamp: metav1.Time{Time: time.Now()},
 				},
 				Spec: clusterapi.MachineSpec{
-					ProviderSpec: clusterapi.ProviderSpec{
-						Value: &runtime.RawExtension{
-							Raw: providerConfValue,
-						},
-					},
+					ProviderSpec: providerSpec,
 					Versions: clusterapi.MachineVersionInfo{
-						ControlPlane: cluster.ClusterConfig().KubernetesVersion,
+						Kubelet: cluster.ClusterConfig().KubernetesVersion,
 					},
 				},
 			},
@@ -242,7 +233,8 @@ func DeleteMachineSet(ctx context.Context, clusterName, setName string) error {
 	if err != nil {
 		return errors.Errorf(`machinset not found in pharmer db, try using kubectl`)
 	}
-	mSet.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+	tm := metav1.Now()
+	mSet.DeletionTimestamp = &tm
 	_, err = Store(ctx).MachineSet(clusterName).Update(mSet)
 	return err
 }

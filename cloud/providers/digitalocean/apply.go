@@ -1,6 +1,10 @@
 package digitalocean
 
 import (
+	"encoding/json"
+
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
+
 	//"context"
 	"fmt"
 
@@ -13,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
@@ -235,44 +238,81 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 // Scales up/down regular node groups
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
 	Logger(cm.ctx).Infoln("scaling machine set")
-	var cs clientset.Interface
-	cs, err = NewClusterApiClient(cm.ctx, cm.cluster)
-	if err != nil {
-		return
-	}
-	client := cs.ClusterV1alpha1()
 
-	var machineSet []*clusterv1.MachineSet
+	var machineSets []*clusterv1.MachineSet
+	var existingMachineSet []*clusterv1.MachineSet
 	//var msc *clusterv1.MachineSet
-	machineSet, err = Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+	machineSets, err = Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
-	for _, ms := range machineSet {
-		if ms.DeletionTimestamp != nil {
-			if err = client.MachineSets(core.NamespaceDefault).Delete(ms.Name, &metav1.DeleteOptions{}); err != nil {
+	var bc clusterclient.Client
+	bc, err = GetBooststrapClient(cm.ctx, cm.cluster)
+	if err != nil {
+		return nil, err
+	}
+	var data []byte
+	for _, machineSet := range machineSets {
+		if machineSet.DeletionTimestamp != nil {
+			machineSet.DeletionTimestamp = nil
+			if data, err = json.Marshal(machineSet); err != nil {
 				return
 			}
-			err = Store(cm.ctx).MachineSet(cm.cluster.Name).Delete(ms.Name)
-			return
+
+			if err = bc.Delete(string(data)); err != nil {
+				return
+			}
+			if err = Store(cm.ctx).MachineSet(cm.cluster.Name).Delete(machineSet.Name); err != nil {
+				return
+			}
 		}
 
-		_, err = client.MachineSets(core.NamespaceDefault).Get(ms.Name, metav1.GetOptions{})
+		if existingMachineSet, err = bc.GetMachineSetObjects(); err != nil {
+			return
+		}
+		if data, err = json.Marshal(machineSet); err != nil {
+			return
+		}
+		found := false
+		for _, ems := range existingMachineSet {
+			if ems.Name == machineSet.Name {
+				found = true
+				if err = bc.Apply(string(data)); err != nil {
+					return
+				}
+				break
+			}
+		}
+
+		if !found {
+			if err = bc.CreateMachineSetObjects([]*clusterv1.MachineSet{machineSet}, bc.GetContextNamespace()); err != nil {
+				return
+			}
+		}
+
+		/*if ms.DeletionTimestamp != nil {
+			if err = cs.Delete(cm.ctx, ms); err != nil {
+				return
+			}
+
+		}
+		found := &clusterv1.MachineSet{}
+		err = cs.Get(cm.ctx, types.NamespacedName{Name: ms.Name, Namespace: core.NamespaceDefault}, found)
 		if kerr.IsNotFound(err) {
-			_, err = client.MachineSets(core.NamespaceDefault).Create(ms)
+			err = cs.Create(cm.ctx, ms)
 			if err != nil {
 				return
 			}
 		} else {
-			if _, err = client.MachineSets(core.NamespaceDefault).Update(ms); err != nil {
+			if err = cs.Update(cm.ctx, ms); err != nil {
 				return
 			}
 
 			//patch makes provider config null :(. TODO(): why??
 			/*if _, err = PatchMachineSet(cs, msc, ms); err != nil {
 				return
-			}*/
-		}
+			}
+		}*/
 
 	}
 

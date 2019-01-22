@@ -230,10 +230,10 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 		Resource: "Master upgrade",
 		Message:  fmt.Sprintf("Master instance will be upgraded to %v", upm.cluster.ClusterConfig().KubernetesVersion),
 	})
-	upm.clientSet, err = NewClusterApiClient(upm.ctx, upm.cluster)
+	/*upm.clientSet, err = NewClusterApiClient(upm.ctx, upm.cluster)
 	if err != nil {
 		return
-	}
+	}*/
 	upm.client = upm.clientSet.ClusterV1alpha1()
 	if !dryRun {
 		machineList, err := upm.client.Machines(core.NamespaceDefault).List(metav1.ListOptions{})

@@ -36,7 +36,8 @@ func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
 			term.ExitOnError(err)
 
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			RunGetNodeGroup(ctx, opts, out)
+			err = RunGetNodeGroup(ctx, opts, out)
+			term.ExitOnError(err)
 
 		},
 	}
@@ -70,7 +71,7 @@ func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out 
 	}
 
 	for _, cluster := range clusterList {
-		nodegroups, err := GetNodeGroupList(ctx, cluster, opts.NodeGroups...)
+		nodegroups, err := GetMachineSetList(ctx, cluster, opts.NodeGroups...)
 		if err != nil {
 			return err
 		}

@@ -2,7 +2,6 @@ package digitalocean
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -43,8 +42,6 @@ func New(ctx context.Context) Interface {
 type paramK8sClient struct{}
 
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
-	cluster, err := Store(cm.ctx).Clusters().Get("capi11")
-	fmt.Println(cluster, err, "**************")
 	ma := NewMachineActuator(MachineActuatorParams{
 		Ctx:           cm.ctx,
 		EventRecorder: mgr.GetRecorder(Recorder),

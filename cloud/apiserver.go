@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/cert"
-	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -233,7 +233,7 @@ func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cl
 	})
 }
 
-func NewClusterApiClient(ctx context.Context, cluster *api.Cluster) (*clientset.Clientset, error) {
+func NewClusterApiClient(ctx context.Context, cluster *api.Cluster) (client.Client, error) {
 	adminCert, adminKey, err := CreateAdminCertificate(ctx)
 	if err != nil {
 		return nil, err
@@ -250,7 +250,7 @@ func NewClusterApiClient(ctx context.Context, cluster *api.Cluster) (*clientset.
 			KeyData:  cert.EncodePrivateKeyPEM(adminKey),
 		},
 	}
-	return clientset.NewForConfig(cfg)
+	return client.New(cfg, client.Options{})
 }
 
 func waitForServiceAccount(ctx context.Context, client kubernetes.Interface) error {

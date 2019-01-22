@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 // ref: k8s.io/kubernetes/pkg/kubectl/resource_printer.go
@@ -72,6 +73,7 @@ func (h *HumanReadablePrinter) addDefaultHandlers() {
 	h.Handler(h.printCluster)
 	h.Handler(h.printNodeGroup)
 	h.Handler(h.printCredential)
+	h.Handler(h.printMachineSet)
 }
 
 func (h *HumanReadablePrinter) PrintHeader(enable bool) {
@@ -128,6 +130,10 @@ func getColumns(options PrintOptions, t reflect.Type) []string {
 	case "*v1alpha1.Credential":
 		columns = append(columns, "Provider")
 		columns = append(columns, "Data")
+	case "*cluster.k8s.io/v1alpha1":
+		columns = append(columns, "Cluster")
+		columns = append(columns, "Node")
+		columns = append(columns, "SKU")
 	}
 	return columns
 }
@@ -180,6 +186,27 @@ func (h *HumanReadablePrinter) printNodeGroup(item *api.NodeGroup, w io.Writer, 
 	return
 }
 
+func (h *HumanReadablePrinter) printMachineSet(item *clusterv1.MachineSet, w io.Writer, options PrintOptions) (err error) {
+	name := item.Name
+
+	if _, err = fmt.Fprintf(w, "%s\t", name); err != nil {
+		return
+	}
+
+	if _, err = fmt.Fprintf(w, "%s\t", item.ClusterName); err != nil {
+		return
+	}
+
+	if _, err = fmt.Fprintf(w, "%v\t", item.Spec.Template.Name); err != nil {
+		return
+	}
+	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.Template.Spec.Namespace); err != nil {
+		return
+	}
+	PrintNewline(w)
+	return
+}
+
 func (h *HumanReadablePrinter) printCredential(item *api.Credential, w io.Writer, options PrintOptions) (err error) {
 	name := item.Name
 
@@ -224,7 +251,7 @@ func (h *HumanReadablePrinter) PrintObj(obj runtime.Object, output io.Writer) er
 		return resultValue.Interface().(error)
 	}
 
-	return errors.Errorf(`kubedb doesn't support: "%v"`, t)
+	return errors.Errorf(`pharmer doesn't support: "%v"`, t)
 }
 
 func (h *HumanReadablePrinter) HandledResources() []string {

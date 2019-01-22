@@ -44,7 +44,7 @@ build_docker() {
 FROM ubuntu:latest as kubeadm
 RUN apt-get update
 RUN apt-get install -y curl
-RUN curl -fsSL https://dl.k8s.io/release/v1.12.3/bin/linux/amd64/kubeadm > /usr/bin/kubeadm
+RUN curl -fsSL https://dl.k8s.io/release/v1.13.2/bin/linux/amd64/kubeadm > /usr/bin/kubeadm
 RUN chmod a+rx /usr/bin/kubeadm
 
 FROM ubuntu:latest

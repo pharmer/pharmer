@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -38,13 +37,12 @@ func NewCmdCreateCluster() *cobra.Command {
 			if err != nil {
 				term.Fatalln(err)
 			}
-			fmt.Println(cluster)
-			/*if len(opts.Nodes) > 0 {
+			if len(opts.Nodes) > 0 {
 				nodeOpts := options.NewNodeGroupCreateConfig()
 				nodeOpts.ClusterName = cluster.Name
 				nodeOpts.Nodes = opts.Nodes
 				CreateNodeGroups(ctx, nodeOpts)
-			}*/
+			}
 		},
 	}
 	opts.AddFlags(cmd.Flags())

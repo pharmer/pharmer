@@ -59,7 +59,7 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 	flag.CommandLine.Parse([]string{})
 
 	rootCmd.AddCommand(newCmdCreate())
-	/*rootCmd.AddCommand(newCmdGet(out))
+	rootCmd.AddCommand(newCmdGet(out))
 	rootCmd.AddCommand(newCmdDelete())
 	rootCmd.AddCommand(newCmdDescribe(out))
 	rootCmd.AddCommand(newCmdEdit(out, err))
@@ -68,7 +68,7 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 	rootCmd.AddCommand(newCmdSSH())
 	rootCmd.AddCommand(NewCmdInspector())
 
-	rootCmd.AddCommand(cfgCmd.NewCmdConfig())
+	/*rootCmd.AddCommand(cfgCmd.NewCmdConfig())
 
 	rootCmd.AddCommand(v.NewCmdVersion())
 	*/
