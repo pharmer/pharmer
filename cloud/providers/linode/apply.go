@@ -1,6 +1,7 @@
 package linode
 
 import (
+	"context"
 	"fmt"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
@@ -10,6 +11,7 @@ import (
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
@@ -39,10 +41,6 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 		return nil, err
 	}
 	Logger(cm.ctx).Debugln("Linode instance image", cm.cluster.Spec.Cloud.InstanceImage)
-	if cm.cluster.Spec.Cloud.Linode.KernelId, err = cm.conn.DetectKernel(); err != nil {
-		return nil, err
-	}
-	Logger(cm.ctx).Infof("Linode kernel %v found", cm.cluster.Spec.Cloud.Linode.KernelId)
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
@@ -57,7 +55,10 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 			return nil, err
 		} else if upgrade {
 			cm.cluster.Status.Phase = api.ClusterUpgrading
-			Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+			if _, err := Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+				return nil, err
+			}
+
 			return cm.applyUpgrade(dryRun)
 		}
 	}
@@ -169,13 +170,15 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 
-			// needed to get master_internal_ip
 			cm.cluster.Status.Phase = api.ClusterReady
 			if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 				return
 			}
 			// need to run ccm
 			if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
+				return
+			}
+			if err = createCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
 				return
 			}
 
@@ -189,6 +192,30 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	return
+}
+
+func createCredentialSecret(ctx context.Context, client kubernetes.Interface, cluster *api.Cluster) error {
+	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	if err != nil {
+		return err
+	}
+
+	secret := &core.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ccm-linode",
+			Namespace: "kube-system",
+		},
+		Type: core.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"apiToken": []byte(cred.Spec.Data["token"]),
+			"region":   []byte(cluster.Spec.Cloud.Region),
+		},
+	}
+
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		_, err := client.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
+		return err == nil, nil
+	})
 }
 
 // Scales up/down regular node groups
@@ -207,9 +234,6 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		}
 		if !dryRun {
 			if token, err = GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration); err != nil {
-				return
-			}
-			if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
 				return
 			}
 		}
