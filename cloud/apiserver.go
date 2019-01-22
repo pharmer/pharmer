@@ -2,10 +2,7 @@ package cloud
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
-	"strings"
 	"time"
 
 	semver "github.com/appscode/go-version"
@@ -16,15 +13,11 @@ import (
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/cert"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
-	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
 
 const (
@@ -271,47 +264,6 @@ func waitForServiceAccount(ctx context.Context, client kubernetes.Interface) err
 	})
 }
 
-func waitForClusterResourceReady(ctx context.Context, clientSet clientset.Interface) error {
-	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		attempt++
-		Logger(ctx).Infof("Attempt %v: Probing Kubernetes api server ...", attempt)
-		_, err := clientSet.Discovery().ServerResourcesForGroupVersion("cluster.k8s.io/v1alpha1")
-		fmt.Println(err)
-		return err == nil, nil
-	})
-}
-
-func GetCurrentMachineIfExists(machineClient client.MachineInterface, machine *clusterv1.Machine) (*clusterv1.Machine, error) {
-	return GetMachineIfExists(machineClient, machine.ObjectMeta.Name, machine.ObjectMeta.UID)
-}
-
-func GetMachineIfExists(machineClient client.MachineInterface, name string, uid types.UID) (*clusterv1.Machine, error) {
-	if machineClient == nil {
-		fmt.Println("machine client is nil")
-		// Being called before k8s is setup as part of master VM creation
-		return nil, nil
-	}
-
-	// Machines are identified by name and UID
-	machine, err := machineClient.Get(name, metav1.GetOptions{})
-	if err != nil {
-		// TODO: Use formal way to check for not found
-		if strings.Contains(err.Error(), "not found") {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	fmt.Println(name, "<><>", machine.ObjectMeta.UID, "<<<", uid)
-
-	if machine.ObjectMeta.UID != uid {
-		fmt.Println("uid not match")
-		return nil, nil
-	}
-	return machine, nil
-}
-
 func CreateSecret(kc kubernetes.Interface, name, namespace string, data map[string][]byte) error {
 	secret := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -355,61 +307,4 @@ func CreateConfigMap(kc kubernetes.Interface, name string, data map[string]strin
 		fmt.Println(err)
 		return err == nil, nil
 	})
-}
-
-func CheckMachineReady(ctx context.Context, cc client.MachineInterface, kc kubernetes.Interface, machineName string, kubeVersion string) (bool, error) {
-	machine, err := cc.Get(machineName, metav1.GetOptions{})
-	if err != nil {
-		return false, err
-	}
-
-	if machine.Status.NodeRef == nil {
-		return false, nil
-	}
-
-	// Find the node object via reference in machine object.
-	node, err := kc.CoreV1().Nodes().Get(machine.Status.NodeRef.Name, metav1.GetOptions{})
-	switch {
-	case err != nil:
-		Logger(ctx).Infof("Failed to get node %s: %v", machineName, err)
-		return false, err
-	case !IsNodeReady(node):
-		Logger(ctx).Infof("node %s is not ready. Status : %v", machineName, node.Status.Conditions)
-		return false, nil
-	case node.Status.NodeInfo.KubeletVersion == "v"+kubeVersion:
-		Logger(ctx).Infof("node %s is ready", machineName)
-		return true, nil
-	default:
-		Logger(ctx).Infof("node %s kubelet current version: %s, target: %s.", machineName, node.Status.NodeInfo.KubeletVersion, kubeVersion)
-		return false, nil
-	}
-}
-
-func PatchMachineSet(client clientset.Interface, cur, mod *clusterv1.MachineSet) (*clusterv1.MachineSet, error) {
-	curJson, err := json.Marshal(cur)
-	if err != nil {
-		return nil, err
-	}
-
-	modJson, err := json.Marshal(mod)
-	if err != nil {
-		return nil, err
-	}
-	patch, err := strategicpatch.StrategicMergePatch(curJson, modJson, clusterv1.MachineSet{})
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println(string(curJson))
-	fmt.Println("-----------------------------------------")
-	fmt.Println(string(modJson))
-	fmt.Println("-----------------------------------------")
-	fmt.Println(string(patch))
-	fmt.Println("-----------------------------------------")
-	os.Exit(1)
-	if len(patch) == 0 || string(patch) == "{}" {
-		return cur, nil
-	}
-
-	out, err := client.ClusterV1alpha1().MachineSets(core.NamespaceDefault).Patch(cur.Name, types.StrategicMergePatchType, patch)
-	return out, err
 }

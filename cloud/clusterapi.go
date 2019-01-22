@@ -1,18 +1,20 @@
 package cloud
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"os/exec"
+	"text/template"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	rbac "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/cert"
 	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/phases"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -24,24 +26,18 @@ type ClusterApi struct {
 	token     string
 	kc        kubernetes.Interface
 	client    client.Client
+
+	bootstrapClient clusterclient.Client
 }
 
 type ApiServerTemplate struct {
-	ClusterName            string
-	Token                  string
-	APIServerImage         string
-	ControllerManagerImage string
-	MachineControllerImage string
-	CABundle               string
-	TLSCrt                 string
-	TLSKey                 string
-	Provider               string
-	MasterCount            int
+	ClusterName         string
+	Provider            string
+	ControllerNamespace string
+	ControllerImage     string
 }
 
-var apiServerImage = "pharmer/cluster-apiserver:0.0.3"
-var controllerManagerImage = "pharmer/cluster-controller-manager:0.0.3"
-var machineControllerImage = "pharmer/machine-controller:clusterApi"
+var machineControllerImage = "pharmer/machine-controller:clusterapi"
 
 const (
 	BasePath = ".pharmer/config.d"
@@ -54,7 +50,12 @@ func NewClusterApi(ctx context.Context, cluster *api.Cluster, namespace string, 
 		return nil, err
 	}
 
-	return &ClusterApi{ctx: ctx, cluster: cluster, namespace: namespace, kc: kc, token: token}, nil
+	bc, err := GetBooststrapClient(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ClusterApi{ctx: ctx, cluster: cluster, namespace: namespace, kc: kc, token: token, bootstrapClient: bc}, nil
 }
 
 func (ca *ClusterApi) Apply() error {
@@ -64,24 +65,27 @@ func (ca *ClusterApi) Apply() error {
 		return fmt.Errorf("can't create machine controller: %v", err)
 	}
 
-	/*if err := waitForClusterResourceReady(ca.ctx, ca.clientSet); err != nil {
+	if err := phases.ApplyCluster(ca.bootstrapClient, ca.cluster.Spec.ClusterAPI); err != nil {
 		return err
 	}
-	if _, err := ca.client.Clusters(core.NamespaceDefault).Create(ca.cluster.Spec.ClusterAPI); err != nil {
+	namespace := ca.cluster.Spec.ClusterAPI.Namespace
+	if namespace == "" {
+		namespace = ca.bootstrapClient.GetContextNamespace()
+	}
+	machines, err := Store(ca.ctx).Machine(ca.cluster.Name).List(metav1.ListOptions{})
+	if err != nil {
 		return err
 	}
 
-	if _, err := ca.client.Clusters(core.NamespaceDefault).UpdateStatus(ca.cluster.Spec.ClusterAPI); err != nil {
+	masterMachine, err := api.GetMasterMachine(machines)
+	if err != nil {
 		return err
 	}
-	*/
 	Logger(ca.ctx).Infof("Adding master machines...")
-	/*for _, master := range ca.cluster.Spec.Masters {
-		if _, err := ca.client.Machines(core.NamespaceDefault).Create(master); err != nil {
-			return err
-		}
+	if err := phases.ApplyMachines(ca.bootstrapClient, namespace, []*clusterv1.Machine{masterMachine}); err != nil {
+		return err
 	}
-	*/
+
 	return nil
 }
 
@@ -91,15 +95,10 @@ func (ca *ClusterApi) CreateMachineController() error {
 		return err
 	}
 
-	/*Logger(ca.ctx).Infoln("creating cluster api rolebinding")
-	if err := ca.CreateExtApiServerRoleBinding(); err != nil {
-		return err
-	}
-
 	Logger(ca.ctx).Infoln("creating apiserver and controller")
 	if err := ca.CreateApiServerAndController(); err != nil {
 		return err
-	}*/
+	}
 	return nil
 }
 
@@ -166,105 +165,133 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 	return nil
 }
 
-func (ca *ClusterApi) CreateExtApiServerRoleBinding() error {
-	rolebinding := &rbac.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "machine-controller",
-		},
-		RoleRef: rbac.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "Role",
-			Name:     "extension-apiserver-authentication-reader",
-		},
-		Subjects: []rbac.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Name:      "default",
-				Namespace: "default",
-			},
-		},
-	}
-
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := ca.kc.RbacV1().RoleBindings(metav1.NamespaceSystem).Create(rolebinding)
-		return err == nil, nil
-	})
-}
-
 func (ca *ClusterApi) CreateApiServerAndController() error {
-	return nil
-	/*tmpl, err := template.New("config").Parse(ClusterAPIDeployConfigTemplate)
+	tmpl, err := template.New("config").Parse(ClusterAPIDeployConfigTemplate)
 	if err != nil {
 		return err
 	}
-	if ca.ctx, err = LoadApiserverCertificate(ca.ctx, ca.cluster); err != nil {
-		return err
-	}
-	masterNG, err := FindMasterMachines(ca.cluster)
-	if err != nil {
-		return err
-	}
-
 	var tmplBuf bytes.Buffer
 	err = tmpl.Execute(&tmplBuf, ApiServerTemplate{
-		ClusterName:            ca.cluster.Name,
-		Token:                  ca.token,
-		APIServerImage:         apiServerImage,
-		ControllerManagerImage: controllerManagerImage,
-		MachineControllerImage: machineControllerImage,
-		CABundle:               base64.StdEncoding.EncodeToString(cert.EncodeCertPEM(ApiServerCaCert(ca.ctx))),
-		TLSCrt:                 base64.StdEncoding.EncodeToString(cert.EncodeCertPEM(ApiServerCert(ca.ctx))),
-		TLSKey:                 base64.StdEncoding.EncodeToString(cert.EncodePrivateKeyPEM(ApiServerKey(ca.ctx))),
-		Provider:               ca.cluster.ClusterConfig().CloudProvider,
-		MasterCount:            len(masterNG),
+		ClusterName:         ca.cluster.Name,
+		Provider:            ca.cluster.ClusterConfig().Cloud.CloudProvider,
+		ControllerNamespace: ca.namespace,
+		ControllerImage:     machineControllerImage,
 	})
 	if err != nil {
 		return err
 	}
 
-	maxTries := 5
-	for tries := 0; tries < maxTries; tries++ {
-		err = deployConfig(tmplBuf.Bytes())
-		if err == nil {
-			return nil
-		} else {
-			if tries < maxTries-1 {
-				//glog.Info("Error scheduling machine controller. Will retry...\n", err)
-				time.Sleep(3 * time.Second)
-			}
-		}
-	}
+	return ca.bootstrapClient.Apply(tmplBuf.String())
 
-	if err != nil {
-		return fmt.Errorf("couldn't start machine controller: %v\n", err)
-	} else {
-		return nil
-	}
-	*/
-}
-
-func deployConfig(manifest []byte) error {
-	fmt.Println(string(manifest))
-	cmd := exec.Command("kubectl", "create", "-f", "-")
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		defer stdin.Close()
-		stdin.Write(manifest)
-	}()
-
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		return nil
-	} else {
-		return fmt.Errorf("couldn't create pod: %v, output: %s", err, string(out))
-	}
 }
 
 const ClusterAPIDeployConfigTemplate = `
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: {{ .ControllerNamespace }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: controller-manager
+    controller-tools.k8s.io: "1.0"
+  name: do-provider-controller-manager-service
+  namespace: {{ .ControllerNamespace }}
+spec:
+  ports:
+  - port: 443
+  selector:
+    control-plane: controller-manager
+    controller-tools.k8s.io: "1.0"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    control-plane: controller-manager
+    controller-tools.k8s.io: "1.0"
+  name: do-provider-controller-manager
+  namespace: {{ .ControllerNamespace }}
+spec:
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+      controller-tools.k8s.io: "1.0"
+  serviceName: do-provider-controller-manager-service
+  template:
+    metadata:
+      labels:
+        control-plane: controller-manager
+        controller-tools.k8s.io: "1.0"
+    spec:
+      containers:
+      - args:
+        - controller
+        - --provider={{ .Provider }}
+        - --kubeconfig=/etc/kubernetes/admin.conf 
+        env:
+        image: {{ .ControllerImage }}
+        name: manager
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+        volumeMounts:
+        - mountPath: /etc/kubernetes
+          name: config
+        - mountPath: /etc/ssl/certs
+          name: certs
+        - name: sshkeys
+          mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/ssh
+        - name: certificates
+          mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/pki
+        - name: cluster
+          mountPath: /root/.pharmer/store.d/clusters
+        - name: credential
+          mountPath: /root/.pharmer/store.d/credentials
+      terminationGracePeriodSeconds: 10
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoExecute
+        key: node.alpha.kubernetes.io/notReady
+        operator: Exists
+      - effect: NoExecute
+        key: node.alpha.kubernetes.io/unreachable
+        operator: Exists
+      volumes:
+      - hostPath:
+          path: /etc/kubernetes
+        name: config
+      - hostPath:
+          path: /etc/ssl/certs
+        name: certs
+      - name: sshkeys
+        secret:
+          secretName: pharmer-ssh
+          defaultMode: 256
+      - name: certificates
+        secret:
+          secretName: pharmer-certificate
+          defaultMode: 256
+      - name: cluster
+        secret:
+          secretName: pharmer-cluster
+          defaultMode: 256
+      - name: credential
+        secret:
+          secretName: pharmer-cred
+          defaultMode: 256
+---
 apiVersion: v1
 kind: Namespace
 metadata:

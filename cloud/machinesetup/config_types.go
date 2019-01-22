@@ -21,12 +21,11 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-
 	"reflect"
 
 	"github.com/ghodss/yaml"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type MachineSetupConfig interface {
@@ -70,7 +69,7 @@ type Metadata struct {
 type ConfigParams struct {
 	OS       string
 	Roles    []api.MachineRole
-	Image     string
+	Image    string
 	Versions clusterv1.MachineVersionInfo
 }
 

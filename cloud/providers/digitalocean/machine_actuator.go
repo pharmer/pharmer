@@ -2,12 +2,12 @@ package digitalocean
 
 import (
 	"context"
-	"github.com/pharmer/pharmer/cloud/machinesetup"
 	"reflect"
 	"strings"
 	"time"
 
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/machinesetup"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -55,13 +55,13 @@ type DOClientMachineSetupConfigGetter interface {
 }
 
 type MachineActuator struct {
-	ctx     context.Context
-	conn    *cloudConnector
-	client  client.Client
-	kubeadm DOClientKubeadm
+	ctx                      context.Context
+	conn                     *cloudConnector
+	client                   client.Client
+	kubeadm                  DOClientKubeadm
 	machineSetupConfigGetter DOClientMachineSetupConfigGetter
-	eventRecorder record.EventRecorder
-	scheme        *runtime.Scheme
+	eventRecorder            record.EventRecorder
+	scheme                   *runtime.Scheme
 }
 
 type MachineActuatorParams struct {
@@ -379,9 +379,9 @@ func (do *MachineActuator) updateInstanceStatus(machine *clusterv1.Machine) erro
 func (do *MachineActuator) requiresUpdate(a *clusterv1.Machine, b *clusterv1.Machine) bool {
 	// Do not want status changes. Do want changes that impact machine provisioning
 	return !reflect.DeepEqual(a.Spec.ObjectMeta, b.Spec.ObjectMeta) ||
-	!reflect.DeepEqual(a.Spec.ProviderSpec, b.Spec.ProviderSpec) ||
-	!reflect.DeepEqual(a.Spec.Versions, b.Spec.Versions) ||
-	a.ObjectMeta.Name != b.ObjectMeta.Name
+		!reflect.DeepEqual(a.Spec.ProviderSpec, b.Spec.ProviderSpec) ||
+		!reflect.DeepEqual(a.Spec.Versions, b.Spec.Versions) ||
+		a.ObjectMeta.Name != b.ObjectMeta.Name
 }
 
 func getKubeadm(params MachineActuatorParams) DOClientKubeadm {

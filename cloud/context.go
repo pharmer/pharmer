@@ -4,12 +4,12 @@ import (
 	"context"
 	"crypto/rsa"
 	"crypto/x509"
-	"github.com/pharmer/pharmer/cloud/machinesetup"
 
 	"github.com/appscode/go/crypto/ssh"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/cloud/machinesetup"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/store/providers/fake"
 	"github.com/pharmer/pharmer/store/providers/vfs"
@@ -41,7 +41,7 @@ type paramK8sClient struct{}
 type paramSaKey struct{}
 type paramSaCert struct{}
 
-type paramMachineSetup struct {}
+type paramMachineSetup struct{}
 
 func Env(ctx context.Context) _env.Environment {
 	return ctx.Value(paramEnv{}).(_env.Environment)
@@ -62,11 +62,11 @@ func WithStore(parent context.Context, v store.Interface) context.Context {
 	return context.WithValue(parent, paramStore{}, v)
 }
 
-func MachineSetup(ctx context.Context) *machinesetup.ConfigWatch  {
+func MachineSetup(ctx context.Context) *machinesetup.ConfigWatch {
 	return ctx.Value(paramMachineSetup{}).(*machinesetup.ConfigWatch)
 }
 
-func WithMachineSetup(parent context.Context, v *machinesetup.ConfigWatch) context.Context  {
+func WithMachineSetup(parent context.Context, v *machinesetup.ConfigWatch) context.Context {
 	if v == nil {
 		panic("nil machine setup")
 	}

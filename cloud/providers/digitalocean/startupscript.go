@@ -176,6 +176,6 @@ func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *c
 	return script.String(), nil
 }
 
-func (conn *cloudConnector) createStartupScript(cluster *api.Cluster)  {
+func (conn *cloudConnector) createStartupScript(cluster *api.Cluster) {
 
 }

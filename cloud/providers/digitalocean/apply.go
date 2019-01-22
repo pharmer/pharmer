@@ -12,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/cluster-api/cmd/clusterctl/phases"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
@@ -167,17 +166,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			var masterServer *api.NodeInfo
 			nodeAddresses := make([]core.NodeAddress, 0)
 
-			script, err := cm.conn.renderStartupScript(cm.cluster, masterMachine, "")
-			if err != nil {
-				return nil, err
-			}
-
-			fmt.Println()
-			fmt.Println(script)
-			fmt.Println()
-
-
-			masterServer, err = cm.conn.CreateInstance(cm.cluster, masterMachine, script)
+			masterServer, err = cm.conn.CreateInstance(cm.cluster, masterMachine, "")
 			if err != nil {
 				return
 			}
@@ -233,36 +222,12 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	ca, err := NewClusterApi(cm.ctx, cm.cluster, "do-provider-system", kc)
+	ca, err := NewClusterApi(cm.ctx, cm.cluster, "cloud-provider-system", kc)
 	if err != nil {
 		return acts, err
 	}
 	if err := ca.Apply(); err != nil {
 		return acts, err
-	}
-
-	bootstrapClient, err := GetBooststrapClient(cm.ctx, cm.cluster)
-	if err != nil {
-		return
-	}
-
-	if err = bootstrapClient.Apply(ClusterAPIDOProviderComponentsTemplate); err != nil {
-		return
-	}
-
-	if err = phases.ApplyClusterAPIComponents(bootstrapClient, ClusterAPIDeployConfigTemplate); err != nil {
-		return
-	}
-
-	if err = phases.ApplyCluster(bootstrapClient, cm.cluster.Spec.ClusterAPI); err != nil {
-		return
-	}
-	namespace := cm.cluster.Spec.ClusterAPI.Namespace
-	if namespace == "" {
-		namespace = bootstrapClient.GetContextNamespace()
-	}
-	if err = phases.ApplyMachines(bootstrapClient, namespace, []*clusterv1.Machine{masterMachine}); err != nil {
-		return
 	}
 	return acts, err
 }
