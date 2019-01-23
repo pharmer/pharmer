@@ -178,7 +178,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
 				return
 			}
-			if err = createCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
+			if err = createLinodeCloudSecret(cm.ctx, kc, cm.cluster); err != nil {
 				return
 			}
 
@@ -194,7 +194,9 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	return
 }
 
-func createCredentialSecret(ctx context.Context, client kubernetes.Interface, cluster *api.Cluster) error {
+// linode CCM needs this secret to work
+// ref: https://github.com/linode/linode-cloud-controller-manager/blob/26179d04e0b99bb4125c0ef1b8a8d01673c9383f/hack/deploy/ccm-linode-template.yaml#L1-L10
+func createLinodeCloudSecret(ctx context.Context, client kubernetes.Interface, cluster *api.Cluster) error {
 	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
 	if err != nil {
 		return err
