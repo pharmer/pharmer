@@ -6,11 +6,12 @@ import (
 	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2017-09-30/containerservice"
 	. "github.com/appscode/go/context"
 	. "github.com/appscode/go/types"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
@@ -31,15 +32,10 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster, cm.owner); err != nil {
 		return nil, err
 	}
-	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+	if cm.conn, err = NewConnector(cm.ctx, cm.cluster, cm.owner); err != nil {
 		return nil, err
 	}
 	cm.conn.namer = cm.namer
-
-	// Common stuff
-	if err = cm.conn.detectUbuntuImage(); err != nil {
-		return nil, errors.Wrap(err, ID(cm.ctx))
-	}
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
@@ -100,7 +96,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			if _, err = cm.conn.ensureResourceGroup(); err != nil {
 				return
 			}
-			Logger(cm.ctx).Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.cluster.Spec.Cloud.Zone)
+			Logger(cm.ctx).Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.cluster.Spec.Config.Cloud.Zone)
 		}
 	} else {
 		acts = append(acts, api.Action{
@@ -110,8 +106,8 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 	}
 	if !dryRun {
-		var nodeGroups []*api.NodeGroup
-		nodeGroups, err = Store(cm.ctx).Owner(cm.owner).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+		var nodeGroups []*clusterapi.MachineSet
+		nodeGroups, err = Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 		if err != nil {
 			err = errors.Wrap(err, ID(cm.ctx))
 			return
@@ -123,13 +119,13 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		agentPools := make([]containersvc.AgentPoolProfile, 0)
 
 		for _, ng := range nodeGroups {
-
+			providerspec := cm.cluster.AKSProviderConfig(ng.Spec.Template.Spec.ProviderSpec.Value.Raw)
 			name := cm.namer.GetNodeGroupName(ng.Name)
 			ap := containersvc.AgentPoolProfile{
 				Name:   StringP(name),
-				Count:  Int32P(int32(ng.Spec.Nodes)),
-				VMSize: containersvc.VMSizeTypes(ng.Spec.Template.Spec.SKU),
-				OsType: containersvc.Linux,
+				Count:  ng.Spec.Replicas,
+				VMSize: containersvc.VMSizeTypes(providerspec.VMSize),
+				OsType: containersvc.OSType(providerspec.OSDisk.OSType),
 			}
 			agentPools = append(agentPools, ap)
 		}
@@ -156,7 +152,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 }
 
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
-	nodeGroups, err := Store(cm.ctx).Owner(cm.owner).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		err = errors.Wrap(err, ID(cm.ctx))
 		return
@@ -167,11 +163,12 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 
 	agentPools := make([]containersvc.AgentPoolProfile, 0)
 	for _, ng := range nodeGroups {
+		providerspec := cm.cluster.AKSProviderConfig(ng.Spec.Template.Spec.ProviderSpec.Value.Raw)
 		name := cm.namer.GetNodeGroupName(ng.Name)
 		found := false
 		for _, a := range *cluster.AgentPoolProfiles {
 			if *a.Name == name {
-				if *a.Count == int32(ng.Spec.Nodes) {
+				if *a.Count == *ng.Spec.Replicas {
 					found = true
 					break
 				}
@@ -182,8 +179,8 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		}
 		ap := containersvc.AgentPoolProfile{
 			Name:   StringP(name),
-			Count:  Int32P(int32(ng.Spec.Nodes)),
-			VMSize: containersvc.VMSizeTypes(ng.Spec.Template.Spec.SKU),
+			Count:  ng.Spec.Replicas,
+			VMSize: containersvc.VMSizeTypes(providerspec.VMSize),
 			OsType: containersvc.Linux,
 			//DNSPrefix:    StringP(name),
 			//Fqdn:         StringP(name),

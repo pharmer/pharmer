@@ -2,18 +2,18 @@ package aks
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sync"
 
 	"github.com/ghodss/yaml"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes" //"fmt"
 	"k8s.io/client-go/rest"       //"k8s.io/client-go/util/cert"
 	clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type ClusterManager struct {
@@ -43,7 +43,16 @@ func New(ctx context.Context) Interface {
 	return &ClusterManager{ctx: ctx}
 }
 
+// AddToManager adds all Controllers to the Manager
+func (cm *ClusterManager) AddToManager(ctx context.Context, m manager.Manager) error {
+	return nil
+}
+
 type paramK8sClient struct{}
+
+func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
+	return nil
+}
 
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 	cm.m.Lock()
@@ -67,10 +76,8 @@ func (cm *ClusterManager) GetAKSAdminClient() (kubernetes.Interface, error) {
 	if err != nil {
 		return nil, err
 	}
-	kubeconfig, err := base64.StdEncoding.DecodeString(string(*resp.KubeConfig))
-	if err != nil {
-		return nil, err
-	}
+	fmt.Println(*resp.KubeConfig)
+	kubeconfig := *resp.KubeConfig
 	kubeconfig, err = yaml.YAMLToJSON(kubeconfig)
 	if err != nil {
 		return nil, err
@@ -97,7 +104,7 @@ func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, 
 	var err error
 	cm.cluster = cluster
 	cm.namer = namer{cluster: cm.cluster}
-	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+	if cm.conn, err = NewConnector(cm.ctx, cm.cluster, cm.owner); err != nil {
 		return nil, err
 	}
 
@@ -105,10 +112,8 @@ func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, 
 	if err != nil {
 		return nil, err
 	}
-	kubeconfig, err := base64.StdEncoding.DecodeString(string(*resp.KubeConfig))
-	if err != nil {
-		return nil, err
-	}
+
+	kubeconfig := *resp.KubeConfig
 	kubeconfig, err = yaml.YAMLToJSON(kubeconfig)
 	if err != nil {
 		return nil, err

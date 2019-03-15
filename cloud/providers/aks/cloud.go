@@ -15,7 +15,7 @@ import (
 	. "github.com/appscode/go/context"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/go/wait"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
@@ -38,14 +38,14 @@ type cloudConnector struct {
 	managedClient          ms.ManagedClustersClient
 }
 
-func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.CredentialName)
+func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
+	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
 	typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.Config.CredentialName)
 	}
 
 	baseURI := azure.PublicCloud.ResourceManagerEndpoint
@@ -80,11 +80,6 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}, nil
 }
 
-func (conn *cloudConnector) detectUbuntuImage() error {
-	conn.cluster.Spec.Cloud.OS = string(cs.Linux)
-	return nil
-}
-
 func (conn *cloudConnector) getResourceGroup() (bool, error) {
 	_, err := conn.groupsClient.Get(context.TODO(), conn.namer.ResourceGroupName())
 	return err == nil, err
@@ -93,7 +88,7 @@ func (conn *cloudConnector) getResourceGroup() (bool, error) {
 func (conn *cloudConnector) ensureResourceGroup() (resources.Group, error) {
 	req := resources.Group{
 		Name:     StringP(conn.namer.ResourceGroupName()),
-		Location: StringP(conn.cluster.Spec.Cloud.Zone),
+		Location: StringP(conn.cluster.Spec.Config.Cloud.Zone),
 		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
@@ -109,7 +104,7 @@ func (conn *cloudConnector) ensureAvailabilitySet() (compute.AvailabilitySet, er
 	name := conn.namer.AvailabilitySetName()
 	req := compute.AvailabilitySet{
 		Name:     StringP(name),
-		Location: StringP(conn.cluster.Spec.Cloud.Zone),
+		Location: StringP(conn.cluster.Spec.Config.Cloud.Zone),
 		Tags: map[string]*string{
 			"KubernetesCluster": StringP(conn.cluster.Name),
 		},
@@ -124,22 +119,22 @@ func (conn *cloudConnector) deleteResourceGroup() error {
 }
 
 func (conn *cloudConnector) upsertAKS(agentPools []cs.AgentPoolProfile) error {
-	cred, err := Store(conn.ctx).Credentials().Get(conn.cluster.Spec.CredentialName)
+	cred, err := Store(conn.ctx).Credentials().Get(conn.cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return err
 	}
 	typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return errors.Wrapf(err, "credential %s is invalid", conn.cluster.Spec.CredentialName)
+		return errors.Wrapf(err, "credential %s is invalid", conn.cluster.Spec.Config.CredentialName)
 	}
 
 	container := cs.ManagedCluster{
 		Name:     &conn.cluster.Name,
-		Location: StringP(conn.cluster.Spec.Cloud.Zone),
+		Location: StringP(conn.cluster.Spec.Config.Cloud.Zone),
 		ManagedClusterProperties: &cs.ManagedClusterProperties{
 			DNSPrefix: StringP(conn.cluster.Name),
 			//Fqdn:              StringP(conn.cluster.Name),
-			KubernetesVersion: StringP(conn.cluster.Spec.KubernetesVersion),
+			KubernetesVersion: StringP(conn.cluster.Spec.Config.KubernetesVersion),
 			ServicePrincipalProfile: &cs.ServicePrincipalProfile{
 				ClientID: StringP(typed.ClientID()),
 				Secret:   StringP(typed.ClientSecret()),
@@ -193,7 +188,7 @@ func (conn *cloudConnector) getUpgradeProfile() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if *resp.ControlPlaneProfile.KubernetesVersion == conn.cluster.Spec.KubernetesVersion {
+	if *resp.ControlPlaneProfile.KubernetesVersion == conn.cluster.Spec.Config.KubernetesVersion {
 		return false, nil
 	}
 	return true, nil
@@ -204,7 +199,7 @@ func (conn *cloudConnector) upgradeCluster() error {
 	if err != nil {
 		return err
 	}
-	cluster.KubernetesVersion = StringP(conn.cluster.Spec.KubernetesVersion)
+	cluster.KubernetesVersion = StringP(conn.cluster.Spec.Config.KubernetesVersion)
 	_, err = conn.managedClient.CreateOrUpdate(context.Background(), conn.namer.ResourceGroupName(), conn.cluster.Name, cluster)
 	if err != nil {
 		return err

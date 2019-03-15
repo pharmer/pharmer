@@ -1,26 +1,53 @@
 package aks
 
 import (
+	"encoding/json"
 	"net"
-	"time"
 
+	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2017-09-30/containerservice"
 	"github.com/appscode/go/crypto/rand"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/apimachinery/pkg/runtime"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
 	if sku == "" {
 		sku = "Standard_D2_v2"
 	}
-	return api.NodeSpec{
-		SKU: sku,
-		//	DiskType:      "",
-		//	DiskSize:      100,
+	spec := &api.AKSMachineProviderSpec{
+		Roles:    []api.MachineRole{role},
+		Location: cluster.Spec.Config.Cloud.Zone,
+		OSDisk: api.OSDisk{
+
+			OSType:     string(containersvc.Linux),
+			DiskSizeGB: 30,
+			ManagedDisk: api.ManagedDisk{
+				StorageAccountType: "Premium_LRS",
+			},
+		},
+		VMSize: sku,
+		Image: api.Image{
+			Publisher: "Canonical",
+			Offer:     "UbuntuServer",
+			SKU:       "16.04-LTS",
+			Version:   "latest",
+		},
+		SSHPublicKey:  string(SSHKey(cm.ctx).PublicKey),
+		SSHPrivateKey: string(SSHKey(cm.ctx).PrivateKey),
+	}
+	providerSpecValue, err := json.Marshal(spec)
+	if err != nil {
+		return clusterapi.ProviderSpec{}, err
+	}
+
+	return clusterapi.ProviderSpec{
+		Value: &runtime.RawExtension{
+			Raw: providerSpecValue,
+		},
 	}, nil
 }
 
@@ -28,20 +55,23 @@ func (cm *ClusterManager) SetOwner(owner string) {
 	cm.owner = owner
 }
 
-func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
 	n := namer{cluster: cluster}
 
-	// Init object meta
-	cluster.ObjectMeta.UID = uuid.NewUUID()
-	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
-	cluster.ObjectMeta.Generation = time.Now().UnixNano()
-	api.AssignTypeKind(cluster)
+	if err := api.AssignTypeKind(cluster); err != nil {
+		return err
+	}
+	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
+		return err
+	}
 
 	// Init spec
-	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
-	cluster.Spec.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
+	config.Cloud.Region = config.Cloud.Zone
+	config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
 
-	cluster.Spec.Cloud.Azure = &api.AzureSpec{
+	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
+
+	config.Cloud.Azure = &api.AzureSpec{
 		ResourceGroup:      n.ResourceGroupName(),
 		SubnetName:         n.SubnetName(),
 		SecurityGroupName:  n.NetworkSecurityGroupName(),
@@ -53,11 +83,12 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	}
 
 	// Init status
-	cluster.Status = api.ClusterStatus{
+	cluster.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,
 	}
 
-	return nil
+	return cluster.SetAKSProviderConfig(cluster.Spec.ClusterAPI, config)
+
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {

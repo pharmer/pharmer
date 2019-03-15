@@ -26,6 +26,10 @@ const (
 	AWSProviderApiVersion  = "v1alpha1"
 	AWSClusterProviderKind = "AWSClusterProviderSpec"
 	AWSMachineProviderKind = "AWSMachineProviderSpec"
+
+	AKSProviderGroupName  = "azureprovider"
+	AKSProviderKind       = "AzureClusterProviderSpec"
+	AKSProviderApiVersion = "v1alpha1"
 )
 
 // DigitalOceanMachineProviderConfig contains Config for DigitalOcean machines.
@@ -232,4 +236,81 @@ func (c *Cluster) SetEKSProviderConfig(cluster *clusterapi.Cluster, config *Clus
 		},
 	}
 	return nil
+}
+
+// AKSClusterProviderSpec is the Schema for the azureclusterproviderspecs API
+// +k8s:openapi-gen=true
+type AKSClusterProviderSpec struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	ResourceGroup string `json:"resourceGroup"`
+	Location      string `json:"location"`
+
+	// CACertificate is a PEM encoded CA Certificate for the control plane nodes.
+	CACertificate []byte `json:"caCertificate,omitempty"`
+
+	// CAPrivateKey is a PEM encoded PKCS1 CA PrivateKey for the control plane nodes.
+	CAPrivateKey []byte `json:"caKey,omitempty"`
+}
+
+// AKSMachineProviderSpec is the Schema for the azuremachineproviderspecs API
+// +k8s:openapi-gen=true
+type AKSMachineProviderSpec struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Roles         []MachineRole `json:"roles,omitempty"`
+	Location      string        `json:"location"`
+	VMSize        string        `json:"vmSize"`
+	Image         Image         `json:"image"`
+	OSDisk        OSDisk        `json:"osDisk"`
+	SSHPublicKey  string        `json:"sshPublicKey"`
+	SSHPrivateKey string        `json:"sshPrivateKey"`
+}
+
+type Image struct {
+	Publisher string `json:"publisher"`
+	Offer     string `json:"offer"`
+	SKU       string `json:"sku"`
+	Version   string `json:"version"`
+}
+
+type OSDisk struct {
+	OSType      string      `json:"osType"`
+	ManagedDisk ManagedDisk `json:"managedDisk"`
+	DiskSizeGB  int         `json:"diskSizeGB"`
+}
+
+type ManagedDisk struct {
+	StorageAccountType string `json:"storageAccountType"`
+}
+
+func (c *Cluster) SetAKSProviderConfig(cluster *clusterapi.Cluster, config *ClusterConfig) error {
+	conf := &GKEMachineProviderSpec{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: AKSProviderGroupName + "/" + AKSProviderApiVersion,
+			Kind:       AKSProviderKind,
+		},
+	}
+	bytes, err := json.Marshal(conf)
+	if err != nil {
+		fmt.Println("Unable to marshal provider config: %v", err)
+		return err
+	}
+	cluster.Spec.ProviderSpec = clusterapi.ProviderSpec{
+		Value: &runtime.RawExtension{
+			Raw: bytes,
+		},
+	}
+	return nil
+}
+
+func (c *Cluster) AKSProviderConfig(raw []byte) *AKSMachineProviderSpec {
+	providerConfig := &AKSMachineProviderSpec{}
+	err := json.Unmarshal(raw, providerConfig)
+	if err != nil {
+		fmt.Println("Unable to unmarshal provider config: %v", err)
+	}
+	return providerConfig
 }
