@@ -1,33 +1,31 @@
 package linode
 
 import (
-	"strconv"
-
+	"github.com/linode/linodego"
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"
 	"github.com/pkg/errors"
-	"github.com/taoh/linodego"
 )
 
-func ParseRegion(in *linodego.DataCenter) *data.Region {
+func ParseRegion(in *linodego.Region) *data.Region {
 	return &data.Region{
-		Location: in.Location,
-		Region:   strconv.Itoa(in.DataCenterId),
+		Location: in.Country,
+		Region:   in.ID,
 		Zones: []string{
-			strconv.Itoa(in.DataCenterId),
+			in.ID,
 		},
 	}
 }
 
-func ParseInstance(in *linodego.LinodePlan) (*data.InstanceType, error) {
+func ParseInstance(in *linodego.LinodeType) (*data.InstanceType, error) {
 	out := &data.InstanceType{
-		SKU:         strconv.Itoa(in.PlanId),
-		Description: in.Label.String(),
-		CPU:         in.Cores,
+		SKU:         in.ID,
+		Description: in.Label,
+		CPU:         in.VCPUs,
 		Disk:        in.Disk,
 	}
 	var err error
-	out.RAM, err = util.MBToGB(int64(in.RAM))
+	out.RAM, err = util.MBToGB(int64(in.Memory))
 	if err != nil {
 		return nil, errors.Errorf("Parse Instance failed. reason: %v", err)
 	}

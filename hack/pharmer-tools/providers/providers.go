@@ -100,7 +100,7 @@ func WriteCloudData(cloudData *data.CloudData, fileName string) error {
 	cloudData = util.SortCloudData(cloudData)
 	dataBytes, err := json.MarshalIndent(cloudData, "", "  ")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	dir, err := util.GetWriteDir()
 	if err != nil {

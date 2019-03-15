@@ -39,10 +39,6 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 		return nil, err
 	}
 	Logger(cm.ctx).Debugln("Linode instance image", cm.cluster.Spec.Cloud.InstanceImage)
-	if cm.cluster.Spec.Cloud.Linode.KernelId, err = cm.conn.DetectKernel(); err != nil {
-		return nil, err
-	}
-	Logger(cm.ctx).Infof("Linode kernel %v found", cm.cluster.Spec.Cloud.Linode.KernelId)
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
@@ -57,7 +53,10 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 			return nil, err
 		} else if upgrade {
 			cm.cluster.Status.Phase = api.ClusterUpgrading
-			Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+			if _, err := Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+				return nil, err
+			}
+
 			return cm.applyUpgrade(dryRun)
 		}
 	}
@@ -169,13 +168,29 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 
-			// needed to get master_internal_ip
 			cm.cluster.Status.Phase = api.ClusterReady
 			if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 				return
 			}
 			// need to run ccm
 			if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster); err != nil {
+				return
+			}
+
+			var cred *api.Credential
+			cred, err = Store(cm.ctx).Credentials().Get(cm.cluster.Spec.CredentialName)
+			if err != nil {
+				return
+			}
+
+			// linode CCM needs this secret to work
+			// ref: https://github.com/linode/linode-cloud-controller-manager/blob/26179d04e0b99bb4125c0ef1b8a8d01673c9383f/hack/deploy/ccm-linode-template.yaml#L1-L10
+			if err = CreateCredentialSecretWithData(kc, "ccm-linode", metav1.NamespaceSystem,
+				map[string][]byte{
+					"apiToken": []byte(cred.Spec.Data["token"]),
+					"region":   []byte(cm.cluster.Spec.Cloud.Region),
+				},
+			); err != nil {
 				return
 			}
 
@@ -207,9 +222,6 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		}
 		if !dryRun {
 			if token, err = GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration); err != nil {
-				return
-			}
-			if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
 				return
 			}
 		}

@@ -13,10 +13,8 @@ import:
   version: master
 - package: github.com/appscode/go
   version: master
-- package: github.com/taoh/linodego
-  repo: https://github.com/appscode/linodego.git
-  vcs: git
-  version: master
+- package: github.com/linode/linodego
+  version: v0.7.0
 - package: github.com/appscode/mergo
   version: master
 - package: github.com/aws/aws-sdk-go
@@ -38,7 +36,7 @@ import:
 - package: github.com/mgutz/str
   version: master
 - package: github.com/packethost/packngo
-  version: master
+  version: b36133050ae5b072233083a26657db33f4e46560
 - package: github.com/pborman/uuid
   version: v1.1
 - package: github.com/pkg/errors

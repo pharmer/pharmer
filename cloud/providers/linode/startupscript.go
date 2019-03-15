@@ -124,6 +124,17 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 var (
 	customTemplate = `
 {{ define "init-os" }}
+
+# REF: https://www.linode.com/docs/platform/stackscripts/#variables-and-udfs
+#<UDF name="hostname" label="The hostname for the new Linode.">
+# HOSTNAME=
+
+echo $HOSTNAME > /etc/hostname
+hostname -F /etc/hostname
+
+IPADDR=$(/sbin/ifconfig eth0 | awk '/inet / { print $2 }' | sed 's/addr://')
+echo $IPADDR $HOSTNAME >> /etc/hosts
+
 # We rely on DNS for a lot, and it's just not worth doing a whole lot of startup work if this isn't ready yet.
 # ref: https://github.com/kubernetes/kubernetes/blob/443908193d564736d02efdca4c9ba25caf1e96fb/cluster/gce/configure-vm.sh#L24
 ensure_basic_networking() {
@@ -158,8 +169,6 @@ EOF
 {{ end }}
 
 {{ define "prepare-host" }}
-HOSTNAME=$(pre-k linode hostname -k {{ .ClusterName }})
-hostnamectl set-hostname $HOSTNAME
 # ref: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=769356
 # ref: https://github.com/kubernetes/kubernetes/blob/82c986ecbcdf99a87cd12a7e2cf64f90057b9acd/cmd/kubeadm/app/preflight/checks.go#L927
 touch /lib/modules/$(uname -r)/modules.builtin

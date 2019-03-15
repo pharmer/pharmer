@@ -1,6 +1,8 @@
 package azure
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/2017-03-09/resources/mgmt/subscriptions"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-12-01/compute"
 	"github.com/Azure/go-autorest/autorest"
@@ -13,7 +15,7 @@ import (
 type Client struct {
 	Data           *AzureData
 	SubscriptionId string
-	GroupsClient   subscriptions.GroupClient
+	GroupsClient   subscriptions.Client
 	VmSizesClient  compute.VirtualMachineSizesClient
 }
 
@@ -41,7 +43,7 @@ func NewClient(tenantId, subscriptionId, clientId, clientSecret string) (*Client
 	if err != nil {
 		return nil, err
 	}
-	g.GroupsClient = subscriptions.NewGroupClient()
+	g.GroupsClient = subscriptions.NewClient()
 	g.GroupsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
 	g.VmSizesClient = compute.NewVirtualMachineSizesClient(subscriptionId)
@@ -66,7 +68,7 @@ func (g *Client) GetKubernets() []data.Kubernetes {
 }
 
 func (g *Client) GetRegions() ([]data.Region, error) {
-	regionList, err := g.GroupsClient.ListLocations(g.SubscriptionId)
+	regionList, err := g.GroupsClient.ListLocations(context.Background(), g.SubscriptionId)
 	regions := []data.Region{}
 	for _, r := range *regionList.Value {
 		region := ParseRegion(&r)
@@ -102,7 +104,7 @@ func (g *Client) GetInstanceTypes() ([]data.InstanceType, error) {
 	//to find the position in instances array
 	instancePos := map[string]int{}
 	for _, zone := range zones {
-		instanceList, err := g.VmSizesClient.List(zone)
+		instanceList, err := g.VmSizesClient.List(context.Background(), zone)
 		if err != nil {
 			return nil, err
 		}

@@ -217,3 +217,19 @@ func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cl
 		return err == nil, nil
 	})
 }
+
+func CreateCredentialSecretWithData(client kubernetes.Interface, name, namespace string, data map[string][]byte) error {
+	secret := &core.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Type: core.SecretTypeOpaque,
+		Data: data,
+	}
+
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		_, err := client.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
+		return err == nil, nil
+	})
+}

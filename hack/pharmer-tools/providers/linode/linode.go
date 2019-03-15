@@ -1,9 +1,13 @@
 package linode
 
 import (
+	"context"
+	"net/http"
+
+	"github.com/linode/linodego"
 	"github.com/pharmer/pharmer/data"
 	"github.com/pharmer/pharmer/hack/pharmer-tools/util"
-	"github.com/taoh/linodego"
+	"golang.org/x/oauth2"
 )
 
 type Client struct {
@@ -14,8 +18,17 @@ type Client struct {
 type LinodeData data.CloudData
 
 func NewClient(linodeApiToken string) (*Client, error) {
+	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: linodeApiToken})
+
+	oauth2Client := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: tokenSource,
+		},
+	}
+
+	client := linodego.NewClient(oauth2Client)
 	g := &Client{
-		Client: linodego.NewClient(linodeApiToken, nil),
+		Client: &client,
 	}
 	var err error
 	data, err := util.GetDataFormFile("linode")
@@ -45,12 +58,12 @@ func (g *Client) GetKubernets() []data.Kubernetes {
 
 //DataCenter as region
 func (g *Client) GetRegions() ([]data.Region, error) {
-	regionList, err := g.Client.Avail.DataCenters()
+	regionList, err := g.Client.ListRegions(context.Background(), &linodego.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 	regions := []data.Region{}
-	for _, r := range regionList.DataCenters {
+	for _, r := range regionList {
 		region := ParseRegion(&r)
 		regions = append(regions, *region)
 	}
@@ -71,12 +84,12 @@ func (g *Client) GetZones() ([]string, error) {
 }
 
 func (g *Client) GetInstanceTypes() ([]data.InstanceType, error) {
-	instanceList, err := g.Client.Avail.LinodePlans()
+	instanceList, err := g.Client.ListTypes(context.Background(), &linodego.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 	instances := []data.InstanceType{}
-	for _, ins := range instanceList.LinodePlans {
+	for _, ins := range instanceList {
 		instance, err := ParseInstance(&ins)
 		if err != nil {
 			return nil, err

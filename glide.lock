@@ -1,5 +1,5 @@
-hash: becb5755d9aafbff5dfb7d74bcf89b9215776ad4c2051deb805568e841ff6980
-updated: 2018-12-07T15:26:20.58790893+06:00
+hash: a0a5cf9a5c2a9665c252d29f8a841d015d36e16442ff0d1498bdcc7d3b9e05f4
+updated: 2019-01-23T17:46:45.725088118+06:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -7,7 +7,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/go
-  version: aa0a55d74dac66f9b9bec9c0e7b67944115a3f44
+  version: 52eaa8008e2e5fe8df77ac6fb2fd45e3ea2ae47c
   subpackages:
   - analytics
   - context
@@ -234,7 +234,7 @@ imports:
 - name: github.com/gorilla/websocket
   version: 2d1e4548da234d9cb742cc3628556fef86aafbac
 - name: github.com/graymeta/stow
-  version: 1849a82ac7fbd3e5cb144bcc711544e90903eac4
+  version: 8020e152292b2cdbdca30274fec24e18905f254d
   repo: https://github.com/appscode/stow.git
   vcs: git
   subpackages:
@@ -273,6 +273,8 @@ imports:
   version: 88edab0803230a3898347e77b474f8c1820a1f20
   subpackages:
   - oid
+- name: github.com/linode/linodego
+  version: 9f8d0fc73c373cb5dcb65c670afc53b118fe9bdd
 - name: github.com/mailru/easyjson
   version: 2f5df55504ebc322e4d52d34df6a1f5b503bf26d
   subpackages:
@@ -294,7 +296,7 @@ imports:
 - name: github.com/mitchellh/go-wordwrap
   version: ad45545899c7b13c020ea92b2072220eefad42b8
 - name: github.com/moby/moby
-  version: 5a9cb68eb3ac3a195ab08c6b3c3a4f1ec18ebf9e
+  version: 8422e6f6fa04eb8ee805a98067ee490a86ce3b98
   subpackages:
   - pkg/term
 - name: github.com/modern-go/concurrent
@@ -306,7 +308,7 @@ imports:
 - name: github.com/moul/gotty-client
   version: c1b82f1af3ebb2febba268415cb1c90686078f80
 - name: github.com/ncw/swift
-  version: 6f342da371d063863f2f354f183e4ab0ef72d287
+  version: b2a130b7215bd352e6c48f86bb2a2fd42edf577a
 - name: github.com/onsi/ginkgo
   version: fa5fabab2a1bfbd924faf4c067d07ae414e2aedf
   subpackages:
@@ -374,7 +376,7 @@ imports:
 - name: github.com/sirupsen/logrus
   version: 89742aefa4b206dcf400792f3bd35b542998eb3b
 - name: github.com/skratchdot/open-golang
-  version: 75fb7ed4208cf72d323d7d02fd1a5964a7a9073c
+  version: a2dfa6d0dab6634ecf39251031a3d52db73b5c7e
   subpackages:
   - open
 - name: github.com/softlayer/softlayer-go
@@ -391,10 +393,6 @@ imports:
   - doc
 - name: github.com/spf13/pflag
   version: 298182f68c66c05229eb03ac171abe6e309ee79a
-- name: github.com/taoh/linodego
-  version: d85493a2eaad404c21b1582ce1dc75e745a4ead5
-  repo: https://github.com/appscode/linodego.git
-  vcs: git
 - name: github.com/tent/http-link-go
   version: ac974c61c2f990f4115b119354b5e0b47550e888
 - name: golang.org/x/crypto
@@ -420,6 +418,7 @@ imports:
   - http2/hpack
   - idna
   - lex/httplex
+  - publicsuffix
 - name: golang.org/x/oauth2
   version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
   subpackages:
@@ -500,6 +499,8 @@ imports:
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/ini.v1
   version: 06f5f3d67269ccec1fe5fe4134ba6e982984f7f5
+- name: gopkg.in/resty.v1
+  version: 03c09fa32a21b7b27b8dbb3877826c1ab3d2daa2
 - name: gopkg.in/yaml.v2
   version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
 - name: k8s.io/api

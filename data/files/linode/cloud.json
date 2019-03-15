@@ -7,66 +7,66 @@
   ],
   "regions": [
     {
-      "location": "Frankfurt, DE",
-      "region": "10",
+      "location": "jp",
+      "region": "ap-northeast",
       "zones": [
-        "10"
+        "ap-northeast"
       ]
     },
     {
-      "location": "Tokyo 2, JP",
-      "region": "11",
+      "location": "jp",
+      "region": "ap-northeast-1a",
       "zones": [
-        "11"
+        "ap-northeast-1a"
       ]
     },
     {
-      "location": "Dallas, TX, USA",
-      "region": "2",
+      "location": "sg",
+      "region": "ap-south",
       "zones": [
-        "2"
+        "ap-south"
       ]
     },
     {
-      "location": "Fremont, CA, USA",
-      "region": "3",
+      "location": "de",
+      "region": "eu-central",
       "zones": [
-        "3"
+        "eu-central"
       ]
     },
     {
-      "location": "Atlanta, GA, USA",
-      "region": "4",
+      "location": "uk",
+      "region": "eu-west",
       "zones": [
-        "4"
+        "eu-west"
       ]
     },
     {
-      "location": "Newark, NJ, USA",
-      "region": "6",
+      "location": "us",
+      "region": "us-central",
       "zones": [
-        "6"
+        "us-central"
       ]
     },
     {
-      "location": "London, England, UK",
-      "region": "7",
+      "location": "us",
+      "region": "us-east",
       "zones": [
-        "7"
+        "us-east"
       ]
     },
     {
-      "location": "Tokyo, JP",
-      "region": "8",
+      "location": "us",
+      "region": "us-southeast",
       "zones": [
-        "8"
+        "us-southeast"
       ]
     },
     {
-      "location": "Singapore, SG",
-      "region": "9",
+      "location": "us",
+      "region": "us-west",
       "zones": [
-        "9"
+        "us-west"
       ]
     }
   ],
@@ -77,7 +77,8 @@
       "category": "General Purpose",
       "cpu": 1,
       "ram": 1,
-      "disk": 20
+      "disk": 20,
+      "deprecated": true
     },
     {
       "sku": "10",
@@ -85,7 +86,8 @@
       "category": "High Memory",
       "cpu": 1,
       "ram": 16,
-      "disk": 20
+      "disk": 20,
+      "deprecated": true
     },
     {
       "sku": "11",
@@ -93,7 +95,8 @@
       "category": "High Memory",
       "cpu": 2,
       "ram": 32,
-      "disk": 40
+      "disk": 40,
+      "deprecated": true
     },
     {
       "sku": "12",
@@ -101,7 +104,8 @@
       "category": "High Memory",
       "cpu": 4,
       "ram": 60,
-      "disk": 90
+      "disk": 90,
+      "deprecated": true
     },
     {
       "sku": "13",
@@ -109,7 +113,8 @@
       "category": "High Memory",
       "cpu": 8,
       "ram": 100,
-      "disk": 200
+      "disk": 200,
+      "deprecated": true
     },
     {
       "sku": "14",
@@ -117,7 +122,8 @@
       "category": "High Memory",
       "cpu": 16,
       "ram": 200,
-      "disk": 340
+      "disk": 340,
+      "deprecated": true
     },
     {
       "sku": "2",
@@ -125,7 +131,8 @@
       "category": "General Purpose",
       "cpu": 1,
       "ram": 2,
-      "disk": 30
+      "disk": 30,
+      "deprecated": true
     },
     {
       "sku": "3",
@@ -133,7 +140,8 @@
       "category": "General Purpose",
       "cpu": 2,
       "ram": 4,
-      "disk": 48
+      "disk": 48,
+      "deprecated": true
     },
     {
       "sku": "4",
@@ -141,7 +149,8 @@
       "category": "General Purpose",
       "cpu": 4,
       "ram": 8,
-      "disk": 96
+      "disk": 96,
+      "deprecated": true
     },
     {
       "sku": "5",
@@ -149,7 +158,8 @@
       "category": "General Purpose",
       "cpu": 6,
       "ram": 12,
-      "disk": 192
+      "disk": 192,
+      "deprecated": true
     },
     {
       "sku": "6",
@@ -157,7 +167,8 @@
       "category": "General Purpose",
       "cpu": 8,
       "ram": 24,
-      "disk": 384
+      "disk": 384,
+      "deprecated": true
     },
     {
       "sku": "7",
@@ -165,7 +176,8 @@
       "category": "General Purpose",
       "cpu": 12,
       "ram": 48,
-      "disk": 768
+      "disk": 768,
+      "deprecated": true
     },
     {
       "sku": "8",
@@ -173,7 +185,8 @@
       "category": "General Purpose",
       "cpu": 16,
       "ram": 64,
-      "disk": 1152
+      "disk": 1152,
+      "deprecated": true
     },
     {
       "sku": "9",
@@ -181,7 +194,113 @@
       "category": "General Purpose",
       "cpu": 20,
       "ram": 80,
-      "disk": 1536
+      "disk": 1536,
+      "deprecated": true
+    },
+    {
+      "sku": "g6-highmem-1",
+      "description": "Linode 24GB",
+      "cpu": 1,
+      "ram": 24,
+      "disk": 20480
+    },
+    {
+      "sku": "g6-highmem-16",
+      "description": "Linode 300GB",
+      "cpu": 16,
+      "ram": 300,
+      "disk": 348160
+    },
+    {
+      "sku": "g6-highmem-2",
+      "description": "Linode 48GB",
+      "cpu": 2,
+      "ram": 48,
+      "disk": 40960
+    },
+    {
+      "sku": "g6-highmem-4",
+      "description": "Linode 90GB",
+      "cpu": 4,
+      "ram": 90,
+      "disk": 92160
+    },
+    {
+      "sku": "g6-highmem-8",
+      "description": "Linode 150GB",
+      "cpu": 8,
+      "ram": 150,
+      "disk": 204800
+    },
+    {
+      "sku": "g6-nanode-1",
+      "description": "Nanode 1GB",
+      "cpu": 1,
+      "ram": 1,
+      "disk": 25600
+    },
+    {
+      "sku": "g6-standard-1",
+      "description": "Linode 2GB",
+      "cpu": 1,
+      "ram": 2,
+      "disk": 51200
+    },
+    {
+      "sku": "g6-standard-16",
+      "description": "Linode 64GB",
+      "cpu": 16,
+      "ram": 64,
+      "disk": 1310720
+    },
+    {
+      "sku": "g6-standard-2",
+      "description": "Linode 4GB",
+      "cpu": 2,
+      "ram": 4,
+      "disk": 81920
+    },
+    {
+      "sku": "g6-standard-20",
+      "description": "Linode 96GB",
+      "cpu": 20,
+      "ram": 96,
+      "disk": 1966080
+    },
+    {
+      "sku": "g6-standard-24",
+      "description": "Linode 128GB",
+      "cpu": 24,
+      "ram": 128,
+      "disk": 2621440
+    },
+    {
+      "sku": "g6-standard-32",
+      "description": "Linode 192GB",
+      "cpu": 32,
+      "ram": 192,
+      "disk": 3932160
+    },
+    {
+      "sku": "g6-standard-4",
+      "description": "Linode 8GB",
+      "cpu": 4,
+      "ram": 8,
+      "disk": 163840
+    },
+    {
+      "sku": "g6-standard-6",
+      "description": "Linode 16GB",
+      "cpu": 6,
+      "ram": 16,
+      "disk": 327680
+    },
+    {
+      "sku": "g6-standard-8",
+      "description": "Linode 32GB",
+      "cpu": 8,
+      "ram": 32,
+      "disk": 655360
     }
   ],
   "credentials": [
