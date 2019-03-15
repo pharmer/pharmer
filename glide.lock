@@ -1,5 +1,5 @@
-hash: a0a5cf9a5c2a9665c252d29f8a841d015d36e16442ff0d1498bdcc7d3b9e05f4
-updated: 2019-01-23T17:46:45.725088118+06:00
+hash: 53922944532df31b809a7650b49f2c2a21a75eb660d34e493491061903e9e061
+updated: 2019-03-14T23:31:09.018399344-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -134,7 +134,7 @@ imports:
   subpackages:
   - md2man
 - name: github.com/creack/goselect
-  version: 40085cf5fd629ccd88dc328895f1f137d09a1de4
+  version: 58854f77ee8d858ce751b0a9bcc5533fef7bfa9e
 - name: github.com/davecgh/go-spew
   version: 8991bc29aa16c548c550c7ff78260e27b9ab7c73
   subpackages:
@@ -142,7 +142,7 @@ imports:
 - name: github.com/dgrijalva/jwt-go
   version: 01aeca54ebda6e0fbfafd0a524d234159c05ec20
 - name: github.com/digitalocean/godo
-  version: 51f18c0e42941703dc13d15bc0ad69aef6a49830
+  version: 19a129a06bc8b565baeea8761ba6bf24b80ac262
 - name: github.com/docker/docker
   version: a9fbbdc8dd8794b20af358382ab780559bca589d
   subpackages:
@@ -154,7 +154,7 @@ imports:
   subpackages:
   - spdy
 - name: github.com/dustin/go-humanize
-  version: f3565c9525600a911af3bd34f8b535ea81b2a9e0
+  version: 9f541cc9db5d55bce703bd99987c9d5cb8eea45e
 - name: github.com/evanphx/json-patch
   version: 36442dbdb585210f8d5a1b45e67aa323c197d5c4
 - name: github.com/exponent-io/jsonpath
@@ -162,7 +162,7 @@ imports:
 - name: github.com/fatih/color
   version: 9aae6aaa22315390f03959adca2c4d395b02fcef
 - name: github.com/fsnotify/fsnotify
-  version: f12c6236fe7b5cf6bcf30e5935d08cb079d78334
+  version: 1485a34d5d5723fea214f5710708e19a831720e4
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
 - name: github.com/go-ini/ini
@@ -176,7 +176,7 @@ imports:
 - name: github.com/go-openapi/swag
   version: 5899d5c5e619fda5fa86e14795a835f473ca284c
 - name: github.com/go-xorm/builder
-  version: dc8bf48f58fab2b4da338ffd25191905fd741b8f
+  version: 1d658d7596c25394aab557ef5b50ef35bf706384
 - name: github.com/go-xorm/core
   version: c10e21e7e1cec20e09398f2dfae385e58c8df555
 - name: github.com/go-xorm/xorm
@@ -203,7 +203,7 @@ imports:
 - name: github.com/google/btree
   version: 7d79101e329e5a3adf994758c578dab82b90c017
 - name: github.com/google/go-querystring
-  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
+  version: 44c6ddd0a2342c386950e880b658017258da92fc
   subpackages:
   - query
 - name: github.com/google/gofuzz
@@ -296,7 +296,7 @@ imports:
 - name: github.com/mitchellh/go-wordwrap
   version: ad45545899c7b13c020ea92b2072220eefad42b8
 - name: github.com/moby/moby
-  version: 8422e6f6fa04eb8ee805a98067ee490a86ce3b98
+  version: 05e7d000f2fc3ad0df1880cdeb98b76778a30b69
   subpackages:
   - pkg/term
 - name: github.com/modern-go/concurrent
@@ -304,11 +304,11 @@ imports:
 - name: github.com/modern-go/reflect2
   version: 94122c33edd36123c84d5368cfb2b69df93a0ec8
 - name: github.com/moul/anonuuid
-  version: 609b752a95effbbef26d134ac18ed6f57e01b98e
+  version: 7e821d3418404ca3498d0b1f0a4256e9c7df069c
 - name: github.com/moul/gotty-client
   version: c1b82f1af3ebb2febba268415cb1c90686078f80
 - name: github.com/ncw/swift
-  version: b2a130b7215bd352e6c48f86bb2a2fd42edf577a
+  version: a12c20e04ddb87207d41409a7afda9848aba8df2
 - name: github.com/onsi/ginkgo
   version: fa5fabab2a1bfbd924faf4c067d07ae414e2aedf
   subpackages:
@@ -358,7 +358,7 @@ imports:
 - name: github.com/renier/xmlrpc
   version: ce4a1a486c03a3c6e1816df25b8c559d1879d380
 - name: github.com/renstrom/fuzzysearch
-  version: 2d205ac6ec17a839a94bdbfd16d2fa6c6dada2e0
+  version: 9704abcb5729ef17e4316e31439d7fcece8dac5f
   subpackages:
   - fuzzy
 - name: github.com/russross/blackfriday
@@ -380,7 +380,7 @@ imports:
   subpackages:
   - open
 - name: github.com/softlayer/softlayer-go
-  version: 99f42e8c8395c6728bb4eefb210071e75988d3fe
+  version: a40f6fdd659fe88efd2020e932905ceb4d496db7
   subpackages:
   - config
   - datatypes
@@ -393,8 +393,6 @@ imports:
   - doc
 - name: github.com/spf13/pflag
   version: 298182f68c66c05229eb03ac171abe6e309ee79a
-- name: github.com/tent/http-link-go
-  version: ac974c61c2f990f4115b119354b5e0b47550e888
 - name: golang.org/x/crypto
   version: de0752318171da717af4ce24d0a2e8626afaeb11
   subpackages:
@@ -427,7 +425,7 @@ imports:
   - jws
   - jwt
 - name: golang.org/x/sync
-  version: 42b317875d0fa942474b76e1b46a6060d720ae6e
+  version: 1d60e4601c6fd243af51cc01ddf169918a5407ca
   subpackages:
   - errgroup
 - name: golang.org/x/sys
@@ -477,7 +475,7 @@ imports:
   - replicapoolupdater/v1beta1
   - storage/v1
 - name: google.golang.org/appengine
-  version: 4f7eeb5305a4ba1966344836ba4af9996b7b4e05
+  version: 12d5545dc1cfa6047a286d5e853841b6471f4c19
   subpackages:
   - internal
   - internal/app_identity
@@ -500,7 +498,7 @@ imports:
 - name: gopkg.in/ini.v1
   version: 06f5f3d67269ccec1fe5fe4134ba6e982984f7f5
 - name: gopkg.in/resty.v1
-  version: 03c09fa32a21b7b27b8dbb3877826c1ab3d2daa2
+  version: fa5875c0caa5c260ab78acec5a244215a730247f
 - name: gopkg.in/yaml.v2
   version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
 - name: k8s.io/api

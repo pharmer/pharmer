@@ -22,7 +22,7 @@ import:
 - package: github.com/cenkalti/backoff
   version: v1.1.0
 - package: github.com/digitalocean/godo
-  version: v1.3.0
+  version: v1.8.0
 - package: github.com/ghodss/yaml
   version: v1.0.0
 - package: github.com/golang/glog
@@ -111,6 +111,8 @@ import:
   version: v1.1.1
 - package: k8s.io/kube-openapi
   version: 0cf8f7e6ed1d2e3d47d02e3b6e559369af24d803
+- package: github.com/fatih/color
+  version: 9aae6aaa22315390f03959adca2c4d395b02fcef
 testImport:
 - package: github.com/stretchr/testify
   version: v1.1.4

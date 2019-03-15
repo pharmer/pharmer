@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/util/cert"
 )
 
-var managedProviders = sets.NewString("aks", "gke", "eks")
+var managedProviders = sets.NewString("aks", "gke", "eks", "dokube")
 
 func List(ctx context.Context, opts metav1.ListOptions) ([]*api.Cluster, error) {
 	return Store(ctx).Clusters().List(opts)

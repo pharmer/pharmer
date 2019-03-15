@@ -5,6 +5,7 @@ import (
 	_ "github.com/pharmer/pharmer/cloud/providers/aws"
 	_ "github.com/pharmer/pharmer/cloud/providers/azure"
 	_ "github.com/pharmer/pharmer/cloud/providers/digitalocean"
+	_ "github.com/pharmer/pharmer/cloud/providers/dokube"
 	_ "github.com/pharmer/pharmer/cloud/providers/eks"
 	_ "github.com/pharmer/pharmer/cloud/providers/fake"
 	_ "github.com/pharmer/pharmer/cloud/providers/gce"

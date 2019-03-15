@@ -121,12 +121,13 @@ func (s *certificateFileStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing certificate name")
 	}
-
-	err := s.container.RemoveItem(s.certID(name))
+	certPath := filepath.Join(s.container.ID(), s.certID(name))
+	err := s.container.RemoveItem(certPath)
 	if err != nil {
 		return errors.Errorf("failed to delete certificate %s.crt. Reason: %v", name, err)
 	}
-	err = s.container.RemoveItem(s.keyID(name))
+	keyPath := filepath.Join(s.container.ID(), s.keyID(name))
+	err = s.container.RemoveItem(keyPath)
 	if err != nil {
 		return errors.Errorf("failed to delete certificate key %s.key. Reason: %v", name, err)
 	}

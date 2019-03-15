@@ -161,6 +161,10 @@ type AzureSpec struct {
 	StorageAccountName   string `json:"azureStorageAccountName,omitempty" protobuf:"bytes,9,opt,name=azureStorageAccountName"`
 }
 
+type DokubeSpec struct {
+	ClusterID string `json:"clusterID,omitempty" protobuf:"bytes,3,opt,name=clusterID"`
+}
+
 type LinodeSpec struct {
 	// Linode
 	RootPassword string `json:"rootPassword,omitempty" protobuf:"bytes,1,opt,name=rootPassword"`
@@ -181,6 +185,7 @@ type CloudSpec struct {
 	Azure                *AzureSpec  `json:"azure,omitempty" protobuf:"bytes,12,opt,name=azure"`
 	Linode               *LinodeSpec `json:"linode,omitempty" protobuf:"bytes,13,opt,name=linode"`
 	GKE                  *GKESpec    `json:"gke,omitempty" protobuf:"bytes,14,opt,name=gke"`
+	Dokube               *DokubeSpec `json:"dokube,omitempty" protobuf:"bytes,15,opt,name=dokube"`
 }
 
 type API struct {
