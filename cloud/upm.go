@@ -343,14 +343,13 @@ func (upm *GenericUpgradeManager) MasterUpgrade(oldMachine *clusterv1.Machine, n
 }
 
 func (upm *GenericUpgradeManager) NodeUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) (err error) {
-	if oldMachine.Spec.Versions.ControlPlane != newMachine.Spec.Versions.ControlPlane {
-		desiredVersion, _ := semver.NewVersion(oldMachine.Spec.Versions.ControlPlane)
+	if oldMachine.Spec.Versions.Kubelet != newMachine.Spec.Versions.Kubelet {
+		desiredVersion, _ := semver.NewVersion(newMachine.Spec.Versions.Kubelet)
+		currentVersion, _ := semver.NewVersion(oldMachine.Spec.Versions.Kubelet)
 		v11, err := semver.NewVersion("1.11.0")
 		if err != nil {
 			return err
 		}
-
-		currentVersion, _ := semver.NewVersion(newMachine.Spec.Versions.ControlPlane)
 		if !desiredVersion.Equal(currentVersion) {
 			patch := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().String()
 			minor := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String()

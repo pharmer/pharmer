@@ -287,6 +287,10 @@ imports:
   version: 1624edc4454b8682399def8740d46db5e4362ba4
 - name: github.com/juju/ratelimit
   version: 77ed1c8a01217656d2080ad51981f6e99adaa177
+- name: github.com/kubernetes-sigs/cluster-api
+  version: c488193251e8e0cc557cbe9bbf09a61fb97bd8ba
+  subpackages:
+  - pkg/util
 - name: github.com/lib/pq
   version: 88edab0803230a3898347e77b474f8c1820a1f20
   subpackages:

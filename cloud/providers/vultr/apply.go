@@ -6,6 +6,7 @@ import (
 
 	semver "github.com/appscode/go-version"
 	. "github.com/appscode/go/types"
+	"github.com/kubernetes-sigs/cluster-api/pkg/util"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
@@ -393,6 +394,23 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 	// wait for nodes to start
 	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
 		return
+	}
+
+	ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, cm.conn)
+	if err != nil {
+		return acts, err
+	}
+
+	machines, err := ca.GetMachines()
+	for _, machine := range *machines {
+		if !util.IsControlPlaneMachine(&machine) {
+			machine.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
+			err := ca.UpdateMachine(&machine)
+			if err != nil {
+				fmt.Println("Can't update machine ", machine.Name, ", Reasons: ", err)
+			}
+			fmt.Println("Machine", machine.Name, "updated.")
+		}
 	}
 
 	var machineSets []*clusterv1.MachineSet

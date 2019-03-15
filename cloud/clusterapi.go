@@ -259,3 +259,18 @@ func (ca *ClusterApi) CreateApiServerAndController(controllerManager string) err
 
 	return ca.bootstrapClient.Apply(tmplBuf.String())
 }
+
+func (ca *ClusterApi) GetMachines() (*[]clusterv1.Machine, error) {
+	machineList, err := ca.clusterapiClient.ClusterV1alpha1().Machines("default").List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &machineList.Items, err
+}
+
+func (ca *ClusterApi) UpdateMachine(machine *clusterv1.Machine) error {
+	_, err := ca.clusterapiClient.ClusterV1alpha1().Machines("default").Update(machine)
+
+	return err
+}
