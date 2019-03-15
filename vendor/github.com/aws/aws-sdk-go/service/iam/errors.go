@@ -4,14 +4,6 @@ package iam
 
 const (
 
-	// ErrCodeConcurrentModificationException for service response error code
-	// "ConcurrentModification".
-	//
-	// The request was rejected because multiple requests to change this object
-	// were submitted simultaneously. Wait a few minutes and submit your request
-	// again.
-	ErrCodeConcurrentModificationException = "ConcurrentModification"
-
 	// ErrCodeCredentialReportExpiredException for service response error code
 	// "ReportExpired".
 	//
@@ -137,8 +129,8 @@ const (
 	// ErrCodeNoSuchEntityException for service response error code
 	// "NoSuchEntity".
 	//
-	// The request was rejected because it referenced a resource entity that does
-	// not exist. The error message describes the resource.
+	// The request was rejected because it referenced an entity that does not exist.
+	// The error message describes the entity.
 	ErrCodeNoSuchEntityException = "NoSuchEntity"
 
 	// ErrCodePasswordPolicyViolationException for service response error code

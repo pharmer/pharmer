@@ -86,7 +86,7 @@ type AWSSpec struct {
 	VpcCIDRBase       string `json:"vpcCIDRBase,omitempty" protobuf:"bytes,6,opt,name=vpcCIDRBase"`
 	MasterIPSuffix    string `json:"masterIPSuffix,omitempty" protobuf:"bytes,7,opt,name=masterIPSuffix"`
 	PrivateSubnetCIDR string `json:"privateSubnetCidr,omitempty" protobuf:"bytes,8,opt,name=privateSubnetCidr"`
-	PublicSubnetCIDR  string `json:"publicSubnetCidr,omitempty" protobuf:"bytes,8,opt,name=publicSubnetCidr"`
+	PublicSubnetCIDR  string `json:"publicSubnetCidr,omitempty" protobuf:"bytes,9,opt,name=publicSubnetCidr"`
 }
 
 type GoogleSpec struct {
@@ -161,7 +161,7 @@ const (
 type CloudStatus struct {
 	SShKeyExternalID string     `json:"sshKeyExternalID,omitempty" protobuf:"bytes,1,opt,name=sshKeyExternalID"`
 	AWS              *AWSStatus `json:"aws,omitempty" protobuf:"bytes,2,opt,name=aws"`
-	EKS              *EKSStatus `json:"eks,omitempty" protobuf:"bytes,2,opt,name=eks"`
+	EKS              *EKSStatus `json:"eks,omitempty" protobuf:"bytes,3,opt,name=eks"`
 }
 
 type AWSStatus struct {

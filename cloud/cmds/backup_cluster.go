@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/term"
-	"github.com/appscode/kutil/tools/backup"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
@@ -13,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"kmodules.xyz/client-go/tools/backup"
 )
 
 type ItemList struct {

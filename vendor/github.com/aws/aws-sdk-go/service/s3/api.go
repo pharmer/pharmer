@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -27,7 +26,7 @@ const opAbortMultipartUpload = "AbortMultipartUpload"
 // AbortMultipartUploadRequest generates a "aws/request.Request" representing the
 // client's request for the AbortMultipartUpload operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -110,7 +109,7 @@ const opCompleteMultipartUpload = "CompleteMultipartUpload"
 // CompleteMultipartUploadRequest generates a "aws/request.Request" representing the
 // client's request for the CompleteMultipartUpload operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -184,7 +183,7 @@ const opCopyObject = "CopyObject"
 // CopyObjectRequest generates a "aws/request.Request" representing the
 // client's request for the CopyObject operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -264,7 +263,7 @@ const opCreateBucket = "CreateBucket"
 // CreateBucketRequest generates a "aws/request.Request" representing the
 // client's request for the CreateBucket operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -346,7 +345,7 @@ const opCreateMultipartUpload = "CreateMultipartUpload"
 // CreateMultipartUploadRequest generates a "aws/request.Request" representing the
 // client's request for the CreateMultipartUpload operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -426,7 +425,7 @@ const opDeleteBucket = "DeleteBucket"
 // DeleteBucketRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucket operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -460,7 +459,8 @@ func (c *S3) DeleteBucketRequest(input *DeleteBucketInput) (req *request.Request
 
 	output = &DeleteBucketOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -502,7 +502,7 @@ const opDeleteBucketAnalyticsConfiguration = "DeleteBucketAnalyticsConfiguration
 // DeleteBucketAnalyticsConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketAnalyticsConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -536,7 +536,8 @@ func (c *S3) DeleteBucketAnalyticsConfigurationRequest(input *DeleteBucketAnalyt
 
 	output = &DeleteBucketAnalyticsConfigurationOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -578,7 +579,7 @@ const opDeleteBucketCors = "DeleteBucketCors"
 // DeleteBucketCorsRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketCors operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -612,13 +613,14 @@ func (c *S3) DeleteBucketCorsRequest(input *DeleteBucketCorsInput) (req *request
 
 	output = &DeleteBucketCorsOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
 // DeleteBucketCors API operation for Amazon Simple Storage Service.
 //
-// Deletes the CORS configuration information set for the bucket.
+// Deletes the cors configuration information set for the bucket.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -653,7 +655,7 @@ const opDeleteBucketEncryption = "DeleteBucketEncryption"
 // DeleteBucketEncryptionRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketEncryption operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -687,7 +689,8 @@ func (c *S3) DeleteBucketEncryptionRequest(input *DeleteBucketEncryptionInput) (
 
 	output = &DeleteBucketEncryptionOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -728,7 +731,7 @@ const opDeleteBucketInventoryConfiguration = "DeleteBucketInventoryConfiguration
 // DeleteBucketInventoryConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketInventoryConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -762,7 +765,8 @@ func (c *S3) DeleteBucketInventoryConfigurationRequest(input *DeleteBucketInvent
 
 	output = &DeleteBucketInventoryConfigurationOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -804,7 +808,7 @@ const opDeleteBucketLifecycle = "DeleteBucketLifecycle"
 // DeleteBucketLifecycleRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketLifecycle operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -838,7 +842,8 @@ func (c *S3) DeleteBucketLifecycleRequest(input *DeleteBucketLifecycleInput) (re
 
 	output = &DeleteBucketLifecycleOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -879,7 +884,7 @@ const opDeleteBucketMetricsConfiguration = "DeleteBucketMetricsConfiguration"
 // DeleteBucketMetricsConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketMetricsConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -913,7 +918,8 @@ func (c *S3) DeleteBucketMetricsConfigurationRequest(input *DeleteBucketMetricsC
 
 	output = &DeleteBucketMetricsConfigurationOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -955,7 +961,7 @@ const opDeleteBucketPolicy = "DeleteBucketPolicy"
 // DeleteBucketPolicyRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketPolicy operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -989,7 +995,8 @@ func (c *S3) DeleteBucketPolicyRequest(input *DeleteBucketPolicyInput) (req *req
 
 	output = &DeleteBucketPolicyOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -1030,7 +1037,7 @@ const opDeleteBucketReplication = "DeleteBucketReplication"
 // DeleteBucketReplicationRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketReplication operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1064,15 +1071,14 @@ func (c *S3) DeleteBucketReplicationRequest(input *DeleteBucketReplicationInput)
 
 	output = &DeleteBucketReplicationOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
 // DeleteBucketReplication API operation for Amazon Simple Storage Service.
 //
-// Deletes the replication configuration from the bucket. For information about
-// replication configuration, see Cross-Region Replication (CRR) ( https://docs.aws.amazon.com/AmazonS3/latest/dev/crr.html)
-// in the Amazon S3 Developer Guide.
+// Deletes the replication configuration from the bucket.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1107,7 +1113,7 @@ const opDeleteBucketTagging = "DeleteBucketTagging"
 // DeleteBucketTaggingRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketTagging operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1141,7 +1147,8 @@ func (c *S3) DeleteBucketTaggingRequest(input *DeleteBucketTaggingInput) (req *r
 
 	output = &DeleteBucketTaggingOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -1182,7 +1189,7 @@ const opDeleteBucketWebsite = "DeleteBucketWebsite"
 // DeleteBucketWebsiteRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketWebsite operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1216,7 +1223,8 @@ func (c *S3) DeleteBucketWebsiteRequest(input *DeleteBucketWebsiteInput) (req *r
 
 	output = &DeleteBucketWebsiteOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -1257,7 +1265,7 @@ const opDeleteObject = "DeleteObject"
 // DeleteObjectRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteObject operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1333,7 +1341,7 @@ const opDeleteObjectTagging = "DeleteObjectTagging"
 // DeleteObjectTaggingRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteObjectTagging operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1407,7 +1415,7 @@ const opDeleteObjects = "DeleteObjects"
 // DeleteObjectsRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteObjects operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1477,87 +1485,12 @@ func (c *S3) DeleteObjectsWithContext(ctx aws.Context, input *DeleteObjectsInput
 	return out, req.Send()
 }
 
-const opDeletePublicAccessBlock = "DeletePublicAccessBlock"
-
-// DeletePublicAccessBlockRequest generates a "aws/request.Request" representing the
-// client's request for the DeletePublicAccessBlock operation. The "output" return
-// value will be populated with the request's response once the request completes
-// successfully.
-//
-// Use "Send" method on the returned Request to send the API call to the service.
-// the "output" return value is not valid until after Send returns without error.
-//
-// See DeletePublicAccessBlock for more information on using the DeletePublicAccessBlock
-// API call, and error handling.
-//
-// This method is useful when you want to inject custom logic or configuration
-// into the SDK's request lifecycle. Such as custom headers, or retry logic.
-//
-//
-//    // Example sending a request using the DeletePublicAccessBlockRequest method.
-//    req, resp := client.DeletePublicAccessBlockRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/DeletePublicAccessBlock
-func (c *S3) DeletePublicAccessBlockRequest(input *DeletePublicAccessBlockInput) (req *request.Request, output *DeletePublicAccessBlockOutput) {
-	op := &request.Operation{
-		Name:       opDeletePublicAccessBlock,
-		HTTPMethod: "DELETE",
-		HTTPPath:   "/{Bucket}?publicAccessBlock",
-	}
-
-	if input == nil {
-		input = &DeletePublicAccessBlockInput{}
-	}
-
-	output = &DeletePublicAccessBlockOutput{}
-	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
-	return
-}
-
-// DeletePublicAccessBlock API operation for Amazon Simple Storage Service.
-//
-// Removes the PublicAccessBlock configuration from an Amazon S3 bucket.
-//
-// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
-// with awserr.Error's Code and Message methods to get detailed information about
-// the error.
-//
-// See the AWS API reference guide for Amazon Simple Storage Service's
-// API operation DeletePublicAccessBlock for usage and error information.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/DeletePublicAccessBlock
-func (c *S3) DeletePublicAccessBlock(input *DeletePublicAccessBlockInput) (*DeletePublicAccessBlockOutput, error) {
-	req, out := c.DeletePublicAccessBlockRequest(input)
-	return out, req.Send()
-}
-
-// DeletePublicAccessBlockWithContext is the same as DeletePublicAccessBlock with the addition of
-// the ability to pass a context and additional request options.
-//
-// See DeletePublicAccessBlock for details on how to use this API operation.
-//
-// The context must be non-nil and will be used for request cancellation. If
-// the context is nil a panic will occur. In the future the SDK may create
-// sub-contexts for http.Requests. See https://golang.org/pkg/context/
-// for more information on using Contexts.
-func (c *S3) DeletePublicAccessBlockWithContext(ctx aws.Context, input *DeletePublicAccessBlockInput, opts ...request.Option) (*DeletePublicAccessBlockOutput, error) {
-	req, out := c.DeletePublicAccessBlockRequest(input)
-	req.SetContext(ctx)
-	req.ApplyOptions(opts...)
-	return out, req.Send()
-}
-
 const opGetBucketAccelerateConfiguration = "GetBucketAccelerateConfiguration"
 
 // GetBucketAccelerateConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketAccelerateConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1631,7 +1564,7 @@ const opGetBucketAcl = "GetBucketAcl"
 // GetBucketAclRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketAcl operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1705,7 +1638,7 @@ const opGetBucketAnalyticsConfiguration = "GetBucketAnalyticsConfiguration"
 // GetBucketAnalyticsConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketAnalyticsConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1780,7 +1713,7 @@ const opGetBucketCors = "GetBucketCors"
 // GetBucketCorsRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketCors operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1819,7 +1752,7 @@ func (c *S3) GetBucketCorsRequest(input *GetBucketCorsInput) (req *request.Reque
 
 // GetBucketCors API operation for Amazon Simple Storage Service.
 //
-// Returns the CORS configuration for the bucket.
+// Returns the cors configuration for the bucket.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1854,7 +1787,7 @@ const opGetBucketEncryption = "GetBucketEncryption"
 // GetBucketEncryptionRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketEncryption operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1928,7 +1861,7 @@ const opGetBucketInventoryConfiguration = "GetBucketInventoryConfiguration"
 // GetBucketInventoryConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketInventoryConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2003,7 +1936,7 @@ const opGetBucketLifecycle = "GetBucketLifecycle"
 // GetBucketLifecycleRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketLifecycle operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2024,8 +1957,6 @@ const opGetBucketLifecycle = "GetBucketLifecycle"
 //    }
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetBucketLifecycle
-//
-// Deprecated: GetBucketLifecycle has been deprecated
 func (c *S3) GetBucketLifecycleRequest(input *GetBucketLifecycleInput) (req *request.Request, output *GetBucketLifecycleOutput) {
 	if c.Client.Config.Logger != nil {
 		c.Client.Config.Logger.Log("This operation, GetBucketLifecycle, has been deprecated")
@@ -2056,8 +1987,6 @@ func (c *S3) GetBucketLifecycleRequest(input *GetBucketLifecycleInput) (req *req
 // See the AWS API reference guide for Amazon Simple Storage Service's
 // API operation GetBucketLifecycle for usage and error information.
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetBucketLifecycle
-//
-// Deprecated: GetBucketLifecycle has been deprecated
 func (c *S3) GetBucketLifecycle(input *GetBucketLifecycleInput) (*GetBucketLifecycleOutput, error) {
 	req, out := c.GetBucketLifecycleRequest(input)
 	return out, req.Send()
@@ -2072,8 +2001,6 @@ func (c *S3) GetBucketLifecycle(input *GetBucketLifecycleInput) (*GetBucketLifec
 // the context is nil a panic will occur. In the future the SDK may create
 // sub-contexts for http.Requests. See https://golang.org/pkg/context/
 // for more information on using Contexts.
-//
-// Deprecated: GetBucketLifecycleWithContext has been deprecated
 func (c *S3) GetBucketLifecycleWithContext(ctx aws.Context, input *GetBucketLifecycleInput, opts ...request.Option) (*GetBucketLifecycleOutput, error) {
 	req, out := c.GetBucketLifecycleRequest(input)
 	req.SetContext(ctx)
@@ -2086,7 +2013,7 @@ const opGetBucketLifecycleConfiguration = "GetBucketLifecycleConfiguration"
 // GetBucketLifecycleConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketLifecycleConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2160,7 +2087,7 @@ const opGetBucketLocation = "GetBucketLocation"
 // GetBucketLocationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketLocation operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2234,7 +2161,7 @@ const opGetBucketLogging = "GetBucketLogging"
 // GetBucketLoggingRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketLogging operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2309,7 +2236,7 @@ const opGetBucketMetricsConfiguration = "GetBucketMetricsConfiguration"
 // GetBucketMetricsConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketMetricsConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2384,7 +2311,7 @@ const opGetBucketNotification = "GetBucketNotification"
 // GetBucketNotificationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketNotification operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2405,8 +2332,6 @@ const opGetBucketNotification = "GetBucketNotification"
 //    }
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetBucketNotification
-//
-// Deprecated: GetBucketNotification has been deprecated
 func (c *S3) GetBucketNotificationRequest(input *GetBucketNotificationConfigurationRequest) (req *request.Request, output *NotificationConfigurationDeprecated) {
 	if c.Client.Config.Logger != nil {
 		c.Client.Config.Logger.Log("This operation, GetBucketNotification, has been deprecated")
@@ -2437,8 +2362,6 @@ func (c *S3) GetBucketNotificationRequest(input *GetBucketNotificationConfigurat
 // See the AWS API reference guide for Amazon Simple Storage Service's
 // API operation GetBucketNotification for usage and error information.
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetBucketNotification
-//
-// Deprecated: GetBucketNotification has been deprecated
 func (c *S3) GetBucketNotification(input *GetBucketNotificationConfigurationRequest) (*NotificationConfigurationDeprecated, error) {
 	req, out := c.GetBucketNotificationRequest(input)
 	return out, req.Send()
@@ -2453,8 +2376,6 @@ func (c *S3) GetBucketNotification(input *GetBucketNotificationConfigurationRequ
 // the context is nil a panic will occur. In the future the SDK may create
 // sub-contexts for http.Requests. See https://golang.org/pkg/context/
 // for more information on using Contexts.
-//
-// Deprecated: GetBucketNotificationWithContext has been deprecated
 func (c *S3) GetBucketNotificationWithContext(ctx aws.Context, input *GetBucketNotificationConfigurationRequest, opts ...request.Option) (*NotificationConfigurationDeprecated, error) {
 	req, out := c.GetBucketNotificationRequest(input)
 	req.SetContext(ctx)
@@ -2467,7 +2388,7 @@ const opGetBucketNotificationConfiguration = "GetBucketNotificationConfiguration
 // GetBucketNotificationConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketNotificationConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2541,7 +2462,7 @@ const opGetBucketPolicy = "GetBucketPolicy"
 // GetBucketPolicyRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketPolicy operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2610,87 +2531,12 @@ func (c *S3) GetBucketPolicyWithContext(ctx aws.Context, input *GetBucketPolicyI
 	return out, req.Send()
 }
 
-const opGetBucketPolicyStatus = "GetBucketPolicyStatus"
-
-// GetBucketPolicyStatusRequest generates a "aws/request.Request" representing the
-// client's request for the GetBucketPolicyStatus operation. The "output" return
-// value will be populated with the request's response once the request completes
-// successfully.
-//
-// Use "Send" method on the returned Request to send the API call to the service.
-// the "output" return value is not valid until after Send returns without error.
-//
-// See GetBucketPolicyStatus for more information on using the GetBucketPolicyStatus
-// API call, and error handling.
-//
-// This method is useful when you want to inject custom logic or configuration
-// into the SDK's request lifecycle. Such as custom headers, or retry logic.
-//
-//
-//    // Example sending a request using the GetBucketPolicyStatusRequest method.
-//    req, resp := client.GetBucketPolicyStatusRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetBucketPolicyStatus
-func (c *S3) GetBucketPolicyStatusRequest(input *GetBucketPolicyStatusInput) (req *request.Request, output *GetBucketPolicyStatusOutput) {
-	op := &request.Operation{
-		Name:       opGetBucketPolicyStatus,
-		HTTPMethod: "GET",
-		HTTPPath:   "/{Bucket}?policyStatus",
-	}
-
-	if input == nil {
-		input = &GetBucketPolicyStatusInput{}
-	}
-
-	output = &GetBucketPolicyStatusOutput{}
-	req = c.newRequest(op, input, output)
-	return
-}
-
-// GetBucketPolicyStatus API operation for Amazon Simple Storage Service.
-//
-// Retrieves the policy status for an Amazon S3 bucket, indicating whether the
-// bucket is public.
-//
-// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
-// with awserr.Error's Code and Message methods to get detailed information about
-// the error.
-//
-// See the AWS API reference guide for Amazon Simple Storage Service's
-// API operation GetBucketPolicyStatus for usage and error information.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetBucketPolicyStatus
-func (c *S3) GetBucketPolicyStatus(input *GetBucketPolicyStatusInput) (*GetBucketPolicyStatusOutput, error) {
-	req, out := c.GetBucketPolicyStatusRequest(input)
-	return out, req.Send()
-}
-
-// GetBucketPolicyStatusWithContext is the same as GetBucketPolicyStatus with the addition of
-// the ability to pass a context and additional request options.
-//
-// See GetBucketPolicyStatus for details on how to use this API operation.
-//
-// The context must be non-nil and will be used for request cancellation. If
-// the context is nil a panic will occur. In the future the SDK may create
-// sub-contexts for http.Requests. See https://golang.org/pkg/context/
-// for more information on using Contexts.
-func (c *S3) GetBucketPolicyStatusWithContext(ctx aws.Context, input *GetBucketPolicyStatusInput, opts ...request.Option) (*GetBucketPolicyStatusOutput, error) {
-	req, out := c.GetBucketPolicyStatusRequest(input)
-	req.SetContext(ctx)
-	req.ApplyOptions(opts...)
-	return out, req.Send()
-}
-
 const opGetBucketReplication = "GetBucketReplication"
 
 // GetBucketReplicationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketReplication operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2731,10 +2577,6 @@ func (c *S3) GetBucketReplicationRequest(input *GetBucketReplicationInput) (req 
 //
 // Returns the replication configuration of a bucket.
 //
-// It can take a while to propagate the put or delete a replication configuration
-// to all Amazon S3 systems. Therefore, a get request soon after put or delete
-// can return a wrong result.
-//
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
 // the error.
@@ -2768,7 +2610,7 @@ const opGetBucketRequestPayment = "GetBucketRequestPayment"
 // GetBucketRequestPaymentRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketRequestPayment operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2842,7 +2684,7 @@ const opGetBucketTagging = "GetBucketTagging"
 // GetBucketTaggingRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketTagging operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2916,7 +2758,7 @@ const opGetBucketVersioning = "GetBucketVersioning"
 // GetBucketVersioningRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketVersioning operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2990,7 +2832,7 @@ const opGetBucketWebsite = "GetBucketWebsite"
 // GetBucketWebsiteRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketWebsite operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3064,7 +2906,7 @@ const opGetObject = "GetObject"
 // GetObjectRequest generates a "aws/request.Request" representing the
 // client's request for the GetObject operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3143,7 +2985,7 @@ const opGetObjectAcl = "GetObjectAcl"
 // GetObjectAclRequest generates a "aws/request.Request" representing the
 // client's request for the GetObjectAcl operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3217,236 +3059,12 @@ func (c *S3) GetObjectAclWithContext(ctx aws.Context, input *GetObjectAclInput, 
 	return out, req.Send()
 }
 
-const opGetObjectLegalHold = "GetObjectLegalHold"
-
-// GetObjectLegalHoldRequest generates a "aws/request.Request" representing the
-// client's request for the GetObjectLegalHold operation. The "output" return
-// value will be populated with the request's response once the request completes
-// successfully.
-//
-// Use "Send" method on the returned Request to send the API call to the service.
-// the "output" return value is not valid until after Send returns without error.
-//
-// See GetObjectLegalHold for more information on using the GetObjectLegalHold
-// API call, and error handling.
-//
-// This method is useful when you want to inject custom logic or configuration
-// into the SDK's request lifecycle. Such as custom headers, or retry logic.
-//
-//
-//    // Example sending a request using the GetObjectLegalHoldRequest method.
-//    req, resp := client.GetObjectLegalHoldRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetObjectLegalHold
-func (c *S3) GetObjectLegalHoldRequest(input *GetObjectLegalHoldInput) (req *request.Request, output *GetObjectLegalHoldOutput) {
-	op := &request.Operation{
-		Name:       opGetObjectLegalHold,
-		HTTPMethod: "GET",
-		HTTPPath:   "/{Bucket}/{Key+}?legal-hold",
-	}
-
-	if input == nil {
-		input = &GetObjectLegalHoldInput{}
-	}
-
-	output = &GetObjectLegalHoldOutput{}
-	req = c.newRequest(op, input, output)
-	return
-}
-
-// GetObjectLegalHold API operation for Amazon Simple Storage Service.
-//
-// Gets an object's current Legal Hold status.
-//
-// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
-// with awserr.Error's Code and Message methods to get detailed information about
-// the error.
-//
-// See the AWS API reference guide for Amazon Simple Storage Service's
-// API operation GetObjectLegalHold for usage and error information.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetObjectLegalHold
-func (c *S3) GetObjectLegalHold(input *GetObjectLegalHoldInput) (*GetObjectLegalHoldOutput, error) {
-	req, out := c.GetObjectLegalHoldRequest(input)
-	return out, req.Send()
-}
-
-// GetObjectLegalHoldWithContext is the same as GetObjectLegalHold with the addition of
-// the ability to pass a context and additional request options.
-//
-// See GetObjectLegalHold for details on how to use this API operation.
-//
-// The context must be non-nil and will be used for request cancellation. If
-// the context is nil a panic will occur. In the future the SDK may create
-// sub-contexts for http.Requests. See https://golang.org/pkg/context/
-// for more information on using Contexts.
-func (c *S3) GetObjectLegalHoldWithContext(ctx aws.Context, input *GetObjectLegalHoldInput, opts ...request.Option) (*GetObjectLegalHoldOutput, error) {
-	req, out := c.GetObjectLegalHoldRequest(input)
-	req.SetContext(ctx)
-	req.ApplyOptions(opts...)
-	return out, req.Send()
-}
-
-const opGetObjectLockConfiguration = "GetObjectLockConfiguration"
-
-// GetObjectLockConfigurationRequest generates a "aws/request.Request" representing the
-// client's request for the GetObjectLockConfiguration operation. The "output" return
-// value will be populated with the request's response once the request completes
-// successfully.
-//
-// Use "Send" method on the returned Request to send the API call to the service.
-// the "output" return value is not valid until after Send returns without error.
-//
-// See GetObjectLockConfiguration for more information on using the GetObjectLockConfiguration
-// API call, and error handling.
-//
-// This method is useful when you want to inject custom logic or configuration
-// into the SDK's request lifecycle. Such as custom headers, or retry logic.
-//
-//
-//    // Example sending a request using the GetObjectLockConfigurationRequest method.
-//    req, resp := client.GetObjectLockConfigurationRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetObjectLockConfiguration
-func (c *S3) GetObjectLockConfigurationRequest(input *GetObjectLockConfigurationInput) (req *request.Request, output *GetObjectLockConfigurationOutput) {
-	op := &request.Operation{
-		Name:       opGetObjectLockConfiguration,
-		HTTPMethod: "GET",
-		HTTPPath:   "/{Bucket}?object-lock",
-	}
-
-	if input == nil {
-		input = &GetObjectLockConfigurationInput{}
-	}
-
-	output = &GetObjectLockConfigurationOutput{}
-	req = c.newRequest(op, input, output)
-	return
-}
-
-// GetObjectLockConfiguration API operation for Amazon Simple Storage Service.
-//
-// Gets the Object Lock configuration for a bucket. The rule specified in the
-// Object Lock configuration will be applied by default to every new object
-// placed in the specified bucket.
-//
-// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
-// with awserr.Error's Code and Message methods to get detailed information about
-// the error.
-//
-// See the AWS API reference guide for Amazon Simple Storage Service's
-// API operation GetObjectLockConfiguration for usage and error information.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetObjectLockConfiguration
-func (c *S3) GetObjectLockConfiguration(input *GetObjectLockConfigurationInput) (*GetObjectLockConfigurationOutput, error) {
-	req, out := c.GetObjectLockConfigurationRequest(input)
-	return out, req.Send()
-}
-
-// GetObjectLockConfigurationWithContext is the same as GetObjectLockConfiguration with the addition of
-// the ability to pass a context and additional request options.
-//
-// See GetObjectLockConfiguration for details on how to use this API operation.
-//
-// The context must be non-nil and will be used for request cancellation. If
-// the context is nil a panic will occur. In the future the SDK may create
-// sub-contexts for http.Requests. See https://golang.org/pkg/context/
-// for more information on using Contexts.
-func (c *S3) GetObjectLockConfigurationWithContext(ctx aws.Context, input *GetObjectLockConfigurationInput, opts ...request.Option) (*GetObjectLockConfigurationOutput, error) {
-	req, out := c.GetObjectLockConfigurationRequest(input)
-	req.SetContext(ctx)
-	req.ApplyOptions(opts...)
-	return out, req.Send()
-}
-
-const opGetObjectRetention = "GetObjectRetention"
-
-// GetObjectRetentionRequest generates a "aws/request.Request" representing the
-// client's request for the GetObjectRetention operation. The "output" return
-// value will be populated with the request's response once the request completes
-// successfully.
-//
-// Use "Send" method on the returned Request to send the API call to the service.
-// the "output" return value is not valid until after Send returns without error.
-//
-// See GetObjectRetention for more information on using the GetObjectRetention
-// API call, and error handling.
-//
-// This method is useful when you want to inject custom logic or configuration
-// into the SDK's request lifecycle. Such as custom headers, or retry logic.
-//
-//
-//    // Example sending a request using the GetObjectRetentionRequest method.
-//    req, resp := client.GetObjectRetentionRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetObjectRetention
-func (c *S3) GetObjectRetentionRequest(input *GetObjectRetentionInput) (req *request.Request, output *GetObjectRetentionOutput) {
-	op := &request.Operation{
-		Name:       opGetObjectRetention,
-		HTTPMethod: "GET",
-		HTTPPath:   "/{Bucket}/{Key+}?retention",
-	}
-
-	if input == nil {
-		input = &GetObjectRetentionInput{}
-	}
-
-	output = &GetObjectRetentionOutput{}
-	req = c.newRequest(op, input, output)
-	return
-}
-
-// GetObjectRetention API operation for Amazon Simple Storage Service.
-//
-// Retrieves an object's retention settings.
-//
-// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
-// with awserr.Error's Code and Message methods to get detailed information about
-// the error.
-//
-// See the AWS API reference guide for Amazon Simple Storage Service's
-// API operation GetObjectRetention for usage and error information.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetObjectRetention
-func (c *S3) GetObjectRetention(input *GetObjectRetentionInput) (*GetObjectRetentionOutput, error) {
-	req, out := c.GetObjectRetentionRequest(input)
-	return out, req.Send()
-}
-
-// GetObjectRetentionWithContext is the same as GetObjectRetention with the addition of
-// the ability to pass a context and additional request options.
-//
-// See GetObjectRetention for details on how to use this API operation.
-//
-// The context must be non-nil and will be used for request cancellation. If
-// the context is nil a panic will occur. In the future the SDK may create
-// sub-contexts for http.Requests. See https://golang.org/pkg/context/
-// for more information on using Contexts.
-func (c *S3) GetObjectRetentionWithContext(ctx aws.Context, input *GetObjectRetentionInput, opts ...request.Option) (*GetObjectRetentionOutput, error) {
-	req, out := c.GetObjectRetentionRequest(input)
-	req.SetContext(ctx)
-	req.ApplyOptions(opts...)
-	return out, req.Send()
-}
-
 const opGetObjectTagging = "GetObjectTagging"
 
 // GetObjectTaggingRequest generates a "aws/request.Request" representing the
 // client's request for the GetObjectTagging operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3520,7 +3138,7 @@ const opGetObjectTorrent = "GetObjectTorrent"
 // GetObjectTorrentRequest generates a "aws/request.Request" representing the
 // client's request for the GetObjectTorrent operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3589,86 +3207,12 @@ func (c *S3) GetObjectTorrentWithContext(ctx aws.Context, input *GetObjectTorren
 	return out, req.Send()
 }
 
-const opGetPublicAccessBlock = "GetPublicAccessBlock"
-
-// GetPublicAccessBlockRequest generates a "aws/request.Request" representing the
-// client's request for the GetPublicAccessBlock operation. The "output" return
-// value will be populated with the request's response once the request completes
-// successfully.
-//
-// Use "Send" method on the returned Request to send the API call to the service.
-// the "output" return value is not valid until after Send returns without error.
-//
-// See GetPublicAccessBlock for more information on using the GetPublicAccessBlock
-// API call, and error handling.
-//
-// This method is useful when you want to inject custom logic or configuration
-// into the SDK's request lifecycle. Such as custom headers, or retry logic.
-//
-//
-//    // Example sending a request using the GetPublicAccessBlockRequest method.
-//    req, resp := client.GetPublicAccessBlockRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetPublicAccessBlock
-func (c *S3) GetPublicAccessBlockRequest(input *GetPublicAccessBlockInput) (req *request.Request, output *GetPublicAccessBlockOutput) {
-	op := &request.Operation{
-		Name:       opGetPublicAccessBlock,
-		HTTPMethod: "GET",
-		HTTPPath:   "/{Bucket}?publicAccessBlock",
-	}
-
-	if input == nil {
-		input = &GetPublicAccessBlockInput{}
-	}
-
-	output = &GetPublicAccessBlockOutput{}
-	req = c.newRequest(op, input, output)
-	return
-}
-
-// GetPublicAccessBlock API operation for Amazon Simple Storage Service.
-//
-// Retrieves the PublicAccessBlock configuration for an Amazon S3 bucket.
-//
-// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
-// with awserr.Error's Code and Message methods to get detailed information about
-// the error.
-//
-// See the AWS API reference guide for Amazon Simple Storage Service's
-// API operation GetPublicAccessBlock for usage and error information.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetPublicAccessBlock
-func (c *S3) GetPublicAccessBlock(input *GetPublicAccessBlockInput) (*GetPublicAccessBlockOutput, error) {
-	req, out := c.GetPublicAccessBlockRequest(input)
-	return out, req.Send()
-}
-
-// GetPublicAccessBlockWithContext is the same as GetPublicAccessBlock with the addition of
-// the ability to pass a context and additional request options.
-//
-// See GetPublicAccessBlock for details on how to use this API operation.
-//
-// The context must be non-nil and will be used for request cancellation. If
-// the context is nil a panic will occur. In the future the SDK may create
-// sub-contexts for http.Requests. See https://golang.org/pkg/context/
-// for more information on using Contexts.
-func (c *S3) GetPublicAccessBlockWithContext(ctx aws.Context, input *GetPublicAccessBlockInput, opts ...request.Option) (*GetPublicAccessBlockOutput, error) {
-	req, out := c.GetPublicAccessBlockRequest(input)
-	req.SetContext(ctx)
-	req.ApplyOptions(opts...)
-	return out, req.Send()
-}
-
 const opHeadBucket = "HeadBucket"
 
 // HeadBucketRequest generates a "aws/request.Request" representing the
 // client's request for the HeadBucket operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3702,7 +3246,8 @@ func (c *S3) HeadBucketRequest(input *HeadBucketInput) (req *request.Request, ou
 
 	output = &HeadBucketOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -3749,7 +3294,7 @@ const opHeadObject = "HeadObject"
 // HeadObjectRequest generates a "aws/request.Request" representing the
 // client's request for the HeadObject operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3828,7 +3373,7 @@ const opListBucketAnalyticsConfigurations = "ListBucketAnalyticsConfigurations"
 // ListBucketAnalyticsConfigurationsRequest generates a "aws/request.Request" representing the
 // client's request for the ListBucketAnalyticsConfigurations operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3902,7 +3447,7 @@ const opListBucketInventoryConfigurations = "ListBucketInventoryConfigurations"
 // ListBucketInventoryConfigurationsRequest generates a "aws/request.Request" representing the
 // client's request for the ListBucketInventoryConfigurations operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3976,7 +3521,7 @@ const opListBucketMetricsConfigurations = "ListBucketMetricsConfigurations"
 // ListBucketMetricsConfigurationsRequest generates a "aws/request.Request" representing the
 // client's request for the ListBucketMetricsConfigurations operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4050,7 +3595,7 @@ const opListBuckets = "ListBuckets"
 // ListBucketsRequest generates a "aws/request.Request" representing the
 // client's request for the ListBuckets operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4124,7 +3669,7 @@ const opListMultipartUploads = "ListMultipartUploads"
 // ListMultipartUploadsRequest generates a "aws/request.Request" representing the
 // client's request for the ListMultipartUploads operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4254,7 +3799,7 @@ const opListObjectVersions = "ListObjectVersions"
 // ListObjectVersionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListObjectVersions operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4384,7 +3929,7 @@ const opListObjects = "ListObjects"
 // ListObjectsRequest generates a "aws/request.Request" representing the
 // client's request for the ListObjects operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4521,7 +4066,7 @@ const opListObjectsV2 = "ListObjectsV2"
 // ListObjectsV2Request generates a "aws/request.Request" representing the
 // client's request for the ListObjectsV2 operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4659,7 +4204,7 @@ const opListParts = "ListParts"
 // ListPartsRequest generates a "aws/request.Request" representing the
 // client's request for the ListParts operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4789,7 +4334,7 @@ const opPutBucketAccelerateConfiguration = "PutBucketAccelerateConfiguration"
 // PutBucketAccelerateConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketAccelerateConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4823,7 +4368,8 @@ func (c *S3) PutBucketAccelerateConfigurationRequest(input *PutBucketAccelerateC
 
 	output = &PutBucketAccelerateConfigurationOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -4864,7 +4410,7 @@ const opPutBucketAcl = "PutBucketAcl"
 // PutBucketAclRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketAcl operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4898,7 +4444,8 @@ func (c *S3) PutBucketAclRequest(input *PutBucketAclInput) (req *request.Request
 
 	output = &PutBucketAclOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -4939,7 +4486,7 @@ const opPutBucketAnalyticsConfiguration = "PutBucketAnalyticsConfiguration"
 // PutBucketAnalyticsConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketAnalyticsConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4973,7 +4520,8 @@ func (c *S3) PutBucketAnalyticsConfigurationRequest(input *PutBucketAnalyticsCon
 
 	output = &PutBucketAnalyticsConfigurationOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -5015,7 +4563,7 @@ const opPutBucketCors = "PutBucketCors"
 // PutBucketCorsRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketCors operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5049,13 +4597,14 @@ func (c *S3) PutBucketCorsRequest(input *PutBucketCorsInput) (req *request.Reque
 
 	output = &PutBucketCorsOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
 // PutBucketCors API operation for Amazon Simple Storage Service.
 //
-// Sets the CORS configuration for a bucket.
+// Sets the cors configuration for a bucket.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -5090,7 +4639,7 @@ const opPutBucketEncryption = "PutBucketEncryption"
 // PutBucketEncryptionRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketEncryption operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5124,7 +4673,8 @@ func (c *S3) PutBucketEncryptionRequest(input *PutBucketEncryptionInput) (req *r
 
 	output = &PutBucketEncryptionOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -5166,7 +4716,7 @@ const opPutBucketInventoryConfiguration = "PutBucketInventoryConfiguration"
 // PutBucketInventoryConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketInventoryConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5200,7 +4750,8 @@ func (c *S3) PutBucketInventoryConfigurationRequest(input *PutBucketInventoryCon
 
 	output = &PutBucketInventoryConfigurationOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -5242,7 +4793,7 @@ const opPutBucketLifecycle = "PutBucketLifecycle"
 // PutBucketLifecycleRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketLifecycle operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5263,8 +4814,6 @@ const opPutBucketLifecycle = "PutBucketLifecycle"
 //    }
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutBucketLifecycle
-//
-// Deprecated: PutBucketLifecycle has been deprecated
 func (c *S3) PutBucketLifecycleRequest(input *PutBucketLifecycleInput) (req *request.Request, output *PutBucketLifecycleOutput) {
 	if c.Client.Config.Logger != nil {
 		c.Client.Config.Logger.Log("This operation, PutBucketLifecycle, has been deprecated")
@@ -5281,7 +4830,8 @@ func (c *S3) PutBucketLifecycleRequest(input *PutBucketLifecycleInput) (req *req
 
 	output = &PutBucketLifecycleOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -5296,8 +4846,6 @@ func (c *S3) PutBucketLifecycleRequest(input *PutBucketLifecycleInput) (req *req
 // See the AWS API reference guide for Amazon Simple Storage Service's
 // API operation PutBucketLifecycle for usage and error information.
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutBucketLifecycle
-//
-// Deprecated: PutBucketLifecycle has been deprecated
 func (c *S3) PutBucketLifecycle(input *PutBucketLifecycleInput) (*PutBucketLifecycleOutput, error) {
 	req, out := c.PutBucketLifecycleRequest(input)
 	return out, req.Send()
@@ -5312,8 +4860,6 @@ func (c *S3) PutBucketLifecycle(input *PutBucketLifecycleInput) (*PutBucketLifec
 // the context is nil a panic will occur. In the future the SDK may create
 // sub-contexts for http.Requests. See https://golang.org/pkg/context/
 // for more information on using Contexts.
-//
-// Deprecated: PutBucketLifecycleWithContext has been deprecated
 func (c *S3) PutBucketLifecycleWithContext(ctx aws.Context, input *PutBucketLifecycleInput, opts ...request.Option) (*PutBucketLifecycleOutput, error) {
 	req, out := c.PutBucketLifecycleRequest(input)
 	req.SetContext(ctx)
@@ -5326,7 +4872,7 @@ const opPutBucketLifecycleConfiguration = "PutBucketLifecycleConfiguration"
 // PutBucketLifecycleConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketLifecycleConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5360,7 +4906,8 @@ func (c *S3) PutBucketLifecycleConfigurationRequest(input *PutBucketLifecycleCon
 
 	output = &PutBucketLifecycleConfigurationOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -5402,7 +4949,7 @@ const opPutBucketLogging = "PutBucketLogging"
 // PutBucketLoggingRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketLogging operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5436,7 +4983,8 @@ func (c *S3) PutBucketLoggingRequest(input *PutBucketLoggingInput) (req *request
 
 	output = &PutBucketLoggingOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -5479,7 +5027,7 @@ const opPutBucketMetricsConfiguration = "PutBucketMetricsConfiguration"
 // PutBucketMetricsConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketMetricsConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5513,7 +5061,8 @@ func (c *S3) PutBucketMetricsConfigurationRequest(input *PutBucketMetricsConfigu
 
 	output = &PutBucketMetricsConfigurationOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -5555,7 +5104,7 @@ const opPutBucketNotification = "PutBucketNotification"
 // PutBucketNotificationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketNotification operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5576,8 +5125,6 @@ const opPutBucketNotification = "PutBucketNotification"
 //    }
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutBucketNotification
-//
-// Deprecated: PutBucketNotification has been deprecated
 func (c *S3) PutBucketNotificationRequest(input *PutBucketNotificationInput) (req *request.Request, output *PutBucketNotificationOutput) {
 	if c.Client.Config.Logger != nil {
 		c.Client.Config.Logger.Log("This operation, PutBucketNotification, has been deprecated")
@@ -5594,7 +5141,8 @@ func (c *S3) PutBucketNotificationRequest(input *PutBucketNotificationInput) (re
 
 	output = &PutBucketNotificationOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -5609,8 +5157,6 @@ func (c *S3) PutBucketNotificationRequest(input *PutBucketNotificationInput) (re
 // See the AWS API reference guide for Amazon Simple Storage Service's
 // API operation PutBucketNotification for usage and error information.
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutBucketNotification
-//
-// Deprecated: PutBucketNotification has been deprecated
 func (c *S3) PutBucketNotification(input *PutBucketNotificationInput) (*PutBucketNotificationOutput, error) {
 	req, out := c.PutBucketNotificationRequest(input)
 	return out, req.Send()
@@ -5625,8 +5171,6 @@ func (c *S3) PutBucketNotification(input *PutBucketNotificationInput) (*PutBucke
 // the context is nil a panic will occur. In the future the SDK may create
 // sub-contexts for http.Requests. See https://golang.org/pkg/context/
 // for more information on using Contexts.
-//
-// Deprecated: PutBucketNotificationWithContext has been deprecated
 func (c *S3) PutBucketNotificationWithContext(ctx aws.Context, input *PutBucketNotificationInput, opts ...request.Option) (*PutBucketNotificationOutput, error) {
 	req, out := c.PutBucketNotificationRequest(input)
 	req.SetContext(ctx)
@@ -5639,7 +5183,7 @@ const opPutBucketNotificationConfiguration = "PutBucketNotificationConfiguration
 // PutBucketNotificationConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketNotificationConfiguration operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5673,7 +5217,8 @@ func (c *S3) PutBucketNotificationConfigurationRequest(input *PutBucketNotificat
 
 	output = &PutBucketNotificationConfigurationOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -5714,7 +5259,7 @@ const opPutBucketPolicy = "PutBucketPolicy"
 // PutBucketPolicyRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketPolicy operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5748,7 +5293,8 @@ func (c *S3) PutBucketPolicyRequest(input *PutBucketPolicyInput) (req *request.R
 
 	output = &PutBucketPolicyOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -5790,7 +5336,7 @@ const opPutBucketReplication = "PutBucketReplication"
 // PutBucketReplicationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketReplication operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5824,15 +5370,15 @@ func (c *S3) PutBucketReplicationRequest(input *PutBucketReplicationInput) (req 
 
 	output = &PutBucketReplicationOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
 // PutBucketReplication API operation for Amazon Simple Storage Service.
 //
-// Creates a replication configuration or replaces an existing one. For more
-// information, see Cross-Region Replication (CRR) ( https://docs.aws.amazon.com/AmazonS3/latest/dev/crr.html)
-// in the Amazon S3 Developer Guide.
+// Creates a new replication configuration (or replaces an existing one, if
+// present).
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -5867,7 +5413,7 @@ const opPutBucketRequestPayment = "PutBucketRequestPayment"
 // PutBucketRequestPaymentRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketRequestPayment operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5901,7 +5447,8 @@ func (c *S3) PutBucketRequestPaymentRequest(input *PutBucketRequestPaymentInput)
 
 	output = &PutBucketRequestPaymentOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -5946,7 +5493,7 @@ const opPutBucketTagging = "PutBucketTagging"
 // PutBucketTaggingRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketTagging operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5980,7 +5527,8 @@ func (c *S3) PutBucketTaggingRequest(input *PutBucketTaggingInput) (req *request
 
 	output = &PutBucketTaggingOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -6021,7 +5569,7 @@ const opPutBucketVersioning = "PutBucketVersioning"
 // PutBucketVersioningRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketVersioning operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -6055,7 +5603,8 @@ func (c *S3) PutBucketVersioningRequest(input *PutBucketVersioningInput) (req *r
 
 	output = &PutBucketVersioningOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -6097,7 +5646,7 @@ const opPutBucketWebsite = "PutBucketWebsite"
 // PutBucketWebsiteRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketWebsite operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -6131,7 +5680,8 @@ func (c *S3) PutBucketWebsiteRequest(input *PutBucketWebsiteInput) (req *request
 
 	output = &PutBucketWebsiteOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
@@ -6172,7 +5722,7 @@ const opPutObject = "PutObject"
 // PutObjectRequest generates a "aws/request.Request" representing the
 // client's request for the PutObject operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -6246,7 +5796,7 @@ const opPutObjectAcl = "PutObjectAcl"
 // PutObjectAclRequest generates a "aws/request.Request" representing the
 // client's request for the PutObjectAcl operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -6321,236 +5871,12 @@ func (c *S3) PutObjectAclWithContext(ctx aws.Context, input *PutObjectAclInput, 
 	return out, req.Send()
 }
 
-const opPutObjectLegalHold = "PutObjectLegalHold"
-
-// PutObjectLegalHoldRequest generates a "aws/request.Request" representing the
-// client's request for the PutObjectLegalHold operation. The "output" return
-// value will be populated with the request's response once the request completes
-// successfully.
-//
-// Use "Send" method on the returned Request to send the API call to the service.
-// the "output" return value is not valid until after Send returns without error.
-//
-// See PutObjectLegalHold for more information on using the PutObjectLegalHold
-// API call, and error handling.
-//
-// This method is useful when you want to inject custom logic or configuration
-// into the SDK's request lifecycle. Such as custom headers, or retry logic.
-//
-//
-//    // Example sending a request using the PutObjectLegalHoldRequest method.
-//    req, resp := client.PutObjectLegalHoldRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutObjectLegalHold
-func (c *S3) PutObjectLegalHoldRequest(input *PutObjectLegalHoldInput) (req *request.Request, output *PutObjectLegalHoldOutput) {
-	op := &request.Operation{
-		Name:       opPutObjectLegalHold,
-		HTTPMethod: "PUT",
-		HTTPPath:   "/{Bucket}/{Key+}?legal-hold",
-	}
-
-	if input == nil {
-		input = &PutObjectLegalHoldInput{}
-	}
-
-	output = &PutObjectLegalHoldOutput{}
-	req = c.newRequest(op, input, output)
-	return
-}
-
-// PutObjectLegalHold API operation for Amazon Simple Storage Service.
-//
-// Applies a Legal Hold configuration to the specified object.
-//
-// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
-// with awserr.Error's Code and Message methods to get detailed information about
-// the error.
-//
-// See the AWS API reference guide for Amazon Simple Storage Service's
-// API operation PutObjectLegalHold for usage and error information.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutObjectLegalHold
-func (c *S3) PutObjectLegalHold(input *PutObjectLegalHoldInput) (*PutObjectLegalHoldOutput, error) {
-	req, out := c.PutObjectLegalHoldRequest(input)
-	return out, req.Send()
-}
-
-// PutObjectLegalHoldWithContext is the same as PutObjectLegalHold with the addition of
-// the ability to pass a context and additional request options.
-//
-// See PutObjectLegalHold for details on how to use this API operation.
-//
-// The context must be non-nil and will be used for request cancellation. If
-// the context is nil a panic will occur. In the future the SDK may create
-// sub-contexts for http.Requests. See https://golang.org/pkg/context/
-// for more information on using Contexts.
-func (c *S3) PutObjectLegalHoldWithContext(ctx aws.Context, input *PutObjectLegalHoldInput, opts ...request.Option) (*PutObjectLegalHoldOutput, error) {
-	req, out := c.PutObjectLegalHoldRequest(input)
-	req.SetContext(ctx)
-	req.ApplyOptions(opts...)
-	return out, req.Send()
-}
-
-const opPutObjectLockConfiguration = "PutObjectLockConfiguration"
-
-// PutObjectLockConfigurationRequest generates a "aws/request.Request" representing the
-// client's request for the PutObjectLockConfiguration operation. The "output" return
-// value will be populated with the request's response once the request completes
-// successfully.
-//
-// Use "Send" method on the returned Request to send the API call to the service.
-// the "output" return value is not valid until after Send returns without error.
-//
-// See PutObjectLockConfiguration for more information on using the PutObjectLockConfiguration
-// API call, and error handling.
-//
-// This method is useful when you want to inject custom logic or configuration
-// into the SDK's request lifecycle. Such as custom headers, or retry logic.
-//
-//
-//    // Example sending a request using the PutObjectLockConfigurationRequest method.
-//    req, resp := client.PutObjectLockConfigurationRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutObjectLockConfiguration
-func (c *S3) PutObjectLockConfigurationRequest(input *PutObjectLockConfigurationInput) (req *request.Request, output *PutObjectLockConfigurationOutput) {
-	op := &request.Operation{
-		Name:       opPutObjectLockConfiguration,
-		HTTPMethod: "PUT",
-		HTTPPath:   "/{Bucket}?object-lock",
-	}
-
-	if input == nil {
-		input = &PutObjectLockConfigurationInput{}
-	}
-
-	output = &PutObjectLockConfigurationOutput{}
-	req = c.newRequest(op, input, output)
-	return
-}
-
-// PutObjectLockConfiguration API operation for Amazon Simple Storage Service.
-//
-// Places an Object Lock configuration on the specified bucket. The rule specified
-// in the Object Lock configuration will be applied by default to every new
-// object placed in the specified bucket.
-//
-// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
-// with awserr.Error's Code and Message methods to get detailed information about
-// the error.
-//
-// See the AWS API reference guide for Amazon Simple Storage Service's
-// API operation PutObjectLockConfiguration for usage and error information.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutObjectLockConfiguration
-func (c *S3) PutObjectLockConfiguration(input *PutObjectLockConfigurationInput) (*PutObjectLockConfigurationOutput, error) {
-	req, out := c.PutObjectLockConfigurationRequest(input)
-	return out, req.Send()
-}
-
-// PutObjectLockConfigurationWithContext is the same as PutObjectLockConfiguration with the addition of
-// the ability to pass a context and additional request options.
-//
-// See PutObjectLockConfiguration for details on how to use this API operation.
-//
-// The context must be non-nil and will be used for request cancellation. If
-// the context is nil a panic will occur. In the future the SDK may create
-// sub-contexts for http.Requests. See https://golang.org/pkg/context/
-// for more information on using Contexts.
-func (c *S3) PutObjectLockConfigurationWithContext(ctx aws.Context, input *PutObjectLockConfigurationInput, opts ...request.Option) (*PutObjectLockConfigurationOutput, error) {
-	req, out := c.PutObjectLockConfigurationRequest(input)
-	req.SetContext(ctx)
-	req.ApplyOptions(opts...)
-	return out, req.Send()
-}
-
-const opPutObjectRetention = "PutObjectRetention"
-
-// PutObjectRetentionRequest generates a "aws/request.Request" representing the
-// client's request for the PutObjectRetention operation. The "output" return
-// value will be populated with the request's response once the request completes
-// successfully.
-//
-// Use "Send" method on the returned Request to send the API call to the service.
-// the "output" return value is not valid until after Send returns without error.
-//
-// See PutObjectRetention for more information on using the PutObjectRetention
-// API call, and error handling.
-//
-// This method is useful when you want to inject custom logic or configuration
-// into the SDK's request lifecycle. Such as custom headers, or retry logic.
-//
-//
-//    // Example sending a request using the PutObjectRetentionRequest method.
-//    req, resp := client.PutObjectRetentionRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutObjectRetention
-func (c *S3) PutObjectRetentionRequest(input *PutObjectRetentionInput) (req *request.Request, output *PutObjectRetentionOutput) {
-	op := &request.Operation{
-		Name:       opPutObjectRetention,
-		HTTPMethod: "PUT",
-		HTTPPath:   "/{Bucket}/{Key+}?retention",
-	}
-
-	if input == nil {
-		input = &PutObjectRetentionInput{}
-	}
-
-	output = &PutObjectRetentionOutput{}
-	req = c.newRequest(op, input, output)
-	return
-}
-
-// PutObjectRetention API operation for Amazon Simple Storage Service.
-//
-// Places an Object Retention configuration on an object.
-//
-// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
-// with awserr.Error's Code and Message methods to get detailed information about
-// the error.
-//
-// See the AWS API reference guide for Amazon Simple Storage Service's
-// API operation PutObjectRetention for usage and error information.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutObjectRetention
-func (c *S3) PutObjectRetention(input *PutObjectRetentionInput) (*PutObjectRetentionOutput, error) {
-	req, out := c.PutObjectRetentionRequest(input)
-	return out, req.Send()
-}
-
-// PutObjectRetentionWithContext is the same as PutObjectRetention with the addition of
-// the ability to pass a context and additional request options.
-//
-// See PutObjectRetention for details on how to use this API operation.
-//
-// The context must be non-nil and will be used for request cancellation. If
-// the context is nil a panic will occur. In the future the SDK may create
-// sub-contexts for http.Requests. See https://golang.org/pkg/context/
-// for more information on using Contexts.
-func (c *S3) PutObjectRetentionWithContext(ctx aws.Context, input *PutObjectRetentionInput, opts ...request.Option) (*PutObjectRetentionOutput, error) {
-	req, out := c.PutObjectRetentionRequest(input)
-	req.SetContext(ctx)
-	req.ApplyOptions(opts...)
-	return out, req.Send()
-}
-
 const opPutObjectTagging = "PutObjectTagging"
 
 // PutObjectTaggingRequest generates a "aws/request.Request" representing the
 // client's request for the PutObjectTagging operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -6619,88 +5945,12 @@ func (c *S3) PutObjectTaggingWithContext(ctx aws.Context, input *PutObjectTaggin
 	return out, req.Send()
 }
 
-const opPutPublicAccessBlock = "PutPublicAccessBlock"
-
-// PutPublicAccessBlockRequest generates a "aws/request.Request" representing the
-// client's request for the PutPublicAccessBlock operation. The "output" return
-// value will be populated with the request's response once the request completes
-// successfully.
-//
-// Use "Send" method on the returned Request to send the API call to the service.
-// the "output" return value is not valid until after Send returns without error.
-//
-// See PutPublicAccessBlock for more information on using the PutPublicAccessBlock
-// API call, and error handling.
-//
-// This method is useful when you want to inject custom logic or configuration
-// into the SDK's request lifecycle. Such as custom headers, or retry logic.
-//
-//
-//    // Example sending a request using the PutPublicAccessBlockRequest method.
-//    req, resp := client.PutPublicAccessBlockRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutPublicAccessBlock
-func (c *S3) PutPublicAccessBlockRequest(input *PutPublicAccessBlockInput) (req *request.Request, output *PutPublicAccessBlockOutput) {
-	op := &request.Operation{
-		Name:       opPutPublicAccessBlock,
-		HTTPMethod: "PUT",
-		HTTPPath:   "/{Bucket}?publicAccessBlock",
-	}
-
-	if input == nil {
-		input = &PutPublicAccessBlockInput{}
-	}
-
-	output = &PutPublicAccessBlockOutput{}
-	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
-	return
-}
-
-// PutPublicAccessBlock API operation for Amazon Simple Storage Service.
-//
-// Creates or modifies the PublicAccessBlock configuration for an Amazon S3
-// bucket.
-//
-// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
-// with awserr.Error's Code and Message methods to get detailed information about
-// the error.
-//
-// See the AWS API reference guide for Amazon Simple Storage Service's
-// API operation PutPublicAccessBlock for usage and error information.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutPublicAccessBlock
-func (c *S3) PutPublicAccessBlock(input *PutPublicAccessBlockInput) (*PutPublicAccessBlockOutput, error) {
-	req, out := c.PutPublicAccessBlockRequest(input)
-	return out, req.Send()
-}
-
-// PutPublicAccessBlockWithContext is the same as PutPublicAccessBlock with the addition of
-// the ability to pass a context and additional request options.
-//
-// See PutPublicAccessBlock for details on how to use this API operation.
-//
-// The context must be non-nil and will be used for request cancellation. If
-// the context is nil a panic will occur. In the future the SDK may create
-// sub-contexts for http.Requests. See https://golang.org/pkg/context/
-// for more information on using Contexts.
-func (c *S3) PutPublicAccessBlockWithContext(ctx aws.Context, input *PutPublicAccessBlockInput, opts ...request.Option) (*PutPublicAccessBlockOutput, error) {
-	req, out := c.PutPublicAccessBlockRequest(input)
-	req.SetContext(ctx)
-	req.ApplyOptions(opts...)
-	return out, req.Send()
-}
-
 const opRestoreObject = "RestoreObject"
 
 // RestoreObjectRequest generates a "aws/request.Request" representing the
 // client's request for the RestoreObject operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -6779,7 +6029,7 @@ const opSelectObjectContent = "SelectObjectContent"
 // SelectObjectContentRequest generates a "aws/request.Request" representing the
 // client's request for the SelectObjectContent operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -6861,7 +6111,7 @@ const opUploadPart = "UploadPart"
 // UploadPartRequest generates a "aws/request.Request" representing the
 // client's request for the UploadPart operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -6941,7 +6191,7 @@ const opUploadPartCopy = "UploadPartCopy"
 // UploadPartCopyRequest generates a "aws/request.Request" representing the
 // client's request for the UploadPartCopy operation. The "output" return
 // value will be populated with the request's response once the request completes
-// successfully.
+// successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -7070,9 +6320,6 @@ func (s *AbortMultipartUploadInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "AbortMultipartUploadInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
@@ -7219,7 +6466,7 @@ func (s *AccessControlPolicy) SetOwner(v *Owner) *AccessControlPolicy {
 	return s
 }
 
-// A container for information about access control for replicas.
+// Container for information regarding the access control for replicas.
 type AccessControlTranslation struct {
 	_ struct{} `type:"structure"`
 
@@ -7572,7 +6819,7 @@ type Bucket struct {
 	_ struct{} `type:"structure"`
 
 	// Date the bucket was created.
-	CreationDate *time.Time `type:"timestamp"`
+	CreationDate *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
 	// The name of the bucket.
 	Name *string `type:"string"`
@@ -7819,16 +7066,11 @@ func (s *CORSRule) SetMaxAgeSeconds(v int64) *CORSRule {
 type CSVInput struct {
 	_ struct{} `type:"structure"`
 
-	// Specifies that CSV field values may contain quoted record delimiters and
-	// such records should be allowed. Default value is FALSE. Setting this value
-	// to TRUE may lower performance.
-	AllowQuotedRecordDelimiter *bool `type:"boolean"`
-
-	// The single character used to indicate a row should be ignored when present
-	// at the start of a row.
+	// Single character used to indicate a row should be ignored when present at
+	// the start of a row.
 	Comments *string `type:"string"`
 
-	// The value used to separate individual fields in a record.
+	// Value used to separate individual fields in a record.
 	FieldDelimiter *string `type:"string"`
 
 	// Describes the first line of input. Valid values: None, Ignore, Use.
@@ -7837,11 +7079,11 @@ type CSVInput struct {
 	// Value used for escaping where the field delimiter is part of the value.
 	QuoteCharacter *string `type:"string"`
 
-	// The single character used for escaping the quote character inside an already
+	// Single character used for escaping the quote character inside an already
 	// escaped value.
 	QuoteEscapeCharacter *string `type:"string"`
 
-	// The value used to separate individual records.
+	// Value used to separate individual records.
 	RecordDelimiter *string `type:"string"`
 }
 
@@ -7853,12 +7095,6 @@ func (s CSVInput) String() string {
 // GoString returns the string representation
 func (s CSVInput) GoString() string {
 	return s.String()
-}
-
-// SetAllowQuotedRecordDelimiter sets the AllowQuotedRecordDelimiter field's value.
-func (s *CSVInput) SetAllowQuotedRecordDelimiter(v bool) *CSVInput {
-	s.AllowQuotedRecordDelimiter = &v
-	return s
 }
 
 // SetComments sets the Comments field's value.
@@ -7901,20 +7137,20 @@ func (s *CSVInput) SetRecordDelimiter(v string) *CSVInput {
 type CSVOutput struct {
 	_ struct{} `type:"structure"`
 
-	// The value used to separate individual fields in a record.
+	// Value used to separate individual fields in a record.
 	FieldDelimiter *string `type:"string"`
 
-	// The value used for escaping where the field delimiter is part of the value.
+	// Value used for escaping where the field delimiter is part of the value.
 	QuoteCharacter *string `type:"string"`
 
-	// Th single character used for escaping the quote character inside an already
+	// Single character used for escaping the quote character inside an already
 	// escaped value.
 	QuoteEscapeCharacter *string `type:"string"`
 
 	// Indicates whether or not all output fields should be quoted.
 	QuoteFields *string `type:"string" enum:"QuoteFields"`
 
-	// The value used to separate individual records.
+	// Value used to separate individual records.
 	RecordDelimiter *string `type:"string"`
 }
 
@@ -7963,14 +7199,12 @@ type CloudFunctionConfiguration struct {
 
 	CloudFunction *string `type:"string"`
 
-	// The bucket event for which to send notifications.
-	//
-	// Deprecated: Event has been deprecated
+	// Bucket event for which to send notifications.
 	Event *string `deprecated:"true" type:"string" enum:"Event"`
 
 	Events []*string `locationName:"Event" type:"list" flattened:"true"`
 
-	// An optional unique identifier for configurations in a notification configuration.
+	// Optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
 	Id *string `type:"string"`
 
@@ -8076,9 +7310,6 @@ func (s *CompleteMultipartUploadInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
 	}
@@ -8154,7 +7385,7 @@ type CompleteMultipartUploadOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -8333,7 +7564,7 @@ func (s *Condition) SetKeyPrefixEquals(v string) *Condition {
 }
 
 type ContinuationEvent struct {
-	_ struct{} `locationName:"ContinuationEvent" type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -8394,14 +7625,14 @@ type CopyObjectInput struct {
 	CopySourceIfMatch *string `location:"header" locationName:"x-amz-copy-source-if-match" type:"string"`
 
 	// Copies the object if it has been modified since the specified time.
-	CopySourceIfModifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-modified-since" type:"timestamp"`
+	CopySourceIfModifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-modified-since" type:"timestamp" timestampFormat:"rfc822"`
 
 	// Copies the object if its entity tag (ETag) is different than the specified
 	// ETag.
 	CopySourceIfNoneMatch *string `location:"header" locationName:"x-amz-copy-source-if-none-match" type:"string"`
 
 	// Copies the object if it hasn't been modified since the specified time.
-	CopySourceIfUnmodifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-unmodified-since" type:"timestamp"`
+	CopySourceIfUnmodifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-unmodified-since" type:"timestamp" timestampFormat:"rfc822"`
 
 	// Specifies the algorithm to use when decrypting the source object (e.g., AES256).
 	CopySourceSSECustomerAlgorithm *string `location:"header" locationName:"x-amz-copy-source-server-side-encryption-customer-algorithm" type:"string"`
@@ -8409,7 +7640,7 @@ type CopyObjectInput struct {
 	// Specifies the customer-provided encryption key for Amazon S3 to use to decrypt
 	// the source object. The encryption key provided in this header must be one
 	// that was used when the source object was created.
-	CopySourceSSECustomerKey *string `location:"header" locationName:"x-amz-copy-source-server-side-encryption-customer-key" type:"string" sensitive:"true"`
+	CopySourceSSECustomerKey *string `location:"header" locationName:"x-amz-copy-source-server-side-encryption-customer-key" type:"string"`
 
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure the encryption
@@ -8417,7 +7648,7 @@ type CopyObjectInput struct {
 	CopySourceSSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-copy-source-server-side-encryption-customer-key-MD5" type:"string"`
 
 	// The date and time at which the object is no longer cacheable.
-	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp"`
+	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp" timestampFormat:"rfc822"`
 
 	// Gives the grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
 	GrantFullControl *string `location:"header" locationName:"x-amz-grant-full-control" type:"string"`
@@ -8441,15 +7672,6 @@ type CopyObjectInput struct {
 	// with metadata provided in the request.
 	MetadataDirective *string `location:"header" locationName:"x-amz-metadata-directive" type:"string" enum:"MetadataDirective"`
 
-	// Specifies whether you want to apply a Legal Hold to the copied object.
-	ObjectLockLegalHoldStatus *string `location:"header" locationName:"x-amz-object-lock-legal-hold" type:"string" enum:"ObjectLockLegalHoldStatus"`
-
-	// The Object Lock mode that you want to apply to the copied object.
-	ObjectLockMode *string `location:"header" locationName:"x-amz-object-lock-mode" type:"string" enum:"ObjectLockMode"`
-
-	// The date and time when you want the copied object's Object Lock to expire.
-	ObjectLockRetainUntilDate *time.Time `location:"header" locationName:"x-amz-object-lock-retain-until-date" type:"timestamp" timestampFormat:"iso8601"`
-
 	// Confirms that the requester knows that she or he will be charged for the
 	// request. Bucket owners need not specify this parameter in their requests.
 	// Documentation on downloading objects from requester pays buckets can be found
@@ -8464,7 +7686,7 @@ type CopyObjectInput struct {
 	// does not store the encryption key. The key must be appropriate for use with
 	// the algorithm specified in the x-amz-server-side​-encryption​-customer-algorithm
 	// header.
-	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string" sensitive:"true"`
+	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string"`
 
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure the encryption
@@ -8475,7 +7697,7 @@ type CopyObjectInput struct {
 	// requests for an object protected by AWS KMS will fail if not made via SSL
 	// or using SigV4. Documentation on configuring any of the officially supported
 	// AWS SDKs and CLI can be found at http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingAWSSDK.html#specify-signature-version
-	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -8514,9 +7736,6 @@ func (s *CopyObjectInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "CopyObjectInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.CopySource == nil {
 		invalidParams.Add(request.NewErrParamRequired("CopySource"))
@@ -8686,24 +7905,6 @@ func (s *CopyObjectInput) SetMetadataDirective(v string) *CopyObjectInput {
 	return s
 }
 
-// SetObjectLockLegalHoldStatus sets the ObjectLockLegalHoldStatus field's value.
-func (s *CopyObjectInput) SetObjectLockLegalHoldStatus(v string) *CopyObjectInput {
-	s.ObjectLockLegalHoldStatus = &v
-	return s
-}
-
-// SetObjectLockMode sets the ObjectLockMode field's value.
-func (s *CopyObjectInput) SetObjectLockMode(v string) *CopyObjectInput {
-	s.ObjectLockMode = &v
-	return s
-}
-
-// SetObjectLockRetainUntilDate sets the ObjectLockRetainUntilDate field's value.
-func (s *CopyObjectInput) SetObjectLockRetainUntilDate(v time.Time) *CopyObjectInput {
-	s.ObjectLockRetainUntilDate = &v
-	return s
-}
-
 // SetRequestPayer sets the RequestPayer field's value.
 func (s *CopyObjectInput) SetRequestPayer(v string) *CopyObjectInput {
 	s.RequestPayer = &v
@@ -8797,7 +7998,7 @@ type CopyObjectOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -8876,7 +8077,7 @@ type CopyObjectResult struct {
 
 	ETag *string `type:"string"`
 
-	LastModified *time.Time `type:"timestamp"`
+	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 }
 
 // String returns the string representation
@@ -8908,7 +8109,7 @@ type CopyPartResult struct {
 	ETag *string `type:"string"`
 
 	// Date and time at which the object was uploaded.
-	LastModified *time.Time `type:"timestamp"`
+	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 }
 
 // String returns the string representation
@@ -8983,9 +8184,6 @@ type CreateBucketInput struct {
 
 	// Allows grantee to write the ACL for the applicable bucket.
 	GrantWriteACP *string `location:"header" locationName:"x-amz-grant-write-acp" type:"string"`
-
-	// Specifies whether you want S3 Object Lock to be enabled for the new bucket.
-	ObjectLockEnabledForBucket *bool `location:"header" locationName:"x-amz-bucket-object-lock-enabled" type:"boolean"`
 }
 
 // String returns the string representation
@@ -9003,9 +8201,6 @@ func (s *CreateBucketInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "CreateBucketInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -9069,12 +8264,6 @@ func (s *CreateBucketInput) SetGrantWriteACP(v string) *CreateBucketInput {
 	return s
 }
 
-// SetObjectLockEnabledForBucket sets the ObjectLockEnabledForBucket field's value.
-func (s *CreateBucketInput) SetObjectLockEnabledForBucket(v bool) *CreateBucketInput {
-	s.ObjectLockEnabledForBucket = &v
-	return s
-}
-
 type CreateBucketOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -9124,7 +8313,7 @@ type CreateMultipartUploadInput struct {
 	ContentType *string `location:"header" locationName:"Content-Type" type:"string"`
 
 	// The date and time at which the object is no longer cacheable.
-	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp"`
+	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp" timestampFormat:"rfc822"`
 
 	// Gives the grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
 	GrantFullControl *string `location:"header" locationName:"x-amz-grant-full-control" type:"string"`
@@ -9144,15 +8333,6 @@ type CreateMultipartUploadInput struct {
 	// A map of metadata to store with the object in S3.
 	Metadata map[string]*string `location:"headers" locationName:"x-amz-meta-" type:"map"`
 
-	// Specifies whether you want to apply a Legal Hold to the uploaded object.
-	ObjectLockLegalHoldStatus *string `location:"header" locationName:"x-amz-object-lock-legal-hold" type:"string" enum:"ObjectLockLegalHoldStatus"`
-
-	// Specifies the Object Lock mode that you want to apply to the uploaded object.
-	ObjectLockMode *string `location:"header" locationName:"x-amz-object-lock-mode" type:"string" enum:"ObjectLockMode"`
-
-	// Specifies the date and time when you want the Object Lock to expire.
-	ObjectLockRetainUntilDate *time.Time `location:"header" locationName:"x-amz-object-lock-retain-until-date" type:"timestamp" timestampFormat:"iso8601"`
-
 	// Confirms that the requester knows that she or he will be charged for the
 	// request. Bucket owners need not specify this parameter in their requests.
 	// Documentation on downloading objects from requester pays buckets can be found
@@ -9167,7 +8347,7 @@ type CreateMultipartUploadInput struct {
 	// does not store the encryption key. The key must be appropriate for use with
 	// the algorithm specified in the x-amz-server-side​-encryption​-customer-algorithm
 	// header.
-	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string" sensitive:"true"`
+	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string"`
 
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure the encryption
@@ -9178,7 +8358,7 @@ type CreateMultipartUploadInput struct {
 	// requests for an object protected by AWS KMS will fail if not made via SSL
 	// or using SigV4. Documentation on configuring any of the officially supported
 	// AWS SDKs and CLI can be found at http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingAWSSDK.html#specify-signature-version
-	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -9211,9 +8391,6 @@ func (s *CreateMultipartUploadInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "CreateMultipartUploadInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
@@ -9319,24 +8496,6 @@ func (s *CreateMultipartUploadInput) SetMetadata(v map[string]*string) *CreateMu
 	return s
 }
 
-// SetObjectLockLegalHoldStatus sets the ObjectLockLegalHoldStatus field's value.
-func (s *CreateMultipartUploadInput) SetObjectLockLegalHoldStatus(v string) *CreateMultipartUploadInput {
-	s.ObjectLockLegalHoldStatus = &v
-	return s
-}
-
-// SetObjectLockMode sets the ObjectLockMode field's value.
-func (s *CreateMultipartUploadInput) SetObjectLockMode(v string) *CreateMultipartUploadInput {
-	s.ObjectLockMode = &v
-	return s
-}
-
-// SetObjectLockRetainUntilDate sets the ObjectLockRetainUntilDate field's value.
-func (s *CreateMultipartUploadInput) SetObjectLockRetainUntilDate(v time.Time) *CreateMultipartUploadInput {
-	s.ObjectLockRetainUntilDate = &v
-	return s
-}
-
 // SetRequestPayer sets the RequestPayer field's value.
 func (s *CreateMultipartUploadInput) SetRequestPayer(v string) *CreateMultipartUploadInput {
 	s.RequestPayer = &v
@@ -9402,7 +8561,7 @@ type CreateMultipartUploadOutput struct {
 	_ struct{} `type:"structure"`
 
 	// Date when multipart upload will become eligible for abort operation by lifecycle.
-	AbortDate *time.Time `location:"header" locationName:"x-amz-abort-date" type:"timestamp"`
+	AbortDate *time.Time `location:"header" locationName:"x-amz-abort-date" type:"timestamp" timestampFormat:"rfc822"`
 
 	// Id of the lifecycle rule that makes a multipart upload eligible for abort
 	// operation.
@@ -9430,7 +8589,7 @@ type CreateMultipartUploadOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -9514,50 +8673,6 @@ func (s *CreateMultipartUploadOutput) SetServerSideEncryption(v string) *CreateM
 // SetUploadId sets the UploadId field's value.
 func (s *CreateMultipartUploadOutput) SetUploadId(v string) *CreateMultipartUploadOutput {
 	s.UploadId = &v
-	return s
-}
-
-// The container element for specifying the default Object Lock retention settings
-// for new objects placed in the specified bucket.
-type DefaultRetention struct {
-	_ struct{} `type:"structure"`
-
-	// The number of days that you want to specify for the default retention period.
-	Days *int64 `type:"integer"`
-
-	// The default Object Lock retention mode you want to apply to new objects placed
-	// in the specified bucket.
-	Mode *string `type:"string" enum:"ObjectLockRetentionMode"`
-
-	// The number of years that you want to specify for the default retention period.
-	Years *int64 `type:"integer"`
-}
-
-// String returns the string representation
-func (s DefaultRetention) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s DefaultRetention) GoString() string {
-	return s.String()
-}
-
-// SetDays sets the Days field's value.
-func (s *DefaultRetention) SetDays(v int64) *DefaultRetention {
-	s.Days = &v
-	return s
-}
-
-// SetMode sets the Mode field's value.
-func (s *DefaultRetention) SetMode(v string) *DefaultRetention {
-	s.Mode = &v
-	return s
-}
-
-// SetYears sets the Years field's value.
-func (s *DefaultRetention) SetYears(v int64) *DefaultRetention {
-	s.Years = &v
 	return s
 }
 
@@ -9647,9 +8762,6 @@ func (s *DeleteBucketAnalyticsConfigurationInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.Id == nil {
 		invalidParams.Add(request.NewErrParamRequired("Id"))
 	}
@@ -9716,9 +8828,6 @@ func (s *DeleteBucketCorsInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -9779,9 +8888,6 @@ func (s *DeleteBucketEncryptionInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -9839,9 +8945,6 @@ func (s *DeleteBucketInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -9891,9 +8994,6 @@ func (s *DeleteBucketInventoryConfigurationInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DeleteBucketInventoryConfigurationInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Id == nil {
 		invalidParams.Add(request.NewErrParamRequired("Id"))
@@ -9961,9 +9061,6 @@ func (s *DeleteBucketLifecycleInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -10027,9 +9124,6 @@ func (s *DeleteBucketMetricsConfigurationInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DeleteBucketMetricsConfigurationInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Id == nil {
 		invalidParams.Add(request.NewErrParamRequired("Id"))
@@ -10111,9 +9205,6 @@ func (s *DeleteBucketPolicyInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -10151,11 +9242,6 @@ func (s DeleteBucketPolicyOutput) GoString() string {
 type DeleteBucketReplicationInput struct {
 	_ struct{} `type:"structure"`
 
-	// The bucket name.
-	//
-	// It can take a while to propagate the deletion of a replication configuration
-	// to all Amazon S3 systems.
-	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 }
@@ -10175,9 +9261,6 @@ func (s *DeleteBucketReplicationInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DeleteBucketReplicationInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -10236,9 +9319,6 @@ func (s *DeleteBucketTaggingInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -10296,9 +9376,6 @@ func (s *DeleteBucketWebsiteInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -10344,7 +9421,7 @@ type DeleteMarkerEntry struct {
 	Key *string `min:"1" type:"string"`
 
 	// Date and time the object was last modified.
-	LastModified *time.Time `type:"timestamp"`
+	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
 	Owner *Owner `type:"structure"`
 
@@ -10392,42 +9469,11 @@ func (s *DeleteMarkerEntry) SetVersionId(v string) *DeleteMarkerEntry {
 	return s
 }
 
-// Specifies whether Amazon S3 should replicate delete makers.
-type DeleteMarkerReplication struct {
-	_ struct{} `type:"structure"`
-
-	// The status of the delete marker replication.
-	//
-	// In the current implementation, Amazon S3 doesn't replicate the delete markers.
-	// The status must be Disabled.
-	Status *string `type:"string" enum:"DeleteMarkerReplicationStatus"`
-}
-
-// String returns the string representation
-func (s DeleteMarkerReplication) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s DeleteMarkerReplication) GoString() string {
-	return s.String()
-}
-
-// SetStatus sets the Status field's value.
-func (s *DeleteMarkerReplication) SetStatus(v string) *DeleteMarkerReplication {
-	s.Status = &v
-	return s
-}
-
 type DeleteObjectInput struct {
 	_ struct{} `type:"structure"`
 
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
-
-	// Indicates whether S3 Object Lock should bypass Governance-mode restrictions
-	// to process this operation.
-	BypassGovernanceRetention *bool `location:"header" locationName:"x-amz-bypass-governance-retention" type:"boolean"`
 
 	// Key is a required field
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
@@ -10462,9 +9508,6 @@ func (s *DeleteObjectInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
 	}
@@ -10489,12 +9532,6 @@ func (s *DeleteObjectInput) getBucket() (v string) {
 		return v
 	}
 	return *s.Bucket
-}
-
-// SetBypassGovernanceRetention sets the BypassGovernanceRetention field's value.
-func (s *DeleteObjectInput) SetBypassGovernanceRetention(v bool) *DeleteObjectInput {
-	s.BypassGovernanceRetention = &v
-	return s
 }
 
 // SetKey sets the Key field's value.
@@ -10594,9 +9631,6 @@ func (s *DeleteObjectTaggingInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
 	}
@@ -10664,11 +9698,6 @@ type DeleteObjectsInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Specifies whether you want to delete this object even if it has a Governance-type
-	// Object Lock in place. You must have sufficient permissions to perform this
-	// operation.
-	BypassGovernanceRetention *bool `location:"header" locationName:"x-amz-bypass-governance-retention" type:"boolean"`
-
 	// Delete is a required field
 	Delete *Delete `locationName:"Delete" type:"structure" required:"true" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
 
@@ -10699,9 +9728,6 @@ func (s *DeleteObjectsInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.Delete == nil {
 		invalidParams.Add(request.NewErrParamRequired("Delete"))
 	}
@@ -10728,12 +9754,6 @@ func (s *DeleteObjectsInput) getBucket() (v string) {
 		return v
 	}
 	return *s.Bucket
-}
-
-// SetBypassGovernanceRetention sets the BypassGovernanceRetention field's value.
-func (s *DeleteObjectsInput) SetBypassGovernanceRetention(v bool) *DeleteObjectsInput {
-	s.BypassGovernanceRetention = &v
-	return s
 }
 
 // SetDelete sets the Delete field's value.
@@ -10794,68 +9814,6 @@ func (s *DeleteObjectsOutput) SetRequestCharged(v string) *DeleteObjectsOutput {
 	return s
 }
 
-type DeletePublicAccessBlockInput struct {
-	_ struct{} `type:"structure"`
-
-	// The Amazon S3 bucket whose PublicAccessBlock configuration you want to delete.
-	//
-	// Bucket is a required field
-	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
-}
-
-// String returns the string representation
-func (s DeletePublicAccessBlockInput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s DeletePublicAccessBlockInput) GoString() string {
-	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *DeletePublicAccessBlockInput) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "DeletePublicAccessBlockInput"}
-	if s.Bucket == nil {
-		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
-}
-
-// SetBucket sets the Bucket field's value.
-func (s *DeletePublicAccessBlockInput) SetBucket(v string) *DeletePublicAccessBlockInput {
-	s.Bucket = &v
-	return s
-}
-
-func (s *DeletePublicAccessBlockInput) getBucket() (v string) {
-	if s.Bucket == nil {
-		return v
-	}
-	return *s.Bucket
-}
-
-type DeletePublicAccessBlockOutput struct {
-	_ struct{} `type:"structure"`
-}
-
-// String returns the string representation
-func (s DeletePublicAccessBlockOutput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s DeletePublicAccessBlockOutput) GoString() string {
-	return s.String()
-}
-
 type DeletedObject struct {
 	_ struct{} `type:"structure"`
 
@@ -10902,43 +9860,27 @@ func (s *DeletedObject) SetVersionId(v string) *DeletedObject {
 	return s
 }
 
-// A container for information about the replication destination.
+// Container for replication destination information.
 type Destination struct {
 	_ struct{} `type:"structure"`
 
-	// A container for information about access control for replicas.
-	//
-	// Use this element only in a cross-account scenario where source and destination
-	// bucket owners are not the same to change replica ownership to the AWS account
-	// that owns the destination bucket. If you don't add this element to the replication
-	// configuration, the replicas are owned by same AWS account that owns the source
-	// object.
+	// Container for information regarding the access control for replicas.
 	AccessControlTranslation *AccessControlTranslation `type:"structure"`
 
-	// The account ID of the destination bucket. Currently, Amazon S3 verifies this
-	// value only if Access Control Translation is enabled.
-	//
-	// In a cross-account scenario, if you change replica ownership to the AWS account
-	// that owns the destination bucket by adding the AccessControlTranslation element,
-	// this is the account ID of the owner of the destination bucket.
+	// Account ID of the destination bucket. Currently this is only being verified
+	// if Access Control Translation is enabled
 	Account *string `type:"string"`
 
-	// The Amazon Resource Name (ARN) of the bucket where you want Amazon S3 to
-	// store replicas of the object identified by the rule.
-	//
-	// If there are multiple rules in your replication configuration, all rules
-	// must specify the same bucket as the destination. A replication configuration
-	// can replicate objects to only one destination bucket.
+	// Amazon resource name (ARN) of the bucket where you want Amazon S3 to store
+	// replicas of the object identified by the rule.
 	//
 	// Bucket is a required field
 	Bucket *string `type:"string" required:"true"`
 
-	// A container that provides information about encryption. If SourceSelectionCriteria
-	// is specified, you must specify this element.
+	// Container for information regarding encryption based configuration for replicas.
 	EncryptionConfiguration *EncryptionConfiguration `type:"structure"`
 
-	// The class of storage used to store the object. By default Amazon S3 uses
-	// storage class of the source object when creating a replica.
+	// The class of storage used to store the object.
 	StorageClass *string `type:"string" enum:"StorageClass"`
 }
 
@@ -11024,7 +9966,7 @@ type Encryption struct {
 
 	// If the encryption type is aws:kms, this optional value specifies the AWS
 	// KMS key ID to use for encryption of job results.
-	KMSKeyId *string `type:"string" sensitive:"true"`
+	KMSKeyId *string `type:"string"`
 }
 
 // String returns the string representation
@@ -11068,13 +10010,11 @@ func (s *Encryption) SetKMSKeyId(v string) *Encryption {
 	return s
 }
 
-// A container for information about the encryption-based configuration for
-// replicas.
+// Container for information regarding encryption based configuration for replicas.
 type EncryptionConfiguration struct {
 	_ struct{} `type:"structure"`
 
-	// The ID of the AWS KMS key for the AWS Region where the destination bucket
-	// resides. Amazon S3 uses this key to encrypt the replica object.
+	// The id of the KMS key used to encrypt the replica object.
 	ReplicaKmsKeyID *string `type:"string"`
 }
 
@@ -11095,7 +10035,7 @@ func (s *EncryptionConfiguration) SetReplicaKmsKeyID(v string) *EncryptionConfig
 }
 
 type EndEvent struct {
-	_ struct{} `locationName:"EndEvent" type:"structure"`
+	_ struct{} `type:"structure"`
 }
 
 // String returns the string representation
@@ -11207,16 +10147,14 @@ func (s *ErrorDocument) SetKey(v string) *ErrorDocument {
 	return s
 }
 
-// A container for a key value pair that defines the criteria for the filter
-// rule.
+// Container for key value pair that defines the criteria for the filter rule.
 type FilterRule struct {
 	_ struct{} `type:"structure"`
 
-	// The object key name prefix or suffix identifying one or more objects to which
-	// the filtering rule applies. The maximum prefix length is 1,024 characters.
+	// Object key name prefix or suffix identifying one or more objects to which
+	// the filtering rule applies. Maximum prefix length can be up to 1,024 characters.
 	// Overlapping prefixes and suffixes are not supported. For more information,
-	// see Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
-	// in the Amazon Simple Storage Service Developer Guide.
+	// go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
 	Name *string `type:"string" enum:"FilterRuleName"`
 
 	Value *string `type:"string"`
@@ -11268,9 +10206,6 @@ func (s *GetBucketAccelerateConfigurationInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetBucketAccelerateConfigurationInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -11337,9 +10272,6 @@ func (s *GetBucketAclInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetBucketAclInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -11422,9 +10354,6 @@ func (s *GetBucketAnalyticsConfigurationInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.Id == nil {
 		invalidParams.Add(request.NewErrParamRequired("Id"))
 	}
@@ -11500,9 +10429,6 @@ func (s *GetBucketCorsInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -11570,9 +10496,6 @@ func (s *GetBucketEncryptionInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetBucketEncryptionInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -11647,9 +10570,6 @@ func (s *GetBucketInventoryConfigurationInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetBucketInventoryConfigurationInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Id == nil {
 		invalidParams.Add(request.NewErrParamRequired("Id"))
@@ -11726,9 +10646,6 @@ func (s *GetBucketLifecycleConfigurationInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -11793,9 +10710,6 @@ func (s *GetBucketLifecycleInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetBucketLifecycleInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -11862,9 +10776,6 @@ func (s *GetBucketLocationInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -11929,9 +10840,6 @@ func (s *GetBucketLoggingInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetBucketLoggingInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -12007,9 +10915,6 @@ func (s *GetBucketMetricsConfigurationInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetBucketMetricsConfigurationInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Id == nil {
 		invalidParams.Add(request.NewErrParamRequired("Id"))
@@ -12088,9 +10993,6 @@ func (s *GetBucketNotificationConfigurationRequest) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -12133,9 +11035,6 @@ func (s *GetBucketPolicyInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetBucketPolicyInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -12180,77 +11079,6 @@ func (s *GetBucketPolicyOutput) SetPolicy(v string) *GetBucketPolicyOutput {
 	return s
 }
 
-type GetBucketPolicyStatusInput struct {
-	_ struct{} `type:"structure"`
-
-	// The name of the Amazon S3 bucket whose policy status you want to retrieve.
-	//
-	// Bucket is a required field
-	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
-}
-
-// String returns the string representation
-func (s GetBucketPolicyStatusInput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s GetBucketPolicyStatusInput) GoString() string {
-	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *GetBucketPolicyStatusInput) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "GetBucketPolicyStatusInput"}
-	if s.Bucket == nil {
-		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
-}
-
-// SetBucket sets the Bucket field's value.
-func (s *GetBucketPolicyStatusInput) SetBucket(v string) *GetBucketPolicyStatusInput {
-	s.Bucket = &v
-	return s
-}
-
-func (s *GetBucketPolicyStatusInput) getBucket() (v string) {
-	if s.Bucket == nil {
-		return v
-	}
-	return *s.Bucket
-}
-
-type GetBucketPolicyStatusOutput struct {
-	_ struct{} `type:"structure" payload:"PolicyStatus"`
-
-	// The policy status for the specified bucket.
-	PolicyStatus *PolicyStatus `type:"structure"`
-}
-
-// String returns the string representation
-func (s GetBucketPolicyStatusOutput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s GetBucketPolicyStatusOutput) GoString() string {
-	return s.String()
-}
-
-// SetPolicyStatus sets the PolicyStatus field's value.
-func (s *GetBucketPolicyStatusOutput) SetPolicyStatus(v *PolicyStatus) *GetBucketPolicyStatusOutput {
-	s.PolicyStatus = v
-	return s
-}
-
 type GetBucketReplicationInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12273,9 +11101,6 @@ func (s *GetBucketReplicationInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetBucketReplicationInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -12300,8 +11125,8 @@ func (s *GetBucketReplicationInput) getBucket() (v string) {
 type GetBucketReplicationOutput struct {
 	_ struct{} `type:"structure" payload:"ReplicationConfiguration"`
 
-	// A container for replication rules. You can add up to 1,000 rules. The maximum
-	// size of a replication configuration is 2 MB.
+	// Container for replication rules. You can add as many as 1,000 rules. Total
+	// replication configuration size can be up to 2 MB.
 	ReplicationConfiguration *ReplicationConfiguration `type:"structure"`
 }
 
@@ -12343,9 +11168,6 @@ func (s *GetBucketRequestPaymentInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetBucketRequestPaymentInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -12413,9 +11235,6 @@ func (s *GetBucketTaggingInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -12481,9 +11300,6 @@ func (s *GetBucketVersioningInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetBucketVersioningInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -12561,9 +11377,6 @@ func (s *GetBucketWebsiteInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetBucketWebsiteInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -12666,9 +11479,6 @@ func (s *GetObjectAclInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
 	}
@@ -12766,7 +11576,7 @@ type GetObjectInput struct {
 
 	// Return the object only if it has been modified since the specified time,
 	// otherwise return a 304 (not modified).
-	IfModifiedSince *time.Time `location:"header" locationName:"If-Modified-Since" type:"timestamp"`
+	IfModifiedSince *time.Time `location:"header" locationName:"If-Modified-Since" type:"timestamp" timestampFormat:"rfc822"`
 
 	// Return the object only if its entity tag (ETag) is different from the one
 	// specified, otherwise return a 304 (not modified).
@@ -12774,7 +11584,7 @@ type GetObjectInput struct {
 
 	// Return the object only if it has not been modified since the specified time,
 	// otherwise return a 412 (precondition failed).
-	IfUnmodifiedSince *time.Time `location:"header" locationName:"If-Unmodified-Since" type:"timestamp"`
+	IfUnmodifiedSince *time.Time `location:"header" locationName:"If-Unmodified-Since" type:"timestamp" timestampFormat:"rfc822"`
 
 	// Key is a required field
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
@@ -12810,7 +11620,7 @@ type GetObjectInput struct {
 	ResponseContentType *string `location:"querystring" locationName:"response-content-type" type:"string"`
 
 	// Sets the Expires header of the response.
-	ResponseExpires *time.Time `location:"querystring" locationName:"response-expires" type:"timestamp"`
+	ResponseExpires *time.Time `location:"querystring" locationName:"response-expires" type:"timestamp" timestampFormat:"iso8601"`
 
 	// Specifies the algorithm to use to when encrypting the object (e.g., AES256).
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
@@ -12820,7 +11630,7 @@ type GetObjectInput struct {
 	// does not store the encryption key. The key must be appropriate for use with
 	// the algorithm specified in the x-amz-server-side​-encryption​-customer-algorithm
 	// header.
-	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string" sensitive:"true"`
+	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string"`
 
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure the encryption
@@ -12846,9 +11656,6 @@ func (s *GetObjectInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetObjectInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
@@ -12991,186 +11798,6 @@ func (s *GetObjectInput) SetVersionId(v string) *GetObjectInput {
 	return s
 }
 
-type GetObjectLegalHoldInput struct {
-	_ struct{} `type:"structure"`
-
-	// The bucket containing the object whose Legal Hold status you want to retrieve.
-	//
-	// Bucket is a required field
-	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
-
-	// The key name for the object whose Legal Hold status you want to retrieve.
-	//
-	// Key is a required field
-	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
-
-	// Confirms that the requester knows that she or he will be charged for the
-	// request. Bucket owners need not specify this parameter in their requests.
-	// Documentation on downloading objects from requester pays buckets can be found
-	// at http://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html
-	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
-
-	// The version ID of the object whose Legal Hold status you want to retrieve.
-	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
-}
-
-// String returns the string representation
-func (s GetObjectLegalHoldInput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s GetObjectLegalHoldInput) GoString() string {
-	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *GetObjectLegalHoldInput) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "GetObjectLegalHoldInput"}
-	if s.Bucket == nil {
-		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
-	if s.Key == nil {
-		invalidParams.Add(request.NewErrParamRequired("Key"))
-	}
-	if s.Key != nil && len(*s.Key) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Key", 1))
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
-}
-
-// SetBucket sets the Bucket field's value.
-func (s *GetObjectLegalHoldInput) SetBucket(v string) *GetObjectLegalHoldInput {
-	s.Bucket = &v
-	return s
-}
-
-func (s *GetObjectLegalHoldInput) getBucket() (v string) {
-	if s.Bucket == nil {
-		return v
-	}
-	return *s.Bucket
-}
-
-// SetKey sets the Key field's value.
-func (s *GetObjectLegalHoldInput) SetKey(v string) *GetObjectLegalHoldInput {
-	s.Key = &v
-	return s
-}
-
-// SetRequestPayer sets the RequestPayer field's value.
-func (s *GetObjectLegalHoldInput) SetRequestPayer(v string) *GetObjectLegalHoldInput {
-	s.RequestPayer = &v
-	return s
-}
-
-// SetVersionId sets the VersionId field's value.
-func (s *GetObjectLegalHoldInput) SetVersionId(v string) *GetObjectLegalHoldInput {
-	s.VersionId = &v
-	return s
-}
-
-type GetObjectLegalHoldOutput struct {
-	_ struct{} `type:"structure" payload:"LegalHold"`
-
-	// The current Legal Hold status for the specified object.
-	LegalHold *ObjectLockLegalHold `type:"structure"`
-}
-
-// String returns the string representation
-func (s GetObjectLegalHoldOutput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s GetObjectLegalHoldOutput) GoString() string {
-	return s.String()
-}
-
-// SetLegalHold sets the LegalHold field's value.
-func (s *GetObjectLegalHoldOutput) SetLegalHold(v *ObjectLockLegalHold) *GetObjectLegalHoldOutput {
-	s.LegalHold = v
-	return s
-}
-
-type GetObjectLockConfigurationInput struct {
-	_ struct{} `type:"structure"`
-
-	// The bucket whose Object Lock configuration you want to retrieve.
-	//
-	// Bucket is a required field
-	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
-}
-
-// String returns the string representation
-func (s GetObjectLockConfigurationInput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s GetObjectLockConfigurationInput) GoString() string {
-	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *GetObjectLockConfigurationInput) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "GetObjectLockConfigurationInput"}
-	if s.Bucket == nil {
-		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
-}
-
-// SetBucket sets the Bucket field's value.
-func (s *GetObjectLockConfigurationInput) SetBucket(v string) *GetObjectLockConfigurationInput {
-	s.Bucket = &v
-	return s
-}
-
-func (s *GetObjectLockConfigurationInput) getBucket() (v string) {
-	if s.Bucket == nil {
-		return v
-	}
-	return *s.Bucket
-}
-
-type GetObjectLockConfigurationOutput struct {
-	_ struct{} `type:"structure" payload:"ObjectLockConfiguration"`
-
-	// The specified bucket's Object Lock configuration.
-	ObjectLockConfiguration *ObjectLockConfiguration `type:"structure"`
-}
-
-// String returns the string representation
-func (s GetObjectLockConfigurationOutput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s GetObjectLockConfigurationOutput) GoString() string {
-	return s.String()
-}
-
-// SetObjectLockConfiguration sets the ObjectLockConfiguration field's value.
-func (s *GetObjectLockConfigurationOutput) SetObjectLockConfiguration(v *ObjectLockConfiguration) *GetObjectLockConfigurationOutput {
-	s.ObjectLockConfiguration = v
-	return s
-}
-
 type GetObjectOutput struct {
 	_ struct{} `type:"structure" payload:"Body"`
 
@@ -13220,7 +11847,7 @@ type GetObjectOutput struct {
 	Expires *string `location:"header" locationName:"Expires" type:"string"`
 
 	// Last modified date of the object
-	LastModified *time.Time `location:"header" locationName:"Last-Modified" type:"timestamp"`
+	LastModified *time.Time `location:"header" locationName:"Last-Modified" type:"timestamp" timestampFormat:"rfc822"`
 
 	// A map of metadata to store with the object in S3.
 	Metadata map[string]*string `location:"headers" locationName:"x-amz-meta-" type:"map"`
@@ -13230,16 +11857,6 @@ type GetObjectOutput struct {
 	// supports more flexible metadata than the REST API. For example, using SOAP,
 	// you can create metadata whose values are not legal HTTP headers.
 	MissingMeta *int64 `location:"header" locationName:"x-amz-missing-meta" type:"integer"`
-
-	// Indicates whether this object has an active legal hold. This field is only
-	// returned if you have permission to view an object's legal hold status.
-	ObjectLockLegalHoldStatus *string `location:"header" locationName:"x-amz-object-lock-legal-hold" type:"string" enum:"ObjectLockLegalHoldStatus"`
-
-	// The Object Lock mode currently in place for this object.
-	ObjectLockMode *string `location:"header" locationName:"x-amz-object-lock-mode" type:"string" enum:"ObjectLockMode"`
-
-	// The date and time when this object's Object Lock will expire.
-	ObjectLockRetainUntilDate *time.Time `location:"header" locationName:"x-amz-object-lock-retain-until-date" type:"timestamp" timestampFormat:"iso8601"`
 
 	// The count of parts this object has.
 	PartsCount *int64 `location:"header" locationName:"x-amz-mp-parts-count" type:"integer"`
@@ -13266,7 +11883,7 @@ type GetObjectOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -13392,24 +12009,6 @@ func (s *GetObjectOutput) SetMissingMeta(v int64) *GetObjectOutput {
 	return s
 }
 
-// SetObjectLockLegalHoldStatus sets the ObjectLockLegalHoldStatus field's value.
-func (s *GetObjectOutput) SetObjectLockLegalHoldStatus(v string) *GetObjectOutput {
-	s.ObjectLockLegalHoldStatus = &v
-	return s
-}
-
-// SetObjectLockMode sets the ObjectLockMode field's value.
-func (s *GetObjectOutput) SetObjectLockMode(v string) *GetObjectOutput {
-	s.ObjectLockMode = &v
-	return s
-}
-
-// SetObjectLockRetainUntilDate sets the ObjectLockRetainUntilDate field's value.
-func (s *GetObjectOutput) SetObjectLockRetainUntilDate(v time.Time) *GetObjectOutput {
-	s.ObjectLockRetainUntilDate = &v
-	return s
-}
-
 // SetPartsCount sets the PartsCount field's value.
 func (s *GetObjectOutput) SetPartsCount(v int64) *GetObjectOutput {
 	s.PartsCount = &v
@@ -13482,115 +12081,6 @@ func (s *GetObjectOutput) SetWebsiteRedirectLocation(v string) *GetObjectOutput 
 	return s
 }
 
-type GetObjectRetentionInput struct {
-	_ struct{} `type:"structure"`
-
-	// The bucket containing the object whose retention settings you want to retrieve.
-	//
-	// Bucket is a required field
-	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
-
-	// The key name for the object whose retention settings you want to retrieve.
-	//
-	// Key is a required field
-	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
-
-	// Confirms that the requester knows that she or he will be charged for the
-	// request. Bucket owners need not specify this parameter in their requests.
-	// Documentation on downloading objects from requester pays buckets can be found
-	// at http://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html
-	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
-
-	// The version ID for the object whose retention settings you want to retrieve.
-	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
-}
-
-// String returns the string representation
-func (s GetObjectRetentionInput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s GetObjectRetentionInput) GoString() string {
-	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *GetObjectRetentionInput) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "GetObjectRetentionInput"}
-	if s.Bucket == nil {
-		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
-	if s.Key == nil {
-		invalidParams.Add(request.NewErrParamRequired("Key"))
-	}
-	if s.Key != nil && len(*s.Key) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Key", 1))
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
-}
-
-// SetBucket sets the Bucket field's value.
-func (s *GetObjectRetentionInput) SetBucket(v string) *GetObjectRetentionInput {
-	s.Bucket = &v
-	return s
-}
-
-func (s *GetObjectRetentionInput) getBucket() (v string) {
-	if s.Bucket == nil {
-		return v
-	}
-	return *s.Bucket
-}
-
-// SetKey sets the Key field's value.
-func (s *GetObjectRetentionInput) SetKey(v string) *GetObjectRetentionInput {
-	s.Key = &v
-	return s
-}
-
-// SetRequestPayer sets the RequestPayer field's value.
-func (s *GetObjectRetentionInput) SetRequestPayer(v string) *GetObjectRetentionInput {
-	s.RequestPayer = &v
-	return s
-}
-
-// SetVersionId sets the VersionId field's value.
-func (s *GetObjectRetentionInput) SetVersionId(v string) *GetObjectRetentionInput {
-	s.VersionId = &v
-	return s
-}
-
-type GetObjectRetentionOutput struct {
-	_ struct{} `type:"structure" payload:"Retention"`
-
-	// The container element for an object's retention settings.
-	Retention *ObjectLockRetention `type:"structure"`
-}
-
-// String returns the string representation
-func (s GetObjectRetentionOutput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s GetObjectRetentionOutput) GoString() string {
-	return s.String()
-}
-
-// SetRetention sets the Retention field's value.
-func (s *GetObjectRetentionOutput) SetRetention(v *ObjectLockRetention) *GetObjectRetentionOutput {
-	s.Retention = v
-	return s
-}
-
 type GetObjectTaggingInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13618,9 +12108,6 @@ func (s *GetObjectTaggingInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetObjectTaggingInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
@@ -13723,9 +12210,6 @@ func (s *GetObjectTorrentInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
 	}
@@ -13793,79 +12277,6 @@ func (s *GetObjectTorrentOutput) SetBody(v io.ReadCloser) *GetObjectTorrentOutpu
 // SetRequestCharged sets the RequestCharged field's value.
 func (s *GetObjectTorrentOutput) SetRequestCharged(v string) *GetObjectTorrentOutput {
 	s.RequestCharged = &v
-	return s
-}
-
-type GetPublicAccessBlockInput struct {
-	_ struct{} `type:"structure"`
-
-	// The name of the Amazon S3 bucket whose PublicAccessBlock configuration you
-	// want to retrieve.
-	//
-	// Bucket is a required field
-	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
-}
-
-// String returns the string representation
-func (s GetPublicAccessBlockInput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s GetPublicAccessBlockInput) GoString() string {
-	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *GetPublicAccessBlockInput) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "GetPublicAccessBlockInput"}
-	if s.Bucket == nil {
-		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
-}
-
-// SetBucket sets the Bucket field's value.
-func (s *GetPublicAccessBlockInput) SetBucket(v string) *GetPublicAccessBlockInput {
-	s.Bucket = &v
-	return s
-}
-
-func (s *GetPublicAccessBlockInput) getBucket() (v string) {
-	if s.Bucket == nil {
-		return v
-	}
-	return *s.Bucket
-}
-
-type GetPublicAccessBlockOutput struct {
-	_ struct{} `type:"structure" payload:"PublicAccessBlockConfiguration"`
-
-	// The PublicAccessBlock configuration currently in effect for this Amazon S3
-	// bucket.
-	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `type:"structure"`
-}
-
-// String returns the string representation
-func (s GetPublicAccessBlockOutput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s GetPublicAccessBlockOutput) GoString() string {
-	return s.String()
-}
-
-// SetPublicAccessBlockConfiguration sets the PublicAccessBlockConfiguration field's value.
-func (s *GetPublicAccessBlockOutput) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *GetPublicAccessBlockOutput {
-	s.PublicAccessBlockConfiguration = v
 	return s
 }
 
@@ -14050,9 +12461,6 @@ func (s *HeadBucketInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -14099,7 +12507,7 @@ type HeadObjectInput struct {
 
 	// Return the object only if it has been modified since the specified time,
 	// otherwise return a 304 (not modified).
-	IfModifiedSince *time.Time `location:"header" locationName:"If-Modified-Since" type:"timestamp"`
+	IfModifiedSince *time.Time `location:"header" locationName:"If-Modified-Since" type:"timestamp" timestampFormat:"rfc822"`
 
 	// Return the object only if its entity tag (ETag) is different from the one
 	// specified, otherwise return a 304 (not modified).
@@ -14107,7 +12515,7 @@ type HeadObjectInput struct {
 
 	// Return the object only if it has not been modified since the specified time,
 	// otherwise return a 412 (precondition failed).
-	IfUnmodifiedSince *time.Time `location:"header" locationName:"If-Unmodified-Since" type:"timestamp"`
+	IfUnmodifiedSince *time.Time `location:"header" locationName:"If-Unmodified-Since" type:"timestamp" timestampFormat:"rfc822"`
 
 	// Key is a required field
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
@@ -14136,7 +12544,7 @@ type HeadObjectInput struct {
 	// does not store the encryption key. The key must be appropriate for use with
 	// the algorithm specified in the x-amz-server-side​-encryption​-customer-algorithm
 	// header.
-	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string" sensitive:"true"`
+	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string"`
 
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure the encryption
@@ -14162,9 +12570,6 @@ func (s *HeadObjectInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "HeadObjectInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
@@ -14314,7 +12719,7 @@ type HeadObjectOutput struct {
 	Expires *string `location:"header" locationName:"Expires" type:"string"`
 
 	// Last modified date of the object
-	LastModified *time.Time `location:"header" locationName:"Last-Modified" type:"timestamp"`
+	LastModified *time.Time `location:"header" locationName:"Last-Modified" type:"timestamp" timestampFormat:"rfc822"`
 
 	// A map of metadata to store with the object in S3.
 	Metadata map[string]*string `location:"headers" locationName:"x-amz-meta-" type:"map"`
@@ -14324,15 +12729,6 @@ type HeadObjectOutput struct {
 	// supports more flexible metadata than the REST API. For example, using SOAP,
 	// you can create metadata whose values are not legal HTTP headers.
 	MissingMeta *int64 `location:"header" locationName:"x-amz-missing-meta" type:"integer"`
-
-	// The Legal Hold status for the specified object.
-	ObjectLockLegalHoldStatus *string `location:"header" locationName:"x-amz-object-lock-legal-hold" type:"string" enum:"ObjectLockLegalHoldStatus"`
-
-	// The Object Lock mode currently in place for this object.
-	ObjectLockMode *string `location:"header" locationName:"x-amz-object-lock-mode" type:"string" enum:"ObjectLockMode"`
-
-	// The date and time when this object's Object Lock will expire.
-	ObjectLockRetainUntilDate *time.Time `location:"header" locationName:"x-amz-object-lock-retain-until-date" type:"timestamp" timestampFormat:"iso8601"`
 
 	// The count of parts this object has.
 	PartsCount *int64 `location:"header" locationName:"x-amz-mp-parts-count" type:"integer"`
@@ -14359,7 +12755,7 @@ type HeadObjectOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -14467,24 +12863,6 @@ func (s *HeadObjectOutput) SetMetadata(v map[string]*string) *HeadObjectOutput {
 // SetMissingMeta sets the MissingMeta field's value.
 func (s *HeadObjectOutput) SetMissingMeta(v int64) *HeadObjectOutput {
 	s.MissingMeta = &v
-	return s
-}
-
-// SetObjectLockLegalHoldStatus sets the ObjectLockLegalHoldStatus field's value.
-func (s *HeadObjectOutput) SetObjectLockLegalHoldStatus(v string) *HeadObjectOutput {
-	s.ObjectLockLegalHoldStatus = &v
-	return s
-}
-
-// SetObjectLockMode sets the ObjectLockMode field's value.
-func (s *HeadObjectOutput) SetObjectLockMode(v string) *HeadObjectOutput {
-	s.ObjectLockMode = &v
-	return s
-}
-
-// SetObjectLockRetainUntilDate sets the ObjectLockRetainUntilDate field's value.
-func (s *HeadObjectOutput) SetObjectLockRetainUntilDate(v time.Time) *HeadObjectOutput {
-	s.ObjectLockRetainUntilDate = &v
 	return s
 }
 
@@ -14635,15 +13013,12 @@ type InputSerialization struct {
 	// Describes the serialization of a CSV-encoded object.
 	CSV *CSVInput `type:"structure"`
 
-	// Specifies object's compression format. Valid values: NONE, GZIP, BZIP2. Default
+	// Specifies object's compression format. Valid values: NONE, GZIP. Default
 	// Value: NONE.
 	CompressionType *string `type:"string" enum:"CompressionType"`
 
 	// Specifies JSON as object's input serialization format.
 	JSON *JSONInput `type:"structure"`
-
-	// Specifies Parquet as object's input serialization format.
-	Parquet *ParquetInput `type:"structure"`
 }
 
 // String returns the string representation
@@ -14671,12 +13046,6 @@ func (s *InputSerialization) SetCompressionType(v string) *InputSerialization {
 // SetJSON sets the JSON field's value.
 func (s *InputSerialization) SetJSON(v *JSONInput) *InputSerialization {
 	s.JSON = v
-	return s
-}
-
-// SetParquet sets the Parquet field's value.
-func (s *InputSerialization) SetParquet(v *ParquetInput) *InputSerialization {
-	s.Parquet = v
 	return s
 }
 
@@ -14857,10 +13226,10 @@ func (s *InventoryDestination) SetS3BucketDestination(v *InventoryS3BucketDestin
 type InventoryEncryption struct {
 	_ struct{} `type:"structure"`
 
-	// Specifies the use of SSE-KMS to encrypt delivered Inventory reports.
+	// Specifies the use of SSE-KMS to encrypt delievered Inventory reports.
 	SSEKMS *SSEKMS `locationName:"SSE-KMS" type:"structure"`
 
-	// Specifies the use of SSE-S3 to encrypt delivered Inventory reports.
+	// Specifies the use of SSE-S3 to encrypt delievered Inventory reports.
 	SSES3 *SSES3 `locationName:"SSE-S3" type:"structure"`
 }
 
@@ -15116,12 +13485,12 @@ func (s *JSONOutput) SetRecordDelimiter(v string) *JSONOutput {
 	return s
 }
 
-// A container for object key name prefix and suffix filtering rules.
+// Container for object key name prefix and suffix filtering rules.
 type KeyFilter struct {
 	_ struct{} `type:"structure"`
 
-	// A list of containers for the key value pair that defines the criteria for
-	// the filter rule.
+	// A list of containers for key value pair that defines the criteria for the
+	// filter rule.
 	FilterRules []*FilterRule `locationName:"FilterRule" type:"list" flattened:"true"`
 }
 
@@ -15141,24 +13510,23 @@ func (s *KeyFilter) SetFilterRules(v []*FilterRule) *KeyFilter {
 	return s
 }
 
-// A container for specifying the configuration for AWS Lambda notifications.
+// Container for specifying the AWS Lambda notification configuration.
 type LambdaFunctionConfiguration struct {
 	_ struct{} `type:"structure"`
 
 	// Events is a required field
 	Events []*string `locationName:"Event" type:"list" flattened:"true" required:"true"`
 
-	// A container for object key name filtering rules. For information about key
-	// name filtering, see Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
-	// in the Amazon Simple Storage Service Developer Guide.
+	// Container for object key name filtering rules. For information about key
+	// name filtering, go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
 	Filter *NotificationConfigurationFilter `type:"structure"`
 
-	// An optional unique identifier for configurations in a notification configuration.
+	// Optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
 	Id *string `type:"string"`
 
-	// The Amazon Resource Name (ARN) of the Lambda cloud function that Amazon S3
-	// can invoke when it detects events of the specified type.
+	// Lambda cloud function ARN that Amazon S3 can invoke when it detects events
+	// of the specified type.
 	//
 	// LambdaFunctionArn is a required field
 	LambdaFunctionArn *string `locationName:"CloudFunction" type:"string" required:"true"`
@@ -15333,8 +13701,6 @@ type LifecycleRule struct {
 
 	// Prefix identifying one or more objects to which the rule applies. This is
 	// deprecated; use Filter instead.
-	//
-	// Deprecated: Prefix has been deprecated
 	Prefix *string `deprecated:"true" type:"string"`
 
 	// If 'Enabled', the rule is currently being applied. If 'Disabled', the rule
@@ -15577,9 +13943,6 @@ func (s *ListBucketAnalyticsConfigurationsInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -15691,9 +14054,6 @@ func (s *ListBucketInventoryConfigurationsInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -15804,9 +14164,6 @@ func (s *ListBucketMetricsConfigurationsInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ListBucketMetricsConfigurationsInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -15985,9 +14342,6 @@ func (s *ListMultipartUploadsInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ListMultipartUploadsInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -16225,9 +14579,6 @@ func (s *ListObjectVersionsInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -16460,9 +14811,6 @@ func (s *ListObjectsInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -16679,9 +15027,6 @@ func (s *ListObjectsV2Input) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ListObjectsV2Input"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -16928,9 +15273,6 @@ func (s *ListPartsInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
 	}
@@ -16994,7 +15336,7 @@ type ListPartsOutput struct {
 	_ struct{} `type:"structure"`
 
 	// Date when multipart upload will become eligible for abort operation by lifecycle.
-	AbortDate *time.Time `location:"header" locationName:"x-amz-abort-date" type:"timestamp"`
+	AbortDate *time.Time `location:"header" locationName:"x-amz-abort-date" type:"timestamp" timestampFormat:"rfc822"`
 
 	// Id of the lifecycle rule that makes a multipart upload eligible for abort
 	// operation.
@@ -17550,7 +15892,7 @@ type MultipartUpload struct {
 	_ struct{} `type:"structure"`
 
 	// Date and time at which the multipart upload was initiated.
-	Initiated *time.Time `type:"timestamp"`
+	Initiated *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
 	// Identifies who initiated the multipart upload.
 	Initiator *Initiator `type:"structure"`
@@ -17624,8 +15966,7 @@ type NoncurrentVersionExpiration struct {
 	// Specifies the number of days an object is noncurrent before Amazon S3 can
 	// perform the associated action. For information about the noncurrent days
 	// calculations, see How Amazon S3 Calculates When an Object Became Noncurrent
-	// (http://docs.aws.amazon.com/AmazonS3/latest/dev/s3-access-control.html) in
-	// the Amazon Simple Storage Service Developer Guide.
+	// (http://docs.aws.amazon.com/AmazonS3/latest/dev/s3-access-control.html)
 	NoncurrentDays *int64 `type:"integer"`
 }
 
@@ -17646,19 +15987,18 @@ func (s *NoncurrentVersionExpiration) SetNoncurrentDays(v int64) *NoncurrentVers
 }
 
 // Container for the transition rule that describes when noncurrent objects
-// transition to the STANDARD_IA, ONEZONE_IA, INTELLIGENT_TIERING or GLACIER
-// storage class. If your bucket is versioning-enabled (or versioning is suspended),
-// you can set this action to request that Amazon S3 transition noncurrent object
-// versions to the STANDARD_IA, ONEZONE_IA, INTELLIGENT_TIERING or GLACIER storage
-// class at a specific period in the object's lifetime.
+// transition to the STANDARD_IA, ONEZONE_IA or GLACIER storage class. If your
+// bucket is versioning-enabled (or versioning is suspended), you can set this
+// action to request that Amazon S3 transition noncurrent object versions to
+// the STANDARD_IA, ONEZONE_IA or GLACIER storage class at a specific period
+// in the object's lifetime.
 type NoncurrentVersionTransition struct {
 	_ struct{} `type:"structure"`
 
 	// Specifies the number of days an object is noncurrent before Amazon S3 can
 	// perform the associated action. For information about the noncurrent days
 	// calculations, see How Amazon S3 Calculates When an Object Became Noncurrent
-	// (http://docs.aws.amazon.com/AmazonS3/latest/dev/s3-access-control.html) in
-	// the Amazon Simple Storage Service Developer Guide.
+	// (http://docs.aws.amazon.com/AmazonS3/latest/dev/s3-access-control.html)
 	NoncurrentDays *int64 `type:"integer"`
 
 	// The class of storage used to store the object.
@@ -17687,8 +16027,8 @@ func (s *NoncurrentVersionTransition) SetStorageClass(v string) *NoncurrentVersi
 	return s
 }
 
-// A container for specifying the notification configuration of the bucket.
-// If this element is empty, notifications are turned off for the bucket.
+// Container for specifying the notification configuration of the bucket. If
+// this element is empty, notifications are turned off on the bucket.
 type NotificationConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -17805,13 +16145,12 @@ func (s *NotificationConfigurationDeprecated) SetTopicConfiguration(v *TopicConf
 	return s
 }
 
-// A container for object key name filtering rules. For information about key
-// name filtering, see Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
-// in the Amazon Simple Storage Service Developer Guide.
+// Container for object key name filtering rules. For information about key
+// name filtering, go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
 type NotificationConfigurationFilter struct {
 	_ struct{} `type:"structure"`
 
-	// A container for object key name prefix and suffix filtering rules.
+	// Container for object key name prefix and suffix filtering rules.
 	Key *KeyFilter `locationName:"S3Key" type:"structure"`
 }
 
@@ -17838,7 +16177,7 @@ type Object struct {
 
 	Key *string `min:"1" type:"string"`
 
-	LastModified *time.Time `type:"timestamp"`
+	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
 	Owner *Owner `type:"structure"`
 
@@ -17944,121 +16283,6 @@ func (s *ObjectIdentifier) SetVersionId(v string) *ObjectIdentifier {
 	return s
 }
 
-// The container element for Object Lock configuration parameters.
-type ObjectLockConfiguration struct {
-	_ struct{} `type:"structure"`
-
-	// Indicates whether this bucket has an Object Lock configuration enabled.
-	ObjectLockEnabled *string `type:"string" enum:"ObjectLockEnabled"`
-
-	// The Object Lock rule in place for the specified object.
-	Rule *ObjectLockRule `type:"structure"`
-}
-
-// String returns the string representation
-func (s ObjectLockConfiguration) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s ObjectLockConfiguration) GoString() string {
-	return s.String()
-}
-
-// SetObjectLockEnabled sets the ObjectLockEnabled field's value.
-func (s *ObjectLockConfiguration) SetObjectLockEnabled(v string) *ObjectLockConfiguration {
-	s.ObjectLockEnabled = &v
-	return s
-}
-
-// SetRule sets the Rule field's value.
-func (s *ObjectLockConfiguration) SetRule(v *ObjectLockRule) *ObjectLockConfiguration {
-	s.Rule = v
-	return s
-}
-
-// A Legal Hold configuration for an object.
-type ObjectLockLegalHold struct {
-	_ struct{} `type:"structure"`
-
-	// Indicates whether the specified object has a Legal Hold in place.
-	Status *string `type:"string" enum:"ObjectLockLegalHoldStatus"`
-}
-
-// String returns the string representation
-func (s ObjectLockLegalHold) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s ObjectLockLegalHold) GoString() string {
-	return s.String()
-}
-
-// SetStatus sets the Status field's value.
-func (s *ObjectLockLegalHold) SetStatus(v string) *ObjectLockLegalHold {
-	s.Status = &v
-	return s
-}
-
-// A Retention configuration for an object.
-type ObjectLockRetention struct {
-	_ struct{} `type:"structure"`
-
-	// Indicates the Retention mode for the specified object.
-	Mode *string `type:"string" enum:"ObjectLockRetentionMode"`
-
-	// The date on which this Object Lock Retention will expire.
-	RetainUntilDate *time.Time `type:"timestamp" timestampFormat:"iso8601"`
-}
-
-// String returns the string representation
-func (s ObjectLockRetention) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s ObjectLockRetention) GoString() string {
-	return s.String()
-}
-
-// SetMode sets the Mode field's value.
-func (s *ObjectLockRetention) SetMode(v string) *ObjectLockRetention {
-	s.Mode = &v
-	return s
-}
-
-// SetRetainUntilDate sets the RetainUntilDate field's value.
-func (s *ObjectLockRetention) SetRetainUntilDate(v time.Time) *ObjectLockRetention {
-	s.RetainUntilDate = &v
-	return s
-}
-
-// The container element for an Object Lock rule.
-type ObjectLockRule struct {
-	_ struct{} `type:"structure"`
-
-	// The default retention period that you want to apply to new objects placed
-	// in the specified bucket.
-	DefaultRetention *DefaultRetention `type:"structure"`
-}
-
-// String returns the string representation
-func (s ObjectLockRule) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s ObjectLockRule) GoString() string {
-	return s.String()
-}
-
-// SetDefaultRetention sets the DefaultRetention field's value.
-func (s *ObjectLockRule) SetDefaultRetention(v *DefaultRetention) *ObjectLockRule {
-	s.DefaultRetention = v
-	return s
-}
-
 type ObjectVersion struct {
 	_ struct{} `type:"structure"`
 
@@ -18072,7 +16296,7 @@ type ObjectVersion struct {
 	Key *string `min:"1" type:"string"`
 
 	// Date and time the object was last modified.
-	LastModified *time.Time `type:"timestamp"`
+	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
 	Owner *Owner `type:"structure"`
 
@@ -18246,20 +16470,6 @@ func (s *Owner) SetID(v string) *Owner {
 	return s
 }
 
-type ParquetInput struct {
-	_ struct{} `type:"structure"`
-}
-
-// String returns the string representation
-func (s ParquetInput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s ParquetInput) GoString() string {
-	return s.String()
-}
-
 type Part struct {
 	_ struct{} `type:"structure"`
 
@@ -18267,13 +16477,13 @@ type Part struct {
 	ETag *string `type:"string"`
 
 	// Date and time at which the part was uploaded.
-	LastModified *time.Time `type:"timestamp"`
+	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
 	// Part number identifying the part. This is a positive integer between 1 and
 	// 10,000.
 	PartNumber *int64 `type:"integer"`
 
-	// Size in bytes of the uploaded part data.
+	// Size of the uploaded part data.
 	Size *int64 `type:"integer"`
 }
 
@@ -18311,41 +16521,16 @@ func (s *Part) SetSize(v int64) *Part {
 	return s
 }
 
-// The container element for a bucket's policy status.
-type PolicyStatus struct {
-	_ struct{} `type:"structure"`
-
-	// The policy status for this bucket. TRUE indicates that this bucket is public.
-	// FALSE indicates that the bucket is not public.
-	IsPublic *bool `locationName:"IsPublic" type:"boolean"`
-}
-
-// String returns the string representation
-func (s PolicyStatus) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s PolicyStatus) GoString() string {
-	return s.String()
-}
-
-// SetIsPublic sets the IsPublic field's value.
-func (s *PolicyStatus) SetIsPublic(v bool) *PolicyStatus {
-	s.IsPublic = &v
-	return s
-}
-
 type Progress struct {
 	_ struct{} `type:"structure"`
 
-	// The current number of uncompressed object bytes processed.
+	// Current number of uncompressed object bytes processed.
 	BytesProcessed *int64 `type:"long"`
 
-	// The current number of bytes of records payload data returned.
+	// Current number of bytes of records payload data returned.
 	BytesReturned *int64 `type:"long"`
 
-	// The current number of object bytes scanned.
+	// Current number of object bytes scanned.
 	BytesScanned *int64 `type:"long"`
 }
 
@@ -18378,7 +16563,7 @@ func (s *Progress) SetBytesScanned(v int64) *Progress {
 }
 
 type ProgressEvent struct {
-	_ struct{} `locationName:"ProgressEvent" type:"structure" payload:"Details"`
+	_ struct{} `type:"structure" payload:"Details"`
 
 	// The Progress event details.
 	Details *Progress `locationName:"Details" type:"structure"`
@@ -18412,84 +16597,9 @@ func (s *ProgressEvent) UnmarshalEvent(
 	if err := payloadUnmarshaler.UnmarshalPayload(
 		bytes.NewReader(msg.Payload), s,
 	); err != nil {
-		return err
+		return fmt.Errorf("failed to unmarshal payload, %v", err)
 	}
 	return nil
-}
-
-type PublicAccessBlockConfiguration struct {
-	_ struct{} `type:"structure"`
-
-	// Specifies whether Amazon S3 should block public access control lists (ACLs)
-	// for this bucket and objects in this bucket. Setting this element to TRUE
-	// causes the following behavior:
-	//
-	//    * PUT Bucket acl and PUT Object acl calls fail if the specified ACL is
-	//    public.
-	//
-	//    * PUT Object calls fail if the request includes a public ACL.
-	//
-	// Enabling this setting doesn't affect existing policies or ACLs.
-	BlockPublicAcls *bool `locationName:"BlockPublicAcls" type:"boolean"`
-
-	// Specifies whether Amazon S3 should block public bucket policies for this
-	// bucket. Setting this element to TRUE causes Amazon S3 to reject calls to
-	// PUT Bucket policy if the specified bucket policy allows public access.
-	//
-	// Enabling this setting doesn't affect existing bucket policies.
-	BlockPublicPolicy *bool `locationName:"BlockPublicPolicy" type:"boolean"`
-
-	// Specifies whether Amazon S3 should ignore public ACLs for this bucket and
-	// objects in this bucket. Setting this element to TRUE causes Amazon S3 to
-	// ignore all public ACLs on this bucket and objects in this bucket.
-	//
-	// Enabling this setting doesn't affect the persistence of any existing ACLs
-	// and doesn't prevent new public ACLs from being set.
-	IgnorePublicAcls *bool `locationName:"IgnorePublicAcls" type:"boolean"`
-
-	// Specifies whether Amazon S3 should restrict public bucket policies for this
-	// bucket. Setting this element to TRUE restricts access to this bucket to only
-	// AWS services and authorized users within this account if the bucket has a
-	// public policy.
-	//
-	// Enabling this setting doesn't affect previously stored bucket policies, except
-	// that public and cross-account access within any public bucket policy, including
-	// non-public delegation to specific accounts, is blocked.
-	RestrictPublicBuckets *bool `locationName:"RestrictPublicBuckets" type:"boolean"`
-}
-
-// String returns the string representation
-func (s PublicAccessBlockConfiguration) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s PublicAccessBlockConfiguration) GoString() string {
-	return s.String()
-}
-
-// SetBlockPublicAcls sets the BlockPublicAcls field's value.
-func (s *PublicAccessBlockConfiguration) SetBlockPublicAcls(v bool) *PublicAccessBlockConfiguration {
-	s.BlockPublicAcls = &v
-	return s
-}
-
-// SetBlockPublicPolicy sets the BlockPublicPolicy field's value.
-func (s *PublicAccessBlockConfiguration) SetBlockPublicPolicy(v bool) *PublicAccessBlockConfiguration {
-	s.BlockPublicPolicy = &v
-	return s
-}
-
-// SetIgnorePublicAcls sets the IgnorePublicAcls field's value.
-func (s *PublicAccessBlockConfiguration) SetIgnorePublicAcls(v bool) *PublicAccessBlockConfiguration {
-	s.IgnorePublicAcls = &v
-	return s
-}
-
-// SetRestrictPublicBuckets sets the RestrictPublicBuckets field's value.
-func (s *PublicAccessBlockConfiguration) SetRestrictPublicBuckets(v bool) *PublicAccessBlockConfiguration {
-	s.RestrictPublicBuckets = &v
-	return s
 }
 
 type PutBucketAccelerateConfigurationInput struct {
@@ -18524,9 +16634,6 @@ func (s *PutBucketAccelerateConfigurationInput) Validate() error {
 	}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -18611,9 +16718,6 @@ func (s *PutBucketAclInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "PutBucketAclInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.AccessControlPolicy != nil {
 		if err := s.AccessControlPolicy.Validate(); err != nil {
@@ -18734,9 +16838,6 @@ func (s *PutBucketAnalyticsConfigurationInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.Id == nil {
 		invalidParams.Add(request.NewErrParamRequired("Id"))
 	}
@@ -18817,9 +16918,6 @@ func (s *PutBucketCorsInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.CORSConfiguration == nil {
 		invalidParams.Add(request.NewErrParamRequired("CORSConfiguration"))
 	}
@@ -18899,9 +16997,6 @@ func (s *PutBucketEncryptionInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "PutBucketEncryptionInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.ServerSideEncryptionConfiguration == nil {
 		invalidParams.Add(request.NewErrParamRequired("ServerSideEncryptionConfiguration"))
@@ -18986,9 +17081,6 @@ func (s *PutBucketInventoryConfigurationInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.Id == nil {
 		invalidParams.Add(request.NewErrParamRequired("Id"))
 	}
@@ -19071,9 +17163,6 @@ func (s *PutBucketLifecycleConfigurationInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.LifecycleConfiguration != nil {
 		if err := s.LifecycleConfiguration.Validate(); err != nil {
 			invalidParams.AddNested("LifecycleConfiguration", err.(request.ErrInvalidParams))
@@ -19143,9 +17232,6 @@ func (s *PutBucketLifecycleInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "PutBucketLifecycleInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.LifecycleConfiguration != nil {
 		if err := s.LifecycleConfiguration.Validate(); err != nil {
@@ -19217,9 +17303,6 @@ func (s *PutBucketLoggingInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "PutBucketLoggingInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.BucketLoggingStatus == nil {
 		invalidParams.Add(request.NewErrParamRequired("BucketLoggingStatus"))
@@ -19304,9 +17387,6 @@ func (s *PutBucketMetricsConfigurationInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.Id == nil {
 		invalidParams.Add(request.NewErrParamRequired("Id"))
 	}
@@ -19370,8 +17450,8 @@ type PutBucketNotificationConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// A container for specifying the notification configuration of the bucket.
-	// If this element is empty, notifications are turned off for the bucket.
+	// Container for specifying the notification configuration of the bucket. If
+	// this element is empty, notifications are turned off on the bucket.
 	//
 	// NotificationConfiguration is a required field
 	NotificationConfiguration *NotificationConfiguration `locationName:"NotificationConfiguration" type:"structure" required:"true" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
@@ -19392,9 +17472,6 @@ func (s *PutBucketNotificationConfigurationInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "PutBucketNotificationConfigurationInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.NotificationConfiguration == nil {
 		invalidParams.Add(request.NewErrParamRequired("NotificationConfiguration"))
@@ -19469,9 +17546,6 @@ func (s *PutBucketNotificationInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "PutBucketNotificationInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.NotificationConfiguration == nil {
 		invalidParams.Add(request.NewErrParamRequired("NotificationConfiguration"))
@@ -19548,9 +17622,6 @@ func (s *PutBucketPolicyInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.Policy == nil {
 		invalidParams.Add(request.NewErrParamRequired("Policy"))
 	}
@@ -19606,8 +17677,8 @@ type PutBucketReplicationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// A container for replication rules. You can add up to 1,000 rules. The maximum
-	// size of a replication configuration is 2 MB.
+	// Container for replication rules. You can add as many as 1,000 rules. Total
+	// replication configuration size can be up to 2 MB.
 	//
 	// ReplicationConfiguration is a required field
 	ReplicationConfiguration *ReplicationConfiguration `locationName:"ReplicationConfiguration" type:"structure" required:"true" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
@@ -19628,9 +17699,6 @@ func (s *PutBucketReplicationInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "PutBucketReplicationInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.ReplicationConfiguration == nil {
 		invalidParams.Add(request.NewErrParamRequired("ReplicationConfiguration"))
@@ -19706,9 +17774,6 @@ func (s *PutBucketRequestPaymentInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.RequestPaymentConfiguration == nil {
 		invalidParams.Add(request.NewErrParamRequired("RequestPaymentConfiguration"))
 	}
@@ -19782,9 +17847,6 @@ func (s *PutBucketTaggingInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "PutBucketTaggingInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Tagging == nil {
 		invalidParams.Add(request.NewErrParamRequired("Tagging"))
@@ -19864,9 +17926,6 @@ func (s *PutBucketVersioningInput) Validate() error {
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
 	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
 	if s.VersioningConfiguration == nil {
 		invalidParams.Add(request.NewErrParamRequired("VersioningConfiguration"))
 	}
@@ -19941,9 +18000,6 @@ func (s *PutBucketWebsiteInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "PutBucketWebsiteInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.WebsiteConfiguration == nil {
 		invalidParams.Add(request.NewErrParamRequired("WebsiteConfiguration"))
@@ -20048,9 +18104,6 @@ func (s *PutObjectAclInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "PutObjectAclInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
@@ -20206,7 +18259,7 @@ type PutObjectInput struct {
 	ContentType *string `location:"header" locationName:"Content-Type" type:"string"`
 
 	// The date and time at which the object is no longer cacheable.
-	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp"`
+	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp" timestampFormat:"rfc822"`
 
 	// Gives the grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
 	GrantFullControl *string `location:"header" locationName:"x-amz-grant-full-control" type:"string"`
@@ -20228,15 +18281,6 @@ type PutObjectInput struct {
 	// A map of metadata to store with the object in S3.
 	Metadata map[string]*string `location:"headers" locationName:"x-amz-meta-" type:"map"`
 
-	// The Legal Hold status that you want to apply to the specified object.
-	ObjectLockLegalHoldStatus *string `location:"header" locationName:"x-amz-object-lock-legal-hold" type:"string" enum:"ObjectLockLegalHoldStatus"`
-
-	// The Object Lock mode that you want to apply to this object.
-	ObjectLockMode *string `location:"header" locationName:"x-amz-object-lock-mode" type:"string" enum:"ObjectLockMode"`
-
-	// The date and time when you want this object's Object Lock to expire.
-	ObjectLockRetainUntilDate *time.Time `location:"header" locationName:"x-amz-object-lock-retain-until-date" type:"timestamp" timestampFormat:"iso8601"`
-
 	// Confirms that the requester knows that she or he will be charged for the
 	// request. Bucket owners need not specify this parameter in their requests.
 	// Documentation on downloading objects from requester pays buckets can be found
@@ -20251,7 +18295,7 @@ type PutObjectInput struct {
 	// does not store the encryption key. The key must be appropriate for use with
 	// the algorithm specified in the x-amz-server-side​-encryption​-customer-algorithm
 	// header.
-	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string" sensitive:"true"`
+	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string"`
 
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure the encryption
@@ -20262,7 +18306,7 @@ type PutObjectInput struct {
 	// requests for an object protected by AWS KMS will fail if not made via SSL
 	// or using SigV4. Documentation on configuring any of the officially supported
 	// AWS SDKs and CLI can be found at http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingAWSSDK.html#specify-signature-version
-	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -20271,8 +18315,7 @@ type PutObjectInput struct {
 	// The type of storage to use for the object. Defaults to 'STANDARD'.
 	StorageClass *string `location:"header" locationName:"x-amz-storage-class" type:"string" enum:"StorageClass"`
 
-	// The tag-set for the object. The tag-set must be encoded as URL Query parameters.
-	// (For example, "Key1=Value1")
+	// The tag-set for the object. The tag-set must be encoded as URL Query parameters
 	Tagging *string `location:"header" locationName:"x-amz-tagging" type:"string"`
 
 	// If the bucket is configured as a website, redirects requests for this object
@@ -20296,9 +18339,6 @@ func (s *PutObjectInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "PutObjectInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
@@ -20422,24 +18462,6 @@ func (s *PutObjectInput) SetMetadata(v map[string]*string) *PutObjectInput {
 	return s
 }
 
-// SetObjectLockLegalHoldStatus sets the ObjectLockLegalHoldStatus field's value.
-func (s *PutObjectInput) SetObjectLockLegalHoldStatus(v string) *PutObjectInput {
-	s.ObjectLockLegalHoldStatus = &v
-	return s
-}
-
-// SetObjectLockMode sets the ObjectLockMode field's value.
-func (s *PutObjectInput) SetObjectLockMode(v string) *PutObjectInput {
-	s.ObjectLockMode = &v
-	return s
-}
-
-// SetObjectLockRetainUntilDate sets the ObjectLockRetainUntilDate field's value.
-func (s *PutObjectInput) SetObjectLockRetainUntilDate(v time.Time) *PutObjectInput {
-	s.ObjectLockRetainUntilDate = &v
-	return s
-}
-
 // SetRequestPayer sets the RequestPayer field's value.
 func (s *PutObjectInput) SetRequestPayer(v string) *PutObjectInput {
 	s.RequestPayer = &v
@@ -20501,227 +18523,6 @@ func (s *PutObjectInput) SetWebsiteRedirectLocation(v string) *PutObjectInput {
 	return s
 }
 
-type PutObjectLegalHoldInput struct {
-	_ struct{} `type:"structure" payload:"LegalHold"`
-
-	// The bucket containing the object that you want to place a Legal Hold on.
-	//
-	// Bucket is a required field
-	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
-
-	// The key name for the object that you want to place a Legal Hold on.
-	//
-	// Key is a required field
-	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
-
-	// Container element for the Legal Hold configuration you want to apply to the
-	// specified object.
-	LegalHold *ObjectLockLegalHold `locationName:"LegalHold" type:"structure" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
-
-	// Confirms that the requester knows that she or he will be charged for the
-	// request. Bucket owners need not specify this parameter in their requests.
-	// Documentation on downloading objects from requester pays buckets can be found
-	// at http://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html
-	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
-
-	// The version ID of the object that you want to place a Legal Hold on.
-	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
-}
-
-// String returns the string representation
-func (s PutObjectLegalHoldInput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s PutObjectLegalHoldInput) GoString() string {
-	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *PutObjectLegalHoldInput) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "PutObjectLegalHoldInput"}
-	if s.Bucket == nil {
-		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
-	if s.Key == nil {
-		invalidParams.Add(request.NewErrParamRequired("Key"))
-	}
-	if s.Key != nil && len(*s.Key) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Key", 1))
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
-}
-
-// SetBucket sets the Bucket field's value.
-func (s *PutObjectLegalHoldInput) SetBucket(v string) *PutObjectLegalHoldInput {
-	s.Bucket = &v
-	return s
-}
-
-func (s *PutObjectLegalHoldInput) getBucket() (v string) {
-	if s.Bucket == nil {
-		return v
-	}
-	return *s.Bucket
-}
-
-// SetKey sets the Key field's value.
-func (s *PutObjectLegalHoldInput) SetKey(v string) *PutObjectLegalHoldInput {
-	s.Key = &v
-	return s
-}
-
-// SetLegalHold sets the LegalHold field's value.
-func (s *PutObjectLegalHoldInput) SetLegalHold(v *ObjectLockLegalHold) *PutObjectLegalHoldInput {
-	s.LegalHold = v
-	return s
-}
-
-// SetRequestPayer sets the RequestPayer field's value.
-func (s *PutObjectLegalHoldInput) SetRequestPayer(v string) *PutObjectLegalHoldInput {
-	s.RequestPayer = &v
-	return s
-}
-
-// SetVersionId sets the VersionId field's value.
-func (s *PutObjectLegalHoldInput) SetVersionId(v string) *PutObjectLegalHoldInput {
-	s.VersionId = &v
-	return s
-}
-
-type PutObjectLegalHoldOutput struct {
-	_ struct{} `type:"structure"`
-
-	// If present, indicates that the requester was successfully charged for the
-	// request.
-	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
-}
-
-// String returns the string representation
-func (s PutObjectLegalHoldOutput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s PutObjectLegalHoldOutput) GoString() string {
-	return s.String()
-}
-
-// SetRequestCharged sets the RequestCharged field's value.
-func (s *PutObjectLegalHoldOutput) SetRequestCharged(v string) *PutObjectLegalHoldOutput {
-	s.RequestCharged = &v
-	return s
-}
-
-type PutObjectLockConfigurationInput struct {
-	_ struct{} `type:"structure" payload:"ObjectLockConfiguration"`
-
-	// The bucket whose Object Lock configuration you want to create or replace.
-	//
-	// Bucket is a required field
-	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
-
-	// The Object Lock configuration that you want to apply to the specified bucket.
-	ObjectLockConfiguration *ObjectLockConfiguration `locationName:"ObjectLockConfiguration" type:"structure" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
-
-	// Confirms that the requester knows that she or he will be charged for the
-	// request. Bucket owners need not specify this parameter in their requests.
-	// Documentation on downloading objects from requester pays buckets can be found
-	// at http://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html
-	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
-
-	Token *string `location:"header" locationName:"x-amz-bucket-object-lock-token" type:"string"`
-}
-
-// String returns the string representation
-func (s PutObjectLockConfigurationInput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s PutObjectLockConfigurationInput) GoString() string {
-	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *PutObjectLockConfigurationInput) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "PutObjectLockConfigurationInput"}
-	if s.Bucket == nil {
-		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
-}
-
-// SetBucket sets the Bucket field's value.
-func (s *PutObjectLockConfigurationInput) SetBucket(v string) *PutObjectLockConfigurationInput {
-	s.Bucket = &v
-	return s
-}
-
-func (s *PutObjectLockConfigurationInput) getBucket() (v string) {
-	if s.Bucket == nil {
-		return v
-	}
-	return *s.Bucket
-}
-
-// SetObjectLockConfiguration sets the ObjectLockConfiguration field's value.
-func (s *PutObjectLockConfigurationInput) SetObjectLockConfiguration(v *ObjectLockConfiguration) *PutObjectLockConfigurationInput {
-	s.ObjectLockConfiguration = v
-	return s
-}
-
-// SetRequestPayer sets the RequestPayer field's value.
-func (s *PutObjectLockConfigurationInput) SetRequestPayer(v string) *PutObjectLockConfigurationInput {
-	s.RequestPayer = &v
-	return s
-}
-
-// SetToken sets the Token field's value.
-func (s *PutObjectLockConfigurationInput) SetToken(v string) *PutObjectLockConfigurationInput {
-	s.Token = &v
-	return s
-}
-
-type PutObjectLockConfigurationOutput struct {
-	_ struct{} `type:"structure"`
-
-	// If present, indicates that the requester was successfully charged for the
-	// request.
-	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
-}
-
-// String returns the string representation
-func (s PutObjectLockConfigurationOutput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s PutObjectLockConfigurationOutput) GoString() string {
-	return s.String()
-}
-
-// SetRequestCharged sets the RequestCharged field's value.
-func (s *PutObjectLockConfigurationOutput) SetRequestCharged(v string) *PutObjectLockConfigurationOutput {
-	s.RequestCharged = &v
-	return s
-}
-
 type PutObjectOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -20748,7 +18549,7 @@ type PutObjectOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -20816,137 +18617,6 @@ func (s *PutObjectOutput) SetVersionId(v string) *PutObjectOutput {
 	return s
 }
 
-type PutObjectRetentionInput struct {
-	_ struct{} `type:"structure" payload:"Retention"`
-
-	// The bucket that contains the object you want to apply this Object Retention
-	// configuration to.
-	//
-	// Bucket is a required field
-	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
-
-	// Indicates whether this operation should bypass Governance-mode restrictions.j
-	BypassGovernanceRetention *bool `location:"header" locationName:"x-amz-bypass-governance-retention" type:"boolean"`
-
-	// The key name for the object that you want to apply this Object Retention
-	// configuration to.
-	//
-	// Key is a required field
-	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
-
-	// Confirms that the requester knows that she or he will be charged for the
-	// request. Bucket owners need not specify this parameter in their requests.
-	// Documentation on downloading objects from requester pays buckets can be found
-	// at http://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html
-	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
-
-	// The container element for the Object Retention configuration.
-	Retention *ObjectLockRetention `locationName:"Retention" type:"structure" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
-
-	// The version ID for the object that you want to apply this Object Retention
-	// configuration to.
-	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
-}
-
-// String returns the string representation
-func (s PutObjectRetentionInput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s PutObjectRetentionInput) GoString() string {
-	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *PutObjectRetentionInput) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "PutObjectRetentionInput"}
-	if s.Bucket == nil {
-		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
-	if s.Key == nil {
-		invalidParams.Add(request.NewErrParamRequired("Key"))
-	}
-	if s.Key != nil && len(*s.Key) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Key", 1))
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
-}
-
-// SetBucket sets the Bucket field's value.
-func (s *PutObjectRetentionInput) SetBucket(v string) *PutObjectRetentionInput {
-	s.Bucket = &v
-	return s
-}
-
-func (s *PutObjectRetentionInput) getBucket() (v string) {
-	if s.Bucket == nil {
-		return v
-	}
-	return *s.Bucket
-}
-
-// SetBypassGovernanceRetention sets the BypassGovernanceRetention field's value.
-func (s *PutObjectRetentionInput) SetBypassGovernanceRetention(v bool) *PutObjectRetentionInput {
-	s.BypassGovernanceRetention = &v
-	return s
-}
-
-// SetKey sets the Key field's value.
-func (s *PutObjectRetentionInput) SetKey(v string) *PutObjectRetentionInput {
-	s.Key = &v
-	return s
-}
-
-// SetRequestPayer sets the RequestPayer field's value.
-func (s *PutObjectRetentionInput) SetRequestPayer(v string) *PutObjectRetentionInput {
-	s.RequestPayer = &v
-	return s
-}
-
-// SetRetention sets the Retention field's value.
-func (s *PutObjectRetentionInput) SetRetention(v *ObjectLockRetention) *PutObjectRetentionInput {
-	s.Retention = v
-	return s
-}
-
-// SetVersionId sets the VersionId field's value.
-func (s *PutObjectRetentionInput) SetVersionId(v string) *PutObjectRetentionInput {
-	s.VersionId = &v
-	return s
-}
-
-type PutObjectRetentionOutput struct {
-	_ struct{} `type:"structure"`
-
-	// If present, indicates that the requester was successfully charged for the
-	// request.
-	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
-}
-
-// String returns the string representation
-func (s PutObjectRetentionOutput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s PutObjectRetentionOutput) GoString() string {
-	return s.String()
-}
-
-// SetRequestCharged sets the RequestCharged field's value.
-func (s *PutObjectRetentionOutput) SetRequestCharged(v string) *PutObjectRetentionOutput {
-	s.RequestCharged = &v
-	return s
-}
-
 type PutObjectTaggingInput struct {
 	_ struct{} `type:"structure" payload:"Tagging"`
 
@@ -20977,9 +18647,6 @@ func (s *PutObjectTaggingInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "PutObjectTaggingInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
@@ -21055,107 +18722,24 @@ func (s *PutObjectTaggingOutput) SetVersionId(v string) *PutObjectTaggingOutput 
 	return s
 }
 
-type PutPublicAccessBlockInput struct {
-	_ struct{} `type:"structure" payload:"PublicAccessBlockConfiguration"`
-
-	// The name of the Amazon S3 bucket whose PublicAccessBlock configuration you
-	// want to set.
-	//
-	// Bucket is a required field
-	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
-
-	// The PublicAccessBlock configuration that you want to apply to this Amazon
-	// S3 bucket. You can enable the configuration options in any combination. For
-	// more information about when Amazon S3 considers a bucket or object public,
-	// see The Meaning of "Public" (https://docs.aws.amazon.com/AmazonS3/latest/dev/access-control-block-public-access.html#access-control-block-public-access-policy-status)
-	// in the Amazon Simple Storage Service Developer Guide.
-	//
-	// PublicAccessBlockConfiguration is a required field
-	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `locationName:"PublicAccessBlockConfiguration" type:"structure" required:"true" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
-}
-
-// String returns the string representation
-func (s PutPublicAccessBlockInput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s PutPublicAccessBlockInput) GoString() string {
-	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *PutPublicAccessBlockInput) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "PutPublicAccessBlockInput"}
-	if s.Bucket == nil {
-		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
-	}
-	if s.PublicAccessBlockConfiguration == nil {
-		invalidParams.Add(request.NewErrParamRequired("PublicAccessBlockConfiguration"))
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
-}
-
-// SetBucket sets the Bucket field's value.
-func (s *PutPublicAccessBlockInput) SetBucket(v string) *PutPublicAccessBlockInput {
-	s.Bucket = &v
-	return s
-}
-
-func (s *PutPublicAccessBlockInput) getBucket() (v string) {
-	if s.Bucket == nil {
-		return v
-	}
-	return *s.Bucket
-}
-
-// SetPublicAccessBlockConfiguration sets the PublicAccessBlockConfiguration field's value.
-func (s *PutPublicAccessBlockInput) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *PutPublicAccessBlockInput {
-	s.PublicAccessBlockConfiguration = v
-	return s
-}
-
-type PutPublicAccessBlockOutput struct {
-	_ struct{} `type:"structure"`
-}
-
-// String returns the string representation
-func (s PutPublicAccessBlockOutput) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s PutPublicAccessBlockOutput) GoString() string {
-	return s.String()
-}
-
-// A container for specifying the configuration for publication of messages
-// to an Amazon Simple Queue Service (Amazon SQS) queue.when Amazon S3 detects
-// specified events.
+// Container for specifying an configuration when you want Amazon S3 to publish
+// events to an Amazon Simple Queue Service (Amazon SQS) queue.
 type QueueConfiguration struct {
 	_ struct{} `type:"structure"`
 
 	// Events is a required field
 	Events []*string `locationName:"Event" type:"list" flattened:"true" required:"true"`
 
-	// A container for object key name filtering rules. For information about key
-	// name filtering, see Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
-	// in the Amazon Simple Storage Service Developer Guide.
+	// Container for object key name filtering rules. For information about key
+	// name filtering, go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
 	Filter *NotificationConfigurationFilter `type:"structure"`
 
-	// An optional unique identifier for configurations in a notification configuration.
+	// Optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
 	Id *string `type:"string"`
 
-	// The Amazon Resource Name (ARN) of the Amazon SQS queue to which Amazon S3
-	// will publish a message when it detects events of the specified type.
+	// Amazon SQS queue ARN to which Amazon S3 will publish a message when it detects
+	// events of specified type.
 	//
 	// QueueArn is a required field
 	QueueArn *string `locationName:"Queue" type:"string" required:"true"`
@@ -21214,14 +18798,12 @@ func (s *QueueConfiguration) SetQueueArn(v string) *QueueConfiguration {
 type QueueConfigurationDeprecated struct {
 	_ struct{} `type:"structure"`
 
-	// The bucket event for which to send notifications.
-	//
-	// Deprecated: Event has been deprecated
+	// Bucket event for which to send notifications.
 	Event *string `deprecated:"true" type:"string" enum:"Event"`
 
 	Events []*string `locationName:"Event" type:"list" flattened:"true"`
 
-	// An optional unique identifier for configurations in a notification configuration.
+	// Optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
 	Id *string `type:"string"`
 
@@ -21263,7 +18845,7 @@ func (s *QueueConfigurationDeprecated) SetQueue(v string) *QueueConfigurationDep
 }
 
 type RecordsEvent struct {
-	_ struct{} `locationName:"RecordsEvent" type:"structure" payload:"Payload"`
+	_ struct{} `type:"structure" payload:"Payload"`
 
 	// The byte array of partial, one or more result records.
 	//
@@ -21417,19 +18999,19 @@ func (s *RedirectAllRequestsTo) SetProtocol(v string) *RedirectAllRequestsTo {
 	return s
 }
 
-// A container for replication rules. You can add up to 1,000 rules. The maximum
-// size of a replication configuration is 2 MB.
+// Container for replication rules. You can add as many as 1,000 rules. Total
+// replication configuration size can be up to 2 MB.
 type ReplicationConfiguration struct {
 	_ struct{} `type:"structure"`
 
-	// The Amazon Resource Name (ARN) of the AWS Identity and Access Management
-	// (IAM) role that Amazon S3 can assume when replicating the objects.
+	// Amazon Resource Name (ARN) of an IAM role for Amazon S3 to assume when replicating
+	// the objects.
 	//
 	// Role is a required field
 	Role *string `type:"string" required:"true"`
 
-	// A container for one or more replication rules. A replication configuration
-	// must have at least one rule and can contain a maximum of 1,000 rules.
+	// Container for information about a particular replication rule. Replication
+	// configuration must have at least one rule and can contain up to 1,000 rules.
 	//
 	// Rules is a required field
 	Rules []*ReplicationRule `locationName:"Rule" type:"list" flattened:"true" required:"true"`
@@ -21483,57 +19065,29 @@ func (s *ReplicationConfiguration) SetRules(v []*ReplicationRule) *ReplicationCo
 	return s
 }
 
-// A container for information about a specific replication rule.
+// Container for information about a particular replication rule.
 type ReplicationRule struct {
 	_ struct{} `type:"structure"`
 
-	// Specifies whether Amazon S3 should replicate delete makers.
-	DeleteMarkerReplication *DeleteMarkerReplication `type:"structure"`
-
-	// A container for information about the replication destination.
+	// Container for replication destination information.
 	//
 	// Destination is a required field
 	Destination *Destination `type:"structure" required:"true"`
 
-	// A filter that identifies the subset of objects to which the replication rule
-	// applies. A Filter must specify exactly one Prefix, Tag, or an And child element.
-	Filter *ReplicationRuleFilter `type:"structure"`
-
-	// A unique identifier for the rule. The maximum value is 255 characters.
+	// Unique identifier for the rule. The value cannot be longer than 255 characters.
 	ID *string `type:"string"`
 
-	// An object keyname prefix that identifies the object or objects to which the
-	// rule applies. The maximum prefix length is 1,024 characters.
+	// Object keyname prefix identifying one or more objects to which the rule applies.
+	// Maximum prefix length can be up to 1,024 characters. Overlapping prefixes
+	// are not supported.
 	//
-	// Deprecated: Prefix has been deprecated
-	Prefix *string `deprecated:"true" type:"string"`
+	// Prefix is a required field
+	Prefix *string `type:"string" required:"true"`
 
-	// The priority associated with the rule. If you specify multiple rules in a
-	// replication configuration, Amazon S3 prioritizes the rules to prevent conflicts
-	// when filtering. If two or more rules identify the same object based on a
-	// specified filter, the rule with higher priority takes precedence. For example:
-	//
-	//    * Same object quality prefix based filter criteria If prefixes you specified
-	//    in multiple rules overlap
-	//
-	//    * Same object qualify tag based filter criteria specified in multiple
-	//    rules
-	//
-	// For more information, see Cross-Region Replication (CRR) ( https://docs.aws.amazon.com/AmazonS3/latest/dev/crr.html)
-	// in the Amazon S3 Developer Guide.
-	Priority *int64 `type:"integer"`
-
-	// A container that describes additional filters for identifying the source
-	// objects that you want to replicate. You can choose to enable or disable the
-	// replication of these objects. Currently, Amazon S3 supports only the filter
-	// that you can specify for objects created with server-side encryption using
-	// an AWS KMS-Managed Key (SSE-KMS).
-	//
-	// If you want Amazon S3 to replicate objects created with server-side encryption
-	// using AWS KMS-Managed Keys.
+	// Container for filters that define which source objects should be replicated.
 	SourceSelectionCriteria *SourceSelectionCriteria `type:"structure"`
 
-	// If status isn't enabled, the rule is ignored.
+	// The rule is ignored if status is not Enabled.
 	//
 	// Status is a required field
 	Status *string `type:"string" required:"true" enum:"ReplicationRuleStatus"`
@@ -21555,17 +19109,15 @@ func (s *ReplicationRule) Validate() error {
 	if s.Destination == nil {
 		invalidParams.Add(request.NewErrParamRequired("Destination"))
 	}
+	if s.Prefix == nil {
+		invalidParams.Add(request.NewErrParamRequired("Prefix"))
+	}
 	if s.Status == nil {
 		invalidParams.Add(request.NewErrParamRequired("Status"))
 	}
 	if s.Destination != nil {
 		if err := s.Destination.Validate(); err != nil {
 			invalidParams.AddNested("Destination", err.(request.ErrInvalidParams))
-		}
-	}
-	if s.Filter != nil {
-		if err := s.Filter.Validate(); err != nil {
-			invalidParams.AddNested("Filter", err.(request.ErrInvalidParams))
 		}
 	}
 	if s.SourceSelectionCriteria != nil {
@@ -21580,21 +19132,9 @@ func (s *ReplicationRule) Validate() error {
 	return nil
 }
 
-// SetDeleteMarkerReplication sets the DeleteMarkerReplication field's value.
-func (s *ReplicationRule) SetDeleteMarkerReplication(v *DeleteMarkerReplication) *ReplicationRule {
-	s.DeleteMarkerReplication = v
-	return s
-}
-
 // SetDestination sets the Destination field's value.
 func (s *ReplicationRule) SetDestination(v *Destination) *ReplicationRule {
 	s.Destination = v
-	return s
-}
-
-// SetFilter sets the Filter field's value.
-func (s *ReplicationRule) SetFilter(v *ReplicationRuleFilter) *ReplicationRule {
-	s.Filter = v
 	return s
 }
 
@@ -21610,12 +19150,6 @@ func (s *ReplicationRule) SetPrefix(v string) *ReplicationRule {
 	return s
 }
 
-// SetPriority sets the Priority field's value.
-func (s *ReplicationRule) SetPriority(v int64) *ReplicationRule {
-	s.Priority = &v
-	return s
-}
-
 // SetSourceSelectionCriteria sets the SourceSelectionCriteria field's value.
 func (s *ReplicationRule) SetSourceSelectionCriteria(v *SourceSelectionCriteria) *ReplicationRule {
 	s.SourceSelectionCriteria = v
@@ -21625,130 +19159,6 @@ func (s *ReplicationRule) SetSourceSelectionCriteria(v *SourceSelectionCriteria)
 // SetStatus sets the Status field's value.
 func (s *ReplicationRule) SetStatus(v string) *ReplicationRule {
 	s.Status = &v
-	return s
-}
-
-type ReplicationRuleAndOperator struct {
-	_ struct{} `type:"structure"`
-
-	Prefix *string `type:"string"`
-
-	Tags []*Tag `locationName:"Tag" locationNameList:"Tag" type:"list" flattened:"true"`
-}
-
-// String returns the string representation
-func (s ReplicationRuleAndOperator) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s ReplicationRuleAndOperator) GoString() string {
-	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *ReplicationRuleAndOperator) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "ReplicationRuleAndOperator"}
-	if s.Tags != nil {
-		for i, v := range s.Tags {
-			if v == nil {
-				continue
-			}
-			if err := v.Validate(); err != nil {
-				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "Tags", i), err.(request.ErrInvalidParams))
-			}
-		}
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
-}
-
-// SetPrefix sets the Prefix field's value.
-func (s *ReplicationRuleAndOperator) SetPrefix(v string) *ReplicationRuleAndOperator {
-	s.Prefix = &v
-	return s
-}
-
-// SetTags sets the Tags field's value.
-func (s *ReplicationRuleAndOperator) SetTags(v []*Tag) *ReplicationRuleAndOperator {
-	s.Tags = v
-	return s
-}
-
-// A filter that identifies the subset of objects to which the replication rule
-// applies. A Filter must specify exactly one Prefix, Tag, or an And child element.
-type ReplicationRuleFilter struct {
-	_ struct{} `type:"structure"`
-
-	// A container for specifying rule filters. The filters determine the subset
-	// of objects to which the rule applies. This element is required only if you
-	// specify more than one filter. For example:
-	//
-	//    * If you specify both a Prefix and a Tag filter, wrap these filters in
-	//    an And tag.
-	//
-	//    * If you specify a filter based on multiple tags, wrap the Tag elements
-	//    in an And tag.
-	And *ReplicationRuleAndOperator `type:"structure"`
-
-	// An object keyname prefix that identifies the subset of objects to which the
-	// rule applies.
-	Prefix *string `type:"string"`
-
-	// A container for specifying a tag key and value.
-	//
-	// The rule applies only to objects that have the tag in their tag set.
-	Tag *Tag `type:"structure"`
-}
-
-// String returns the string representation
-func (s ReplicationRuleFilter) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s ReplicationRuleFilter) GoString() string {
-	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *ReplicationRuleFilter) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "ReplicationRuleFilter"}
-	if s.And != nil {
-		if err := s.And.Validate(); err != nil {
-			invalidParams.AddNested("And", err.(request.ErrInvalidParams))
-		}
-	}
-	if s.Tag != nil {
-		if err := s.Tag.Validate(); err != nil {
-			invalidParams.AddNested("Tag", err.(request.ErrInvalidParams))
-		}
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
-}
-
-// SetAnd sets the And field's value.
-func (s *ReplicationRuleFilter) SetAnd(v *ReplicationRuleAndOperator) *ReplicationRuleFilter {
-	s.And = v
-	return s
-}
-
-// SetPrefix sets the Prefix field's value.
-func (s *ReplicationRuleFilter) SetPrefix(v string) *ReplicationRuleFilter {
-	s.Prefix = &v
-	return s
-}
-
-// SetTag sets the Tag field's value.
-func (s *ReplicationRuleFilter) SetTag(v *Tag) *ReplicationRuleFilter {
-	s.Tag = v
 	return s
 }
 
@@ -21850,9 +19260,6 @@ func (s *RestoreObjectInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "RestoreObjectInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
@@ -22059,7 +19466,7 @@ type RoutingRule struct {
 
 	// Container for redirect information. You can redirect requests to another
 	// host, to another page, or with another protocol. In the event of an error,
-	// you can specify a different error code to return.
+	// you can can specify a different error code to return.
 	//
 	// Redirect is a required field
 	Redirect *Redirect `type:"structure" required:"true"`
@@ -22120,11 +19527,11 @@ type Rule struct {
 	NoncurrentVersionExpiration *NoncurrentVersionExpiration `type:"structure"`
 
 	// Container for the transition rule that describes when noncurrent objects
-	// transition to the STANDARD_IA, ONEZONE_IA, INTELLIGENT_TIERING or GLACIER
-	// storage class. If your bucket is versioning-enabled (or versioning is suspended),
-	// you can set this action to request that Amazon S3 transition noncurrent object
-	// versions to the STANDARD_IA, ONEZONE_IA, INTELLIGENT_TIERING or GLACIER storage
-	// class at a specific period in the object's lifetime.
+	// transition to the STANDARD_IA, ONEZONE_IA or GLACIER storage class. If your
+	// bucket is versioning-enabled (or versioning is suspended), you can set this
+	// action to request that Amazon S3 transition noncurrent object versions to
+	// the STANDARD_IA, ONEZONE_IA or GLACIER storage class at a specific period
+	// in the object's lifetime.
 	NoncurrentVersionTransition *NoncurrentVersionTransition `type:"structure"`
 
 	// Prefix identifying one or more objects to which the rule applies.
@@ -22215,7 +19622,7 @@ func (s *Rule) SetTransition(v *Transition) *Rule {
 	return s
 }
 
-// Specifies the use of SSE-KMS to encrypt delivered Inventory reports.
+// Specifies the use of SSE-KMS to encrypt delievered Inventory reports.
 type SSEKMS struct {
 	_ struct{} `locationName:"SSE-KMS" type:"structure"`
 
@@ -22223,7 +19630,7 @@ type SSEKMS struct {
 	// key to use for encrypting Inventory reports.
 	//
 	// KeyId is a required field
-	KeyId *string `type:"string" required:"true" sensitive:"true"`
+	KeyId *string `type:"string" required:"true"`
 }
 
 // String returns the string representation
@@ -22255,7 +19662,7 @@ func (s *SSEKMS) SetKeyId(v string) *SSEKMS {
 	return s
 }
 
-// Specifies the use of SSE-S3 to encrypt delivered Inventory reports.
+// Specifies the use of SSE-S3 to encrypt delievered Inventory reports.
 type SSES3 struct {
 	_ struct{} `locationName:"SSE-S3" type:"structure"`
 }
@@ -22372,7 +19779,7 @@ type SelectObjectContentEventStreamReader interface {
 	// HTTP this will also close the HTTP connection.
 	Close() error
 
-	// Returns any error that has occurred while reading from the event stream.
+	// Returns any error that has occured while reading from the event stream.
 	Err() error
 }
 
@@ -22482,25 +19889,22 @@ func (r *readSelectObjectContentEventStream) unmarshalerForEventType(
 	case "Stats":
 		return &StatsEvent{}, nil
 	default:
-		return nil, awserr.New(
-			request.ErrCodeSerialization,
-			fmt.Sprintf("unknown event type name, %s, for SelectObjectContentEventStream", eventType),
-			nil,
-		)
+		return nil, fmt.Errorf(
+			"unknown event type name, %s, for SelectObjectContentEventStream", eventType)
 	}
 }
 
 // Request to filter the contents of an Amazon S3 object based on a simple Structured
 // Query Language (SQL) statement. In the request, along with the SQL expression,
-// you must specify a data serialization format (JSON or CSV) of the object.
-// Amazon S3 uses this to parse object data into records. It returns only records
+// you must also specify a data serialization format (JSON or CSV) of the object.
+// Amazon S3 uses this to parse object data into records, and returns only records
 // that match the specified SQL expression. You must also specify the data serialization
-// format for the response. For more information, see S3Select API Documentation
-// (http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectSELECTContent.html).
+// format for the response. For more information, go to S3Select API Documentation
+// (https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectSELECTContent.html)
 type SelectObjectContentInput struct {
 	_ struct{} `locationName:"SelectObjectContentRequest" type:"structure" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
 
-	// The S3 bucket.
+	// The S3 Bucket.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
@@ -22510,7 +19914,7 @@ type SelectObjectContentInput struct {
 	// Expression is a required field
 	Expression *string `type:"string" required:"true"`
 
-	// The type of the provided expression (for example., SQL).
+	// The type of the provided expression (e.g., SQL).
 	//
 	// ExpressionType is a required field
 	ExpressionType *string `type:"string" required:"true" enum:"ExpressionType"`
@@ -22520,7 +19924,7 @@ type SelectObjectContentInput struct {
 	// InputSerialization is a required field
 	InputSerialization *InputSerialization `type:"structure" required:"true"`
 
-	// The object key.
+	// The Object Key.
 	//
 	// Key is a required field
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
@@ -22533,16 +19937,16 @@ type SelectObjectContentInput struct {
 	// Specifies if periodic request progress information should be enabled.
 	RequestProgress *RequestProgress `type:"structure"`
 
-	// The SSE Algorithm used to encrypt the object. For more information, see
-	// Server-Side Encryption (Using Customer-Provided Encryption Keys (http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html).
+	// The SSE Algorithm used to encrypt the object. For more information, go to
+	//  Server-Side Encryption (Using Customer-Provided Encryption Keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
-	// The SSE Customer Key. For more information, see  Server-Side Encryption (Using
-	// Customer-Provided Encryption Keys (http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html).
-	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string" sensitive:"true"`
+	// The SSE Customer Key. For more information, go to  Server-Side Encryption
+	// (Using Customer-Provided Encryption Keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
+	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string"`
 
-	// The SSE Customer Key MD5. For more information, see  Server-Side Encryption
-	// (Using Customer-Provided Encryption Keys (http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html).
+	// The SSE Customer Key MD5. For more information, go to  Server-Side Encryption
+	// (Using Customer-Provided Encryption Keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 }
 
@@ -22561,9 +19965,6 @@ func (s *SelectObjectContentInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "SelectObjectContentInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Expression == nil {
 		invalidParams.Add(request.NewErrParamRequired("Expression"))
@@ -22795,7 +20196,7 @@ type ServerSideEncryptionByDefault struct {
 
 	// KMS master key ID to use for the default encryption. This parameter is allowed
 	// if SSEAlgorithm is aws:kms.
-	KMSMasterKeyID *string `type:"string" sensitive:"true"`
+	KMSMasterKeyID *string `type:"string"`
 
 	// Server-side encryption algorithm to use for the default encryption.
 	//
@@ -22931,13 +20332,11 @@ func (s *ServerSideEncryptionRule) SetApplyServerSideEncryptionByDefault(v *Serv
 	return s
 }
 
-// A container for filters that define which source objects should be replicated.
+// Container for filters that define which source objects should be replicated.
 type SourceSelectionCriteria struct {
 	_ struct{} `type:"structure"`
 
-	// A container for filter information for the selection of S3 objects encrypted
-	// with AWS KMS. If you include SourceSelectionCriteria in the replication configuration,
-	// this element is required.
+	// Container for filter information of selection of KMS Encrypted S3 objects.
 	SseKmsEncryptedObjects *SseKmsEncryptedObjects `type:"structure"`
 }
 
@@ -22972,13 +20371,12 @@ func (s *SourceSelectionCriteria) SetSseKmsEncryptedObjects(v *SseKmsEncryptedOb
 	return s
 }
 
-// A container for filter information for the selection of S3 objects encrypted
-// with AWS KMS.
+// Container for filter information of selection of KMS Encrypted S3 objects.
 type SseKmsEncryptedObjects struct {
 	_ struct{} `type:"structure"`
 
-	// If the status is not Enabled, replication for S3 objects encrypted with AWS
-	// KMS is disabled.
+	// The replication for KMS encrypted S3 objects is disabled if status is not
+	// Enabled.
 	//
 	// Status is a required field
 	Status *string `type:"string" required:"true" enum:"SseKmsEncryptedObjectsStatus"`
@@ -23016,13 +20414,13 @@ func (s *SseKmsEncryptedObjects) SetStatus(v string) *SseKmsEncryptedObjects {
 type Stats struct {
 	_ struct{} `type:"structure"`
 
-	// The total number of uncompressed object bytes processed.
+	// Total number of uncompressed object bytes processed.
 	BytesProcessed *int64 `type:"long"`
 
-	// The total number of bytes of records payload data returned.
+	// Total number of bytes of records payload data returned.
 	BytesReturned *int64 `type:"long"`
 
-	// The total number of object bytes scanned.
+	// Total number of object bytes scanned.
 	BytesScanned *int64 `type:"long"`
 }
 
@@ -23055,7 +20453,7 @@ func (s *Stats) SetBytesScanned(v int64) *Stats {
 }
 
 type StatsEvent struct {
-	_ struct{} `locationName:"StatsEvent" type:"structure" payload:"Details"`
+	_ struct{} `type:"structure" payload:"Details"`
 
 	// The Stats event details.
 	Details *Stats `locationName:"Details" type:"structure"`
@@ -23089,7 +20487,7 @@ func (s *StatsEvent) UnmarshalEvent(
 	if err := payloadUnmarshaler.UnmarshalPayload(
 		bytes.NewReader(msg.Payload), s,
 	); err != nil {
-		return err
+		return fmt.Errorf("failed to unmarshal payload, %v", err)
 	}
 	return nil
 }
@@ -23337,26 +20735,24 @@ func (s *TargetGrant) SetPermission(v string) *TargetGrant {
 	return s
 }
 
-// A container for specifying the configuration for publication of messages
-// to an Amazon Simple Notification Service (Amazon SNS) topic.when Amazon S3
-// detects specified events.
+// Container for specifying the configuration when you want Amazon S3 to publish
+// events to an Amazon Simple Notification Service (Amazon SNS) topic.
 type TopicConfiguration struct {
 	_ struct{} `type:"structure"`
 
 	// Events is a required field
 	Events []*string `locationName:"Event" type:"list" flattened:"true" required:"true"`
 
-	// A container for object key name filtering rules. For information about key
-	// name filtering, see Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
-	// in the Amazon Simple Storage Service Developer Guide.
+	// Container for object key name filtering rules. For information about key
+	// name filtering, go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
 	Filter *NotificationConfigurationFilter `type:"structure"`
 
-	// An optional unique identifier for configurations in a notification configuration.
+	// Optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
 	Id *string `type:"string"`
 
-	// The Amazon Resource Name (ARN) of the Amazon SNS topic to which Amazon S3
-	// will publish a message when it detects events of the specified type.
+	// Amazon SNS topic ARN to which Amazon S3 will publish a message when it detects
+	// events of specified type.
 	//
 	// TopicArn is a required field
 	TopicArn *string `locationName:"Topic" type:"string" required:"true"`
@@ -23416,13 +20812,11 @@ type TopicConfigurationDeprecated struct {
 	_ struct{} `type:"structure"`
 
 	// Bucket event for which to send notifications.
-	//
-	// Deprecated: Event has been deprecated
 	Event *string `deprecated:"true" type:"string" enum:"Event"`
 
 	Events []*string `locationName:"Event" type:"list" flattened:"true"`
 
-	// An optional unique identifier for configurations in a notification configuration.
+	// Optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
 	Id *string `type:"string"`
 
@@ -23524,14 +20918,14 @@ type UploadPartCopyInput struct {
 	CopySourceIfMatch *string `location:"header" locationName:"x-amz-copy-source-if-match" type:"string"`
 
 	// Copies the object if it has been modified since the specified time.
-	CopySourceIfModifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-modified-since" type:"timestamp"`
+	CopySourceIfModifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-modified-since" type:"timestamp" timestampFormat:"rfc822"`
 
 	// Copies the object if its entity tag (ETag) is different than the specified
 	// ETag.
 	CopySourceIfNoneMatch *string `location:"header" locationName:"x-amz-copy-source-if-none-match" type:"string"`
 
 	// Copies the object if it hasn't been modified since the specified time.
-	CopySourceIfUnmodifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-unmodified-since" type:"timestamp"`
+	CopySourceIfUnmodifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-unmodified-since" type:"timestamp" timestampFormat:"rfc822"`
 
 	// The range of bytes to copy from the source object. The range value must use
 	// the form bytes=first-last, where the first and last are the zero-based byte
@@ -23546,7 +20940,7 @@ type UploadPartCopyInput struct {
 	// Specifies the customer-provided encryption key for Amazon S3 to use to decrypt
 	// the source object. The encryption key provided in this header must be one
 	// that was used when the source object was created.
-	CopySourceSSECustomerKey *string `location:"header" locationName:"x-amz-copy-source-server-side-encryption-customer-key" type:"string" sensitive:"true"`
+	CopySourceSSECustomerKey *string `location:"header" locationName:"x-amz-copy-source-server-side-encryption-customer-key" type:"string"`
 
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure the encryption
@@ -23577,7 +20971,7 @@ type UploadPartCopyInput struct {
 	// the algorithm specified in the x-amz-server-side​-encryption​-customer-algorithm
 	// header. This must be the same encryption key specified in the initiate multipart
 	// upload request.
-	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string" sensitive:"true"`
+	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string"`
 
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure the encryption
@@ -23605,9 +20999,6 @@ func (s *UploadPartCopyInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "UploadPartCopyInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.CopySource == nil {
 		invalidParams.Add(request.NewErrParamRequired("CopySource"))
@@ -23779,7 +21170,7 @@ type UploadPartCopyOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -23882,7 +21273,7 @@ type UploadPartInput struct {
 	// the algorithm specified in the x-amz-server-side​-encryption​-customer-algorithm
 	// header. This must be the same encryption key specified in the initiate multipart
 	// upload request.
-	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string" sensitive:"true"`
+	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string"`
 
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure the encryption
@@ -23910,9 +21301,6 @@ func (s *UploadPartInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "UploadPartInput"}
 	if s.Bucket == nil {
 		invalidParams.Add(request.NewErrParamRequired("Bucket"))
-	}
-	if s.Bucket != nil && len(*s.Bucket) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
 	}
 	if s.Key == nil {
 		invalidParams.Add(request.NewErrParamRequired("Key"))
@@ -24035,7 +21423,7 @@ type UploadPartOutput struct {
 
 	// If present, specifies the ID of the AWS Key Management Service (KMS) master
 	// encryption key that was used for the object.
-	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
+	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string"`
 
 	// The Server-side encryption algorithm used when storing this object in S3
 	// (e.g., AES256, aws:kms).
@@ -24290,17 +21678,6 @@ const (
 
 	// CompressionTypeGzip is a CompressionType enum value
 	CompressionTypeGzip = "GZIP"
-
-	// CompressionTypeBzip2 is a CompressionType enum value
-	CompressionTypeBzip2 = "BZIP2"
-)
-
-const (
-	// DeleteMarkerReplicationStatusEnabled is a DeleteMarkerReplicationStatus enum value
-	DeleteMarkerReplicationStatusEnabled = "Enabled"
-
-	// DeleteMarkerReplicationStatusDisabled is a DeleteMarkerReplicationStatus enum value
-	DeleteMarkerReplicationStatusDisabled = "Disabled"
 )
 
 // Requests Amazon S3 to encode the object keys in the response and specifies
@@ -24314,7 +21691,7 @@ const (
 	EncodingTypeUrl = "url"
 )
 
-// The bucket event for which to send notifications.
+// Bucket event for which to send notifications.
 const (
 	// EventS3ReducedRedundancyLostObject is a Event enum value
 	EventS3ReducedRedundancyLostObject = "s3:ReducedRedundancyLostObject"
@@ -24342,12 +21719,6 @@ const (
 
 	// EventS3ObjectRemovedDeleteMarkerCreated is a Event enum value
 	EventS3ObjectRemovedDeleteMarkerCreated = "s3:ObjectRemoved:DeleteMarkerCreated"
-
-	// EventS3ObjectRestorePost is a Event enum value
-	EventS3ObjectRestorePost = "s3:ObjectRestore:Post"
-
-	// EventS3ObjectRestoreCompleted is a Event enum value
-	EventS3ObjectRestoreCompleted = "s3:ObjectRestore:Completed"
 )
 
 const (
@@ -24388,9 +21759,6 @@ const (
 
 	// InventoryFormatOrc is a InventoryFormat enum value
 	InventoryFormatOrc = "ORC"
-
-	// InventoryFormatParquet is a InventoryFormat enum value
-	InventoryFormatParquet = "Parquet"
 )
 
 const (
@@ -24430,15 +21798,6 @@ const (
 
 	// InventoryOptionalFieldEncryptionStatus is a InventoryOptionalField enum value
 	InventoryOptionalFieldEncryptionStatus = "EncryptionStatus"
-
-	// InventoryOptionalFieldObjectLockRetainUntilDate is a InventoryOptionalField enum value
-	InventoryOptionalFieldObjectLockRetainUntilDate = "ObjectLockRetainUntilDate"
-
-	// InventoryOptionalFieldObjectLockMode is a InventoryOptionalField enum value
-	InventoryOptionalFieldObjectLockMode = "ObjectLockMode"
-
-	// InventoryOptionalFieldObjectLockLegalHoldStatus is a InventoryOptionalField enum value
-	InventoryOptionalFieldObjectLockLegalHoldStatus = "ObjectLockLegalHoldStatus"
 )
 
 const (
@@ -24497,35 +21856,6 @@ const (
 )
 
 const (
-	// ObjectLockEnabledEnabled is a ObjectLockEnabled enum value
-	ObjectLockEnabledEnabled = "Enabled"
-)
-
-const (
-	// ObjectLockLegalHoldStatusOn is a ObjectLockLegalHoldStatus enum value
-	ObjectLockLegalHoldStatusOn = "ON"
-
-	// ObjectLockLegalHoldStatusOff is a ObjectLockLegalHoldStatus enum value
-	ObjectLockLegalHoldStatusOff = "OFF"
-)
-
-const (
-	// ObjectLockModeGovernance is a ObjectLockMode enum value
-	ObjectLockModeGovernance = "GOVERNANCE"
-
-	// ObjectLockModeCompliance is a ObjectLockMode enum value
-	ObjectLockModeCompliance = "COMPLIANCE"
-)
-
-const (
-	// ObjectLockRetentionModeGovernance is a ObjectLockRetentionMode enum value
-	ObjectLockRetentionModeGovernance = "GOVERNANCE"
-
-	// ObjectLockRetentionModeCompliance is a ObjectLockRetentionMode enum value
-	ObjectLockRetentionModeCompliance = "COMPLIANCE"
-)
-
-const (
 	// ObjectStorageClassStandard is a ObjectStorageClass enum value
 	ObjectStorageClassStandard = "STANDARD"
 
@@ -24540,9 +21870,6 @@ const (
 
 	// ObjectStorageClassOnezoneIa is a ObjectStorageClass enum value
 	ObjectStorageClassOnezoneIa = "ONEZONE_IA"
-
-	// ObjectStorageClassIntelligentTiering is a ObjectStorageClass enum value
-	ObjectStorageClassIntelligentTiering = "INTELLIGENT_TIERING"
 )
 
 const (
@@ -24667,12 +21994,6 @@ const (
 
 	// StorageClassOnezoneIa is a StorageClass enum value
 	StorageClassOnezoneIa = "ONEZONE_IA"
-
-	// StorageClassIntelligentTiering is a StorageClass enum value
-	StorageClassIntelligentTiering = "INTELLIGENT_TIERING"
-
-	// StorageClassGlacier is a StorageClass enum value
-	StorageClassGlacier = "GLACIER"
 )
 
 const (
@@ -24708,9 +22029,6 @@ const (
 
 	// TransitionStorageClassOnezoneIa is a TransitionStorageClass enum value
 	TransitionStorageClassOnezoneIa = "ONEZONE_IA"
-
-	// TransitionStorageClassIntelligentTiering is a TransitionStorageClass enum value
-	TransitionStorageClassIntelligentTiering = "INTELLIGENT_TIERING"
 )
 
 const (
