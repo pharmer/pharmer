@@ -6,7 +6,7 @@ import (
 
 	"github.com/appscode/go/crypto/rand"
 	stringutil "github.com/appscode/go/strings"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 )
 
 type namer struct {
@@ -17,12 +17,16 @@ func (n namer) MasterName() string {
 	return n.cluster.Name + "-master"
 }
 
+func (n namer) BastionName() string {
+	return n.cluster.Name + "-bastion"
+}
+
 func (n namer) GenSSHKeyExternalID() string {
 	return n.cluster.Name + "-" + rand.Characters(6)
 }
 
 func (n namer) VPCName() string {
-	return "kubernetes-vpc"
+	return n.cluster.Name + "-vpc"
 }
 
 func (n namer) DHCPOptionsName() string {
@@ -30,15 +34,19 @@ func (n namer) DHCPOptionsName() string {
 }
 
 func (n namer) InternetGatewayName() string {
-	return n.cluster.Name + "-internet-gateway"
+	return n.cluster.Name + "-igw"
 }
 
 func (n namer) GenMasterSGName() string {
-	return n.cluster.Name + "-master-" + rand.Characters(6)
+	return n.cluster.Name + "-controlplane"
 }
 
 func (n namer) GenNodeSGName() string {
-	return n.cluster.Name + "-node-" + rand.Characters(6)
+	return n.cluster.Name + "-node" //  + rand.Characters(6)
+}
+
+func (n namer) GenBastionSGName() string {
+	return n.cluster.Name + "-bastion"
 }
 
 func (n namer) MasterPDName() string {

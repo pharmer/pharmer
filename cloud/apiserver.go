@@ -302,9 +302,13 @@ func CreateNamespace(kc kubernetes.Interface, namespace string) error {
 		},
 	}
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := kc.CoreV1().Namespaces().Create(ns)
-		fmt.Println(err)
-		return err == nil, nil
+		_, err := kc.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+		if err == nil {
+			return true, nil
+		}
+
+		_, err = kc.CoreV1().Namespaces().Create(ns)
+		return err == nil, err
 	})
 }
 

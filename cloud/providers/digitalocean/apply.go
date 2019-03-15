@@ -52,7 +52,9 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 			return nil, err
 		} else if upgrade {
 			cm.cluster.Status.Phase = api.ClusterUpgrading
-			Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
+			if _, err := Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
+				return nil, err
+			}
 			return cm.applyUpgrade(dryRun)
 		}
 	}
@@ -138,7 +140,9 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Tag %s will be added", "KubernetesCluster:"+cm.cluster.Name),
 		})
 		if !dryRun {
-			cm.conn.createTags()
+			if err = cm.conn.createTags(); err != nil {
+				return
+			}
 		}
 	} else {
 		acts = append(acts, api.Action{
@@ -227,7 +231,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, cm.conn)
+	ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, nil)
 	if err != nil {
 		return acts, err
 	}

@@ -3,6 +3,7 @@ package v1beta1
 import (
 	"fmt"
 
+	"github.com/appscode/go-version"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
@@ -76,14 +77,16 @@ type CloudSpec struct {
 
 type AWSSpec struct {
 	// aws:TAG KubernetesCluster => clusterid
-	IAMProfileMaster string `json:"iamProfileMaster,omitempty" protobuf:"bytes,1,opt,name=iamProfileMaster"`
-	IAMProfileNode   string `json:"iamProfileNode,omitempty" protobuf:"bytes,2,opt,name=iamProfileNode"`
-	MasterSGName     string `json:"masterSGName,omitempty" protobuf:"bytes,3,opt,name=masterSGName"`
-	NodeSGName       string `json:"nodeSGName,omitempty" protobuf:"bytes,4,opt,name=nodeSGName"`
-	VpcCIDR          string `json:"vpcCIDR,omitempty" protobuf:"bytes,5,opt,name=vpcCIDR"`
-	VpcCIDRBase      string `json:"vpcCIDRBase,omitempty" protobuf:"bytes,6,opt,name=vpcCIDRBase"`
-	MasterIPSuffix   string `json:"masterIPSuffix,omitempty" protobuf:"bytes,7,opt,name=masterIPSuffix"`
-	SubnetCIDR       string `json:"subnetCidr,omitempty" protobuf:"bytes,8,opt,name=subnetCidr"`
+	IAMProfileMaster  string `json:"iamProfileMaster,omitempty" protobuf:"bytes,1,opt,name=iamProfileMaster"`
+	IAMProfileNode    string `json:"iamProfileNode,omitempty" protobuf:"bytes,2,opt,name=iamProfileNode"`
+	MasterSGName      string `json:"masterSGName,omitempty" protobuf:"bytes,3,opt,name=masterSGName"`
+	NodeSGName        string `json:"nodeSGName,omitempty" protobuf:"bytes,4,opt,name=nodeSGName"`
+	BastionSGName     string `json:"bastionSGName,omitempty"`
+	VpcCIDR           string `json:"vpcCIDR,omitempty" protobuf:"bytes,5,opt,name=vpcCIDR"`
+	VpcCIDRBase       string `json:"vpcCIDRBase,omitempty" protobuf:"bytes,6,opt,name=vpcCIDRBase"`
+	MasterIPSuffix    string `json:"masterIPSuffix,omitempty" protobuf:"bytes,7,opt,name=masterIPSuffix"`
+	PrivateSubnetCIDR string `json:"privateSubnetCidr,omitempty" protobuf:"bytes,8,opt,name=privateSubnetCidr"`
+	PublicSubnetCIDR  string `json:"publicSubnetCidr,omitempty" protobuf:"bytes,8,opt,name=publicSubnetCidr"`
 }
 
 type GoogleSpec struct {
@@ -131,9 +134,17 @@ const (
 )
 
 type CloudStatus struct {
-	SShKeyExternalID string `json:"sshKeyExternalID,omitempty" protobuf:"bytes,1,opt,name=sshKeyExternalID"`
-	//AWS              *AWSStatus `json:"aws,omitempty" protobuf:"bytes,2,opt,name=aws"`
-	EKS *EKSStatus `json:"eks,omitempty" protobuf:"bytes,2,opt,name=eks"`
+	SShKeyExternalID string     `json:"sshKeyExternalID,omitempty" protobuf:"bytes,1,opt,name=sshKeyExternalID"`
+	AWS              *AWSStatus `json:"aws,omitempty" protobuf:"bytes,2,opt,name=aws"`
+	EKS              *EKSStatus `json:"eks,omitempty" protobuf:"bytes,2,opt,name=eks"`
+}
+
+type AWSStatus struct {
+	MasterSGId  string `json:"masterSGID,omitempty" protobuf:"bytes,1,opt,name=masterSGID"`
+	NodeSGId    string `json:"nodeSGID,omitempty" protobuf:"bytes,2,opt,name=nodeSGID"`
+	BastionSGId string `json:"bastionSGID,omitempty"`
+
+	LBDNS string `json:"lbDNS,omitempty"`
 }
 
 type EKSStatus struct {
@@ -238,4 +249,30 @@ func (c *Cluster) InitClusterApi() {
 			Name: c.Name,
 		},
 	}
+}
+
+func (c Cluster) IsMinorVersion(in string) bool {
+	v, err := version.NewVersion(c.Spec.Config.KubernetesVersion)
+	if err != nil {
+		return false
+	}
+	minor := v.ToMutator().ResetMetadata().ResetPrerelease().ResetPatch().String()
+
+	inVer, err := version.NewVersion(in)
+	if err != nil {
+		return false
+	}
+	return inVer.String() == minor
+}
+
+func (c Cluster) IsLessThanVersion(in string) bool {
+	v, err := version.NewVersion(c.Spec.Config.KubernetesVersion)
+	if err != nil {
+		return false
+	}
+	inVer, err := version.NewVersion(in)
+	if err != nil {
+		return false
+	}
+	return v.LessThan(inVer)
 }

@@ -50,7 +50,6 @@ func Create(ctx context.Context, cluster *api.Cluster, owner string) (*api.Clust
 	if err != nil {
 		return nil, err
 	}
-
 	if err = cm.SetDefaultCluster(cluster, config); err != nil {
 		return nil, err
 	}
@@ -70,15 +69,7 @@ func Create(ctx context.Context, cluster *api.Cluster, owner string) (*api.Clust
 	if ctx, err = CreateSSHKey(ctx, cluster, owner); err != nil {
 		return nil, err
 	}
-	/*if ctx, err = CreateApiserverCertificates(ctx, cluster); err != nil {
-		return nil, err
-	}
-	if ctx, err = CreateServiceAccountKey(ctx, cluster); err != nil {
-		return nil, err
-	}
-	if ctx, err = CreateEtcdCertificates(ctx, cluster); err != nil {
-		return nil, err
-	}*/
+
 	if !managedProviders.Has(cluster.ClusterConfig().Cloud.CloudProvider) {
 		master, err := CreateMasterMachines(ctx, cluster)
 		if err != nil {
@@ -113,8 +104,11 @@ func CreateMasterMachines(ctx context.Context, cluster *api.Cluster) (*clusterap
 			//	UID:               uuid.NewUUID(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 			Labels: map[string]string{
-				"set":             "master",
-				api.RoleMasterKey: "",
+				//ref: https://github.com/kubernetes-sigs/cluster-api-provider-aws/blob/94a3a3abc7b1ebdd88ea89889347f5e644e160cf/pkg/cloud/aws/actuators/machine_scope.go#L90-L93
+				//ref: https://github.com/kubernetes-sigs/cluster-api-provider-aws/blob/94a3a3abc7b1ebdd88ea89889347f5e644e160cf/pkg/cloud/aws/actuators/machine/actuator.go#L89-L92
+				"set":                              "controlplane",
+				api.RoleMasterKey:                  "",
+				clusterapi.MachineClusterLabelName: cluster.Name,
 			},
 		},
 		Spec: clusterapi.MachineSpec{
@@ -125,7 +119,9 @@ func CreateMasterMachines(ctx context.Context, cluster *api.Cluster) (*clusterap
 			},
 		},
 	}
-	api.AssignTypeKind(machine)
+	if err := api.AssignTypeKind(machine); err != nil {
+		return nil, err
+	}
 
 	return machine, nil
 }
@@ -145,11 +141,6 @@ func CreateMachineSet(ctx context.Context, cluster *api.Cluster, owner, role, sk
 		return err
 	}
 
-	/*spec.Type = nodeType
-	if nodeType == api.NodeTypeSpot {
-		spec.SpotPriceMax = spotPriceMax
-	}*/
-
 	ig := clusterapi.MachineSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              strings.Replace(sku, "_", "-", -1) + "-pool",
@@ -166,10 +157,11 @@ func CreateMachineSet(ctx context.Context, cluster *api.Cluster, owner, role, sk
 			Template: clusterapi.MachineTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						api.PharmerCluster:  cluster.Name,
-						api.RoleNodeKey:     "",
-						api.MachineSlecetor: sku,
-						"set":               "node",
+						api.PharmerCluster:                 cluster.Name,
+						api.RoleNodeKey:                    "",
+						api.MachineSlecetor:                sku,
+						"set":                              "node",
+						clusterapi.MachineClusterLabelName: cluster.Name, //ref:https://github.com/kubernetes-sigs/cluster-api/blob/master/pkg/controller/machine/controller.go#L229-L232
 					},
 					CreationTimestamp: metav1.Time{Time: time.Now()},
 				},
@@ -201,32 +193,6 @@ func Delete(ctx context.Context, name string, owner string) (*api.Cluster, error
 	cluster.Status.Phase = api.ClusterDeleting
 
 	return Store(ctx).Owner(owner).Clusters().Update(cluster)
-}
-
-func DeleteNG(ctx context.Context, clusterName, nodeGroupName string, owner string) error {
-	if clusterName == "" {
-		return errors.New("missing cluster name")
-	}
-	if nodeGroupName == "" {
-		return errors.New("missing nodegroup name")
-	}
-
-	if _, err := Store(ctx).Owner(owner).Clusters().Get(clusterName); err != nil {
-		return errors.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
-	}
-
-	nodeGroup, err := Store(ctx).Owner(owner).NodeGroups(clusterName).Get(nodeGroupName)
-	if err != nil {
-		return errors.Errorf(`nodegroup not found`)
-	}
-
-	//	if !nodeGroup.IsMaster() {
-	//		nodeGroup.DeletionTimestamp = &metav1.Time{Time: time.Now()}
-	_, err = Store(ctx).Owner(owner).NodeGroups(clusterName).Update(nodeGroup)
-	return err
-	//	}
-
-	return nil
 }
 
 func DeleteMachineSet(ctx context.Context, clusterName, setName, owner string) error {

@@ -18,7 +18,7 @@ import:
 - package: github.com/appscode/mergo
   version: master
 - package: github.com/aws/aws-sdk-go
-  version: v1.14.12
+  version: v1.16.30
 - package: github.com/cenkalti/backoff
   version: v1.1.0
 - package: github.com/digitalocean/godo

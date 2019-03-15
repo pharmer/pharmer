@@ -21,6 +21,11 @@ const (
 	EKSProviderGroupName  = "eksproviderconfig"
 	EKSProviderKind       = "EKSProviderConfig"
 	EKSProviderApiVersion = "v1alpha1"
+
+	AWSProviderGroupName   = "awsprovider"
+	AWSProviderApiVersion  = "v1alpha1"
+	AWSClusterProviderKind = "AWSClusterProviderSpec"
+	AWSMachineProviderKind = "AWSMachineProviderSpec"
 )
 
 // DigitalOceanMachineProviderConfig contains Config for DigitalOcean machines.
