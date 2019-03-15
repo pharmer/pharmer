@@ -137,6 +137,10 @@ type PacketCloudConfig struct {
 	Zone    string `json:"zone,omitempty" protobuf:"bytes,3,opt,name=zone"`
 }
 
+type VultrCloudConfig struct {
+	Token string `json:"token,omitempty" protobuf:"bytes,1,opt,name=token"`
+}
+
 // ClusterPhase is a label for the condition of a Cluster at the current time.
 type ClusterPhase string
 

@@ -9,4 +9,5 @@ import (
 	_ "github.com/pharmer/pharmer/cloud/providers/gce"
 	_ "github.com/pharmer/pharmer/cloud/providers/gke"
 	_ "github.com/pharmer/pharmer/cloud/providers/packet"
+	_ "github.com/pharmer/pharmer/cloud/providers/vultr"
 )

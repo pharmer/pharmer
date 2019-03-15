@@ -4,9 +4,11 @@ import (
 	"context"
 	"sync"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type ClusterManager struct {
@@ -23,7 +25,8 @@ type ClusterManager struct {
 var _ Interface = &ClusterManager{}
 
 const (
-	UID = "vultr"
+	UID      = "vultr"
+	Recorder = "vultr-controller"
 )
 
 func init() {
@@ -36,6 +39,18 @@ func New(ctx context.Context) Interface {
 
 type paramK8sClient struct{}
 
+func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
+	ma := NewMachineActuator(MachineActuatorParams{
+		Ctx:           cm.ctx,
+		EventRecorder: mgr.GetRecorder(Recorder),
+		Client:        mgr.GetClient(),
+		Scheme:        mgr.GetScheme(),
+		Owner:         cm.owner,
+	})
+	common.RegisterClusterProvisioner(UID, ma)
+	return nil
+}
+
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 	cm.m.Lock()
 	defer cm.m.Unlock()
@@ -43,6 +58,13 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 	v := cm.ctx.Value(paramK8sClient{})
 	if kc, ok := v.(kubernetes.Interface); ok && kc != nil {
 		return kc, nil
+	}
+
+	var err error
+
+	cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner)
+	if err != nil {
+		return nil, err
 	}
 
 	kc, err := NewAdminClient(cm.ctx, cm.cluster)

@@ -8,11 +8,13 @@ import (
 
 	gv "github.com/JamesClonk/vultr/lib"
 	. "github.com/appscode/go/context"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type cloudConnector struct {
@@ -22,16 +24,16 @@ type cloudConnector struct {
 	namer   namer
 }
 
-var _ InstanceManager = &cloudConnector{}
+//var _ InstanceManager = &cloudConnector{}
 
-func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.CredentialName)
+func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
+	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
 	}
 	typed := credential.Vultr{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.ClusterConfig().CredentialName)
 	}
 
 	return &cloudConnector{
@@ -42,14 +44,35 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 	}, nil
 }
 
-func (conn *cloudConnector) detectInstanceImage() error {
+func PrepareCloud(ctx context.Context, clusterName string, owner string) (*cloudConnector, error) {
+	var err error
+	var conn *cloudConnector
+	cluster, err := Store(ctx).Owner(owner).Clusters().Get(clusterName)
+	if err != nil {
+		return conn, fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
+	}
+
+	if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
+		return conn, err
+	}
+
+	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
+		return conn, err
+	}
+	if conn, err = NewConnector(ctx, cluster, owner); err != nil {
+		return nil, err
+	}
+	return conn, nil
+}
+
+func (conn *cloudConnector) detectInstanceImage(owner string) error {
 	oses, err := conn.client.GetOS()
 	if err != nil {
 		return errors.Wrap(err, ID(conn.ctx))
 	}
 	for _, os := range oses {
 		if os.Arch == "x64" && os.Family == "ubuntu" && strings.HasPrefix(os.Name, "Ubuntu 16.04 x64") {
-			conn.cluster.Spec.Cloud.InstanceImage = strconv.Itoa(os.ID)
+			conn.cluster.ClusterConfig().Cloud.InstanceImage = strconv.Itoa(os.ID)
 			return nil
 		}
 	}
@@ -88,7 +111,7 @@ func (conn *cloudConnector) getPublicKey() (bool, string, error) {
 		return false, "", err
 	}
 	for _, key := range keys {
-		if key.Name == conn.cluster.Spec.Cloud.SSHKeyName {
+		if key.Name == conn.cluster.ClusterConfig().Cloud.SSHKeyName {
 			return true, key.ID, nil
 		}
 	}
@@ -97,12 +120,12 @@ func (conn *cloudConnector) getPublicKey() (bool, string, error) {
 
 func (conn *cloudConnector) importPublicKey() error {
 	Logger(conn.ctx).Infof("Adding SSH public key")
-	resp, err := conn.client.CreateSSHKey(conn.cluster.Spec.Cloud.SSHKeyName, string(SSHKey(conn.ctx).PublicKey))
+	resp, err := conn.client.CreateSSHKey(conn.cluster.ClusterConfig().Cloud.SSHKeyName, string(SSHKey(conn.ctx).PublicKey))
 	if err != nil {
 		return errors.Wrap(err, ID(conn.ctx))
 	}
 	conn.cluster.Status.Cloud.SShKeyExternalID = resp.ID
-	Logger(conn.ctx).Infof("New ssh key with name %v and id %v created", conn.cluster.Spec.Cloud.SSHKeyName, resp.ID)
+	Logger(conn.ctx).Infof("New ssh key with name %v and id %v created", conn.cluster.ClusterConfig().Cloud.SSHKeyName, resp.ID)
 	return nil
 }
 
@@ -135,7 +158,7 @@ func (conn *cloudConnector) getReserveIP(ip string) (bool, error) {
 }
 
 func (conn *cloudConnector) createReserveIP() (string, error) {
-	regionID, err := strconv.Atoi(conn.cluster.Spec.Cloud.Zone)
+	regionID, err := strconv.Atoi(conn.cluster.ClusterConfig().Cloud.Zone)
 	if err != nil {
 		return "", err
 	}
@@ -174,8 +197,13 @@ func (conn *cloudConnector) releaseReservedIP(ip string) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) getStartupScriptID(ng *api.NodeGroup) (int, error) {
-	scriptName := conn.namer.StartupScriptName(ng.Name, ng.Role())
+func (conn *cloudConnector) getStartupScriptID(machine *clusterv1.Machine) (int, error) {
+	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
+	if err != nil {
+		return 0, err
+	}
+
+	scriptName := conn.namer.StartupScriptName(machine.Name, string(machineConfig.Roles[0]))
 
 	scripts, err := conn.client.GetStartupScripts()
 	if err != nil {
@@ -193,13 +221,16 @@ func (conn *cloudConnector) getStartupScriptID(ng *api.NodeGroup) (int, error) {
 	return 0, ErrNotFound
 }
 
-func (conn *cloudConnector) createOrUpdateStartupScript(ng *api.NodeGroup, token string) (int, error) {
-	scriptName := conn.namer.StartupScriptName(ng.Name, ng.Role())
-	script, err := conn.renderStartupScript(ng, token)
+func (conn *cloudConnector) createOrUpdateStartupScript(machine *clusterv1.Machine, token string, owner string) (int, error) {
+	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return 0, err
 	}
-	fmt.Println(script)
+	scriptName := conn.namer.StartupScriptName(machine.Name, string(machineConfig.Roles[0]))
+	script, err := conn.renderStartupScript(conn.cluster, machine, token, owner)
+	if err != nil {
+		return 0, err
+	}
 
 	scripts, err := conn.client.GetStartupScripts()
 	if err != nil {
@@ -216,7 +247,7 @@ func (conn *cloudConnector) createOrUpdateStartupScript(ng *api.NodeGroup, token
 		}
 	}
 
-	Logger(conn.ctx).Infof("creating StackScript for NodeGroup %v role %v", ng.Name, ng.Role())
+	Logger(conn.ctx).Infof("creating StackScript for NodeGroup %v role %v", machine.Name, machineConfig.Roles[0])
 	resp, err := conn.client.CreateStartupScript(scriptName, script, "boot")
 	if err != nil {
 		return 0, err
@@ -224,8 +255,8 @@ func (conn *cloudConnector) createOrUpdateStartupScript(ng *api.NodeGroup, token
 	return strconv.Atoi(resp.ID)
 }
 
-func (conn *cloudConnector) deleteStartupScript(ng *api.NodeGroup) error {
-	scriptName := conn.namer.StartupScriptName(ng.Name, ng.Role())
+func (conn *cloudConnector) deleteStartupScript(name string, roles string) error {
+	scriptName := conn.namer.StartupScriptName(name, roles)
 	scripts, err := conn.client.GetStartupScripts()
 	if err != nil {
 		return err
@@ -240,16 +271,20 @@ func (conn *cloudConnector) deleteStartupScript(ng *api.NodeGroup) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
-	regionID, err := strconv.Atoi(conn.cluster.Spec.Cloud.Zone)
+func (conn *cloudConnector) CreateInstance(name, token string, machine *clusterv1.Machine, owner string) (*api.NodeInfo, error) {
+	regionID, err := strconv.Atoi(conn.cluster.ClusterConfig().Cloud.Zone)
 	if err != nil {
 		return nil, err
 	}
-	planID, err := strconv.Atoi(ng.Spec.Template.Spec.SKU)
+	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return nil, err
 	}
-	osID, err := strconv.Atoi(conn.cluster.Spec.Cloud.InstanceImage)
+	planID, err := strconv.Atoi(machineConfig.Plan)
+	if err != nil {
+		return nil, err
+	}
+	osID, err := strconv.Atoi(conn.cluster.ClusterConfig().Cloud.InstanceImage)
 	if err != nil {
 		return nil, err
 	}
@@ -258,8 +293,12 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	if err != nil {
 		return nil, err
 	}
+	_, err = conn.createOrUpdateStartupScript(machine, token, owner)
+	if err != nil {
+		return nil, err
+	}
 
-	scriptID, err := conn.getStartupScriptID(ng)
+	scriptID, err := conn.getStartupScriptID(machine)
 	if err != nil {
 		return nil, err
 	}
@@ -312,11 +351,10 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	return nil
 }
 
-// dropletIDFromProviderID returns a droplet's ID from providerID.
+// serverIDFromProviderID returns a server's ID from providerID.
 //
 // The providerID spec should be retrievable from the Kubernetes
-// node object. The expected format is: digitalocean://droplet-id
-// ref: https://github.com/digitalocean/digitalocean-cloud-controller-manager/blob/f9a9856e99c9d382db3777d678f29d85dea25e91/do/droplets.go#L211
+// node object. The expected format is: vultr://server-id
 func serverIDFromProviderID(providerID string) (string, error) {
 	if providerID == "" {
 		return "", errors.New("providerID cannot be empty string")
@@ -324,15 +362,33 @@ func serverIDFromProviderID(providerID string) (string, error) {
 
 	split := strings.Split(providerID, "/")
 	if len(split) != 3 {
-		return "", errors.Errorf("unexpected providerID format: %s, format should be: digitalocean://12345", providerID)
+		return "", errors.Errorf("unexpected providerID format: %s, format should be: vultr://12345", providerID)
 	}
 
 	// since split[0] is actually "digitalocean:"
 	if strings.TrimSuffix(split[0], ":") != UID {
-		return "", errors.Errorf("provider name from providerID should be digitalocean: %s", providerID)
+		return "", errors.Errorf("provider name from providerID should be vultr: %s", providerID)
 	}
 
 	return split[2], nil
+}
+
+func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*gv.Server, error) {
+	servers, err := conn.client.GetServers()
+	if err != nil {
+		return nil, err
+	}
+	for _, server := range servers {
+		if server.Name == machine.Name {
+			return &server, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no server found with %v name", machine.Name)
+}
+
+func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data map[string]string) error {
+	return nil
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
