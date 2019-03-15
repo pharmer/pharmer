@@ -1,77 +1,88 @@
 package packet
 
 import (
+	"encoding/json"
 	"net"
 	"strings"
-	"time"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
+	packetconfig "github.com/pharmer/pharmer/apis/v1beta1/packet"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/data/files"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
-
-func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
-	if sku == "" {
-		ins, err := files.GetInstanceByZoneCPU(cluster.Spec.Cloud.CloudProvider, cluster.Spec.Cloud.Zone, 2)
-		if err != nil {
-			return api.NodeSpec{}, err
-		}
-		sku = ins.SKU
-	}
-	return api.NodeSpec{
-		SKU: sku,
-		//	DiskType:      "gp2",
-		//	DiskSize:      100,
-	}, nil
-}
 
 func (cm *ClusterManager) SetOwner(owner string) {
 	cm.owner = owner
 }
 
-func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+
+	if sku == "" {
+		ins, err := files.GetInstanceByZoneCPU(cluster.ClusterConfig().Cloud.CloudProvider, cluster.ClusterConfig().Cloud.Zone, 2)
+		if err != nil {
+			return clusterapi.ProviderSpec{}, err
+		}
+		sku = ins.SKU
+	}
+	//config := cluster.Spec.Config
+	spec := &packetconfig.PacketMachineProviderConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: packetconfig.PacketProviderGroupName + "/" + packetconfig.PacketProviderApiVersion,
+			Kind:       packetconfig.PacketProviderKind,
+		},
+		Plan:         sku,
+		SpotInstance: "Regular",
+	}
+
+	providerSpecValue, err := json.Marshal(spec)
+	if err != nil {
+		return clusterapi.ProviderSpec{}, err
+	}
+
+	return clusterapi.ProviderSpec{
+		Value: &runtime.RawExtension{
+			Raw: providerSpecValue,
+		},
+	}, nil
+}
+
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
 	n := namer{cluster: cluster}
 
-	// Init object meta
-	cluster.ObjectMeta.UID = uuid.NewUUID()
-	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
-	cluster.ObjectMeta.Generation = time.Now().UnixNano()
-	api.AssignTypeKind(cluster)
-
+	if err := api.AssignTypeKind(cluster); err != nil {
+		return err
+	}
+	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
+		return err
+	}
 	// Init spec
-	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
-	cluster.Spec.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
-	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
-	cluster.Spec.Cloud.CCMCredentialName = cluster.Spec.CredentialName
-	cluster.Spec.Cloud.InstanceImage = "ubuntu_16_04" // 1b9b78e3-de68-466e-ba00-f2123e89c112
-	cluster.Spec.Networking.SetDefaults()
-	cluster.Spec.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
-	cluster.Spec.APIServerExtraArgs = map[string]string{
+	cluster.ClusterConfig().Cloud.Region = cluster.ClusterConfig().Cloud.Zone
+	cluster.ClusterConfig().Cloud.SSHKeyName = n.GenSSHKeyExternalID()
+	//cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
+	cluster.ClusterConfig().Cloud.CCMCredentialName = cluster.ClusterConfig().CredentialName
+	cluster.ClusterConfig().Cloud.InstanceImage = "ubuntu_16_04" // 1b9b78e3-de68-466e-ba00-f2123e89c112
+	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
+	cluster.ClusterConfig().APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
+	cluster.ClusterConfig().APIServerExtraArgs = map[string]string{
 		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
 		"kubelet-preferred-address-types": strings.Join([]string{
 			string(core.NodeInternalIP),
 			string(core.NodeExternalIP),
 		}, ","),
 	}
-	if cluster.IsMinorVersion("1.9") {
-		cluster.Spec.APIServerExtraArgs["admission-control"] = api.DefaultV19AdmissionControl
-	} else if cluster.IsMinorVersion("1.11") {
-		cluster.Spec.APIServerExtraArgs["enable-admission-plugins"] = api.DefaultV111AdmissionControl
-		cluster.Spec.APIServerExtraArgs["runtime-config"] = "admissionregistration.k8s.io/v1alpha1"
-	}
 
 	// Init status
-	cluster.Status = api.ClusterStatus{
+	cluster.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,
 	}
-	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
+	cluster.SetNetworkingDefaults("calico")
 
-	return nil
+	return packetconfig.SetPacketClusterProviderConfig(cluster.Spec.ClusterAPI)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {

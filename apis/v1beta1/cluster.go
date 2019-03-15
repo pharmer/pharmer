@@ -131,6 +131,12 @@ type LinodeSpec struct {
 	KernelId     int64  `json:"kernelId,omitempty" protobuf:"varint,2,opt,name=kernelId"`
 }
 
+type PacketCloudConfig struct {
+	Project string `json:"project,omitempty" protobuf:"bytes,1,opt,name=project"`
+	ApiKey  string `json:"apiKey,omitempty" protobuf:"bytes,2,opt,name=apiKey"`
+	Zone    string `json:"zone,omitempty" protobuf:"bytes,3,opt,name=zone"`
+}
+
 // ClusterPhase is a label for the condition of a Cluster at the current time.
 type ClusterPhase string
 

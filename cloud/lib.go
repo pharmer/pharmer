@@ -149,8 +149,8 @@ func CreateMachineSet(ctx context.Context, cluster *api.Cluster, owner, role, sk
 		Spec: clusterapi.MachineSetSpec{
 			Selector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					api.PharmerCluster:  cluster.Name,
-					api.MachineSlecetor: sku,
+					clusterapi.MachineClusterLabelName: cluster.Name,
+					api.MachineSlecetor:                sku,
 				},
 			},
 			Replicas: Int32P(count),
