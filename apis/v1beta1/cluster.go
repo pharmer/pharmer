@@ -128,7 +128,12 @@ type AzureSpec struct {
 type LinodeSpec struct {
 	// Linode
 	RootPassword string `json:"rootPassword,omitempty" protobuf:"bytes,1,opt,name=rootPassword"`
-	KernelId     int64  `json:"kernelId,omitempty" protobuf:"varint,2,opt,name=kernelId"`
+	KernelId     string `json:"kernelId,omitempty" protobuf:"varint,2,opt,name=kernelId"`
+}
+
+type LinodeCloudConfig struct {
+	Token string `json:"token,omitempty" protobuf:"bytes,1,opt,name=token"`
+	Zone  string `json:"zone,omitempty" protobuf:"bytes,2,opt,name=zone"`
 }
 
 type PacketCloudConfig struct {

@@ -1,36 +1,26 @@
-package digitalocean
+package linode
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
 
+	"github.com/ghodss/yaml"
+	linodeconfig "github.com/pharmer/pharmer/apis/v1beta1/linode"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/machinesetup"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/machine"
-	"sigs.k8s.io/cluster-api/pkg/util"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	//	"k8s.io/client-go/kubernetes"
-	"fmt"
-
-	"github.com/ghodss/yaml"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	//kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"sigs.k8s.io/cluster-api/pkg/kubeadm"
+	"sigs.k8s.io/cluster-api/pkg/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	NameAnnotationKey = "droplet-name"
-	IDAnnotationKey   = "droplet-id"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 func init() {
@@ -47,11 +37,11 @@ func init() {
 	})
 }
 
-type DOClientKubeadm interface {
+type LinodeClientKubeadm interface {
 	TokenCreate(params kubeadm.TokenCreateParams) (string, error)
 }
 
-type DOClientMachineSetupConfigGetter interface {
+type LinodeClientMachineSetupConfigGetter interface {
 	GetMachineSetupConfig() (machinesetup.MachineSetupConfig, error)
 }
 
@@ -59,8 +49,8 @@ type MachineActuator struct {
 	ctx                      context.Context
 	conn                     *cloudConnector
 	client                   client.Client
-	kubeadm                  DOClientKubeadm
-	machineSetupConfigGetter DOClientMachineSetupConfigGetter
+	kubeadm                  LinodeClientKubeadm
+	machineSetupConfigGetter LinodeClientMachineSetupConfigGetter
 	eventRecorder            record.EventRecorder
 	scheme                   *runtime.Scheme
 
@@ -69,14 +59,12 @@ type MachineActuator struct {
 
 type MachineActuatorParams struct {
 	Ctx            context.Context
-	Kubeadm        DOClientKubeadm
+	Kubeadm        LinodeClientKubeadm
 	Client         client.Client
 	CloudConnector *cloudConnector
 	EventRecorder  record.EventRecorder
 	Scheme         *runtime.Scheme
 	Owner          string
-	//MachineSetupConfigGetter DOClientMachineSetupConfigGetter
-
 }
 
 func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
@@ -92,18 +80,15 @@ func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
 	}
 }
 
-func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (do *MachineActuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	Logger(do.ctx).Infoln("call for creating machine", machine.Name)
-	/*if do.machineSetupConfigGetter == nil {
-		return errors.New("a valid machineSetupConfigGetter is required")
-	}*/
 	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return fmt.Errorf("error decoding provided machineConfig: %v", err)
 	}
 
-	if err := do.validateMachine(machineConfig); err != nil {
-		return err
+	if verr := do.validateMachine(machineConfig); err != nil {
+		return verr
 	}
 
 	if do.conn, err = PrepareCloud(do.ctx, cluster.Name, do.owner); err != nil {
@@ -124,18 +109,9 @@ func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster,
 		return err
 	}
 
-	instance, err := do.conn.CreateInstance(do.conn.cluster, machine, token)
+	_, err = do.conn.CreateInstance(machine.Name, token, machine, do.owner)
 	if err != nil {
 		return err
-	}
-
-	if util.IsControlPlaneMachine(machine) {
-		if instance.PublicIP != "" {
-			cluster.Status.APIEndpoints = append(cluster.Status.APIEndpoints, clusterv1.APIEndpoint{
-				Host: instance.PublicIP,
-				Port: 6443, //int(cm.cluster.Spec.API.BindPort),
-			})
-		}
 	}
 
 	if do.client != nil {
@@ -145,15 +121,15 @@ func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster,
 	return nil
 }
 
-func (do *MachineActuator) validateMachine(providerConfig *api.DigitalOceanMachineProviderConfig) error {
+func (do *MachineActuator) validateMachine(providerConfig *linodeconfig.LinodeMachineProviderConfig) error {
 	if len(providerConfig.Image) == 0 {
 		return errors.New("image slug must be provided")
 	}
 	if len(providerConfig.Region) == 0 {
 		return errors.New("region must be provided")
 	}
-	if len(providerConfig.Size) == 0 {
-		return errors.New("size must be provided")
+	if len(providerConfig.Type) == 0 {
+		return errors.New("type must be provided")
 	}
 
 	return nil
@@ -172,8 +148,8 @@ func (do *MachineActuator) getKubeadmToken() (string, error) {
 	return strings.TrimSpace(token), nil
 }
 
-func machineProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*api.DigitalOceanMachineProviderConfig, error) {
-	var config api.DigitalOceanMachineProviderConfig
+func machineProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*linodeconfig.LinodeMachineProviderConfig, error) {
+	var config linodeconfig.LinodeMachineProviderConfig
 	if err := yaml.Unmarshal(providerSpec.Value.Raw, &config); err != nil {
 		return nil, err
 	}
@@ -198,9 +174,9 @@ func (do *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster,
 		fmt.Println("Skipped deleting a VM that is already deleted.\n")
 		return nil
 	}
-	dropletId := fmt.Sprintf("digitalocean://%v", instance.ID)
+	instanceID := fmt.Sprintf("linode://%v", instance.ID)
 
-	if err = do.conn.DeleteInstanceByProviderID(dropletId); err != nil {
+	if err = do.conn.DeleteInstanceByProviderID(instanceID); err != nil {
 		fmt.Println("errror on deleting %v", err)
 	}
 
@@ -242,7 +218,7 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		return errors.New("status annotation not set")
 	}
 
-	pharmerCluster, err := Store(do.ctx).Clusters().Get(cluster.Name)
+	pharmerCluster, err := Store(do.ctx).Owner(do.owner).Clusters().Get(cluster.Name)
 	if err != nil {
 		return err
 	}
@@ -256,6 +232,7 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 	if err != nil {
 		return err
 	}
+
 	upm := NewUpgradeManager(do.ctx, kc, do.conn.cluster, do.owner)
 	if util.IsControlPlaneMachine(currentMachine) {
 		if currentMachine.Spec.Versions.ControlPlane != goalMachine.Spec.Versions.ControlPlane {
@@ -275,7 +252,7 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 }
 
 func (do *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	fmt.Println("call for checking machine existence", machine.Name, "owner", do.owner)
+	fmt.Println("call for checking machine existence", machine.Name)
 	clusterName := cluster.Name
 	if _, found := machine.Labels[clusterv1.MachineClusterLabelName]; found {
 		clusterName = machine.Labels[clusterv1.MachineClusterLabelName]
@@ -285,15 +262,12 @@ func (do *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluste
 		return false, err
 	}
 	i, err := do.conn.instanceIfExists(machine)
-	fmt.Println(err)
 	if err != nil {
 		return false, nil
 	}
+
 	if util.IsControlPlaneMachine(machine) {
-		publicIP, err := i.PublicIPv4()
-		if err != nil {
-			return false, err
-		}
+		publicIP := i.IPv4[0].String()
 		if publicIP != "" {
 			cluster.Status.APIEndpoints = []clusterv1.APIEndpoint{
 				{
@@ -302,7 +276,7 @@ func (do *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluste
 				},
 			}
 		}
-		if err = api.SetDigitalOceanClusterProviderStatus(cluster); err != nil {
+		if err = linodeconfig.SetLinodeClusterProviderStatus(cluster); err != nil {
 			return false, err
 		}
 		if err = do.client.Status().Update(ctx, cluster); err != nil {
@@ -314,15 +288,12 @@ func (do *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluste
 }
 
 func (do *MachineActuator) updateAnnotations(machine *clusterv1.Machine) error {
-	//	config, err := cloud.GetProviderconfig(cm.codecFactory, machine.Spec.ClusterConfig)
-
 	name := machine.ObjectMeta.Name
 	zone := do.conn.cluster.Spec.Config.Cloud.Zone
 
 	if machine.ObjectMeta.Annotations == nil {
 		machine.ObjectMeta.Annotations = make(map[string]string)
 	}
-	//machine.ObjectMeta.Annotations[ProjectAnnotationKey] = project
 	machine.ObjectMeta.Annotations["zone"] = zone
 	machine.ObjectMeta.Annotations["name"] = name
 	err := do.client.Update(context.Background(), machine)
@@ -345,7 +316,7 @@ func (do *MachineActuator) requiresUpdate(a *clusterv1.Machine, b *clusterv1.Mac
 		a.ObjectMeta.Name != b.ObjectMeta.Name
 }
 
-func getKubeadm(params MachineActuatorParams) DOClientKubeadm {
+func getKubeadm(params MachineActuatorParams) LinodeClientKubeadm {
 	if params.Kubeadm == nil {
 		return kubeadm.New()
 	}

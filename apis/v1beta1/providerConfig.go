@@ -80,13 +80,36 @@ func (c *Cluster) SetDigitalOceanProviderConfig(cluster *clusterapi.Cluster, con
 	return nil
 }
 
+type DigitalOceanClusterProviderStatus struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+}
+
+func SetDigitalOceanClusterProviderStatus(cluster *clusterapi.Cluster) error {
+	conf := &DigitalOceanClusterProviderStatus{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: DigitalOceanProviderGroupName + "/" + DigitalOceanProviderApiVersion,
+			Kind:       DigitalOceanProviderKind,
+		},
+	}
+	bytes, err := json.Marshal(conf)
+	if err != nil {
+		return err
+
+	}
+	cluster.Status.ProviderStatus = &runtime.RawExtension{
+		Raw: bytes,
+	}
+	return nil
+}
+
 type GKEMachineProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Roles []MachineRole `json:"roles,omitempty"`
 
-	Zone        string `json:"zone"`
+	Zone        string `json:"zone,omitempty"`
 	MachineType string `json:"machineType"`
 
 	// The name of the OS to be installed on the machine.

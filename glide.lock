@@ -1,5 +1,5 @@
-hash: 72d2c902174c500f77deb20aa9d14096b83c89738e0956df3ff4b1b1ed2dd763
-updated: 2019-03-15T14:38:26.844589188+06:00
+hash: 1110e46f5e48c876d3bf03056aa63d058aa4741d27aa94f48ccc64894bbb7eb4
+updated: 2019-03-15T15:19:10.809198833+06:00
 imports:
 - name: cloud.google.com/go
   version: 74b12019e2aa53ec27882158f59192d7cd6d1998
@@ -40,7 +40,7 @@ imports:
 - name: github.com/appscode/mergo
   version: 9f23e2d6bd2a77f959b2bf6acdbefd708a83a4a4
 - name: github.com/aws/aws-sdk-go
-  version: fde4ded7becdeae4d26bf1212916aabba79349b4
+  version: 130e7e7f5cfa00e267b884bd2772ae986f9e8273
   subpackages:
   - aws
   - aws/awserr
@@ -51,6 +51,7 @@ imports:
   - aws/credentials
   - aws/credentials/ec2rolecreds
   - aws/credentials/endpointcreds
+  - aws/credentials/processcreds
   - aws/credentials/stscreds
   - aws/csm
   - aws/defaults
@@ -59,8 +60,11 @@ imports:
   - aws/request
   - aws/session
   - aws/signer/v4
+  - internal/ini
+  - internal/s3err
   - internal/sdkio
   - internal/sdkrand
+  - internal/sdkuri
   - internal/shareddefaults
   - private/protocol
   - private/protocol/ec2query
@@ -77,6 +81,7 @@ imports:
   - service/autoscaling
   - service/cloudformation
   - service/ec2
+  - service/ec2/ec2iface
   - service/eks
   - service/elb
   - service/iam
@@ -137,7 +142,7 @@ imports:
   subpackages:
   - md2man
 - name: github.com/creack/goselect
-  version: 40085cf5fd629ccd88dc328895f1f137d09a1de4
+  version: 58854f77ee8d858ce751b0a9bcc5533fef7bfa9e
 - name: github.com/davecgh/go-spew
   version: 8991bc29aa16c548c550c7ff78260e27b9ab7c73
   subpackages:
@@ -157,7 +162,7 @@ imports:
   subpackages:
   - spdy
 - name: github.com/dustin/go-humanize
-  version: f3565c9525600a911af3bd34f8b535ea81b2a9e0
+  version: 9f541cc9db5d55bce703bd99987c9d5cb8eea45e
 - name: github.com/evanphx/json-patch
   version: 36442dbdb585210f8d5a1b45e67aa323c197d5c4
 - name: github.com/exponent-io/jsonpath
@@ -165,11 +170,9 @@ imports:
 - name: github.com/fatih/color
   version: 9aae6aaa22315390f03959adca2c4d395b02fcef
 - name: github.com/fsnotify/fsnotify
-  version: f12c6236fe7b5cf6bcf30e5935d08cb079d78334
+  version: 1485a34d5d5723fea214f5710708e19a831720e4
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
-- name: github.com/go-ini/ini
-  version: 300e940a926eb277d3901b20bdfcc54928ad3642
 - name: github.com/go-logr/logr
   version: 9fb12b3b21c5415d16ac18dc5cd42c1cfdd40c4e
 - name: github.com/go-logr/zapr
@@ -196,7 +199,7 @@ imports:
   - protoc-gen-gogo/descriptor
   - sortkeys
 - name: github.com/golang/glog
-  version: 44145f04b68cf362d9c4df2182967c2275eaefed
+  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/golang/groupcache
   version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
   subpackages:
@@ -214,7 +217,7 @@ imports:
 - name: github.com/google/btree
   version: 7d79101e329e5a3adf994758c578dab82b90c017
 - name: github.com/google/go-querystring
-  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
+  version: 44c6ddd0a2342c386950e880b658017258da92fc
   subpackages:
   - query
 - name: github.com/google/gofuzz
@@ -303,9 +306,9 @@ imports:
 - name: github.com/mattbaird/jsonpatch
   version: 81af80346b1a01caae0cbc27fd3c1ba5b11e189f
 - name: github.com/mattn/go-colorable
-  version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
+  version: 3a70a971f94a22f2fa562ffcc7a0eb45f5daf045
 - name: github.com/mattn/go-isatty
-  version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
+  version: c2a7a6ca930a4cd0bc33a3f298eb71960732a3a7
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
@@ -317,7 +320,7 @@ imports:
 - name: github.com/mitchellh/go-wordwrap
   version: ad45545899c7b13c020ea92b2072220eefad42b8
 - name: github.com/moby/moby
-  version: 8422e6f6fa04eb8ee805a98067ee490a86ce3b98
+  version: 05e7d000f2fc3ad0df1880cdeb98b76778a30b69
   subpackages:
   - pkg/term
 - name: github.com/modern-go/concurrent
@@ -325,7 +328,7 @@ imports:
 - name: github.com/modern-go/reflect2
   version: 94122c33edd36123c84d5368cfb2b69df93a0ec8
 - name: github.com/moul/anonuuid
-  version: 609b752a95effbbef26d134ac18ed6f57e01b98e
+  version: 7e821d3418404ca3498d0b1f0a4256e9c7df069c
 - name: github.com/moul/gotty-client
   version: c1b82f1af3ebb2febba268415cb1c90686078f80
 - name: github.com/nats-io/go-nats
@@ -412,7 +415,7 @@ imports:
 - name: github.com/renier/xmlrpc
   version: ce4a1a486c03a3c6e1816df25b8c559d1879d380
 - name: github.com/renstrom/fuzzysearch
-  version: 2d205ac6ec17a839a94bdbfd16d2fa6c6dada2e0
+  version: 9704abcb5729ef17e4316e31439d7fcece8dac5f
   subpackages:
   - fuzzy
 - name: github.com/russross/blackfriday
@@ -434,7 +437,7 @@ imports:
   subpackages:
   - open
 - name: github.com/softlayer/softlayer-go
-  version: 99f42e8c8395c6728bb4eefb210071e75988d3fe
+  version: a40f6fdd659fe88efd2020e932905ceb4d496db7
   subpackages:
   - config
   - datatypes
@@ -491,7 +494,7 @@ imports:
   - jws
   - jwt
 - name: golang.org/x/sync
-  version: 42b317875d0fa942474b76e1b46a6060d720ae6e
+  version: e225da77a7e68af35c70ccbf71af2b83e6acac3c
   subpackages:
   - errgroup
 - name: golang.org/x/sys
@@ -541,7 +544,7 @@ imports:
   - replicapoolupdater/v1beta1
   - storage/v1
 - name: google.golang.org/appengine
-  version: 4f7eeb5305a4ba1966344836ba4af9996b7b4e05
+  version: e9657d882bb81064595ca3b56cbe2546bbabf7b1
   subpackages:
   - internal
   - internal/app_identity

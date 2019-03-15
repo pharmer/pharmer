@@ -9,12 +9,16 @@ import (
 
 	"github.com/appscode/go/types"
 	"github.com/linode/linodego"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
+	core "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type cloudConnector struct {
@@ -24,14 +28,14 @@ type cloudConnector struct {
 	namer   namer
 }
 
-func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.CredentialName)
+func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
+	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
 	}
 	typed := credential.Linode{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Errorf("credential %s is invalid. Reason: %v", cluster.ClusterConfig().CredentialName, err)
 	}
 
 	namer := namer{cluster: cluster}
@@ -44,14 +48,35 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		},
 	}
 
-	linodeClient := linodego.NewClient(oauth2Client)
+	c := linodego.NewClient(oauth2Client)
 
 	return &cloudConnector{
 		ctx:     ctx,
 		cluster: cluster,
 		namer:   namer,
-		client:  &linodeClient,
+		client:  &c,
 	}, nil
+}
+
+func PrepareCloud(ctx context.Context, clusterName string, owner string) (*cloudConnector, error) {
+	var err error
+	var conn *cloudConnector
+	cluster, err := Store(ctx).Owner(owner).Clusters().Get(clusterName)
+	if err != nil {
+		return conn, fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
+	}
+
+	if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
+		return conn, err
+	}
+
+	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
+		return conn, err
+	}
+	if conn, err = NewConnector(ctx, cluster, owner); err != nil {
+		return nil, err
+	}
+	return conn, nil
 }
 
 func (conn *cloudConnector) DetectInstanceImage() (string, error) {
@@ -70,6 +95,28 @@ func (conn *cloudConnector) DetectInstanceImage() (string, error) {
 	}
 
 	return images[0].ID, nil
+}
+
+func (conn *cloudConnector) DetectKernel() (string, error) {
+	kernels, err := conn.client.ListKernels(conn.ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	kernelId := ""
+	for _, d := range kernels {
+		if d.PVOPS {
+			if strings.HasPrefix(d.Label, "Latest 64 bit") {
+				return d.ID, nil
+			}
+			if strings.Contains(d.Label, "x86_64") && d.ID != kernelId {
+				kernelId = d.ID
+			}
+		}
+	}
+	if kernelId != "" {
+		return kernelId, nil
+	}
+	return "", errors.New("can't find Kernel")
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -94,11 +141,40 @@ func (conn *cloudConnector) waitForStatus(id int, status linodego.InstanceStatus
 	})
 }
 
+/*
+Status values are -1: Being Created, 0: Brand New, 1: Running, and 2: Powered Off.
+*/
+func statusString(status int) string {
+	switch status {
+	case LinodeStatus_BeingCreated:
+		return "Being Created"
+	case LinodeStatus_BrandNew:
+		return "Brand New"
+	case LinodeStatus_Running:
+		return "Running"
+	case LinodeStatus_PoweredOff:
+		return "Powered Off"
+	default:
+		return strconv.Itoa(status)
+	}
+}
+
+const (
+	LinodeStatus_BeingCreated = -1
+	LinodeStatus_BrandNew     = 0
+	LinodeStatus_Running      = 1
+	LinodeStatus_PoweredOff   = 2
+)
+
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) getStartupScriptID(ng *api.NodeGroup) (int, error) {
-	scriptName := conn.namer.StartupScriptName(ng.Name, ng.Role())
-
+func (conn *cloudConnector) getStartupScriptID(machine *clusterv1.Machine) (int, error) {
+	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
+	if err != nil {
+		return 0, err
+	}
+	fmt.Println("roles = " + machineConfig.Roles[0])
+	scriptName := conn.namer.StartupScriptName(machine.Name, string(machineConfig.Roles[0]))
 	filter := fmt.Sprintf(`{"label" : "%v"}`, scriptName)
 	listOpts := &linodego.ListOptions{nil, filter}
 
@@ -115,9 +191,13 @@ func (conn *cloudConnector) getStartupScriptID(ng *api.NodeGroup) (int, error) {
 	return scripts[0].ID, nil
 }
 
-func (conn *cloudConnector) createOrUpdateStackScript(ng *api.NodeGroup, token string) (int, error) {
-	scriptName := conn.namer.StartupScriptName(ng.Name, ng.Role())
-	script, err := conn.renderStartupScript(ng, token)
+func (conn *cloudConnector) createOrUpdateStackScript(cluster *api.Cluster, machine *clusterv1.Machine, token string, owner string) (int, error) {
+	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
+	if err != nil {
+		return 0, err
+	}
+	scriptName := conn.namer.StartupScriptName(machine.Name, string(machineConfig.Roles[0]))
+	script, err := conn.renderStartupScript(cluster, machine, token, owner)
 	if err != nil {
 		return 0, err
 	}
@@ -135,15 +215,15 @@ func (conn *cloudConnector) createOrUpdateStackScript(ng *api.NodeGroup, token s
 	} else if len(scripts) == 0 {
 		createOpts := linodego.StackscriptCreateOptions{
 			Label:       scriptName,
-			Description: fmt.Sprintf("Startup script for NodeGroup %s of Cluster %s", ng.Name, conn.cluster.Name),
-			Images:      []string{conn.cluster.Spec.Cloud.InstanceImage},
+			Description: fmt.Sprintf("Startup script for NodeGroup %s of Cluster %s", machine.Name, conn.cluster.Name),
+			Images:      []string{conn.cluster.ClusterConfig().Cloud.InstanceImage},
 			Script:      script,
 		}
 		stackScript, err := conn.client.CreateStackscript(context.Background(), createOpts)
 		if err != nil {
 			return 0, err
 		}
-		Logger(conn.ctx).Infof("Stack script for role %v created", ng.Role())
+		Logger(conn.ctx).Infof("Stack script for role %v created", string(machineConfig.Roles[0]))
 		return stackScript.ID, nil
 	}
 
@@ -155,13 +235,12 @@ func (conn *cloudConnector) createOrUpdateStackScript(ng *api.NodeGroup, token s
 		return 0, err
 	}
 
-	Logger(conn.ctx).Infof("Stack script for role %v updated", ng.Role())
+	Logger(conn.ctx).Infof("Stack script for role %v updated", string(machineConfig.Roles[0]))
 	return stackScript.ID, nil
 }
 
-func (conn *cloudConnector) deleteStackScript(ng *api.NodeGroup) error {
-	scriptName := conn.namer.StartupScriptName(ng.Name, ng.Role())
-
+func (conn *cloudConnector) DeleteStackScript(machineName string, role string) error {
+	scriptName := conn.namer.StartupScriptName(machineName, role)
 	filter := fmt.Sprintf(`{"label" : "%v"}`, scriptName)
 	listOpts := &linodego.ListOptions{nil, filter}
 
@@ -169,7 +248,6 @@ func (conn *cloudConnector) deleteStackScript(ng *api.NodeGroup) error {
 	if err != nil {
 		return err
 	}
-
 	for _, script := range scripts {
 		if err := conn.client.DeleteStackscript(context.Background(), script.ID); err != nil {
 			return err
@@ -179,27 +257,31 @@ func (conn *cloudConnector) deleteStackScript(ng *api.NodeGroup) error {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-
-func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error) {
-	scriptId, err := conn.getStartupScriptID(ng)
+func (conn *cloudConnector) CreateInstance(name, token string, machine *clusterv1.Machine, owner string) (*api.NodeInfo, error) {
+	if _, err := conn.createOrUpdateStackScript(conn.cluster, machine, token, owner); err != nil {
+		return nil, err
+	}
+	scriptId, err := conn.getStartupScriptID(machine)
 	if err != nil {
 		return nil, err
 	}
-
+	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
+	if err != nil {
+		return nil, err
+	}
 	createOpts := linodego.InstanceCreateOptions{
 		Label:    name,
-		Region:   conn.cluster.Spec.Cloud.Zone,
-		Type:     ng.Spec.Template.Spec.SKU,
-		RootPass: conn.cluster.Spec.Cloud.Linode.RootPassword,
+		Region:   conn.cluster.ClusterConfig().Cloud.Zone,
+		Type:     machineConfig.Type,
+		RootPass: conn.cluster.ClusterConfig().Cloud.Linode.RootPassword,
 		AuthorizedKeys: []string{
 			string(SSHKey(conn.ctx).PublicKey),
 		},
-
-		StackScriptID: scriptId,
 		StackScriptData: map[string]string{
 			"hostname": name,
 		},
-		Image:          conn.cluster.Spec.Cloud.InstanceImage,
+		StackScriptID:  scriptId,
+		Image:          conn.cluster.ClusterConfig().Cloud.InstanceImage,
 		BackupsEnabled: false,
 		PrivateIP:      true,
 		SwapSize:       types.IntP(0),
@@ -223,28 +305,8 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	return &node, nil
 }
 
-/*
-func (conn *cloudConnector) bootToGrub2(linodeId, configId int, name string) error {
-	// GRUB2 Kernel ID = 210
-	_, err := conn.client.Config.Update(configId, linodeId, 210, nil)
-	if err != nil {
-		return err
-	}
-	_, err = conn.client.Linode.Update(linodeId, map[string]interface{}{
-		"Label":    name,
-		"watchdog": true,
-	})
-	if err != nil {
-		return err
-	}
-	_, err = conn.client.Linode.Boot(linodeId, configId)
-	Logger(conn.ctx).Infof("%v booted", name)
-	return err
-}
-*/
-
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
-	id, err := serverIDFromProviderID(providerID)
+	id, err := instanceIDFromProviderID(providerID)
 	if err != nil {
 		return err
 	}
@@ -257,12 +319,7 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	return nil
 }
 
-// dropletIDFromProviderID returns a droplet's ID from providerID.
-//
-// The providerID spec should be retrievable from the Kubernetes
-// node object. The expected format is: linode://droplet-id
-// ref: https://github.com/digitalocean/digitalocean-cloud-controller-manager/blob/f9a9856e99c9d382db3777d678f29d85dea25e91/do/droplets.go#L211
-func serverIDFromProviderID(providerID string) (int, error) {
+func instanceIDFromProviderID(providerID string) (int, error) {
 	if providerID == "" {
 		return 0, errors.New("providerID cannot be empty string")
 	}
@@ -274,10 +331,41 @@ func serverIDFromProviderID(providerID string) (int, error) {
 
 	// since split[0] is actually "linode:"
 	if strings.TrimSuffix(split[0], ":") != UID {
-		return 0, errors.Errorf("provider name from providerID should be %s: %s", providerID, UID)
+		return 0, errors.Errorf("provider name from providerID should be linode: %s", providerID)
 	}
 
 	return strconv.Atoi(split[2])
+}
+
+func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*linodego.Instance, error) {
+	lds, err := conn.client.ListInstances(conn.ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	for _, ld := range lds {
+		if ld.Label == machine.Name {
+			return &ld, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no droplet found with %v name", machine.Name)
+}
+
+func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data map[string]string) error {
+	cred := make(map[string]string)
+	cred["apiToken"] = data["token"]
+	cred["region"] = conn.cluster.ClusterConfig().Cloud.Region
+	secret := &core.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "ccm-" + conn.cluster.ClusterConfig().Cloud.CloudProvider,
+		},
+		StringData: cred,
+		Type:       core.SecretTypeOpaque,
+	}
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		_, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
+		return err == nil, nil
+	})
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
