@@ -240,8 +240,15 @@ func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cl
 	}
 
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := client.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
-		return err == nil, nil
+		_, err := client.CoreV1().Secrets(metav1.NamespaceSystem).Get(secret.Name, metav1.GetOptions{})
+		if err == nil {
+			return true, nil
+		}
+		_, err = client.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
+		if err != nil {
+			return false, nil
+		}
+		return false, nil
 	})
 }
 
@@ -312,15 +319,17 @@ func CreateNamespace(kc kubernetes.Interface, namespace string) error {
 	})
 }
 
-func CreateConfigMap(kc kubernetes.Interface, name string, data map[string]string) error {
+func CreateConfigMap(kc kubernetes.Interface, name, namespace string, data map[string]string) error {
 	conf := &core.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name:      name,
+			Namespace: namespace,
 		},
 		Data: data,
 	}
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := kc.CoreV1().ConfigMaps(metav1.NamespaceDefault).Create(conf)
+		_, err := kc.CoreV1().ConfigMaps(namespace).Create(conf)
+
 		fmt.Println(err)
 		return err == nil, nil
 	})

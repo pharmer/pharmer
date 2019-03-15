@@ -1,61 +1,95 @@
 package gce
 
 import (
+	"encoding/json"
 	"net"
 	"strings"
 	"time"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/google/uuid"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
+	proconfig "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
-
-func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
-	if sku == "" {
-		// assign at the time of apply
-	}
-	return api.NodeSpec{
-		SKU:      sku,
-		DiskType: "pd-standard",
-		DiskSize: 100,
-	}, nil
-}
 
 func (cm *ClusterManager) SetOwner(owner string) {
 	cm.owner = owner
 }
 
-func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+	//if sku == "" {
+	//	sku = "n1-standard-2"
+	//}
+	config := cluster.Spec.Config
+
+	spec := proconfig.GCEMachineProviderSpec{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: proconfig.GCEProviderGroupName + "/" + proconfig.GCEProviderApiVersion,
+			Kind:       proconfig.GCEMachineProviderKind,
+		},
+		Zone:  config.Cloud.Zone,
+		OS:    config.Cloud.InstanceImage,
+		Roles: []api.MachineRole{role},
+		Disks: []api.Disk{
+			{
+				InitializeParams: api.DiskInitializeParams{
+					DiskType:   "pd-standard",
+					DiskSizeGb: 30,
+				},
+			},
+		},
+		MachineType: sku,
+	}
+
+	providerSpecValue, err := json.Marshal(spec)
+	if err != nil {
+		return clusterapi.ProviderSpec{}, err
+	}
+
+	return clusterapi.ProviderSpec{
+		Value: &runtime.RawExtension{
+			Raw: providerSpecValue,
+		},
+	}, nil
+}
+
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
 	n := namer{cluster: cluster}
 
 	// Init object meta
-	cluster.ObjectMeta.UID = uuid.NewUUID()
+	uid, _ := uuid.NewUUID()
+	cluster.ObjectMeta.UID = types.UID(uid.String())
 	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
 	cluster.ObjectMeta.Generation = time.Now().UnixNano()
-	api.AssignTypeKind(cluster)
 
-	// Init spec
-	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone[0:strings.LastIndex(cluster.Spec.Cloud.Zone, "-")]
-	cluster.Spec.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
-	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
-	// REGISTER_MASTER_KUBELET = false // always false, keep master lightweight
-	// PREEMPTIBLE_NODE = false // Removed Support
+	if err := api.AssignTypeKind(cluster); err != nil {
+		return err
+	}
 
-	cluster.Spec.Cloud.InstanceImageProject = "ubuntu-os-cloud"
-	cluster.Spec.Cloud.InstanceImage = "ubuntu-1604-xenial-v20170721"
-	cluster.Spec.Cloud.CCMCredentialName = cluster.Spec.CredentialName
-	cluster.Spec.Cloud.GCE = &api.GoogleSpec{
+	// Init Spec
+	cluster.Spec.Config.Cloud.Region = cluster.Spec.Config.Cloud.Zone[0:strings.LastIndex(cluster.Spec.Config.Cloud.Zone, "-")]
+	cluster.Spec.Config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
+
+	cluster.Spec.Config.Cloud.InstanceImageProject = "ubuntu-os-cloud"
+	cluster.Spec.Config.Cloud.InstanceImage = "ubuntu-1604-xenial-v20170721"
+	cluster.Spec.Config.Cloud.OS = "ubuntu-1604-lts"
+	cluster.Spec.Config.Cloud.CCMCredentialName = cluster.Spec.Config.CredentialName
+	cluster.Spec.Config.Cloud.GCE = &api.GoogleSpec{
 		NetworkName: "default",
 		NodeTags:    []string{n.NodePrefix()},
 	}
-	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
-	cluster.Spec.Networking.PodSubnet = "10.244.0.0/16"
-	cluster.Spec.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
-	cluster.Spec.APIServerExtraArgs = map[string]string{
+
+	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
+		return err
+	}
+	cluster.Spec.Config.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
+	cluster.Spec.Config.APIServerExtraArgs = map[string]string{
 		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
 		"kubelet-preferred-address-types": strings.Join([]string{
 			string(core.NodeHostName),
@@ -65,21 +99,35 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 			string(core.NodeExternalIP),
 		}, ","),
 		"cloud-config":   "/etc/kubernetes/ccm/cloud-config",
-		"cloud-provider": cluster.Spec.Cloud.CloudProvider,
+		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
 	}
-	if cluster.IsMinorVersion("1.9") {
-		cluster.Spec.APIServerExtraArgs["admission-control"] = api.DeprecatedV19AdmissionControl
-	}
-	cluster.Spec.ControllerManagerExtraArgs = map[string]string{
+
+	//cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
+
+	//cluster.InitializeClusterApi ()
+	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
+	cluster.Spec.Config.ControllerManagerExtraArgs = map[string]string{
 		"cloud-config":   "/etc/kubernetes/ccm/cloud-config",
-		"cloud-provider": cluster.Spec.Cloud.CloudProvider,
+		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
+	}
+
+	//kube.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
+
+	// Init status
+	cluster.Status = api.PharmerClusterStatus{
+		Phase: api.ClusterPending,
+	}
+
+	if cluster.Spec.ClusterAPI.ObjectMeta.Annotations == nil {
+		cluster.Spec.ClusterAPI.ObjectMeta.Annotations = make(map[string]string)
 	}
 
 	// Init status
-	cluster.Status = api.ClusterStatus{
+	cluster.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,
 	}
-	return nil
+
+	return proconfig.SetGCEClusterProviderSpec(cluster.Spec.ClusterAPI, config)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {

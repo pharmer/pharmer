@@ -97,6 +97,16 @@ type GoogleSpec struct {
 	NodeScopes []string `json:"nodeScopes,omitempty" protobuf:"bytes,3,rep,name=nodeScopes"`
 }
 
+type GCECloudConfig struct {
+	TokenURL           string   `gcfg:"token-url" ini:"token-url,omitempty" protobuf:"bytes,1,opt,name=tokenURL"`
+	TokenBody          string   `gcfg:"token-body" ini:"token-body,omitempty" protobuf:"bytes,2,opt,name=tokenBody"`
+	ProjectID          string   `gcfg:"project-id" ini:"project-id,omitempty" protobuf:"bytes,3,opt,name=projectID"`
+	NetworkName        string   `gcfg:"network-name" ini:"network-name,omitempty" protobuf:"bytes,4,opt,name=networkName"`
+	NodeTags           []string `gcfg:"node-tags" ini:"node-tags,omitempty,omitempty" protobuf:"bytes,5,rep,name=nodeTags"`
+	NodeInstancePrefix string   `gcfg:"node-instance-prefix" ini:"node-instance-prefix,omitempty,omitempty" protobuf:"bytes,6,opt,name=nodeInstancePrefix"`
+	Multizone          bool     `gcfg:"multizone" ini:"multizone,omitempty" protobuf:"varint,7,opt,name=multizone"`
+}
+
 type GKESpec struct {
 	UserName    string `json:"userName,omitempty" protobuf:"bytes,1,opt,name=userName"`
 	Password    string `json:"password,omitempty" protobuf:"bytes,2,opt,name=password"`

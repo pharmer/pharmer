@@ -3,61 +3,64 @@ package gce
 import (
 	"bytes"
 	"context"
+	"fmt"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
-	ini "gopkg.in/ini.v1"
+	"gopkg.in/ini.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, token string) TemplateData {
+func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine, token string) TemplateData {
 	td := TemplateData{
 		ClusterName:       cluster.Name,
-		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		KubernetesVersion: machine.Spec.Versions.ControlPlane,
 		KubeadmToken:      token,
 		CAHash:            pubkeypin.Hash(CACert(ctx)),
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
 		APIServerAddress:  cluster.APIServerAddress(),
-		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
-		Provider:          cluster.Spec.Cloud.CloudProvider,
+		NetworkProvider:   cluster.ClusterConfig().Cloud.NetworkProvider,
+		Provider:          cluster.ClusterConfig().Cloud.CloudProvider,
 		ExternalProvider:  false, // GCE does not use out-of-tree CCM
 	}
 
 	{
 		td.KubeletExtraArgs = map[string]string{}
-		for k, v := range cluster.Spec.KubeletExtraArgs {
+		for k, v := range cluster.Spec.Config.KubeletExtraArgs {
 			td.KubeletExtraArgs[k] = v
 		}
-		for k, v := range ng.Spec.Template.Spec.KubeletExtraArgs {
-			td.KubeletExtraArgs[k] = v
-		}
+
 		td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
-			api.NodePoolKey: ng.Name,
+			api.NodePoolKey: machine.Name,
 			api.RoleNodeKey: "",
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
-		td.KubeletExtraArgs["cloud-provider"] = cluster.Spec.Cloud.CloudProvider // requires --cloud-config
+		td.KubeletExtraArgs["cloud-provider"] = cluster.ClusterConfig().Cloud.CloudProvider // requires --cloud-config
 		// ref: https://github.com/kubernetes/kubernetes/blob/release-1.5/cluster/gce/configure-vm.sh#L846
-		if cluster.Spec.Cloud.CCMCredentialName == "" {
+
+		if cluster.ClusterConfig().Cloud.CCMCredentialName == "" {
 			panic(errors.New("no cloud controller manager credential found"))
 		}
+
 		n := namer{cluster}
 
 		cloudConfig := &api.GCECloudConfig{
-			ProjectID:          cluster.Spec.Cloud.Project,
-			NetworkName:        cluster.Spec.Cloud.GCE.NetworkName,
-			NodeTags:           cluster.Spec.Cloud.GCE.NodeTags,
+			ProjectID:          cluster.Spec.Config.Cloud.Project,
+			NetworkName:        cluster.Spec.Config.Cloud.GCE.NetworkName,
+			NodeTags:           cluster.Spec.Config.Cloud.GCE.NodeTags,
 			NodeInstancePrefix: n.NodePrefix(),
 			Multizone:          false,
 		}
 
 		cfg := ini.Empty()
 		err := cfg.Section("global").ReflectFrom(cloudConfig)
+		fmt.Println(err)
 		if err != nil {
 			panic(err)
 		}
@@ -76,10 +79,10 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 	return td
 }
 
-func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup) TemplateData {
-	td := newNodeTemplateData(ctx, cluster, ng, "")
+func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine) TemplateData {
+	td := newNodeTemplateData(ctx, cluster, machine, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
-		api.NodePoolKey: ng.Name,
+		api.NodePoolKey: machine.Name,
 	}.String()
 
 	hostPath := kubeadmapi.HostPathMount{
@@ -97,8 +100,9 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			KubeletExtraArgs: td.KubeletExtraArgs,
 		},
 		LocalAPIEndpoint: kubeadmapi.APIEndpoint{
-			AdvertiseAddress: cluster.Spec.API.AdvertiseAddress,
-			BindPort:         cluster.Spec.API.BindPort,
+			BindPort: 6443,
+			//AdvertiseAddress: cluster.Spec.Config.API.AdvertiseAddress,
+			//BindPort:         cluster.Spec.Config.API.BindPort,
 		},
 	}
 	td.InitConfiguration = &ifg
@@ -109,25 +113,26 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			Kind:       "ClusterConfiguration",
 		},
 		Networking: kubeadmapi.Networking{
-			ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
-			PodSubnet:     cluster.Spec.Networking.PodSubnet,
-			DNSDomain:     cluster.Spec.Networking.DNSDomain,
+			ServiceSubnet: cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Services.CIDRBlocks[0],
+			PodSubnet:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
+			DNSDomain:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.ServiceDomain,
 		},
-		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		KubernetesVersion: cluster.Spec.Config.KubernetesVersion,
 		//CloudProvider:              cluster.Spec.Cloud.CloudProvider,
+
 		APIServer: kubeadmapi.APIServer{
 			ControlPlaneComponent: kubeadmapi.ControlPlaneComponent{
-				ExtraArgs:    cluster.Spec.APIServerExtraArgs,
+				ExtraArgs:    cluster.Spec.Config.APIServerExtraArgs,
 				ExtraVolumes: []kubeadmapi.HostPathMount{hostPath},
 			},
-			CertSANs: cluster.Spec.APIServerCertSANs,
+			CertSANs: cluster.Spec.Config.APIServerCertSANs,
 		},
 		ControllerManager: kubeadmapi.ControlPlaneComponent{
-			ExtraArgs:    cluster.Spec.ControllerManagerExtraArgs,
+			ExtraArgs:    cluster.Spec.Config.ControllerManagerExtraArgs,
 			ExtraVolumes: []kubeadmapi.HostPathMount{hostPath},
 		},
 		Scheduler: kubeadmapi.ControlPlaneComponent{
-			ExtraArgs: cluster.Spec.SchedulerExtraArgs,
+			ExtraArgs: cluster.Spec.Config.SchedulerExtraArgs,
 		},
 	}
 	td.ClusterConfiguration = &cfg
@@ -165,7 +170,7 @@ pre-k mount-master-pd --provider=gce
 `
 )
 
-func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string) (string, error) {
+func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *clusterv1.Machine, token string) (string, error) {
 	tpl, err := StartupScriptTemplate.Clone()
 	if err != nil {
 		return "", err
@@ -176,12 +181,14 @@ func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, token string)
 	}
 
 	var script bytes.Buffer
-	if ng.Role() == api.RoleMaster {
-		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng)); err != nil {
+	_ = tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, cluster, machine))
+
+	if api.IsMaster(machine) {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, cluster, machine)); err != nil {
 			return "", err
 		}
 	} else {
-		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, token)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, cluster, machine, token)); err != nil {
 			return "", err
 		}
 	}

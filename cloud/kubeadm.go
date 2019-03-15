@@ -71,6 +71,32 @@ func ConvertInitConfigFromV1bet1ToV1alpha3(conf *v1beta1.InitConfiguration) *v1a
 }
 
 func ConvertClusterConfigFromV1beta1ToV1alpha3(conf *v1beta1.ClusterConfiguration) *v1alpha3.ClusterConfiguration {
+	apiVolumes := make([]v1alpha3.HostPathMount, 0)
+	if len(conf.APIServer.ExtraVolumes) > 0 {
+		for _, vol := range conf.APIServer.ExtraVolumes {
+			apiVolumes = append(apiVolumes, v1alpha3.HostPathMount{
+				Name:      vol.Name,
+				HostPath:  vol.HostPath,
+				MountPath: vol.MountPath,
+				PathType:  vol.PathType,
+				Writable:  !vol.ReadOnly,
+			})
+		}
+	}
+	ctrlVolumes := make([]v1alpha3.HostPathMount, 0)
+	if len(conf.ControllerManager.ExtraVolumes) > 0 {
+		for _, vol := range conf.ControllerManager.ExtraVolumes {
+			ctrlVolumes = append(ctrlVolumes, v1alpha3.HostPathMount{
+				Name:      vol.Name,
+				HostPath:  vol.HostPath,
+				MountPath: vol.MountPath,
+				PathType:  vol.PathType,
+				Writable:  !vol.ReadOnly,
+			})
+		}
+
+	}
+
 	return &v1alpha3.ClusterConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "kubeadm.k8s.io/v1alpha3",
@@ -84,11 +110,13 @@ func ConvertClusterConfigFromV1beta1ToV1alpha3(conf *v1beta1.ClusterConfiguratio
 		KubernetesVersion: conf.KubernetesVersion,
 		// "external": cloudprovider not supported for apiserver and controller-manager
 		// https://github.com/kubernetes/kubernetes/pull/50545
-		APIServerExtraArgs:         conf.APIServer.ExtraArgs,
-		ControllerManagerExtraArgs: conf.ControllerManager.ExtraArgs,
-		SchedulerExtraArgs:         conf.Scheduler.ExtraArgs,
-		APIServerCertSANs:          conf.APIServer.CertSANs,
-		ClusterName:                conf.ClusterName,
+		APIServerExtraArgs:            conf.APIServer.ExtraArgs,
+		APIServerExtraVolumes:         apiVolumes,
+		ControllerManagerExtraArgs:    conf.ControllerManager.ExtraArgs,
+		ControllerManagerExtraVolumes: ctrlVolumes,
+		SchedulerExtraArgs:            conf.Scheduler.ExtraArgs,
+		APIServerCertSANs:             conf.APIServer.CertSANs,
+		ClusterName:                   conf.ClusterName,
 	}
 }
 

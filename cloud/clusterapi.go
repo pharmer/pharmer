@@ -43,7 +43,7 @@ type ApiServerTemplate struct {
 	ClusterOwner        string
 }
 
-var machineControllerImage = "pharmer/machine-controller:platform"
+var MachineControllerImage = "pharmer/machine-controller:platform"
 
 const (
 	BasePath = ".pharmer/config.d"
@@ -97,6 +97,16 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 	namespace := ca.cluster.Spec.ClusterAPI.Namespace
 	if namespace == "" {
 		namespace = ca.bootstrapClient.GetContextNamespace()
+	}
+
+	c, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(namespace).Get(ca.cluster.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	c.Status = ca.cluster.Spec.ClusterAPI.Status
+	if _, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(namespace).UpdateStatus(c); err != nil {
+		return err
 	}
 
 	machines, err := Store(ca.ctx).Owner(ca.Owner).Machine(ca.cluster.Name).List(metav1.ListOptions{})
@@ -240,7 +250,7 @@ func (ca *ClusterApi) CreateApiServerAndController(controllerManager string) err
 		ClusterName:         ca.cluster.Name,
 		Provider:            ca.cluster.ClusterConfig().Cloud.CloudProvider,
 		ControllerNamespace: ca.namespace,
-		ControllerImage:     machineControllerImage,
+		ControllerImage:     MachineControllerImage,
 		ClusterOwner:        ca.Owner,
 	})
 	if err != nil {

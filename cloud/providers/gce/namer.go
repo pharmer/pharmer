@@ -5,7 +5,7 @@ import (
 
 	"github.com/appscode/go/crypto/rand"
 	stringutil "github.com/appscode/go/strings"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 )
 
 type namer struct {
