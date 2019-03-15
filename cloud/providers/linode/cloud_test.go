@@ -1,6 +1,6 @@
 package linode
 
-import (
+/*import (
 	"encoding/json"
 	"fmt"
 	"github.com/taoh/linodego" //"fmt"
@@ -15,7 +15,7 @@ func TestInstances(t *testing.T) {
 		fmt.Println(d.Label.String(), "<>", d.DistributionId, d.Label, "<>", d.Is64Bit)
 		/*if d.Is64Bit == 1 && d.Label.String() == "Ubuntu 16.04 LTS" {
 			return strconv.Itoa(d.DistributionId), nil
-		}*/
+		}
 	}
 
 }
@@ -26,3 +26,4 @@ func TestJS(t *testing.T) {
 	err := json.Unmarshal([]byte(cl), &tt)
 	fmt.Println(err, tt)
 }
+*/

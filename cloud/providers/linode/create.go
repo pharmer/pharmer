@@ -17,7 +17,7 @@ import (
 
 func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
 	if sku == "" {
-		sku = "3"
+		sku = "g6-standard-2"
 	}
 	return api.NodeSpec{
 		SKU: sku,

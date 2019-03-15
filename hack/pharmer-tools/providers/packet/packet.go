@@ -68,7 +68,7 @@ func (g *Client) GetKubernets() []data.Kubernetes {
 }
 
 func (g *Client) GetRegions() ([]data.Region, error) {
-	facilityList, _, err := g.Client.Facilities.List()
+	facilityList, _, err := g.Client.Facilities.List(&packngo.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (g *Client) GetRegions() ([]data.Region, error) {
 //Facility.Code as zone
 func (g *Client) GetZones() ([]string, error) {
 	zones := []string{}
-	facilityList, _, err := g.Client.Facilities.List()
+	facilityList, _, err := g.Client.Facilities.List(&packngo.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (g *Client) GetZones() ([]string, error) {
 func (g *Client) GetInstanceTypes() ([]data.InstanceType, error) {
 	//facilityCode maps facility.ID to facility.Code
 	facilityCode := map[string]string{}
-	facilityList, _, err := g.Client.Facilities.List()
+	facilityList, _, err := g.Client.Facilities.List(&packngo.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (g *Client) GetInstanceTypes() ([]data.InstanceType, error) {
 }
 
 func getClient(packetToken string) *packngo.Client {
-	return packngo.NewClient("", packetToken, nil)
+	return packngo.NewClientWithAuth("", packetToken, nil)
 }
 
 func getPlanRequest(packetToken string) (*http.Request, error) {
