@@ -113,6 +113,14 @@ import:
   version: 0cf8f7e6ed1d2e3d47d02e3b6e559369af24d803
 - package: github.com/fatih/color
   version: 9aae6aaa22315390f03959adca2c4d395b02fcef
+- package: cloud.google.com/go
+  version: v0.33.1
+- package: sigs.k8s.io/cluster-api
+  version: c51a9c13aa0ebe6d2d7bef869094b9b78bebcd48
+- package: sigs.k8s.io/controller-runtime
+  version: v0.1.9
+- package: github.com/prometheus/client_golang
+  version: v0.9.2
 testImport:
 - package: github.com/stretchr/testify
   version: v1.1.4

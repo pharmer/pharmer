@@ -1,9 +1,14 @@
 package cloud
 
 import (
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"context"
+
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 var (
@@ -13,19 +18,18 @@ var (
 )
 
 type Interface interface {
+	InitializeMachineActuator(mgr manager.Manager) error
+	AddToManager(ctx context.Context, m manager.Manager) error
+
 	SSHGetter
 	ProviderKubeConfig
-	GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error)
-	SetDefaults(in *api.Cluster) error
+
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
-	// GetAdminClient() (kubernetes.Interface, error)
+	SetOwner(owner string)
 
-	// IsValid(cluster *api.Cluster) (bool, error)
-	// Delete(req *proto.ClusterDeleteRequest) error
-	// SetVersion(req *proto.ClusterReconfigureRequest) error
-	// Scale(req *proto.ClusterReconfigureRequest) error
-	// GetInstance(md *api.InstanceStatus) (*api.Instance, error)
+	SetDefaultCluster(in *api.Cluster, conf *api.ClusterConfig) error
+	GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterv1.ProviderSpec, error)
 }
 
 type SSHGetter interface {
@@ -33,22 +37,26 @@ type SSHGetter interface {
 }
 
 type NodeGroupManager interface {
-	Apply(dryRun bool) (acts []api.Action, err error)
-	AddNodes(count int64) error
-	DeleteNodes(nodes []core.Node) error
+	//	Apply(dryRun bool) (acts []api.Action, err error)
+	//	AddNodes(count int64) error
+	//	DeleteNodes(nodes []core.Node) error
 }
 
 type InstanceManager interface {
-	CreateInstance(name, token string, ng *api.NodeGroup) (*api.NodeInfo, error)
+	CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error)
 	DeleteInstanceByProviderID(providerID string) error
+}
+
+type ClusterApiProviderComponent interface {
+	CreateCredentialSecret(kc kubernetes.Interface, data map[string]string) error
 }
 
 type UpgradeManager interface {
 	GetAvailableUpgrades() ([]*api.Upgrade, error)
 	PrintAvailableUpgrades([]*api.Upgrade)
 	Apply(dryRun bool) ([]api.Action, error)
-	MasterUpgrade() error
-	NodeGroupUpgrade(ng *api.NodeGroup) error
+	MasterUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error
+	NodeUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error
 }
 
 type ProviderKubeConfig interface {

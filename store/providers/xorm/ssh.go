@@ -10,6 +10,7 @@ import (
 type sshKeyXormStore struct {
 	engine  *xorm.Engine
 	cluster string
+	owner   string
 }
 
 var _ store.SSHKeyStore = &sshKeyXormStore{}
@@ -21,10 +22,15 @@ func (s *sshKeyXormStore) Get(name string) ([]byte, []byte, error) {
 	if name == "" {
 		return nil, nil, errors.New("missing ssh key name")
 	}
+	cluster, err := s.getCluster()
+	if err != nil {
+		return nil, nil, err
+	}
 
 	sshKey := &SSHKey{
 		Name:        name,
-		ClusterName: s.cluster,
+		ClusterName: cluster.Name,
+		ClusterId:   cluster.Id,
 	}
 	found, err := s.engine.Get(sshKey)
 	if !found {
@@ -46,9 +52,15 @@ func (s *sshKeyXormStore) Create(name string, pubKey, privKey []byte) error {
 		return errors.New("empty ssh private key")
 	}
 
+	cluster, err := s.getCluster()
+	if err != nil {
+		return err
+	}
+
 	sshKey := &SSHKey{
 		Name:        name,
-		ClusterName: s.cluster,
+		ClusterName: cluster.Name,
+		ClusterId:   cluster.Id,
 	}
 	found, err := s.engine.Get(sshKey)
 	if found {
@@ -64,6 +76,7 @@ func (s *sshKeyXormStore) Create(name string, pubKey, privKey []byte) error {
 	sshKey.Name = name
 	sshKey.ClusterName = s.cluster
 	sshKey.UID = string(uuid.NewUUID())
+	sshKey.ClusterId = cluster.Id
 
 	_, err = s.engine.Insert(sshKey)
 	return err
@@ -76,7 +89,26 @@ func (s *sshKeyXormStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing ssh key name")
 	}
+	cluster, err := s.getCluster()
+	if err != nil {
+		return err
+	}
 
-	_, err := s.engine.Delete(&SSHKey{Name: name, ClusterName: s.cluster})
+	_, err = s.engine.Delete(&SSHKey{Name: name, ClusterName: cluster.Name, ClusterId: cluster.Id})
 	return err
+}
+
+func (s *sshKeyXormStore) getCluster() (*Cluster, error) {
+	cluster := &Cluster{
+		Name:    s.cluster,
+		OwnerId: s.owner,
+	}
+	has, err := s.engine.Get(cluster)
+	if err != nil {
+		return nil, err
+	}
+	if !has {
+		return nil, errors.New("cluster not exists")
+	}
+	return cluster, nil
 }

@@ -232,13 +232,10 @@ func makeHTTPRequest(
 		return nil, 0, err
 	}
 
-	switch {
-	case session.APIKey != "":
+	if session.APIKey != "" {
 		req.SetBasicAuth(session.UserName, session.APIKey)
-	case session.AuthToken != "":
+	} else if session.AuthToken != "" {
 		req.SetBasicAuth(fmt.Sprintf("%d", session.UserId), session.AuthToken)
-	case session.IAMToken != "":
-		req.Header.Set("Authorization", session.IAMToken)
 	}
 
 	// For cases where session is built from the raw structure and not using New() , the UserAgent would be empty

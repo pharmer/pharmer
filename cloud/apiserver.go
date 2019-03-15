@@ -2,11 +2,13 @@ package cloud
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	semver "github.com/appscode/go-version"
 	stringz "github.com/appscode/go/strings"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	apiAlpha "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,22 +17,26 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/cert"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	RetryInterval = 5 * time.Second
-	RetryTimeout  = 15 * time.Minute
+	RetryInterval      = 5 * time.Second
+	RetryTimeout       = 15 * time.Minute
+	ServiceAccountNs   = "kube-system"
+	ServiceAccountName = "default"
 )
 
-func NodeCount(nodeGroups []*api.NodeGroup) int64 {
+func NodeCount(machineSets []*clusterv1.MachineSet) int64 {
 	count := int64(0)
-	for _, ng := range nodeGroups {
-		count += ng.Spec.Nodes
+	for _, machineSet := range machineSets {
+		count += int64(*machineSet.Spec.Replicas)
 	}
 	return count
 }
 
-func FindMasterNodeGroup(nodeGroups []*api.NodeGroup) (*api.NodeGroup, error) {
+func FindMasterNodeGroup(nodeGroups []*apiAlpha.NodeGroup) (*apiAlpha.NodeGroup, error) {
 	for _, ng := range nodeGroups {
 		if ng.IsMaster() {
 			return ng, nil
@@ -39,17 +45,27 @@ func FindMasterNodeGroup(nodeGroups []*api.NodeGroup) (*api.NodeGroup, error) {
 	return nil, ErrNoMasterNG
 }
 
-// WARNING:
-// Returned KubeClient uses admin client cert. This should only be used for cluster provisioning operations.
-func NewAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes.Interface, error) {
+func IsNodeReady(node *core.Node) bool {
+	for _, condition := range node.Status.Conditions {
+		if condition.Type == core.NodeReady {
+			return condition.Status == core.ConditionTrue
+		}
+	}
+
+	return false
+}
+
+func NewRestConfig(ctx context.Context, cluster *api.Cluster) (*rest.Config, error) {
 	adminCert, adminKey, err := CreateAdminCertificate(ctx)
 	if err != nil {
 		return nil, err
 	}
+
 	host := cluster.APIServerURL()
 	if host == "" {
 		return nil, errors.Errorf("failed to detect api server url for cluster %s", cluster.Name)
 	}
+
 	cfg := &rest.Config{
 		Host: host,
 		TLSClientConfig: rest.TLSClientConfig{
@@ -57,6 +73,17 @@ func NewAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes.Inter
 			CertData: cert.EncodeCertPEM(adminCert),
 			KeyData:  cert.EncodePrivateKeyPEM(adminKey),
 		},
+	}
+
+	return cfg, nil
+}
+
+// WARNING:
+// Returned KubeClient uses admin client cert. This should only be used for cluster provisioning operations.
+func NewAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes.Interface, error) {
+	cfg, err := NewRestConfig(ctx, cluster)
+	if err != nil {
+		return nil, err
 	}
 	return kubernetes.NewForConfig(cfg)
 }
@@ -199,14 +226,14 @@ func DeleteDyanamicVolumes(client kubernetes.Interface) error {
 	})
 }
 
-func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cluster *api.Cluster) error {
-	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cluster *api.Cluster, owner string) error {
+	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return err
 	}
 	secret := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: cluster.Spec.Cloud.CloudProvider,
+			Name: cluster.ClusterConfig().Cloud.CloudProvider,
 		},
 		StringData: cred.Spec.Data,
 		Type:       core.SecretTypeOpaque,
@@ -218,7 +245,38 @@ func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cl
 	})
 }
 
-func CreateCredentialSecretWithData(client kubernetes.Interface, name, namespace string, data map[string][]byte) error {
+func NewClusterApiClient(ctx context.Context, cluster *api.Cluster) (client.Client, error) {
+	adminCert, adminKey, err := CreateAdminCertificate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	host := cluster.APIServerURL()
+	if host == "" {
+		return nil, errors.Errorf("failed to detect api server url for cluster %s", cluster.Name)
+	}
+	cfg := &rest.Config{
+		Host: host,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData:   cert.EncodeCertPEM(CACert(ctx)),
+			CertData: cert.EncodeCertPEM(adminCert),
+			KeyData:  cert.EncodePrivateKeyPEM(adminKey),
+		},
+	}
+	return client.New(cfg, client.Options{})
+}
+
+func waitForServiceAccount(ctx context.Context, client kubernetes.Interface) error {
+	attempt := 0
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+		Logger(ctx).Infof("Attempt %v: Waiting for the service account to exist...", attempt)
+
+		_, err := client.CoreV1().ServiceAccounts(ServiceAccountNs).Get(ServiceAccountName, metav1.GetOptions{})
+		return err == nil, nil
+	})
+}
+
+func CreateSecret(kc kubernetes.Interface, name, namespace string, data map[string][]byte) error {
 	secret := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -227,9 +285,39 @@ func CreateCredentialSecretWithData(client kubernetes.Interface, name, namespace
 		Type: core.SecretTypeOpaque,
 		Data: data,
 	}
-
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := client.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
+		_, err := kc.CoreV1().Secrets(namespace).Create(secret)
+		fmt.Println(err)
+		return err == nil, nil
+	})
+}
+
+func CreateNamespace(kc kubernetes.Interface, namespace string) error {
+	ns := &core.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+			Labels: map[string]string{
+				"controller-tools.k8s.io": "1.0",
+			},
+		},
+	}
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		_, err := kc.CoreV1().Namespaces().Create(ns)
+		fmt.Println(err)
+		return err == nil, nil
+	})
+}
+
+func CreateConfigMap(kc kubernetes.Interface, name string, data map[string]string) error {
+	conf := &core.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Data: data,
+	}
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		_, err := kc.CoreV1().ConfigMaps(metav1.NamespaceDefault).Create(conf)
+		fmt.Println(err)
 		return err == nil, nil
 	})
 }

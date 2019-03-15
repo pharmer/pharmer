@@ -9,7 +9,8 @@ import (
 )
 
 type ClusterManager struct {
-	cfg *api.PharmerConfig
+	cfg   *api.PharmerConfig
+	owner string
 }
 
 var _ Interface = &ClusterManager{}
@@ -28,6 +29,10 @@ func New(ctx context.Context) Interface {
 
 func (cm *ClusterManager) SetDefaults(in *api.Cluster) error {
 	return nil
+}
+
+func (cm *ClusterManager) SetOwner(owner string) {
+	cm.owner = owner
 }
 
 func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {

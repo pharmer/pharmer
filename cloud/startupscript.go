@@ -313,6 +313,9 @@ mkdir -p ~/.kube
 sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
 sudo chown $(id -u):$(id -g) ~/.kube/config
 
+kubectl apply \
+  -f https://raw.githubusercontent.com/pharmer/addons/clusterapi/cluster-api/cluster-crd.yaml \
+  --kubeconfig /etc/kubernetes/admin.conf
 
 {{ if .ExternalProvider }}
 {{ template "ccm" . }}

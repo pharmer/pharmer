@@ -3,6 +3,7 @@ package options
 import (
 	"strings"
 
+	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -14,6 +15,7 @@ type ClusterEditConfig struct {
 	KubernetesVersion string
 	Locked            bool
 	Output            string
+	Owner             string
 }
 
 func NewClusterEditConfig() *ClusterEditConfig {
@@ -23,6 +25,7 @@ func NewClusterEditConfig() *ClusterEditConfig {
 		KubernetesVersion: "",
 		Locked:            false,
 		Output:            "yaml",
+		Owner:             utils.GetLocalOwner(),
 	}
 }
 
@@ -32,6 +35,7 @@ func (c *ClusterEditConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.KubernetesVersion, "kubernetes-version", c.KubernetesVersion, "Kubernetes version")
 	fs.BoolVar(&c.Locked, "locked", c.Locked, "If true, locks cluster from deletion")
 	fs.StringVarP(&c.Output, "output", "o", c.Output, "Output format. One of: yaml|json.")
+	fs.StringVarP(&c.Owner, "owner", "", c.Owner, "Current user id")
 
 }
 

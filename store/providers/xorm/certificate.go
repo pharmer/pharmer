@@ -14,6 +14,7 @@ import (
 type certificateXormStore struct {
 	engine  *xorm.Engine
 	cluster string
+	owner   string
 }
 
 var _ store.CertificateStore = &certificateXormStore{}
@@ -26,9 +27,15 @@ func (s *certificateXormStore) Get(name string) (*x509.Certificate, *rsa.Private
 		return nil, nil, errors.New("missing certificate name")
 	}
 
+	cluster, err := s.getCluster()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	certificate := &Certificate{
 		Name:        name,
-		ClusterName: s.cluster,
+		ClusterName: cluster.Name,
+		ClusterId:   cluster.Id,
 	}
 	found, err := s.engine.Get(certificate)
 	if err != nil {
@@ -50,9 +57,15 @@ func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *r
 		return errors.New("missing certificate key")
 	}
 
+	cluster, err := s.getCluster()
+	if err != nil {
+		return err
+	}
+
 	certificate := &Certificate{
 		Name:        name,
-		ClusterName: s.cluster,
+		ClusterName: cluster.Name,
+		ClusterId:   cluster.Id,
 	}
 
 	found, err := s.engine.Get(certificate)
@@ -66,6 +79,7 @@ func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *r
 	if err != nil {
 		return err
 	}
+	certificate.ClusterId = cluster.Id
 	certificate.Name = name
 	certificate.ClusterName = s.cluster
 	certificate.UID = string(uuid.NewUUID())
@@ -83,6 +97,26 @@ func (s *certificateXormStore) Delete(name string) error {
 		return errors.New("missing certificate name")
 	}
 
-	_, err := s.engine.Delete(&Certificate{Name: name, ClusterName: s.cluster})
+	cluster, err := s.getCluster()
+	if err != nil {
+		return err
+	}
+
+	_, err = s.engine.Delete(&Certificate{Name: name, ClusterName: cluster.Name, ClusterId: cluster.Id})
 	return err
+}
+
+func (s *certificateXormStore) getCluster() (*Cluster, error) {
+	cluster := &Cluster{
+		Name:    s.cluster,
+		OwnerId: s.owner,
+	}
+	has, err := s.engine.Get(cluster)
+	if err != nil {
+		return nil, err
+	}
+	if !has {
+		return nil, errors.New("cluster not exists")
+	}
+	return cluster, nil
 }

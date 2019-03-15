@@ -6,127 +6,204 @@ import (
 	"strings"
 	"time"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	. "github.com/appscode/go/types"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 var managedProviders = sets.NewString("aks", "gke", "eks", "dokube")
 
-func List(ctx context.Context, opts metav1.ListOptions) ([]*api.Cluster, error) {
-	return Store(ctx).Clusters().List(opts)
+func List(ctx context.Context, opts metav1.ListOptions, owner string) ([]*api.Cluster, error) {
+	return Store(ctx).Owner(owner).Clusters().List(opts)
 }
 
-func Get(ctx context.Context, name string) (*api.Cluster, error) {
-	return Store(ctx).Clusters().Get(name)
+func Get(ctx context.Context, name string, owner string) (*api.Cluster, error) {
+	return Store(ctx).Owner(owner).Clusters().Get(name)
 }
 
-func Create(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
+func Create(ctx context.Context, cluster *api.Cluster, owner string) (*api.Cluster, error) {
+	config := cluster.Spec.Config
 	if cluster == nil {
 		return nil, errors.New("missing cluster")
 	} else if cluster.Name == "" {
 		return nil, errors.New("missing cluster name")
-	} else if cluster.Spec.KubernetesVersion == "" {
+	} else if config.KubernetesVersion == "" {
 		return nil, errors.New("missing cluster version")
 	}
 
-	_, err := Store(ctx).Clusters().Get(cluster.Name)
+	exists := false
+	_, err := Store(ctx).Owner(owner).Clusters().Get(cluster.Name)
 	if err == nil {
-		return nil, errors.Errorf("cluster exists with name `%s`", cluster.Name)
+		exists = true
+		//return nil, errors.Errorf("cluster exists with name `%s`", cluster.Name)
 	}
 
-	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+	cm, err := GetCloudManager(config.Cloud.CloudProvider, ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err = cm.SetDefaults(cluster); err != nil {
-		return nil, err
-	}
-	if cluster, err = Store(ctx).Clusters().Create(cluster); err != nil {
-		return nil, err
-	}
 
-	if ctx, err = CreateCACertificates(ctx, cluster); err != nil {
+	if err = cm.SetDefaultCluster(cluster, config); err != nil {
 		return nil, err
 	}
-	if ctx, err = CreateSSHKey(ctx, cluster); err != nil {
-		return nil, err
-	}
-	if !managedProviders.Has(cluster.Spec.Cloud.CloudProvider) {
-		if err = CreateNodeGroup(ctx, cluster, api.RoleMaster, "", api.NodeTypeRegular, 1, float64(0)); err != nil {
+	if exists {
+		if cluster, err = Store(ctx).Owner(owner).Clusters().Update(cluster); err != nil {
+			return nil, err
+		}
+	} else {
+		if cluster, err = Store(ctx).Owner(owner).Clusters().Create(cluster); err != nil {
 			return nil, err
 		}
 	}
-	if _, err = Store(ctx).Clusters().Update(cluster); err != nil {
+
+	if ctx, err = CreateCACertificates(ctx, cluster, owner); err != nil {
 		return nil, err
 	}
-	return cluster, nil
+	if ctx, err = CreateSSHKey(ctx, cluster, owner); err != nil {
+		return nil, err
+	}
+	/*if ctx, err = CreateApiserverCertificates(ctx, cluster); err != nil {
+		return nil, err
+	}
+	if ctx, err = CreateServiceAccountKey(ctx, cluster); err != nil {
+		return nil, err
+	}
+	if ctx, err = CreateEtcdCertificates(ctx, cluster); err != nil {
+		return nil, err
+	}*/
+	if !managedProviders.Has(cluster.ClusterConfig().Cloud.CloudProvider) {
+		master, err := CreateMasterMachines(ctx, cluster)
+		if err != nil {
+			return nil, err
+		}
+		if _, err = Store(ctx).Owner(owner).Machine(cluster.Name).Create(master); err != nil {
+			return nil, err
+		}
+	}
+
+	return Store(ctx).Owner(owner).Clusters().Update(cluster)
+
 }
 
-func CreateNodeGroup(ctx context.Context, cluster *api.Cluster, role, sku string, nodeType api.NodeType, count int, spotPriceMax float64) error {
-	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+func CreateMasterMachines(ctx context.Context, cluster *api.Cluster) (*clusterapi.Machine, error) {
+	cm, err := GetCloudManager(cluster.ClusterConfig().Cloud.CloudProvider, ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	spec, err := cm.GetDefaultNodeSpec(cluster, sku)
+	providerSpec, err := cm.GetDefaultMachineProviderSpec(cluster, "", api.MasterRole)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	ig := api.NodeGroup{
+	/*role := api.RoleMember
+	if ind == 0 {
+		role = api.RoleLeader
+	}*/
+	machine := &clusterapi.Machine{
 		ObjectMeta: metav1.ObjectMeta{
-			ClusterName:       cluster.Name,
-			UID:               uuid.NewUUID(),
+			Name: fmt.Sprintf("%v-master", cluster.Name),
+			//	UID:               uuid.NewUUID(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
+			Labels: map[string]string{
+				"set":             "master",
+				api.RoleMasterKey: "",
+			},
 		},
-		Spec: api.NodeGroupSpec{
-			Nodes: int64(count),
-			Template: api.NodeTemplateSpec{
-				Spec: spec,
+		Spec: clusterapi.MachineSpec{
+			ProviderSpec: providerSpec,
+			Versions: clusterapi.MachineVersionInfo{
+				Kubelet:      cluster.ClusterConfig().KubernetesVersion,
+				ControlPlane: cluster.ClusterConfig().KubernetesVersion,
 			},
 		},
 	}
-	if role == api.RoleMaster {
-		ig.ObjectMeta.Name = "master"
-		ig.ObjectMeta.Labels = map[string]string{
-			api.RoleMasterKey: "",
-		}
-	} else {
-		ig.ObjectMeta.Name = strings.Replace(sku, "_", "-", -1) + "-pool"
-		ig.ObjectMeta.Labels = map[string]string{
-			api.RoleNodeKey: "",
-		}
+	api.AssignTypeKind(machine)
+
+	return machine, nil
+}
+
+func CreateMachineSet(ctx context.Context, cluster *api.Cluster, owner, role, sku string, nodeType api.NodeType, count int32, spotPriceMax float64) error {
+	var err error
+	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
+		return err
 	}
-	ig.Spec.Template.Spec.Type = nodeType
-	if nodeType == api.NodeTypeSpot {
-		ig.Spec.Template.Spec.SpotPriceMax = spotPriceMax
+	cm, err := GetCloudManager(cluster.ClusterConfig().Cloud.CloudProvider, ctx)
+	if err != nil {
+		return err
 	}
 
-	_, err = Store(ctx).NodeGroups(cluster.Name).Create(&ig)
+	providerSpec, err := cm.GetDefaultMachineProviderSpec(cluster, sku, api.NodeRole)
+	if err != nil {
+		return err
+	}
+
+	/*spec.Type = nodeType
+	if nodeType == api.NodeTypeSpot {
+		spec.SpotPriceMax = spotPriceMax
+	}*/
+
+	ig := clusterapi.MachineSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              strings.Replace(sku, "_", "-", -1) + "-pool",
+			CreationTimestamp: metav1.Time{Time: time.Now()},
+		},
+		Spec: clusterapi.MachineSetSpec{
+			Selector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					api.PharmerCluster:  cluster.Name,
+					api.MachineSlecetor: sku,
+				},
+			},
+			Replicas: Int32P(count),
+			Template: clusterapi.MachineTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						api.PharmerCluster:  cluster.Name,
+						api.RoleNodeKey:     "",
+						api.MachineSlecetor: sku,
+						"set":               "node",
+					},
+					CreationTimestamp: metav1.Time{Time: time.Now()},
+				},
+				Spec: clusterapi.MachineSpec{
+					ProviderSpec: providerSpec,
+					Versions: clusterapi.MachineVersionInfo{
+						Kubelet: cluster.ClusterConfig().KubernetesVersion,
+					},
+				},
+			},
+		},
+	}
+
+	_, err = Store(ctx).Owner(owner).MachineSet(cluster.Name).Create(&ig)
 
 	return err
 }
 
-func Delete(ctx context.Context, name string) (*api.Cluster, error) {
+func Delete(ctx context.Context, name string, owner string) (*api.Cluster, error) {
 	if name == "" {
 		return nil, errors.New("missing cluster name")
 	}
 
-	cluster, err := Store(ctx).Clusters().Get(name)
+	cluster, err := Store(ctx).Owner(owner).Clusters().Get(name)
 	if err != nil {
 		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
 	cluster.DeletionTimestamp = &metav1.Time{Time: time.Now()}
 	cluster.Status.Phase = api.ClusterDeleting
 
-	return Store(ctx).Clusters().Update(cluster)
+	return Store(ctx).Owner(owner).Clusters().Update(cluster)
 }
 
-func DeleteNG(ctx context.Context, clusterName, nodeGroupName string) error {
+func DeleteNG(ctx context.Context, clusterName, nodeGroupName string, owner string) error {
 	if clusterName == "" {
 		return errors.New("missing cluster name")
 	}
@@ -134,27 +211,45 @@ func DeleteNG(ctx context.Context, clusterName, nodeGroupName string) error {
 		return errors.New("missing nodegroup name")
 	}
 
-	if _, err := Store(ctx).Clusters().Get(clusterName); err != nil {
+	if _, err := Store(ctx).Owner(owner).Clusters().Get(clusterName); err != nil {
 		return errors.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
 	}
 
-	nodeGroup, err := Store(ctx).NodeGroups(clusterName).Get(nodeGroupName)
+	nodeGroup, err := Store(ctx).Owner(owner).NodeGroups(clusterName).Get(nodeGroupName)
 	if err != nil {
 		return errors.Errorf(`nodegroup not found`)
 	}
 
-	if !nodeGroup.IsMaster() {
-		nodeGroup.DeletionTimestamp = &metav1.Time{Time: time.Now()}
-		_, err := Store(ctx).NodeGroups(clusterName).Update(nodeGroup)
-		return err
-	}
+	//	if !nodeGroup.IsMaster() {
+	//		nodeGroup.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+	_, err = Store(ctx).Owner(owner).NodeGroups(clusterName).Update(nodeGroup)
+	return err
+	//	}
 
 	return nil
 }
 
-func GetSSHConfig(ctx context.Context, nodeName string, cluster *api.Cluster) (*api.SSHConfig, error) {
+func DeleteMachineSet(ctx context.Context, clusterName, setName, owner string) error {
+	if clusterName == "" {
+		return errors.New("missing cluster name")
+	}
+	if setName == "" {
+		return errors.New("missing machineset name")
+	}
+
+	mSet, err := Store(ctx).Owner(owner).MachineSet(clusterName).Get(setName)
+	if err != nil {
+		return errors.Errorf(`machinset not found in pharmer db, try using kubectl`)
+	}
+	tm := metav1.Now()
+	mSet.DeletionTimestamp = &tm
+	_, err = Store(ctx).Owner(owner).MachineSet(clusterName).Update(mSet)
+	return err
+}
+
+func GetSSHConfig(ctx context.Context, owner, nodeName string, cluster *api.Cluster) (*api.SSHConfig, error) {
 	var err error
-	ctx, err = LoadCACertificates(ctx, cluster)
+	ctx, err = LoadCACertificates(ctx, cluster, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -166,28 +261,29 @@ func GetSSHConfig(ctx context.Context, nodeName string, cluster *api.Cluster) (*
 	if err != nil {
 		return nil, err
 	}
-	ctx, err = LoadSSHKey(ctx, cluster)
+	ctx, err = LoadSSHKey(ctx, cluster, owner)
 	if err != nil {
 		return nil, err
 	}
 
-	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+	cm, err := GetCloudManager(cluster.ClusterConfig().Cloud.CloudProvider, ctx)
 	if err != nil {
 		return nil, err
 	}
 	return cm.GetSSHConfig(cluster, node)
 }
 
-func GetAdminConfig(ctx context.Context, cluster *api.Cluster) (*api.KubeConfig, error) {
-	if managedProviders.Has(cluster.Spec.Cloud.CloudProvider) {
-		cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+func GetAdminConfig(ctx context.Context, cluster *api.Cluster, owner string) (*api.KubeConfig, error) {
+	if managedProviders.Has(cluster.ClusterConfig().Cloud.CloudProvider) {
+		cm, err := GetCloudManager(cluster.ClusterConfig().Cloud.CloudProvider, ctx)
 		if err != nil {
 			return nil, err
 		}
+		cm.SetOwner(owner)
 		return cm.GetKubeConfig(cluster)
 	}
 	var err error
-	ctx, err = LoadCACertificates(ctx, cluster)
+	ctx, err = LoadCACertificates(ctx, cluster, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -233,25 +329,27 @@ func Apply(ctx context.Context, opts *options.ApplyConfig) ([]api.Action, error)
 		return nil, errors.New("missing cluster name")
 	}
 
-	cluster, err := Store(ctx).Clusters().Get(opts.ClusterName)
+	cluster, err := Store(ctx).Owner(opts.Owner).Clusters().Get(opts.ClusterName)
 	if err != nil {
 		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", opts.ClusterName, err)
 	}
+	fmt.Println("KO")
 
-	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
+	cm, err := GetCloudManager(cluster.ClusterConfig().Cloud.CloudProvider, ctx)
 	if err != nil {
 		return nil, err
 	}
+	cm.SetOwner(opts.Owner)
 
 	return cm.Apply(cluster, opts.DryRun)
 }
 
-func CheckForUpdates(ctx context.Context, name string) (string, error) {
+func CheckForUpdates(ctx context.Context, name, owner string) (string, error) {
 	if name == "" {
 		return "", errors.New("missing cluster name")
 	}
 
-	cluster, err := Store(ctx).Clusters().Get(name)
+	cluster, err := Store(ctx).Owner(owner).Clusters().Get(name)
 	if err != nil {
 		return "", errors.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
@@ -264,21 +362,18 @@ func CheckForUpdates(ctx context.Context, name string) (string, error) {
 	if cluster.Status.Phase == api.ClusterDeleted {
 		return "", nil
 	}
-	if ctx, err = LoadCACertificates(ctx, cluster); err != nil {
+	if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
 		return "", err
 	}
-	if ctx, err = LoadSSHKey(ctx, cluster); err != nil {
+	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
 		return "", err
 	}
 	kc, err := NewAdminClient(ctx, cluster)
 	if err != nil {
 		return "", err
 	}
-	cm, err := GetCloudManager(cluster.Spec.Cloud.CloudProvider, ctx)
-	if err != nil {
-		return "", err
-	}
-	upm := NewUpgradeManager(ctx, cm, kc, cluster)
+
+	upm := NewUpgradeManager(ctx, kc, cluster, owner)
 	upgrades, err := upm.GetAvailableUpgrades()
 	if err != nil {
 		return "", err
@@ -287,21 +382,57 @@ func CheckForUpdates(ctx context.Context, name string) (string, error) {
 	return "", nil
 }
 
-func UpdateSpec(ctx context.Context, cluster *api.Cluster) (*api.Cluster, error) {
+func UpdateSpec(ctx context.Context, cluster *api.Cluster, owner string) (*api.Cluster, error) {
 	if cluster == nil {
 		return nil, errors.New("missing cluster")
 	} else if cluster.Name == "" {
 		return nil, errors.New("missing cluster name")
-	} else if cluster.Spec.KubernetesVersion == "" {
+	} else if cluster.ClusterConfig().KubernetesVersion == "" {
 		return nil, errors.New("missing cluster version")
 	}
 
-	existing, err := Store(ctx).Clusters().Get(cluster.Name)
+	existing, err := Store(ctx).Owner(owner).Clusters().Get(cluster.Name)
 	if err != nil {
 		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", cluster.Name, err)
 	}
 	cluster.Status = existing.Status
 	cluster.Generation = time.Now().UnixNano()
 
-	return Store(ctx).Clusters().Update(cluster)
+	return Store(ctx).Owner(owner).Clusters().Update(cluster)
 }
+
+func GetBooststrapClient(ctx context.Context, cluster *api.Cluster, owner string) (clusterclient.Client, error) {
+	clientFactory := clusterclient.NewFactory()
+	kubeConifg, err := GetAdminConfig(ctx, cluster, owner)
+	if err != nil {
+		return nil, err
+	}
+
+	config := api.Convert_KubeConfig_To_Config(kubeConifg)
+	data, err := clientcmd.Write(*config)
+	bootstrapClient, err := clientFactory.NewClientFromKubeconfig(string(data))
+	if err != nil {
+		return nil, fmt.Errorf("unable to create bootstrap client: %v", err)
+	}
+	return bootstrapClient, nil
+}
+
+func GetKubernetesClient(ctx context.Context, cluster *api.Cluster, owner string) (kubernetes.Interface, error) {
+	kubeConifg, err := GetAdminConfig(ctx, cluster, owner)
+	if err != nil {
+		return nil, err
+	}
+
+	config := api.NewRestConfig(kubeConifg)
+
+	return kubernetes.NewForConfig(config)
+}
+
+/*func GetSSHConfig(ctx context.Context, hostip string) *api.SSHConfig {
+	return &api.SSHConfig{
+		PrivateKey: SSHKey(ctx).PrivateKey,
+		User:       "root",
+		HostPort:   int32(22),
+		HostIP: hostip,
+	}
+}*/

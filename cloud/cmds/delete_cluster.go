@@ -34,7 +34,7 @@ func NewCmdDeleteCluster() *cobra.Command {
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
 			for _, clusterName := range opts.Clusters {
-				_, err := cloud.Delete(ctx, clusterName)
+				_, err := cloud.Delete(ctx, clusterName, opts.Owner)
 				term.ExitOnError(err)
 			}
 		},

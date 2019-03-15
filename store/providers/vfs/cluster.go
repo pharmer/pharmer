@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/graymeta/stow"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,12 +16,13 @@ import (
 type clusterFileStore struct {
 	container stow.Container
 	prefix    string
+	owner     string
 }
 
 var _ store.ClusterStore = &clusterFileStore{}
 
 func (s *clusterFileStore) resourceHome() string {
-	return filepath.Join(s.prefix, "clusters")
+	return filepath.Join(s.owner, s.prefix, "clusters")
 }
 
 func (s *clusterFileStore) resourceID(name string) string {

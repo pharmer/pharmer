@@ -11,17 +11,18 @@ import (
 type Certificate struct {
 	Id                int64
 	Name              string     `xorm:"text not null 'name'"`
-	ClusterName       string     `xorm:"text not null 'clusterName'"`
+	ClusterName       string     `xorm:"text not null 'cluster_name'"`
 	UID               string     `xorm:"text not null 'uid'"`
 	Cert              string     `xorm:"text NOT NULL 'cert'"`
 	Key               string     `xorm:"text NOT NULL 'key'"`
-	CreationTimestamp time.Time  `xorm:"bigint created 'creationTimestamp'"`
-	DateModified      time.Time  `xorm:"bigint updated 'dateModified'"`
-	DeletionTimestamp *time.Time `xorm:"bigint null 'deletionTimestamp'"`
+	CreationTimestamp time.Time  `xorm:"bigint created 'created_unix'"`
+	DateModified      time.Time  `xorm:"bigint updated 'updated_unix'"`
+	DeletionTimestamp *time.Time `xorm:"bigint null 'deleted_unix'"`
+	ClusterId         int64      `xorm:"bigint not null 'cluster_id'"`
 }
 
 func (Certificate) TableName() string {
-	return `"pharmer"."certificate"`
+	return `"cluster_certificate"`
 }
 
 func encodeCertificate(crt *x509.Certificate, key *rsa.PrivateKey) (*Certificate, error) {

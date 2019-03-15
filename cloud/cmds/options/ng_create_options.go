@@ -6,6 +6,7 @@ import (
 
 	"github.com/appscode/go/flags"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -16,6 +17,7 @@ type NodeGroupCreateConfig struct {
 	NodeType     string
 	SpotPriceMax float64
 	Nodes        map[string]int
+	Owner        string
 }
 
 func NewNodeGroupCreateConfig() *NodeGroupCreateConfig {
@@ -24,6 +26,7 @@ func NewNodeGroupCreateConfig() *NodeGroupCreateConfig {
 		NodeType:     string(api.NodeTypeRegular),
 		SpotPriceMax: float64(0),
 		Nodes:        map[string]int{},
+		Owner:        utils.GetLocalOwner(),
 	}
 }
 
@@ -33,6 +36,7 @@ func (c *NodeGroupCreateConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.Float64Var(&c.SpotPriceMax, "spot-price-max", c.SpotPriceMax, "Maximum price of spot instance")
 	fs.StringToIntVar(&c.Nodes, "nodes", c.Nodes, "Node set configuration")
 
+	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
 }
 
 func (c *NodeGroupCreateConfig) ValidateFlags(cmd *cobra.Command, args []string) error {

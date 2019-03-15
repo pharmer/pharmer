@@ -1,7 +1,9 @@
 package xorm
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -10,13 +12,16 @@ import (
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 )
 
+func TestJM(t *testing.T) {
+	fmt.Println(os.Getenv("HOME"))
+}
+
 func TestClusterEngine(t *testing.T) {
-	engine, err := newPGEngine("postgres", "postgres", "127.0.0.1", 5432, "postgres")
-	fmt.Println(err)
-	x := New(engine)
+	//engine, err := newPGEngine("postgres", "postgres", "127.0.0.1", 5432, "postgres")
+	//fmt.Println(err)
+	//x := New(engine)
 	cluster := &api.Cluster{}
 	cluster.Name = "xorm-test"
 	cluster.Spec.Cloud.CloudProvider = "digitalocean"
@@ -33,10 +38,10 @@ func TestClusterEngine(t *testing.T) {
 
 	// Init spec
 	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
-	cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
+	//cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	cluster.Spec.Cloud.InstanceImage = "ubuntu-16-04-x64"
 	cluster.Spec.Networking.SetDefaults()
-	cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
+	//cluster.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
 	//cluster.Spec.APIServerCertSANs = ""
 	cluster.Spec.APIServerExtraArgs = map[string]string{
 		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
@@ -50,6 +55,15 @@ func TestClusterEngine(t *testing.T) {
 		Phase: api.ClusterPending,
 	}
 
-	_, err = x.Clusters().Create(cluster)
+	//_, err = x.Clusters().Create(cluster)
+	//fmt.Println(err)
+}
+
+func TestCred(t *testing.T) {
+	data := `{"kind":"Credential","apiVersion":"v1alpha1","metadata":{"name":"do2","creationTimestamp":"2018-11-21T06:54:35Z"},"spec":{"provider":"DigitalOcean","data":{"token":"testcredential"}}}`
+
+	obj := api.Credential{}
+	err := json.Unmarshal([]byte(data), &obj)
 	fmt.Println(err)
+	fmt.Println(obj.Kind)
 }

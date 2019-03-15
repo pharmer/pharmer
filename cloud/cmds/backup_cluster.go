@@ -6,7 +6,7 @@ import (
 
 	"github.com/appscode/go/term"
 	"github.com/appscode/kutil/tools/backup"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
@@ -38,11 +38,11 @@ func NewCmdBackup() *cobra.Command {
 				}
 				ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-				cluster, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
+				cluster, err := cloud.Store(ctx).Owner(opts.Owner).Clusters().Get(opts.ClusterName)
 				if err != nil {
 					term.Fatalln(err)
 				}
-				c2, err := cloud.GetAdminConfig(ctx, cluster)
+				c2, err := cloud.GetAdminConfig(ctx, cluster, opts.Owner)
 				if err != nil {
 					term.Fatalln(err)
 				}

@@ -1,10 +1,11 @@
 package xorm
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/go-xorm/xorm"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +14,7 @@ import (
 
 type credentialXormStore struct {
 	engine *xorm.Engine
+	owner  string
 }
 
 var _ store.CredentialStore = &credentialXormStore{}
@@ -20,7 +22,7 @@ var _ store.CredentialStore = &credentialXormStore{}
 func (s *credentialXormStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
 	result := make([]*api.Credential, 0)
 	var credentials []Credential
-	err := s.engine.Find(&credentials)
+	err := s.engine.Where(`"ownerId"=?`, s.owner).Find(&credentials)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +42,15 @@ func (s *credentialXormStore) Get(name string) (*api.Credential, error) {
 		return nil, errors.New("missing credential name")
 	}
 	cred := &Credential{
-		Name: name,
+		Name:    name,
+		OwnerId: s.owner,
+	}
+	if s.owner == "" {
+		id, err := strconv.Atoi(name)
+		if err != nil {
+			return nil, err
+		}
+		cred = &Credential{Id: int64(id)}
 	}
 
 	found, err := s.engine.Get(cred)
@@ -64,7 +74,7 @@ func (s *credentialXormStore) Create(obj *api.Credential) (*api.Credential, erro
 	if err != nil {
 		return nil, err
 	}
-	found, err := s.engine.Get(&Credential{Name: obj.Name, DeletionTimestamp: nil})
+	found, err := s.engine.Get(&Credential{Name: obj.Name, DeletionTimestamp: nil, OwnerId: s.owner})
 	if err != nil {
 		return nil, errors.Errorf("reason: %v", err)
 	}
@@ -77,7 +87,7 @@ func (s *credentialXormStore) Create(obj *api.Credential) (*api.Credential, erro
 		return nil, err
 	}
 	cred.UID = string(uuid.NewUUID())
-
+	cred.OwnerId = s.owner
 	_, err = s.engine.Insert(cred)
 
 	return obj, err
@@ -94,7 +104,7 @@ func (s *credentialXormStore) Update(obj *api.Credential) (*api.Credential, erro
 		return nil, err
 	}
 
-	found, err := s.engine.Get(&Credential{Name: obj.Name})
+	found, err := s.engine.Get(&Credential{Name: obj.Name, OwnerId: s.owner})
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +116,7 @@ func (s *credentialXormStore) Update(obj *api.Credential) (*api.Credential, erro
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.engine.Where(`name = ?`, cred.Name).Update(cred)
+	_, err = s.engine.Where(`name = ?`, cred.Name).Where(`"ownerId"=?`, s.owner).Update(cred)
 	return obj, err
 }
 
@@ -114,6 +124,6 @@ func (s *credentialXormStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing credential name")
 	}
-	_, err := s.engine.Delete(&Credential{Name: name})
+	_, err := s.engine.Delete(&Credential{Name: name, OwnerId: s.owner})
 	return err
 }

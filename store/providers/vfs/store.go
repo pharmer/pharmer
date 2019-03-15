@@ -2,6 +2,7 @@ package vfs
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"path/filepath"
 	"strconv"
@@ -20,7 +21,7 @@ import (
 	"github.com/graymeta/stow/local"
 	"github.com/graymeta/stow/s3"
 	"github.com/graymeta/stow/swift"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
@@ -222,6 +223,7 @@ func init() {
 type FileStore struct {
 	container stow.Container
 	prefix    string
+	owner     string
 }
 
 var _ store.Interface = &FileStore{}
@@ -230,22 +232,41 @@ func New(container stow.Container, prefix string) store.Interface {
 	return &FileStore{container: container, prefix: prefix}
 }
 
+func (s *FileStore) Owner(id string) store.ResourceInterface {
+	ret := *s
+	ret.owner = id
+	return &ret
+}
+
 func (s *FileStore) Credentials() store.CredentialStore {
-	return &credentialFileStore{container: s.container, prefix: s.prefix}
+	return &credentialFileStore{container: s.container, prefix: s.prefix, owner: s.owner}
 }
 
 func (s *FileStore) Clusters() store.ClusterStore {
-	return &clusterFileStore{container: s.container, prefix: s.prefix}
+	return &clusterFileStore{container: s.container, prefix: s.prefix, owner: s.owner}
 }
 
 func (s *FileStore) NodeGroups(cluster string) store.NodeGroupStore {
-	return &nodeGroupFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
+	return &nodeGroupFileStore{container: s.container, prefix: s.prefix, cluster: cluster, owner: s.owner}
+}
+
+func (s *FileStore) MachineSet(cluster string) store.MachineSetStore {
+	return &machineSetFileStore{container: s.container, prefix: s.prefix, cluster: cluster, owner: s.owner}
+}
+
+func (s *FileStore) Machine(cluster string) store.MachineStore {
+	return &machineFileStore{container: s.container, prefix: s.prefix, cluster: cluster, owner: s.owner}
 }
 
 func (s *FileStore) Certificates(cluster string) store.CertificateStore {
-	return &certificateFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
+	return &certificateFileStore{container: s.container, prefix: s.prefix, cluster: cluster, owner: s.owner}
 }
 
 func (s *FileStore) SSHKeys(cluster string) store.SSHKeyStore {
-	return &sshKeyFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
+	return &sshKeyFileStore{container: s.container, prefix: s.prefix, cluster: cluster, owner: s.owner}
+}
+
+func (s *FileStore) Operations() store.OperationStore {
+	fmt.Println("file operation nil")
+	return nil
 }

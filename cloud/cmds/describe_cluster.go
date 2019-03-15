@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/config"
@@ -45,10 +45,10 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 }
 
 func RunDescribeCluster(ctx context.Context, opts *options.ClusterDescribeConfig, out io.Writer) error {
-	rDescriber := describer.NewDescriber(ctx)
+	rDescriber := describer.NewDescriber(ctx, opts.Owner)
 
 	first := true
-	clusters, err := getClusterList(ctx, opts.Clusters)
+	clusters, err := getClusterList(ctx, opts.Clusters, opts.Owner)
 	if err != nil {
 		return err
 	}
@@ -65,8 +65,10 @@ func RunDescribeCluster(ctx context.Context, opts *options.ClusterDescribeConfig
 			fmt.Fprintf(out, "\n\n%s", s)
 		}
 
-		if resp, err := cloud.CheckForUpdates(ctx, cluster.Name); err == nil {
+		if resp, err := cloud.CheckForUpdates(ctx, cluster.Name, opts.Owner); err == nil {
 			term.Println(resp)
+		} else {
+			term.ExitOnError(err)
 		}
 	}
 

@@ -17,12 +17,13 @@ type certificateFileStore struct {
 	container stow.Container
 	prefix    string
 	cluster   string
+	owner     string
 }
 
 var _ store.CertificateStore = &certificateFileStore{}
 
 func (s *certificateFileStore) resourceHome() string {
-	return filepath.Join(s.prefix, "clusters", s.cluster, "pki")
+	return filepath.Join(s.owner, s.prefix, "clusters", s.cluster, "pki")
 }
 
 func (s *certificateFileStore) certID(name string) string {

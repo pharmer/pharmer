@@ -20,6 +20,8 @@ type ClusterManager struct {
 	conn    *cloudConnector
 	namer   namer
 	m       sync.Mutex
+
+	owner string
 }
 
 var _ Interface = &ClusterManager{}

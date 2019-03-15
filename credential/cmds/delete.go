@@ -2,7 +2,7 @@ package cmds
 
 import (
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential/cmds/options"
@@ -34,7 +34,7 @@ func NewCmdDeleteCredential() *cobra.Command {
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
 			for _, cred := range opts.Credentials {
-				err := cloud.Store(ctx).Credentials().Delete(cred)
+				err := cloud.Store(ctx).Owner(opts.Owner).Credentials().Delete(cred)
 				term.ExitOnError(err)
 			}
 		},

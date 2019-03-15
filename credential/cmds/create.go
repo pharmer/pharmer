@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential"
@@ -79,7 +79,7 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 			if err != nil {
 				term.Fatalln(err)
 			}
-			_, err = cloud.Store(ctx).Credentials().Create(cred)
+			_, err = cloud.Store(ctx).Owner(opts.Owner).Credentials().Create(cred)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -123,6 +123,6 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 	}
 
 	cred.Spec.Data = commonSpec.Data
-	_, err = cloud.Store(ctx).Credentials().Create(cred)
+	_, err = cloud.Store(ctx).Owner(opts.Owner).Credentials().Create(cred)
 	return err
 }

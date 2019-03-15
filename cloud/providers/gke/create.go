@@ -1,62 +1,80 @@
 package gke
 
 import (
+	"encoding/json"
 	"net"
 	"strings"
-	"time"
 
 	"github.com/appscode/go/crypto/rand"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/apimachinery/pkg/runtime"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
-	if sku == "" {
-		// assign at the time of apply
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+	spec := &api.GKEMachineProviderSpec{
+		Zone:        cluster.Spec.Config.Cloud.Zone,
+		MachineType: sku,
+		Roles:       []api.MachineRole{role},
+		Disks: []api.Disk{
+			{
+				InitializeParams: api.DiskInitializeParams{
+					DiskSizeGb: 100,
+					DiskType:   "pd-standard",
+				},
+			},
+		},
 	}
-	return api.NodeSpec{
-		SKU:      sku,
-		DiskType: "pd-standard",
-		DiskSize: 100,
+	providerSpecValue, err := json.Marshal(spec)
+	if err != nil {
+		return clusterapi.ProviderSpec{}, err
+	}
+
+	return clusterapi.ProviderSpec{
+		Value: &runtime.RawExtension{
+			Raw: providerSpecValue,
+		},
 	}, nil
 }
 
-func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
+func (cm *ClusterManager) SetOwner(owner string) {
+	cm.owner = owner
+}
+
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
 	n := namer{cluster: cluster}
 
-	// Init object meta
-	cluster.ObjectMeta.UID = uuid.NewUUID()
-	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
-	cluster.ObjectMeta.Generation = time.Now().UnixNano()
-	api.AssignTypeKind(cluster)
+	if err := api.AssignTypeKind(cluster); err != nil {
+		return err
+	}
+	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
+		return err
+	}
 
 	// Init spec
-	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone[0:strings.LastIndex(cluster.Spec.Cloud.Zone, "-")]
-	cluster.Spec.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
+	config.Cloud.Region = config.Cloud.Zone[0:strings.LastIndex(config.Cloud.Zone, "-")]
+	config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
 	//cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
 	// REGISTER_MASTER_KUBELET = false // always false, keep master lightweight
 	// PREEMPTIBLE_NODE = false // Removed Support
 
 	//cluster.Spec.Cloud.InstanceImageProject = "ubuntu-os-cloud"
-	cluster.Spec.Cloud.InstanceImage = "Ubuntu"
-	cluster.Spec.Networking.NonMasqueradeCIDR = "10.0.0.0/8"
-	cluster.Spec.Networking.PodSubnet = "10.244.0.0/16"
-	cluster.Spec.Networking.NetworkProvider = "CALICO"
+	config.Cloud.InstanceImage = "Ubuntu"
+	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
 
-	cluster.Spec.Cloud.GKE = &api.GKESpec{
+	config.Cloud.GKE = &api.GKESpec{
 		UserName:    n.AdminUsername(),
 		Password:    rand.GeneratePassword(),
 		NetworkName: "default",
 	}
 	// Init status
-	cluster.Status = api.ClusterStatus{
+	cluster.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,
 	}
-	return nil
+	return cluster.SetGKEProviderConfig(cluster.Spec.ClusterAPI, config)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {

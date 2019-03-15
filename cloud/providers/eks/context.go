@@ -8,11 +8,12 @@ import (
 
 	. "github.com/appscode/go/types"
 	_eks "github.com/aws/aws-sdk-go/service/eks"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes" //"fmt"
 	"k8s.io/client-go/rest"       //"k8s.io/client-go/util/cert"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type ClusterManager struct {
@@ -22,6 +23,8 @@ type ClusterManager struct {
 	// Deprecated
 	namer namer
 	m     sync.Mutex
+
+	owner string
 }
 
 var _ Interface = &ClusterManager{}
@@ -35,9 +38,9 @@ const (
 	clusterIDHeader   = "x-k8s-aws-id"
 	EKSNodeConfigMap  = "aws-auth"
 	EKSConfigMapRoles = "mapRoles"
-	EKSVPCUrl         = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/amazon-eks-vpc-sample.yaml"
-	ServiceRoleUrl    = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/amazon-eks-service-role.yaml"
-	NodeGroupUrl      = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/amazon-eks-nodegroup.yaml"
+	EKSVPCUrl         = "https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-01-09/amazon-eks-vpc-sample.yaml"
+	ServiceRoleUrl    = "https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-01-09/amazon-eks-service-role.yaml"
+	NodeGroupUrl      = "https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-01-09/amazon-eks-nodegroup.yaml"
 )
 
 func init() {
@@ -48,7 +51,16 @@ func New(ctx context.Context) Interface {
 	return &ClusterManager{ctx: ctx}
 }
 
+// AddToManager adds all Controllers to the Manager
+func (cm *ClusterManager) AddToManager(ctx context.Context, m manager.Manager) error {
+	return nil
+}
+
 type paramK8sClient struct{}
+
+func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
+	return nil
+}
 
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 	cm.m.Lock()
@@ -98,7 +110,7 @@ func (cm *ClusterManager) GetEKSAdminClient() (kubernetes.Interface, error) {
 
 func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
 	var err error
-	cm.conn, err = NewConnector(cm.ctx, cluster)
+	cm.conn, err = NewConnector(cm.ctx, cluster, cm.owner)
 	if err != nil {
 		return nil, err
 	}

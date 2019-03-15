@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/golang/glog"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 )
 
 // Factory is a function that returns a storage.Interface.

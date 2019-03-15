@@ -7,17 +7,18 @@ import (
 type SSHKey struct {
 	Id                int64
 	Name              string     `xorm:"text not null 'name'"`
-	ClusterName       string     `xorm:"text not null 'clusterName'"`
+	ClusterName       string     `xorm:"text not null 'cluster_name'"`
 	UID               string     `xorm:"text not null 'uid'"`
-	PublicKey         string     `xorm:"string  not null 'publicKey'"`
-	PrivateKey        string     `xorm:"string  not null 'privateKey'"`
-	CreationTimestamp time.Time  `xorm:"bigint created 'creationTimestamp'"`
-	DateModified      time.Time  `xorm:"bigint updated 'dateModified'"`
-	DeletionTimestamp *time.Time `xorm:"bigint null 'deletionTimestamp'"`
+	PublicKey         string     `xorm:"string  not null 'public_key'"`
+	PrivateKey        string     `xorm:"string  not null 'private_key'"`
+	CreationTimestamp time.Time  `xorm:"bigint created 'created_unix'"`
+	DateModified      time.Time  `xorm:"bigint updated 'updated_unix'"`
+	DeletionTimestamp *time.Time `xorm:"bigint null 'deleted_unix'"`
+	ClusterId         int64      `xorm:"bigint not null 'cluster_id'"`
 }
 
 func (SSHKey) TableName() string {
-	return `"pharmer"."sshKey"`
+	return `"cluster_ssh_key"`
 }
 
 func encodeSSHKey(pub, priv []byte) (*SSHKey, error) {

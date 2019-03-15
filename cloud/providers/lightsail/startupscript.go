@@ -48,7 +48,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 		if cluster.Spec.Cloud.CCMCredentialName == "" {
 			panic(errors.New("no cloud controller manager credential found"))
 		}
-		cred, err := Store(ctx).Credentials().Get(cluster.Spec.Cloud.CCMCredentialName)
+		cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Cloud.CCMCredentialName)
 		if err != nil {
 			panic(err)
 		}

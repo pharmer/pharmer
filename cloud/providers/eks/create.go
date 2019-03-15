@@ -1,51 +1,63 @@
 package eks
 
 import (
+	"encoding/json"
 	"net"
-	"time"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/apimachinery/pkg/runtime"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
-	if sku == "" {
-		// assign at the time of apply
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+	spec := &api.EKSMachineProviderSpec{
+		InstanceType: sku,
 	}
-	return api.NodeSpec{
-		SKU:      sku,
-		DiskType: "gp2",
-		DiskSize: 100,
+
+	providerSpecValue, err := json.Marshal(spec)
+	if err != nil {
+		return clusterapi.ProviderSpec{}, err
+	}
+	return clusterapi.ProviderSpec{
+		Value: &runtime.RawExtension{
+			Raw: providerSpecValue,
+		},
 	}, nil
 }
 
-func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
+func (cm *ClusterManager) SetOwner(owner string) {
+	cm.owner = owner
+}
+
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
 	n := namer{cluster: cluster}
 
-	// Init object meta
-	cluster.ObjectMeta.UID = uuid.NewUUID()
-	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
-	cluster.ObjectMeta.Generation = time.Now().UnixNano()
-	api.AssignTypeKind(cluster)
+	if err := api.AssignTypeKind(cluster); err != nil {
+		return err
+	}
+	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
+		return err
+	}
 
 	// Init spec
-	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone[0 : len(cluster.Spec.Cloud.Zone)-1]
-	cluster.Spec.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
+	config.Cloud.Region = config.Cloud.Zone[0 : len(config.Cloud.Zone)-1]
+	config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
+
+	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
 
 	// cluster.Spec.Cloud.InstanceImage = "ubuntu_16_04_1"
 	// Init status
-	cluster.Status = api.ClusterStatus{
+	cluster.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,
 		Cloud: api.CloudStatus{
 			EKS: &api.EKSStatus{},
 		},
 	}
 
-	return nil
+	return cluster.SetEKSProviderConfig(cluster.Spec.ClusterAPI, config)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {

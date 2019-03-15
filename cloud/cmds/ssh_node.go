@@ -34,11 +34,11 @@ func NewCmdSSH() *cobra.Command {
 			}
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			cluster, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
+			cluster, err := cloud.Store(ctx).Owner(opts.Owner).Clusters().Get(opts.ClusterName)
 			if err != nil {
 				term.Fatalln(err)
 			}
-			sshConfig, err := cloud.GetSSHConfig(ctx, opts.NodeName, cluster)
+			sshConfig, err := cloud.GetSSHConfig(ctx, opts.Owner, opts.NodeName, cluster)
 			if err != nil {
 				log.Fatalln(err)
 			}

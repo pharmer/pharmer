@@ -23,6 +23,7 @@ type AWSNodeGroupManager struct {
 	ng    *api.NodeGroup
 	kc    kubernetes.Interface
 	token string
+	owner string
 }
 
 func NewAWSNodeGroupManager(ctx context.Context, conn *cloudConnector, namer namer, ng *api.NodeGroup, kc kubernetes.Interface, token string) *AWSNodeGroupManager {
@@ -55,7 +56,7 @@ func (igm *AWSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 		})
 		if !dryRun {
 			var nd NodeDrain
-			if nd, err = NewNodeDrain(igm.ctx, igm.kc, igm.conn.cluster); err != nil {
+			if nd, err = NewNodeDrain(igm.ctx, igm.kc, igm.conn.cluster, igm.owner); err != nil {
 				return
 			}
 			for _, node := range nodes.Items {
@@ -157,7 +158,7 @@ func (igm *AWSNodeGroupManager) createNodeGroup(ng *api.NodeGroup) error {
 }
 
 func (igm *AWSNodeGroupManager) deleteNodeWithDrain(nodes []core.Node) error {
-	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.conn.cluster)
+	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.conn.cluster, igm.owner)
 	if err != nil {
 		return err
 	}

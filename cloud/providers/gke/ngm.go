@@ -4,25 +4,26 @@ import (
 	"context"
 	"fmt"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	container "google.golang.org/api/container/v1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type GKENodeGroupManager struct {
 	ctx  context.Context
 	conn *cloudConnector
-	ng   *api.NodeGroup
+	ng   *clusterapi.MachineSet
 }
 
-func NewGKENodeGroupManager(ctx context.Context, conn *cloudConnector, ng *api.NodeGroup) *GKENodeGroupManager {
+func NewGKENodeGroupManager(ctx context.Context, conn *cloudConnector, ng *clusterapi.MachineSet) *GKENodeGroupManager {
 	return &GKENodeGroupManager{ctx: ctx, conn: conn, ng: ng}
 }
 
 func (igm *GKENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
 	var np *container.NodePool
 	var op string
-	np, _ = igm.conn.containerService.Projects.Zones.Clusters.NodePools.Get(igm.conn.cluster.Spec.Cloud.Project, igm.conn.cluster.Spec.Cloud.Zone, igm.conn.cluster.Name, igm.ng.Name).Do()
+	np, _ = igm.conn.containerService.Projects.Zones.Clusters.NodePools.Get(igm.conn.cluster.Spec.Config.Cloud.Project, igm.conn.cluster.Spec.Config.Cloud.Zone, igm.conn.cluster.Name, igm.ng.Name).Do()
 
 	if np == nil {
 		acts = append(acts, api.Action{
@@ -39,7 +40,7 @@ func (igm *GKENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 			}
 		}
 
-	} else if igm.ng.Spec.Nodes == 0 || igm.ng.DeletionTimestamp != nil {
+	} else if *igm.ng.Spec.Replicas == 0 || igm.ng.DeletionTimestamp != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionDelete,
 			Resource: "Node pool",
@@ -73,8 +74,8 @@ func (igm *GKENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 			}
 		}
 	}
-	igm.ng.Status.Nodes = igm.ng.Spec.Nodes
-	Store(igm.ctx).NodeGroups(igm.conn.cluster.Name).UpdateStatus(igm.ng)
+	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas
+	_, err = Store(igm.ctx).MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
 
 	return acts, err
 }

@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
@@ -115,4 +116,16 @@ func CheckAlterableFlags(cmd *cobra.Command, name ...string) bool {
 		}
 	}
 	return false
+}
+
+func GetLocalOwner() string {
+	home := os.Getenv("HOME")
+	if len(home) > 0 {
+		u := strings.Split(home, "/")
+		if len(u) > 0 {
+			return u[len(u)-1]
+		}
+	}
+	return ""
+
 }

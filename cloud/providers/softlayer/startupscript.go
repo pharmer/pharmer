@@ -46,7 +46,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 			panic(errors.New("no cloud controller manager credential found"))
 		}
 		// This config used by pharm-controller-manager
-		cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+		cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.CredentialName)
 		if err != nil {
 			panic(err)
 		}

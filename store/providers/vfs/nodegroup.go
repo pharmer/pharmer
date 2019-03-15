@@ -17,12 +17,13 @@ type nodeGroupFileStore struct {
 	container stow.Container
 	prefix    string
 	cluster   string
+	owner     string
 }
 
 var _ store.NodeGroupStore = &nodeGroupFileStore{}
 
 func (s *nodeGroupFileStore) resourceHome() string {
-	return filepath.Join(s.prefix, "clusters", s.cluster, "nodegroups")
+	return filepath.Join(s.owner, s.prefix, "clusters", s.cluster, "nodegroups")
 }
 
 func (s *nodeGroupFileStore) resourceID(name string) string {

@@ -8,34 +8,41 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	semver "github.com/appscode/go-version"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
-	"github.com/pkg/errors"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"golang.org/x/crypto/ssh"
-	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+
+	//	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
+
+	//client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	semver "github.com/appscode/go-version"
+	"github.com/pkg/errors"
 )
 
 type GenericUpgradeManager struct {
-	ctx     context.Context
-	ssh     SSHGetter
+	ctx context.Context
+	//ssh     SSHGetter
 	kc      kubernetes.Interface
 	cluster *api.Cluster
+
+	owner string
+	//client    client.ClusterV1alpha1Interface
+	clientSet clientset.Interface
 }
 
 var _ UpgradeManager = &GenericUpgradeManager{}
 
-func NewUpgradeManager(ctx context.Context, ssh SSHGetter, kc kubernetes.Interface, cluster *api.Cluster) UpgradeManager {
-	return &GenericUpgradeManager{ctx: ctx, ssh: ssh, kc: kc, cluster: cluster}
+func NewUpgradeManager(ctx context.Context, kc kubernetes.Interface, cluster *api.Cluster, owner string) UpgradeManager {
+	return &GenericUpgradeManager{ctx: ctx, kc: kc, cluster: cluster, owner: owner}
 }
 
 func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error) {
 	// Collect the upgrades kubeadm can do in this list
 	upgrades := make([]*api.Upgrade, 0)
-	v := NewKubeVersionGetter(upm.kc, upm.cluster)
+	v := NewKubeVersionGetter(upm.kc, nil)
 	clusterVersionStr, clusterVersion, err := v.ClusterVersion()
 	if err != nil {
 		return nil, err
@@ -61,15 +68,15 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 		return nil, err
 	}
 
-	dnsType, dnsVersion, err := v.DeployedDNSAddon()
+	/*dnsType, dnsVersion, err := v.DeployedDNSAddon()
 	if err != nil {
 		return nil, err
-	}
+	}*/
 	// Construct a descriptor for the current state of the world
 	beforeState := api.ClusterState{
-		KubeVersion:     clusterVersionStr,
-		DNSType:         dnsType,
-		DNSVersion:      dnsVersion,
+		KubeVersion: clusterVersionStr,
+		//DNSType:         dnsType,
+		//DNSVersion:      dnsVersion,
 		KubeadmVersion:  kubeadmVersionStr,
 		KubeletVersions: kubeletVersions,
 	}
@@ -109,9 +116,9 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 				Description: description,
 				Before:      beforeState,
 				After: api.ClusterState{
-					KubeVersion:    patchVersionStr,
-					DNSType:        api.CoreDNS,
-					DNSVersion:     kubeadmconstants.GetDNSVersion(api.CoreDNS),
+					KubeVersion: patchVersionStr,
+					//DNSType:        api.CoreDNS,
+					//	DNSVersion:     kubeadmconstants.GetDNSVersion(api.CoreDNS),
 					KubeadmVersion: newKubeadmVer,
 					// KubeletVersions is unset here as it is not used anywhere in .After
 				},
@@ -123,9 +130,9 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 			Description: "stable version",
 			Before:      beforeState,
 			After: api.ClusterState{
-				KubeVersion:    stableVersionStr,
-				DNSType:        api.CoreDNS,
-				DNSVersion:     kubeadmconstants.GetDNSVersion(api.CoreDNS),
+				KubeVersion: stableVersionStr,
+				//DNSType:        api.CoreDNS,
+				//DNSVersion:     kubeadmconstants.GetDNSVersion(api.CoreDNS),
 				KubeadmVersion: stableVersionStr,
 				// KubeletVersions is unset here as it is not used anywhere in .After
 			},
@@ -135,8 +142,12 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 	return upgrades, nil
 }
 
-func (upm *GenericUpgradeManager) ExecuteSSHCommand(command string, node *core.Node) (string, error) {
-	cfg, err := upm.ssh.GetSSHConfig(upm.cluster, node)
+func (upm *GenericUpgradeManager) ExecuteSSHCommand(command string, machine *clusterv1.Machine) (string, error) {
+	node, err := upm.kc.CoreV1().Nodes().Get(machine.Name, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	cfg, err := GetSSHConfig(upm.ctx, upm.owner, node.Name, upm.cluster)
 	if err != nil {
 		return "", err
 	}
@@ -197,7 +208,7 @@ func (upm *GenericUpgradeManager) PrintAvailableUpgrades(upgrades []*api.Upgrade
 		fmt.Fprintf(tabw, "API Server\t%s\t%s\n", upgrade.Before.KubeVersion, upgrade.After.KubeVersion)
 		fmt.Fprintf(tabw, "Controller Manager\t%s\t%s\n", upgrade.Before.KubeVersion, upgrade.After.KubeVersion)
 		fmt.Fprintf(tabw, "Scheduler\t%s\t%s\n", upgrade.Before.KubeVersion, upgrade.After.KubeVersion)
-		fmt.Fprintf(tabw, "Kube Proxy\t%s\t%s\n", upgrade.Before.KubeVersion, upgrade.After.KubeVersion)
+		fmt.Fprintf(tabw, "Cluster Proxy\t%s\t%s\n", upgrade.Before.KubeVersion, upgrade.After.KubeVersion)
 		fmt.Fprintf(tabw, "Core DNS\t%s\t%s\n", upgrade.Before.DNSVersion, upgrade.After.DNSVersion)
 
 		// The tabwriter should be flushed at this stage as we have now put in all the required content for this time. This is required for the tabs' size to be correct.
@@ -221,72 +232,62 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 	acts = append(acts, api.Action{
 		Action:   api.ActionUpdate,
 		Resource: "Master upgrade",
-		Message:  fmt.Sprintf("Master instance will be upgraded to %v", upm.cluster.Spec.KubernetesVersion),
+		Message:  fmt.Sprintf("Master instance will be upgraded to %v", upm.cluster.ClusterConfig().KubernetesVersion),
 	})
-	if !dryRun {
-		if err = upm.MasterUpgrade(); err != nil {
-			return
-		}
-
-		desiredVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
-		if err = WaitForReadyMasterVersion(upm.ctx, upm.kc, desiredVersion); err != nil {
-			return
-		}
-		// wait for nodes to start
-		if err = WaitForReadyMaster(upm.ctx, upm.kc); err != nil {
-			return
-		}
-	}
-
-	var nodeGroups []*api.NodeGroup
-	if nodeGroups, err = Store(upm.ctx).NodeGroups(upm.cluster.Name).List(metav1.ListOptions{}); err != nil {
+	/*upm.clientSet, err = NewClusterApiClient(upm.ctx, upm.cluster)
+	if err != nil {
 		return
 	}
+	upm.client = upm.clientSet.ClusterV1alpha1()
+	if !dryRun {
+		machineList, err := upm.client.Machines(core.NamespaceDefault).List(metav1.ListOptions{})
+		if err != nil {
+			return acts, err
+		}
+		for _, machine := range machineList.Items {
+			fmt.Println(machine)
+			if IsMaster(&machine) {
+				machine.Spec.Versions.ControlPlane = upm.cluster.Spec.KubernetesVersion
+				_, err = upm.client.Machines(core.NamespaceDefault).Update(&machine)
+				if err != nil {
+					return acts, err
+				}
+			}
+		}
+
+			desiredVersion, _ := semver.NewVersion(upm.cluster.ClusterConfig().KubernetesVersion)
+			if err = WaitForReadyMasterVersion(upm.ctx, upm.kc, desiredVersion); err != nil {
+				return
+			}
+			// wait for nodes to start
+			if err = WaitForReadyMaster(upm.ctx, upm.kc); err != nil {
+				return
+			}
+	}
+
 	acts = append(acts, api.Action{
 		Action:   api.ActionUpdate,
 		Resource: "Node group upgrade",
-		Message:  fmt.Sprintf("Node group will be upgraded to %v", upm.cluster.Spec.KubernetesVersion),
+		Message:  fmt.Sprintf("Node group will be upgraded to %v", upm.cluster.ClusterConfig().KubernetesVersion),
 	})
 	if !dryRun {
-		for _, ng := range nodeGroups {
-			if ng.IsMaster() {
-				continue
-			}
-			if err = upm.NodeGroupUpgrade(ng); err != nil {
-				return
+		machineSetList, err := upm.client.MachineSets(core.NamespaceDefault).List(metav1.ListOptions{})
+		if err != nil {
+			return acts, err
+		}
+
+		for _, ms := range machineSetList.Items {
+			ms.Spec.Template.Spec.Versions.ControlPlane = upm.cluster.ClusterConfig().KubernetesVersion
+			_, err := upm.client.MachineSets(core.NamespaceDefault).Update(&ms)
+			if err != nil {
+				return acts, err
 			}
 		}
-	}
-	return
+	}*/
+	return acts, nil
 }
 
-func (upm *GenericUpgradeManager) MasterUpgrade() error {
-	var masterInstance *core.Node
-	var err error
-	masterInstances, err := upm.kc.CoreV1().Nodes().List(metav1.ListOptions{
-		LabelSelector: labels.SelectorFromSet(map[string]string{
-			api.RoleMasterKey: "",
-		}).String(),
-	})
-	if err != nil {
-		return err
-	}
-	if len(masterInstances.Items) == 1 {
-		masterInstance = &masterInstances.Items[0]
-	} else if len(masterInstances.Items) > 1 {
-		return errors.Errorf("multiple master found")
-	} else {
-		return errors.Errorf("no master found")
-	}
-
-	desiredVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
-	currentVersion, _ := semver.NewVersion(masterInstance.Status.NodeInfo.KubeletVersion)
-
-	v11, err := semver.NewVersion("1.11.0")
-	if err != nil {
-		return err
-	}
-
+func (upm *GenericUpgradeManager) MasterUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error {
 	// ref: https://stackoverflow.com/a/2831449/244009
 	steps := []string{
 		`echo "#!/bin/bash" > /usr/bin/pharmer.sh`,
@@ -296,77 +297,60 @@ func (upm *GenericUpgradeManager) MasterUpgrade() error {
 		`echo "" >> /usr/bin/pharmer.sh`,
 		`echo "apt-get update" >> /usr/bin/pharmer.sh`,
 	}
-	if !desiredVersion.Equal(currentVersion) {
-		patch := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().String()
-		minor := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String()
-		cni, found := kubernetesCNIVersions[minor]
-		if !found {
-			return errors.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", desiredVersion)
+	var cmd string
+	if oldMachine.Spec.Versions.ControlPlane != newMachine.Spec.Versions.ControlPlane {
+		desiredVersion, _ := semver.NewVersion(newMachine.Spec.Versions.ControlPlane)
+		currentVersion, _ := semver.NewVersion(oldMachine.Spec.Versions.ControlPlane)
+		if !desiredVersion.Equal(currentVersion) {
+			patch := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().String()
+			minor := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String()
+			cni, found := kubernetesCNIVersions[minor]
+			if !found {
+				return errors.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", desiredVersion)
+			}
+			prekVer, found := prekVersions[minor]
+			if !found {
+				return errors.Errorf("pre-k version is unknown for Kubernetes version %s", desiredVersion)
+			}
+
+			// Keep using forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
+			if minor == "1.8.0" {
+				steps = append(steps, fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, cni))
+			} else {
+				steps = append(steps, fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubeadm=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, patch, cni))
+			}
+			steps = append(steps, fmt.Sprintf(`echo "curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/%s/pre-k-linux-amd64 && chmod +x pre-k && mv pre-k /usr/bin/" >> /usr/bin/pharmer.sh`, prekVer))
 		}
-		prekVer, found := prekVersions[minor]
-		if !found {
-			return errors.Errorf("pre-k version is unknown for Kubernetes version %s", desiredVersion)
-		}
-
-		// Keep using forked kubeadm 1.8.x for: https://github.com/kubernetes/kubernetes/pull/49840
-		if minor == "1.8.0" {
-			steps = append(steps, fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, cni))
-		} else if desiredVersion.LessThan(v11) {
-			steps = append(steps, fmt.Sprintf(`echo "apt-get upgrade -y kubelet=%s* kubectl=%s* kubeadm=%s* kubernetes-cni=%s*" >> /usr/bin/pharmer.sh`, patch, patch, patch, cni))
-		} else {
-			steps = append(steps, []string{
-				`echo "curl -sSL https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubeadm > /usr/bin/kubeadm" >> /usr/bin/pharmer.sh`,
-				`echo "chmod a+rx /usr/bin/kubeadm" >> /usr/bin/pharmer.sh`,
-			}...)
-
-		}
-		steps = append(steps, fmt.Sprintf(`echo "curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/%s/pre-k-linux-amd64 && chmod +x pre-k && mv pre-k /usr/bin/" >> /usr/bin/pharmer.sh`, prekVer))
-	}
-
-	steps = append(steps,
-		fmt.Sprintf(`echo "pre-k check master-status --timeout=-1s --kubeconfig=/etc/kubernetes/admin.conf" >> /usr/bin/pharmer.sh`))
-	steps = append(steps,
-		fmt.Sprintf(`echo "kubeadm upgrade apply %v -y" >> /usr/bin/pharmer.sh`, upm.cluster.Spec.KubernetesVersion))
-
-	if desiredVersion.Compare(v11) >= 0 {
 		steps = append(steps,
-			fmt.Sprintf(`echo "kubectl drain %s --ignore-daemonsets" >> /usr/bin/pharmer.sh`, masterInstance.Name),
-			fmt.Sprintf(`echo "apt-get upgrade -y kubelet kubeadm" >> /usr/bin/pharmer.sh`),
-			fmt.Sprintf(`echo "kubectl uncordon %s" >> /usr/bin/pharmer.sh`, masterInstance.Name))
+			fmt.Sprintf(`echo "pre-k check master-status --timeout=-1s --kubeconfig=/etc/kubernetes/admin.conf" >> /usr/bin/pharmer.sh`))
+		steps = append(steps,
+			fmt.Sprintf(`echo "kubeadm upgrade apply %v -y" >> /usr/bin/pharmer.sh`, newMachine.Spec.Versions.ControlPlane),
+			`chmod +x /usr/bin/pharmer.sh`,
+			`nohup /usr/bin/pharmer.sh >> /var/log/pharmer.log 2>&1 &`,
+		)
 	}
 
-	steps = append(steps,
-		`chmod +x /usr/bin/pharmer.sh`,
-		`nohup /usr/bin/pharmer.sh >> /var/log/pharmer.log 2>&1 &`,
-	)
-	cmd := fmt.Sprintf("sh -c '%s'", strings.Join(steps, "; "))
-	Logger(upm.ctx).Infof("Upgrading server %s using `%s`", masterInstance.Name, cmd)
+	// TODO(): Do you update each component seperately??
 
-	if _, err = upm.ExecuteSSHCommand(cmd, masterInstance); err != nil {
+	cmd = fmt.Sprintf("sh -c '%s'", strings.Join(steps, "; "))
+	Logger(upm.ctx).Infof("Upgrading machine %s using `%s`", oldMachine.Name, cmd)
+
+	if _, err := upm.ExecuteSSHCommand(cmd, oldMachine); err != nil {
+
 		return err
 	}
 	return nil
 }
 
-func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error) {
-	nodes := &core.NodeList{}
-	if upm.kc != nil {
-		nodes, err = upm.kc.CoreV1().Nodes().List(metav1.ListOptions{
-			LabelSelector: labels.SelectorFromSet(map[string]string{
-				api.NodePoolKey: ng.Name,
-			}).String(),
-		})
+func (upm *GenericUpgradeManager) NodeUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) (err error) {
+	if oldMachine.Spec.Versions.ControlPlane != newMachine.Spec.Versions.ControlPlane {
+		desiredVersion, _ := semver.NewVersion(oldMachine.Spec.Versions.ControlPlane)
+		v11, err := semver.NewVersion("1.11.0")
 		if err != nil {
-			return
+			return err
 		}
-	}
-	desiredVersion, _ := semver.NewVersion(upm.cluster.Spec.KubernetesVersion)
-	v11, err := semver.NewVersion("1.11.0")
-	if err != nil {
-		return err
-	}
-	for _, node := range nodes.Items {
-		currentVersion, _ := semver.NewVersion(node.Status.NodeInfo.KubeletVersion)
+
+		currentVersion, _ := semver.NewVersion(newMachine.Spec.Versions.ControlPlane)
 		if !desiredVersion.Equal(currentVersion) {
 			patch := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().String()
 			minor := desiredVersion.Clone().ToMutator().ResetPrerelease().ResetMetadata().ResetPatch().String()
@@ -410,12 +394,13 @@ func (upm *GenericUpgradeManager) NodeGroupUpgrade(ng *api.NodeGroup) (err error
 				`nohup /usr/bin/pharmer.sh >> /var/log/pharmer.log 2>&1 &`,
 			)
 			cmd := fmt.Sprintf("sh -c '%s'", strings.Join(steps, "; "))
-			Logger(upm.ctx).Infof("Upgrading server %s using `%s`", node.Name, cmd)
+			Logger(upm.ctx).Infof("Upgrading server %s using `%s`", oldMachine.Name, cmd)
 
-			if _, err = upm.ExecuteSSHCommand(cmd, &node); err != nil {
+			if _, err = upm.ExecuteSSHCommand(cmd, oldMachine); err != nil {
 				return err
 			}
 		}
+
 	}
 	return nil
 }

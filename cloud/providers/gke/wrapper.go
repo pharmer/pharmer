@@ -6,17 +6,17 @@ import (
 	"encoding/base64"
 
 	. "github.com/appscode/go/context"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"google.golang.org/api/container/v1"
-	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func encodeCluster(ctx context.Context, cluster *api.Cluster) (*container.Cluster, error) {
-	nodeGroups, err := Store(ctx).NodeGroups(cluster.Name).List(metav1.ListOptions{})
+func encodeCluster(ctx context.Context, cluster *api.Cluster, owner string) (*container.Cluster, error) {
+	nodeGroups, err := Store(ctx).Owner(owner).MachineSet(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		err = errors.Wrap(err, ID(ctx))
 		return nil, err
@@ -27,35 +27,38 @@ func encodeCluster(ctx context.Context, cluster *api.Cluster) (*container.Cluste
 
 	nodePools := make([]*container.NodePool, 0)
 	for _, node := range nodeGroups {
+		providerSpec := cluster.GKEProviderConfig(node.Spec.Template.Spec.ProviderSpec.Value.Raw)
 		np := &container.NodePool{
 			Config: &container.NodeConfig{
-				MachineType: node.Spec.Template.Spec.SKU,
-				DiskSizeGb:  node.Spec.Template.Spec.DiskSize,
-				ImageType:   cluster.Spec.Cloud.InstanceImage,
+				MachineType: providerSpec.MachineType,
+				DiskSizeGb:  providerSpec.Disks[0].InitializeParams.DiskSizeGb,
+				ImageType:   providerSpec.OS,
 				//		Tags:        cluster.Spec.Cloud.GKE.NodeTags,
 				/*Metadata: map[string]string{
 
 				},*/
 			},
-			InitialNodeCount: node.Spec.Nodes,
+			InitialNodeCount: int64(*node.Spec.Replicas),
 			Name:             node.Name,
 		}
 		nodePools = append(nodePools, np)
 	}
+	config := cluster.Spec.Config
+	clusterApi := cluster.Spec.ClusterAPI
 
 	kluster := &container.Cluster{
-		ClusterIpv4Cidr:       cluster.Spec.Networking.PodSubnet,
+		ClusterIpv4Cidr:       clusterApi.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
 		Name:                  cluster.Name,
-		InitialClusterVersion: cluster.Spec.KubernetesVersion,
+		InitialClusterVersion: cluster.Spec.Config.KubernetesVersion,
 
 		MasterAuth: &container.MasterAuth{
-			Username: cluster.Spec.Cloud.GKE.UserName,
-			Password: cluster.Spec.Cloud.GKE.Password,
+			Username: config.Cloud.GKE.UserName,
+			Password: config.Cloud.GKE.Password,
 		},
-		Network: cluster.Spec.Cloud.GKE.NetworkName,
+		Network: config.Cloud.GKE.NetworkName,
 		NetworkPolicy: &container.NetworkPolicy{
 			Enabled:  true,
-			Provider: cluster.Spec.Networking.NetworkProvider,
+			Provider: config.Cloud.NetworkProvider,
 		},
 		NodePools: nodePools,
 	}
@@ -63,18 +66,22 @@ func encodeCluster(ctx context.Context, cluster *api.Cluster) (*container.Cluste
 	return kluster, nil
 }
 
-func (cm *ClusterManager) retrieveClusterStatus(cluster *container.Cluster) {
-	cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
-		Type:    core.NodeExternalIP,
-		Address: cluster.Endpoint,
+func (cm *ClusterManager) retrieveClusterStatus(cluster *container.Cluster) error {
+	cm.cluster.Spec.ClusterAPI.Status.APIEndpoints = append(cm.cluster.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
+		Host: cluster.Endpoint,
+		Port: 0,
 	})
+	return nil
 }
 
-func (cm *ClusterManager) StoreCertificate(cluster *container.Cluster) error {
-	certStore := Store(cm.ctx).Certificates(cluster.Name)
-	_, caKey, err := certStore.Get(cm.cluster.Spec.CACertName)
+func (cm *ClusterManager) StoreCertificate(cluster *container.Cluster, owner string) error {
+	certStore := Store(cm.ctx).Owner(owner).Certificates(cluster.Name)
+	config := cm.cluster.Spec.Config
+	_, caKey, err := certStore.Get(config.CACertName)
 	if err == nil {
-		certStore.Delete(cm.cluster.Spec.CACertName)
+		if err = certStore.Delete(config.CACertName); err != nil {
+			return err
+		}
 	}
 	caCert, err := base64.StdEncoding.DecodeString(cluster.MasterAuth.ClusterCaCertificate)
 	if err != nil {
@@ -85,7 +92,7 @@ func (cm *ClusterManager) StoreCertificate(cluster *container.Cluster) error {
 		return err
 	}
 
-	if err := certStore.Create(cm.cluster.Spec.CACertName, crt[0], caKey); err != nil {
+	if err := certStore.Create(config.CACertName, crt[0], caKey); err != nil {
 		return err
 	}
 

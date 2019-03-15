@@ -3,6 +3,7 @@ package options
 import (
 	"strings"
 
+	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -11,17 +12,20 @@ import (
 type ApplyConfig struct {
 	ClusterName string
 	DryRun      bool
+	Owner       string
 }
 
 func NewApplyConfig() *ApplyConfig {
 	return &ApplyConfig{
 		ClusterName: "",
 		DryRun:      false,
+		Owner:       utils.GetLocalOwner(),
 	}
 }
 
 func (c *ApplyConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.DryRun, "dry-run", c.DryRun, "Dry run.")
+	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
 
 }
 

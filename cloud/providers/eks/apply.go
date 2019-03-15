@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
@@ -27,18 +28,18 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 	cm.cluster = in
 	cm.namer = namer{cluster: cm.cluster}
-	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster); err != nil {
+	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
 		return nil, err
 	}
-	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
+	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster, cm.owner); err != nil {
 		return nil, err
 	}
-	if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+	if cm.conn, err = NewConnector(cm.ctx, cm.cluster, cm.owner); err != nil {
 		return nil, err
 	}
 	cm.conn.namer = cm.namer
 
-	if cm.cluster.Spec.Cloud.InstanceImage, err = cm.conn.DetectInstanceImage(); err != nil {
+	if cm.cluster.Spec.Config.Cloud.InstanceImage, err = cm.conn.DetectInstanceImage(); err != nil {
 		return nil, err
 	}
 
@@ -51,13 +52,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 
 	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		nodeGroups, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+		nodeGroups, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
+		var replica int32 = 0
 		for _, ng := range nodeGroups {
-			ng.Spec.Nodes = 0
-			_, err := Store(cm.ctx).NodeGroups(cm.cluster.Name).Update(ng)
+			ng.Spec.Replicas = &replica
+			_, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).Update(ng)
 			if err != nil {
 				return nil, err
 			}
@@ -168,7 +170,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "VPC",
-			Message:  fmt.Sprintf("Found vpc with id %v", cm.cluster.Status.Cloud.AWS.VpcId),
+			Message:  fmt.Sprintf("Found vpc with id %v", cm.cluster.Status.Cloud.EKS.VpcId),
 		})
 	}
 
@@ -179,7 +181,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Control plane",
-			Message:  fmt.Sprintf("%v.compute.internal dscp option set will be created", cm.cluster.Spec.Cloud.Region),
+			Message:  fmt.Sprintf("%v.compute.internal dscp option set will be created", cm.cluster.Spec.Config.Cloud.Region),
 		})
 		if !dryRun {
 			if err = cm.conn.createControlPlane(); err != nil {
@@ -190,10 +192,10 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "Control plane",
-			Message:  fmt.Sprintf("Found %v.compute.internal dscp option set", cm.cluster.Spec.Cloud.Region),
+			Message:  fmt.Sprintf("Found %v.compute.internal dscp option set", cm.cluster.Spec.Config.Cloud.Region),
 		})
 	}
-	Store(cm.ctx).Clusters().Update(cm.cluster)
+	Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster)
 
 	var kc kubernetes.Interface
 	kc, err = cm.GetAdminClient()
@@ -206,7 +208,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	cm.cluster.Status.Phase = api.ClusterReady
-	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+	if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
 		return
 	}
 
@@ -215,8 +217,8 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
 	Logger(cm.ctx).Infoln("scaling node group...")
-	var nodeGroups []*api.NodeGroup
-	nodeGroups, err = Store(cm.ctx).NodeGroups(cm.cluster.Name).List(metav1.ListOptions{})
+	var nodeGroups []*clusterapi.MachineSet
+	nodeGroups, err = Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
@@ -226,7 +228,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		return
 	}
 	for _, ng := range nodeGroups {
-		igm := NewEKSNodeGroupManager(cm.ctx, cm.conn, ng, kc)
+		igm := NewEKSNodeGroupManager(cm.ctx, cm.conn, ng, kc, cm.owner)
 		var a2 []api.Action
 		a2, err = igm.Apply(dryRun)
 		if err != nil {
@@ -234,8 +236,8 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		}
 		acts = append(acts, a2...)
 	}
-	Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
-	Store(cm.ctx).Clusters().Update(cm.cluster)
+	Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
+	Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster)
 	return
 }
 
@@ -245,7 +247,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		cm.cluster.Status.Phase = api.ClusterDeleting
 	}
 	var found bool
-	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	_, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return
 	}
@@ -291,7 +293,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 
 	if !dryRun {
 		cm.cluster.Status.Phase = api.ClusterDeleted
-		Store(cm.ctx).Clusters().Update(cm.cluster)
+		Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster)
 	}
 
 	return

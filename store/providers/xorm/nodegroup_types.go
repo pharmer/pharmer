@@ -21,10 +21,11 @@ type NodeGroup struct {
 	CreationTimestamp time.Time  `xorm:"bigint created 'creationTimestamp'"`
 	DateModified      time.Time  `xorm:"bigint updated 'dateModified'"`
 	DeletionTimestamp *time.Time `xorm:"bigint null 'deletionTimestamp'"`
+	ClusterId         int64      `xorm:"bigint not null 'clusterId'"`
 }
 
 func (NodeGroup) TableName() string {
-	return `"pharmer"."nodegroup"`
+	return `"cluster_nodegroup"`
 }
 
 func encodeNodeGroup(in *api.NodeGroup) (*NodeGroup, error) {

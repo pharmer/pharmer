@@ -10,7 +10,7 @@ import (
 
 	"github.com/appscode/go/term"
 	"github.com/ghodss/yaml"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential/cmds/options"
@@ -67,18 +67,18 @@ func RunUpdateCredential(ctx context.Context, opts *options.CredentialEditConfig
 			return err
 		}
 
-		updated, err := cloud.Store(ctx).Credentials().Get(local.Name)
+		updated, err := cloud.Store(ctx).Owner(opts.Owner).Credentials().Get(local.Name)
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = local.ObjectMeta
 		updated.Spec = local.Spec
 
-		original, err := cloud.Store(ctx).Credentials().Get(updated.Name)
+		original, err := cloud.Store(ctx).Owner(opts.Owner).Credentials().Get(updated.Name)
 		if err != nil {
 			return err
 		}
-		if err := updateCredential(ctx, original, updated); err != nil {
+		if err := updateCredential(ctx, original, updated, opts.Owner); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`credential "%s" replaced`, original.Name))
@@ -87,21 +87,21 @@ func RunUpdateCredential(ctx context.Context, opts *options.CredentialEditConfig
 
 	credential := opts.Name
 
-	original, err := cloud.Store(ctx).Credentials().Get(credential)
+	original, err := cloud.Store(ctx).Owner(opts.Owner).Credentials().Get(credential)
 	if err != nil {
 		return err
 	}
 
 	// Check if flags are provided to update
 	if opts.DoNotDelete {
-		updated, err := cloud.Store(ctx).Credentials().Get(credential)
+		updated, err := cloud.Store(ctx).Owner(opts.Owner).Credentials().Get(credential)
 		if err != nil {
 			return err
 		}
 
 		// Set flag values in updated object
 
-		if err := updateCredential(ctx, original, updated); err != nil {
+		if err := updateCredential(ctx, original, updated, opts.Owner); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`credential "%s" updated`, original.Name))
@@ -183,7 +183,7 @@ func editCredential(ctx context.Context, opts *options.CredentialEditConfig, ori
 
 			containsError = false
 
-			if err := updateCredential(ctx, original, updated); err != nil {
+			if err := updateCredential(ctx, original, updated, opts.Owner); err != nil {
 				return err
 			}
 
@@ -196,7 +196,7 @@ func editCredential(ctx context.Context, opts *options.CredentialEditConfig, ori
 	return editFn()
 }
 
-func updateCredential(ctx context.Context, original, updated *api.Credential) error {
+func updateCredential(ctx context.Context, original, updated *api.Credential, owner string) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
@@ -238,7 +238,7 @@ func updateCredential(ctx context.Context, original, updated *api.Credential) er
 		return err
 	}
 
-	_, err = cloud.Store(ctx).Credentials().Update(updated)
+	_, err = cloud.Store(ctx).Owner(owner).Credentials().Update(updated)
 	if err != nil {
 		return err
 	}

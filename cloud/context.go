@@ -8,7 +8,8 @@ import (
 	"github.com/appscode/go/crypto/ssh"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/cloud/machinesetup"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/store/providers/fake"
 	"github.com/pharmer/pharmer/store/providers/vfs"
@@ -25,9 +26,22 @@ type paramCAKey struct{}
 type paramFrontProxyCACert struct{}
 type paramFrontProxyCAKey struct{}
 
+type paramApiServerCaCert struct{}
+type paramApiServerCaKey struct{}
+type paramApiServerCert struct{}
+type paramApiServerKey struct{}
+
+type paramEtcdCACert struct{}
+type paramEtcdCAKey struct{}
+
 type paramSSHKey struct{}
 
 type paramK8sClient struct{}
+
+type paramSaKey struct{}
+type paramSaCert struct{}
+
+type paramMachineSetup struct{}
 
 func Env(ctx context.Context) _env.Environment {
 	return ctx.Value(paramEnv{}).(_env.Environment)
@@ -46,6 +60,17 @@ func WithStore(parent context.Context, v store.Interface) context.Context {
 		panic("nil store")
 	}
 	return context.WithValue(parent, paramStore{}, v)
+}
+
+func MachineSetup(ctx context.Context) *machinesetup.ConfigWatch {
+	return ctx.Value(paramMachineSetup{}).(*machinesetup.ConfigWatch)
+}
+
+func WithMachineSetup(parent context.Context, v *machinesetup.ConfigWatch) context.Context {
+	if v == nil {
+		panic("nil machine setup")
+	}
+	return context.WithValue(parent, paramMachineSetup{}, v)
 }
 
 func Logger(ctx context.Context) api.Logger {
@@ -84,8 +109,40 @@ func FrontProxyCAKey(ctx context.Context) *rsa.PrivateKey {
 	return ctx.Value(paramFrontProxyCAKey{}).(*rsa.PrivateKey)
 }
 
+func ApiServerCaCert(ctx context.Context) *x509.Certificate {
+	return ctx.Value(paramApiServerCaCert{}).(*x509.Certificate)
+}
+
+func ApiServerCaKey(ctx context.Context) *rsa.PrivateKey {
+	return ctx.Value(paramApiServerCaKey{}).(*rsa.PrivateKey)
+}
+
+func ApiServerCert(ctx context.Context) *x509.Certificate {
+	return ctx.Value(paramApiServerCert{}).(*x509.Certificate)
+}
+
+func ApiServerKey(ctx context.Context) *rsa.PrivateKey {
+	return ctx.Value(paramApiServerKey{}).(*rsa.PrivateKey)
+}
+
+func EtcdCaCert(ctx context.Context) *x509.Certificate {
+	return ctx.Value(paramEtcdCACert{}).(*x509.Certificate)
+}
+
+func EtcdCaKey(ctx context.Context) *rsa.PrivateKey {
+	return ctx.Value(paramEtcdCAKey{}).(*rsa.PrivateKey)
+}
+
 func SSHKey(ctx context.Context) *ssh.SSHKey {
 	return ctx.Value(paramSSHKey{}).(*ssh.SSHKey)
+}
+
+func SaKey(ctx context.Context) *rsa.PrivateKey {
+	return ctx.Value(paramSaKey{}).(*rsa.PrivateKey)
+}
+
+func SaCert(ctx context.Context) *x509.Certificate {
+	return ctx.Value(paramSaCert{}).(*x509.Certificate)
 }
 
 func NewContext(parent context.Context, cfg *api.PharmerConfig, env _env.Environment) context.Context {

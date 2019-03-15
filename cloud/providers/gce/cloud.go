@@ -41,7 +41,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -758,7 +758,7 @@ func (conn *cloudConnector) createNodeGroup(ng *api.NodeGroup) (string, error) {
 	return r1.Name, nil
 }
 
-// Not used since Kube 1.3
+// Not used since Cluster 1.3
 /*func (conn *cloudConnector) createAutoscaler(ng *api.NodeGroup) (string, error) {
 	target := fmt.Sprintf("https://www.googleapis.com/compute/v1/projects/%v/zones/%v/instanceGroupManagers/%v", conn.cluster.Spec.Cloud.Project, conn.cluster.Spec.Cloud.Zone, ng.Name)
 

@@ -1,34 +1,37 @@
 package cloud
 
+/*
 import (
 	"context"
 	"fmt"
-
-	"github.com/appscode/go/crypto/rand"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 )
+*/
 
+/*
 type GenericNodeGroupManager struct {
 	ctx     context.Context
 	ng      *api.NodeGroup
 	im      InstanceManager
 	kc      kubernetes.Interface
-	cluster *api.Cluster
+	cluster *apiv1.Cluster
 	token   string
 	// preHook is run once before a set of nodes are added. This can be used to create or update startup scripts. Since this will be
 	// called, nodes are added, make sure this method can handle create/update scenarios for a NodeGroup.
 	preHook HookFunc
 	// gcHook is used to garbage collect when all nodes of a NodeGroup is deleted. This can be used to delete things like startup script.
 	gcHook HookFunc
+
+	owner string
 }
 
 var _ NodeGroupManager = &GenericNodeGroupManager{}
 
-func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster, token string, initHook HookFunc, gcHook HookFunc) NodeGroupManager {
+func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster, owner, token string, initHook HookFunc, gcHook HookFunc) NodeGroupManager {
 	return &GenericNodeGroupManager{
 		ctx:     ctx,
 		ng:      ng,
@@ -38,6 +41,7 @@ func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceMana
 		token:   token,
 		preHook: initHook,
 		gcHook:  gcHook,
+		owner:   owner,
 	}
 }
 
@@ -138,16 +142,18 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 
 func (igm *GenericNodeGroupManager) AddNodes(count int64) error {
 	for i := int64(0); i < count; i++ {
-		_, err := igm.im.CreateInstance(rand.WithUniqSuffix(igm.ng.Name), igm.token, igm.ng)
-		if err != nil {
-			return err
-		}
+*/
+/*_, err := igm.im.CreateInstance(rand.WithUniqSuffix(igm.ng.Name), igm.token, igm.ng)
+if err != nil {
+	return err
+}*/ /*
+
 	}
 	return nil
 }
 
 func (igm *GenericNodeGroupManager) DeleteNodes(nodes []core.Node) error {
-	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.cluster)
+	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.cluster, igm.owner)
 	if err != nil {
 		return err
 	}
@@ -170,3 +176,4 @@ func (igm *GenericNodeGroupManager) DeleteNodes(nodes []core.Node) error {
 	}
 	return nil
 }
+*/

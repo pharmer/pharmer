@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	version "github.com/appscode/go-version"
 	. "github.com/appscode/go/types"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -16,7 +17,7 @@ import (
 	_eks "github.com/aws/aws-sdk-go/service/eks"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
 	_sts "github.com/aws/aws-sdk-go/service/sts"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
@@ -36,18 +37,18 @@ type cloudConnector struct {
 	cfn *cloudformation.CloudFormation
 }
 
-func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
+	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
 	typed := credential.AWS{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.CredentialName, err)
+		return nil, errors.Errorf("credential %s is invalid. Reason: %v", cluster.Spec.Config.CredentialName, err)
 	}
 
 	config := &_aws.Config{
-		Region:      &cluster.Spec.Cloud.Region,
+		Region:      &cluster.Spec.Config.Cloud.Region,
 		Credentials: credentials.NewStaticCredentials(typed.AccessKeyID(), typed.SecretAccessKey(), ""),
 	}
 	sess, err := session.NewSession(config)
@@ -70,13 +71,29 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 }
 
 func (conn *cloudConnector) DetectInstanceImage() (string, error) {
-	regionalAMIs := map[string]string{
-		// https://docs.aws.amazon.com/eks/latest/userguide/launch-workers.html
-		"us-west-2": "ami-73a6e20b",
-		"us-east-1": "ami-dea4d5a1",
+	v10, err := version.NewVersion("1.10")
+	if err != nil {
+		return "", err
+	}
+	cv, err := version.NewVersion(conn.cluster.Spec.Config.KubernetesVersion)
+	if err != nil {
+		return "", err
+	}
+	var regionalAMIS map[string]string
+	if cv.Equal(v10) {
+		regionalAMIS = map[string]string{
+			// https://docs.aws.amazon.com/eks/latest/userguide/launch-workers.html
+			"us-west-2": "ami-0e36fae01a5fa0d76",
+			"us-east-1": "ami-0de0b13514617a168",
+		}
+	} else {
+		regionalAMIS = map[string]string{
+			"us-west-2": "ami-081099ec932b99961",
+			"us-east-1": "ami-0c5b63ec54dd3fc38",
+		}
 	}
 
-	return regionalAMIs[conn.cluster.Spec.Cloud.Region], nil
+	return regionalAMIS[conn.cluster.Spec.Config.Cloud.Region], nil
 }
 
 func (conn *cloudConnector) WaitForStackOperation(name string, expectedStatus string) error {
@@ -87,6 +104,7 @@ func (conn *cloudConnector) WaitForStackOperation(name string, expectedStatus st
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		attempt++
 		resp, err := conn.cfn.DescribeStacks(params)
+		fmt.Println(err, "<>")
 		if err != nil {
 			return false, nil
 		}
@@ -181,7 +199,7 @@ func (conn *cloudConnector) createControlPlane() error {
 			SubnetIds:        StringPSlice(strings.Split(conn.cluster.Status.Cloud.EKS.SubnetId, ",")),
 			SecurityGroupIds: StringPSlice([]string{conn.cluster.Status.Cloud.EKS.SecurityGroup}),
 		},
-		Version: StringP(conn.cluster.Spec.KubernetesVersion),
+		Version: StringP(conn.cluster.Spec.Config.KubernetesVersion),
 	}
 	_, err := conn.eks.CreateCluster(params)
 	if err != nil {
@@ -321,7 +339,7 @@ func (conn *cloudConnector) updateStack(name string, params map[string]string, w
 
 func (conn *cloudConnector) getPublicKey() (bool, error) {
 	resp, err := conn.ec2.DescribeKeyPairs(&_ec2.DescribeKeyPairsInput{
-		KeyNames: StringPSlice([]string{conn.cluster.Spec.Cloud.SSHKeyName}),
+		KeyNames: StringPSlice([]string{conn.cluster.Spec.Config.Cloud.SSHKeyName}),
 	})
 	if err != nil {
 		return false, err
@@ -334,7 +352,7 @@ func (conn *cloudConnector) getPublicKey() (bool, error) {
 
 func (conn *cloudConnector) importPublicKey() error {
 	resp, err := conn.ec2.ImportKeyPair(&_ec2.ImportKeyPairInput{
-		KeyName:           StringP(conn.cluster.Spec.Cloud.SSHKeyName),
+		KeyName:           StringP(conn.cluster.Spec.Config.Cloud.SSHKeyName),
 		PublicKeyMaterial: SSHKey(conn.ctx).PublicKey,
 	})
 	Logger(conn.ctx).Debug("Imported SSH key", resp, err)
@@ -356,12 +374,12 @@ func (conn *cloudConnector) importPublicKey() error {
 func (conn *cloudConnector) deleteSSHKey() error {
 	var err error
 	_, err = conn.ec2.DeleteKeyPair(&_ec2.DeleteKeyPairInput{
-		KeyName: StringP(conn.cluster.Spec.Cloud.SSHKeyName),
+		KeyName: StringP(conn.cluster.Spec.Config.Cloud.SSHKeyName),
 	})
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("SSH key for cluster %v is deleted", conn.cluster.Spec.MasterDiskId)
+	Logger(conn.ctx).Infof("SSH key for cluster %v is deleted", conn.cluster.Name)
 	//updates := &storage.SSHKey{IsDeleted: 1}
 	//cond := &storage.SSHKey{PHID: cluster.Spec.ctx.SSHKeyPHID}
 	// _, err = cluster.Spec.Store(ctx).Engine.Update(updates, cond)
