@@ -143,7 +143,7 @@ func CreateMachineSet(ctx context.Context, cluster *api.Cluster, owner, role, sk
 
 	ig := clusterapi.MachineSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:              strings.Replace(sku, "_", "-", -1) + "-pool",
+			Name:              strings.Replace(strings.ToLower(sku), "_", "-", -1) + "-pool",
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
 		Spec: clusterapi.MachineSetSpec{
@@ -168,7 +168,8 @@ func CreateMachineSet(ctx context.Context, cluster *api.Cluster, owner, role, sk
 				Spec: clusterapi.MachineSpec{
 					ProviderSpec: providerSpec,
 					Versions: clusterapi.MachineVersionInfo{
-						Kubelet: cluster.ClusterConfig().KubernetesVersion,
+						Kubelet:      cluster.ClusterConfig().KubernetesVersion,
+						ControlPlane: strings.TrimPrefix(cluster.ClusterConfig().KubernetesVersion, "v"),
 					},
 				},
 			},

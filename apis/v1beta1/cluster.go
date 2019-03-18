@@ -125,6 +125,21 @@ type AzureSpec struct {
 	StorageAccountName   string `json:"azureStorageAccountName,omitempty" protobuf:"bytes,9,opt,name=azureStorageAccountName"`
 }
 
+// ref: https://github.com/kubernetes/kubernetes/blob/8b9f0ea5de2083589f3b9b289b90273556bc09c4/pkg/cloudprovider/providers/azure/azure.go#L56
+type AzureCloudConfig struct {
+	TenantID           string `json:"tenantId,omitempty" protobuf:"bytes,1,opt,name=tenantId"`
+	SubscriptionID     string `json:"subscriptionId,omitempty" protobuf:"bytes,2,opt,name=subscriptionId"`
+	AadClientID        string `json:"aadClientId,omitempty" protobuf:"bytes,3,opt,name=aadClientId"`
+	AadClientSecret    string `json:"aadClientSecret,omitempty" protobuf:"bytes,4,opt,name=aadClientSecret"`
+	ResourceGroup      string `json:"resourceGroup,omitempty" protobuf:"bytes,5,opt,name=resourceGroup"`
+	Location           string `json:"location,omitempty" protobuf:"bytes,6,opt,name=location"`
+	SubnetName         string `json:"subnetName,omitempty" protobuf:"bytes,7,opt,name=subnetName"`
+	SecurityGroupName  string `json:"securityGroupName,omitempty" protobuf:"bytes,8,opt,name=securityGroupName"`
+	VnetName           string `json:"vnetName,omitempty" protobuf:"bytes,9,opt,name=vnetName"`
+	RouteTableName     string `json:"routeTableName,omitempty" protobuf:"bytes,10,opt,name=routeTableName"`
+	StorageAccountName string `json:"storageAccountName,omitempty" protobuf:"bytes,11,opt,name=storageAccountName"`
+}
+
 type LinodeSpec struct {
 	// Linode
 	RootPassword string `json:"rootPassword,omitempty" protobuf:"bytes,1,opt,name=rootPassword"`
@@ -159,9 +174,14 @@ const (
 )
 
 type CloudStatus struct {
-	SShKeyExternalID string     `json:"sshKeyExternalID,omitempty" protobuf:"bytes,1,opt,name=sshKeyExternalID"`
-	AWS              *AWSStatus `json:"aws,omitempty" protobuf:"bytes,2,opt,name=aws"`
-	EKS              *EKSStatus `json:"eks,omitempty" protobuf:"bytes,3,opt,name=eks"`
+	SShKeyExternalID string       `json:"sshKeyExternalID,omitempty" protobuf:"bytes,1,opt,name=sshKeyExternalID"`
+	AWS              *AWSStatus   `json:"aws,omitempty" protobuf:"bytes,2,opt,name=aws"`
+	EKS              *EKSStatus   `json:"eks,omitempty" protobuf:"bytes,2,opt,name=eks"`
+	Azure            *AzureStatus `json:"azure,omitempty"`
+}
+
+type AzureStatus struct {
+	LBDNS string `json:"lbDNS,omitempty"`
 }
 
 type AWSStatus struct {

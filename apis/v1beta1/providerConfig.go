@@ -27,6 +27,11 @@ const (
 	AWSClusterProviderKind = "AWSClusterProviderSpec"
 	AWSMachineProviderKind = "AWSMachineProviderSpec"
 
+	AzureProviderGroupName   = "azureprovider"
+	AzureProviderMachineKind = "AzureMachineProviderSpec"
+	AzureProviderClusterKind = "AzureClusterProviderSpec"
+	AzureProviderApiVersion  = "v1alpha1"
+
 	AKSProviderGroupName  = "azureprovider"
 	AKSProviderKind       = "AzureClusterProviderSpec"
 	AKSProviderApiVersion = "v1alpha1"

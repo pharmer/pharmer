@@ -6,7 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2017-10-01/storage"
 	"github.com/appscode/go/crypto/rand"
 	. "github.com/appscode/go/types"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 )
 
 type namer struct {
@@ -30,7 +30,7 @@ func (n namer) NetworkInterfaceName(instanceName string) string {
 }
 
 func (n namer) PublicIPName(instanceName string) string {
-	return instanceName + "-pip"
+	return instanceName + "-api"
 }
 
 func (n namer) ResourceGroupName() string {
@@ -42,15 +42,19 @@ func (n namer) AvailabilitySetName() string {
 }
 
 func (n namer) VirtualNetworkName() string {
-	return n.cluster.Name + "-vnet"
+	return "ClusterAPIVnet"
 }
 
 func (n namer) NetworkSecurityGroupName() string {
-	return n.cluster.Name + "-nsg"
+	return "ClusterAPINSG"
 }
 
 func (n namer) SubnetName() string {
-	return n.cluster.Name + "-subnet"
+	return "ClusterAPISubnet"
+}
+
+func (n namer) LoadBalancerName() string {
+	return n.cluster.Name + "-api"
 }
 
 func (n namer) RouteTableName() string {
@@ -79,7 +83,7 @@ func (n namer) BootDiskName(instanceName string) string {
 
 // https://k1g09f7j8mf0htzaq7mq4k8s.blob.core.windows.net/strgkubernetes/kubernetes-master-osdisk.vhd
 func (n namer) BootDiskURI(sa storage.Account, instanceName string) string {
-	return String(sa.PrimaryEndpoints.Blob) + n.cluster.Spec.Cloud.Azure.StorageAccountName + "/" + instanceName + "-osdisk.vhd"
+	return String(sa.PrimaryEndpoints.Blob) + n.cluster.Spec.Config.Cloud.Azure.StorageAccountName + "/" + instanceName + "-osdisk.vhd"
 }
 
 func (n namer) BlobName(instanceName string) string {

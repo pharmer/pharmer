@@ -136,7 +136,7 @@ import:
 - package: kmodules.xyz/client-go
   version: release-10.0
 - package: sigs.k8s.io/cluster-api
-  version: c51a9c13aa0ebe6d2d7bef869094b9b78bebcd48
+  version: 26aa37ad8bcffd5b69e2a514b5e9a8ac30744134
 - package: sigs.k8s.io/controller-runtime
   version: v0.1.9
 - package: sigs.k8s.io/yaml

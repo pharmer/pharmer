@@ -293,6 +293,11 @@ func CreateSecret(kc kubernetes.Interface, name, namespace string, data map[stri
 		Data: data,
 	}
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		if _, err := kc.CoreV1().Secrets(namespace).Get(secret.Name, metav1.GetOptions{}); err == nil {
+			fmt.Println("Secret %q Already Exists, Ignoring", secret.Name)
+			return true, nil
+		}
+
 		_, err := kc.CoreV1().Secrets(namespace).Create(secret)
 		fmt.Println(err)
 		return err == nil, nil
@@ -309,13 +314,14 @@ func CreateNamespace(kc kubernetes.Interface, namespace string) error {
 		},
 	}
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := kc.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
-		if err == nil {
+		if _, err := kc.CoreV1().Namespaces().Get(ns.Name, metav1.GetOptions{}); err == nil {
+			fmt.Printf("Namespace %q Already Exists, Ignoring", ns.Name)
 			return true, nil
 		}
 
-		_, err = kc.CoreV1().Namespaces().Create(ns)
-		return err == nil, err
+		_, err := kc.CoreV1().Namespaces().Create(ns)
+		fmt.Println(err)
+		return err == nil, nil
 	})
 }
 

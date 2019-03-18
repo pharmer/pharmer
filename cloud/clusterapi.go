@@ -109,6 +109,10 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 		return err
 	}
 
+	if err := ca.updateProviderStatus(); err != nil {
+		return err
+	}
+
 	machines, err := Store(ca.ctx).Owner(ca.Owner).Machine(ca.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return err
@@ -138,7 +142,7 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 		return err
 	}
 
-	return ca.updateProviderStatus()
+	return nil
 }
 
 func (ca *ClusterApi) updateProviderStatus() error {

@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
@@ -13,40 +13,42 @@ import (
 	"k8s.io/client-go/util/cert"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
-func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, owner, token string) TemplateData {
+func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterapi.Machine, owner, token string) TemplateData {
 	td := TemplateData{
 		ClusterName:       cluster.Name,
-		KubernetesVersion: cluster.Spec.KubernetesVersion,
+		KubernetesVersion: machine.Spec.Versions.ControlPlane,
 		KubeadmToken:      token,
 		CAHash:            pubkeypin.Hash(CACert(ctx)),
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
 		APIServerAddress:  cluster.APIServerAddress(),
-		NetworkProvider:   cluster.Spec.Networking.NetworkProvider,
-		Provider:          cluster.Spec.Cloud.CloudProvider,
+		NetworkProvider:   cluster.ClusterConfig().Cloud.NetworkProvider,
+		Provider:          cluster.ClusterConfig().Cloud.CloudProvider,
 		ExternalProvider:  false, // Azure does not use out-of-tree CCM
 	}
 	{
 		td.KubeletExtraArgs = map[string]string{}
-		for k, v := range cluster.Spec.KubeletExtraArgs {
+		for k, v := range cluster.Spec.Config.KubeletExtraArgs {
 			td.KubeletExtraArgs[k] = v
 		}
-		for k, v := range ng.Spec.Template.Spec.KubeletExtraArgs {
+		/*for k, v := range machine.Spec.Template.Spec.KubeletExtraArgs {
 			td.KubeletExtraArgs[k] = v
-		}
+		}*/
 		td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
-			api.NodePoolKey: ng.Name,
+			api.NodePoolKey: machine.Name,
 			api.RoleNodeKey: "",
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "azure" // requires --cloud-config
-		if cluster.Spec.Cloud.CCMCredentialName == "" {
+		if cluster.Spec.Config.Cloud.CCMCredentialName == "" {
 			panic(errors.New("no cloud controller manager credential found"))
 		}
 
-		cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Cloud.CCMCredentialName)
+		cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Config.Cloud.CCMCredentialName)
 		if err != nil {
 			panic(err)
 		}
@@ -59,13 +61,13 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 			SubscriptionID:     typed.SubscriptionID(),
 			AadClientID:        typed.ClientID(),
 			AadClientSecret:    typed.ClientSecret(),
-			ResourceGroup:      cluster.Spec.Cloud.Azure.ResourceGroup,
-			Location:           cluster.Spec.Cloud.Zone,
-			SubnetName:         cluster.Spec.Cloud.Azure.SubnetName,
-			SecurityGroupName:  cluster.Spec.Cloud.Azure.SecurityGroupName,
-			VnetName:           cluster.Spec.Cloud.Azure.VnetName,
-			RouteTableName:     cluster.Spec.Cloud.Azure.RouteTableName,
-			StorageAccountName: cluster.Spec.Cloud.Azure.StorageAccountName,
+			ResourceGroup:      cluster.ClusterConfig().Cloud.Azure.ResourceGroup,
+			Location:           cluster.ClusterConfig().Cloud.Zone,
+			SubnetName:         cluster.ClusterConfig().Cloud.Azure.SubnetName,
+			SecurityGroupName:  cluster.ClusterConfig().Cloud.Azure.SecurityGroupName,
+			VnetName:           cluster.ClusterConfig().Cloud.Azure.VnetName,
+			RouteTableName:     cluster.ClusterConfig().Cloud.Azure.RouteTableName,
+			StorageAccountName: cluster.ClusterConfig().Cloud.Azure.StorageAccountName,
 		}
 		data, err := json.MarshalIndent(cloudConfig, "", "  ")
 		if err != nil {
@@ -84,10 +86,10 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.Node
 	return td
 }
 
-func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.NodeGroup, owner string) TemplateData {
-	td := newNodeTemplateData(ctx, cluster, ng, owner, "")
+func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterapi.Machine, owner string) TemplateData {
+	td := newNodeTemplateData(ctx, cluster, machine, owner, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
-		api.NodePoolKey: ng.Name,
+		api.NodePoolKey: machine.Name,
 	}.String()
 
 	hostPath := kubeadmapi.HostPathMount{
@@ -105,8 +107,8 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			KubeletExtraArgs: td.KubeletExtraArgs,
 		},
 		LocalAPIEndpoint: kubeadmapi.APIEndpoint{
-			AdvertiseAddress: cluster.Spec.API.AdvertiseAddress,
-			BindPort:         cluster.Spec.API.BindPort,
+			//AdvertiseAddress: cluster.Spec.API.AdvertiseAddress,
+			BindPort: 6443, //         cluster.Spec.API.BindPort,
 		},
 	}
 	td.InitConfiguration = &ifg
@@ -116,29 +118,31 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, ng *api.No
 			APIVersion: "kubeadm.k8s.io/v1beta1",
 			Kind:       "ClusterConfiguration",
 		},
-
-		Networking: kubeadmapi.Networking{
-			ServiceSubnet: cluster.Spec.Networking.ServiceSubnet,
-			PodSubnet:     cluster.Spec.Networking.PodSubnet,
-			DNSDomain:     cluster.Spec.Networking.DNSDomain,
-		},
-		KubernetesVersion: cluster.Spec.KubernetesVersion,
-		//CloudProvider:              cluster.Spec.Cloud.CloudProvider,
 		APIServer: kubeadmapi.APIServer{
 			ControlPlaneComponent: kubeadmapi.ControlPlaneComponent{
-				ExtraArgs:    cluster.Spec.APIServerExtraArgs,
 				ExtraVolumes: []kubeadmapi.HostPathMount{hostPath},
+				ExtraArgs:    cluster.Spec.Config.APIServerExtraArgs,
 			},
-			CertSANs: cluster.Spec.APIServerCertSANs,
+			CertSANs: cluster.Spec.Config.APIServerCertSANs,
 		},
 		ControllerManager: kubeadmapi.ControlPlaneComponent{
-			ExtraArgs:    cluster.Spec.ControllerManagerExtraArgs,
 			ExtraVolumes: []kubeadmapi.HostPathMount{hostPath},
+			ExtraArgs:    cluster.Spec.Config.ControllerManagerExtraArgs,
 		},
 		Scheduler: kubeadmapi.ControlPlaneComponent{
-			ExtraArgs: cluster.Spec.SchedulerExtraArgs,
+			ExtraArgs: cluster.Spec.Config.SchedulerExtraArgs,
 		},
+		ControlPlaneEndpoint: cluster.Status.Cloud.Azure.LBDNS,
+
+		Networking: kubeadmapi.Networking{
+			ServiceSubnet: cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Services.CIDRBlocks[0],
+			PodSubnet:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
+			DNSDomain:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.ServiceDomain,
+		},
+		KubernetesVersion: cluster.Spec.Config.KubernetesVersion,
+		//CloudProvider:              cluster.Spec.Cloud.CloudProvider,
 	}
+	cfg.APIServer.CertSANs = append(cfg.APIServer.CertSANs, cluster.Status.Cloud.Azure.LBDNS)
 
 	td.ClusterConfiguration = &cfg
 	return td
@@ -163,7 +167,7 @@ ensure_basic_networking
 `
 )
 
-func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, owner, token string) (string, error) {
+func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *clusterapi.Machine, owner, token string) (string, error) {
 	tpl, err := StartupScriptTemplate.Clone()
 	if err != nil {
 		return "", err
@@ -174,12 +178,12 @@ func (conn *cloudConnector) renderStartupScript(ng *api.NodeGroup, owner, token 
 	}
 
 	var script bytes.Buffer
-	if ng.Role() == api.RoleMaster {
-		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, ng, owner)); err != nil {
+	if util.IsControlPlaneMachine(machine) {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, machine, owner)); err != nil {
 			return "", err
 		}
 	} else {
-		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, ng, owner, token)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, machine, owner, token)); err != nil {
 			return "", err
 		}
 	}
