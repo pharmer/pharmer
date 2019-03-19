@@ -16,6 +16,7 @@ This project is spread over 5 repositories:
   - [Amazon Lightsail](https://amazonlightsail.com/)
   - [Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html)
   - [DigitalOcean](https://www.digitalocean.com/)
+  - [CloudSigma](https://www.cloudsigma.com/) (Currently in beta)
   - [Google Cloud](https://cloud.google.com/compute/)
   - [Google Kubernetes Engine GKE](https://cloud.google.com/kubernetes-engine/)
   - [Linode](https://www.linode.com/)
