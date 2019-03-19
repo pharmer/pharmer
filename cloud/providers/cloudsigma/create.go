@@ -1,4 +1,4 @@
-package vultr
+package cloudsigma
 
 import (
 	"net"
