@@ -7,9 +7,9 @@ import (
 
 	"github.com/digitalocean/godo"
 	. "github.com/pharmer/pharmer/cloud"
-	core "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func (cm *ClusterManager) retrieveClusterStatus(cluster *godo.KubernetesCluster) error {
@@ -17,15 +17,15 @@ func (cm *ClusterManager) retrieveClusterStatus(cluster *godo.KubernetesCluster)
 	if err != nil {
 		return err
 	}
-	cm.cluster.Status.APIAddresses = append(cm.cluster.Status.APIAddresses, core.NodeAddress{
-		Type:    core.NodeExternalIP,
-		Address: u.Host,
+	cm.cluster.Spec.ClusterAPI.Status.APIEndpoints = append(cm.cluster.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
+		Host: u.Host,
+		Port: 0,
 	})
 	return nil
 }
 
-func (cm *ClusterManager) StoreCertificate(ctx context.Context, c *godo.Client) error {
-	kcc, _, err := c.Kubernetes.GetKubeConfig(ctx, cm.cluster.Spec.Cloud.Dokube.ClusterID)
+func (cm *ClusterManager) StoreCertificate(ctx context.Context, c *godo.Client, owner string) error {
+	kcc, _, err := c.Kubernetes.GetKubeConfig(ctx, cm.cluster.Spec.Config.Cloud.Dokube.ClusterID)
 	if err != nil {
 		return err
 	}
@@ -37,10 +37,10 @@ func (cm *ClusterManager) StoreCertificate(ctx context.Context, c *godo.Client) 
 
 	currentContext := kc.CurrentContext
 
-	certStore := Store(cm.ctx).Certificates(cm.cluster.Name)
-	_, caKey, err := certStore.Get(cm.cluster.Spec.CACertName)
+	certStore := Store(cm.ctx).Owner(owner).Certificates(cm.cluster.Name)
+	_, caKey, err := certStore.Get(cm.cluster.Spec.Config.CACertName)
 	if err == nil {
-		if err = certStore.Delete(cm.cluster.Spec.CACertName); err != nil {
+		if err = certStore.Delete(cm.cluster.Spec.Config.CACertName); err != nil {
 			return err
 		}
 	}
@@ -50,7 +50,7 @@ func (cm *ClusterManager) StoreCertificate(ctx context.Context, c *godo.Client) 
 		return err
 	}
 
-	if err := certStore.Create(cm.cluster.Spec.CACertName, caCrt[0], caKey); err != nil {
+	if err := certStore.Create(cm.cluster.Spec.Config.CACertName, caCrt[0], caKey); err != nil {
 		return err
 	}
 

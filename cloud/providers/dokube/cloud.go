@@ -7,12 +7,14 @@ import (
 
 	"github.com/appscode/go/wait"
 	"github.com/digitalocean/godo"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
+	dokube_config "github.com/pharmer/pharmer/apis/v1beta1/dokube"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
@@ -25,14 +27,14 @@ type cloudConnector struct {
 	client  *godo.Client
 }
 
-func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := Store(ctx).Credentials().Get(cluster.Spec.CredentialName)
+func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
+	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
 	typed := credential.DigitalOcean{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.Config.CredentialName)
 	}
 	oauthClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: typed.Token(),
@@ -43,7 +45,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, e
 		client:  godo.NewClient(oauthClient),
 	}
 	if ok, msg := conn.IsUnauthorized(); !ok {
-		return nil, errors.Errorf("credential `%s` does not have necessary authorization. Reason: %s", cluster.Spec.CredentialName, msg)
+		return nil, errors.Errorf("credential `%s` does not have necessary authorization. Reason: %s", cluster.Spec.Config.CredentialName, msg)
 	}
 	return &conn, nil
 }
@@ -63,27 +65,31 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 	return true, ""
 }
 
-func (conn *cloudConnector) createCluster(cluster *api.Cluster) (*godo.KubernetesCluster, error) {
-	nodeGroups, err := Store(conn.ctx).NodeGroups(cluster.Name).List(metav1.ListOptions{})
+func (conn *cloudConnector) createCluster(cluster *api.Cluster, owner string) (*godo.KubernetesCluster, error) {
+	nodeGroups, err := Store(conn.ctx).Owner(owner).MachineSet(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
-
 	nodePools := make([]*godo.KubernetesNodePoolCreateRequest, len(nodeGroups))
+
 	i := 0
 	for _, node := range nodeGroups {
+		config, err := dokube_config.DokubeProviderConfig(node.Spec.Template.Spec.ProviderSpec.Value.Raw)
+		if err != nil {
+			return nil, err
+		}
 		nodePools[i] = &godo.KubernetesNodePoolCreateRequest{
 			Name:  node.Name,
-			Size:  node.Spec.Template.Spec.SKU,
-			Count: int(node.Spec.Nodes),
+			Size:  config.Size,
+			Count: int(*node.Spec.Replicas),
 		}
 		i++
 	}
 
 	clusterCreateReq := &godo.KubernetesClusterCreateRequest{
 		Name:        cluster.Name,
-		RegionSlug:  cluster.Spec.Cloud.Zone,
-		VersionSlug: cluster.Spec.KubernetesVersion,
+		RegionSlug:  cluster.Spec.Config.Cloud.Zone,
+		VersionSlug: cluster.Spec.Config.KubernetesVersion,
 		NodePools:   nodePools,
 	}
 	kubeCluster, _, err := conn.client.Kubernetes.Create(conn.ctx, clusterCreateReq)
@@ -110,7 +116,7 @@ func (conn *cloudConnector) getCluster(clusterID string) (*godo.KubernetesCluste
 }
 
 func (conn *cloudConnector) deleteCluster() error {
-	_, err := conn.client.Kubernetes.Delete(conn.ctx, conn.cluster.Spec.Cloud.Dokube.ClusterID)
+	_, err := conn.client.Kubernetes.Delete(conn.ctx, conn.cluster.Spec.Config.Cloud.Dokube.ClusterID)
 	if err != nil {
 		return err
 	}
@@ -131,23 +137,27 @@ func (conn *cloudConnector) waitForClusterCreation(cluster *godo.KubernetesClust
 
 }
 
-func (conn *cloudConnector) getNodePool(ng *api.NodeGroup) (*godo.KubernetesNodePool, error) {
+func (conn *cloudConnector) getNodePool(ng *clusterapi.MachineSet) (*godo.KubernetesNodePool, error) {
 	npID, err := conn.getNodePoolIDFromName(ng.Name)
 	if err != nil {
 		return nil, err
 	}
-	np, _, err := conn.client.Kubernetes.GetNodePool(conn.ctx, conn.cluster.Spec.Cloud.Dokube.ClusterID, npID)
+	np, _, err := conn.client.Kubernetes.GetNodePool(conn.ctx, conn.cluster.Spec.Config.Cloud.Dokube.ClusterID, npID)
 	if err != nil {
 		return nil, err
 	}
 	return np, nil
 }
 
-func (conn *cloudConnector) addNodePool(ng *api.NodeGroup) error {
-	_, _, err := conn.client.Kubernetes.CreateNodePool(conn.ctx, conn.cluster.Spec.Cloud.Dokube.ClusterID, &godo.KubernetesNodePoolCreateRequest{
+func (conn *cloudConnector) addNodePool(ng *clusterapi.MachineSet) error {
+	config, err := dokube_config.DokubeProviderConfig(ng.Spec.Template.Spec.ProviderSpec.Value.Raw)
+	if err != nil {
+		return err
+	}
+	_, _, err = conn.client.Kubernetes.CreateNodePool(conn.ctx, conn.cluster.Spec.Config.Cloud.Dokube.ClusterID, &godo.KubernetesNodePoolCreateRequest{
 		Name:  ng.Name,
-		Size:  ng.Spec.Template.Spec.SKU,
-		Count: int(ng.Spec.Nodes),
+		Size:  config.Size,
+		Count: int(*ng.Spec.Replicas),
 	})
 	if err != nil {
 		return err
@@ -155,26 +165,26 @@ func (conn *cloudConnector) addNodePool(ng *api.NodeGroup) error {
 	return nil
 }
 
-func (conn *cloudConnector) deleteNodePool(ng *api.NodeGroup) error {
+func (conn *cloudConnector) deleteNodePool(ng *clusterapi.MachineSet) error {
 	npID, err := conn.getNodePoolIDFromName(ng.Name)
 	if err != nil {
 		return err
 	}
-	_, err = conn.client.Kubernetes.DeleteNodePool(conn.ctx, conn.cluster.Spec.Cloud.Dokube.ClusterID, npID)
+	_, err = conn.client.Kubernetes.DeleteNodePool(conn.ctx, conn.cluster.Spec.Config.Cloud.Dokube.ClusterID, npID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (conn *cloudConnector) adjustNodePool(ng *api.NodeGroup) error {
+func (conn *cloudConnector) adjustNodePool(ng *clusterapi.MachineSet) error {
 	npID, err := conn.getNodePoolIDFromName(ng.Name)
 	if err != nil {
 		return err
 	}
-	_, _, err = conn.client.Kubernetes.UpdateNodePool(conn.ctx, conn.cluster.Spec.Cloud.Dokube.ClusterID, npID, &godo.KubernetesNodePoolUpdateRequest{
+	_, _, err = conn.client.Kubernetes.UpdateNodePool(conn.ctx, conn.cluster.Spec.Config.Cloud.Dokube.ClusterID, npID, &godo.KubernetesNodePoolUpdateRequest{
 		Name:  ng.Name,
-		Count: int(ng.Spec.Nodes),
+		Count: int(*ng.Spec.Replicas),
 	})
 	if err != nil {
 		return err
@@ -183,7 +193,7 @@ func (conn *cloudConnector) adjustNodePool(ng *api.NodeGroup) error {
 }
 
 func (conn *cloudConnector) getNodePoolIDFromName(name string) (string, error) {
-	knps, _, err := conn.client.Kubernetes.ListNodePools(conn.ctx, conn.cluster.Spec.Cloud.Dokube.ClusterID, &godo.ListOptions{})
+	knps, _, err := conn.client.Kubernetes.ListNodePools(conn.ctx, conn.cluster.Spec.Config.Cloud.Dokube.ClusterID, &godo.ListOptions{})
 	if err != nil {
 		return "", err
 	}

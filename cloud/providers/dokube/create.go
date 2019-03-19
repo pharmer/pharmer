@@ -1,23 +1,40 @@
 package dokube
 
 import (
+	"encoding/json"
 	"time"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/apis/v1beta1/dokube"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
-	return api.NodeSpec{
-		SKU: sku,
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+	spec := &dokube_config.DokubeMachineProviderConfig{
+		Size: sku,
+	}
+	providerSpecValue, err := json.Marshal(spec)
+	if err != nil {
+		return clusterapi.ProviderSpec{}, err
+	}
+
+	return clusterapi.ProviderSpec{
+		Value: &runtime.RawExtension{
+			Raw: providerSpecValue,
+		},
 	}, nil
 }
 
-func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
+func (cm *ClusterManager) SetOwner(owner string) {
+	cm.owner = owner
+}
+
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
 	n := namer{cluster: cluster}
 
 	// Init object meta
@@ -29,20 +46,21 @@ func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 		return err
 	}
 	// Init spec
-	cluster.Spec.Cloud.Region = cluster.Spec.Cloud.Zone
-	cluster.Spec.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
+	cluster.Spec.Config.Cloud.Region = cluster.Spec.Config.Cloud.Zone
+	cluster.Spec.Config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
 
-	cluster.Spec.Cloud.InstanceImage = "ubuntu-16-04-x64"
-	cluster.Spec.Networking.SetDefaults()
-	cluster.Spec.Networking.PodSubnet = "10.244.0.0/16"
-	cluster.Spec.Networking.NetworkProvider = "CALICO"
+	cluster.Spec.Config.Cloud.InstanceImage = "ubuntu-16-04-x64"
+	cluster.SetNetworkingDefaults(cluster.Spec.Config.Cloud.NetworkProvider)
 
-	cluster.Spec.Cloud.Dokube = &api.DokubeSpec{}
+	cluster.Spec.Config.Cloud.Dokube = &api.DokubeSpec{}
 	// Init status
-	cluster.Status = api.ClusterStatus{
+	cluster.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,
 	}
-	return nil
+
+	cluster.SetNetworkingDefaults("calico")
+
+	return dokube_config.SetLDokubeClusterProviderConfig(cluster.Spec.ClusterAPI, nil)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
@@ -50,21 +68,5 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 }
 
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
-	return nil, errors.Errorf("Error ssh")
-	/*cfg := &api.SSHConfig{
-		PrivateKey: SSHKey(cm.ctx).PrivateKey,
-		User:       "root",
-		HostPort:   int32(22),
-	}
-
-	for _, addr := range node.Status.Addresses {
-		if addr.Type == core.NodeExternalIP {
-			cfg.HostIP = addr.Address
-		}
-	}
-
-	if net.ParseIP(cfg.HostIP) == nil {
-		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
-	}
-	return cfg, nil*/
+	return nil, ErrNotImplemented
 }

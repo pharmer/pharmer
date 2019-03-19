@@ -73,6 +73,7 @@ type CloudSpec struct {
 	Linode               *LinodeSpec `json:"linode,omitempty" protobuf:"bytes,14,opt,name=linode"`
 	GKE                  *GKESpec    `json:"gke,omitempty" protobuf:"bytes,15,opt,name=gke"`
 	//DigitalOcean         *DigitalOceanMachineProviderConfig `json:"digitalocean,omitempty" protobuf:"bytes,16,opt,name=digitalocean"`
+	Dokube *DokubeSpec `json:"dokube,omitempty" protobuf:"bytes,15,opt,name=dokube"`
 }
 
 type AWSSpec struct {
@@ -159,6 +160,10 @@ type PacketCloudConfig struct {
 
 type VultrCloudConfig struct {
 	Token string `json:"token,omitempty" protobuf:"bytes,1,opt,name=token"`
+}
+
+type DokubeSpec struct {
+	ClusterID string `json:"clusterID,omitempty" protobuf:"bytes,3,opt,name=clusterID"`
 }
 
 // ClusterPhase is a label for the condition of a Cluster at the current time.

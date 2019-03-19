@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"sync"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/cert"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type ClusterManager struct {
@@ -38,7 +39,16 @@ func New(ctx context.Context) Interface {
 	return &ClusterManager{ctx: ctx}
 }
 
+// AddToManager adds all Controllers to the Manager
+func (cm *ClusterManager) AddToManager(ctx context.Context, m manager.Manager) error {
+	return nil
+}
+
 type paramK8sClient struct{}
+
+func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
+	return nil
+}
 
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 	cm.m.Lock()
@@ -49,7 +59,7 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 		return kc, nil
 	}
 
-	kc, err := NewDokubeAdminClient(cm.ctx, cm.cluster)
+	kc, err := NewDokubeAdminClient(cm.ctx, cm.cluster, cm.owner)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +67,8 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 	return kc, nil
 }
 
-func NewDokubeAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes.Interface, error) {
-	adminCert, adminKey, err := GetAdminCertificate(ctx, cluster)
+func NewDokubeAdminClient(ctx context.Context, cluster *api.Cluster, owner string) (kubernetes.Interface, error) {
+	adminCert, adminKey, err := GetAdminCertificate(ctx, cluster, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +90,7 @@ func NewDokubeAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes
 
 func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
 	var err error
-	cm.ctx, err = LoadCACertificates(cm.ctx, cluster)
+	cm.ctx, err = LoadCACertificates(cm.ctx, cluster, cm.owner)
 	if err != nil {
 		return nil, err
 	}
@@ -114,3 +124,22 @@ func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, 
 	}
 	return &cfg, nil
 }
+
+/*func (cm *ClusterManager) kubeConfig(cluster *api.Cluster) (*api.KubeConfig, error){
+	var err error
+	cm.conn, err = NewConnector(cm.ctx, cluster, cm.owner)
+	kcc, _, err := cm.conn.client.Kubernetes.GetKubeConfig(cm.ctx, cluster.Spec.Config.Cloud.Dokube.ClusterID)
+	fmt.Println(err)
+	if err != nil {
+		return nil, err
+	}
+
+	var kc api.KubeConfig
+	err = yaml.Unmarshal(kcc.KubeconfigYAML, &kc)
+	fmt.Println(err)
+	if err != nil {
+		return nil, err
+	}
+	spew.Dump(kc)
+	return &kc, nil
+}*/
