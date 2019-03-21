@@ -5,7 +5,7 @@ import (
 	"time"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/apis/v1beta1/dokube"
+	dokube_config "github.com/pharmer/pharmer/apis/v1beta1/dokube"
 	. "github.com/pharmer/pharmer/cloud"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

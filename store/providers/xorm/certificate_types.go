@@ -22,7 +22,7 @@ type Certificate struct {
 }
 
 func (Certificate) TableName() string {
-	return `"cluster_certificate"`
+	return `"ac_cluster_certificate"`
 }
 
 func encodeCertificate(crt *x509.Certificate, key *rsa.PrivateKey) (*Certificate, error) {

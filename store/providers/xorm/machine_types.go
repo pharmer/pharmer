@@ -18,7 +18,7 @@ type Machine struct {
 }
 
 func (Machine) TableName() string {
-	return `"cluster_machine"`
+	return `"ac_cluster_machine"`
 }
 
 func encodeMachine(in *clusterapi.Machine) (*Machine, error) {

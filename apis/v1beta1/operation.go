@@ -22,3 +22,7 @@ type Operation struct {
 	Code      string `xorm:"UNIQUE(s)"`
 	State     OperationState
 }
+
+func (Operation) TableName() string {
+	return "ac_operation"
+}
