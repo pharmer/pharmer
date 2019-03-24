@@ -1359,9 +1359,9 @@
       "provider": "GoogleCloud",
       "displayFormat": "json",
       "annotations": {
-        "pharmer.appscode.com/cluster-credential": "",
-        "pharmer.appscode.com/dns-credential": "",
-        "pharmer.appscode.com/storage-credential": ""
+        "cloud.pharmer.io/cluster-credential": "",
+        "cloud.pharmer.io/dns-credential": "",
+        "cloud.pharmer.io/storage-credential": ""
       },
       "fields": [
         {

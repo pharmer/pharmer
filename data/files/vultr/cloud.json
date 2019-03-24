@@ -434,8 +434,8 @@
       "provider": "Vultr",
       "displayFormat": "field",
       "annotations": {
-        "pharmer.appscode.com/cluster-credential": "",
-        "pharmer.appscode.com/dns-credential": ""
+        "cloud.pharmer.io/cluster-credential": "",
+        "cloud.pharmer.io/dns-credential": ""
       },
       "fields": [
         {

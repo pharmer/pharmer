@@ -6,9 +6,9 @@ import (
 )
 
 const (
-	KeyClusterCredential = "pharmer.appscode.com/cluster-credential"
-	KeyDNSCredential     = "pharmer.appscode.com/dns-credential"
-	KeyStorageCredential = "pharmer.appscode.com/storage-credential"
+	KeyClusterCredential = "cloud.pharmer.io/cluster-credential"
+	KeyDNSCredential     = "cloud.pharmer.io/dns-credential"
+	KeyStorageCredential = "cloud.pharmer.io/storage-credential"
 )
 
 type CloudData struct {

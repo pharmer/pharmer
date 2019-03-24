@@ -65,8 +65,8 @@ func TestExists(t *testing.T) {
 	/*machine := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				"cloud.appscode.com/cluster": "doco9",
-				"cloud.appscode.com/mg":      "2gb",
+				"cluster.pharmer.io/cluster": "doco9",
+				"cluster.pharmer.io/mg":      "2gb",
 			},
 			Name: "2gb-pool-phg2q",
 		},

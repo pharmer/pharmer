@@ -219,7 +219,7 @@
       "provider": "Ovh",
       "displayFormat": "field",
       "annotations": {
-        "pharmer.appscode.com/cluster-credential": ""
+        "cloud.pharmer.io/cluster-credential": ""
       },
       "fields": [
         {

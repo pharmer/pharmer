@@ -28,7 +28,7 @@ const (
 	NodeTypeRegular NodeType = "regular"
 	NodeTypeSpot    NodeType = "spot"
 
-	MachineSlecetor = "cloud.appscode.com/mg"
+	MachineSlecetor = "cluster.pharmer.io/mg"
 )
 
 type MachineRole string

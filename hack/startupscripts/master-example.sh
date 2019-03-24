@@ -31,7 +31,7 @@ systemctl start docker
 
 cat >/etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 [Service]
-Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool=master --cloud-provider=external "
+Environment="KUBELET_EXTRA_ARGS=--node-labels=cluster.pharmer.io/pool=master --cloud-provider=external "
 EOF
 
 systemctl daemon-reload
@@ -177,7 +177,7 @@ kubectl apply -f "https://raw.githubusercontent.com/pharmer/pharmer/ccm-fix/clou
 
 #cat > /etc/systemd/system/kubelet.service.d/20-pharmer.conf <<EOF
 #[Service]
-#Environment="KUBELET_EXTRA_ARGS=--node-labels=cloud.appscode.com/pool=master --cloud-provider=external "
+#Environment="KUBELET_EXTRA_ARGS=--node-labels=cluster.pharmer.io/pool=master --cloud-provider=external "
 #EOF
 
 #NODE_NAME=$(uname -n)

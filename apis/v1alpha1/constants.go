@@ -9,8 +9,8 @@ const (
 	RoleMasterKey = RoleKeyPrefix + RoleMaster
 	RoleNodeKey   = RoleKeyPrefix + RoleNode
 
-	KubeadmVersionKey = "cloud.appscode.com/kubeadm-version"
-	NodePoolKey       = "cloud.appscode.com/pool"
+	KubeadmVersionKey = "cluster.pharmer.io/kubeadm-version"
+	NodePoolKey       = "cluster.pharmer.io/pool"
 	KubeSystem_App    = "k8s-app"
 
 	HostnameKey     = "kubernetes.io/hostname"

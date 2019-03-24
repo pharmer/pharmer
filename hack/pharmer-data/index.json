@@ -877,9 +877,9 @@
         "provider": "AWS",
         "displayFormat": "field",
         "annotations": {
-          "pharmer.appscode.com/cluster-credential": "",
-          "pharmer.appscode.com/dns-credential": "",
-          "pharmer.appscode.com/storage-credential": ""
+          "cloud.pharmer.io/cluster-credential": "",
+          "cloud.pharmer.io/dns-credential": "",
+          "cloud.pharmer.io/storage-credential": ""
         },
         "fields": [
           {
@@ -6146,8 +6146,8 @@
         "provider": "Azure",
         "displayFormat": "field",
         "annotations": {
-          "pharmer.appscode.com/cluster-credential": "",
-          "pharmer.appscode.com/dns-credential": ""
+          "cloud.pharmer.io/cluster-credential": "",
+          "cloud.pharmer.io/dns-credential": ""
         },
         "fields": [
           {
@@ -6184,7 +6184,7 @@
         "provider": "AzureStorage",
         "displayFormat": "field",
         "annotations": {
-          "pharmer.appscode.com/storage-credential": ""
+          "cloud.pharmer.io/storage-credential": ""
         },
         "fields": [
           {
@@ -6797,8 +6797,8 @@
         "provider": "DigitalOcean",
         "displayFormat": "field",
         "annotations": {
-          "pharmer.appscode.com/cluster-credential": "",
-          "pharmer.appscode.com/dns-credential": ""
+          "cloud.pharmer.io/cluster-credential": "",
+          "cloud.pharmer.io/dns-credential": ""
         },
         "fields": [
           {
@@ -8191,9 +8191,9 @@
         "provider": "GoogleCloud",
         "displayFormat": "json",
         "annotations": {
-          "pharmer.appscode.com/cluster-credential": "",
-          "pharmer.appscode.com/dns-credential": "",
-          "pharmer.appscode.com/storage-credential": ""
+          "cloud.pharmer.io/cluster-credential": "",
+          "cloud.pharmer.io/dns-credential": "",
+          "cloud.pharmer.io/storage-credential": ""
         },
         "fields": [
           {
@@ -8393,9 +8393,9 @@
         "provider": "AWS",
         "displayFormat": "field",
         "annotations": {
-          "pharmer.appscode.com/cluster-credential": "",
-          "pharmer.appscode.com/dns-credential": "",
-          "pharmer.appscode.com/storage-credential": ""
+          "cloud.pharmer.io/cluster-credential": "",
+          "cloud.pharmer.io/dns-credential": "",
+          "cloud.pharmer.io/storage-credential": ""
         },
         "fields": [
           {
@@ -8617,8 +8617,8 @@
         "provider": "Linode",
         "displayFormat": "field",
         "annotations": {
-          "pharmer.appscode.com/cluster-credential": "",
-          "pharmer.appscode.com/dns-credential": ""
+          "cloud.pharmer.io/cluster-credential": "",
+          "cloud.pharmer.io/dns-credential": ""
         },
         "fields": [
           {
@@ -8871,7 +8871,7 @@
         "provider": "Ovh",
         "displayFormat": "field",
         "annotations": {
-          "pharmer.appscode.com/cluster-credential": ""
+          "cloud.pharmer.io/cluster-credential": ""
         },
         "fields": [
           {
@@ -9128,7 +9128,7 @@
         "provider": "Packet",
         "displayFormat": "field",
         "annotations": {
-          "pharmer.appscode.com/cluster-credential": ""
+          "cloud.pharmer.io/cluster-credential": ""
         },
         "fields": [
           {
@@ -9392,7 +9392,7 @@
         "provider": "Scaleway",
         "displayFormat": "field",
         "annotations": {
-          "pharmer.appscode.com/cluster-credential": ""
+          "cloud.pharmer.io/cluster-credential": ""
         },
         "fields": [
           {
@@ -10245,7 +10245,7 @@
         "provider": "Softlayer",
         "displayFormat": "field",
         "annotations": {
-          "pharmer.appscode.com/cluster-credential": ""
+          "cloud.pharmer.io/cluster-credential": ""
         },
         "fields": [
           {
@@ -10712,8 +10712,8 @@
         "provider": "Vultr",
         "displayFormat": "field",
         "annotations": {
-          "pharmer.appscode.com/cluster-credential": "",
-          "pharmer.appscode.com/dns-credential": ""
+          "cloud.pharmer.io/cluster-credential": "",
+          "cloud.pharmer.io/dns-credential": ""
         },
         "fields": [
           {
