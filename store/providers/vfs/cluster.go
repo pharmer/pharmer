@@ -136,7 +136,15 @@ func (s *clusterFileStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing cluster name")
 	}
-	return s.container.RemoveItem(s.resourceID(name))
+
+	resourceID := s.resourceID(name)
+
+	item, err := s.container.Item(resourceID)
+	if err != nil {
+		return errors.Errorf("failed to get item %s. Reason: %v", name, err)
+	}
+
+	return s.container.RemoveItem(item.ID())
 }
 
 func (s *clusterFileStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) {

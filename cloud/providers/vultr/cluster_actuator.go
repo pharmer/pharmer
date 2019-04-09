@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	vultr_config "github.com/pharmer/pharmer/apis/v1beta1/vultr"
+
+	"github.com/appscode/go/log"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -52,8 +56,13 @@ func NewClusterActuator(m manager.Manager, params ClusterActuatorParams) *Cluste
 }
 
 func (cm *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
-	fmt.Println("Reconciling cluster %v", cluster.Name)
-	return nil
+	log.Info("Reconciling cluster: %q", cluster.Name)
+
+	if err := vultr_config.SetVultrClusterProviderStatus(cluster); err != nil {
+		log.Debug("Error setting providre status for cluster %q: %v", cluster.Name, err)
+		return err
+	}
+	return cm.client.Status().Update(cm.ctx, cluster)
 }
 
 func (cm *ClusterActuator) Delete(cluster *clusterapi.Cluster) error {
