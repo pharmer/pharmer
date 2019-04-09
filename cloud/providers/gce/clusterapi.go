@@ -3,6 +3,7 @@ package gce
 import (
 	"bytes"
 	"encoding/base64"
+	"strings"
 	"text/template"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -53,8 +54,8 @@ func geteMachineSetupConfig(config *api.ClusterConfig) (string, error) {
 	err = tmpl.Execute(&tmplBuf, setupConfig{
 		OS:                  config.Cloud.InstanceImage,
 		OSFamily:            config.Cloud.OS,
-		KubeletVersion:      config.KubernetesVersion,
-		ControlPlaneVersion: config.KubernetesVersion,
+		KubeletVersion:      strings.Trim(config.KubernetesVersion, "vV"),
+		ControlPlaneVersion: strings.Trim(config.KubernetesVersion, "vV"),
 	})
 	if err != nil {
 		return "", err
