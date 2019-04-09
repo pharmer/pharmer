@@ -193,7 +193,6 @@ func (td TemplateData) PackageList() (string, error) {
 
 	pkgs := []string{
 		"cron",
-		"docker.io",
 		"ebtables",
 		"git",
 		"glusterfs-client",
@@ -247,7 +246,8 @@ kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
 chmod +x /usr/sbin/policy-rc.d
 
-apt-get update -y
+{{- template "install-docker-script" }}
+
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common tzdata
 curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
@@ -337,7 +337,8 @@ kill $(ps aux | grep '[a]pt' | awk '{print $2}') || true
 echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
 chmod +x /usr/sbin/policy-rc.d
 
-apt-get update -y
+{{- template "install-docker-script" }}
+
 apt-get install -y apt-transport-https curl ca-certificates software-properties-common tzdata
 curl -fsSL --retry 5 https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo 'deb http://apt.kubernetes.io/ kubernetes-xenial main' > /etc/apt/sources.list.d/kubernetes.list
@@ -407,6 +408,25 @@ exec_until_success() {
 	_ = template.Must(StartupScriptTemplate.New("mount-master-pd").Parse(``))
 
 	_ = template.Must(StartupScriptTemplate.New("prepare-cluster").Parse(``))
+	_ = template.Must(StartupScriptTemplate.New("install-docker-script").Parse(`
+apt-get update -y
+apt-get install -y \
+    apt-transport-https \
+    gnupg-agent
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+sudo apt-key fingerprint 0EBFCD88
+
+sudo add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"
+
+apt-get update -y
+
+apt-get install -y docker-ce=18.06.1~ce~3-0~ubuntu
+`))
 
 	_ = template.Must(StartupScriptTemplate.New("setup-certs").Parse(`
 mkdir -p /etc/kubernetes/pki
