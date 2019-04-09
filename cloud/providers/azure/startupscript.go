@@ -142,7 +142,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 		KubernetesVersion: cluster.Spec.Config.KubernetesVersion,
 		//CloudProvider:              cluster.Spec.Cloud.CloudProvider,
 	}
-	cfg.APIServer.CertSANs = append(cfg.APIServer.CertSANs, cluster.Status.Cloud.Azure.LBDNS)
+	cfg.APIServer.CertSANs = append(cfg.APIServer.CertSANs, cluster.Status.Cloud.Azure.LBDNS, cluster.Spec.Config.Cloud.Azure.InternalLBIPAddress)
 
 	td.ClusterConfiguration = &cfg
 	return td

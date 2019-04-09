@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-12-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2017-09-01/network"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2017-05-10/resources"
 	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2017-10-01/storage"
 	armstorage "github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2017-10-01/storage"
@@ -18,6 +18,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	. "github.com/appscode/go/context"
+	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
@@ -240,19 +241,19 @@ func (conn *cloudConnector) getVirtualNetwork() (network.VirtualNetwork, error) 
 	return conn.virtualNetworksClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.VirtualNetworkName(), "")
 }
 
+// ref: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/b55f066db9cb0f96e81257150a2468942d3996ba/pkg/cloud/azure/services/virtualnetworks/virtualnetworks.go#L51
 func (conn *cloudConnector) ensureVirtualNetwork() (network.VirtualNetwork, error) {
 	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return network.VirtualNetwork{}, err
 	}
-	name := conn.namer.VirtualNetworkName()
+	name := conn.namer.GenerateVnetName()
 	req := network.VirtualNetwork{
 		Name:     StringP(name),
 		Location: StringP(providerConfig.Location),
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
-				// ref: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/bd0edaf97c13cbbae57a34e10e527cadcfe16312/pkg/cloud/azure/services/network/virtualnetworks.go#L52
-				AddressPrefixes: &[]string{conn.cluster.Spec.Config.Cloud.Azure.SubnetCIDR},
+				AddressPrefixes: &[]string{conn.cluster.Spec.Config.Cloud.Azure.VPCCIDR},
 			},
 		},
 		Tags: map[string]*string{
@@ -260,230 +261,407 @@ func (conn *cloudConnector) ensureVirtualNetwork() (network.VirtualNetwork, erro
 		},
 	}
 
-	_, err = conn.virtualNetworksClient.CreateOrUpdate(context.TODO(), providerConfig.ResourceGroup, name, req)
+	f, err := conn.virtualNetworksClient.CreateOrUpdate(context.TODO(), providerConfig.ResourceGroup, name, req)
 	if err != nil {
 		return network.VirtualNetwork{}, err
 	}
+
+	if err := f.WaitForCompletionRef(context.Background(), conn.virtualNetworksClient.Client); err != nil {
+		return network.VirtualNetwork{}, err
+	}
+
+	vn, err := f.Result(conn.virtualNetworksClient)
+	if err != nil {
+		return network.VirtualNetwork{}, err
+	}
+
 	Logger(conn.ctx).Infof("Virtual network %v created", name)
-	return conn.virtualNetworksClient.Get(context.TODO(), providerConfig.ResourceGroup, name, "")
+	return vn, nil
 }
 
-func (conn *cloudConnector) getNetworkSecurityGroup() (network.SecurityGroup, error) {
-	return conn.securityGroupsClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.NetworkSecurityGroupName(), "")
+func (conn *cloudConnector) getNetworkSecurityGroup(name string) (network.SecurityGroup, error) {
+	return conn.securityGroupsClient.Get(context.TODO(), conn.namer.ResourceGroupName(), name, "")
 }
 
-func (conn *cloudConnector) createNetworkSecurityGroup() (network.SecurityGroup, error) {
+// ref: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/b55f066db9cb0f96e81257150a2468942d3996ba/pkg/cloud/azure/services/securitygroups/securitygroups.go#L51
+func (conn *cloudConnector) createNetworkSecurityGroup(isControlPlane bool) (network.SecurityGroup, error) {
 	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return network.SecurityGroup{}, err
 	}
-	securityGroupName := conn.namer.NetworkSecurityGroupName()
 
-	// ref: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/bd0edaf97c13cbbae57a34e10e527cadcfe16312/pkg/cloud/azure/services/network/securitygroups.go#L53
-	sshInbound := network.SecurityRule{
-		Name: StringP("ClusterAPISSH"),
-		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Protocol:                 network.SecurityRuleProtocolTCP,
-			SourcePortRange:          StringP("*"),
-			DestinationPortRange:     StringP("22"),
-			SourceAddressPrefix:      StringP("*"),
-			DestinationAddressPrefix: StringP("*"),
-			Priority:                 Int32P(1000),
-			Direction:                network.SecurityRuleDirectionInbound,
-			Access:                   network.SecurityRuleAccessAllow,
+	securityRules := &[]network.SecurityRule{}
+
+	if isControlPlane {
+		securityRules = &[]network.SecurityRule{
+			{
+				Name: to.StringPtr("allow_ssh"),
+				SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+					Protocol:                 network.SecurityRuleProtocolTCP,
+					SourceAddressPrefix:      to.StringPtr("*"),
+					SourcePortRange:          to.StringPtr("*"),
+					DestinationAddressPrefix: to.StringPtr("*"),
+					DestinationPortRange:     to.StringPtr("22"),
+					Access:                   network.SecurityRuleAccessAllow,
+					Direction:                network.SecurityRuleDirectionInbound,
+					Priority:                 to.Int32Ptr(100),
+				},
+			},
+			{
+				Name: to.StringPtr("allow_6443"),
+				SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
+					Protocol:                 network.SecurityRuleProtocolTCP,
+					SourceAddressPrefix:      to.StringPtr("*"),
+					SourcePortRange:          to.StringPtr("*"),
+					DestinationAddressPrefix: to.StringPtr("*"),
+					DestinationPortRange:     to.StringPtr("6443"),
+					Access:                   network.SecurityRuleAccessAllow,
+					Direction:                network.SecurityRuleDirectionInbound,
+					Priority:                 to.Int32Ptr(101),
+				},
+			},
+		}
+	}
+
+	var name string
+	if isControlPlane {
+		name = conn.namer.GenerateControlPlaneSecurityGroupName()
+	} else {
+		name = conn.namer.GenerateNodeSecurityGroupName()
+	}
+
+	f, err := conn.securityGroupsClient.CreateOrUpdate(
+		context.Background(),
+		conn.namer.ResourceGroupName(),
+		name,
+		network.SecurityGroup{
+			Location: StringP(providerConfig.Location),
+			SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
+				SecurityRules: securityRules,
+			},
+			Tags: map[string]*string{
+				"KubernetesCluster": StringP(conn.cluster.Name),
+			},
 		},
-	}
-
-	kubernetesInbound := network.SecurityRule{
-		Name: StringP("KubernetesAPI"),
-		SecurityRulePropertiesFormat: &network.SecurityRulePropertiesFormat{
-			Protocol:                 network.SecurityRuleProtocolTCP,
-			SourcePortRange:          StringP("*"),
-			DestinationPortRange:     StringP("6443"),
-			SourceAddressPrefix:      StringP("*"),
-			DestinationAddressPrefix: StringP("*"),
-			Priority:                 Int32P(1001),
-			Direction:                network.SecurityRuleDirectionInbound,
-			Access:                   network.SecurityRuleAccessAllow,
-		},
-	}
-
-	securityGroupProperties := network.SecurityGroupPropertiesFormat{
-		SecurityRules: &[]network.SecurityRule{sshInbound, kubernetesInbound},
-	}
-	securityGroup := network.SecurityGroup{
-		Name:     StringP(securityGroupName),
-		Location: StringP(providerConfig.Location),
-		Tags: map[string]*string{
-			"KubernetesCluster": StringP(conn.cluster.Name),
-		},
-		SecurityGroupPropertiesFormat: &securityGroupProperties,
-	}
-
-	_, err = conn.securityGroupsClient.CreateOrUpdate(context.TODO(), providerConfig.ResourceGroup, securityGroupName, securityGroup)
+	)
 	if err != nil {
-		return network.SecurityGroup{}, err
-	}
-	Logger(conn.ctx).Infof("Network security group %v created", securityGroupName)
-	return conn.securityGroupsClient.Get(context.TODO(), providerConfig.ResourceGroup, securityGroupName, "")
-}
-
-func (conn *cloudConnector) getSubnetID(vn *network.VirtualNetwork) (network.Subnet, error) {
-	n := &network.VirtualNetwork{}
-	if vn.Name == n.Name {
-		return network.Subnet{}, errors.New("Virtualnetwork not found")
-	}
-	return conn.subnetsClient.Get(context.TODO(), conn.namer.ResourceGroupName(), *vn.Name, conn.namer.SubnetName(), "")
-}
-
-func (conn *cloudConnector) createSubnetID(vn *network.VirtualNetwork, sg *network.SecurityGroup) (network.Subnet, error) {
-	name := conn.namer.SubnetName()
-	subnet := network.Subnet{
-		Name: StringP(name),
-		SubnetPropertiesFormat: &network.SubnetPropertiesFormat{
-			AddressPrefix:        StringP(conn.cluster.Spec.Config.Cloud.Azure.SubnetCIDR),
-			NetworkSecurityGroup: sg,
-		},
+		return network.SecurityGroup{}, errors.Wrapf(err, "failed to create security group %s in resource group %s", name, conn.namer.ResourceGroupName())
 	}
 
-	_, err := conn.subnetsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), *vn.Name, name, subnet)
+	err = f.WaitForCompletionRef(context.Background(), conn.securityGroupsClient.Client)
 	if err != nil {
-		return network.Subnet{}, err
+		return network.SecurityGroup{}, errors.Wrap(err, "cannot create, future response")
 	}
-	Logger(conn.ctx).Infof("Subnet name %v created", name)
-	return conn.subnetsClient.Get(context.TODO(), conn.namer.ResourceGroupName(), *vn.Name, name, "")
+
+	sg, err := f.Result(conn.securityGroupsClient)
+	if err != nil {
+		return network.SecurityGroup{}, errors.Wrap(err, "result error")
+	}
+	Logger(conn.ctx).Infof("created security group %s", name)
+	return sg, nil
 }
 
-func (conn *cloudConnector) findLoadBalancer() (network.LoadBalancer, error) {
-	return conn.lbClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.LoadBalancerName(), "")
+func (conn *cloudConnector) getSubnetID(name string) (network.Subnet, error) {
+	return conn.subnetsClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.GenerateVnetName(), name, "")
 }
 
-func (conn *cloudConnector) createLoadBalancer(publicIP *network.PublicIPAddress) (network.LoadBalancer, error) {
-	fmt.Println("creating lb")
-	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+// ref: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/c4896544d32792f06f5302c4fd9d2b4fdff358e1/pkg/cloud/azure/services/subnets/subnets.go#L56
+func (conn *cloudConnector) createSubnetID(name string, sg *network.SecurityGroup, rt *network.RouteTable) (network.Subnet, error) {
+	subnetProperties := network.SubnetPropertiesFormat{
+		RouteTable:           rt,
+		NetworkSecurityGroup: sg,
+	}
+
+	// route table is nil for control plane subnet
+	// using this logic for setting up name and cidrs
+	if rt == nil {
+		subnetProperties.AddressPrefix = &conn.cluster.Spec.Config.Cloud.Azure.ControlPlaneSubnetCIDR
+	} else {
+		subnetProperties.AddressPrefix = &conn.cluster.Spec.Config.Cloud.Azure.NodeSubnetCIDR
+	}
+
+	log.Infof("creating subnet %s in vnet %s", name, conn.namer.GenerateVnetName())
+	f, err := conn.subnetsClient.CreateOrUpdate(
+		context.Background(),
+		conn.namer.ResourceGroupName(),
+		conn.namer.GenerateVnetName(),
+		name,
+		network.Subnet{
+			Name:                   to.StringPtr(name),
+			SubnetPropertiesFormat: &subnetProperties,
+		},
+	)
+	if err != nil {
+		return network.Subnet{}, errors.Wrapf(err, "failed to create subnet %s in resource group %s", name, conn.namer.ResourceGroupName())
+	}
+
+	err = f.WaitForCompletionRef(context.Background(), conn.subnetsClient.Client)
+	if err != nil {
+		return network.Subnet{}, errors.Wrap(err, "cannot create, future response")
+	}
+
+	sn, err := f.Result(conn.subnetsClient)
+	if err != nil {
+		return network.Subnet{}, errors.Wrap(err, "result error")
+	}
+	log.Infof("successfully created subnet %s in vnet %s", name, conn.namer.GenerateVnetName())
+	return sn, nil
+}
+
+func (conn *cloudConnector) findLoadBalancer(name string) (network.LoadBalancer, error) {
+	return conn.lbClient.Get(context.TODO(), conn.namer.ResourceGroupName(), name, "")
+}
+
+func (conn *cloudConnector) createInternalLoadBalancer(lbName string, subnet *network.Subnet) (network.LoadBalancer, error) {
+	clusterConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return network.LoadBalancer{}, err
 	}
 
-	lbName := conn.namer.LoadBalancerName()
+	probeName := "tcpHTTPSProbe"
+	frontEndIPConfigName := "controlplane-internal-lbFrontEnd"
+	backEndAddressPoolName := "controlplane-internal-backEndPool"
+	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", conn.cluster.Spec.Config.Cloud.Azure.SubscriptionID, conn.namer.ResourceGroupName())
 
-	lbCreateOpts := network.LoadBalancer{
-		Name:     &lbName,
-		Location: &providerConfig.Location,
-		Sku: &network.LoadBalancerSku{
-			Name: network.LoadBalancerSkuNameStandard,
-		},
-		LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
-			BackendAddressPools: &[]network.BackendAddressPool{
-				{
-					Name: &lbName,
+	future, err := conn.lbClient.CreateOrUpdate(context.Background(),
+		clusterConfig.ResourceGroup,
+		lbName,
+		network.LoadBalancer{
+			Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
+			Location: to.StringPtr(clusterConfig.Location),
+			LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
+				FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
+					{
+						Name: &frontEndIPConfigName,
+						FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
+							PrivateIPAllocationMethod: network.Static,
+							Subnet:                    subnet,
+							PrivateIPAddress:          &conn.cluster.Spec.Config.Cloud.Azure.InternalLBIPAddress,
+						},
+					},
 				},
-			},
-			Probes: &[]network.Probe{
-				{
-					Name: &lbName,
-					ProbePropertiesFormat: &network.ProbePropertiesFormat{
-						Protocol:          network.ProbeProtocolTCP,
-						Port:              to.Int32Ptr(6443),
-						IntervalInSeconds: to.Int32Ptr(5),
-						NumberOfProbes:    to.Int32Ptr(2),
+				BackendAddressPools: &[]network.BackendAddressPool{
+					{
+						Name: &backEndAddressPoolName,
+					},
+				},
+				Probes: &[]network.Probe{
+					{
+						Name: &probeName,
+						ProbePropertiesFormat: &network.ProbePropertiesFormat{
+							Protocol:          network.ProbeProtocolTCP,
+							Port:              to.Int32Ptr(6443),
+							IntervalInSeconds: to.Int32Ptr(15),
+							NumberOfProbes:    to.Int32Ptr(4),
+						},
+					},
+				},
+				LoadBalancingRules: &[]network.LoadBalancingRule{
+					{
+						Name: to.StringPtr("LBRuleHTTPS"),
+						LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
+							Protocol:             network.TransportProtocolTCP,
+							FrontendPort:         to.Int32Ptr(6443),
+							BackendPort:          to.Int32Ptr(6443),
+							IdleTimeoutInMinutes: to.Int32Ptr(4),
+							EnableFloatingIP:     to.BoolPtr(false),
+							LoadDistribution:     network.LoadDistributionDefault,
+							FrontendIPConfiguration: &network.SubResource{
+								ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbName, frontEndIPConfigName)),
+							},
+							BackendAddressPool: &network.SubResource{
+								ID: to.StringPtr(fmt.Sprintf("/%s/%s/backendAddressPools/%s", idPrefix, lbName, backEndAddressPoolName)),
+							},
+							Probe: &network.SubResource{
+								ID: to.StringPtr(fmt.Sprintf("/%s/%s/probes/%s", idPrefix, lbName, probeName)),
+							},
+						},
 					},
 				},
 			},
-			FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
-				{
-					Name: &lbName,
-					FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
-						PrivateIPAllocationMethod: network.Dynamic,
-						PublicIPAddress:           publicIP,
+		})
+
+	if err != nil {
+		return network.LoadBalancer{}, errors.Wrap(err, "cannot create load balancer")
+	}
+
+	err = future.WaitForCompletionRef(context.Background(), conn.lbClient.Client)
+	if err != nil {
+		return network.LoadBalancer{}, errors.Wrap(err, "cannot get internal load balancer create or update future response")
+	}
+
+	lb, err := future.Result(conn.lbClient)
+	if err != nil {
+		return network.LoadBalancer{}, err
+	}
+	log.Infof("successfully created internal load balancer %s", lbName)
+	return lb, nil
+}
+
+func (conn *cloudConnector) createPublicLoadBalancer(pip *network.PublicIPAddress) (network.LoadBalancer, error) {
+	clusterConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	if err != nil {
+		return network.LoadBalancer{}, err
+	}
+
+	probeName := "tcpHTTPSProbe"
+	frontEndIPConfigName := "controlplane-lbFrontEnd"
+	backEndAddressPoolName := "controlplane-backEndPool"
+	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", conn.cluster.Spec.Config.Cloud.Azure.SubscriptionID, clusterConfig.ResourceGroup)
+	lbName := conn.namer.GeneratePublicLBName()
+	log.Infof("creating public load balancer %s", lbName)
+
+	f, err := conn.lbClient.CreateOrUpdate(
+		context.Background(),
+		clusterConfig.ResourceGroup,
+		lbName,
+		network.LoadBalancer{
+			Sku:      &network.LoadBalancerSku{Name: network.LoadBalancerSkuNameStandard},
+			Location: to.StringPtr(clusterConfig.Location),
+			LoadBalancerPropertiesFormat: &network.LoadBalancerPropertiesFormat{
+				FrontendIPConfigurations: &[]network.FrontendIPConfiguration{
+					{
+						Name: &frontEndIPConfigName,
+						FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
+							PrivateIPAllocationMethod: network.Dynamic,
+							PublicIPAddress:           pip,
+						},
+					},
+				},
+				BackendAddressPools: &[]network.BackendAddressPool{
+					{
+						Name: &backEndAddressPoolName,
+					},
+				},
+				Probes: &[]network.Probe{
+					{
+						Name: &probeName,
+						ProbePropertiesFormat: &network.ProbePropertiesFormat{
+							Protocol:          network.ProbeProtocolTCP,
+							Port:              to.Int32Ptr(6443),
+							IntervalInSeconds: to.Int32Ptr(15),
+							NumberOfProbes:    to.Int32Ptr(4),
+						},
+					},
+				},
+				LoadBalancingRules: &[]network.LoadBalancingRule{
+					{
+						Name: to.StringPtr("LBRuleHTTPS"),
+						LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
+							Protocol:             network.TransportProtocolTCP,
+							FrontendPort:         to.Int32Ptr(6443),
+							BackendPort:          to.Int32Ptr(6443),
+							IdleTimeoutInMinutes: to.Int32Ptr(4),
+							EnableFloatingIP:     to.BoolPtr(false),
+							LoadDistribution:     network.LoadDistributionDefault,
+							FrontendIPConfiguration: &network.SubResource{
+								ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbName, frontEndIPConfigName)),
+							},
+							BackendAddressPool: &network.SubResource{
+								ID: to.StringPtr(fmt.Sprintf("/%s/%s/backendAddressPools/%s", idPrefix, lbName, backEndAddressPoolName)),
+							},
+							Probe: &network.SubResource{
+								ID: to.StringPtr(fmt.Sprintf("/%s/%s/probes/%s", idPrefix, lbName, probeName)),
+							},
+						},
+					},
+				},
+				InboundNatRules: &[]network.InboundNatRule{
+					{
+						Name: to.StringPtr("natRule1"),
+						InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
+							Protocol:             network.TransportProtocolTCP,
+							FrontendPort:         to.Int32Ptr(22),
+							BackendPort:          to.Int32Ptr(22),
+							EnableFloatingIP:     to.BoolPtr(false),
+							IdleTimeoutInMinutes: to.Int32Ptr(4),
+							FrontendIPConfiguration: &network.SubResource{
+								ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbName, frontEndIPConfigName)),
+							},
+						},
+					},
+					{
+						Name: to.StringPtr("natRule2"),
+						InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
+							Protocol:             network.TransportProtocolTCP,
+							FrontendPort:         to.Int32Ptr(2201),
+							BackendPort:          to.Int32Ptr(22),
+							EnableFloatingIP:     to.BoolPtr(false),
+							IdleTimeoutInMinutes: to.Int32Ptr(4),
+							FrontendIPConfiguration: &network.SubResource{
+								ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbName, frontEndIPConfigName)),
+							},
+						},
+					},
+					{
+						Name: to.StringPtr("natRule3"),
+						InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
+							Protocol:             network.TransportProtocolTCP,
+							FrontendPort:         to.Int32Ptr(2202),
+							BackendPort:          to.Int32Ptr(22),
+							EnableFloatingIP:     to.BoolPtr(false),
+							IdleTimeoutInMinutes: to.Int32Ptr(4),
+							FrontendIPConfiguration: &network.SubResource{
+								ID: to.StringPtr(fmt.Sprintf("/%s/%s/frontendIPConfigurations/%s", idPrefix, lbName, frontEndIPConfigName)),
+							},
+						},
 					},
 				},
 			},
-		},
-	}
+		})
 
-	if _, err := conn.lbClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), lbName, lbCreateOpts); err != nil {
-		return network.LoadBalancer{}, err
-	}
-
-	lb, err := conn.lbClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.LoadBalancerName(), "")
 	if err != nil {
-		return network.LoadBalancer{}, err
+		return network.LoadBalancer{}, errors.Wrap(err, "cannot create public load balancer")
 	}
 
-	lbRules := []network.LoadBalancingRule{
-		{
-			Name: to.StringPtr("api"),
-			LoadBalancingRulePropertiesFormat: &network.LoadBalancingRulePropertiesFormat{
-				Protocol:     network.TransportProtocolTCP,
-				FrontendPort: Int32P(6443),
-				BackendPort:  Int32P(6443),
-				FrontendIPConfiguration: &network.SubResource{
-					ID: StringP(fmt.Sprintf("%s/%s/%s", *lb.ID, "frontendIPConfigurations", *lb.Name)),
-				},
-				BackendAddressPool: &network.SubResource{
-					ID: StringP(fmt.Sprintf("%s/%s/%s", *lb.ID, "backendAddressPools", *lb.Name)),
-				},
-				Probe: &network.SubResource{
-					ID: StringP(fmt.Sprintf("%s/%s/%s", *lb.ID, "probes", *lb.Name)),
-				},
-			},
-		},
-	}
-
-	lb.LoadBalancingRules = &lbRules
-
-	future, err := conn.lbClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), lbName, lb)
+	err = f.WaitForCompletionRef(context.Background(), conn.lbClient.Client)
 	if err != nil {
-		return network.LoadBalancer{}, err
+		return network.LoadBalancer{}, errors.Wrapf(err, "cannot get public load balancer create or update future response")
 	}
 
-	if err := future.WaitForCompletionRef(context.Background(), conn.lbClient.Client); err != nil {
-		return lb, err
-	}
-
-	return future.Result(conn.lbClient)
+	return f.Result(conn.lbClient)
 }
 
 func (conn *cloudConnector) getRouteTable() (network.RouteTable, error) {
-	return conn.routeTablesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.RouteTableName(), "")
+	return conn.routeTablesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.GenerateNodeRouteTableName(), "")
 }
 
+// ref: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/b55f066db9cb0f96e81257150a2468942d3996ba/pkg/cloud/azure/services/routetables/routetables.go#L51
 func (conn *cloudConnector) createRouteTable() (network.RouteTable, error) {
 	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return network.RouteTable{}, err
 	}
-	name := conn.namer.RouteTableName()
-	req := network.RouteTable{
-		Name:     StringP(name),
-		Location: StringP(providerConfig.Location),
-		Tags: map[string]*string{
-			"KubernetesCluster": StringP(conn.cluster.Name),
-		},
-	}
-	_, err = conn.routeTablesClient.CreateOrUpdate(context.TODO(), providerConfig.ResourceGroup, name, req)
-	if err != nil {
-		return network.RouteTable{}, err
-	}
-	Logger(conn.ctx).Infof("Route table %v created", name)
-	return conn.routeTablesClient.Get(context.TODO(), providerConfig.ResourceGroup, name, "")
-}
 
-func (conn *cloudConnector) getNetworkSecurityRule() (bool, error) {
-	_, err := conn.securityRulesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.NetworkSecurityGroupName(), conn.namer.NetworkSecurityRule("ssh"))
+	name := conn.namer.GenerateNodeRouteTableName()
+
+	f, err := conn.routeTablesClient.CreateOrUpdate(
+		context.Background(),
+		conn.namer.ResourceGroupName(),
+		name,
+		network.RouteTable{
+			Location:                   to.StringPtr(providerConfig.Location),
+			RouteTablePropertiesFormat: &network.RouteTablePropertiesFormat{},
+			Tags: map[string]*string{
+				"KubernetesCluster": StringP(conn.cluster.Name),
+			},
+		},
+	)
 	if err != nil {
-		return false, err
+		return network.RouteTable{}, errors.Wrapf(err, "failed to create route table %s in resource group %s", name, conn.namer.ResourceGroupName())
 	}
-	_, err = conn.securityRulesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.NetworkSecurityGroupName(), conn.namer.NetworkSecurityRule("ssl"))
+
+	err = f.WaitForCompletionRef(context.Background(), conn.routeTablesClient.Client)
 	if err != nil {
-		return false, err
+		return network.RouteTable{}, errors.Wrap(err, "cannot create, future response")
 	}
-	_, err = conn.securityRulesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.NetworkSecurityGroupName(), conn.namer.NetworkSecurityRule("masterssl"))
+
+	rt, err := f.Result(conn.routeTablesClient)
 	if err != nil {
-		return false, err
+		return network.RouteTable{}, errors.Wrap(err, "result error")
 	}
-	return true, nil
+	Logger(conn.ctx).Infof("successfully created route table %s", name)
+	return rt, nil
 }
 
 func (conn *cloudConnector) createNetworkSecurityRule(sg *network.SecurityGroup) error {
@@ -592,40 +770,48 @@ func (conn *cloudConnector) createStorageAccount() (armstorage.Account, error) {
 	return conn.storageClient.GetProperties(context.TODO(), conn.namer.ResourceGroupName(), storageName)
 }
 
-func (conn *cloudConnector) createPublicIP(name string) (network.PublicIPAddress, error) {
-	req := network.PublicIPAddress{
-		Name:     &name,
-		Location: &conn.cluster.Spec.Config.Cloud.Zone,
-		Sku: &network.PublicIPAddressSku{
-			Name: network.PublicIPAddressSkuNameStandard,
-		},
-		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-			PublicIPAddressVersion:   network.IPv4,
-			PublicIPAllocationMethod: network.Static,
-			DNSSettings: &network.PublicIPAddressDNSSettings{
-				DomainNameLabel: &name,
-			},
-		},
-		Tags: map[string]*string{
-			"KubernetesCluster": StringP(conn.cluster.Name),
-		},
-	}
-	if name != conn.namer.LoadBalancerName() {
-		pipZones := []string{"3"}
-		req.Zones = &pipZones
-	}
-
-	future, err := conn.publicIPAddressesClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), name, req)
+func (conn *cloudConnector) createPublicIP(ipName string) (network.PublicIPAddress, error) {
+	log.Infof("Creating public ip %q", ipName)
+	clusterConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return network.PublicIPAddress{}, err
 	}
 
-	if err := future.WaitForCompletionRef(context.Background(), conn.publicIPAddressesClient.Client); err != nil {
-		return network.PublicIPAddress{}, err
+	f, err := conn.publicIPAddressesClient.CreateOrUpdate(
+		context.Background(),
+		clusterConfig.ResourceGroup,
+		ipName,
+		network.PublicIPAddress{
+			Sku:      &network.PublicIPAddressSku{Name: network.PublicIPAddressSkuNameStandard},
+			Name:     to.StringPtr(ipName),
+			Location: to.StringPtr(clusterConfig.Location),
+			PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
+				PublicIPAddressVersion:   network.IPv4,
+				PublicIPAllocationMethod: network.Static,
+				DNSSettings: &network.PublicIPAddressDNSSettings{
+					DomainNameLabel: to.StringPtr(strings.ToLower(ipName)),
+					Fqdn:            to.StringPtr(conn.namer.GenerateFQDN(ipName, DefaultAzureDNSZone)),
+				},
+			},
+		},
+	)
+
+	if err != nil {
+		return network.PublicIPAddress{}, errors.Wrap(err, "cannot create public ip")
 	}
 
-	Logger(conn.ctx).Infof("Public ip address %v created", name)
-	return future.Result(conn.publicIPAddressesClient)
+	err = f.WaitForCompletionRef(context.Background(), conn.publicIPAddressesClient.Client)
+	if err != nil {
+		return network.PublicIPAddress{}, errors.Wrap(err, "cannot create, future response")
+	}
+
+	publicIP, err := f.Result(conn.publicIPAddressesClient)
+	if err != nil {
+		return network.PublicIPAddress{}, errors.Wrap(err, "result error")
+	}
+
+	log.Infof("Successfully created public ip %q", publicIP.Name)
+	return publicIP, err
 }
 
 func (conn *cloudConnector) getPublicIP(name string) (network.PublicIPAddress, error) {
@@ -667,45 +853,68 @@ func (conn *cloudConnector) GetNodeGroup(instanceGroup string) (bool, map[string
 	//Logger(conn.ctx).Infof("Found virtual machine %v", vm)
 }
 
-func (conn *cloudConnector) createNetworkInterface(name string, sg network.SecurityGroup, subnet network.Subnet, lb network.LoadBalancer, publicIP *network.PublicIPAddress) (network.Interface, error) {
-	var req = network.Interface{
-		Name:     StringP(name),
-		Location: StringP(conn.cluster.Spec.Config.Cloud.Zone),
-		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
-			IPConfigurations: &[]network.InterfaceIPConfiguration{
-				{
-					Name: StringP("ipconfig1"),
-					InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
-						Subnet: &network.Subnet{
-							ID: subnet.ID,
-						},
-						LoadBalancerBackendAddressPools: &[]network.BackendAddressPool{
-							{
-								ID: (*lb.BackendAddressPools)[0].ID,
-							},
-						},
-						PublicIPAddress: publicIP,
-					},
-				},
-			},
-		},
-		Tags: map[string]*string{
-			"KubernetesCluster": StringP(conn.cluster.Name),
-		},
-	}
-	_, err := conn.interfacesClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), name, req)
+func (conn *cloudConnector) createNetworkInterface(name string, subnet *network.Subnet, publicLB, internalLB *network.LoadBalancer) (network.Interface, error) {
+	clusterConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return network.Interface{}, err
 	}
-	Logger(conn.ctx).Infof("Network interface %v created", name)
-	return conn.interfacesClient.Get(context.TODO(), conn.namer.ResourceGroupName(), name, "")
+
+	nicConfig := &network.InterfaceIPConfigurationPropertiesFormat{}
+	nicConfig.Subnet = &network.Subnet{ID: subnet.ID}
+	nicConfig.PrivateIPAllocationMethod = network.Dynamic
+
+	backendAddressPools := []network.BackendAddressPool{}
+
+	backendAddressPools = append(backendAddressPools,
+		network.BackendAddressPool{
+			ID: (*publicLB.BackendAddressPools)[0].ID,
+		})
+	nicConfig.LoadBalancerInboundNatRules = &[]network.InboundNatRule{
+		{
+			ID: (*publicLB.InboundNatRules)[0].ID,
+		},
+	}
+
+	backendAddressPools = append(backendAddressPools,
+		network.BackendAddressPool{
+			ID: (*internalLB.BackendAddressPools)[0].ID,
+		},
+	)
+
+	nicConfig.LoadBalancerBackendAddressPools = &backendAddressPools
+
+	f, err := conn.interfacesClient.CreateOrUpdate(context.Background(),
+		clusterConfig.ResourceGroup,
+		name,
+		network.Interface{
+			Location: to.StringPtr(clusterConfig.Location),
+			InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
+				IPConfigurations: &[]network.InterfaceIPConfiguration{
+					{
+						Name:                                     to.StringPtr("pipConfig"),
+						InterfaceIPConfigurationPropertiesFormat: nicConfig,
+					},
+				},
+			},
+		})
+
+	if err != nil {
+		return network.Interface{}, errors.Wrapf(err, "failed to create network interface %s in resource group %s", name, clusterConfig.ResourceGroup)
+	}
+
+	err = f.WaitForCompletionRef(context.Background(), conn.interfacesClient.Client)
+	if err != nil {
+		return network.Interface{}, errors.Wrap(err, "cannot create, future response")
+	}
+
+	return f.Result(conn.interfacesClient)
 }
 
 func (conn *cloudConnector) getVirtualMachine(name string) (compute.VirtualMachine, error) {
 	return conn.vmClient.Get(context.TODO(), conn.namer.ResourceGroupName(), name, "")
 }
 
-func (conn *cloudConnector) createVirtualMachine(nic network.Interface, as compute.AvailabilitySet, sa armstorage.Account, vmName, data string, machine *clusterapi.Machine) (compute.VirtualMachine, error) {
+func (conn *cloudConnector) createVirtualMachine(nic network.Interface, vmName, data string, machine *clusterapi.Machine) (compute.VirtualMachine, error) {
 	providerConf, err := capiAzure.MachineSpecFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return compute.VirtualMachine{}, err
@@ -714,9 +923,6 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, as compu
 		Name:     StringP(vmName),
 		Location: StringP(providerConf.Location),
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
-			AvailabilitySet: &compute.SubResource{
-				ID: as.ID,
-			},
 			NetworkProfile: &compute.NetworkProfile{
 				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
 					{
@@ -749,11 +955,12 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, as compu
 					Version:   StringP(providerConf.Image.Version),
 				},
 				OsDisk: &compute.OSDisk{
-					Caching:      compute.ReadWrite,
-					CreateOption: compute.FromImage,
-					Name:         StringP(conn.namer.BootDiskName(vmName)),
-					Vhd: &compute.VirtualHardDisk{
-						URI: StringP(conn.namer.BootDiskURI(sa, vmName)),
+					Name:         to.StringPtr(fmt.Sprintf("%s_OSDisk", vmName)),
+					OsType:       compute.OperatingSystemTypes(providerConf.OSDisk.OSType),
+					CreateOption: compute.DiskCreateOptionTypesFromImage,
+					DiskSizeGB:   to.Int32Ptr(providerConf.OSDisk.DiskSizeGB),
+					ManagedDisk: &compute.ManagedDiskParameters{
+						StorageAccountType: compute.StorageAccountTypes(providerConf.OSDisk.ManagedDisk.StorageAccountType),
 					},
 				},
 			},
@@ -770,41 +977,33 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, as compu
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
-	Logger(conn.ctx).Infof("Virtual machine with disk %v password %v created", conn.namer.BootDiskURI(sa, vmName), conn.cluster.Spec.Config.Cloud.Azure.RootPassword)
-	// https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-linux-extensions-customscript?toc=%2fazure%2fvirtual-machines%2flinux%2ftoc.json
-	// https://github.com/Azure/custom-script-extension-linux
-	// old: https://github.com/Azure/azure-linux-extensions/tree/master/CustomScript
-	// https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-windows-classic-inject-custom-data
 	Logger(conn.ctx).Infof("Running startup script in virtual machine %v", vmName)
-	extName := vmName + "-script"
-	extReq := compute.VirtualMachineExtension{
-		Name:     StringP(extName),
-		Type:     StringP("Microsoft.Compute/virtualMachines/extensions"),
-		Location: StringP(providerConf.Location),
-		VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
-			Publisher:               StringP("Microsoft.Azure.Extensions"),
-			Type:                    StringP("CustomScript"),
-			TypeHandlerVersion:      StringP("2.0"),
-			AutoUpgradeMinorVersion: TrueP(),
-			Settings: &map[string]interface{}{
-				"commandToExecute": "cat /var/lib/waagent/CustomData | base64 --decode | /bin/bash",
+
+	vmextName := "startupScript"
+
+	_, err = conn.vmExtensionsClient.CreateOrUpdate(
+		context.Background(),
+		conn.namer.ResourceGroupName(),
+		vmName,
+		vmextName,
+		compute.VirtualMachineExtension{
+			Name:     StringP(vmextName),
+			Location: StringP(providerConf.Location),
+			VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
+				Type:                    to.StringPtr("CustomScript"),
+				TypeHandlerVersion:      to.StringPtr("2.0"),
+				AutoUpgradeMinorVersion: to.BoolPtr(true),
+				Settings:                map[string]bool{"skipDos2Unix": true},
+				Publisher:               to.StringPtr("Microsoft.Azure.Extensions"),
+				ProtectedSettings:       map[string]string{"script": base64.StdEncoding.EncodeToString([]byte(data))},
 			},
-			// ProvisioningState
-		},
-		Tags: map[string]*string{
-			"KubernetesCluster": StringP(conn.cluster.Name),
-		},
-	}
-	_, err = conn.vmExtensionsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), vmName, extName, extReq)
+			Tags: map[string]*string{
+				"KubernetesCluster": StringP(conn.cluster.Name),
+			},
+		})
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
-
-	//Logger(conn.ctx).Infof("Restarting virtual machine %v", vmName)
-	//_, err = conn.vmClient.Restart(conn.namer.ResourceGroupName(), vmName, nil)
-	//if err != nil {
-	//	return compute.VirtualMachine{}, err
-	//}
 
 	vm, err := conn.vmClient.Get(context.TODO(), conn.namer.ResourceGroupName(), vmName, compute.InstanceView)
 	Logger(conn.ctx).Infof("Found virtual machine %v", vm)
@@ -892,29 +1091,6 @@ func (conn *cloudConnector) StartNode(nodeName, token string, as compute.Availab
 	//}
 	//return ki, nil
 	return nil, nil
-}
-
-func (conn *cloudConnector) CreateInstance(name, token string, machine *clusterapi.Machine) (*api.NodeInfo, error) {
-	as, err := conn.getAvailabilitySet()
-	if err != nil {
-		return nil, errors.Wrap(err, ID(conn.ctx))
-	}
-
-	vn, err := conn.getVirtualNetwork()
-	if err != nil {
-		return nil, errors.Wrap(err, ID(conn.ctx))
-	}
-
-	sn, err := conn.getSubnetID(&vn)
-	if err != nil {
-		return nil, errors.Wrap(err, ID(conn.ctx))
-	}
-
-	sg, err := conn.getNetworkSecurityGroup()
-	if err != nil {
-		return nil, errors.Wrap(err, ID(conn.ctx))
-	}
-	return conn.StartNode(name, token, as, sg, sn, machine)
 }
 
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {

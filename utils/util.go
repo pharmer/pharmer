@@ -118,6 +118,7 @@ func CheckAlterableFlags(cmd *cobra.Command, name ...string) bool {
 	return false
 }
 
+// TODO: os.Getenv("USER") ??
 func GetLocalOwner() string {
 	home := os.Getenv("HOME")
 	if len(home) > 0 {

@@ -7,9 +7,11 @@ import (
 	"strings"
 
 	"github.com/appscode/go/crypto/rand"
+	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +22,7 @@ import (
 
 func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
 	if sku == "" {
-		sku = "Standard_D2_v2"
+		sku = "Standard_B2ms"
 	}
 	return api.NodeSpec{
 		SKU: sku,
@@ -35,7 +37,7 @@ func (cm *ClusterManager) SetOwner(owner string) {
 
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
 	if sku == "" {
-		sku = "Standard_D2_v3"
+		sku = "Standard_B2ms"
 	}
 	spec := &capiAzure.AzureMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
@@ -105,17 +107,29 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 		"cloud-config":   "/etc/kubernetes/ccm/cloud-config",
 		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
 	}
-
 	config.Cloud.CCMCredentialName = cluster.Spec.Config.CredentialName
+
+	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(cluster.Spec.Config.Cloud.CCMCredentialName)
+	if err != nil {
+		log.Infof("Error getting credential %q: %v", cluster.Spec.Config.Cloud.CCMCredentialName, err)
+		return err
+	}
+	typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
+	if ok, err := typed.IsValid(); !ok {
+		log.Infof("Invalid credential: %v", err)
+		return err
+	}
+
 	config.Cloud.Azure = &api.AzureSpec{
-		ResourceGroup:     n.ResourceGroupName(),
-		SubnetName:        n.SubnetName(),
-		SecurityGroupName: n.NetworkSecurityGroupName(),
-		VnetName:          n.VirtualNetworkName(),
-		//RouteTableName:     n.RouteTableName(),
-		StorageAccountName: n.GenStorageAccountName(),
-		SubnetCIDR:         "10.0.0.0/24",
-		RootPassword:       rand.GeneratePassword(),
+		StorageAccountName:     n.GenStorageAccountName(),
+		RootPassword:           rand.GeneratePassword(),
+		VPCCIDR:                DefaultVnetCIDR,
+		ControlPlaneSubnetCIDR: DefaultControlPlaneSubnetCIDR,
+		NodeSubnetCIDR:         DefaultNodeSubnetCIDR,
+		InternalLBIPAddress:    DefaultInternalLBIPAddress,
+		AzureDNSZone:           DefaultAzureDNSZone,
+		SubscriptionID:         typed.SubscriptionID(),
+		ResourceGroup:          n.ResourceGroupName(),
 	}
 
 	// Init status

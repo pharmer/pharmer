@@ -7,7 +7,7 @@ import (
 
 	ms "github.com/Azure/azure-sdk-for-go/profiles/latest/containerservice/mgmt/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-12-01/compute"
-	cs "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2017-09-30/containerservice"
+	cs "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-02-01/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2017-05-10/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -31,6 +31,7 @@ var providerIDRE = regexp.MustCompile(`^` + CloudProviderName + `://(?:.*)/Micro
 type cloudConnector struct {
 	ctx     context.Context
 	cluster *api.Cluster
+	owner   string
 	namer   namer
 
 	availabilitySetsClient compute.AvailabilitySetsClient
@@ -77,6 +78,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*clo
 		availabilitySetsClient: availabilitySetsClient,
 		groupsClient:           groupsClient,
 		managedClient:          managedClient,
+		owner:                  owner,
 	}, nil
 }
 
@@ -118,8 +120,8 @@ func (conn *cloudConnector) deleteResourceGroup() error {
 	return err
 }
 
-func (conn *cloudConnector) upsertAKS(agentPools []cs.AgentPoolProfile) error {
-	cred, err := Store(conn.ctx).Credentials().Get(conn.cluster.Spec.Config.CredentialName)
+func (conn *cloudConnector) upsertAKS(agentPools []cs.ManagedClusterAgentPoolProfile) error {
+	cred, err := Store(conn.ctx).Owner(conn.owner).Credentials().Get(conn.cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return err
 	}
@@ -135,7 +137,7 @@ func (conn *cloudConnector) upsertAKS(agentPools []cs.AgentPoolProfile) error {
 			DNSPrefix: StringP(conn.cluster.Name),
 			//Fqdn:              StringP(conn.cluster.Name),
 			KubernetesVersion: StringP(conn.cluster.Spec.Config.KubernetesVersion),
-			ServicePrincipalProfile: &cs.ServicePrincipalProfile{
+			ServicePrincipalProfile: &cs.ManagedClusterServicePrincipalProfile{
 				ClientID: StringP(typed.ClientID()),
 				Secret:   StringP(typed.ClientSecret()),
 			},

@@ -50,6 +50,7 @@ func Create(ctx context.Context, cluster *api.Cluster, owner string) (*api.Clust
 	if err != nil {
 		return nil, err
 	}
+	cm.SetOwner(owner)
 	if err = cm.SetDefaultCluster(cluster, config); err != nil {
 		return nil, err
 	}
@@ -168,8 +169,7 @@ func CreateMachineSet(ctx context.Context, cluster *api.Cluster, owner, role, sk
 				Spec: clusterapi.MachineSpec{
 					ProviderSpec: providerSpec,
 					Versions: clusterapi.MachineVersionInfo{
-						Kubelet:      cluster.ClusterConfig().KubernetesVersion,
-						ControlPlane: strings.TrimPrefix(cluster.ClusterConfig().KubernetesVersion, "v"),
+						Kubelet: cluster.ClusterConfig().KubernetesVersion,
 					},
 				},
 			},

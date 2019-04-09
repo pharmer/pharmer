@@ -597,7 +597,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) error {
 			}
 		}
 
-		existingMachineSet, err := bc.GetMachineSetObjects()
+		existingMachineSet, err := bc.GetMachineSets(bc.GetContextNamespace())
 		if err != nil {
 			return err
 		}
@@ -617,7 +617,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) error {
 		}
 
 		if !found {
-			if err = bc.CreateMachineSetObjects([]*clusterv1.MachineSet{machineSet}, bc.GetContextNamespace()); err != nil {
+			if err = bc.CreateMachineSets([]*clusterv1.MachineSet{machineSet}, bc.GetContextNamespace()); err != nil {
 				return err
 			}
 		}

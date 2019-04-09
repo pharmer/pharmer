@@ -72,7 +72,7 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 }
 
 func (cm *ClusterManager) GetAKSAdminClient() (kubernetes.Interface, error) {
-	resp, err := cm.conn.managedClient.GetAccessProfiles(context.Background(), cm.namer.ResourceGroupName(), cm.cluster.Name, RoleClusterUser)
+	resp, err := cm.conn.managedClient.GetAccessProfile(context.Background(), cm.namer.ResourceGroupName(), cm.cluster.Name, RoleClusterUser)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, 
 		return nil, err
 	}
 
-	resp, err := cm.conn.managedClient.GetAccessProfiles(context.Background(), cm.namer.ResourceGroupName(), cm.cluster.Name, RoleClusterUser)
+	resp, err := cm.conn.managedClient.GetAccessProfile(context.Background(), cm.namer.ResourceGroupName(), cm.cluster.Name, RoleClusterUser)
 	if err != nil {
 		return nil, err
 	}

@@ -115,15 +115,21 @@ type GKESpec struct {
 }
 
 type AzureSpec struct {
-	InstanceImageVersion string `json:"instanceImageVersion,omitempty" protobuf:"bytes,1,opt,name=instanceImageVersion"`
-	RootPassword         string `json:"rootPassword,omitempty" protobuf:"bytes,2,opt,name=rootPassword"`
-	SubnetCIDR           string `json:"subnetCidr,omitempty" protobuf:"bytes,3,opt,name=subnetCidr"`
-	ResourceGroup        string `json:"resourceGroup,omitempty" protobuf:"bytes,4,opt,name=resourceGroup"`
-	SubnetName           string `json:"subnetName,omitempty" protobuf:"bytes,5,opt,name=subnetName"`
-	SecurityGroupName    string `json:"securityGroupName,omitempty" protobuf:"bytes,6,opt,name=securityGroupName"`
-	VnetName             string `json:"vnetName,omitempty" protobuf:"bytes,7,opt,name=vnetName"`
-	RouteTableName       string `json:"routeTableName,omitempty" protobuf:"bytes,8,opt,name=routeTableName"`
-	StorageAccountName   string `json:"azureStorageAccountName,omitempty" protobuf:"bytes,9,opt,name=azureStorageAccountName"`
+	InstanceImageVersion   string `json:"instanceImageVersion,omitempty" protobuf:"bytes,1,opt,name=instanceImageVersion"`
+	RootPassword           string `json:"rootPassword,omitempty" protobuf:"bytes,2,opt,name=rootPassword"`
+	VPCCIDR                string `json:"vpcCIDR"`
+	ControlPlaneSubnetCIDR string `json:"controlPlaneSubnetCIDR"`
+	NodeSubnetCIDR         string `json:"nodeSubnetCIDR"`
+	InternalLBIPAddress    string `json:"internalLBIPAddress"`
+	AzureDNSZone           string `json:"azureDNSZone"`
+	SubnetCIDR             string `json:"subnetCidr,omitempty" protobuf:"bytes,3,opt,name=subnetCidr"`
+	ResourceGroup          string `json:"resourceGroup,omitempty" protobuf:"bytes,4,opt,name=resourceGroup"`
+	SubnetName             string `json:"subnetName,omitempty" protobuf:"bytes,5,opt,name=subnetName"`
+	SecurityGroupName      string `json:"securityGroupName,omitempty" protobuf:"bytes,6,opt,name=securityGroupName"`
+	VnetName               string `json:"vnetName,omitempty" protobuf:"bytes,7,opt,name=vnetName"`
+	RouteTableName         string `json:"routeTableName,omitempty" protobuf:"bytes,8,opt,name=routeTableName"`
+	StorageAccountName     string `json:"azureStorageAccountName,omitempty" protobuf:"bytes,9,opt,name=azureStorageAccountName"`
+	SubscriptionID         string `json:"subscriptionID"`
 }
 
 // ref: https://github.com/kubernetes/kubernetes/blob/8b9f0ea5de2083589f3b9b289b90273556bc09c4/pkg/cloudprovider/providers/azure/azure.go#L56

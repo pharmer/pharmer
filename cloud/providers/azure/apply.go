@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-12-01/compute"
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2017-09-01/network"
-	armstorage "github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2017-10-01/storage"
+	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
 	. "github.com/pharmer/pharmer/cloud"
@@ -14,6 +12,8 @@ import (
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -158,55 +158,14 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 		})
 	}
 
-	var as compute.AvailabilitySet
-	if as, err = cm.conn.getAvailabilitySet(); err != nil {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Availability set",
-			Message:  fmt.Sprintf("Availability set %v will be created", cm.namer.AvailabilitySetName()),
-		})
-		if !dryRun {
-			if as, err = cm.conn.ensureAvailabilitySet(); err != nil {
-				return acts, err
-			}
-			Logger(cm.ctx).Infof("Availability set %v created", cm.namer.AvailabilitySetName())
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Availability set",
-			Message:  fmt.Sprintf("Availability set %v found", cm.namer.AvailabilitySetName()),
-		})
-	}
-	var sa armstorage.Account
-	if sa, err = cm.conn.getStorageAccount(); err != nil {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Storage account",
-			Message:  fmt.Sprintf("Storage account %v will be created", cm.cluster.Spec.Config.Cloud.Azure.StorageAccountName),
-		})
-		if !dryRun {
-			if sa, err = cm.conn.createStorageAccount(); err != nil {
-				return acts, err
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Storage account",
-			Message:  fmt.Sprintf("Storage account %v found", cm.cluster.Spec.Config.Cloud.Azure.StorageAccountName),
-		})
-	}
-
-	var vn network.VirtualNetwork
-	if vn, err = cm.conn.getVirtualNetwork(); err != nil {
+	if _, err = cm.conn.getVirtualNetwork(); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Virtual network",
 			Message:  fmt.Sprintf("Virtual network %v will be created", cm.namer.VirtualNetworkName()),
 		})
 		if !dryRun {
-			if vn, err = cm.conn.ensureVirtualNetwork(); err != nil {
+			if _, err = cm.conn.ensureVirtualNetwork(); err != nil {
 				return acts, err
 			}
 		}
@@ -218,57 +177,135 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 		})
 	}
 
-	var sg network.SecurityGroup
-	if sg, err = cm.conn.getNetworkSecurityGroup(); err != nil {
+	var controlplaneSG network.SecurityGroup
+	if controlplaneSG, err = cm.conn.getNetworkSecurityGroup(cm.namer.GenerateControlPlaneSecurityGroupName()); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
-			Resource: "Network security group",
-			Message:  fmt.Sprintf("Network security group %v will be created", cm.namer.NetworkSecurityGroupName()),
+			Resource: "ControlPlane Network security group",
+			Message:  fmt.Sprintf("ControlPlane Network security group %v will be created", cm.namer.GenerateControlPlaneSecurityGroupName()),
 		})
 		if !dryRun {
-			if sg, err = cm.conn.createNetworkSecurityGroup(); err != nil {
+			if controlplaneSG, err = cm.conn.createNetworkSecurityGroup(true); err != nil {
 				return acts, err
 			}
 		}
 	} else {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
-			Resource: "Network security group",
-			Message:  fmt.Sprintf("Network security group %v found", cm.namer.NetworkSecurityGroupName()),
+			Resource: "ControlPlane Network security group",
+			Message:  fmt.Sprintf("ControlPlane Network security group %v found", cm.namer.GenerateControlPlaneSecurityGroupName()),
 		})
 	}
 
-	var sn network.Subnet
-	if sn, err = cm.conn.getSubnetID(&vn); err != nil {
+	var nodeSG network.SecurityGroup
+	if nodeSG, err = cm.conn.getNetworkSecurityGroup(cm.namer.GenerateNodeSecurityGroupName()); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
-			Resource: "Subnet id",
-			Message:  fmt.Sprintf("Subnet %v will be created", cm.namer.SubnetName()),
+			Resource: "Node Network security group",
+			Message:  fmt.Sprintf("Node Network security group %v will be created", cm.namer.GenerateNodeSecurityGroupName()),
 		})
 		if !dryRun {
-			if sn, err = cm.conn.createSubnetID(&vn, &sg); err != nil {
+			if nodeSG, err = cm.conn.createNetworkSecurityGroup(false); err != nil {
 				return acts, err
 			}
 		}
 	} else {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
-			Resource: "Subnet id",
-			Message:  fmt.Sprintf("Subnet %v found", cm.namer.SubnetName()),
+			Resource: "Node Network security group",
+			Message:  fmt.Sprintf("Node Network security group %v found", cm.namer.GenerateNodeSecurityGroupName()),
+		})
+	}
+
+	var rt network.RouteTable
+	if rt, err = cm.conn.getRouteTable(); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Route Table",
+			Message:  fmt.Sprintf("Route Table %v will be created", cm.namer.GenerateNodeRouteTableName()),
+		})
+		if !dryRun {
+			if rt, err = cm.conn.createRouteTable(); err != nil {
+				return acts, err
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Route Table",
+			Message:  fmt.Sprintf("Route Table %v found", cm.namer.GenerateNodeSecurityGroupName()),
+		})
+	}
+
+	var controlPlaneSN network.Subnet
+	if controlPlaneSN, err = cm.conn.getSubnetID(cm.namer.GenerateControlPlaneSubnetName()); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Control Plane Subnet",
+			Message:  fmt.Sprintf("Control Plane Subnet %v will be created", cm.namer.GenerateControlPlaneSubnetName()),
+		})
+		if !dryRun {
+			if controlPlaneSN, err = cm.conn.createSubnetID(cm.namer.GenerateControlPlaneSubnetName(), &controlplaneSG, nil); err != nil {
+				return acts, err
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Control Plane Subnet",
+			Message:  fmt.Sprintf("Control Plane Subnet %v found", cm.namer.GenerateControlPlaneSubnetName()),
+		})
+	}
+
+	if _, err = cm.conn.getSubnetID(cm.namer.GenerateNodeSubnetName()); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Node Subnet",
+			Message:  fmt.Sprintf("Node Subnet %v will be created", cm.namer.GenerateNodeSubnetName()),
+		})
+		if !dryRun {
+			if _, err = cm.conn.createSubnetID(cm.namer.GenerateNodeSubnetName(), &nodeSG, &rt); err != nil {
+				return acts, err
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Node Subnet",
+			Message:  fmt.Sprintf("Node Subnet %v found", cm.namer.GenerateNodeSubnetName()),
+		})
+	}
+
+	var internalLB network.LoadBalancer
+	if internalLB, err = cm.conn.findLoadBalancer(cm.namer.GenerateInternalLBName()); err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Internal Load Balancer",
+			Message:  fmt.Sprintf("Internal Load Balancer %v will be created", cm.namer.GenerateInternalLBName()),
+		})
+		if !dryRun {
+			if internalLB, err = cm.conn.createInternalLoadBalancer(cm.namer.GenerateInternalLBName(), &controlPlaneSN); err != nil {
+				return acts, err
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Internal Load Balancer",
+			Message:  fmt.Sprintf("Internal Load Balancer %v found", cm.namer.GenerateInternalLBName()),
 		})
 	}
 
 	var lbPIP network.PublicIPAddress
-	if lbPIP, err = cm.conn.getPublicIP(cm.namer.LoadBalancerName()); err != nil {
+	if lbPIP, err = cm.conn.getPublicIP(cm.namer.GeneratePublicIPName()); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Load Balancer public ip address",
 			Message:  fmt.Sprintf("Load Balancer public ip will be created"),
 		})
 		if !dryRun {
-			if lbPIP, err = cm.conn.createPublicIP(cm.namer.LoadBalancerName()); err != nil {
+			if lbPIP, err = cm.conn.createPublicIP(cm.namer.GeneratePublicIPName()); err != nil {
 				cm.cluster.Status.Reason = err.Error()
-				//errors.Wrap(err, ID(cm.ctx))
 				return acts, err
 			}
 		}
@@ -280,15 +317,15 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 		})
 	}
 
-	var lb network.LoadBalancer
-	if lb, err = cm.conn.findLoadBalancer(); err != nil {
+	var publicLB network.LoadBalancer
+	if publicLB, err = cm.conn.findLoadBalancer(cm.namer.GeneratePublicLBName()); err != nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Load Balancer",
-			Message:  fmt.Sprintf("Load Balancer %v will be created", cm.namer.LoadBalancerName()),
+			Message:  fmt.Sprintf("Load Balancer %v will be created", cm.namer.GeneratePublicLBName()),
 		})
 		if !dryRun {
-			if lb, err = cm.conn.createLoadBalancer(&lbPIP); err != nil {
+			if publicLB, err = cm.conn.createPublicLoadBalancer(&lbPIP); err != nil {
 				return acts, err
 			}
 		}
@@ -296,32 +333,10 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "Load Balancer",
-			Message:  fmt.Sprintf("Load Balancer %v found", cm.namer.SubnetName()),
+			Message:  fmt.Sprintf("Load Balancer %v found", cm.namer.GeneratePublicLBName()),
 		})
 	}
 	cm.cluster.Status.Cloud.Azure.LBDNS = *lbPIP.DNSSettings.Fqdn
-
-	var masterPIP network.PublicIPAddress
-	if masterPIP, err = cm.conn.getPublicIP(cm.namer.MasterName()); err != nil {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Master public ip address",
-			Message:  fmt.Sprintf("Master public ip will be created"),
-		})
-		if !dryRun {
-			if masterPIP, err = cm.conn.createPublicIP(cm.namer.MasterName()); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				//errors.Wrap(err, ID(cm.ctx))
-				return acts, err
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Master ip address",
-			Message:  fmt.Sprintf("Master ip found"),
-		})
-	}
 
 	// Master Stuff
 	var masterNIC network.Interface
@@ -332,7 +347,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 			Message:  fmt.Sprintf("Masater network interface %v will be created", cm.namer.NetworkInterfaceName(cm.namer.MasterName())),
 		})
 		if !dryRun {
-			if masterNIC, err = cm.conn.createNetworkInterface(cm.namer.NetworkInterfaceName(cm.namer.MasterName()), sg, sn, lb, &masterPIP); err != nil {
+			if masterNIC, err = cm.conn.createNetworkInterface(cm.namer.NetworkInterfaceName(cm.namer.MasterName()), &controlPlaneSN, &publicLB, &internalLB); err != nil {
 				return acts, err
 			}
 		}
@@ -369,7 +384,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 				return acts, err
 			}
 
-			vm, err := cm.conn.createVirtualMachine(masterNIC, as, sa, cm.namer.MasterName(), script, masterMachine)
+			vm, err := cm.conn.createVirtualMachine(masterNIC, masterMachine.Name, script, masterMachine)
 			if err != nil {
 				return acts, err
 			}
@@ -426,6 +441,30 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 		return acts, err
 	}
 
+	kubeConifg, err := GetAdminConfig(cm.ctx, cm.cluster, cm.owner)
+	if err != nil {
+		return nil, err
+	}
+
+	config := api.Convert_KubeConfig_To_Config(kubeConifg)
+	data, err := clientcmd.Write(*config)
+	if err != nil {
+		return acts, err
+	}
+
+	clusterConfig, err := capiAzure.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	if err != nil {
+		return acts, err
+	}
+	clusterConfig.AdminKubeconfig = string(data)
+	clusterConfig.DiscoveryHashes = append(clusterConfig.DiscoveryHashes, pubkeypin.Hash(CACert(cm.ctx)))
+
+	rawConfig, err := capiAzure.EncodeClusterSpec(clusterConfig)
+	if err != nil {
+		return acts, err
+	}
+	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawConfig
+
 	// wait for nodes to start
 	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
 		return acts, err
@@ -476,7 +515,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) error {
 			}
 		}
 
-		existingMachineSet, err := bc.GetMachineSetObjects()
+		existingMachineSet, err := bc.GetMachineSets(bc.GetContextNamespace())
 		if err != nil {
 			return err
 		}
@@ -496,7 +535,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) error {
 		}
 
 		if !found {
-			if err = bc.CreateMachineSetObjects([]*clusterapi.MachineSet{machineSet}, bc.GetContextNamespace()); err != nil {
+			if err = bc.CreateMachineSets([]*clusterapi.MachineSet{machineSet}, bc.GetContextNamespace()); err != nil {
 				return err
 			}
 		}

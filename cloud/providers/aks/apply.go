@@ -3,7 +3,7 @@ package aks
 import (
 	"context"
 
-	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2017-09-30/containerservice"
+	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-02-01/containerservice"
 	. "github.com/appscode/go/context"
 	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -116,12 +116,12 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			err = errors.Errorf("mutiple agent pool not supported yet")
 			return
 		}
-		agentPools := make([]containersvc.AgentPoolProfile, 0)
+		agentPools := make([]containersvc.ManagedClusterAgentPoolProfile, 0)
 
 		for _, ng := range nodeGroups {
 			providerspec := cm.cluster.AKSProviderConfig(ng.Spec.Template.Spec.ProviderSpec.Value.Raw)
 			name := cm.namer.GetNodeGroupName(ng.Name)
-			ap := containersvc.AgentPoolProfile{
+			ap := containersvc.ManagedClusterAgentPoolProfile{
 				Name:   StringP(name),
 				Count:  ng.Spec.Replicas,
 				VMSize: containersvc.VMSizeTypes(providerspec.VMSize),
@@ -161,7 +161,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 	var cluster containersvc.ManagedCluster
 	cluster, err = cm.conn.managedClient.Get(context.Background(), cm.namer.ResourceGroupName(), cm.cluster.Name)
 
-	agentPools := make([]containersvc.AgentPoolProfile, 0)
+	agentPools := make([]containersvc.ManagedClusterAgentPoolProfile, 0)
 	for _, ng := range nodeGroups {
 		providerspec := cm.cluster.AKSProviderConfig(ng.Spec.Template.Spec.ProviderSpec.Value.Raw)
 		name := cm.namer.GetNodeGroupName(ng.Name)
@@ -177,7 +177,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		if found {
 			continue
 		}
-		ap := containersvc.AgentPoolProfile{
+		ap := containersvc.ManagedClusterAgentPoolProfile{
 			Name:   StringP(name),
 			Count:  ng.Spec.Replicas,
 			VMSize: containersvc.VMSizeTypes(providerspec.VMSize),

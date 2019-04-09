@@ -630,7 +630,7 @@ spec:
     spec:
       containers:
       - args:
-        - -v=3
+        - -v=4
         - -logtostderr=true
         - -stderrthreshold=INFO
         env:
@@ -661,16 +661,7 @@ spec:
         image: pharmer/azure-controller
         imagePullPolicy: IfNotPresent
         name: manager
-        resources:
-          limits:
-            cpu: 100m
-            memory: 30Mi
-          requests:
-            cpu: 100m
-            memory: 20Mi
         volumeMounts:
-        - mountPath: /etc/kubernetes
-          name: config
         - mountPath: /etc/ssl/certs
           name: certs
       terminationGracePeriodSeconds: 10
@@ -686,9 +677,6 @@ spec:
         key: node.alpha.kubernetes.io/unreachable
         operator: Exists
       volumes:
-      - hostPath:
-          path: /etc/kubernetes
-        name: config
       - hostPath:
           path: /etc/ssl/certs
         name: certs
