@@ -10,6 +10,7 @@ import (
 	"time"
 
 	. "github.com/appscode/go/context"
+	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/go/wait"
 	"github.com/aws/aws-sdk-go/aws"
@@ -22,6 +23,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/elb"
 	_elb "github.com/aws/aws-sdk-go/service/elb"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go/service/sts"
+	awssts "github.com/aws/aws-sdk-go/service/sts"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
@@ -256,6 +259,21 @@ func (conn *cloudConnector) deleteRolePolicy(role string) error {
 }
 
 func (conn *cloudConnector) createIAMProfile(role, key string) error {
+	// ref: https://github.com/kubernetes-sigs/cluster-api-provider-aws/blob/e6bb385084bc4bc067819391d2179b55d8b96e17/cmd/clusterawsadm/cmd/alpha/bootstrap/bootstrap.go#L131
+	sess, err := session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	})
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+		return nil
+	}
+
+	accountID, err := awssts.New(sess).GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		log.Debugf("Error getting account ID")
+		return err
+	}
+
 	reqRole := &_iam.CreateRoleInput{RoleName: &key}
 	if role == api.RoleMaster {
 		reqRole.AssumeRolePolicyDocument = StringP(strings.TrimSpace(IAMMasterRole))
@@ -269,20 +287,46 @@ func (conn *cloudConnector) createIAMProfile(role, key string) error {
 		return err
 	}
 
-	reqPolicy := &_iam.PutRolePolicyInput{
-		RoleName:   &key,
-		PolicyName: &key,
-	}
 	if role == api.RoleMaster {
-		reqPolicy.PolicyDocument = StringP(strings.TrimSpace(IAMMasterPolicy))
+		controlPlanePolicy := &_iam.PutRolePolicyInput{
+			RoleName:       &key,
+			PolicyName:     &key,
+			PolicyDocument: StringP(strings.TrimSpace(IAMMasterPolicy)),
+		}
+		if _, err := conn.iam.PutRolePolicy(controlPlanePolicy); err != nil {
+			log.Debugf("Error attaching control-plane policy to control-plane instance profile")
+			return err
+		}
+
+		controllerPolicy := &_iam.PutRolePolicyInput{
+			RoleName:       &key,
+			PolicyName:     StringP(strings.Replace(key, "master", "controller", 1)),
+			PolicyDocument: StringP(strings.TrimSpace(strings.Replace(IAMControllerPolicy, "ACCOUNT_ID", *accountID.Account, -1))),
+		}
+		if _, err := conn.iam.PutRolePolicy(controllerPolicy); err != nil {
+			log.Debugf("Error attaching controller policy to control-plane instance profile")
+			return err
+		}
+
+		nodePolicy := &_iam.PutRolePolicyInput{
+			RoleName:       &key,
+			PolicyName:     StringP(strings.Replace(key, "master", "node", 1)),
+			PolicyDocument: StringP(strings.TrimSpace(IAMNodePolicy)),
+		}
+		if _, err := conn.iam.PutRolePolicy(nodePolicy); err != nil {
+			log.Debugf("Error attaching node policy to control-plane instance profile")
+			return err
+		}
 	} else {
-		reqPolicy.PolicyDocument = StringP(strings.TrimSpace(IAMNodePolicy))
-	}
-	r2, err := conn.iam.PutRolePolicy(reqPolicy)
-	Logger(conn.ctx).Debug("Created IAM role-policy", r2, err)
-	Logger(conn.ctx).Infof("IAM role-policy %v created", key)
-	if err != nil {
-		return err
+		nodePolicy := &_iam.PutRolePolicyInput{
+			RoleName:       &key,
+			PolicyName:     &key,
+			PolicyDocument: StringP(strings.TrimSpace(IAMNodePolicy)),
+		}
+		if _, err := conn.iam.PutRolePolicy(nodePolicy); err != nil {
+			log.Debugf("Error attaching node policy to node instance profile")
+			return err
+		}
 	}
 
 	r3, err := conn.iam.CreateInstanceProfile(&_iam.CreateInstanceProfileInput{

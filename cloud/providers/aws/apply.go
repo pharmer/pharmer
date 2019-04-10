@@ -7,6 +7,7 @@ import (
 
 	semver "github.com/appscode/go-version"
 	. "github.com/appscode/go/context"
+	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
@@ -504,13 +505,18 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			}
 
 			// update master machine spec
-			specConfig := clusterapi_aws.AWSMachineProviderSpec{
-				AMI: clusterapi_aws.AWSResourceReference{
-					ID: StringP(cm.cluster.Spec.Config.Cloud.InstanceImage),
-				},
-				InstanceType: sku,
+			spec, err := clusterapi_aws.MachineConfigFromProviderSpec(masterMachine.Spec.ProviderSpec)
+			if err != nil {
+				log.Debug("Error decoding provider spec for machine %q", masterMachine.Name)
+				return nil, err
 			}
-			rawSpec, err := clusterapi_aws.EncodeMachineSpec(&specConfig)
+
+			spec.AMI = clusterapi_aws.AWSResourceReference{
+				ID: StringP(cm.cluster.Spec.Config.Cloud.InstanceImage),
+			}
+			spec.InstanceType = sku
+
+			rawSpec, err := clusterapi_aws.EncodeMachineSpec(spec)
 			if err != nil {
 				return nil, err
 			}

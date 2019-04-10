@@ -724,7 +724,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
-        image: gcr.io/cluster-api-provider-aws/cluster-api-aws-controller:0.0.4
+        image: gcr.io/cluster-api-provider-aws/cluster-api-aws-controller:0.0.5
         imagePullPolicy: IfNotPresent
         name: manager
         resources:

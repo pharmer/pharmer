@@ -300,7 +300,6 @@ func Apply(ctx context.Context, opts *options.ApplyConfig) ([]api.Action, error)
 	if err != nil {
 		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", opts.ClusterName, err)
 	}
-	fmt.Println("KO")
 
 	cm, err := GetCloudManager(cluster.ClusterConfig().Cloud.CloudProvider, ctx)
 	if err != nil {
