@@ -1,13 +1,9 @@
 package gce
 
 import (
-	"encoding/json"
-	"fmt"
-
 	. "github.com/pharmer/pharmer/apis/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	kubeadmv1beta1 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 )
 
 const (
@@ -42,61 +38,41 @@ type GCEClusterProviderSpec struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Project string `json:"project"`
+
+	// CAKeyPair is the key pair for CA certs.
+	CAKeyPair KeyPair `json:"caKeyPair,omitempty"`
+
+	// EtcdCAKeyPair is the key pair for etcd.
+	EtcdCAKeyPair KeyPair `json:"etcdCAKeyPair,omitempty"`
+
+	// FrontProxyCAKeyPair is the key pair for the front proxy.
+	FrontProxyCAKeyPair KeyPair `json:"frontProxyCAKeyPair,omitempty"`
+
+	// SAKeyPair is the service account key pair.
+	SAKeyPair KeyPair `json:"saKeyPair,omitempty"`
+
+	// AdminKubeconfig generated using the certificates part of the spec
+	// do not move to status, since it uses on disk ca certs, which causes issues during regeneration
+	AdminKubeconfig string `json:"adminKubeconfig,omitempty"`
+
+	// DiscoveryHashes generated using the certificates part of the spec, used by master and nodes bootstrapping
+	// this never changes until ca is rotated
+	// do not move to status, since it uses on disk ca certs, which causes issues during regeneration
+	DiscoveryHashes []string `json:"discoveryHashes,omitempty"`
+
+	// ClusterConfiguration holds the cluster-wide information used during a
+	// kubeadm init call.
+	ClusterConfiguration kubeadmv1beta1.ClusterConfiguration `json:"clusterConfiguration,omitempty"`
 }
 
-type GCEClusteProviderStatus struct {
+// KeyPair is how operators can supply custom keypairs for kubeadm to use.
+type KeyPair struct {
+	// base64 encoded cert and key
+	Cert []byte `json:"cert"`
+	Key  []byte `json:"key"`
+}
+
+type GCEClusterProviderStatus struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-}
-
-//func (c *cluster) GCEProviderSpec(cluster *clusterapi.Cluster) *GCEMachineProviderSpec {
-func GetGCEMachineProviderSpec(providerSPec clusterapi.ProviderSpec) *GCEMachineProviderSpec {
-	raw := providerSPec.Value.Raw
-	providerConfig := &GCEMachineProviderSpec{}
-	err := json.Unmarshal(raw, providerConfig)
-	if err != nil {
-		fmt.Println("Unable to unmarshal provider config: %v", err)
-	}
-	return providerConfig
-}
-
-//func (c *Cluster) SetGCEProviderSpec( cluster *clusterapi.Cluster, config *ClusterConfig) error {
-func SetGCEClusterProviderSpec(cluster *clusterapi.Cluster, config *ClusterConfig) error {
-	fmt.Println(config.Cloud)
-	conf := &GCEClusterProviderSpec{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: GCEProviderGroupName + "/" + GCEProviderApiVersion,
-			Kind:       GCEClusterProviderKind,
-		},
-		Project: config.Cloud.Project,
-	}
-	bytes, err := json.Marshal(conf)
-	if err != nil {
-		fmt.Println("Unable to marshal provider config: %v", err)
-		return err
-	}
-	cluster.Spec.ProviderSpec = clusterapi.ProviderSpec{
-		Value: &runtime.RawExtension{
-			Raw: bytes,
-		},
-	}
-	return nil
-}
-
-func SetGCEClusterProviderStatus(cluster *clusterapi.Cluster) error {
-	conf := &GCEClusteProviderStatus{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: GCEProviderGroupName + "/" + GCEProviderApiVersion,
-			Kind:       GCEClusterProviderKind,
-		},
-	}
-	bytes, err := json.Marshal(conf)
-	if err != nil {
-		return err
-
-	}
-	cluster.Status.ProviderStatus = &runtime.RawExtension{
-		Raw: bytes,
-	}
-	return nil
 }

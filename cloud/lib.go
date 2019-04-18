@@ -7,6 +7,7 @@ import (
 	"time"
 
 	. "github.com/appscode/go/types"
+	"github.com/pharmer/pharmer/apis/v1beta1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pkg/errors"
@@ -399,6 +400,14 @@ func GetKubernetesClient(ctx context.Context, cluster *api.Cluster, owner string
 	config := api.NewRestConfig(kubeConifg)
 
 	return kubernetes.NewForConfig(config)
+}
+
+func GetLeaderMachine(ctx context.Context, cluster *v1beta1.Cluster, owner string) (*clusterapi.Machine, error) {
+	machine, err := Store(ctx).Owner(owner).Machine(cluster.Name).Get(cluster.Name + "-master-0")
+	if err != nil {
+		return nil, err
+	}
+	return machine, nil
 }
 
 /*func GetSSHConfig(ctx context.Context, hostip string) *api.SSHConfig {

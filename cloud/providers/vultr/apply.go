@@ -124,13 +124,8 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	// FYI: Vultr does not support tagging.
 
 	// -------------------------------------------------------------------ASSETS
-	var machines []*clusterv1.Machine
-	machines, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return
-	}
 
-	masterMachine, err := api.GetLeaderMachine(machines)
+	masterMachine, err := GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
 	if err != nil {
 		return
 	}

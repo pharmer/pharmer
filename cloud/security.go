@@ -36,6 +36,10 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster, owner strin
 		if err = certStore.Create(cluster.Spec.Config.CACertName, caCert, caKey); err != nil {
 			return ctx, err
 		}
+
+		if _, err := Store(ctx).Owner(owner).Clusters().Update(cluster); err != nil {
+			return nil, errors.Wrap(err, "Error updating cluster object")
+		}
 	}
 
 	// -----------------------------------------------
@@ -54,6 +58,10 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster, owner strin
 		ctx = context.WithValue(ctx, paramFrontProxyCAKey{}, frontProxyCAKey)
 		if err = certStore.Create(cluster.Spec.Config.FrontProxyCACertName, frontProxyCACert, frontProxyCAKey); err != nil {
 			return ctx, err
+		}
+
+		if _, err := Store(ctx).Owner(owner).Clusters().Update(cluster); err != nil {
+			return nil, errors.Wrap(err, "Error updating cluster object")
 		}
 	}
 

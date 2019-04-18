@@ -3,8 +3,8 @@ package gce
 import (
 	"bytes"
 	"context"
-	"fmt"
 
+	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
@@ -24,7 +24,9 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		KubeadmToken:      token,
 		CAHash:            pubkeypin.Hash(CACert(ctx)),
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
 		APIServerAddress:  cluster.APIServerAddress(),
 		NetworkProvider:   cluster.ClusterConfig().Cloud.NetworkProvider,
 		Provider:          cluster.ClusterConfig().Cloud.CloudProvider,
@@ -61,7 +63,9 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 
 		cfg := ini.Empty()
 		err := cfg.Section("global").ReflectFrom(cloudConfig)
-		fmt.Println(err)
+		if err != nil {
+			log.Info(err)
+		}
 		if err != nil {
 			panic(err)
 		}
@@ -136,7 +140,9 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 			ExtraArgs: cluster.Spec.Config.SchedulerExtraArgs,
 		},
 	}
+	td.ControlPlaneEndpointsFromLB(&cfg, cluster)
 	td.ClusterConfiguration = &cfg
+
 	return td
 }
 
@@ -182,8 +188,6 @@ func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *c
 	}
 
 	var script bytes.Buffer
-	_ = tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, cluster, machine))
-
 	if util.IsControlPlaneMachine(machine) {
 		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, cluster, machine)); err != nil {
 			return "", err

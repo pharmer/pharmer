@@ -359,14 +359,8 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 		})
 	}
 
-	var machines []*clusterapi.Machine
-	machines, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return acts, err
-	}
-
 	var masterMachine *clusterapi.Machine
-	masterMachine, err = api.GetLeaderMachine(machines)
+	masterMachine, err = GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
 	if err != nil {
 		return acts, err
 	}

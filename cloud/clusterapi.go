@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"text/template"
 
+	"github.com/appscode/go/log"
 	"github.com/appscode/go/wait"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/cert"
@@ -88,11 +90,11 @@ func GetClusterClient(ctx context.Context, cluster *api.Cluster) (clientset.Inte
 func (ca *ClusterApi) Apply(controllerManager string) error {
 	Logger(ca.ctx).Infof("Deploying the addon apiserver and controller manager...")
 	if err := ca.CreateMachineController(controllerManager); err != nil {
-		return fmt.Errorf("can't create machine controller: %v", err)
+		return errors.Wrap(err, "can't create machine controller")
 	}
 
-	if err := phases.ApplyCluster(ca.bootstrapClient, ca.cluster.Spec.ClusterAPI); err != nil {
-		return err
+	if err := phases.ApplyCluster(ca.bootstrapClient, ca.cluster.Spec.ClusterAPI); err != nil && !api.ErrAlreadyExist(err) {
+		return errors.Wrap(err, "failed to add cluster")
 	}
 	namespace := ca.cluster.Spec.ClusterAPI.Namespace
 	if namespace == "" {
@@ -101,24 +103,20 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 
 	c, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(namespace).Get(ca.cluster.Name, metav1.GetOptions{})
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to update cluster provider status")
 	}
 
 	c.Status = ca.cluster.Spec.ClusterAPI.Status
 	if _, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(namespace).UpdateStatus(c); err != nil {
-		return err
+		return errors.Wrap(err, "failed to update cluster")
 	}
 
 	if err := ca.updateProviderStatus(); err != nil {
+		log.Infoln(err)
 		return err
 	}
 
-	machines, err := Store(ca.ctx).Owner(ca.Owner).Machine(ca.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	masterMachine, err := api.GetLeaderMachine(machines)
+	masterMachine, err := GetLeaderMachine(ca.ctx, ca.cluster, ca.Owner)
 	if err != nil {
 		return err
 	}
@@ -127,7 +125,7 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 	masterMachine.Annotations[InstanceStatusAnnotationKey] = ""
 
 	Logger(ca.ctx).Infof("Adding master machines...")
-	if err := phases.ApplyMachines(ca.bootstrapClient, namespace, []*clusterv1.Machine{masterMachine}); err != nil {
+	if err := phases.ApplyMachines(ca.bootstrapClient, namespace, []*clusterv1.Machine{masterMachine}); err != nil && !api.ErrAlreadyExist(err) {
 		return err
 	}
 

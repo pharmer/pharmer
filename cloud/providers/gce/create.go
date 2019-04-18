@@ -1,20 +1,20 @@
 package gce
 
 import (
-	"encoding/json"
 	"net"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	proconfig "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/cert"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -23,12 +23,9 @@ func (cm *ClusterManager) SetOwner(owner string) {
 }
 
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
-	//if sku == "" {
-	//	sku = "n1-standard-2"
-	//}
 	config := cluster.Spec.Config
 
-	spec := proconfig.GCEMachineProviderSpec{
+	spec := clusterapiGCE.GCEMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: proconfig.GCEProviderGroupName + "/" + proconfig.GCEProviderApiVersion,
 			Kind:       proconfig.GCEMachineProviderKind,
@@ -47,16 +44,51 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 		MachineType: sku,
 	}
 
-	providerSpecValue, err := json.Marshal(spec)
+	rawSpec, err := clusterapiGCE.EncodeMachineSpec(&spec)
 	if err != nil {
-		return clusterapi.ProviderSpec{}, err
+		return clusterapi.ProviderSpec{}, errors.Wrap(err, "Error encoding provider spec for gce cluster")
 	}
 
-	return clusterapi.ProviderSpec{
-		Value: &runtime.RawExtension{
-			Raw: providerSpecValue,
-		},
-	}, nil
+	cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
+
+	return cluster.Spec.ClusterAPI.Spec.ProviderSpec, nil
+}
+
+// SetupCerts Loads necessary certs in Cluster Spec
+func (cm *ClusterManager) SetupCerts() error {
+	conf, err := clusterapiGCE.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	if err != nil {
+		return err
+	}
+
+	conf.CAKeyPair = clusterapiGCE.KeyPair{
+		Cert: cert.EncodeCertPEM(CACert(cm.ctx)),
+		Key:  cert.EncodePrivateKeyPEM(CAKey(cm.ctx)),
+	}
+	conf.FrontProxyCAKeyPair = clusterapiGCE.KeyPair{
+		Cert: cert.EncodeCertPEM(FrontProxyCACert(cm.ctx)),
+		Key:  cert.EncodePrivateKeyPEM(FrontProxyCAKey(cm.ctx)),
+	}
+	conf.EtcdCAKeyPair = clusterapiGCE.KeyPair{
+		Cert: cert.EncodeCertPEM(EtcdCaCert(cm.ctx)),
+		Key:  cert.EncodePrivateKeyPEM(EtcdCaKey(cm.ctx)),
+	}
+	conf.SAKeyPair = clusterapiGCE.KeyPair{
+		Cert: cert.EncodeCertPEM(SaCert(cm.ctx)),
+		Key:  cert.EncodePrivateKeyPEM(SaKey(cm.ctx)),
+	}
+
+	rawSpec, err := clusterapiGCE.EncodeClusterSpec(conf)
+	if err != nil {
+		return err
+	}
+
+	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
+
+	if _, err := Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
@@ -92,11 +124,11 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 	cluster.Spec.Config.APIServerExtraArgs = map[string]string{
 		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
 		"kubelet-preferred-address-types": strings.Join([]string{
+			string(core.NodeExternalDNS),
+			string(core.NodeExternalIP),
 			string(core.NodeHostName),
 			string(core.NodeInternalDNS),
 			string(core.NodeInternalIP),
-			string(core.NodeExternalDNS),
-			string(core.NodeExternalIP),
 		}, ","),
 		"cloud-config":   "/etc/kubernetes/ccm/cloud-config",
 		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
@@ -127,7 +159,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 		Phase: api.ClusterPending,
 	}
 
-	return proconfig.SetGCEClusterProviderSpec(cluster.Spec.ClusterAPI, config)
+	return clusterapiGCE.SetGCEclusterProviderConfig(cluster.Spec.ClusterAPI, cluster.Spec.Config)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {

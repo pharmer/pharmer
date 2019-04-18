@@ -8,6 +8,7 @@ import (
 	"time"
 
 	version "github.com/appscode/go-version"
+	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -104,7 +105,9 @@ func (conn *cloudConnector) WaitForStackOperation(name string, expectedStatus st
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		attempt++
 		resp, err := conn.cfn.DescribeStacks(params)
-		fmt.Println(err, "<>")
+		if err != nil {
+			log.Info(err)
+		}
 		if err != nil {
 			return false, nil
 		}

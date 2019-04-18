@@ -99,7 +99,7 @@ Here,
  - `spec.data.accessKeyID` is the aws access key id
  - `spec.data.secretAccessKey` is the security access key that you provided which can be edited by following command:
 ```console
-$ phrmer edit credential aws
+$ pharmer edit credential aws
 ```
 
 To see the all credentials you need to run following command.

@@ -187,7 +187,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	masterMachine, err := api.GetLeaderMachine(machines)
+	masterMachine, err := GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
 	if err != nil {
 		return
 	}
@@ -265,9 +265,12 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return acts, err
 	}
 
-	for i := 1; i < len(machines); i++ {
-		if _, err := client.ClusterV1alpha1().Machines(cm.cluster.Spec.ClusterAPI.Namespace).Create(machines[i]); err != nil {
-			log.Infof("Error creating maching %q in namespace %q", machines[i].Name, cm.cluster.Spec.ClusterAPI.Namespace)
+	for _, m := range machines {
+		if m.Name == masterMachine.Name {
+			continue
+		}
+		if _, err := client.ClusterV1alpha1().Machines(cm.cluster.Spec.ClusterAPI.Namespace).Create(m); err != nil {
+			log.Infof("Error creating maching %q in namespace %q", m.Name, cm.cluster.Spec.ClusterAPI.Namespace)
 			return acts, err
 		}
 	}
@@ -378,16 +381,6 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 					Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", mi.Spec.ProviderID, err)
 				}
 			}
-			/*if masterNG.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
-				for _, addr := range masterInstance.Status.Addresses {
-					if addr.Type == core.NodeExternalIP {
-						err = cm.conn.releaseReservedIP(addr.Address)
-						if err != nil {
-							return
-						}
-					}
-				}
-			}*/
 		}
 	}
 

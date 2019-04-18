@@ -1,12 +1,10 @@
 package v1beta1
 
 import (
-	"fmt"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
 const (
@@ -73,17 +71,4 @@ type NodeInfo struct {
 type MachineProviderConfig struct {
 	Name   string   `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 	Config NodeSpec `json:"config,omitempty" protobuf:"bytes,2,opt,name=config"`
-}
-
-func GetLeaderMachine(machines []*clusterapi.Machine) (*clusterapi.Machine, error) {
-	masters := []*clusterapi.Machine{}
-	for _, machine := range machines {
-		if util.IsControlPlaneMachine(machine) {
-			masters = append(masters, machine)
-		}
-	}
-	if len(masters) == 0 {
-		return nil, fmt.Errorf("Expected at least one master, got 0")
-	}
-	return masters[0], nil
 }

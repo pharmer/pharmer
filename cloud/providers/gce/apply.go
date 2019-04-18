@@ -3,12 +3,12 @@ package gce
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	semver "github.com/appscode/go-version"
 	. "github.com/appscode/go/context"
+	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	proconfig "github.com/pharmer/pharmer/apis/v1beta1/gce"
+	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -31,17 +31,10 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 	cm.cluster = in
 	cm.namer = namer{cluster: cm.cluster}
-	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return nil, err
-	}
-	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return nil, err
-	}
 
-	if cm.conn, err = PrepareCloud(cm.ctx, in.Name, cm.owner); err != nil {
+	if err = PrepareCloud(cm); err != nil {
 		return nil, err
 	}
-	cm.conn.namer = cm.namer
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
@@ -87,7 +80,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	{
 		a, err := cm.applyScale(dryRun)
 		if err != nil {
-			return nil, err
+			// ignore error if cluster is deleted
+			if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
+				log.Infoln(err)
+			} else {
+				return nil, err
+			}
 		}
 		acts = append(acts, a...)
 	}
@@ -104,6 +102,10 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 }
 
 func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
+	if err := cm.SetupCerts(); err != nil {
+		return nil, err
+	}
+
 	var found bool
 	if !dryRun {
 		if err = cm.conn.importPublicKey(); err != nil {
@@ -155,7 +157,6 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	// ------------------------------- ASSETS ----------------------------------
-
 	var machines []*clusterv1.Machine
 	machines, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
@@ -163,9 +164,42 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 	var masterMachine *clusterv1.Machine
-	masterMachine, err = api.GetLeaderMachine(machines)
+	masterMachine, err = GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
 	if err != nil {
 		return
+	}
+
+	loadBalancerIP, err := cm.conn.getLoadBalancer()
+	if err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Load Balancer",
+			Message:  "Load Balancer not found",
+		})
+		if !dryRun {
+			if loadBalancerIP, err = cm.conn.createLoadBalancer(masterMachine.Name); err != nil {
+				return acts, errors.Wrap(err, "Error creating load balancer")
+			}
+		}
+	} else {
+		acts = append(acts, api.Action{
+			Action:   api.ActionNOP,
+			Resource: "Load Balancer",
+			Message:  "Load Balancer found",
+		})
+	}
+	cm.cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
+		IP:   loadBalancerIP,
+		Port: api.DefaultKubernetesBindPort,
+	}
+
+	if loadBalancerIP == "" {
+		return nil, errors.Wrap(err, "load balancer can't be empty")
+	}
+
+	cm.cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
+		IP:   loadBalancerIP,
+		Port: api.DefaultKubernetesBindPort,
 	}
 
 	machineSets, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
@@ -173,33 +207,48 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return nil, err
 	}
 
-	providerSpec := proconfig.GetGCEMachineProviderSpec(masterMachine.Spec.ProviderSpec)
+	providerSpec, err := clusterapiGCE.MachineConfigFromProviderSpec(masterMachine.Spec.ProviderSpec)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to decode machine provider spec")
+	}
 
 	if providerSpec.MachineType == "" {
 		totalNodes := NodeCount(machineSets)
-		providerSpec.MachineType = "n1-standard-2"
+		sku := "n1-standard-2"
 
 		if totalNodes > 10 {
-			providerSpec.MachineType = "n1-standard-4"
+			sku = "n1-standard-4"
 		}
 		if totalNodes > 100 {
-			providerSpec.MachineType = "n1-standard-8"
+			sku = "n1-standard-8"
 		}
 		if totalNodes > 250 {
-			providerSpec.MachineType = "n1-standard-16"
+			sku = "n1-standard-16"
 		}
 		if totalNodes > 500 {
-			providerSpec.MachineType = "n1-standard-32"
+			sku = "n1-standard-32"
 		}
 
-		masterMachine.Spec.ProviderSpec.Value.Raw, err = json.Marshal(providerSpec)
+		// update all the master machines
+		for _, m := range machines {
+			conf, err := clusterapiGCE.MachineConfigFromProviderSpec(m.Spec.ProviderSpec)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to decode provider spec for macine %s", m.Name)
+			}
+			conf.MachineType = sku
 
-		masterMachine, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Update(masterMachine)
-		if err != nil {
-			return
+			rawcfg, err := clusterapiGCE.EncodeMachineSpec(conf)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to encode provider spec for machine %s", m.Name)
+			}
+			m.Spec.ProviderSpec.Value = rawcfg
+
+			_, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Update(m)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to update machine %q to store", m.Name)
+			}
 		}
 	}
-	masterMachine, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Update(masterMachine)
 
 	// needed for master start-up config
 	if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
@@ -210,7 +259,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 	Logger(cm.ctx).Info("Preparing Master Instance")
 
-	found, _ = cm.conn.getMasterInstance()
+	found, _ = cm.conn.getMasterInstance(masterMachine)
 
 	if !found {
 		acts = append(acts, api.Action{
@@ -220,8 +269,8 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 		if !dryRun {
 			var op1 string
-			log.Println("Creating Master Instance")
-			if op1, err = cm.conn.createMasterIntance(cm.cluster, masterMachine); err != nil {
+			log.Infoln("Creating Master Instance")
+			if op1, err = cm.conn.createMasterIntance(cm.cluster); err != nil {
 				return
 			}
 
@@ -229,35 +278,19 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return
 			}
 
-			var masterInstance *api.NodeInfo
-			nodeAddresses := make([]corev1.NodeAddress, 0)
-			masterInstance, err = cm.conn.getInstance(cm.conn.namer.MasterName())
-			if err != nil {
-				return acts, err
-			}
-
-			if masterInstance.PrivateIP != "" {
-				nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
-					Type:    corev1.NodeInternalIP,
-					Address: masterInstance.PrivateIP,
-				})
-			}
-
-			if masterInstance.PublicIP != "" {
-				nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
+			nodeAddresses := []corev1.NodeAddress{
+				{
 					Type:    corev1.NodeExternalIP,
-					Address: masterInstance.PublicIP,
-				})
+					Address: loadBalancerIP,
+				},
 			}
 
 			Logger(cm.ctx).Info("Waiting for cluster initialization")
 
 			if err = cm.cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
-				return
+				return acts, errors.Wrap(err, "Error setting controlplane endpoints")
 			}
-
 		}
-
 	} else {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
@@ -289,37 +322,44 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	// -------------------------------------------------------------------------------------------------------------
-	// needed to get master_internal_ip
-	cm.cluster.Status.Phase = api.ClusterReady
-	if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
-		return
-	}
-	if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
-		return
-	}
-
 	Logger(cm.ctx).Infoln("Creating secret credential...")
 	if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster, cm.owner); err != nil {
-		return
-	}
-
-	if err = proconfig.SetGCEClusterProviderStatus(cm.cluster.Spec.ClusterAPI); err != nil {
-		return
+		return acts, errors.Wrap(err, "Error creating ccm secret credentials")
 	}
 
 	ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, cm.conn)
 	if err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "Error creating cluster-api components")
 	}
 	var controllerManager string
 	controllerManager, err = cm.conn.getControllerManager()
 	if err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "Error creating controller-manager")
 	}
 
 	if err := ca.Apply(controllerManager); err != nil {
 		return acts, err
+	}
+
+	log.Infof("Adding other master machines")
+	client, err := GetClusterClient(cm.ctx, cm.cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, m := range machines {
+		if m.Name == masterMachine.Name {
+			continue
+		}
+		if _, err := client.ClusterV1alpha1().Machines(cm.cluster.Spec.ClusterAPI.Namespace).Create(m); err != nil {
+			log.Infof("Error creating maching %q in namespace %q", m.Name, cm.cluster.Spec.ClusterAPI.Namespace)
+			return acts, err
+		}
+	}
+
+	cm.cluster.Status.Phase = api.ClusterReady
+	if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
+		return
 	}
 
 	return acts, err
@@ -409,35 +449,22 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if err != nil {
 		return
 	}
-	var masterMachine *clusterv1.Machine
-	masterMachine, err = api.GetLeaderMachine(machines)
-	if err != nil {
-		return
-	}
 
 	var nodeDiskNames = make([]string, 0)
-
-	Logger(cm.ctx).Infoln("Deleting Machines from machineset...")
+	var masterMachines []*clusterv1.Machine
 
 	for _, machine := range machines {
 		if !util.IsControlPlaneMachine(machine) {
-			//nodeDiskNames = append(nodeDiskNames, machine.Name)
-			//template := cm.namer.InstanceTemplateName(machine.Spec.Template.Spec.SKU)
 			acts = append(acts, api.Action{
 				Action:   api.ActionDelete,
 				Resource: "Machine",
-				//Message:  fmt.Sprintf("%v node group with template %v will be deleted", machine.Name),
-				Message: fmt.Sprintf("Machine `%v` will be deleted", machine.Spec.Name),
+				Message:  fmt.Sprintf("Machine `%v` will be deleted", machine.Spec.Name),
 			})
 			if !dryRun {
 				if err = cm.conn.deleteInstance(machine.Spec.Name); err != nil {
 					Logger(cm.ctx).Infof("Error deleting instance `%v`. Reason: %v", machine.Spec.Name, err)
-					//return nil, err
 				}
 
-				//if err = cm.conn.deleteOnlyNodeGroup(machine.Name, template); err != nil {
-				//	Logger(cm.ctx).Infof("Error on deleting node group. Reason: %v", err)
-				//}
 				err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Delete(machine.Spec.Name)
 				if err != nil {
 					return nil, err
@@ -447,40 +474,20 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 					return nil, err
 				}
 			}
+		} else {
+			masterMachines = append(masterMachines, machine)
 		}
-	}
-
-	var kc kubernetes.Interface
-	kc, err = cm.GetAdminClient()
-	if err != nil {
-		return
-	}
-
-	nodes, err := kc.CoreV1().Nodes().List(metav1.ListOptions{})
-	if err != nil {
-		return acts, errors.Wrap(err, "Error listing Nodes in cluster")
-	}
-
-	Logger(cm.ctx).Infoln("Deleting user defined machines")
-	for _, node := range nodes.Items {
-		if node.Name != masterMachine.Name {
-			//nodeDiskNames = append(nodeDiskNames, node.Name)
-			//err = kc.CoreV1().Nodes().Delete(node.Name, metav1.NewDeleteOptions(0))
-			err = cm.conn.deleteInstance(node.Name)
-			if err != nil {
-				return acts, err
-			}
-		}
+		nodeDiskNames = append(nodeDiskNames, cm.namer.MachineDiskName(machine))
 	}
 
 	acts = append(acts, api.Action{
 		Action:   api.ActionNOP,
 		Resource: "Master Instance",
-		Message:  fmt.Sprintf("Found master instance with name %v", cm.namer.MasterName()),
+		Message:  "Deleting master instances",
 	})
 	if !dryRun {
 		Logger(cm.ctx).Infoln("Deleting Master machine")
-		if err = cm.conn.deleteMaster(); err != nil {
+		if err = cm.conn.deleteMaster(masterMachines); err != nil {
 			Logger(cm.ctx).Infof("Error on deleting master. Reason: %v", err)
 		}
 	}
@@ -491,24 +498,16 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		Message:  fmt.Sprintf("%v cluster firewall rule will be deleted", cm.cluster.Name),
 	})
 	if !dryRun {
-		Logger(cm.ctx).Infoln("Deleting Firewall rules")
+		log.Infoln("Deleting Firewall rules")
 		if err = cm.conn.deleteFirewalls(); err != nil {
 			cm.cluster.Status.Reason = err.Error()
 		}
 	}
 
-	//if masterMachine.Spec.Template.Spec.ExternalIPType == api.IPTypeReserved {
-	//	if !dryRun {
-	//		if err = cm.conn.releaseReservedIP(); err != nil {
-	//			Logger(cm.ctx).Infof("Error on releasing reserve ip. Reason: %v", err)
-	//		}
-	//	}
-	//}
-
 	acts = append(acts, api.Action{
 		Action:   api.ActionDelete,
 		Resource: "Master persistent disk",
-		Message:  fmt.Sprintf("Will delete master persistent with name %v", cm.namer.MasterPDName()),
+		Message:  fmt.Sprintf("Will delete master persistent disks"),
 	})
 
 	if !dryRun {
@@ -518,16 +517,11 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		}
 	}
 
-	//acts = append(acts, api.Action{
-	//	Action:   api.ActionDelete,
-	//	Resource: "Route",
-	//	Message:  fmt.Sprintf("Route will be delete"),
-	//})
-	//if !dryRun {
-	//	if err = cm.conn.deleteRoutes(); err != nil {
-	//		Logger(cm.ctx).Infof("Error on deleting routes. Reason: %v", err)
-	//	}
-	//}
+	if !dryRun {
+		if err := cm.conn.deleteLoadBalancer(); err != nil {
+			log.Infof("Error deleting load balancer: %v", err)
+		}
+	}
 
 	if !dryRun {
 		cm.cluster.Status.Phase = api.ClusterDeleted

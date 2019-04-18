@@ -21,7 +21,6 @@ import (
 	//	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	api "github.com/pharmer/pharmer/apis/v1alpha1"
-	apibeta "github.com/pharmer/pharmer/apis/v1beta1"
 )
 
 func TestGce(t *testing.T) {
@@ -64,11 +63,9 @@ func TestConfigSetup(t *testing.T) {
 	}
 	var tmplBuf bytes.Buffer
 	err = tmpl.Execute(&tmplBuf, setupConfig{
-		OS:             "ubuntu-16.04-xenial",
-		OSFamily:       "ubuntu-16.04lts",
-		KubeletVersion: "v1.13.2",
-
-		ControlPlaneVersion: "v1.13.2",
+		OS:                "ubuntu-16.04-xenial",
+		OSFamily:          "ubuntu-16.04lts",
+		KubernetesVersion: "v1.13.2",
 	})
 	fmt.Println(err)
 
@@ -89,27 +86,4 @@ func TestReadfile(t *testing.T) {
 }
 
 func TestControllerManager(t *testing.T) {
-	tmpl, err := template.New("controller-manager-config").Parse(ControllerManager)
-	fmt.Println(err)
-	var tmplBuf bytes.Buffer
-
-	machinsetup, err := geteMachineSetupConfig(&apibeta.ClusterConfig{
-		Cloud: apibeta.CloudSpec{
-			InstanceImage: "ubuntu-16.04-xenial",
-			OS:            "ubuntu",
-		},
-		KubernetesVersion: "v1.13.2",
-	})
-	fmt.Println(machinsetup, err)
-
-	err = tmpl.Execute(&tmplBuf, controllerManagerConfig{
-		MachineConfig:  machinsetup,
-		ServiceAccount: "abc",
-		SSHPrivateKey:  "pqr",
-		SSHPublicKey:   "xyz",
-		SSHUser:        "clusterapi",
-	})
-	fmt.Println(err)
-
-	fmt.Println(tmplBuf.String(), err)
 }

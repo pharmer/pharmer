@@ -23,6 +23,7 @@ var kubernetesCNIVersions = map[string]string{
 	"1.11.0": "0.6.0",
 	"1.12.0": "0.6.0",
 	"1.13.0": "0.6.0",
+	"1.14.0": "0.7.5",
 }
 
 var prekVersions = map[string]string{
@@ -32,6 +33,7 @@ var prekVersions = map[string]string{
 	"1.11.0": "1.12.0-alpha.3",
 	"1.12.0": "1.12.0-alpha.3",
 	"1.13.0": "1.13.0",
+	"1.14.0": "1.13.0",
 }
 
 type TemplateData struct {
@@ -541,11 +543,11 @@ kubectl apply \
   --kubeconfig /etc/kubernetes/admin.conf
 {{ else }}
 kubectl apply \
-  -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml \
+  -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 
 kubectl apply \
-  -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml \
+  -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 {{ end }}
 `))

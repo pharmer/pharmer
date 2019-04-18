@@ -1,6 +1,8 @@
 package v1beta1
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
@@ -45,4 +47,9 @@ func AssignTypeKind(v interface{}) error {
 		return nil
 	}
 	return errors.New("Unknown api object type")
+}
+
+// ErrAlreadyExist checks if the error occurred due to the object already present in the cluster
+func ErrAlreadyExist(err error) bool {
+	return strings.Contains(err.Error(), "already exists")
 }
