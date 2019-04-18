@@ -2,13 +2,14 @@ package cloud
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 	"strings"
 	"text/template"
 
-	version "github.com/appscode/go-version"
+	"github.com/appscode/go-version"
 	"github.com/ghodss/yaml"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
@@ -41,6 +42,8 @@ type TemplateData struct {
 	CAHash            string
 	CAKey             string
 	FrontProxyKey     string
+	SAKey             string
+	ETCDCAKey         string
 	APIServerAddress  string
 	NetworkProvider   string
 	CloudConfig       string
@@ -50,8 +53,9 @@ type TemplateData struct {
 
 	InitConfiguration    *kubeadmapi.InitConfiguration
 	ClusterConfiguration *kubeadmapi.ClusterConfiguration
-	JoinConfiguration    *kubeadmapi.JoinConfiguration
+	JoinConfiguration    string
 	KubeletExtraArgs     map[string]string
+	ControlPlaneJoin     bool
 }
 
 func (td TemplateData) InitConfigurationYAML() (string, error) {
@@ -87,14 +91,6 @@ func (td TemplateData) ClusterConfigurationYAML() (string, error) {
 }
 
 func (td TemplateData) JoinConfigurationYAML() (string, error) {
-	apiAddress := strings.Split(td.APIServerAddress, ":")
-	if len(apiAddress) < 2 {
-		return "", errors.Errorf("Apiserver address is not correct")
-	}
-	apiPort, err := strconv.Atoi(apiAddress[1])
-	if err != nil {
-		return "", err
-	}
 	var cb []byte
 
 	cfg := kubeadmapi.JoinConfiguration{
@@ -113,8 +109,24 @@ func (td TemplateData) JoinConfigurationYAML() (string, error) {
 			},
 		},
 	}
-	cb, err = yaml.Marshal(cfg)
+
+	if td.ControlPlaneJoin {
+		// TODO FIX
+		cfg.ControlPlane = &kubeadmapi.JoinControlPlane{}
+		cfg.ControlPlane.LocalAPIEndpoint.AdvertiseAddress = "CONTROLPLANEIP"
+		cfg.ControlPlane.LocalAPIEndpoint.BindPort = kubeadmapi.DefaultAPIBindPort
+	}
+
+	cb, err := yaml.Marshal(cfg)
 	if td.IsVersionLessThan1_13() {
+		apiAddress := strings.Split(td.APIServerAddress, ":")
+		if len(apiAddress) < 2 {
+			return "", errors.Errorf("Apiserver address is not correct")
+		}
+		apiPort, err := strconv.Atoi(apiAddress[1])
+		if err != nil {
+			return "", err
+		}
 		conf := ConvertJoinConfigFromV1beta1ToV1alpha3(&cfg)
 		conf.ClusterName = td.ClusterName
 		conf.APIEndpoint.AdvertiseAddress = apiAddress[0]
@@ -233,6 +245,16 @@ func (td TemplateData) PrekVersion() (string, error) {
 	return prekVer, nil
 }
 
+func (td *TemplateData) ControlPlaneEndpointsFromLB(cfg *kubeadmapi.ClusterConfiguration, cluster *api.Cluster) {
+	if cluster.Status.Cloud.LoadBalancer.DNS != "" {
+		cfg.ControlPlaneEndpoint = fmt.Sprintf("%s:%d", cluster.Status.Cloud.LoadBalancer.DNS, cluster.Status.Cloud.LoadBalancer.Port)
+		cfg.APIServer.CertSANs = append(cfg.APIServer.CertSANs, cluster.Status.Cloud.LoadBalancer.DNS)
+	} else if cluster.Status.Cloud.LoadBalancer.IP != "" {
+		cfg.ControlPlaneEndpoint = fmt.Sprintf("%s:%d", cluster.Status.Cloud.LoadBalancer.IP, cluster.Status.Cloud.LoadBalancer.Port)
+		cfg.APIServer.CertSANs = append(cfg.APIServer.CertSANs, cluster.Status.Cloud.LoadBalancer.IP)
+	}
+}
+
 var (
 	StartupScriptTemplate = template.Must(template.New(api.RoleMaster).Parse(`
 {{- template "init-script" }}
@@ -290,7 +312,22 @@ mkdir -p /etc/kubernetes/kubeadm
 
 {{ template "pre-k" . }}
 
+{{ if not .ControlPlaneJoin }}
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
+{{ else }}
+
+cat > /etc/kubernetes/kubeadm/join.yaml <<EOF
+{{ .JoinConfiguration }}
+EOF
+
+PUBLIC_IP=$(pre-k machine public-ips --all=false)
+echo $PUBLIC_IP
+sed -i "s/CONTROLPLANEIP/$PUBLIC_IP/g" /etc/kubernetes/kubeadm/join.yaml
+cat /etc/kubernetes/kubeadm/join.yaml
+
+kubeadm join --config=/etc/kubernetes/kubeadm/join.yaml
+
+{{ end }}
 
 {{ if .UseKubeProxy1_11_0 }}
 kubectl apply -f https://raw.githubusercontent.com/pharmer/addons/release-1.11/kube-proxy/v1.11.0/kube-proxy.yaml \
@@ -375,7 +412,7 @@ systemctl start docker kubelet nfs-utils
 mkdir -p /etc/kubernetes/kubeadm
 
 cat > /etc/kubernetes/kubeadm/join.yaml <<EOF
-{{ .JoinConfigurationYAML }}
+{{ .JoinConfiguration }}
 EOF
 
 
@@ -441,11 +478,25 @@ cat > /etc/kubernetes/pki/front-proxy-ca.key <<EOF
 EOF
 pre-k get ca-cert --common-name=front-proxy-ca < /etc/kubernetes/pki/front-proxy-ca.key > /etc/kubernetes/pki/front-proxy-ca.crt
 chmod 600 /etc/kubernetes/pki/ca.key /etc/kubernetes/pki/front-proxy-ca.key
+
+cat > /etc/kubernetes/pki/sa.key <<EOF
+{{ .SAKey }}
+EOF
+pre-k get pub-key < /etc/kubernetes/pki/sa.key > /etc/kubernetes/pki/sa.pub
+
+# ETCD Keys
+mkdir -p /etc/kubernetes/pki/etcd
+cat > /etc/kubernetes/pki/etcd/ca.key <<EOF
+{{ .ETCDCAKey }}
+EOF
+pre-k get ca-cert --common-name=kubernetes < /etc/kubernetes/pki/etcd/ca.key > /etc/kubernetes/pki/etcd/ca.crt
+chmod 600 /etc/kubernetes/pki/etcd/ca.key
+
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("ccm").Parse(`
 # Deploy CCM RBAC
-cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.13/cloud-controller-manager/rbac.yaml'
+cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/master/cloud-controller-manager/rbac.yaml'
 exec_until_success "$cmd"
 
 # Deploy CCM DaemonSet

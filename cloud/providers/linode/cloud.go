@@ -21,6 +21,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
+var errLBNotFound = errors.New("loadbalancer not found")
+
 type cloudConnector struct {
 	ctx     context.Context
 	cluster *api.Cluster
@@ -70,9 +72,18 @@ func PrepareCloud(ctx context.Context, clusterName string, owner string) (*cloud
 		return conn, err
 	}
 
+	if ctx, err = LoadEtcdCertificate(ctx, cluster, owner); err != nil {
+		return nil, err
+	}
+
 	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
 		return conn, err
 	}
+
+	if ctx, err = LoadSaKey(ctx, cluster, owner); err != nil {
+		return conn, err
+	}
+
 	if conn, err = NewConnector(ctx, cluster, owner); err != nil {
 		return nil, err
 	}
@@ -367,5 +378,153 @@ func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data
 		return err == nil, nil
 	})
 }
+
+func (conn *cloudConnector) createLoadBalancer(name string) (*linodego.NodeBalancer, error) {
+	lb, err := conn.lbByName(conn.ctx, name)
+	if err != nil {
+		if err == errLBNotFound {
+			ip, err := conn.buildLoadBalancerRequest(name)
+			if err != nil {
+				return nil, err
+			}
+			return ip, nil
+
+		}
+	}
+	return lb, nil
+
+}
+
+func (conn *cloudConnector) lbByName(ctx context.Context, name string) (*linodego.NodeBalancer, error) {
+	lbs, err := conn.client.ListNodeBalancers(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, lb := range lbs {
+		if *lb.Label == name {
+			return &lb, nil
+		}
+	}
+
+	return nil, errLBNotFound
+}
+
+func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*linodego.NodeBalancer, error) {
+	lb, err := conn.createNodeBalancer(lbName)
+	if err != nil {
+		return nil, err
+	}
+
+	nb, err := conn.client.GetNodeBalancer(conn.ctx, lb)
+	if err != nil {
+		return nil, err
+	}
+	if nb == nil {
+		return nil, fmt.Errorf("nodebalancer with id %v not found", lb)
+	}
+
+	_, err = conn.createNodeBalancerConfig(lb)
+	if err != nil {
+		return nil, err
+	}
+
+	return nb, nil
+}
+
+func (conn *cloudConnector) createNodeBalancerConfig(nbId int) (int, error) {
+	tr := true
+	resp, err := conn.client.CreateNodeBalancerConfig(conn.ctx, nbId, linodego.NodeBalancerConfigCreateOptions{
+		Port:          api.DefaultKubernetesBindPort,
+		Protocol:      linodego.ProtocolTCP,
+		Algorithm:     linodego.AlgorithmLeastConn,
+		Stickiness:    linodego.StickinessTable,
+		Check:         linodego.CheckConnection,
+		CheckInterval: 5,
+		CheckTimeout:  3,
+		CheckAttempts: 10,
+		CheckPassive:  &tr,
+	})
+	if err != nil {
+		return -1, err
+	}
+	return resp.ID, nil
+}
+func (conn *cloudConnector) addNodeToBalancer(lbName string, nodeName, ip string) error {
+	lb, err := conn.lbByName(conn.ctx, lbName)
+	if err != nil {
+		return err
+	}
+
+	lbcs, err := conn.client.ListNodeBalancerConfigs(conn.ctx, lb.ID, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = conn.client.CreateNodeBalancerNode(conn.ctx, lb.ID, lbcs[0].ID, linodego.NodeBalancerNodeCreateOptions{
+		Address: fmt.Sprintf("%v:%v", ip, api.DefaultKubernetesBindPort),
+		Label:   nodeName,
+		Weight:  100,
+		Mode:    linodego.ModeAccept,
+	})
+	if err != nil {
+		return err
+	}
+
+	Logger(conn.ctx).Infof("Added master %v to loadbalancer %v", nodeName, lbName)
+
+	return nil
+}
+
+func (conn *cloudConnector) createNodeBalancer(name string) (int, error) {
+	connThrottle := 20
+	resp, err := conn.client.CreateNodeBalancer(conn.ctx, linodego.NodeBalancerCreateOptions{
+		Label:              &name,
+		Region:             conn.cluster.ClusterConfig().Cloud.Zone,
+		ClientConnThrottle: &connThrottle,
+	})
+	if err != nil {
+		return -1, err
+	}
+	return resp.ID, nil
+}
+
+func (conn *cloudConnector) deleteLoadBalancer(lbName string) error {
+	lb, err := conn.lbByName(conn.ctx, lbName)
+	if err != nil {
+		return err
+	}
+
+	return conn.client.DeleteNodeBalancer(conn.ctx, lb.ID)
+}
+
+/*func (conn *cloudConnector) loadBalancerUpdated(lb *godo.LoadBalancer) (bool, error) {
+	defaultSpecs, err := conn.buildLoadBalancerRequest(conn.namer.LoadBalancerName())
+	if err != nil {
+		log.Debugln("Error getting default lb specs")
+		return false, err
+	}
+
+	if lb.Algorithm != defaultSpecs.Algorithm {
+		return true, nil
+	}
+	if lb.Region.Slug != defaultSpecs.Region {
+		return true, nil
+	}
+	if !reflect.DeepEqual(lb.ForwardingRules, defaultSpecs.ForwardingRules) {
+		return true, nil
+	}
+	if !reflect.DeepEqual(lb.HealthCheck, defaultSpecs.HealthCheck) {
+		return true, nil
+	}
+	if !reflect.DeepEqual(lb.StickySessions, defaultSpecs.StickySessions) {
+		return true, nil
+	}
+	if lb.RedirectHttpToHttps != defaultSpecs.RedirectHttpToHttps {
+		return true, nil
+	}
+
+	return false, nil
+}*/
 
 // ---------------------------------------------------------------------------------------------------------------------

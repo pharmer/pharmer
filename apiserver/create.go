@@ -11,7 +11,6 @@ import (
 	opts "github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/notification"
 	"strconv"
-	"time"
 )
 
 func (a *Apiserver) CreateCluster() error {
@@ -73,7 +72,8 @@ func (a *Apiserver) CreateCluster() error {
 		}
 
 
-	}, stan.SetManualAckMode(), stan.AckWait(time.Second))
+
+	}, stan.SetManualAckMode(), stan.DurableName("i-remember"))
 
 	return err
 }

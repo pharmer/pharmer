@@ -3,14 +3,14 @@ package apiserver
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/nats-io/go-nats-streaming"
 	"github.com/golang/glog"
+	"github.com/nats-io/go-nats-streaming"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/apiserver/options"
 	. "github.com/pharmer/pharmer/cloud"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
+	opts "github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/notification"
 	"strconv"
-	opts "github.com/pharmer/pharmer/cloud/cmds/options"
 )
 
 func (a *Apiserver) DeleteCluster() error  {
@@ -70,7 +70,7 @@ func (a *Apiserver) DeleteCluster() error  {
 
 		}
 
-		}, stan.SetManualAckMode())
+		}, stan.SetManualAckMode(), stan.DurableName("i-remember"))
 
 	return err
 }

@@ -12,6 +12,7 @@ func ApplyCluster(ctx context.Context, opt *opts.ApplyConfig, obj *api.Operation
 	_, err := Apply(ctx, opt)
 	if err != nil {
 		glog.Errorf("err = %v]\n", err)
+		return
 	}
 	obj.State = api.OperationDone
 	obj, err = Store(ctx).Owner(opt.Owner).Operations().Update(obj)

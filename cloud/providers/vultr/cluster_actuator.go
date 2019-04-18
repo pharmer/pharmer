@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	vultr_config "github.com/pharmer/pharmer/apis/v1beta1/vultr"
-
 	"github.com/appscode/go/log"
-
+	vultr_config "github.com/pharmer/pharmer/apis/v1beta1/vultr"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"

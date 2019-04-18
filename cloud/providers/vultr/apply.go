@@ -130,7 +130,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	masterMachine, err := api.GetMasterMachine(machines)
+	masterMachine, err := api.GetLeaderMachine(machines)
 	if err != nil {
 		return
 	}

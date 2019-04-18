@@ -16,3 +16,7 @@ func (n namer) GenSSHKeyExternalID() string {
 func (n namer) StartupScriptName(machine, role string) string {
 	return n.cluster.Name + "-" + machine + "-" + role
 }
+
+func (n namer) LoadBalancerName() string {
+	return n.cluster.Name + "-lb"
+}

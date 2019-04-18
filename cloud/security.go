@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"crypto/x509"
+	"fmt"
 
 	"github.com/appscode/go/crypto/ssh"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -57,6 +58,32 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster, owner strin
 	}
 
 	Logger(ctx).Infoln("CA certificates generated successfully.")
+	return ctx, nil
+}
+
+func CreateServiceAccountKey(ctx context.Context, cluster *api.Cluster, owner string) (context.Context, error) {
+	Logger(ctx).Infoln("Generating Service account signing key for cluster")
+	certStore := Store(ctx).Owner(owner).Certificates(cluster.Name)
+
+	saSigningKey, err := cert.NewPrivateKey()
+	if err != nil {
+		return ctx, errors.Errorf("failure while creating service account token signing key: %v", err)
+	}
+	cfg := cert.Config{
+		CommonName: fmt.Sprintf("%v-certificate-authority", kubeadmconst.ServiceAccountKeyBaseName),
+	}
+	SaSigningCert, err := cert.NewSelfSignedCACert(cfg, saSigningKey)
+	if err != nil {
+		return ctx, errors.Errorf("failed to generate self-signed certificate. Reason: %v", err)
+	}
+
+	ctx = context.WithValue(ctx, paramSaKey{}, saSigningKey)
+	ctx = context.WithValue(ctx, paramSaCert{}, SaSigningCert)
+	if err = certStore.Create(kubeadmconst.ServiceAccountKeyBaseName, SaSigningCert, saSigningKey); err != nil {
+		return ctx, err
+	}
+
+	Logger(ctx).Infoln("Service account key generated successfully.")
 	return ctx, nil
 }
 

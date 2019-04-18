@@ -17,17 +17,17 @@ import (
 func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine, token string) TemplateData {
 	td := TemplateData{
 		ClusterName:       cluster.Name,
-		KubernetesVersion: machine.Spec.Versions.ControlPlane,
+		KubernetesVersion: machine.Spec.Versions.Kubelet,
 		KubeadmToken:      token,
 		CAHash:            pubkeypin.Hash(CACert(ctx)),
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		//SAKey:            string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
-		FrontProxyKey: string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		//ETCDCAKey:        string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
-		APIServerAddress: cluster.APIServerAddress(),
-		NetworkProvider:  cluster.ClusterConfig().Cloud.NetworkProvider,
-		Provider:         cluster.ClusterConfig().Cloud.CloudProvider,
-		ExternalProvider: true, // DigitalOcean uses out-of-tree CCM
+		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
+		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
+		APIServerAddress:  cluster.APIServerAddress(),
+		NetworkProvider:   cluster.ClusterConfig().Cloud.NetworkProvider,
+		Provider:          cluster.ClusterConfig().Cloud.CloudProvider,
+		ExternalProvider:  true, // DigitalOcean uses out-of-tree CCM
 	}
 	{
 		td.KubeletExtraArgs = map[string]string{}
@@ -44,16 +44,14 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		//td.KubeletExtraArgs["keep-terminated-pod-volumes"] = "true"
 
 	}
-
-	if machine.Spec.Versions.ControlPlane == "" {
-		td.KubernetesVersion = machine.Spec.Versions.Kubelet
-	}
+	joinConf, _ := td.JoinConfigurationYAML()
+	td.JoinConfiguration = joinConf
 
 	return td
 }
 
-func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine) TemplateData {
-	td := newNodeTemplateData(ctx, cluster, machine, "")
+func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine, token string) TemplateData {
+	td := newNodeTemplateData(ctx, cluster, machine, token)
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
 	}.String()
@@ -100,8 +98,20 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 		},
 		ClusterName: cluster.Name,
 	}
-	td.ClusterConfiguration = &cfg
 
+	td.ControlPlaneEndpointsFromLB(&cfg, cluster)
+
+	if token != "" {
+		td.ControlPlaneJoin = true
+
+		joinConf, err := td.JoinConfigurationYAML()
+		if err != nil {
+			panic(err)
+		}
+		td.JoinConfiguration = joinConf
+	}
+
+	td.ClusterConfiguration = &cfg
 	return td
 }
 
@@ -165,7 +175,7 @@ func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *c
 
 	var script bytes.Buffer
 	if util.IsControlPlaneMachine(machine) {
-		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, cluster, machine)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, cluster, machine, token)); err != nil {
 			return "", err
 		}
 	} else {

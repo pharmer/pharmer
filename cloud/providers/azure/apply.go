@@ -366,7 +366,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 	}
 
 	var masterMachine *clusterapi.Machine
-	masterMachine, err = api.GetMasterMachine(machines)
+	masterMachine, err = api.GetLeaderMachine(machines)
 	if err != nil {
 		return acts, err
 	}

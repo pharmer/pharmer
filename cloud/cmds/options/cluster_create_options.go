@@ -17,11 +17,11 @@ import (
 )
 
 type ClusterCreateConfig struct {
-	Cluster   *api.Cluster
-	Nodes     map[string]int
-	Owner     string
-	Namespace string
-	//Masters        int32
+	Cluster     *api.Cluster
+	Nodes       map[string]int
+	Owner       string
+	Namespace   string
+	MasterCount int
 }
 
 func NewClusterCreateConfig() *ClusterCreateConfig {
@@ -43,11 +43,11 @@ func NewClusterCreateConfig() *ClusterCreateConfig {
 	}
 
 	return &ClusterCreateConfig{
-		Namespace: core.NamespaceDefault,
-		Cluster:   cluster,
-		Nodes:     map[string]int{},
-		Owner:     utils.GetLocalOwner(),
-		//	Masters: 1,
+		Namespace:   core.NamespaceDefault,
+		Cluster:     cluster,
+		Nodes:       map[string]int{},
+		Owner:       utils.GetLocalOwner(),
+		MasterCount: 1,
 	}
 }
 
@@ -59,6 +59,7 @@ func (c *ClusterCreateConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.Cluster.Spec.Config.Cloud.NetworkProvider, "network-provider", c.Cluster.Spec.Config.Cloud.NetworkProvider, "Name of CNI plugin. Available options: calico, flannel, kubenet, weavenet")
 
 	fs.StringVar(&c.Namespace, "namespace", c.Namespace, "Namespace")
+	fs.IntVar(&c.MasterCount, "masters", c.MasterCount, "Number of masters")
 	fs.StringToIntVar(&c.Nodes, "nodes", c.Nodes, "Node set configuration")
 	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
 	//fs.Int32Var(&c.Masters, "masters", c.Masters, "Node set configuration")
@@ -77,5 +78,6 @@ func (c *ClusterCreateConfig) ValidateFlags(cmd *cobra.Command, args []string) e
 	c.Cluster.Name = strings.ToLower(args[0])
 	c.Cluster.Spec.ClusterAPI.Name = c.Cluster.Name
 	c.Cluster.Spec.ClusterAPI.Namespace = c.Namespace
+	c.Cluster.Spec.Config.MasterCount = c.MasterCount
 	return nil
 }

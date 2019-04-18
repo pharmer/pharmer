@@ -42,17 +42,6 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
-	if sku == "" {
-		// assign at the time of apply
-	}
-	return api.NodeSpec{
-		SKU:      sku,
-		DiskType: "gp2",
-		DiskSize: 100,
-	}, nil
-}
-
 // SetOwner sets owner field of ClusterManager
 func (cm *ClusterManager) SetOwner(owner string) {
 	cm.owner = owner

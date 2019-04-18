@@ -74,6 +74,8 @@ spec:
           mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters
         - name: credential
           mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/credentials
+        - name: etcd-certs
+          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters/{{ .ClusterName }}/pki/etcd
       terminationGracePeriodSeconds: 10
       tolerations:
       - effect: NoSchedule
@@ -100,6 +102,10 @@ spec:
       - name: certificates
         secret:
           secretName: pharmer-certificate
+          defaultMode: 256
+      - name: etcd-certs
+        secret:
+          secretName: pharmer-etcd
           defaultMode: 256
       - name: cluster
         secret:

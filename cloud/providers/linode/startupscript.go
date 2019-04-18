@@ -24,7 +24,9 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		KubeadmToken:      token,
 		CAHash:            pubkeypin.Hash(CACert(ctx)),
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
 		APIServerAddress:  cluster.APIServerAddress(),
 		NetworkProvider:   cluster.ClusterConfig().Cloud.NetworkProvider,
 		Provider:          cluster.ClusterConfig().Cloud.CloudProvider,
@@ -68,8 +70,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 	return td
 }
 
-func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine, owner string) TemplateData {
-	td := newNodeTemplateData(ctx, cluster, machine, "", owner)
+func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine, token, owner string) TemplateData {
+	td := newNodeTemplateData(ctx, cluster, machine, token, owner)
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
 	}.String()
@@ -101,7 +103,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 		CertificatesDir:   "/etc/kubernetes/pki",
 		APIServer: kubeadmapi.APIServer{
 			ControlPlaneComponent: kubeadmapi.ControlPlaneComponent{
-				ExtraArgs: cluster.ClusterConfig().APIServerExtraArgs,
+				ExtraArgs: cluster.Spec.Config.APIServerExtraArgs,
 			},
 			CertSANs: cluster.ClusterConfig().APIServerCertSANs,
 		},
@@ -113,6 +115,19 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 		},
 		ClusterName: cluster.Name,
 	}
+
+	td.ControlPlaneEndpointsFromLB(&cfg, cluster)
+
+	if token != "" {
+		td.ControlPlaneJoin = true
+
+		joinConf, err := td.JoinConfigurationYAML()
+		if err != nil {
+			panic(err)
+		}
+		td.JoinConfiguration = joinConf
+	}
+
 	td.ClusterConfiguration = &cfg
 
 	return td
@@ -206,7 +221,7 @@ func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *c
 
 	var script bytes.Buffer
 	if util.IsControlPlaneMachine(machine) {
-		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, cluster, machine, owner)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, cluster, machine, token, owner)); err != nil {
 			return "", err
 		}
 	} else {

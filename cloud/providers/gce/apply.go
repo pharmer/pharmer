@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
 func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
@@ -162,7 +163,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 	var masterMachine *clusterv1.Machine
-	masterMachine, err = api.GetMasterMachine(machines)
+	masterMachine, err = api.GetLeaderMachine(machines)
 	if err != nil {
 		return
 	}
@@ -409,7 +410,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		return
 	}
 	var masterMachine *clusterv1.Machine
-	masterMachine, err = api.GetMasterMachine(machines)
+	masterMachine, err = api.GetLeaderMachine(machines)
 	if err != nil {
 		return
 	}
@@ -419,7 +420,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	Logger(cm.ctx).Infoln("Deleting Machines from machineset...")
 
 	for _, machine := range machines {
-		if !api.IsMaster(machine) {
+		if !util.IsControlPlaneMachine(machine) {
 			//nodeDiskNames = append(nodeDiskNames, machine.Name)
 			//template := cm.namer.InstanceTemplateName(machine.Spec.Template.Spec.SKU)
 			acts = append(acts, api.Action{

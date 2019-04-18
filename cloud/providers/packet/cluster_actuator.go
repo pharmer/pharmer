@@ -6,7 +6,6 @@ import (
 
 	"github.com/appscode/go/log"
 	packet_config "github.com/pharmer/pharmer/apis/v1beta1/packet"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"

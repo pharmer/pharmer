@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
 	. "github.com/appscode/go/context"
+	"github.com/appscode/go/log"
 	"github.com/digitalocean/godo"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	doCapi "github.com/pharmer/pharmer/apis/v1beta1/digitalocean"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
@@ -19,6 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
 var errLBNotFound = errors.New("loadbalancer not found")
@@ -27,6 +31,7 @@ type cloudConnector struct {
 	ctx     context.Context
 	cluster *api.Cluster
 	client  *godo.Client
+	namer   namer
 }
 
 var _ InstanceManager = &cloudConnector{}
@@ -63,7 +68,9 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 	if err != nil {
 		return false, "Credential missing WRITE scope"
 	}
-	conn.client.Tags.Delete(context.TODO(), name)
+	if _, err := conn.client.Tags.Delete(context.TODO(), name); err != nil {
+		return false, err.Error()
+	}
 	return true, ""
 }
 
@@ -83,19 +90,20 @@ func PrepareCloud(ctx context.Context, clusterName, owner string) (*cloudConnect
 	if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
 		return conn, err
 	}
-	/*if cm.ctx, err = LoadEtcdCertificate(cm.ctx, cm.cluster); err != nil {
-		return err
-	}*/
+	if ctx, err = LoadEtcdCertificate(ctx, cluster, owner); err != nil {
+		return nil, err
+	}
 	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
 		return conn, err
 	}
-	/*if cm.ctx, err = LoadSaKey(cm.ctx, cm.cluster); err != nil {
-		return err
-	}*/
+	if ctx, err = LoadSaKey(ctx, cluster, owner); err != nil {
+		return conn, err
+	}
 
 	if conn, err = NewConnector(ctx, cluster, owner); err != nil {
 		return nil, err
 	}
+	conn.namer = namer{cluster}
 	//cm.namer = namer{cluster: cm.cluster}
 	return conn, nil
 }
@@ -246,11 +254,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 		return nil, err
 	}
 
-	fmt.Println()
-	fmt.Println(script)
-	fmt.Println()
-
-	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
+	machineConfig, err := doCapi.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return nil, err
 	}
@@ -261,16 +265,19 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 		Image:  godo.DropletCreateImage{Slug: machineConfig.Image},
 		SSHKeys: []godo.DropletCreateSSHKey{
 			{Fingerprint: SSHKey(conn.ctx).OpensshFingerprint},
-			{Fingerprint: "0d:ff:0d:86:0c:f1:47:1d:85:67:1e:73:c6:0e:46:17"}, // tamal@beast
-			{Fingerprint: "c0:19:c1:81:c5:2e:6d:d9:a6:db:3c:f5:c5:fd:c8:1d"}, // tamal@mbp
-			{Fingerprint: "f6:66:c5:ad:e6:60:30:d9:ab:2c:7c:75:56:e2:d7:f3"}, // tamal@asus
-			{Fingerprint: "80:b6:5a:c8:92:db:aa:fe:5f:d0:2e:99:95:de:ae:ab"}, // sanjid
-			{Fingerprint: "93:e6:c6:95:5c:d1:ac:00:5e:23:8c:f7:d2:61:b7:07"}, // dipta
 		},
 		PrivateNetworking: true,
 		IPv6:              false,
 		UserData:          script,
+		Tags: []string{
+			"KubernetesCluster:" + cluster.Name,
+		},
 	}
+
+	if util.IsControlPlaneMachine(machine) {
+		req.Tags = append(req.Tags, cluster.Name+"-master")
+	}
+
 	if Env(conn.ctx).IsPublic() {
 		req.SSHKeys = []godo.DropletCreateSSHKey{
 			{Fingerprint: SSHKey(conn.ctx).OpensshFingerprint},
@@ -283,9 +290,6 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 	Logger(conn.ctx).Infof("Droplet %v created", host.Name)
 
 	if err = conn.WaitForInstance(host.ID, "active"); err != nil {
-		return nil, err
-	}
-	if err = conn.applyTag(host.ID); err != nil {
 		return nil, err
 	}
 
@@ -372,31 +376,31 @@ func (conn *cloudConnector) deleteInstance(ctx context.Context, id int) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) createLoadBalancer(ctx context.Context, name string) (string, error) {
+func (conn *cloudConnector) createLoadBalancer(ctx context.Context, name string) (*godo.LoadBalancer, error) {
 	lb, err := conn.lbByName(ctx, name)
 	if err != nil {
 		if err == errLBNotFound {
 			lbRequest, err := conn.buildLoadBalancerRequest(name)
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 			lb, _, err := conn.client.LoadBalancers.Create(ctx, lbRequest)
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 			if lb, err = conn.waitActive(lb.ID); err != nil {
-				return "", err
+				return nil, err
 			}
-			return lb.IP, nil
+			return lb, nil
 		}
 	}
 
 	if lb.Status != "active" {
 		if lb, err = conn.waitActive(lb.ID); err != nil {
-			return "", err
+			return nil, err
 		}
 	}
-	return lb.IP, nil
+	return lb, nil
 }
 
 func (conn *cloudConnector) deleteLoadBalancer(ctx context.Context, name string) error {
@@ -483,7 +487,38 @@ func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*godo.LoadB
 		StickySessions:      stickySessions,
 		Algorithm:           algorithm,
 		RedirectHttpToHttps: false, //redirectHttpToHttps,
+		Tag:                 conn.cluster.Name + "-master",
+		Tags:                []string{conn.cluster.Name + "-master"},
 	}, nil
+}
+
+func (conn *cloudConnector) loadBalancerUpdated(lb *godo.LoadBalancer) (bool, error) {
+	defaultSpecs, err := conn.buildLoadBalancerRequest(conn.namer.LoadBalancerName())
+	if err != nil {
+		log.Debugln("Error getting default lb specs")
+		return false, err
+	}
+
+	if lb.Algorithm != defaultSpecs.Algorithm {
+		return true, nil
+	}
+	if lb.Region.Slug != defaultSpecs.Region {
+		return true, nil
+	}
+	if !reflect.DeepEqual(lb.ForwardingRules, defaultSpecs.ForwardingRules) {
+		return true, nil
+	}
+	if !reflect.DeepEqual(lb.HealthCheck, defaultSpecs.HealthCheck) {
+		return true, nil
+	}
+	if !reflect.DeepEqual(lb.StickySessions, defaultSpecs.StickySessions) {
+		return true, nil
+	}
+	if lb.RedirectHttpToHttps != defaultSpecs.RedirectHttpToHttps {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (conn *cloudConnector) waitActive(lbID string) (*godo.LoadBalancer, error) {
@@ -496,7 +531,6 @@ func (conn *cloudConnector) waitActive(lbID string) (*godo.LoadBalancer, error) 
 			return false, nil
 		}
 		Logger(conn.ctx).Infof("Attempt %v: LoadBalancer `%v` is in status `%s`", attempt, lbID, lb.Status)
-		fmt.Println(lb.String())
 		if strings.ToLower(lb.Status) == "active" {
 			return true, nil
 		}

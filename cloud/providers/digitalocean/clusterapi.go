@@ -51,6 +51,7 @@ spec:
         - controller
         - --provider={{ .Provider }}
         - --kubeconfig=/etc/kubernetes/admin.conf
+        - --owner={{ .ClusterOwner }}
         env:
         image: {{ .ControllerImage }}
         name: manager
@@ -67,15 +68,15 @@ spec:
         - mountPath: /etc/ssl/certs
           name: certs
         - name: sshkeys
-          mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/ssh
+          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters/{{ .ClusterName }}/ssh
         - name: certificates
-          mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/pki
+          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters/{{ .ClusterName }}/pki
         - name: cluster
-          mountPath: /root/.pharmer/store.d/clusters
+          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters
         - name: credential
-          mountPath: /root/.pharmer/store.d/credentials
-        - name: credential
-          mountPath: /root/.aws/credential
+          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/credentials
+        - name: etcd-certs
+          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters/{{ .ClusterName }}/pki/etcd
       terminationGracePeriodSeconds: 10
       tolerations:
       - effect: NoSchedule
@@ -102,6 +103,10 @@ spec:
       - name: certificates
         secret:
           secretName: pharmer-certificate
+          defaultMode: 256
+      - name: etcd-certs
+        secret:
+          secretName: pharmer-etcd
           defaultMode: 256
       - name: cluster
         secret:
@@ -283,4 +288,5 @@ spec:
       - effect: NoExecute
         key: node.alpha.kubernetes.io/unreachable
         operator: Exists
+---
 `

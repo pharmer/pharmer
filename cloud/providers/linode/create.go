@@ -27,7 +27,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 		roles = []api.MachineRole{api.MasterRole}
 	}
 	config := cluster.Spec.Config
-	spec := &linodeconfig.LinodeMachineProviderConfig{
+	spec := &linodeconfig.LinodeMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: linodeconfig.LinodeProviderGroupName + "/" + linodeconfig.LinodeProviderApiVersion,
 			Kind:       linodeconfig.LinodeProviderKind,

@@ -17,6 +17,8 @@ type ClusterManager struct {
 	conn    *cloudConnector
 	m       sync.Mutex
 
+	namer namer
+
 	owner string
 }
 

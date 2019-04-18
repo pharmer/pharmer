@@ -43,7 +43,7 @@ type ApiServerTemplate struct {
 	ClusterOwner        string
 }
 
-var MachineControllerImage = "pharmer/machine-controller:platform"
+var MachineControllerImage = "pharmer/machine-controller:linode-ha"
 
 const (
 	BasePath = ".pharmer/config.d"
@@ -118,7 +118,7 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 		return err
 	}
 
-	masterMachine, err := api.GetMasterMachine(machines)
+	masterMachine, err := api.GetLeaderMachine(machines)
 	if err != nil {
 		return err
 	}
@@ -196,8 +196,9 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 		return err
 	}
 
-	err = CreateNamespace(ca.kc, ca.namespace)
-	fmt.Println(err)
+	if err = CreateNamespace(ca.kc, ca.namespace); err != nil {
+		return err
+	}
 
 	if err = CreateSecret(ca.kc, "pharmer-cred", ca.namespace, map[string][]byte{
 		fmt.Sprintf("%v.json", ca.cluster.ClusterConfig().CredentialName): credData,
@@ -237,18 +238,18 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 		"ca.key":             cert.EncodePrivateKeyPEM(CAKey(ca.ctx)),
 		"front-proxy-ca.crt": cert.EncodeCertPEM(FrontProxyCACert(ca.ctx)),
 		"front-proxy-ca.key": cert.EncodePrivateKeyPEM(FrontProxyCAKey(ca.ctx)),
-		//"sa.crt":             cert.EncodeCertPEM(SaCert(ca.ctx)),
-		//"sa.key":             cert.EncodePrivateKeyPEM(SaKey(ca.ctx)),
+		"sa.crt":             cert.EncodeCertPEM(SaCert(ca.ctx)),
+		"sa.key":             cert.EncodePrivateKeyPEM(SaKey(ca.ctx)),
 	}); err != nil {
 		return err
 	}
 
-	/*if err = CreateSecret(ca.kc, "pharmer-etcd", map[string][]byte{
+	if err = CreateSecret(ca.kc, "pharmer-etcd", ca.namespace, map[string][]byte{
 		"ca.crt": cert.EncodeCertPEM(EtcdCaCert(ca.ctx)),
 		"ca.key": cert.EncodePrivateKeyPEM(EtcdCaKey(ca.ctx)),
 	}); err != nil {
 		return err
-	}*/
+	}
 
 	return nil
 }
