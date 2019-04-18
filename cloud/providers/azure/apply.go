@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
+	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
 	. "github.com/pharmer/pharmer/cloud"
@@ -14,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -30,21 +32,9 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	cm.cluster = in
 	cm.namer = namer{cluster: cm.cluster}
 
-	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
+	if err = PrepareCloud(cm); err != nil {
 		return nil, err
 	}
-	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return nil, err
-	}
-	if cm.conn, err = NewConnector(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return nil, err
-	}
-	cm.conn.namer = cm.namer
-
-	// Common stuff
-	/*	if err = cm.conn.detectUbuntuImage(); err != nil {
-		return nil, errors.Wrap(err, ID(cm.ctx))
-	}*/
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
@@ -90,8 +80,13 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 
 	{
-		if err := cm.applyScale(dryRun); err != nil {
-			return nil, err
+		err := cm.applyScale(dryRun)
+		if err != nil {
+			if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
+				log.Infoln(err)
+			} else {
+				return nil, err
+			}
 		}
 	}
 
@@ -103,29 +98,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 		acts = append(acts, a...)
 	}
 	return acts, nil
-
-	/*defer func(releaseReservedIp bool) {
-		if cm.cluster.Status.Phase == api.ClusterPending {
-			cm.cluster.Status.Phase = api.ClusterFailing
-		}
-		Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
-		Logger(cm.ctx).Infof("Cluster %v is %v", cm.cluster.Name, cm.cluster.Status.Phase)
-		if cm.cluster.Status.Phase != api.ClusterReady {
-			Logger(cm.ctx).Infof("Cluster %v is deleting", cm.cluster.Name)
-			cm.Delete(&proto.ClusterDeleteRequest{
-				Name:              cm.cluster.Name,
-				ReleaseReservedIp: releaseReservedIp,
-			})
-		}
-	}(cm.cluster.Spec.MasterReservedIP == "auto")*/
 }
-
-// IP >>>>>>>>>>>>>>>>
-// TODO(tamal): if cluster.Spec.ctx.MasterReservedIP == "auto"
-//	name := cluster.Spec.ctx.KubernetesMasterName + "-pip"
-//	// cluster.Spec.ctx.MasterExternalIP = *ip.IPAddress
-//	cluster.Spec.ctx.MasterReservedIP = *ip.IPAddress
-//	// cluster.Spec.ctx.ApiServerUrl = "https://" + *ip.IPAddress
 
 func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 	var acts []api.Action
@@ -336,7 +309,13 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 			Message:  fmt.Sprintf("Load Balancer %v found", cm.namer.GeneratePublicLBName()),
 		})
 	}
-	cm.cluster.Status.Cloud.Azure.LBDNS = *lbPIP.DNSSettings.Fqdn
+
+	// update load balancer field
+	cm.cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
+		DNS:  *lbPIP.DNSSettings.Fqdn,
+		IP:   *lbPIP.IPAddress,
+		Port: api.DefaultKubernetesBindPort,
+	}
 
 	// Master Stuff
 	var masterNIC network.Interface
@@ -382,17 +361,11 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 			if err != nil {
 				return acts, err
 			}
-			//var masterInstance *api.NodeInfo
-			//if masterInstance, err = cm.conn.newKubeInstance(masterVM, masterNIC, lbPIP); err != nil {
-			//	return
-			//}
-			//
-			//oneliners.PrettyJson(masterInstance)
 
 			nodeAddresses := []core.NodeAddress{
 				{
 					Type:    core.NodeExternalDNS,
-					Address: cm.cluster.Status.Cloud.Azure.LBDNS,
+					Address: cm.cluster.Status.Cloud.LoadBalancer.DNS,
 				},
 			}
 
@@ -435,12 +408,12 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 		return acts, err
 	}
 
-	kubeConifg, err := GetAdminConfig(cm.ctx, cm.cluster, cm.owner)
+	kubeConfig, err := GetAdminConfig(cm.ctx, cm.cluster, cm.owner)
 	if err != nil {
 		return nil, err
 	}
 
-	config := api.Convert_KubeConfig_To_Config(kubeConifg)
+	config := api.Convert_KubeConfig_To_Config(kubeConfig)
 	data, err := clientcmd.Write(*config)
 	if err != nil {
 		return acts, err
@@ -471,6 +444,28 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 
 	if err := ca.Apply(ClusterAPIComponents); err != nil {
 		return acts, err
+	}
+
+	log.Infof("Adding other master machines")
+	client, err := GetClusterClient(cm.ctx, cm.cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	var machines []*v1alpha1.Machine
+	machines, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).List(metav1.ListOptions{})
+	if err != nil {
+		return acts, errors.Wrap(err, "failed to list machines")
+	}
+
+	for _, m := range machines {
+		if m.Name == masterMachine.Name {
+			continue
+		}
+		if _, err := client.ClusterV1alpha1().Machines(cm.cluster.Spec.ClusterAPI.Namespace).Create(m); err != nil && !api.ErrAlreadyExist(err) {
+			log.Infof("Error creating maching %q in namespace %q", m.Name, cm.cluster.Spec.ClusterAPI.Namespace)
+			return acts, err
+		}
 	}
 
 	cm.cluster.Status.Phase = api.ClusterReady

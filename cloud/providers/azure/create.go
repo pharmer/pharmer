@@ -135,9 +135,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 	// Init status
 	cluster.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,
-		Cloud: api.CloudStatus{
-			Azure: &api.AzureStatus{},
-		},
+		Cloud: api.CloudStatus{},
 	}
 
 	return cm.SetAzureCluster()
@@ -171,28 +169,29 @@ func (cm *ClusterManager) SetAzureCluster() error {
 
 // SetupCerts Loads necessary certs in Cluster Spec
 func (cm *ClusterManager) SetupCerts() error {
-	caCert, caKey, err := Store(cm.ctx).Owner(cm.owner).Certificates(cm.cluster.Name).Get(cm.cluster.Spec.Config.CACertName)
-	if err != nil {
-		return err
-	}
-	fpCert, fpKey, err := Store(cm.ctx).Owner(cm.owner).Certificates(cm.cluster.Name).Get(cm.cluster.Spec.Config.FrontProxyCACertName)
-	if err != nil {
-		return err
-	}
-
 	conf, err := capiAzure.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return err
 	}
 
 	conf.CAKeyPair = capiAzure.KeyPair{
-		Cert: cert.EncodeCertPEM(caCert),
-		Key:  cert.EncodePrivateKeyPEM(caKey),
+		Cert: cert.EncodeCertPEM(CACert(cm.ctx)),
+		Key:  cert.EncodePrivateKeyPEM(CAKey(cm.ctx)),
 	}
 	conf.FrontProxyCAKeyPair = capiAzure.KeyPair{
-		Cert: cert.EncodeCertPEM(fpCert),
-		Key:  cert.EncodePrivateKeyPEM(fpKey),
+		Cert: cert.EncodeCertPEM(FrontProxyCACert(cm.ctx)),
+		Key:  cert.EncodePrivateKeyPEM(FrontProxyCAKey(cm.ctx)),
 	}
+	conf.EtcdCAKeyPair = capiAzure.KeyPair{
+		Cert: cert.EncodeCertPEM(EtcdCaCert(cm.ctx)),
+		Key:  cert.EncodePrivateKeyPEM(EtcdCaKey(cm.ctx)),
+	}
+	conf.SAKeyPair = capiAzure.KeyPair{
+		Cert: cert.EncodeCertPEM(SaCert(cm.ctx)),
+		Key:  cert.EncodePrivateKeyPEM(SaKey(cm.ctx)),
+	}
+	conf.SSHPublicKey = base64.StdEncoding.EncodeToString(SSHKey(cm.ctx).PublicKey)
+	conf.SSHPrivateKey = base64.StdEncoding.EncodeToString(SSHKey(cm.ctx).PrivateKey)
 
 	rawSpec, err := capiAzure.EncodeClusterSpec(conf)
 	if err != nil {

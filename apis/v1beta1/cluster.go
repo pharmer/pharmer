@@ -189,7 +189,6 @@ type CloudStatus struct {
 	SShKeyExternalID string       `json:"sshKeyExternalID,omitempty" protobuf:"bytes,1,opt,name=sshKeyExternalID"`
 	AWS              *AWSStatus   `json:"aws,omitempty" protobuf:"bytes,2,opt,name=aws"`
 	EKS              *EKSStatus   `json:"eks,omitempty" protobuf:"bytes,2,opt,name=eks"`
-	Azure            *AzureStatus `json:"azure,omitempty"`
 	LoadBalancer     LoadBalancer `json:"loadBalancer,omitempty"`
 }
 
@@ -197,12 +196,6 @@ type LoadBalancer struct {
 	DNS  string `json:"dns"`
 	IP   string `json:"ip"`
 	Port int    `json:"port"`
-}
-
-// Depricated
-// TODO: REMOVE
-type AzureStatus struct {
-	LBDNS string `json:"lbDNS,omitempty"`
 }
 
 type AWSStatus struct {

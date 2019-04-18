@@ -25,6 +25,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		CAHash:            pubkeypin.Hash(CACert(ctx)),
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
+		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
 		APIServerAddress:  cluster.APIServerAddress(),
 		NetworkProvider:   cluster.ClusterConfig().Cloud.NetworkProvider,
 		Provider:          cluster.ClusterConfig().Cloud.CloudProvider,
@@ -132,7 +134,6 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 		Scheduler: kubeadmapi.ControlPlaneComponent{
 			ExtraArgs: cluster.Spec.Config.SchedulerExtraArgs,
 		},
-		ControlPlaneEndpoint: cluster.Status.Cloud.Azure.LBDNS,
 
 		Networking: kubeadmapi.Networking{
 			ServiceSubnet: cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Services.CIDRBlocks[0],
@@ -140,9 +141,10 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 			DNSDomain:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.ServiceDomain,
 		},
 		KubernetesVersion: cluster.Spec.Config.KubernetesVersion,
-		//CloudProvider:              cluster.Spec.Cloud.CloudProvider,
 	}
-	cfg.APIServer.CertSANs = append(cfg.APIServer.CertSANs, cluster.Status.Cloud.Azure.LBDNS, cluster.Spec.Config.Cloud.Azure.InternalLBIPAddress)
+	td.ControlPlaneEndpointsFromLB(&cfg, cluster)
+
+	cfg.APIServer.CertSANs = append(cfg.APIServer.CertSANs, cluster.Spec.Config.Cloud.Azure.InternalLBIPAddress)
 
 	td.ClusterConfiguration = &cfg
 	return td
