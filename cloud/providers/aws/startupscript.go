@@ -22,6 +22,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine clus
 		CAHash:            pubkeypin.Hash(CACert(ctx)),
 		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
 		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
+		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
 		APIServerAddress:  cluster.APIServerAddress(),
 		NetworkProvider:   cluster.Spec.Config.Cloud.NetworkProvider,
 		Provider:          cluster.Spec.Config.Cloud.CloudProvider,
@@ -102,8 +104,7 @@ func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *c
 			ExtraArgs: cluster.Spec.Config.SchedulerExtraArgs,
 		},
 	}
-
-	cfg.APIServer.CertSANs = append(cfg.APIServer.CertSANs, cluster.Status.Cloud.AWS.LBDNS)
+	td.ControlPlaneEndpointsFromLB(&cfg, cluster)
 
 	td.ClusterConfiguration = &cfg
 	return td

@@ -202,10 +202,6 @@ type AWSStatus struct {
 	MasterSGId  string `json:"masterSGID,omitempty" protobuf:"bytes,1,opt,name=masterSGID"`
 	NodeSGId    string `json:"nodeSGID,omitempty" protobuf:"bytes,2,opt,name=nodeSGID"`
 	BastionSGId string `json:"bastionSGID,omitempty"`
-
-	// Depricaed
-	// TODO: REMOVE
-	LBDNS string `json:"lbDNS,omitempty"`
 }
 
 type EKSStatus struct {

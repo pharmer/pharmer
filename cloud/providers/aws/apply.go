@@ -36,16 +36,9 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 	cm.cluster = in
 	cm.namer = namer{cluster: cm.cluster}
-	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
+	if err = PrepareCloud(cm); err != nil {
 		return nil, err
 	}
-	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return nil, err
-	}
-	if cm.conn, err = NewConnector(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return nil, err
-	}
-	cm.conn.namer = cm.namer
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
@@ -91,8 +84,13 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 
 	{
-		if err := cm.applyScale(dryRun); err != nil {
-			return nil, err
+		err := cm.applyScale(dryRun)
+		if err != nil {
+			if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
+				log.Infoln(err)
+			} else {
+				return nil, err
+			}
 		}
 	}
 
@@ -370,7 +368,8 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 	}
 
-	if found, err = cm.conn.getLoadBalancer(); err != nil {
+	var loadbalancerDNS string
+	if loadbalancerDNS, err = cm.conn.getLoadBalancer(); err != nil {
 		Logger(cm.ctx).Infoln(err)
 	}
 	if !found {
@@ -380,7 +379,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Load Banalcer will be created"),
 		})
 		if !dryRun {
-			if err = cm.conn.setupLoadBalancer(publicSubnetID); err != nil {
+			if loadbalancerDNS, err = cm.conn.setupLoadBalancer(publicSubnetID); err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.Wrap(err, ID(cm.ctx))
 				return
@@ -392,6 +391,16 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Resource: "Load Banalcer",
 			Message:  fmt.Sprintf("Found Load Balancer"),
 		})
+	}
+
+	if loadbalancerDNS == "" {
+		return nil, errors.New("load balancer dns can't be empty")
+	}
+
+	// update load balancer field
+	cm.cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
+		DNS:  loadbalancerDNS,
+		Port: api.DefaultKubernetesBindPort,
 	}
 
 	clusterSpec, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
@@ -437,6 +446,61 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
+	var machines []*clusterv1.Machine
+	machines, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).List(metav1.ListOptions{})
+	if err != nil {
+		err = errors.Wrap(err, ID(cm.ctx))
+		return
+	}
+
+	masterMachine, err := GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
+	if err != nil {
+		return nil, err
+	}
+
+	machineSets, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	totalNodes := NodeCount(machineSets)
+
+	// https://github.com/kubernetes/kubernetes/blob/8eb75a5810cba92ccad845ca360cf924f2385881/cluster/aws/config-default.sh#L33
+	sku := "m3.large"
+	if totalNodes > 10 {
+		sku = "m3.xlarge"
+	}
+	if totalNodes > 100 {
+		sku = "m3.2xlarge"
+	}
+	if totalNodes > 250 {
+		sku = "c4.4xlarge"
+	}
+	if totalNodes > 500 {
+		sku = "c4.8xlarge"
+	}
+
+	// update master machine spec
+	for _, m := range machines {
+		spec, err := clusterapi_aws.MachineConfigFromProviderSpec(m.Spec.ProviderSpec)
+		if err != nil {
+			log.Debug("Error decoding provider spec for machine %q", m.Name)
+			return nil, err
+		}
+
+		spec.InstanceType = sku
+
+		rawSpec, err := clusterapi_aws.EncodeMachineSpec(spec)
+		if err != nil {
+			return nil, err
+		}
+		m.Spec.ProviderSpec.Value = rawSpec
+
+		_, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Update(m)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to update machine %q to store", m.Name)
+		}
+	}
+
 	if found, err = cm.conn.getMaster(); err != nil {
 		Logger(cm.ctx).Infoln(err)
 	}
@@ -448,32 +512,6 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Master instance %s will be created", cm.namer.MasterName()),
 		})
 		if !dryRun {
-			masterMachine, err := GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
-			if err != nil {
-				return nil, err
-			}
-
-			machineSets, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-			if err != nil {
-				return nil, err
-			}
-			totalNodes := NodeCount(machineSets)
-
-			// https://github.com/kubernetes/kubernetes/blob/8eb75a5810cba92ccad845ca360cf924f2385881/cluster/aws/config-default.sh#L33
-			sku := "m3.large"
-			if totalNodes > 10 {
-				sku = "m3.xlarge"
-			}
-			if totalNodes > 100 {
-				sku = "m3.2xlarge"
-			}
-			if totalNodes > 250 {
-				sku = "c4.4xlarge"
-			}
-			if totalNodes > 500 {
-				sku = "c4.8xlarge"
-			}
-
 			var masterServer *api.NodeInfo
 			masterServer, err = cm.conn.startMaster(masterMachine, sku, privateSubnetID)
 			if err != nil {
@@ -482,12 +520,12 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				return acts, err
 			}
 
-			nodeAddresses := make([]core.NodeAddress, 0)
-
-			nodeAddresses = append(nodeAddresses, core.NodeAddress{
-				Type:    core.NodeExternalDNS,
-				Address: cm.cluster.Status.Cloud.AWS.LBDNS,
-			})
+			nodeAddresses := []core.NodeAddress{
+				{
+					Type:    core.NodeExternalDNS,
+					Address: cm.cluster.Status.Cloud.LoadBalancer.DNS,
+				},
+			}
 
 			if err = cm.cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
 				return nil, err
@@ -559,7 +597,22 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return acts, err
 	}
 
-	// needed to get master_internal_ip
+	log.Infof("Adding other master machines")
+	client, err := GetClusterClient(cm.ctx, cm.cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, m := range machines {
+		if m.Name == masterMachine.Name {
+			continue
+		}
+		if _, err := client.ClusterV1alpha1().Machines(cm.cluster.Spec.ClusterAPI.Namespace).Create(m); err != nil && !api.ErrAlreadyExist(err) {
+			log.Infof("Error creating maching %q in namespace %q", m.Name, cm.cluster.Spec.ClusterAPI.Namespace)
+			return acts, err
+		}
+	}
+
 	cm.cluster.Status.Phase = api.ClusterReady
 	if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
 		return

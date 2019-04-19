@@ -128,27 +128,26 @@ func (cm *ClusterManager) SetClusterProviderConfig() error {
 }
 
 func (cm *ClusterManager) SetupCerts() error {
-	caCert, caKey, err := Store(cm.ctx).Owner(cm.owner).Certificates(cm.cluster.Name).Get(cm.cluster.Spec.Config.CACertName)
-	if err != nil {
-		return err
-	}
-	fpCert, fpKey, err := Store(cm.ctx).Owner(cm.owner).Certificates(cm.cluster.Name).Get(cm.cluster.Spec.Config.FrontProxyCACertName)
-	if err != nil {
-		return err
-	}
-
 	conf, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return err
 	}
 
 	conf.CAKeyPair = clusterapi_aws.KeyPair{
-		Cert: cert.EncodeCertPEM(caCert),
-		Key:  cert.EncodePrivateKeyPEM(caKey),
+		Cert: cert.EncodeCertPEM(CACert(cm.ctx)),
+		Key:  cert.EncodePrivateKeyPEM(CAKey(cm.ctx)),
 	}
 	conf.FrontProxyCAKeyPair = clusterapi_aws.KeyPair{
-		Cert: cert.EncodeCertPEM(fpCert),
-		Key:  cert.EncodePrivateKeyPEM(fpKey),
+		Cert: cert.EncodeCertPEM(FrontProxyCACert(cm.ctx)),
+		Key:  cert.EncodePrivateKeyPEM(FrontProxyCAKey(cm.ctx)),
+	}
+	conf.EtcdCAKeyPair = clusterapi_aws.KeyPair{
+		Cert: cert.EncodeCertPEM(EtcdCaCert(cm.ctx)),
+		Key:  cert.EncodePrivateKeyPEM(EtcdCaKey(cm.ctx)),
+	}
+	conf.SAKeyPair = clusterapi_aws.KeyPair{
+		Cert: cert.EncodeCertPEM(SaCert(cm.ctx)),
+		Key:  cert.EncodePrivateKeyPEM(SaKey(cm.ctx)),
 	}
 
 	rawSpec, err := clusterapi_aws.EncodeClusterSpec(conf)

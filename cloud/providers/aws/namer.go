@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -15,6 +16,10 @@ type namer struct {
 
 func (n namer) MasterName() string {
 	return n.cluster.Name + "-master"
+}
+
+func (n namer) ControlPlanePolicyName() string {
+	return fmt.Sprintf("controller.%s.pharmer", n.cluster.Name)
 }
 
 func (n namer) BastionName() string {
