@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/appscode/go-version"
+	version "github.com/appscode/go-version"
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"

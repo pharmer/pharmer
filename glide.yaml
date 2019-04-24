@@ -19,6 +19,8 @@ import:
   version: v1.14.12
 - package: github.com/cenkalti/backoff
   version: v1.1.0
+- package: github.com/census-instrumentation/opencensus-proto
+  version: v0.2.0
 - package: github.com/cpuguy83/go-md2man
   version: v1.0.8
 - package: github.com/davecgh/go-spew
@@ -33,6 +35,10 @@ import:
   version: v1.0.0
 - package: github.com/go-ini/ini
   version: v1.40.0
+- package: github.com/go-openapi/spec
+  version: v0.17.2
+- package: github.com/go-openapi/swag
+  version: v0.17.2
 - package: github.com/go-xorm/builder
 - package: github.com/go-xorm/core
   version: v0.6.0
@@ -87,10 +93,14 @@ import:
   version: v1.17
 - package: github.com/skratchdot/open-golang
 - package: github.com/softlayer/softlayer-go
+- package: github.com/soheilhy/cmux
+  version: 8a8ea3c53959009183d7914522833c1ed8835020
 - package: github.com/spf13/cobra
   version: v0.0.3
 - package: github.com/spf13/pflag
   version: v1.0.3
+- package: go.opencensus.io
+  version: master
 - package: golang.org/x/crypto
   version: de0752318171da717af4ce24d0a2e8626afaeb11
 - package: golang.org/x/net
@@ -99,7 +109,7 @@ import:
 - package: golang.org/x/sys
   version: 30e92a19ae4a77dde818b8c3d41d51e4850cba12
 - package: golang.org/x/text
-  version: v0.3.0
+  version: b19bf474d317b857955b12035d2c5acb57ce8b01
 - package: google.golang.org/api
 - package: google.golang.org/grpc
   version: v1.14.0
@@ -112,23 +122,23 @@ import:
 - package: gopkg.in/yaml.v2
   version: v2.2.1
 - package: k8s.io/api
-  version: kubernetes-1.13.0
+  version: kubernetes-1.13.5
 - package: k8s.io/apiextensions-apiserver
-  version: kubernetes-1.13.0
+  version: kubernetes-1.13.5
 - package: k8s.io/apimachinery
   repo: https://github.com/kmodules/apimachinery.git
   vcs: git
-  version: ac-1.13.0
+  version: ac-1.13.5
 - package: k8s.io/cli-runtime
-  version: kubernetes-1.13.0
+  version: kubernetes-1.13.5
 - package: k8s.io/client-go
-  version: v10.0.0
+  version: kubernetes-1.13.5
 - package: k8s.io/cluster-bootstrap
   version: kubernetes-1.13.0
 - package: k8s.io/kube-openapi
   version: c59034cc13d587f5ef4e85ca0ade0c1866ae8e1d
 - package: k8s.io/kubernetes
-  version: v1.13.0
+  version: v1.13.5
 - package: k8s.io/utils
   version: 66066c83e385e385ccc3c964b44fd7dcd413d0ed
 - package: kmodules.xyz/client-go
@@ -139,10 +149,6 @@ import:
   version: v0.1.9
 - package: sigs.k8s.io/yaml
   version: v1.1.0
-- package: go.opencensus.io
-  version: master
-- package: github.com/census-instrumentation/opencensus-proto
-  version: v0.2.0
 testImport:
 - package: github.com/stretchr/testify
   version: v1.1.4

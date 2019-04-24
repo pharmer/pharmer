@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"text/template"
 
-	"gopkg.in/yaml.v2"
-
 	//go_ctx "context"
 	"encoding/json"
 	"fmt"
@@ -17,6 +15,7 @@ import (
 	//"github.com/pharmer/pharmer/context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega" //	"time"
+	yaml "gopkg.in/yaml.v2"
 
 	//	api "github.com/pharmer/pharmer/apis/v1alpha1"
 	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
