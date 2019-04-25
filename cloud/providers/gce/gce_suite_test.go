@@ -2,24 +2,17 @@ package gce
 
 import (
 	"bytes"
-	"io/ioutil"
-	"text/template"
-
-	//go_ctx "context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"regexp"
 	"testing" //. "github.com/pharmer/pharmer/cloud/providers/gce"
+	"text/template"
 
-	//"github.com/pharmer/pharmer/config"
-	//"github.com/pharmer/pharmer/context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega" //	"time"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	yaml "gopkg.in/yaml.v2"
-
-	//	api "github.com/pharmer/pharmer/apis/v1beta1"
-	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 )
 
 func TestGce(t *testing.T) {
@@ -35,7 +28,7 @@ func TestNG(t *testing.T) {
 
 func TestJson(t *testing.T) {
 	data := ``
-	crd := api.CredentialSpec{
+	crd := cloudapi.CredentialSpec{
 		Data: map[string]string{
 			"projectID":      "tigerworks-kube",
 			"serviceAccount": data,

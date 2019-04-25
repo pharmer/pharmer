@@ -4,8 +4,8 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	apiv1 "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -31,25 +31,25 @@ type ResourceInterface interface {
 }
 
 type CredentialStore interface {
-	List(opts metav1.ListOptions) ([]*apiv1.Credential, error)
-	Get(name string) (*apiv1.Credential, error)
-	Create(obj *apiv1.Credential) (*apiv1.Credential, error)
-	Update(obj *apiv1.Credential) (*apiv1.Credential, error)
+	List(opts metav1.ListOptions) ([]*cloudapi.Credential, error)
+	Get(name string) (*cloudapi.Credential, error)
+	Create(obj *cloudapi.Credential) (*cloudapi.Credential, error)
+	Update(obj *cloudapi.Credential) (*cloudapi.Credential, error)
 	Delete(name string) error
 }
 
 type OperationStore interface {
-	Get(id string) (*apiv1.Operation, error)
-	Update(obj *apiv1.Operation) (*apiv1.Operation, error)
+	Get(id string) (*api.Operation, error)
+	Update(obj *api.Operation) (*api.Operation, error)
 }
 
 type ClusterStore interface {
-	List(opts metav1.ListOptions) ([]*apiv1.Cluster, error)
-	Get(name string) (*apiv1.Cluster, error)
-	Create(obj *apiv1.Cluster) (*apiv1.Cluster, error)
-	Update(obj *apiv1.Cluster) (*apiv1.Cluster, error)
+	List(opts metav1.ListOptions) ([]*api.Cluster, error)
+	Get(name string) (*api.Cluster, error)
+	Create(obj *api.Cluster) (*api.Cluster, error)
+	Update(obj *api.Cluster) (*api.Cluster, error)
 	Delete(name string) error
-	UpdateStatus(obj *apiv1.Cluster) (*apiv1.Cluster, error)
+	UpdateStatus(obj *api.Cluster) (*api.Cluster, error)
 }
 
 type NodeGroupStore interface {

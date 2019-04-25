@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
-const GroupName = "credential"
+const GroupName = "cluster.pharmer.io"
 
 var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1beta1"}
 
@@ -37,9 +37,7 @@ func init() {
 }
 
 func addKnownTypes(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(SchemeGroupVersion,
-		&Credential{},
-	)
+	scheme.AddKnownTypes(SchemeGroupVersion)
 	return nil
 }
 

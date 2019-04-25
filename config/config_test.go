@@ -6,18 +6,18 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//m1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestConfig(t *testing.T) {
-	cred := api.Credential{
+	cred := cloudapi.Credential{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              "gce",
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
-		Spec: api.CredentialSpec{
+		Spec: cloudapi.CredentialSpec{
 			Provider: "GoogleCloud",
 			Data:     make(map[string]string),
 		},
@@ -26,7 +26,7 @@ func TestConfig(t *testing.T) {
 	cred.Spec.Data["serviceAccount"] = ``
 	conf := &api.PharmerConfig{
 		Context: "default",
-		Credentials: []api.Credential{
+		Credentials: []cloudapi.Credential{
 			cred,
 		},
 		Store: api.StorageBackend{

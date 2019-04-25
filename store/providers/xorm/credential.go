@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-xorm/xorm"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
@@ -19,8 +20,8 @@ type credentialXormStore struct {
 
 var _ store.CredentialStore = &credentialXormStore{}
 
-func (s *credentialXormStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
-	result := make([]*api.Credential, 0)
+func (s *credentialXormStore) List(opts metav1.ListOptions) ([]*cloudapi.Credential, error) {
+	result := make([]*cloudapi.Credential, 0)
 	var credentials []Credential
 	err := s.engine.Where(`"ownerId"=?`, s.owner).Find(&credentials)
 	if err != nil {
@@ -37,7 +38,7 @@ func (s *credentialXormStore) List(opts metav1.ListOptions) ([]*api.Credential, 
 	return result, nil
 }
 
-func (s *credentialXormStore) Get(name string) (*api.Credential, error) {
+func (s *credentialXormStore) Get(name string) (*cloudapi.Credential, error) {
 	if name == "" {
 		return nil, errors.New("missing credential name")
 	}
@@ -64,7 +65,7 @@ func (s *credentialXormStore) Get(name string) (*api.Credential, error) {
 	return decodeCredential(cred)
 }
 
-func (s *credentialXormStore) Create(obj *api.Credential) (*api.Credential, error) {
+func (s *credentialXormStore) Create(obj *cloudapi.Credential) (*cloudapi.Credential, error) {
 	if obj == nil {
 		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {
@@ -93,7 +94,7 @@ func (s *credentialXormStore) Create(obj *api.Credential) (*api.Credential, erro
 	return obj, err
 }
 
-func (s *credentialXormStore) Update(obj *api.Credential) (*api.Credential, error) {
+func (s *credentialXormStore) Update(obj *cloudapi.Credential) (*cloudapi.Credential, error) {
 	if obj == nil {
 		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {

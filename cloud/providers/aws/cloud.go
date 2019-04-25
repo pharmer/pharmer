@@ -32,9 +32,9 @@ import (
 
 	//_ "github.com/aws/aws-sdk-go/service/lightsail"
 	_s3 "github.com/aws/aws-sdk-go/service/s3"
+	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/credential"
 )
 
 type cloudConnector struct {

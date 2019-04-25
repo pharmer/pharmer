@@ -7,10 +7,10 @@ import (
 
 	"github.com/appscode/go/wait"
 	"github.com/digitalocean/godo"
+	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	dokube_config "github.com/pharmer/pharmer/apis/v1beta1/dokube"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

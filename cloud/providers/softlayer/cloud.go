@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	. "github.com/appscode/go/types"
+	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/credential"
 	"github.com/pharmer/pharmer/data/files"
 	"github.com/pkg/errors"
 	"github.com/softlayer/softlayer-go/datatypes"

@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -53,9 +54,9 @@ type StorageBackend struct {
 
 type PharmerConfig struct {
 	metav1.TypeMeta `json:",inline,omitempty,omitempty"`
-	Context         string         `json:"context,omitempty" protobuf:"bytes,1,opt,name=context"`
-	Credentials     []Credential   `json:"credentials,omitempty" protobuf:"bytes,2,rep,name=credentials"`
-	Store           StorageBackend `json:"store,omitempty" protobuf:"bytes,3,opt,name=store"`
+	Context         string                `json:"context,omitempty" protobuf:"bytes,1,opt,name=context"`
+	Credentials     []cloudapi.Credential `json:"credentials,omitempty" protobuf:"bytes,2,rep,name=credentials"`
+	Store           StorageBackend        `json:"store,omitempty" protobuf:"bytes,3,opt,name=store"`
 }
 
 func (pc PharmerConfig) GetStoreType() string {
@@ -75,7 +76,7 @@ func (pc PharmerConfig) GetStoreType() string {
 	return "<Unknown>"
 }
 
-func (pc PharmerConfig) GetCredential(name string) (*Credential, error) {
+func (pc PharmerConfig) GetCredential(name string) (*cloudapi.Credential, error) {
 	for _, c := range pc.Credentials {
 		if c.Name == name {
 			return &c, nil

@@ -10,7 +10,7 @@ import (
 
 	"github.com/appscode/go/term"
 	"github.com/ghodss/yaml"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential/cmds/options"
@@ -27,10 +27,10 @@ import (
 func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 	opts := options.NewCredentialEditConfig()
 	cmd := &cobra.Command{
-		Use: api.ResourceNameCredential,
+		Use: cloudapi.ResourceNameCredential,
 		Aliases: []string{
-			api.ResourceTypeCredential,
-			api.ResourceKindCredential,
+			cloudapi.ResourceTypeCredential,
+			cloudapi.ResourceKindCredential,
 		},
 		Short:             "Edit a cloud Credential",
 		Example:           `pharmer edit credential`,
@@ -62,7 +62,7 @@ func RunUpdateCredential(ctx context.Context, opts *options.CredentialEditConfig
 	if opts.File != "" {
 		fileName := opts.File
 
-		var local *api.Credential
+		var local *cloudapi.Credential
 		if err := cloud.ReadFileAs(fileName, &local); err != nil {
 			return err
 		}
@@ -111,7 +111,7 @@ func RunUpdateCredential(ctx context.Context, opts *options.CredentialEditConfig
 	return editCredential(ctx, opts, original, errOut)
 }
 
-func editCredential(ctx context.Context, opts *options.CredentialEditConfig, original *api.Credential, errOut io.Writer) error {
+func editCredential(ctx context.Context, opts *options.CredentialEditConfig, original *cloudapi.Credential, errOut io.Writer) error {
 
 	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
@@ -173,7 +173,7 @@ func editCredential(ctx context.Context, opts *options.CredentialEditConfig, ori
 				return nil
 			}
 
-			var updated *api.Credential
+			var updated *cloudapi.Credential
 			err = yaml.Unmarshal(editor.StripComments(edited), &updated)
 			if err != nil {
 				containsError = true
@@ -196,7 +196,7 @@ func editCredential(ctx context.Context, opts *options.CredentialEditConfig, ori
 	return editFn()
 }
 
-func updateCredential(ctx context.Context, original, updated *api.Credential, owner string) error {
+func updateCredential(ctx context.Context, original, updated *cloudapi.Credential, owner string) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
@@ -229,11 +229,11 @@ func updateCredential(ctx context.Context, original, updated *api.Credential, ow
 		return err
 	}
 
-	conditionalPreconditions := utils.GetConditionalPreconditionFunc(api.ResourceKindCredential)
+	conditionalPreconditions := utils.GetConditionalPreconditionFunc(cloudapi.ResourceKindCredential)
 	err = utils.CheckConditionalPrecondition(patch, conditionalPreconditions...)
 	if err != nil {
 		if utils.IsPreconditionFailed(err) {
-			return editor.ConditionalPreconditionFailedError(api.ResourceKindCredential)
+			return editor.ConditionalPreconditionFailedError(cloudapi.ResourceKindCredential)
 		}
 		return err
 	}

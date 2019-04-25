@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	api "github.com/pharmer/pharmer/apis/v1beta1"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 )
 
 type Credential struct {
@@ -22,7 +22,7 @@ func (Credential) TableName() string {
 	return `"ac_cluster_credential"`
 }
 
-func encodeCredential(in *api.Credential) (*Credential, error) {
+func encodeCredential(in *cloudapi.Credential) (*Credential, error) {
 	cred := &Credential{
 		//Kind:              in.Kind,
 		//APIVersion:        in.APIVersion,
@@ -50,8 +50,8 @@ func encodeCredential(in *api.Credential) (*Credential, error) {
 	return cred, nil
 }
 
-func decodeCredential(in *Credential) (*api.Credential, error) {
-	var obj api.Credential
+func decodeCredential(in *Credential) (*cloudapi.Credential, error) {
+	var obj cloudapi.Credential
 	if err := json.Unmarshal([]byte(in.Data), &obj); err != nil {
 		return nil, err
 	}

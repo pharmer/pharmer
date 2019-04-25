@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,7 +63,7 @@ func TestClusterEngine(t *testing.T) {
 func TestCred(t *testing.T) {
 	data := `{"kind":"Credential","apiVersion":"v1alpha1","metadata":{"name":"do2","creationTimestamp":"2018-11-21T06:54:35Z"},"spec":{"provider":"DigitalOcean","data":{"token":"testcredential"}}}`
 
-	obj := api.Credential{}
+	obj := cloudapi.Credential{}
 	err := json.Unmarshal([]byte(data), &obj)
 	fmt.Println(err)
 	fmt.Println(obj.Kind)

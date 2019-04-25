@@ -5,9 +5,9 @@ import (
 
 	. "github.com/appscode/go/context"
 	"github.com/appscode/go/wait"
+	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"

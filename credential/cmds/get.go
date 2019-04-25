@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential/cmds/options"
@@ -17,11 +17,11 @@ import (
 func NewCmdGetCredential(out io.Writer) *cobra.Command {
 	opts := options.NewCredentialGetConfig()
 	cmd := &cobra.Command{
-		Use: api.ResourceNameCredential,
+		Use: cloudapi.ResourceNameCredential,
 		Aliases: []string{
-			api.ResourceTypeCredential,
-			api.ResourceCodeCredential,
-			api.ResourceKindCredential,
+			cloudapi.ResourceTypeCredential,
+			cloudapi.ResourceCodeCredential,
+			cloudapi.ResourceKindCredential,
 		},
 		Short:             "List cloud Credentials",
 		Example:           `pharmer get credential`,
@@ -66,7 +66,7 @@ func RunGetCredential(ctx context.Context, opts *options.CredentialGetConfig, ou
 	return nil
 }
 
-func getCredentialList(ctx context.Context, args []string, owner string) (credentialList []*api.Credential, err error) {
+func getCredentialList(ctx context.Context, args []string, owner string) (credentialList []*cloudapi.Credential, err error) {
 	if len(args) != 0 {
 		for _, arg := range args {
 			credential, er2 := cloud.Store(ctx).Owner(owner).Credentials().Get(arg)

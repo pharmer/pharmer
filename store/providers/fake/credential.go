@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
@@ -11,7 +12,7 @@ import (
 )
 
 type credentialFileStore struct {
-	container map[string]*api.Credential
+	container map[string]*cloudapi.Credential
 
 	mux sync.Mutex
 }
@@ -26,18 +27,18 @@ func (s *credentialFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *credentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
+func (s *credentialFileStore) List(opts metav1.ListOptions) ([]*cloudapi.Credential, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
-	result := make([]*api.Credential, 0)
+	result := make([]*cloudapi.Credential, 0)
 	for k := range s.container {
 		result = append(result, s.container[k])
 	}
 	return result, nil
 }
 
-func (s *credentialFileStore) Get(name string) (*api.Credential, error) {
+func (s *credentialFileStore) Get(name string) (*cloudapi.Credential, error) {
 	if name == "" {
 		return nil, errors.New("missing credential name")
 	}
@@ -52,7 +53,7 @@ func (s *credentialFileStore) Get(name string) (*api.Credential, error) {
 	return existing, nil
 }
 
-func (s *credentialFileStore) Create(obj *api.Credential) (*api.Credential, error) {
+func (s *credentialFileStore) Create(obj *cloudapi.Credential) (*cloudapi.Credential, error) {
 	if obj == nil {
 		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {
@@ -74,7 +75,7 @@ func (s *credentialFileStore) Create(obj *api.Credential) (*api.Credential, erro
 	return obj, err
 }
 
-func (s *credentialFileStore) Update(obj *api.Credential) (*api.Credential, error) {
+func (s *credentialFileStore) Update(obj *cloudapi.Credential) (*cloudapi.Credential, error) {
 	if obj == nil {
 		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {

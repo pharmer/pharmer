@@ -3,7 +3,7 @@ package framework
 import (
 	"time"
 
-	api "github.com/pharmer/pharmer/apis/v1beta1"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -11,13 +11,13 @@ import (
 func (c *credentialInvocation) GetName() string {
 	return "test-do"
 }
-func (c *credentialInvocation) GetSkeleton() *api.Credential {
-	cred := &api.Credential{
+func (c *credentialInvocation) GetSkeleton() *cloudapi.Credential {
+	cred := &cloudapi.Credential{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              c.GetName(),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
-		Spec: api.CredentialSpec{
+		Spec: cloudapi.CredentialSpec{
 			Provider: "digitalocean",
 			Data:     make(map[string]string),
 		},
@@ -29,7 +29,7 @@ func (c *credentialInvocation) GetSkeleton() *api.Credential {
 	return cred
 }
 
-func (c *credentialInvocation) Update(cred *api.Credential) error {
+func (c *credentialInvocation) Update(cred *cloudapi.Credential) error {
 	data := map[string]string{
 		"token": "22222222222222222",
 	}
@@ -38,7 +38,7 @@ func (c *credentialInvocation) Update(cred *api.Credential) error {
 	return err
 }
 
-func (c *credentialInvocation) CheckUpdate(cred *api.Credential) error {
+func (c *credentialInvocation) CheckUpdate(cred *cloudapi.Credential) error {
 	data := cred.Spec.Data
 	if token, ok := data["token"]; ok {
 		if token == "22222222222222222" {

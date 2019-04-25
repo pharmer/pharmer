@@ -3,6 +3,7 @@ package v1beta1
 import (
 	"strings"
 
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pkg/errors"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
@@ -11,19 +12,19 @@ func AssignTypeKind(v interface{}) error {
 	switch u := v.(type) {
 	case *PharmerConfig:
 		if u.APIVersion == "" {
-			u.APIVersion = "v1"
+			u.APIVersion = "cluster.pharmer.io/v1beta1"
 		}
 		u.Kind = "PharmerConfig"
 		return nil
 	case *Cluster:
 		if u.APIVersion == "" {
-			u.APIVersion = "v1beta1"
+			u.APIVersion = "cluster.pharmer.io/v1beta1"
 		}
 		u.Kind = "Cluster"
 		return nil
-	case *Credential:
+	case *cloudapi.Credential:
 		if u.APIVersion == "" {
-			u.APIVersion = "v1beta1"
+			u.APIVersion = "cloud.pharmer.io/v1"
 		}
 		u.Kind = "Credential"
 		return nil

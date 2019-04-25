@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
+	"github.com/pharmer/cloud/pkg/credential"
+	cc "github.com/pharmer/cloud/pkg/credential/cloud"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
-	"github.com/pharmer/pharmer/credential"
-	cc "github.com/pharmer/pharmer/credential/cloud"
 	"github.com/pharmer/pharmer/credential/cmds/options"
 	"github.com/pharmer/pharmer/data/files"
 	"github.com/pkg/errors"
@@ -22,11 +22,11 @@ import (
 func NewCmdCreateCredential() *cobra.Command {
 	opts := options.NewCredentialCreateConfig()
 	cmd := &cobra.Command{
-		Use: api.ResourceNameCredential,
+		Use: cloudapi.ResourceNameCredential,
 		Aliases: []string{
-			api.ResourceTypeCredential,
-			api.ResourceCodeCredential,
-			api.ResourceKindCredential,
+			cloudapi.ResourceTypeCredential,
+			cloudapi.ResourceCodeCredential,
+			cloudapi.ResourceKindCredential,
 		},
 		Short:             "Create  credential object",
 		Example:           `pharmer create credential`,
@@ -89,12 +89,12 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 		return nil
 	}
 
-	cred := &api.Credential{
+	cred := &cloudapi.Credential{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              opts.Name,
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
-		Spec: api.CredentialSpec{
+		Spec: cloudapi.CredentialSpec{
 			Provider: provider,
 			Data:     make(map[string]string),
 		},

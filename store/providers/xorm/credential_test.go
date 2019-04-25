@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	api "github.com/pharmer/pharmer/apis/v1beta1"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/pharmer/store"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -18,12 +18,12 @@ func getEngine() store.Interface {
 
 func TestCredentialCreate(t *testing.T) {
 	//x := getEngine()
-	cred := &api.Credential{
+	cred := &cloudapi.Credential{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              "do",
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
-		Spec: api.CredentialSpec{
+		Spec: cloudapi.CredentialSpec{
 			Provider: "digitalocean",
 			Data:     make(map[string]string),
 		},

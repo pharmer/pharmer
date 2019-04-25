@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/mergepatch"
@@ -36,7 +37,7 @@ var PreconditionSpecField = map[string][]string{
 		"metadata",
 		"template.spec.externalIPType",
 	},
-	api.ResourceKindCredential: {
+	cloudapi.ResourceKindCredential: {
 		"metadata",
 	},
 }

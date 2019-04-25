@@ -6,9 +6,9 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/credential"
 	yaml "gopkg.in/yaml.v2"
 )
 

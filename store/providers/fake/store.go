@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"sync"
 
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -61,7 +62,7 @@ func (s *FakeStore) Credentials() store.CredentialStore {
 	defer s.mux.Unlock()
 
 	if s.credentials == nil {
-		s.credentials = &credentialFileStore{container: map[string]*api.Credential{}}
+		s.credentials = &credentialFileStore{container: map[string]*cloudapi.Credential{}}
 	}
 
 	return s.credentials

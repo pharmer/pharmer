@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/graymeta/stow"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
@@ -29,8 +30,8 @@ func (s *credentialFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *credentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, error) {
-	result := make([]*api.Credential, 0)
+func (s *credentialFileStore) List(opts metav1.ListOptions) ([]*cloudapi.Credential, error) {
+	result := make([]*cloudapi.Credential, 0)
 	cursor := stow.CursorStart
 	for {
 		page, err := s.container.Browse(s.resourceHome()+"/", string(os.PathSeparator), cursor, pageSize)
@@ -42,7 +43,7 @@ func (s *credentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, 
 			if err != nil {
 				return nil, errors.Errorf("failed to list credentials. Reason: %v", err)
 			}
-			var obj api.Credential
+			var obj cloudapi.Credential
 			err = json.NewDecoder(r).Decode(&obj)
 			if err != nil {
 				return nil, errors.Errorf("failed to list credentials. Reason: %v", err)
@@ -58,7 +59,7 @@ func (s *credentialFileStore) List(opts metav1.ListOptions) ([]*api.Credential, 
 	return result, nil
 }
 
-func (s *credentialFileStore) Get(name string) (*api.Credential, error) {
+func (s *credentialFileStore) Get(name string) (*cloudapi.Credential, error) {
 	if name == "" {
 		return nil, errors.New("missing credential name")
 	}
@@ -73,7 +74,7 @@ func (s *credentialFileStore) Get(name string) (*api.Credential, error) {
 	}
 	defer r.Close()
 
-	var existing api.Credential
+	var existing cloudapi.Credential
 	err = json.NewDecoder(r).Decode(&existing)
 	if err != nil {
 		return nil, err
@@ -81,7 +82,7 @@ func (s *credentialFileStore) Get(name string) (*api.Credential, error) {
 	return &existing, nil
 }
 
-func (s *credentialFileStore) Create(obj *api.Credential) (*api.Credential, error) {
+func (s *credentialFileStore) Create(obj *cloudapi.Credential) (*cloudapi.Credential, error) {
 	if obj == nil {
 		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {
@@ -106,7 +107,7 @@ func (s *credentialFileStore) Create(obj *api.Credential) (*api.Credential, erro
 	return obj, err
 }
 
-func (s *credentialFileStore) Update(obj *api.Credential) (*api.Credential, error) {
+func (s *credentialFileStore) Update(obj *cloudapi.Credential) (*cloudapi.Credential, error) {
 	if obj == nil {
 		return nil, errors.New("missing credential")
 	} else if obj.Name == "" {

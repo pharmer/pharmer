@@ -3,7 +3,7 @@ package e2e
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/pharmer/store/test/framework"
 )
 
@@ -16,7 +16,7 @@ var _ = Describe("Credential", func() {
 		By("Receive storage " + f.Config.GetStoreType())
 	})
 	Describe("create credential", func() {
-		var cred *api.Credential
+		var cred *cloudapi.Credential
 		BeforeEach(func() {
 			cred = f.Credential.GetSkeleton()
 		})

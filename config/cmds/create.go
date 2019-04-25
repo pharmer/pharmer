@@ -10,9 +10,10 @@ import (
 	"github.com/graymeta/stow/local"
 	"github.com/graymeta/stow/s3"
 	"github.com/graymeta/stow/swift"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
+	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/config"
-	"github.com/pharmer/pharmer/credential"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -122,12 +123,12 @@ func setContext(req *setContextRequest, configPath string) {
 	}
 	credentialName := req.Provider + "-cred"
 
-	cred := api.Credential{
+	cred := cloudapi.Credential{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              credentialName,
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
-		Spec: api.CredentialSpec{
+		Spec: cloudapi.CredentialSpec{
 			Provider: req.Provider,
 			Data:     make(map[string]string),
 		},
@@ -236,7 +237,7 @@ func setContext(req *setContextRequest, configPath string) {
 
 	if len(credData) != 0 {
 		cred.Spec.Data = credData
-		pc.Credentials = []api.Credential{cred}
+		pc.Credentials = []cloudapi.Credential{cred}
 		sb.CredentialName = credentialName
 	}
 	pc.Store = sb
