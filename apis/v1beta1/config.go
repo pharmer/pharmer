@@ -7,56 +7,56 @@ import (
 )
 
 type LocalSpec struct {
-	Path string `json:"path,omitempty" protobuf:"bytes,1,opt,name=path"`
+	Path string `json:"path,omitempty"`
 }
 
 type S3Spec struct {
-	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,1,opt,name=endpoint"`
-	Bucket   string `json:"bucket,omiempty" protobuf:"bytes,2,opt,name=bucket"`
-	Prefix   string `json:"prefix,omitempty" protobuf:"bytes,3,opt,name=prefix"`
+	Endpoint string `json:"endpoint,omitempty"`
+	Bucket   string `json:"bucket,omiempty"`
+	Prefix   string `json:"prefix,omitempty"`
 }
 
 type GCSSpec struct {
-	Bucket string `json:"bucket,omiempty" protobuf:"bytes,1,opt,name=bucket"`
-	Prefix string `json:"prefix,omitempty" protobuf:"bytes,2,opt,name=prefix"`
+	Bucket string `json:"bucket,omiempty"`
+	Prefix string `json:"prefix,omitempty"`
 }
 
 type AzureStorageSpec struct {
-	Container string `json:"container,omitempty" protobuf:"bytes,1,opt,name=container"`
-	Prefix    string `json:"prefix,omitempty" protobuf:"bytes,2,opt,name=prefix"`
+	Container string `json:"container,omitempty"`
+	Prefix    string `json:"prefix,omitempty"`
 }
 
 type SwiftSpec struct {
-	Container string `json:"container,omitempty" protobuf:"bytes,1,opt,name=container"`
-	Prefix    string `json:"prefix,omitempty" protobuf:"bytes,2,opt,name=prefix"`
+	Container string `json:"container,omitempty"`
+	Prefix    string `json:"prefix,omitempty"`
 }
 
 type PostgresSpec struct {
-	DbName   string `json:"database,omitempty" protobuf:"bytes,1,opt,name=database"`
-	Host     string `json:"host,omitempty" protobuf:"bytes,2,opt,name=host"`
-	Port     int64  `json:"port,omitempty" protobuf:"varint,3,opt,name=port"`
-	User     string `json:"user,omitempty" protobuf:"bytes,4,opt,name=user"`
-	Password string `json:"password,omitempty" protobuf:"bytes,5,opt,name=password"`
+	DbName   string `json:"database,omitempty"`
+	Host     string `json:"host,omitempty"`
+	Port     int64  `json:"port,omitempty"`
+	User     string `json:"user,omitempty"`
+	Password string `json:"password,omitempty"`
 }
 
 type StorageBackend struct {
-	CredentialName string `json:"credentialName,omitempty" protobuf:"bytes,1,opt,name=credentialName"`
+	CredentialName string `json:"credentialName,omitempty"`
 
-	Local    *LocalSpec        `json:"local,omitempty" protobuf:"bytes,2,opt,name=local"`
-	S3       *S3Spec           `json:"s3,omitempty" protobuf:"bytes,3,opt,name=s3"`
-	GCS      *GCSSpec          `json:"gcs,omitempty" protobuf:"bytes,4,opt,name=gcs"`
-	Azure    *AzureStorageSpec `json:"azure,omitempty" protobuf:"bytes,5,opt,name=azure"`
-	Swift    *SwiftSpec        `json:"swift,omitempty" protobuf:"bytes,6,opt,name=swift"`
-	Postgres *PostgresSpec     `json:"postgres,omitempty" protobuf:"bytes,7,opt,name=postgres"`
+	Local    *LocalSpec        `json:"local,omitempty"`
+	S3       *S3Spec           `json:"s3,omitempty"`
+	GCS      *GCSSpec          `json:"gcs,omitempty"`
+	Azure    *AzureStorageSpec `json:"azure,omitempty"`
+	Swift    *SwiftSpec        `json:"swift,omitempty"`
+	Postgres *PostgresSpec     `json:"postgres,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type PharmerConfig struct {
-	metav1.TypeMeta `json:",inline,omitempty,omitempty"`
-	Context         string                `json:"context,omitempty" protobuf:"bytes,1,opt,name=context"`
-	Credentials     []cloudapi.Credential `json:"credentials,omitempty" protobuf:"bytes,2,rep,name=credentials"`
-	Store           StorageBackend        `json:"store,omitempty" protobuf:"bytes,3,opt,name=store"`
+	metav1.TypeMeta `json:",inline"`
+	Context         string                `json:"context,omitempty"`
+	Credentials     []cloudapi.Credential `json:"credentials,omitempty"`
+	Store           StorageBackend        `json:"store,omitempty"`
 }
 
 func (pc PharmerConfig) GetStoreType() string {

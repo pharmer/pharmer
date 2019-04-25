@@ -7,25 +7,25 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type NodeGroup struct {
-	metav1.TypeMeta   `json:",inline,omitempty"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-	Spec              NodeGroupSpec   `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
-	Status            NodeGroupStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              NodeGroupSpec   `json:"spec,omitempty"`
+	Status            NodeGroupStatus `json:"status,omitempty"`
 }
 
 type NodeGroupSpec struct {
-	Nodes int64 `json:"nodes" protobuf:"varint,1,opt,name=nodes"`
+	Nodes int64 `json:"nodes"`
 	// Template describes the nodes that will be created.
-	Template NodeTemplateSpec `json:"template" protobuf:"bytes,2,opt,name=template"`
+	Template NodeTemplateSpec `json:"template"`
 }
 
 // NodeGroupStatus is the most recently observed status of the NodeGroup.
 type NodeGroupStatus struct {
 	// Nodes is the most recently oberved number of nodes.
-	Nodes int64 `json:"nodes" protobuf:"varint,1,opt,name=nodes"`
+	Nodes int64 `json:"nodes"`
 	// ObservedGeneration reflects the generation of the most recently observed node group.
 	// +optional
-	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,2,opt,name=observedGeneration"`
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
 func (ng NodeGroup) IsMaster() bool {
@@ -45,10 +45,10 @@ type NodeTemplateSpec struct {
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
 	// +optional
-	// metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	// metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Specification of the desired behavior of the pod.
 	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
 	// +optional
-	Spec NodeSpec `json:"spec,omitempty" protobuf:"bytes,1,opt,name=spec"`
+	Spec NodeSpec `json:"spec,omitempty"`
 }

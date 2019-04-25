@@ -16,8 +16,8 @@ const (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type Action struct {
-	metav1.TypeMeta `json:",inline,omitempty,omitempty"`
-	Action          ActionType `json:"action,omitempty" protobuf:"bytes,1,opt,name=action,casttype=ActionType"`
-	Resource        string     `json:"resource,omitempty" protobuf:"bytes,2,opt,name=resource"`
-	Message         string     `json:"message,omitempty" protobuf:"bytes,3,opt,name=message"`
+	metav1.TypeMeta `json:",inline"`
+	Action          ActionType `json:"action,omitempty"`
+	Resource        string     `json:"resource,omitempty"`
+	Message         string     `json:"message,omitempty"`
 }

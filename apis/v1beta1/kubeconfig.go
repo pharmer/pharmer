@@ -9,64 +9,64 @@ import (
 // Config holds the information needed to build connect to remote kubernetes clusters as a given user
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KubeConfig struct {
-	metav1.TypeMeta `json:",inline,omitempty,omitempty"`
+	metav1.TypeMeta `json:",inline"`
 	// Preferences holds general information to be use for cli interactions
-	Preferences Preferences `json:"preferences" protobuf:"bytes,1,opt,name=preferences"`
+	Preferences Preferences `json:"preferences"`
 	// Clusters is a map of referencable names to cluster configs
-	Cluster NamedCluster `json:"cluster" protobuf:"bytes,2,opt,name=cluster"`
+	Cluster NamedCluster `json:"cluster"`
 	// AuthInfos is a map of referencable names to user configs
-	AuthInfo NamedAuthInfo `json:"user" protobuf:"bytes,3,opt,name=user"`
+	AuthInfo NamedAuthInfo `json:"user"`
 	// Contexts is a map of referencable names to context configs
-	Context NamedContext `json:"context" protobuf:"bytes,4,opt,name=context"`
+	Context NamedContext `json:"context"`
 }
 
 type Preferences struct {
 	// +optional
-	Colors bool `json:"colors,omitempty" protobuf:"varint,1,opt,name=colors"`
+	Colors bool `json:"colors,omitempty"`
 }
 
 // NamedCluster relates nicknames to cluster information
 type NamedCluster struct {
 	// Name is the nickname for this Cluster
-	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	Name string `json:"name"`
 	// Server is the address of the kubernetes cluster (https://hostname:port).
-	Server string `json:"server" protobuf:"bytes,2,opt,name=server"`
+	Server string `json:"server"`
 	// CertificateAuthorityData contains PEM-encoded certificate authority certificates. Overrides CertificateAuthorityData
 	// +optional
-	CertificateAuthorityData []byte `json:"certificateAuthorityData,omitempty" protobuf:"bytes,3,opt,name=certificateAuthorityData"`
+	CertificateAuthorityData []byte `json:"certificateAuthorityData,omitempty"`
 }
 
 // NamedContext relates nicknames to context information
 type NamedContext struct {
 	// Name is the nickname for this Context
-	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	Name string `json:"name"`
 	// Cluster is the name of the cluster for this context
-	Cluster string `json:"cluster" protobuf:"bytes,2,opt,name=cluster"`
+	Cluster string `json:"cluster"`
 	// AuthInfo is the name of the authInfo for this context
-	AuthInfo string `json:"user" protobuf:"bytes,3,opt,name=user"`
+	AuthInfo string `json:"user"`
 }
 
 // NamedAuthInfo relates nicknames to auth information
 type NamedAuthInfo struct {
 	// Name is the nickname for this AuthInfo
-	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	Name string `json:"name"`
 	// ClientCertificateData contains PEM-encoded data from a client cert file for TLS.
 	// +optional
-	ClientCertificateData []byte `json:"clientCertificateData,omitempty" protobuf:"bytes,2,opt,name=clientCertificateData"`
+	ClientCertificateData []byte `json:"clientCertificateData,omitempty"`
 	// ClientKeyData contains PEM-encoded data from a client key file for TLS.
 	// +optional
-	ClientKeyData []byte `json:"clientKeyData,omitempty" protobuf:"bytes,3,opt,name=clientKeyData"`
+	ClientKeyData []byte `json:"clientKeyData,omitempty"`
 	// Token is the bearer token for authentication to the kubernetes cluster.
 	// +optional
-	Token string `json:"token,omitempty" protobuf:"bytes,4,opt,name=token"`
+	Token string `json:"token,omitempty"`
 	// Username is the username for basic authentication to the kubernetes cluster.
 	// +optional
-	Username string `json:"username,omitempty" protobuf:"bytes,5,opt,name=username"`
+	Username string `json:"username,omitempty"`
 	// Password is the password for basic authentication to the kubernetes cluster.
 	// +optional
-	Password string `json:"password,omitempty" protobuf:"bytes,6,opt,name=password"`
+	Password string `json:"password,omitempty"`
 	// +optional
-	Exec *ExecConfig `json:"exec,omitempty" protobuf:"bytes,7,opt,name=exec"`
+	Exec *ExecConfig `json:"exec,omitempty"`
 }
 
 // ExecConfig specifies a command to provide client credentials. The command is exec'd
@@ -76,26 +76,26 @@ type NamedAuthInfo struct {
 // and output format
 type ExecConfig struct {
 	// Command to execute.
-	Command string `json:"command" protobuf:"bytes,1,opt,name=command"`
+	Command string `json:"command"`
 	// Arguments to pass to the command when executing it.
 	// +optional
-	Args []string `json:"args" protobuf:"bytes,2,rep,name=args"`
+	Args []string `json:"args"`
 	// Env defines additional environment variables to expose to the process. These
 	// are unioned with the host's environment, as well as variables client-go uses
 	// to pass argument to the plugin.
 	// +optional
-	Env []ExecEnvVar `json:"env" protobuf:"bytes,3,rep,name=env"`
+	Env []ExecEnvVar `json:"env"`
 
 	// Preferred input version of the ExecInfo. The returned ExecCredentials MUST use
 	// the same encoding version as the input.
-	APIVersion string `json:"apiVersion,omitempty" protobuf:"bytes,4,opt,name=apiVersion"`
+	APIVersion string `json:"apiVersion,omitempty"`
 }
 
 // ExecEnvVar is used for setting environment variables when executing an exec-based
 // credential plugin.
 type ExecEnvVar struct {
-	Name  string `json:"name" protobuf:"bytes,1,opt,name=name"`
-	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 func Convert_KubeConfig_To_Config(in *KubeConfig) *clientcmdapi.Config {
