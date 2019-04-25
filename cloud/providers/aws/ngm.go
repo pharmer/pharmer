@@ -7,7 +7,7 @@ package aws
 // 	. "github.com/appscode/go/context"
 // 	. "github.com/appscode/go/types"
 // 	"github.com/aws/aws-sdk-go/service/autoscaling"
-// 	api "github.com/pharmer/pharmer/apis/v1alpha1"
+// 	api "github.com/pharmer/pharmer/apis/v1beta1"
 // 	. "github.com/pharmer/pharmer/cloud"
 // 	"github.com/pkg/errors"
 // 	core "k8s.io/api/core/v1"

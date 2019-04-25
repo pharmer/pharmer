@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/mergepatch"
 )

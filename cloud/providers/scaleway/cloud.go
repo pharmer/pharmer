@@ -7,7 +7,7 @@ import (
 
 	. "github.com/appscode/go/context"
 	sshtools "github.com/appscode/go/crypto/ssh"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"

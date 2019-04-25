@@ -8,7 +8,6 @@ import (
 	semver "github.com/appscode/go-version"
 	"github.com/appscode/go/log"
 	stringz "github.com/appscode/go/strings"
-	apiAlpha "github.com/pharmer/pharmer/apis/v1alpha1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
@@ -37,7 +36,7 @@ func NodeCount(machineSets []*clusterv1.MachineSet) int64 {
 	return count
 }
 
-func FindMasterNodeGroup(nodeGroups []*apiAlpha.NodeGroup) (*apiAlpha.NodeGroup, error) {
+func FindMasterNodeGroup(nodeGroups []*api.NodeGroup) (*api.NodeGroup, error) {
 	for _, ng := range nodeGroups {
 		if ng.IsMaster() {
 			return ng, nil

@@ -17,9 +17,9 @@ import (
 	. "github.com/onsi/gomega" //	"time"
 	yaml "gopkg.in/yaml.v2"
 
-	//	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	//	api "github.com/pharmer/pharmer/apis/v1beta1"
 	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 )
 
 func TestGce(t *testing.T) {

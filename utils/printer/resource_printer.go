@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	api "github.com/pharmer/pharmer/apis/v1alpha1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/credential"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -145,13 +145,13 @@ func (h *HumanReadablePrinter) printCluster(item *api.Cluster, w io.Writer, opti
 		return
 	}
 
-	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.Cloud.CloudProvider); err != nil {
+	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.Config.Cloud.CloudProvider); err != nil {
 		return
 	}
-	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.Cloud.Zone); err != nil {
+	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.Config.Cloud.Zone); err != nil {
 		return
 	}
-	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.KubernetesVersion); err != nil {
+	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.Config.KubernetesVersion); err != nil {
 		return
 	}
 	if _, err = fmt.Fprintf(w, "%s\t", TranslateTimestamp(item.CreationTimestamp)); err != nil {
