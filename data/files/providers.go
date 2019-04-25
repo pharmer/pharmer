@@ -11,7 +11,6 @@ import (
 	"github.com/pharmer/pharmer/data/files/azure"
 	"github.com/pharmer/pharmer/data/files/digitalocean"
 	"github.com/pharmer/pharmer/data/files/gce"
-	"github.com/pharmer/pharmer/data/files/lightsail"
 	"github.com/pharmer/pharmer/data/files/linode"
 	"github.com/pharmer/pharmer/data/files/ovh"
 	"github.com/pharmer/pharmer/data/files/packet"
@@ -147,11 +146,6 @@ func LoadDataFiles() ([][]byte, error) {
 		dataFiles = append(dataFiles, bytes)
 	}
 
-	if bytes, err := lightsail.Asset("cloud.json"); err != nil {
-		return nil, err
-	} else {
-		dataFiles = append(dataFiles, bytes)
-	}
 	return dataFiles, nil
 }
 

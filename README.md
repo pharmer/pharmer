@@ -13,7 +13,6 @@ This project is spread over 5 repositories:
 
 - [pharmer/pharmer](https://github.com/pharmer/pharmer): A [Kops](https://github.com/kubernetes/kops) [like](https://github.com/pharmer/pharmer/blob/master/docs/reference/pharmer.md) cluster manager using `Kubeadm`. Supported cloud providers:
   - [Amazon Web Services](https://aws.amazon.com/)
-  - [Amazon Lightsail](https://amazonlightsail.com/)
   - [Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html)
   - [DigitalOcean](https://www.digitalocean.com/)
   - [Google Cloud](https://cloud.google.com/compute/)
@@ -27,7 +26,6 @@ This project is spread over 5 repositories:
   - [Vultr](https://www.vultr.com/)
 
 - [pharmer/cloud-controller-manager](https://github.com/pharmer/cloud-controller-manager): Implements Cloud Controller manager for following cloud providers:
-  - [Amazon Lightsail](https://amazonlightsail.com/)
   - [Linode](https://www.linode.com/)
   - [Packet](https://www.packet.net/)
   - [Scaleway](https://www.scaleway.com/)
@@ -43,7 +41,6 @@ This project is spread over 5 repositories:
 
 ## User Guide
  - [Create & manage a Kubernetes cluster in AWS EC2](/docs/cloud/aws/README.md)
- - [Create & manage a Kubernetes cluster in Amazon Lightsail](/docs/cloud/lightsail/README.md)
  - [Create & manage a Kubernetes cluster in Amazon EKS](/docs/cloud/eks/README.md)
  - [Create & manage a Kubernetes cluster in Google Cloud](/docs/cloud/gce/README.md)
  - [Create & manage a Kubernetes cluster in Google Kubernetes Engine](/docs/cloud/gke/README.md)

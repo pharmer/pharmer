@@ -23,18 +23,16 @@ import (
 	"github.com/aws/aws-sdk-go/service/elb"
 	_elb "github.com/aws/aws-sdk-go/service/elb"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
+	_s3 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/sts"
 	awssts "github.com/aws/aws-sdk-go/service/sts"
+	"github.com/pharmer/cloud/pkg/credential"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
+	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-
-	//_ "github.com/aws/aws-sdk-go/service/lightsail"
-	_s3 "github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pharmer/cloud/pkg/credential"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
 )
 
 type cloudConnector struct {

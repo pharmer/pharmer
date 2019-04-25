@@ -1,5 +1,5 @@
 hash: 4fabc53775763ed90effda184e47242815a72f2a054cc7e4b39ea7176e1a86bf
-updated: 2019-04-24T20:02:24.035907007-07:00
+updated: 2019-04-24T21:53:03.718003276-07:00
 imports:
 - name: cloud.google.com/go
   version: 0fd7230b2a7505833d5f69b75cbd6c9582401479
@@ -79,7 +79,6 @@ imports:
   - service/eks
   - service/elb
   - service/iam
-  - service/lightsail
   - service/s3
   - service/s3/s3iface
   - service/s3/s3manager
@@ -505,7 +504,7 @@ imports:
 - name: github.com/yudai/golcs
   version: d1c525dea8ce39ea9a783d33cf08932305373f2c
 - name: go.opencensus.io
-  version: 75c0cca22312e51bfd4fafdbe9197ae399e18b38
+  version: df6e2001952312404b06f5f6f03fcb4aec1648e5
   subpackages:
   - internal
   - internal/tagencoding
