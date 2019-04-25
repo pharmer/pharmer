@@ -27,7 +27,7 @@ func ParseMachineType(sz *godo.Size) (*v1.MachineType, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: util.Sanitize(apis.DigitalOcean + "-" + sz.Slug),
 			Labels: map[string]string{
-				"cloud.pharmer.io/provider": apis.DigitalOcean,
+				apis.KeyCloudProvider: apis.DigitalOcean,
 			},
 		},
 		Spec: v1.MachineTypeSpec{

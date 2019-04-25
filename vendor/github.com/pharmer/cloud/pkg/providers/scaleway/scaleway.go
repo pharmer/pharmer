@@ -36,10 +36,10 @@ func (g *Client) ListCredentialFormats() []v1.CredentialFormat {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: apis.Scaleway,
 				Labels: map[string]string{
-					"cloud.pharmer.io/provider": apis.Scaleway,
+					apis.KeyCloudProvider: apis.Scaleway,
 				},
 				Annotations: map[string]string{
-					"cloud.pharmer.io/cluster-credential": "",
+					apis.KeyClusterCredential: "",
 				},
 			},
 			Spec: v1.CredentialFormatSpec{

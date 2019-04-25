@@ -8,15 +8,16 @@ import (
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/cloud/pkg/credential"
 	cc "github.com/pharmer/cloud/pkg/credential/cloud"
+	"github.com/pharmer/cloud/pkg/providers"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential/cmds/options"
-	"github.com/pharmer/pharmer/data/files"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	survey "gopkg.in/AlecAivazis/survey.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func NewCmdCreateCredential() *cobra.Command {
@@ -57,7 +58,7 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 	// Get Cloud provider
 	provider := opts.Provider
 	if provider == "" {
-		options := files.CredentialProviders().List()
+		options := providers.List()
 		prompt := &survey.Select{
 			Message:  "Choose a Cloud provider:",
 			Options:  options,
@@ -65,7 +66,7 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 		}
 		survey.AskOne(prompt, &provider, nil)
 	} else {
-		if !files.CredentialProviders().Has(provider) {
+		if !sets.NewString(providers.List()...).Has(provider) {
 			return errors.New("Unknown Cloud provider")
 		}
 	}
@@ -111,9 +112,10 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 			return err
 		}
 	} else {
-		cf, _ := files.GetCredentialFormat(provider)
+		i, _ := providers.NewCloudProvider(providers.Options{Provider: provider})
+		cf := i.ListCredentialFormats()[0]
 		commonSpec.Data = make(map[string]string)
-		for _, f := range cf.Fields {
+		for _, f := range cf.Spec.Fields {
 			if f.Input == "password" {
 				commonSpec.Data[f.JSON] = term.ReadMasked(f.Label)
 			} else {

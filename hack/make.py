@@ -100,9 +100,9 @@ def version():
 
 
 def fmt():
-    libbuild.ungroup_go_imports('*.go', 'apis', 'cloud', 'cmds', 'config', 'credential', 'data', 'hack', 'inspector', 'store', 'utils')
-    die(call('goimports -w *.go apis cloud cmds config credential data hack/gendocs inspector store utils'))
-    call('gofmt -s -w *.go apis cloud cmds config credential data hack/gendocs inspector store utils')
+    libbuild.ungroup_go_imports('*.go', 'apis', 'cloud', 'cmds', 'config', 'credential', 'hack', 'inspector', 'store', 'utils')
+    die(call('goimports -w *.go apis cloud cmds config credential hack/gendocs inspector store utils'))
+    call('gofmt -s -w *.go apis cloud cmds config credential hack/gendocs inspector store utils')
 
 
 def vet():
@@ -114,8 +114,9 @@ def lint():
 
 
 def gen_assets():
-    for c in CLOUDS:
-        die(call('go-bindata -ignore=\\.go -ignore=\\.DS_Store -mode=0644 -modtime=1453795200 -o bindata.go -pkg {} .'.format(c), cwd=libbuild.REPO_ROOT + '/data/files/'+c))
+    pass
+    # for c in CLOUDS:
+    #     die(call('go-bindata -ignore=\\.go -ignore=\\.DS_Store -mode=0644 -modtime=1453795200 -o bindata.go -pkg {} .'.format(c), cwd=libbuild.REPO_ROOT + '/data/files/'+c))
 
 
 def gen():

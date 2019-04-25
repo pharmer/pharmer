@@ -42,7 +42,7 @@ func ParseMachine(machine *compute.MachineType) (*v1.MachineType, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: util.Sanitize(apis.GCE + "-" + machine.Name),
 			Labels: map[string]string{
-				"cloud.pharmer.io/provider": apis.GCE,
+				apis.KeyCloudProvider: apis.GCE,
 			},
 		},
 		Spec: v1.MachineTypeSpec{

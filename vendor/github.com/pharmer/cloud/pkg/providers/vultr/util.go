@@ -27,7 +27,7 @@ func ParseInstance(in *PlanExtended) (*v1.MachineType, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: util.Sanitize(apis.Vultr + "-" + strconv.Itoa(in.ID)),
 			Labels: map[string]string{
-				"cloud.pharmer.io/provider": apis.Vultr,
+				apis.KeyCloudProvider: apis.Vultr,
 			},
 		},
 		Spec: v1.MachineTypeSpec{

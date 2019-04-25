@@ -26,7 +26,7 @@ func ParseInstance(in *linodego.LinodeType) (*v1.MachineType, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: util.Sanitize(apis.Linode + "-" + in.ID),
 			Labels: map[string]string{
-				"cloud.pharmer.io/provider": apis.Linode,
+				apis.KeyCloudProvider: apis.Linode,
 			},
 		},
 		Spec: v1.MachineTypeSpec{

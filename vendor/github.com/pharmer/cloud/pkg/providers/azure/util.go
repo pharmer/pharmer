@@ -24,7 +24,7 @@ func ParseInstance(in *compute.VirtualMachineSize) (*v1.MachineType, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: util.Sanitize(apis.Azure + "-" + *in.Name),
 			Labels: map[string]string{
-				"cloud.pharmer.io/provider": apis.Azure,
+				apis.KeyCloudProvider: apis.Azure,
 			},
 		},
 		Spec: v1.MachineTypeSpec{

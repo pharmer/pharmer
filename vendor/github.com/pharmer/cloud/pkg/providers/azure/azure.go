@@ -54,11 +54,11 @@ func (g *Client) ListCredentialFormats() []v1.CredentialFormat {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: apis.Azure + "-cred",
 				Labels: map[string]string{
-					"cloud.pharmer.io/provider": apis.Azure,
+					apis.KeyCloudProvider: apis.Azure,
 				},
 				Annotations: map[string]string{
-					"cloud.pharmer.io/cluster-credential": "",
-					"cloud.pharmer.io/dns-credential":     "",
+					apis.KeyClusterCredential: "",
+					apis.KeyDNSCredential:     "",
 				},
 			},
 			Spec: v1.CredentialFormatSpec{
@@ -100,10 +100,10 @@ func (g *Client) ListCredentialFormats() []v1.CredentialFormat {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: apis.Azure + "-storage-cred",
 				Labels: map[string]string{
-					"cloud.pharmer.io/provider": apis.Azure,
+					apis.KeyCloudProvider: apis.Azure,
 				},
 				Annotations: map[string]string{
-					"cloud.pharmer.io/storage-credential": "",
+					apis.KeyStorageCredential: "",
 				},
 			},
 			Spec: v1.CredentialFormatSpec{

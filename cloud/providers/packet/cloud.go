@@ -9,6 +9,7 @@ import (
 	. "github.com/appscode/go/context"
 	"github.com/packethost/packngo"
 	"github.com/pharmer/cloud/pkg/credential"
+	"github.com/pharmer/cloud/pkg/providers"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
@@ -19,6 +20,7 @@ import (
 
 type cloudConnector struct {
 	ctx     context.Context
+	i       providers.Interface
 	cluster *api.Cluster
 	client  *packngo.Client
 }
@@ -35,8 +37,17 @@ func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*clo
 	// TODO: FixIt Project ID
 	cluster.ClusterConfig().Cloud.Project = typed.ProjectID()
 
+	i, err := providers.NewCloudProvider(providers.Options{
+		Provider: cluster.Spec.Config.Cloud.CloudProvider,
+		// set credentials
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &cloudConnector{
 		ctx:     ctx,
+		i:       i,
 		cluster: cluster,
 		client:  packngo.NewClientWithAuth("", typed.APIKey(), nil),
 	}, nil

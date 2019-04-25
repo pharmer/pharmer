@@ -1,5 +1,5 @@
 hash: 4fabc53775763ed90effda184e47242815a72f2a054cc7e4b39ea7176e1a86bf
-updated: 2019-04-24T21:53:03.718003276-07:00
+updated: 2019-04-25T00:29:26.007091112-07:00
 imports:
 - name: cloud.google.com/go
   version: 0fd7230b2a7505833d5f69b75cbd6c9582401479
@@ -412,7 +412,7 @@ imports:
 - name: github.com/peterbourgon/diskv
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
 - name: github.com/pharmer/cloud
-  version: d764068dbc2c859be1e020ef5edae9d3cc86e000
+  version: fe0ce4034eceaa157b6a5bb4b5e3a19701c65441
   subpackages:
   - pkg/apis
   - pkg/apis/cloud/v1
@@ -504,7 +504,7 @@ imports:
 - name: github.com/yudai/golcs
   version: d1c525dea8ce39ea9a783d33cf08932305373f2c
 - name: go.opencensus.io
-  version: df6e2001952312404b06f5f6f03fcb4aec1648e5
+  version: 5c6a904e408b5ba73f0e0abd48bdb7325c796f8f
   subpackages:
   - internal
   - internal/tagencoding
@@ -1093,11 +1093,5 @@ testImports:
   version: 13a7bf625b83106a184485dd50ae555980780282
   subpackages:
   - gitea
-- name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
-  subpackages:
-  - difflib
 - name: github.com/stretchr/testify
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
-  subpackages:
-  - assert

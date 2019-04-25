@@ -16,7 +16,7 @@ func ParseInstance(in *Ec2Instance) (*v1.MachineType, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: util.Sanitize(apis.AWS + "-" + in.InstanceType),
 			Labels: map[string]string{
-				"cloud.pharmer.io/provider": apis.AWS,
+				apis.KeyCloudProvider: apis.AWS,
 			},
 		},
 		Spec: v1.MachineTypeSpec{

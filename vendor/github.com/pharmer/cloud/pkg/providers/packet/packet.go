@@ -44,7 +44,7 @@ func (g *Client) ListCredentialFormats() []v1.CredentialFormat {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: apis.Packet,
 				Annotations: map[string]string{
-					"cloud.pharmer.io/cluster-credential": "",
+					apis.KeyClusterCredential: "",
 				},
 			},
 			Spec: v1.CredentialFormatSpec{

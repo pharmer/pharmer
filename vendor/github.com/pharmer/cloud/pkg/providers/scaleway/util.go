@@ -14,7 +14,7 @@ func ParseInstance(name string, in *scaleway.ProductServer) (*v1.MachineType, er
 		ObjectMeta: metav1.ObjectMeta{
 			Name: util.Sanitize(apis.Packet + "-" + name),
 			Labels: map[string]string{
-				"cloud.pharmer.io/provider": apis.Packet,
+				apis.KeyCloudProvider: apis.Packet,
 			},
 		},
 		Spec: v1.MachineTypeSpec{

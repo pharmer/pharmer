@@ -5,14 +5,15 @@ import (
 	"net"
 	"strings"
 
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	packetconfig "github.com/pharmer/pharmer/apis/v1beta1/packet"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/data/files"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -21,13 +22,24 @@ func (cm *ClusterManager) SetOwner(owner string) {
 }
 
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
-
 	if sku == "" {
-		ins, err := files.GetInstanceByZoneCPU(cluster.ClusterConfig().Cloud.CloudProvider, cluster.ClusterConfig().Cloud.Zone, 2)
+		mts, err := cm.conn.i.ListMachineTypes()
 		if err != nil {
 			return clusterapi.ProviderSpec{}, err
 		}
-		sku = ins.SKU
+
+		var ins *cloudapi.MachineType
+		for _, instance := range mts {
+			zones := sets.NewString(instance.Spec.Zones...)
+			if zones.Has(cluster.ClusterConfig().Cloud.Zone) && instance.Spec.CPU.CmpInt64(2) >= 0 {
+				ins = &instance
+				break
+			}
+		}
+		if ins == nil {
+			return clusterapi.ProviderSpec{}, errors.Errorf("can't find instance for provider %v with zone %v and cpu %v", cluster.Spec.Config.Cloud.CloudProvider, cluster.ClusterConfig().Cloud.Zone, 2)
+		}
+		sku = ins.Spec.SKU
 	}
 	//config := cluster.Spec.Config
 	spec := &packetconfig.PacketMachineProviderConfig{

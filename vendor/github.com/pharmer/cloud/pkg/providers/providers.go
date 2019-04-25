@@ -28,7 +28,7 @@ import (
 	mu "kmodules.xyz/client-go/meta"
 )
 
-var supportedProvider = []string{
+var providers = []string{
 	apis.GCE,
 	apis.DigitalOcean,
 	apis.Packet,
@@ -37,6 +37,10 @@ var supportedProvider = []string{
 	apis.Vultr,
 	apis.Linode,
 	apis.Scaleway,
+}
+
+func List() []string {
+	return append([]string(nil), providers...)
 }
 
 type Interface interface {
@@ -303,7 +307,7 @@ func AddKubernetesSupport(opts *options.KubernetesData) error {
 			kubeData.Spec.Envs[env] = opts.Deprecated
 		}
 	}
-	for _, name := range supportedProvider {
+	for _, name := range providers {
 		if opts.Provider != options.AllProvider && opts.Provider != name {
 			continue
 		}

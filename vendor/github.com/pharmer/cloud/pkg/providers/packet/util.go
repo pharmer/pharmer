@@ -44,7 +44,7 @@ func ParsePlan(plan *packngo.Plan) (*v1.MachineType, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: util.Sanitize(apis.Packet + "-" + plan.Slug),
 			Labels: map[string]string{
-				"cloud.pharmer.io/provider": apis.Packet,
+				apis.KeyCloudProvider: apis.Packet,
 			},
 		},
 		Spec: v1.MachineTypeSpec{

@@ -14,7 +14,6 @@ import (
 	_ "github.com/pharmer/pharmer/cloud/providers"
 	"github.com/pharmer/pharmer/config"
 	cfgCmd "github.com/pharmer/pharmer/config/cmds"
-	"github.com/pharmer/pharmer/data/files"
 	_ "github.com/pharmer/pharmer/store/providers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -43,8 +42,6 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 					client.Send(ga.NewEvent(parts[0], strings.Join(parts[1:], "/")).Label(version))
 				}
 			}
-
-			files.Load(config.GetEnv(c.Flags()))
 
 			if cfgFile, setByUser := config.GetConfigFile(c.Flags()); !setByUser {
 				if _, err := os.Stat(cfgFile); os.IsNotExist(err) {

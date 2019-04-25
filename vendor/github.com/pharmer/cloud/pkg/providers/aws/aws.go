@@ -58,12 +58,12 @@ func (g *Client) ListCredentialFormats() []v1.CredentialFormat {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: apis.AWS,
 				Labels: map[string]string{
-					"cloud.pharmer.io/provider": apis.AWS,
+					apis.KeyCloudProvider: apis.AWS,
 				},
 				Annotations: map[string]string{
-					"cloud.pharmer.io/cluster-credential": "",
-					"cloud.pharmer.io/dns-credential":     "",
-					"cloud.pharmer.io/storage-credential": "",
+					apis.KeyClusterCredential: "",
+					apis.KeyDNSCredential:     "",
+					apis.KeyStorageCredential: "",
 				},
 			},
 			Spec: v1.CredentialFormatSpec{

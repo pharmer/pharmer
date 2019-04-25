@@ -7,6 +7,13 @@ import (
 )
 
 const (
+	KeyCloudProvider     = "cloud.pharmer.io/provider"
+	KeyClusterCredential = "cloud.pharmer.io/cluster-credential"
+	KeyDNSCredential     = "cloud.pharmer.io/dns-credential"
+	KeyStorageCredential = "cloud.pharmer.io/storage-credential"
+)
+
+const (
 	GCE          string = "gce"
 	DigitalOcean string = "digitalocean"
 	Packet       string = "packet"

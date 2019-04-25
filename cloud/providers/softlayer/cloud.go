@@ -7,10 +7,11 @@ import (
 	"strings"
 
 	. "github.com/appscode/go/types"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/cloud/pkg/credential"
+	"github.com/pharmer/cloud/pkg/providers"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/data/files"
 	"github.com/pkg/errors"
 	"github.com/softlayer/softlayer-go/datatypes"
 	"github.com/softlayer/softlayer-go/services"
@@ -20,6 +21,7 @@ import (
 
 type cloudConnector struct {
 	ctx                   context.Context
+	i                     providers.Interface
 	cluster               *api.Cluster
 	virtualServiceClient  services.Virtual_Guest
 	accountServiceClient  services.Account
@@ -27,19 +29,28 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster) (*cloudConnector, error) {
-	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.CredentialName)
+	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
 	typed := credential.Softlayer{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.CredentialName)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.Spec.Config.CredentialName)
+	}
+
+	i, err := providers.NewCloudProvider(providers.Options{
+		Provider: cluster.Spec.Config.Cloud.CloudProvider,
+		// set credentials
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	sess := session.New(typed.Username(), typed.APIKey())
 	sess.Debug = true
 	return &cloudConnector{
 		ctx:                   ctx,
+		i:                     i,
 		cluster:               cluster,
 		virtualServiceClient:  services.GetVirtualGuestService(sess),
 		accountServiceClient:  services.GetAccountService(sess),
@@ -155,20 +166,26 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	}
 
 	fmt.Println(script)
-	instance, err := files.GetInstanceType(conn.cluster.Spec.Cloud.CloudProvider, ng.Spec.Template.Spec.SKU)
+
+	mts, err := conn.i.ListMachineTypes()
 	if err != nil {
 		return nil, err
 	}
-	cpu := instance.CPU
-	ram := 0
-	switch instance.RAM.(type) {
-	case int, int32, int64:
-		ram = instance.RAM.(int) * 1024
-	case float64, float32:
-		ram = int(instance.RAM.(float64) * 1024)
-	default:
-		return nil, errors.Errorf("failed to parse memory metadata for sku %v", ng.Spec.Template.Spec.SKU)
+
+	var instance *cloudapi.MachineType
+	for _, x := range mts {
+		if x.Spec.SKU == ng.Spec.Template.Spec.SKU {
+			instance = &x
+			break
+		}
 	}
+	if instance == nil {
+		return nil, errors.Errorf("can't find instance type %s for provider Packet", ng.Spec.Template.Spec.SKU)
+	}
+
+	// TODO: Fix this
+	cpu, _ := instance.Spec.CPU.AsInt64()
+	ram, _ := instance.Spec.RAM.AsInt64()
 
 	_, sshid, err := conn.getPublicKey()
 	if err != nil {
@@ -178,10 +195,10 @@ func (conn *cloudConnector) CreateInstance(name, token string, ng *api.NodeGroup
 	vGuestTemplate := datatypes.Virtual_Guest{
 		Hostname:                     StringP(name),
 		Domain:                       StringP(domain),
-		MaxMemory:                    IntP(ram),
-		StartCpus:                    IntP(cpu),
-		Datacenter:                   &datatypes.Location{Name: StringP(conn.cluster.Spec.Cloud.Zone)},
-		OperatingSystemReferenceCode: StringP(conn.cluster.Spec.Cloud.InstanceImage),
+		MaxMemory:                    IntP(int(ram)),
+		StartCpus:                    IntP(int(cpu)),
+		Datacenter:                   &datatypes.Location{Name: StringP(conn.cluster.Spec.Config.Cloud.Zone)},
+		OperatingSystemReferenceCode: StringP(conn.cluster.Spec.Config.Cloud.InstanceImage),
 		LocalDiskFlag:                TrueP(),
 		HourlyBillingFlag:            TrueP(),
 		SshKeys: []datatypes.Security_Ssh_Key{
