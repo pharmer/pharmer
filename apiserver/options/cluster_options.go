@@ -10,6 +10,6 @@ func NewClusterOperation() *ClusterOperation {
 	return &ClusterOperation{}
 }
 
-func (c *ClusterOperation) AddFlags(fs *pflag.FlagSet)  {
+func (c *ClusterOperation) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.OperationId, "operation-id", c.OperationId, "Operation id")
 }
