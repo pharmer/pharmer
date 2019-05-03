@@ -2052,6 +2052,7 @@ items:
       nodeRegistration:
         kubeletExtraArgs:
           cloud-provider: gce
+          node-labels: "node-role.kubernetes.io/master="
       EOF
 
         kubeadm init --config /tmp/kubeadm.yaml
@@ -2156,13 +2157,25 @@ items:
       CLUSTER_DNS_SERVER=$(prips ${SERVICE_CIDR} | head -n 11 | tail -n 1)
       # Override network args to use kubenet instead of cni, override Kubelet DNS args and
       # add cloud provider args.
-      cat > /etc/default/kubelet <<EOF
-      KUBELET_EXTRA_ARGS="--network-plugin=kubenet --cluster-dns=${CLUSTER_DNS_SERVER} --cluster-domain=${CLUSTER_DNS_DOMAIN} --cloud-provider=gce --cloud-config=/etc/kubernetes/cloud-config"
+
+      cat >/tmp/kubeadm-node.yaml <<EOF
+      ---
+      apiVersion: kubeadm.k8s.io/v1beta1
+      kind: JoinConfiguration
+      discovery:
+        bootstrapToken:
+          token: "${TOKEN}"
+          apiServerEndpoint: "${MASTER}"
+          unsafeSkipCAVerification: true
+      nodeRegistration:
+        kubeletExtraArgs:
+          cloud-provider: gce
+          cloud-config: /etc/kubernetes/cloud-config
+          node-labels: "node-role.kubernetes.io/node="
       EOF
 
-      systemctl daemon-reload
-      systemctl restart kubelet.service
-      kubeadm join --token "${TOKEN}" "${MASTER}" --ignore-preflight-errors=all --discovery-token-unsafe-skip-ca-verification
+      kubeadm join --config /tmp/kubeadm-node.yaml
+
       for tries in $(seq 1 60); do
       	kubectl --kubeconfig /etc/kubernetes/kubelet.conf annotate --overwrite node $(hostname) machine=${MACHINE} && break
       	sleep 1
