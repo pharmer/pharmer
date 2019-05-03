@@ -2,7 +2,8 @@ package v1beta1
 
 import (
 	"encoding/json"
-	"fmt"
+
+	"github.com/appscode/go/log"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -61,7 +62,7 @@ func (c *Cluster) GKEProviderConfig(raw []byte) *GKEMachineProviderSpec {
 	providerConfig := &GKEMachineProviderSpec{}
 	err := json.Unmarshal(raw, providerConfig)
 	if err != nil {
-		fmt.Println("Unable to unmarshal provider config: %v", err)
+		log.Infof("Unable to unmarshal provider config: %v", err)
 	}
 	return providerConfig
 }
@@ -75,7 +76,7 @@ func (c *Cluster) SetGKEProviderConfig(cluster *clusterapi.Cluster, config *Clus
 	}
 	bytes, err := json.Marshal(conf)
 	if err != nil {
-		fmt.Println("Unable to marshal provider config: %v", err)
+		log.Infof("Unable to marshal provider config: %v", err)
 		return err
 	}
 	cluster.Spec.ProviderSpec = clusterapi.ProviderSpec{
@@ -167,7 +168,7 @@ func (c *Cluster) EKSProviderConfig(raw []byte) *EKSMachineProviderSpec {
 	providerConfig := &EKSMachineProviderSpec{}
 	err := json.Unmarshal(raw, providerConfig)
 	if err != nil {
-		fmt.Println("Unable to unmarshal provider config: %v", err)
+		log.Infof("Unable to unmarshal provider config: %v", err)
 	}
 	return providerConfig
 }
@@ -180,7 +181,7 @@ func (c *Cluster) SetEKSProviderConfig(cluster *clusterapi.Cluster, config *Clus
 	}
 	bytes, err := json.Marshal(conf)
 	if err != nil {
-		fmt.Println("Unable to marshal provider config: %v", err)
+		log.Infof("Unable to marshal provider config: %v", err)
 		return err
 	}
 	cluster.Spec.ProviderSpec = clusterapi.ProviderSpec{
@@ -248,7 +249,7 @@ func (c *Cluster) SetAKSProviderConfig(cluster *clusterapi.Cluster, config *Clus
 	}
 	bytes, err := json.Marshal(conf)
 	if err != nil {
-		fmt.Println("Unable to marshal provider config: %v", err)
+		log.Infof("Unable to marshal provider config: %v", err)
 		return err
 	}
 	cluster.Spec.ProviderSpec = clusterapi.ProviderSpec{
@@ -263,7 +264,7 @@ func (c *Cluster) AKSProviderConfig(raw []byte) *AKSMachineProviderSpec {
 	providerConfig := &AKSMachineProviderSpec{}
 	err := json.Unmarshal(raw, providerConfig)
 	if err != nil {
-		fmt.Println("Unable to unmarshal provider config: %v", err)
+		log.Infof("Unable to unmarshal provider config: %v", err)
 	}
 	return providerConfig
 }
