@@ -58,18 +58,40 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		if ok, err := typed.IsValid(); !ok {
 			panic(err)
 		}
+
+		namer := namer{cluster: cluster}
 		cloudConfig := &api.AzureCloudConfig{
-			TenantID:           typed.TenantID(),
-			SubscriptionID:     typed.SubscriptionID(),
-			AadClientID:        typed.ClientID(),
-			AadClientSecret:    typed.ClientSecret(),
-			ResourceGroup:      cluster.ClusterConfig().Cloud.Azure.ResourceGroup,
-			Location:           cluster.ClusterConfig().Cloud.Zone,
-			SubnetName:         cluster.ClusterConfig().Cloud.Azure.SubnetName,
-			SecurityGroupName:  cluster.ClusterConfig().Cloud.Azure.SecurityGroupName,
-			VnetName:           cluster.ClusterConfig().Cloud.Azure.VnetName,
-			RouteTableName:     cluster.ClusterConfig().Cloud.Azure.RouteTableName,
-			StorageAccountName: cluster.ClusterConfig().Cloud.Azure.StorageAccountName,
+			Cloud:                        "AzurePublicCloud",
+			TenantID:                     typed.TenantID(),
+			SubscriptionID:               typed.SubscriptionID(),
+			AadClientID:                  typed.ClientID(),
+			AadClientSecret:              typed.ClientSecret(),
+			ResourceGroup:                cluster.ClusterConfig().Cloud.Azure.ResourceGroup,
+			Location:                     cluster.ClusterConfig().Cloud.Zone,
+			VMType:                       "standard",
+			SubnetName:                   namer.GenerateNodeSubnetName(),
+			SecurityGroupName:            namer.GenerateNodeSecurityGroupName(),
+			VnetName:                     namer.VirtualNetworkName(),
+			RouteTableName:               namer.RouteTableName(),
+			PrimaryAvailabilitySetName:   "",
+			PrimaryScaleSetName:          "",
+			CloudProviderBackoff:         true,
+			CloudProviderBackoffRetries:  6,
+			CloudProviderBackoffExponent: 1.5,
+			CloudProviderBackoffDuration: 5,
+			CloudProviderBackoffJitter:   1.0,
+			CloudProviderRatelimit:       true,
+			CloudProviderRateLimitQPS:    3.0,
+			CloudProviderRateLimitBucket: 10,
+			UseManagedIdentityExtension:  false,
+			UserAssignedIdentityID:       "",
+			UseInstanceMetadata:          true,
+			LoadBalancerSku:              "Standard",
+			ExcludeMasterFromStandardLB:  true,
+			ProviderVaultName:            "",
+			MaximumLoadBalancerRuleCount: 250,
+			ProviderKeyName:              "k8s",
+			ProviderKeyVersion:           "",
 		}
 		data, err := json.MarshalIndent(cloudConfig, "", "  ")
 		if err != nil {

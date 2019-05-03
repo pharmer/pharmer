@@ -135,17 +135,37 @@ type AzureSpec struct {
 
 // ref: https://github.com/kubernetes/kubernetes/blob/8b9f0ea5de2083589f3b9b289b90273556bc09c4/pkg/cloudprovider/providers/azure/azure.go#L56
 type AzureCloudConfig struct {
-	TenantID           string `json:"tenantId,omitempty"`
-	SubscriptionID     string `json:"subscriptionId,omitempty"`
-	AadClientID        string `json:"aadClientId,omitempty"`
-	AadClientSecret    string `json:"aadClientSecret,omitempty"`
-	ResourceGroup      string `json:"resourceGroup,omitempty"`
-	Location           string `json:"location,omitempty"`
-	SubnetName         string `json:"subnetName,omitempty"`
-	SecurityGroupName  string `json:"securityGroupName,omitempty"`
-	VnetName           string `json:"vnetName,omitempty"`
-	RouteTableName     string `json:"routeTableName,omitempty"`
-	StorageAccountName string `json:"storageAccountName,omitempty"`
+	Cloud                        string  `json:"cloud"`
+	TenantID                     string  `json:"tenantId,omitempty"`
+	SubscriptionID               string  `json:"subscriptionId,omitempty"`
+	AadClientID                  string  `json:"aadClientId,omitempty"`
+	AadClientSecret              string  `json:"aadClientSecret,omitempty"`
+	ResourceGroup                string  `json:"resourceGroup,omitempty"`
+	Location                     string  `json:"location,omitempty"`
+	VMType                       string  `json:"vmType"`
+	SubnetName                   string  `json:"subnetName,omitempty"`
+	SecurityGroupName            string  `json:"securityGroupName,omitempty"`
+	VnetName                     string  `json:"vnetName,omitempty"`
+	RouteTableName               string  `json:"routeTableName,omitempty"`
+	PrimaryAvailabilitySetName   string  `json:"primaryAvailabilitySetName"`
+	PrimaryScaleSetName          string  `json:"primaryScaleSetName"`
+	CloudProviderBackoff         bool    `json:"cloudProviderBackoff"`
+	CloudProviderBackoffRetries  int     `json:"cloudProviderBackoffRetries"`
+	CloudProviderBackoffExponent float32 `json:"cloudProviderBackoffExponent"`
+	CloudProviderBackoffDuration int     `json:"cloudProviderBackoffDuration"`
+	CloudProviderBackoffJitter   float32 `json:"cloudProviderBackoffJitter"`
+	CloudProviderRatelimit       bool    `json:"cloudProviderRatelimit"`
+	CloudProviderRateLimitQPS    float32 `json:"cloudProviderRateLimitQPS"`
+	CloudProviderRateLimitBucket int     `json:"cloudProviderRateLimitBucket"`
+	UseManagedIdentityExtension  bool    `json:"useManagedIdentityExtension"`
+	UserAssignedIdentityID       string  `json:"userAssignedIdentityID"`
+	UseInstanceMetadata          bool    `json:"useInstanceMetadata"`
+	LoadBalancerSku              string  `json:"loadBalancerSku"`
+	ExcludeMasterFromStandardLB  bool    `json:"excludeMasterFromStandardLB"`
+	ProviderVaultName            string  `json:"providerVaultName"`
+	MaximumLoadBalancerRuleCount int     `json:"maximumLoadBalancerRuleCount"`
+	ProviderKeyName              string  `json:"providerKeyName"`
+	ProviderKeyVersion           string  `json:"providerKeyVersion"`
 }
 
 type LinodeSpec struct {
