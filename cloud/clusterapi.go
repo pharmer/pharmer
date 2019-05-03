@@ -82,7 +82,7 @@ func NewClusterApi(ctx context.Context, cluster *api.Cluster, owner, namespace s
 func GetClusterClient(ctx context.Context, cluster *api.Cluster) (clientset.Interface, error) {
 	conf, err := NewRestConfig(ctx, cluster)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get rest config")
 	}
 	return clientset.NewForConfig(conf)
 }
@@ -113,26 +113,27 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 
 	if err := ca.updateProviderStatus(); err != nil {
 		log.Infoln(err)
-		return err
+		return errors.Wrap(err, "failed to update provider status")
 	}
 
 	masterMachine, err := GetLeaderMachine(ca.ctx, ca.cluster, ca.Owner)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get leader machine")
 	}
 
 	masterMachine.Annotations = make(map[string]string)
 	masterMachine.Annotations[InstanceStatusAnnotationKey] = ""
 
 	Logger(ca.ctx).Infof("Adding master machines...")
-	if err := phases.ApplyMachines(ca.bootstrapClient, namespace, []*clusterv1.Machine{masterMachine}); err != nil && !api.ErrAlreadyExist(err) {
-		return err
+	err = phases.ApplyMachines(ca.bootstrapClient, namespace, []*clusterv1.Machine{masterMachine})
+	if err != nil && !api.ErrAlreadyExist(err) && !api.ErrObjectModified(err) {
+		return errors.Wrap(err, "failed to add master machine")
 	}
 
 	// get the machine object and update the provider status field
 	err = ca.updateMachineStatus(namespace, masterMachine)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to update machine status")
 	}
 
 	return nil
@@ -176,7 +177,7 @@ func (ca *ClusterApi) CreateMachineController(controllerManager string) error {
 	}
 
 	Logger(ca.ctx).Infoln("creating apiserver and controller")
-	if err := ca.CreateApiServerAndController(controllerManager); err != nil {
+	if err := ca.CreateApiServerAndController(controllerManager); err != nil && !api.ErrObjectModified(err) {
 		return err
 	}
 	return nil

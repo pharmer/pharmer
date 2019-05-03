@@ -54,3 +54,13 @@ func AssignTypeKind(v interface{}) error {
 func ErrAlreadyExist(err error) bool {
 	return strings.Contains(err.Error(), "already exists")
 }
+
+// ErrObjectModified checks if the error is :
+// Operation cannot be fulfilled on machines.cluster.k8s.io <machine>:
+// the object has been modified; please apply your changes to the latest version and try again
+func ErrObjectModified(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), "the object has been modified")
+}
