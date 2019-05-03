@@ -184,7 +184,7 @@ func IssueAzureCredential(name string) (*api.Credential, error) {
 			},
 		})
 		if err != nil {
-			return false, err
+			return false, nil
 		}
 		return true, nil
 	})

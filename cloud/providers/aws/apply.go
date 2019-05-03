@@ -512,8 +512,8 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Master instance %s will be created", cm.namer.MasterName()),
 		})
 		if !dryRun {
-			var masterServer *api.NodeInfo
-			masterServer, err = cm.conn.startMaster(masterMachine, sku, privateSubnetID)
+
+			masterInstance, err := cm.conn.startMaster(masterMachine, sku, privateSubnetID)
 			if err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.Wrap(err, ID(cm.ctx))
@@ -547,6 +547,13 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			}
 			spec.InstanceType = sku
 
+			rootDeviceSize, err := cm.conn.getInstanceRootDeviceSize(masterInstance)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get root device size for master instance")
+			}
+
+			spec.RootDeviceSize = *rootDeviceSize
+
 			rawSpec, err := clusterapi_aws.EncodeMachineSpec(spec)
 			if err != nil {
 				return nil, err
@@ -555,7 +562,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 			// update master machine status
 			statusConfig := clusterapi_aws.AWSMachineProviderStatus{
-				InstanceID: StringP(masterServer.ExternalID),
+				InstanceID: masterInstance.InstanceId,
 			}
 
 			rawStatus, err := clusterapi_aws.EncodeMachineStatus(&statusConfig)
@@ -756,12 +763,19 @@ func (cm *ClusterManager) applyDelete(dryRun bool) ([]api.Action, error) {
 		return acts, err
 	}
 
-	vpcID := clusterSpec.NetworkSpec.VPC.ID
+	vpcID, found, err := cm.conn.getVpc()
+	if !found {
+		log.Infof("vpc already deleted")
+		return acts, nil
+	}
+
 	var natID string
-	if clusterSpec.NetworkSpec.Subnets[0].NatGatewayID != nil {
-		natID = *clusterSpec.NetworkSpec.Subnets[0].NatGatewayID
-	} else {
-		natID = *clusterSpec.NetworkSpec.Subnets[0].NatGatewayID
+	if len(clusterSpec.NetworkSpec.Subnets) > 0 {
+		if clusterSpec.NetworkSpec.Subnets[0].NatGatewayID != nil {
+			natID = *clusterSpec.NetworkSpec.Subnets[0].NatGatewayID
+		} else {
+			natID = *clusterSpec.NetworkSpec.Subnets[0].NatGatewayID
+		}
 	}
 
 	if !dryRun {

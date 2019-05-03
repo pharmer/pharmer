@@ -82,7 +82,7 @@ func (c *CommonSpec) LoadFromEnv() {
 func (c CommonSpec) IsValid() (bool, error) {
 	i, err := providers.NewCloudProvider(providers.Options{Provider: c.Provider})
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 	cf := i.ListCredentialFormats()[0]
 	for _, f := range cf.Spec.Fields {

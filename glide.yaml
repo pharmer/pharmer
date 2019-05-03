@@ -16,7 +16,7 @@ import:
 - package: github.com/appscode/go-version
   version: master
 - package: github.com/aws/aws-sdk-go
-  version: v1.14.12
+  version: v1.17.5
 - package: github.com/cenkalti/backoff
   version: v1.1.0
 - package: github.com/census-instrumentation/opencensus-proto
