@@ -23,6 +23,8 @@ var kubernetesCNIVersions = map[string]string{
 	"1.11.0": "0.6.0",
 	"1.12.0": "0.6.0",
 	"1.13.0": "0.6.0",
+	"1.13.5": "0.7.5",
+	"1.13.6": "0.7.5",
 	"1.14.0": "0.7.5",
 }
 
@@ -218,11 +220,13 @@ func (td TemplateData) PackageList() (string, error) {
 		"kubectl=" + patch + "*",
 		"kubeadm=" + kubeadmVersion + "*",
 	}
-	if cni, found := kubernetesCNIVersions[minor]; !found {
-		return "", errors.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", td.KubernetesVersion)
-	} else {
-		pkgs = append(pkgs, "kubernetes-cni="+cni+"*")
+	cni, found := kubernetesCNIVersions[patch]
+	if !found {
+		if cni, found = kubernetesCNIVersions[minor]; !found {
+			return "", errors.Errorf("kubernetes-cni version is unknown for Kubernetes version %s", td.KubernetesVersion)
+		}
 	}
+	pkgs = append(pkgs, "kubernetes-cni="+cni+"*")
 
 	if td.Provider != "gce" && td.Provider != "gke" {
 		pkgs = append(pkgs, "ntp")
