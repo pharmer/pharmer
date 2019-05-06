@@ -2,14 +2,12 @@ package gce
 
 import (
 	"context"
-	"io/ioutil"
 
 	"github.com/pharmer/cloud/pkg/apis"
-
 	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
+	"github.com/pharmer/cloud/pkg/credential"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Client struct {
@@ -18,13 +16,13 @@ type Client struct {
 	Ctx            context.Context
 }
 
-func NewClient(opts Options) (*Client, error) {
+func NewClient(opts credential.GCE) (*Client, error) {
 	g := &Client{
-		GceProjectID: opts.ProjectID,
+		GceProjectID: opts.ProjectID(),
 		Ctx:          context.Background(),
 	}
 	var err error
-	g.ComputeService, err = getComputeService(g.Ctx, opts.CredentialFile)
+	g.ComputeService, err = getComputeService(g.Ctx, opts.ServiceAccount())
 	if err != nil {
 		return nil, err
 	}
@@ -35,42 +33,8 @@ func (g *Client) GetName() string {
 	return apis.GCE
 }
 
-func (g *Client) ListCredentialFormats() []v1.CredentialFormat {
-	return []v1.CredentialFormat{
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: apis.GCE,
-				Labels: map[string]string{
-					apis.KeyCloudProvider: apis.GCE,
-				},
-				Annotations: map[string]string{
-					apis.KeyClusterCredential: "",
-					apis.KeyDNSCredential:     "",
-					apis.KeyStorageCredential: "",
-				},
-			},
-			Spec: v1.CredentialFormatSpec{
-				Provider:      apis.GCE,
-				DisplayFormat: "json",
-				Fields: []v1.CredentialField{
-					{
-						Envconfig: "GCE_PROJECT_ID",
-						Form:      "gce_project_id",
-						JSON:      "projectID",
-						Label:     "Google Cloud Project ID",
-						Input:     "text",
-					},
-					{
-						Envconfig: "GCE_SERVICE_ACCOUNT",
-						Form:      "gce_service_account",
-						JSON:      "serviceAccount",
-						Label:     "Google Cloud Service Account",
-						Input:     "textarea",
-					},
-				},
-			},
-		},
-	}
+func (g *Client) GetCredentialFormat() v1.CredentialFormat {
+	return credential.GCE{}.Format()
 }
 
 func (g *Client) ListRegions() ([]v1.Region, error) {
@@ -148,12 +112,8 @@ func (g *Client) ListMachineTypes() ([]v1.MachineType, error) {
 	return machineTypes, nil
 }
 
-func getComputeService(ctx context.Context, credentialFilePath string) (*compute.Service, error) {
-	data, err := ioutil.ReadFile(credentialFilePath)
-	if err != nil {
-		return nil, err
-	}
-	conf, err := google.JWTConfigFromJSON(data, compute.ComputeScope)
+func getComputeService(ctx context.Context, sajson string) (*compute.Service, error) {
+	conf, err := google.JWTConfigFromJSON([]byte(sajson), compute.ComputeScope)
 	if err != nil {
 		return nil, err
 	}

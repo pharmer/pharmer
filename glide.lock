@@ -1,5 +1,5 @@
-hash: 0dfdb4a5e2b34bbc5458f73990849318bf5fb46aca84fba3f12a48a38b80f885
-updated: 2019-04-30T14:43:20.188283956+06:00
+hash: 76baf812e0c70269ee4276bafe9b4fd5136fe8d85d45c4184e592556f78b279c
+updated: 2019-05-06T05:15:49.091025772-07:00
 imports:
 - name: cloud.google.com/go
   version: 0fd7230b2a7505833d5f69b75cbd6c9582401479
@@ -198,7 +198,7 @@ imports:
 - name: github.com/go-openapi/swag
   version: 5899d5c5e619fda5fa86e14795a835f473ca284c
 - name: github.com/go-xorm/builder
-  version: 0c156dfdb0619fec336cc5b87b15b06f858ce6c7
+  version: 145c9968bfe732a56d7160439d25154c5aaa2f35
 - name: github.com/go-xorm/core
   version: c10e21e7e1cec20e09398f2dfae385e58c8df555
 - name: github.com/go-xorm/xorm
@@ -248,7 +248,7 @@ imports:
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/google/uuid
-  version: 0cd6bf5da1e1c83f8b45653022c74f71af0538a4
+  version: 8c31c18f31ede9fc8eae72290a7e7a8064e9b3e3
 - name: github.com/googleapis/gnostic
   version: 0c5108395e2debce0d731cf0287ddf7242066aba
   subpackages:
@@ -273,7 +273,7 @@ imports:
 - name: github.com/gorilla/websocket
   version: 66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d
 - name: github.com/graymeta/stow
-  version: 8020e152292b2cdbdca30274fec24e18905f254d
+  version: ca5baa008ea321ea84980da11752f2590b485e87
   repo: https://github.com/appscode/stow.git
   vcs: git
   subpackages:
@@ -333,9 +333,9 @@ imports:
 - name: github.com/mattbaird/jsonpatch
   version: 81af80346b1a01caae0cbc27fd3c1ba5b11e189f
 - name: github.com/mattn/go-colorable
-  version: 3a70a971f94a22f2fa562ffcc7a0eb45f5daf045
+  version: ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8
 - name: github.com/mattn/go-isatty
-  version: c1975dc15c1d481e8da23f6ed313bb071136b98f
+  version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
@@ -349,7 +349,7 @@ imports:
 - name: github.com/mitchellh/mapstructure
   version: 3536a929edddb9a5b34bd6861dc4a9647cb459fe
 - name: github.com/moby/moby
-  version: 9a2c26374393e0f46e8f2b1e49d2dcf66b78dbb4
+  version: 619df5a8f60f41f70f67dd1c59e390f67fe78a89
   subpackages:
   - pkg/term
 - name: github.com/modern-go/concurrent
@@ -366,7 +366,7 @@ imports:
   - encoders/builtin
   - util
 - name: github.com/nats-io/go-nats-streaming
-  version: 4366d43a0648b4997ed32080f937e8702ab86c48
+  version: 3e2ff0719c7a6219b4e791e19c782de98c701f4a
   subpackages:
   - pb
 - name: github.com/nats-io/nkeys
@@ -399,8 +399,6 @@ imports:
   version: 62bff4df71bdbc266561a0caee19f0594b17c240
   subpackages:
   - format
-  - gbytes
-  - gexec
   - internal/assertion
   - internal/asyncassertion
   - internal/oraclematcher
@@ -418,7 +416,7 @@ imports:
 - name: github.com/peterbourgon/diskv
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
 - name: github.com/pharmer/cloud
-  version: 5c3df1f0f946b5503d050adeb6b44885bdcb62e1
+  version: ce9f82b28b0a73b4d34e48da24a4d689c5bc8953
   subpackages:
   - pkg/apis
   - pkg/apis/cloud/v1
@@ -478,8 +476,7 @@ imports:
   - pkg/sshcommand
   - pkg/utils
 - name: github.com/sergi/go-diff
-  version: 24e2351369ec4949b2ed0dc5c477afdd4c4034e8
-  repo: https://github.com/sergi/go-diff
+  version: 97b2266dfe4bd4ea1b81a463322f04f8b724801e
   subpackages:
   - diffmatchpatch
 - name: github.com/sirupsen/logrus
@@ -505,14 +502,13 @@ imports:
 - name: github.com/spf13/pflag
   version: 298182f68c66c05229eb03ac171abe6e309ee79a
 - name: github.com/yudai/gojsondiff
-  version: 0525c875b75ca60b9e67ddc44496aa16f21066b0
+  version: 7b1b7adf999dab73a6eb02669c3d82dbb27a3dd6
   subpackages:
   - formatter
 - name: github.com/yudai/golcs
   version: d1c525dea8ce39ea9a783d33cf08932305373f2c
-  repo: https://github.com/yudai/golcs
 - name: go.opencensus.io
-  version: 3f87460392ecb6a7d045e65de9b0dee340fa3a40
+  version: 17d7955af9d42886455ce010dd46878208041a58
   subpackages:
   - internal
   - internal/tagencoding
@@ -577,7 +573,7 @@ imports:
   - jws
   - jwt
 - name: golang.org/x/sync
-  version: 112230192c580c3556b8cee6403af37a4fc5f28c
+  version: 1d60e4601c6fd243af51cc01ddf169918a5407ca
   subpackages:
   - errgroup
   - semaphore
@@ -629,7 +625,7 @@ imports:
   - storage/v1
   - support/bundler
 - name: google.golang.org/appengine
-  version: 54a98f90d1c46b7731eb8fb305d2a321c30ef610
+  version: 12d5545dc1cfa6047a286d5e853841b6471f4c19
   subpackages:
   - internal
   - internal/app_identity
@@ -1098,7 +1094,7 @@ imports:
   version: fd68e9863619f6ec2fdd8625fe1f02e7c877e480
 testImports:
 - name: code.gitea.io/sdk
-  version: 13a7bf625b83106a184485dd50ae555980780282
+  version: 1423c9f77d7ca341ae88578224489cd54cf91dbc
   subpackages:
   - gitea
 - name: github.com/stretchr/testify

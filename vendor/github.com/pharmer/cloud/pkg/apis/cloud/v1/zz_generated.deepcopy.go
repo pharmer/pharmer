@@ -100,13 +100,7 @@ func (in *CloudProviderSpec) DeepCopyInto(out *CloudProviderSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.CredentialFormats != nil {
-		in, out := &in.CredentialFormats, &out.CredentialFormats
-		*out = make([]CredentialFormat, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
-	}
+	in.CredentialFormat.DeepCopyInto(&out.CredentialFormat)
 	if in.KubernetesVersions != nil {
 		in, out := &in.KubernetesVersions, &out.KubernetesVersions
 		*out = make([]KubernetesVersion, len(*in))

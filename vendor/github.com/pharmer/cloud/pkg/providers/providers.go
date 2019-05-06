@@ -45,10 +45,10 @@ func List() []string {
 
 type Interface interface {
 	GetName() string
-	ListCredentialFormats() []v1.CredentialFormat
 	ListRegions() ([]v1.Region, error)
 	ListZones() ([]string, error)
 	ListMachineTypes() ([]v1.MachineType, error)
+	GetCredentialFormat() v1.CredentialFormat
 }
 
 func NewCloudProvider(opts Options) (Interface, error) {
@@ -81,7 +81,7 @@ func GetCloudProvider(i Interface) (*v1.CloudProvider, error) {
 			Name: i.GetName(),
 		},
 		Spec: v1.CloudProviderSpec{
-			CredentialFormats: i.ListCredentialFormats(),
+			CredentialFormat: i.GetCredentialFormat(),
 		},
 	}
 	data.Spec.Regions, err = i.ListRegions()
@@ -144,11 +144,9 @@ func WriteCloudProvider(data *v1.CloudProvider) error {
 		}
 	}
 
-	for _, mt := range data.Spec.CredentialFormats {
-		err := WriteObject(&mt)
-		if err != nil {
-			return err
-		}
+	err = WriteObject(&data.Spec.CredentialFormat)
+	if err != nil {
+		return err
 	}
 
 	for _, mt := range data.Spec.KubernetesVersions {

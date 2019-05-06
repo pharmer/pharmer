@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/appscode/go/term"
+	"github.com/pharmer/cloud/pkg/apis"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/cloud/pkg/credential"
 	cc "github.com/pharmer/cloud/pkg/credential/cloud"
@@ -73,9 +74,9 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 
 	issue := opts.Issue
 	if issue {
-		if provider == "GoogleCloud" {
+		if provider == apis.GCE {
 			cc.IssueGCECredential(opts.Name)
-		} else if strings.ToLower(provider) == "azure" {
+		} else if strings.ToLower(provider) == apis.Azure {
 			cred, err := cc.IssueAzureCredential(opts.Name)
 			if err != nil {
 				term.Fatalln(err)
@@ -106,14 +107,13 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 	commonSpec.Provider = provider
 
 	if opts.FromEnv {
-		commonSpec.LoadFromEnv()
+		commonSpec.LoadFromEnv(credential.GetFormat(opts.Provider))
 	} else if opts.FromFile != "" {
 		if commonSpec, err = credential.LoadCredentialDataFromJson(provider, opts.FromFile); err != nil {
 			return err
 		}
 	} else {
-		i, _ := providers.NewCloudProvider(providers.Options{Provider: provider})
-		cf := i.ListCredentialFormats()[0]
+		cf := credential.GetFormat(opts.Provider)
 		commonSpec.Data = make(map[string]string)
 		for _, f := range cf.Spec.Fields {
 			if f.Input == "password" {

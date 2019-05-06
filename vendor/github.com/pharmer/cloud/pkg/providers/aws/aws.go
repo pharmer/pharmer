@@ -5,15 +5,14 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/pharmer/cloud/pkg/apis"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/pharmer/cloud/pkg/apis"
 	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
+	"github.com/pharmer/cloud/pkg/credential"
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Client struct {
@@ -38,12 +37,12 @@ type Ec2Storage struct {
 	TrimSupport                bool `json:"trim_support"`
 }
 
-func NewClient(opts Options) (*Client, error) {
+func NewClient(opts credential.AWS) (*Client, error) {
 	c := &Client{}
 	var err error
 	c.session, err = session.NewSession(&aws.Config{
-		Region:      &opts.Region,
-		Credentials: credentials.NewStaticCredentials(opts.AccessKeyID, opts.SecretAccessKey, ""),
+		Region:      aws.String(opts.Region()),
+		Credentials: credentials.NewStaticCredentials(opts.AccessKeyID(), opts.SecretAccessKey(), ""),
 	})
 	return c, err
 }
@@ -52,42 +51,8 @@ func (g *Client) GetName() string {
 	return apis.AWS
 }
 
-func (g *Client) ListCredentialFormats() []v1.CredentialFormat {
-	return []v1.CredentialFormat{
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: apis.AWS,
-				Labels: map[string]string{
-					apis.KeyCloudProvider: apis.AWS,
-				},
-				Annotations: map[string]string{
-					apis.KeyClusterCredential: "",
-					apis.KeyDNSCredential:     "",
-					apis.KeyStorageCredential: "",
-				},
-			},
-			Spec: v1.CredentialFormatSpec{
-				Provider:      apis.AWS,
-				DisplayFormat: "field",
-				Fields: []v1.CredentialField{
-					{
-						Envconfig: "AWS_ACCESS_KEY_ID",
-						Form:      "aws_access_key_id",
-						JSON:      "accessKeyID",
-						Label:     "Access Key Id",
-						Input:     "text",
-					},
-					{
-						Envconfig: "AWS_SECRET_ACCESS_KEY",
-						Form:      "aws_secret_access_key",
-						JSON:      "secretAccessKey",
-						Label:     "Secret Access Key",
-						Input:     "password",
-					},
-				},
-			},
-		},
-	}
+func (g *Client) GetCredentialFormat() v1.CredentialFormat {
+	return credential.AWS{}.Format()
 }
 
 func (g *Client) ListRegions() ([]v1.Region, error) {

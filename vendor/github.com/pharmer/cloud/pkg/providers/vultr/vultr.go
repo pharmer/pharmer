@@ -5,11 +5,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/pharmer/cloud/pkg/apis"
-
 	vultr "github.com/JamesClonk/vultr/lib"
+	"github.com/pharmer/cloud/pkg/apis"
 	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/pharmer/cloud/pkg/credential"
 )
 
 type Client struct {
@@ -22,9 +21,9 @@ type PlanExtended struct {
 	Deprecated bool   `json:"deprecated"`
 }
 
-func NewClient(opts Options) (*Client, error) {
+func NewClient(opts credential.Vultr) (*Client, error) {
 	g := &Client{
-		Client: vultr.NewClient(opts.Token, nil),
+		Client: vultr.NewClient(opts.Token(), nil),
 	}
 	return g, nil
 }
@@ -33,34 +32,8 @@ func (g *Client) GetName() string {
 	return apis.Vultr
 }
 
-func (g *Client) ListCredentialFormats() []v1.CredentialFormat {
-	return []v1.CredentialFormat{
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: apis.Vultr,
-				Labels: map[string]string{
-					apis.KeyCloudProvider: apis.Vultr,
-				},
-				Annotations: map[string]string{
-					apis.KeyClusterCredential: "",
-					apis.KeyDNSCredential:     "",
-				},
-			},
-			Spec: v1.CredentialFormatSpec{
-				Provider:      apis.Vultr,
-				DisplayFormat: "field",
-				Fields: []v1.CredentialField{
-					{
-						Envconfig: "VULTR_TOKEN",
-						Form:      "vultr_token",
-						JSON:      "token",
-						Label:     "Personal Access Token",
-						Input:     "password",
-					},
-				},
-			},
-		},
-	}
+func (g *Client) GetCredentialFormat() v1.CredentialFormat {
+	return credential.Vultr{}.Format()
 }
 
 func (g *Client) ListRegions() ([]v1.Region, error) {

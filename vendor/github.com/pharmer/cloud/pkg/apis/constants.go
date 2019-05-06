@@ -19,6 +19,7 @@ const (
 	Packet       string = "packet"
 	AWS          string = "aws"
 	Azure        string = "azure"
+	AzureStorage string = "azureStorage"
 	Vultr        string = "vultr"
 	Linode       string = "linode"
 	Scaleway     string = "scaleway"

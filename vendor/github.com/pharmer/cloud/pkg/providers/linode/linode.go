@@ -4,20 +4,19 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/pharmer/cloud/pkg/apis"
-
 	"github.com/linode/linodego"
+	"github.com/pharmer/cloud/pkg/apis"
 	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
+	"github.com/pharmer/cloud/pkg/credential"
 	"golang.org/x/oauth2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Client struct {
 	Client *linodego.Client
 }
 
-func NewClient(opts Options) (*Client, error) {
-	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: opts.Token})
+func NewClient(opts credential.Linode) (*Client, error) {
+	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: opts.APIToken()})
 
 	oauth2Client := &http.Client{
 		Transport: &oauth2.Transport{
@@ -36,31 +35,8 @@ func (g *Client) GetName() string {
 	return apis.Linode
 }
 
-func (g *Client) ListCredentialFormats() []v1.CredentialFormat {
-	return []v1.CredentialFormat{
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: apis.Linode,
-				Annotations: map[string]string{
-					apis.KeyClusterCredential: "",
-					apis.KeyDNSCredential:     "",
-				},
-			},
-			Spec: v1.CredentialFormatSpec{
-				Provider:      apis.Linode,
-				DisplayFormat: "field",
-				Fields: []v1.CredentialField{
-					{
-						Envconfig: "LINODE_TOKEN",
-						Form:      "linode_token",
-						JSON:      "token",
-						Label:     "Token",
-						Input:     "password",
-					},
-				},
-			},
-		},
-	}
+func (g *Client) GetCredentialFormat() v1.CredentialFormat {
+	return credential.Linode{}.Format()
 }
 
 //DataCenter as region

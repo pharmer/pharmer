@@ -3,8 +3,8 @@ package scaleway
 import (
 	"github.com/pharmer/cloud/pkg/apis"
 	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
+	"github.com/pharmer/cloud/pkg/credential"
 	scaleway "github.com/scaleway/scaleway-cli/pkg/api"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Client struct {
@@ -12,14 +12,14 @@ type Client struct {
 	AmsClient *scaleway.ScalewayAPI
 }
 
-func NewClient(opts Options) (*Client, error) {
+func NewClient(opts credential.Scaleway) (*Client, error) {
 	g := &Client{}
 	var err error
-	g.ParClient, err = scaleway.NewScalewayAPI(opts.Organization, opts.Token, "gen-data", "par1")
+	g.ParClient, err = scaleway.NewScalewayAPI(opts.Organization(), opts.Token(), "gen-data", "par1")
 	if err != nil {
 		return nil, err
 	}
-	g.AmsClient, err = scaleway.NewScalewayAPI(opts.Organization, opts.Token, "gen-data", "ams1")
+	g.AmsClient, err = scaleway.NewScalewayAPI(opts.Organization(), opts.Token(), "gen-data", "ams1")
 	if err != nil {
 		return nil, err
 	}
@@ -30,40 +30,8 @@ func (g *Client) GetName() string {
 	return apis.Scaleway
 }
 
-func (g *Client) ListCredentialFormats() []v1.CredentialFormat {
-	return []v1.CredentialFormat{
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: apis.Scaleway,
-				Labels: map[string]string{
-					apis.KeyCloudProvider: apis.Scaleway,
-				},
-				Annotations: map[string]string{
-					apis.KeyClusterCredential: "",
-				},
-			},
-			Spec: v1.CredentialFormatSpec{
-				Provider:      apis.Scaleway,
-				DisplayFormat: "field",
-				Fields: []v1.CredentialField{
-					{
-						Envconfig: "SCALEWAY_ORGANIZATION",
-						Form:      "scaleway_organization",
-						JSON:      "organization",
-						Label:     "Organization",
-						Input:     "text",
-					},
-					{
-						Envconfig: "SCALEWAY_TOKEN",
-						Form:      "scaleway_token",
-						JSON:      "token",
-						Label:     "Token",
-						Input:     "password",
-					},
-				},
-			},
-		},
-	}
+func (g *Client) GetCredentialFormat() v1.CredentialFormat {
+	return credential.Scaleway{}.Format()
 }
 
 func (g *Client) ListRegions() ([]v1.Region, error) {

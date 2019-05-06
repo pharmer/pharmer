@@ -3,12 +3,11 @@ package digitalocean
 import (
 	"context"
 
-	"github.com/pharmer/cloud/pkg/apis"
-
 	"github.com/digitalocean/godo"
+	"github.com/pharmer/cloud/pkg/apis"
 	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
+	"github.com/pharmer/cloud/pkg/credential"
 	"golang.org/x/oauth2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Client struct {
@@ -16,9 +15,9 @@ type Client struct {
 	ctx    context.Context
 }
 
-func NewClient(opts Options) (*Client, error) {
+func NewClient(opts credential.DigitalOcean) (*Client, error) {
 	g := &Client{ctx: context.Background()}
-	g.Client = getClient(g.ctx, opts.Token)
+	g.Client = getClient(g.ctx, opts.Token())
 	return g, nil
 }
 
@@ -26,35 +25,8 @@ func (g *Client) GetName() string {
 	return apis.DigitalOcean
 }
 
-func (g *Client) ListCredentialFormats() []v1.CredentialFormat {
-	return []v1.CredentialFormat{
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: apis.DigitalOcean,
-				Labels: map[string]string{
-					apis.KeyCloudProvider: apis.DigitalOcean,
-				},
-				Annotations: map[string]string{
-					apis.KeyClusterCredential: "",
-					apis.KeyDNSCredential:     "",
-				},
-			},
-			Spec: v1.CredentialFormatSpec{
-				Provider:      apis.DigitalOcean,
-				DisplayFormat: "field",
-				Fields: []v1.CredentialField{
-					{
-
-						Envconfig: "DIGITALOCEAN_TOKEN",
-						Form:      "digitalocean_token",
-						JSON:      "token",
-						Label:     "Personal Access Token",
-						Input:     "password",
-					},
-				},
-			},
-		},
-	}
+func (g *Client) GetCredentialFormat() v1.CredentialFormat {
+	return credential.DigitalOcean{}.Format()
 }
 
 func (g *Client) ListRegions() ([]v1.Region, error) {

@@ -3,15 +3,14 @@ package azure
 import (
 	"context"
 
-	"github.com/pharmer/cloud/pkg/apis"
-
 	"github.com/Azure/azure-sdk-for-go/profiles/2017-03-09/resources/mgmt/subscriptions"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-12-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/pharmer/cloud/pkg/apis"
 	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/pharmer/cloud/pkg/credential"
 )
 
 type Client struct {
@@ -20,26 +19,26 @@ type Client struct {
 	VmSizesClient  compute.VirtualMachineSizesClient
 }
 
-func NewClient(opts Options) (*Client, error) {
+func NewClient(opts credential.Azure) (*Client, error) {
 	g := &Client{
-		SubscriptionId: opts.SubscriptionID,
+		SubscriptionId: opts.SubscriptionID(),
 	}
 	var err error
 
 	baseURI := azure.PublicCloud.ResourceManagerEndpoint
-	config, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, opts.TenantID)
+	config, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, opts.TenantID())
 	if err != nil {
 		return nil, err
 	}
 
-	spt, err := adal.NewServicePrincipalToken(*config, opts.ClientID, opts.ClientSecret, baseURI)
+	spt, err := adal.NewServicePrincipalToken(*config, opts.ClientID(), opts.ClientSecret(), baseURI)
 	if err != nil {
 		return nil, err
 	}
 	g.GroupsClient = subscriptions.NewClient()
 	g.GroupsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
-	g.VmSizesClient = compute.NewVirtualMachineSizesClient(opts.SubscriptionID)
+	g.VmSizesClient = compute.NewVirtualMachineSizesClient(opts.SubscriptionID())
 	g.VmSizesClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 	return g, nil
 }
@@ -48,86 +47,8 @@ func (g *Client) GetName() string {
 	return apis.Azure
 }
 
-func (g *Client) ListCredentialFormats() []v1.CredentialFormat {
-	return []v1.CredentialFormat{
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: apis.Azure + "-cred",
-				Labels: map[string]string{
-					apis.KeyCloudProvider: apis.Azure,
-				},
-				Annotations: map[string]string{
-					apis.KeyClusterCredential: "",
-					apis.KeyDNSCredential:     "",
-				},
-			},
-			Spec: v1.CredentialFormatSpec{
-				Provider:      apis.Azure,
-				DisplayFormat: "field",
-				Fields: []v1.CredentialField{
-					{
-						Envconfig: "AZURE_TENANT_ID",
-						Form:      "azure_tenant_id",
-						JSON:      "tenantID",
-						Label:     "Tenant Id",
-						Input:     "text",
-					},
-					{
-						Envconfig: "AZURE_SUBSCRIPTION_ID",
-						Form:      "azure_subscription_id",
-						JSON:      "subscriptionID",
-						Label:     "Subscription Id",
-						Input:     "text",
-					},
-					{
-						Envconfig: "AZURE_CLIENT_ID",
-						Form:      "azure_client_id",
-						JSON:      "clientID",
-						Label:     "Client Id",
-						Input:     "text",
-					},
-					{
-						Envconfig: "AZURE_CLIENT_SECRET",
-						Form:      "azure_client_secret",
-						JSON:      "clientSecret",
-						Label:     "Client Secret",
-						Input:     "password",
-					},
-				},
-			},
-		},
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: apis.Azure + "-storage-cred",
-				Labels: map[string]string{
-					apis.KeyCloudProvider: apis.Azure,
-				},
-				Annotations: map[string]string{
-					apis.KeyStorageCredential: "",
-				},
-			},
-			Spec: v1.CredentialFormatSpec{
-				Provider:      apis.Azure,
-				DisplayFormat: "field",
-				Fields: []v1.CredentialField{
-					{
-						Envconfig: "AZURE_STORAGE_ACCOUNT",
-						Form:      "azure_storage_account",
-						JSON:      "account",
-						Label:     "Azure Storage Account",
-						Input:     "text",
-					},
-					{
-						Envconfig: "AZURE_STORAGE_KEY",
-						Form:      "azure_storage_key",
-						JSON:      "key",
-						Label:     "Azure Storage Account Key",
-						Input:     "password",
-					},
-				},
-			},
-		},
-	}
+func (g *Client) GetCredentialFormat() v1.CredentialFormat {
+	return credential.Azure{}.Format()
 }
 
 func (g *Client) ListRegions() ([]v1.Region, error) {

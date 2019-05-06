@@ -6,12 +6,15 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/pharmer/cloud/pkg/apis"
 	api "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	"github.com/pharmer/cloud/pkg/providers"
+	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const (
+	AWSRegion            = "region"
 	AWSAccessKeyID       = "accessKeyID"
 	AWSSecretAccessKey   = "secretAccessKey"
 	AzureClientID        = "clientID"
@@ -66,25 +69,16 @@ func (c *CommonSpec) LoadFromJSON(filename string) error {
 	return json.Unmarshal(data, &c.Data)
 }
 
-func (c *CommonSpec) LoadFromEnv() {
+func (c *CommonSpec) LoadFromEnv(cf v1.CredentialFormat) {
 	if c.Data == nil {
 		c.Data = map[string]string{}
 	}
-	i, err := providers.NewCloudProvider(providers.Options{Provider: c.Provider})
-	if err == nil {
-		cf := i.ListCredentialFormats()[0]
-		for _, f := range cf.Spec.Fields {
-			c.Data[f.JSON] = os.Getenv(f.Envconfig)
-		}
+	for _, f := range cf.Spec.Fields {
+		c.Data[f.JSON] = os.Getenv(f.Envconfig)
 	}
 }
 
-func (c CommonSpec) IsValid() (bool, error) {
-	i, err := providers.NewCloudProvider(providers.Options{Provider: c.Provider})
-	if err != nil {
-		return false, err
-	}
-	cf := i.ListCredentialFormats()[0]
+func (c CommonSpec) IsValid(cf v1.CredentialFormat) (bool, error) {
 	for _, f := range cf.Spec.Fields {
 		if _, found := c.Data[f.JSON]; !found {
 			return false, errors.Errorf("missing key: %s", f.JSON)
@@ -102,24 +96,17 @@ func (c CommonSpec) ToRawMap() map[string]string {
 }
 
 func (c CommonSpec) ToMaskedMap() map[string]string {
-	result := map[string]string{}
-	i, err := providers.NewCloudProvider(providers.Options{Provider: c.Provider})
-	if err != nil {
-		return result
+	bl := sets.NewString("secret", "token", "password", "credential")
+	result := c.ToRawMap()
+	for _, keyword := range bl.UnsortedList() {
+		if _, ok := result[keyword]; ok {
+			result[keyword] = "***REDACTED***"
+		}
 	}
-	cf := i.ListCredentialFormats()[0]
-	for _, f := range cf.Spec.Fields {
-		if f.Input == "password" {
-			// TODO: FixIt! mask it
-			result[f.JSON] = "*****"
-		} else {
-			if len(c.Data[f.JSON]) > 50 {
-				// TODO: FixIt! show shorter version of large amount of data
-				result[f.JSON] = "<data>"
-			} else {
-				result[f.JSON] = c.Data[f.JSON]
-			}
-
+	for k, v := range result {
+		if len(v) > 10 {
+			// TODO: FixIt! show shorter version of large amount of data
+			result[k] = "<data>"
 		}
 	}
 	return result
@@ -140,13 +127,13 @@ func (c CommonSpec) String() string {
 
 func LoadCredentialDataFromJson(provider string, fileName string) (CommonSpec, error) {
 	switch provider {
-	case "GoogleCloud":
+	case apis.GCE:
 		gce := NewGCE()
 		if err := gce.Load(fileName); err != nil {
 			return CommonSpec{}, err
 		}
 		return gce.CommonSpec, nil
-	case "AWS":
+	case apis.AWS:
 		aws := NewAWS()
 		if err := aws.Load(fileName); err != nil {
 			return CommonSpec{}, err
@@ -159,4 +146,35 @@ func LoadCredentialDataFromJson(provider string, fileName string) (CommonSpec, e
 		}
 		return commonSpec, nil
 	}
+}
+
+func GetFormat(provider string) v1.CredentialFormat {
+	switch provider {
+	case apis.GCE:
+		return GCE{}.Format()
+	case apis.DigitalOcean:
+		return DigitalOcean{}.Format()
+	case apis.Packet:
+		return Packet{}.Format()
+	case apis.AWS:
+		return AWS{}.Format()
+	case apis.Azure:
+		return Azure{}.Format()
+	case apis.AzureStorage:
+		return AzureStorage{}.Format()
+	case apis.Vultr:
+		return Vultr{}.Format()
+	case apis.Linode:
+		return Linode{}.Format()
+	case apis.Scaleway:
+		return Scaleway{}.Format()
+	}
+	panic("unknown provider " + provider)
+}
+
+func get(m map[string]string, k, alt string) string {
+	if v, ok := m[k]; ok {
+		return v
+	}
+	return alt
 }

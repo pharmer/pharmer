@@ -24,7 +24,7 @@ import (
 type CloudProviderSpec struct {
 	Regions            []Region            `json:"regions,omitempty"`
 	MachineTypes       []MachineType       `json:"machineTypes,omitempty"`
-	CredentialFormats  []CredentialFormat  `json:"credentialFormats,omitempty"`
+	CredentialFormat   CredentialFormat    `json:"credentialFormat,omitempty"`
 	KubernetesVersions []KubernetesVersion `json:"kubernetesVersions,omitempty"`
 }
 

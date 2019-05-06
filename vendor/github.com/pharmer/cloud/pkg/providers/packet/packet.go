@@ -5,11 +5,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/pharmer/cloud/pkg/apis"
-
 	"github.com/packethost/packngo"
+	"github.com/pharmer/cloud/pkg/apis"
 	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/pharmer/cloud/pkg/credential"
 )
 
 type Client struct {
@@ -22,12 +21,12 @@ type PlanList struct {
 	Plans []packngo.Plan `json:"plans"`
 }
 
-func NewClient(opts Options) (*Client, error) {
+func NewClient(opts credential.Packet) (*Client, error) {
 	g := &Client{}
 	var err error
-	g.Client = getClient(opts.Token)
+	g.Client = getClient(opts.APIKey())
 
-	g.PlanRequest, err = getPlanRequest(opts.Token)
+	g.PlanRequest, err = getPlanRequest(opts.APIKey())
 	if err != nil {
 		return nil, err
 	}
@@ -38,37 +37,8 @@ func (g *Client) GetName() string {
 	return apis.Packet
 }
 
-func (g *Client) ListCredentialFormats() []v1.CredentialFormat {
-	return []v1.CredentialFormat{
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: apis.Packet,
-				Annotations: map[string]string{
-					apis.KeyClusterCredential: "",
-				},
-			},
-			Spec: v1.CredentialFormatSpec{
-				Provider:      apis.Packet,
-				DisplayFormat: "field",
-				Fields: []v1.CredentialField{
-					{
-						Envconfig: "PACKET_PROJECT_ID",
-						Form:      "packet_project_id",
-						JSON:      "projectID",
-						Label:     "Project Id",
-						Input:     "text",
-					},
-					{
-						Envconfig: "PACKET_API_KEY",
-						Form:      "packet_api_key",
-						JSON:      "apiKey",
-						Label:     "API Key",
-						Input:     "password",
-					},
-				},
-			},
-		},
-	}
+func (g *Client) GetCredentialFormat() v1.CredentialFormat {
+	return credential.Packet{}.Format()
 }
 
 func (g *Client) ListRegions() ([]v1.Region, error) {
