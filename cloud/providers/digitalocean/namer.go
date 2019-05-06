@@ -1,7 +1,6 @@
 package digitalocean
 
 import (
-	"github.com/appscode/go/crypto/rand"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 )
 
