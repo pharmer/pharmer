@@ -187,17 +187,17 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	masterMachine, err := GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
+	leaderMachine, err := GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
 	if err != nil {
 		return
 	}
 
-	if d, _ := cm.conn.instanceIfExists(masterMachine); d == nil {
+	if d, _ := cm.conn.instanceIfExists(leaderMachine); d == nil {
 		Logger(cm.ctx).Info("Creating master instance")
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("Master instance %s will be created", masterMachine.Name),
+			Message:  fmt.Sprintf("Master instance %s will be created", leaderMachine.Name),
 		})
 		if !dryRun {
 			nodeAddresses := make([]core.NodeAddress, 0)
@@ -214,7 +214,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				})
 			}
 
-			_, err = cm.conn.CreateInstance(cm.cluster, masterMachine, "")
+			_, err = cm.conn.CreateInstance(cm.cluster, leaderMachine, "")
 			if err != nil {
 				return
 			}
@@ -228,7 +228,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("master instance %v already exist", masterMachine.Name),
+			Message:  fmt.Sprintf("master instance %v already exist", leaderMachine.Name),
 		})
 	}
 
@@ -266,7 +266,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	for _, m := range machines {
-		if m.Name == masterMachine.Name {
+		if m.Name == leaderMachine.Name {
 			continue
 		}
 		if _, err := client.ClusterV1alpha1().Machines(cm.cluster.Spec.ClusterAPI.Namespace).Create(m); err != nil {
@@ -464,15 +464,15 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 		return
 	}
 
-	var masterMachine *clusterv1.Machine
+	var leaderMachine *clusterv1.Machine
 	masterName := fmt.Sprintf("%v-master", cm.cluster.Name)
-	masterMachine, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Get(masterName)
+	leaderMachine, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Get(masterName)
 	if err != nil {
 		return nil, err
 	}
 
-	masterMachine.Spec.Versions.ControlPlane = cm.cluster.Spec.Config.KubernetesVersion
-	masterMachine.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
+	leaderMachine.Spec.Versions.ControlPlane = cm.cluster.Spec.Config.KubernetesVersion
+	leaderMachine.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
 
 	var bc clusterclient.Client
 	bc, err = GetBooststrapClient(cm.ctx, cm.cluster, cm.owner)
@@ -481,7 +481,7 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 	}
 
 	var data []byte
-	if data, err = json.Marshal(masterMachine); err != nil {
+	if data, err = json.Marshal(leaderMachine); err != nil {
 		return
 	}
 	if err = bc.Apply(string(data)); err != nil {

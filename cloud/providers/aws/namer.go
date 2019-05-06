@@ -53,10 +53,6 @@ func (n namer) GenBastionSGName() string {
 	return n.cluster.Name + "-bastion"
 }
 
-func (n namer) MasterPDName() string {
-	return n.MasterName() + "-pd"
-}
-
 // AWS's version of node template
 func (n namer) LaunchConfigName(sku string) string {
 	return stringutil.DomainForm(n.cluster.Name + "-" + strings.Replace(sku, ".", "-", -1) + "-V" + strconv.FormatInt(n.cluster.Generation, 10))

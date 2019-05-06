@@ -1403,12 +1403,12 @@ func (conn *cloudConnector) detectSecurityGroups(vpcID string) error {
 	return nil
 }
 
-func (conn *cloudConnector) getMaster() (bool, error) {
+func (conn *cloudConnector) getMaster(name string) (bool, error) {
 	r1, err := conn.ec2.DescribeInstances(&_ec2.DescribeInstancesInput{
 		Filters: []*_ec2.Filter{
 			{
 				Name:   StringP("tag:Name"),
-				Values: StringPSlice([]string{conn.namer.MasterName()}),
+				Values: StringPSlice([]string{name}),
 			},
 			{
 				Name:   StringP("tag:sigs.k8s.io/cluster-api-provider-aws/role"),

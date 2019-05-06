@@ -84,10 +84,6 @@ func (n namer) GenerateFQDN(publicIPName, location string) string {
 	return fmt.Sprintf("%s.%s.%s", publicIPName, location, DefaultAzureDNSZone)
 }
 
-func (n namer) MasterName() string {
-	return n.cluster.Name + "-master"
-}
-
 func (n namer) GenSSHKeyExternalID() string {
 	return n.cluster.Name + "-sshkey"
 }

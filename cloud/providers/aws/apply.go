@@ -453,7 +453,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	masterMachine, err := GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
+	leaderMachine, err := GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
 	if err != nil {
 		return nil, err
 	}
@@ -501,7 +501,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		}
 	}
 
-	if found, err = cm.conn.getMaster(); err != nil {
+	if found, err = cm.conn.getMaster(leaderMachine.Name); err != nil {
 		Logger(cm.ctx).Infoln(err)
 	}
 	if !found {
@@ -509,11 +509,11 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("Master instance %s will be created", cm.namer.MasterName()),
+			Message:  fmt.Sprintf("Master instance %s will be created", leaderMachine.Name),
 		})
 		if !dryRun {
 
-			masterInstance, err := cm.conn.startMaster(masterMachine, sku, privateSubnetID)
+			masterInstance, err := cm.conn.startMaster(leaderMachine, sku, privateSubnetID)
 			if err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.Wrap(err, ID(cm.ctx))
@@ -536,9 +536,9 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			}
 
 			// update master machine spec
-			spec, err := clusterapi_aws.MachineConfigFromProviderSpec(masterMachine.Spec.ProviderSpec)
+			spec, err := clusterapi_aws.MachineConfigFromProviderSpec(leaderMachine.Spec.ProviderSpec)
 			if err != nil {
-				log.Debug("Error decoding provider spec for machine %q", masterMachine.Name)
+				log.Debug("Error decoding provider spec for machine %q", leaderMachine.Name)
 				return nil, err
 			}
 
@@ -558,7 +558,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			if err != nil {
 				return nil, err
 			}
-			masterMachine.Spec.ProviderSpec.Value = rawSpec
+			leaderMachine.Spec.ProviderSpec.Value = rawSpec
 
 			// update master machine status
 			statusConfig := clusterapi_aws.AWSMachineProviderStatus{
@@ -569,10 +569,10 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			if err != nil {
 				return nil, err
 			}
-			masterMachine.Status.ProviderStatus = rawStatus
+			leaderMachine.Status.ProviderStatus = rawStatus
 
 			// update in pharmer file
-			masterMachine, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Update(masterMachine)
+			leaderMachine, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Update(leaderMachine)
 			if err != nil {
 				return nil, errors.Wrap(err, "error updating master machine in pharmer storage")
 			}
@@ -611,7 +611,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	for _, m := range machines {
-		if m.Name == masterMachine.Name {
+		if m.Name == leaderMachine.Name {
 			continue
 		}
 		if _, err := client.ClusterV1alpha1().Machines(cm.cluster.Spec.ClusterAPI.Namespace).Create(m); err != nil && !api.ErrAlreadyExist(err) {
