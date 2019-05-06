@@ -355,6 +355,11 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
+	err = DeleteAllWorkerMachines(cm.ctx, cm.cluster, cm.owner)
+	if err != nil {
+		log.Infof("failed to delete nodes: %v", err)
+	}
+
 	var kc kubernetes.Interface
 	kc, err = cm.GetAdminClient()
 	if err != nil {

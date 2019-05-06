@@ -116,11 +116,13 @@ var (
 NODE_NAME=$(curl http://169.254.169.254/2007-01-19/meta-data/local-hostname)
 {{ end }}
 
-{{ define "mount-master-pd" }}
-pre-k mount-master-pd --provider=aws
-{{ end }}
 `
 )
+
+// TODO(tahsin): works with pharmer-cli, doesn't work with pharm, why?
+/*{{ define "mount-master-pd" }}
+pre-k mount-master-pd --provider=aws
+{{ end }}*/
 
 func (conn *cloudConnector) renderStartupScript(machine *clusterv1.Machine, token string) (string, error) {
 	tpl, err := StartupScriptTemplate.Clone()

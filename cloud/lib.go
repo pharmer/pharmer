@@ -6,18 +6,22 @@ import (
 	"strings"
 	"time"
 
+	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
 	"github.com/pharmer/pharmer/apis/v1beta1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
 var managedProviders = sets.NewString("aks", "gke", "eks", "dokube")
@@ -418,3 +422,102 @@ func GetLeaderMachine(ctx context.Context, cluster *v1beta1.Cluster, owner strin
 		HostIP: hostip,
 	}
 }*/
+
+// DeleteAllWorkerMachines waits for all nodes to be deleted
+func DeleteAllWorkerMachines(ctx context.Context, cluster *v1beta1.Cluster, owner string) error {
+	log.Infof("Deleting non-controlplane machines")
+
+	client, err := GetBooststrapClient(ctx, cluster, owner)
+	if err != nil {
+		return errors.Wrap(err, "failed to get clusterapi client")
+	}
+
+	err = deleteMachineDeployments(client)
+	if err != nil {
+		log.Infof("failed to delete machine deployments: %v", err)
+	}
+
+	err = deleteMachineSets(client)
+	if err != nil {
+		log.Infof("failed to delete machinesetes: %v", err)
+	}
+
+	err = deleteMachines(client)
+	if err != nil {
+		log.Infof("failed to delete machines: %v", err)
+	}
+
+	log.Infof("successfully deleted non-controlplane machines")
+	return nil
+}
+
+// deletes machinedeployments in all namespaces
+func deleteMachineDeployments(client clusterclient.Client) error {
+	err := client.DeleteMachineDeployments(corev1.NamespaceAll)
+	if err != nil {
+		return err
+	}
+
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (done bool, err error) {
+		deployList, err := client.GetMachineDeployments(corev1.NamespaceAll)
+		if err != nil {
+			log.Infof("failed to list machine deployments: %v", err)
+			return false, nil
+		}
+		if len(deployList) == 0 {
+			log.Infof("successfully deleted machine deployments")
+			return true, nil
+		}
+		log.Infof("machine deployments are not deleted yet")
+		return false, nil
+	})
+}
+
+// deletes machinesets in all namespaces
+func deleteMachineSets(client clusterclient.Client) error {
+	err := client.DeleteMachineSets(corev1.NamespaceAll)
+	if err != nil {
+		return err
+	}
+
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (done bool, err error) {
+		machineSetList, err := client.GetMachineSets(corev1.NamespaceAll)
+		if err != nil {
+			log.Infof("failed to list machine sets: %v", err)
+			return false, nil
+		}
+		if len(machineSetList) == 0 {
+			log.Infof("successfully deleted machinesets")
+			return true, nil
+		}
+		log.Infof("machinesets are not deleted yet")
+		return false, nil
+	})
+}
+
+// deletes machines in all namespaces
+func deleteMachines(client clusterclient.Client) error {
+	// delete non-controlplane machines
+	machineList, err := client.GetMachines(corev1.NamespaceAll)
+	for _, machine := range machineList {
+		if !util.IsControlPlaneMachine(machine) && machine.DeletionTimestamp == nil {
+			err = client.ForceDeleteMachine(machine.Namespace, machine.Name)
+			if err != nil {
+				log.Infof("failed to delete machine %s in namespace %s", machine.Namespace, machine.Name)
+			}
+		}
+	}
+
+	// wait for machines to be deleted
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (done bool, err error) {
+		machineList, err := client.GetMachines(corev1.NamespaceAll)
+		for _, machine := range machineList {
+			if !util.IsControlPlaneMachine(machine) {
+				log.Infof("machine %s in namespace %s is not deleted yet", machine.Name, machine.Namespace)
+			}
+		}
+
+		log.Infof("successfully deleted non-controlplane machines")
+		return true, nil
+	})
+}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
@@ -267,6 +268,11 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	_, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return
+	}
+
+	err = DeleteAllWorkerMachines(cm.ctx, cm.cluster, cm.owner)
+	if err != nil {
+		log.Infof("failed to delete nodes: %v", err)
 	}
 
 	var kc kubernetes.Interface

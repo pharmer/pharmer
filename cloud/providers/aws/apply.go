@@ -465,12 +465,12 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	totalNodes := NodeCount(machineSets)
 
 	// https://github.com/kubernetes/kubernetes/blob/8eb75a5810cba92ccad845ca360cf924f2385881/cluster/aws/config-default.sh#L33
-	sku := "m3.large"
+	sku := "t2.large"
 	if totalNodes > 10 {
-		sku = "m3.xlarge"
+		sku = "t2.xlarge"
 	}
 	if totalNodes > 100 {
-		sku = "m3.2xlarge"
+		sku = "t2.2xlarge"
 	}
 	if totalNodes > 250 {
 		sku = "c4.4xlarge"
@@ -695,6 +695,11 @@ func (cm *ClusterManager) applyDelete(dryRun bool) ([]api.Action, error) {
 	}
 	if _, err := Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
 		return nil, err
+	}
+
+	err := DeleteAllWorkerMachines(cm.ctx, cm.cluster, cm.owner)
+	if err != nil {
+		log.Infof("failed to delete nodes: %v", err)
 	}
 
 	acts = append(acts, api.Action{

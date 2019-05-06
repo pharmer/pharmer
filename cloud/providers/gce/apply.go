@@ -7,7 +7,6 @@ import (
 	semver "github.com/appscode/go-version"
 	. "github.com/appscode/go/context"
 	"github.com/appscode/go/log"
-	"github.com/appscode/go/wait"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	. "github.com/pharmer/pharmer/cloud"
@@ -431,21 +430,16 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		return nil, err
 	}
 
-	// wait for machines to be deleted
-	return acts, wait.PollImmediate(RetryInterval, RetryTimeout, func() (done bool, err error) {
-		machineList, err := bc.GetMachines(corev1.NamespaceAll)
-		for _, machine := range machineList {
-			if machine.DeletionTimestamp != nil {
-				log.Infof("machine %s is not deleted yet", machine.Name)
-				return false, nil
-			}
-		}
-		return true, nil
-	})
+	return acts, nil
 }
 
 func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error) {
 	Logger(cm.ctx).Infoln("Deleting cluster...")
+
+	err = DeleteAllWorkerMachines(cm.ctx, cm.cluster, cm.owner)
+	if err != nil {
+		log.Infof("failed to delete nodes: %v", err)
+	}
 
 	if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
