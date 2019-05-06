@@ -107,7 +107,7 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 	}
 
 	c.Status = ca.cluster.Spec.ClusterAPI.Status
-	if _, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(namespace).UpdateStatus(c); err != nil {
+	if _, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(namespace).UpdateStatus(c); err != nil && !api.ErrObjectModified(err) {
 		return errors.Wrap(err, "failed to update cluster")
 	}
 

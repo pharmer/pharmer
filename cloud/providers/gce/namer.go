@@ -27,7 +27,7 @@ func (n namer) GenNodeName() string {
 }
 
 func (n namer) GenSSHKeyExternalID() string {
-	return n.cluster.Name + "-" + rand.Characters(6)
+	return n.cluster.Name + "-sshkey"
 }
 
 func (n namer) ReserveIPName() string {

@@ -12,7 +12,7 @@ type namer struct {
 }
 
 func (n namer) GenSSHKeyExternalID() string {
-	return n.cluster.Name + "-" + rand.Characters(6)
+	return n.cluster.Name + "-sshkey"
 }
 
 func (n namer) ResourceGroupName() string {

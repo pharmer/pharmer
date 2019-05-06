@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/appscode/go/crypto/rand"
 	stringutil "github.com/appscode/go/strings"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 )
@@ -27,7 +26,7 @@ func (n namer) BastionName() string {
 }
 
 func (n namer) GenSSHKeyExternalID() string {
-	return n.cluster.Name + "-" + rand.Characters(6)
+	return n.cluster.Name + "-sshkey"
 }
 
 func (n namer) VPCName() string {

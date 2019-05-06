@@ -3,7 +3,6 @@ package eks
 import (
 	"fmt"
 
-	"github.com/appscode/go/crypto/rand"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 )
 
@@ -16,7 +15,7 @@ func (n namer) AdminUsername() string {
 }
 
 func (n namer) GenSSHKeyExternalID() string {
-	return n.cluster.Name + "-" + rand.Characters(6)
+	return n.cluster.Name + "-sshkey"
 }
 
 func (n namer) GetStackServiceRole() string {

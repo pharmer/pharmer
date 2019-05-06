@@ -19,5 +19,5 @@ func (n namer) GenNodeName(ng string) string {
 }
 
 func (n namer) GenSSHKeyExternalID() string {
-	return n.cluster.Name + "-" + rand.Characters(6)
+	return n.cluster.Name + "-sshkey"
 }
