@@ -65,13 +65,15 @@ func runServer(ctx context.Context, conn stan.Conn) error {
 
 	//defer apiserver.LogCloser(conn)
 
-	fmt.Println("II")
 	server := apiserver.New(ctx, conn)
 	err := server.CreateCluster()
 	if err != nil {
 		return err
 	}
 
-	return server.DeleteCluster()
+	if err = server.DeleteCluster(); err != nil {
+		return err
+	}
 
+	return server.RetryCluster()
 }
