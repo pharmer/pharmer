@@ -104,7 +104,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 			string(core.NodeInternalDNS),
 			string(core.NodeInternalIP),
 		}, ","),
-		"cloud-config":   "/etc/kubernetes/ccm/cloud-config",
+		"cloud-config":   "/etc/kubernetes/azure.json",
 		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
 	}
 	config.Cloud.CCMCredentialName = cluster.Spec.Config.CredentialName

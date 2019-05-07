@@ -194,7 +194,7 @@ func (s *machineXormStore) UpdateStatus(obj *clusterv1.Machine) (*clusterv1.Mach
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.engine.Where(`name = ? AND "cluster_id" = ?`, obj.Name, cluster.Name, cluster.Id).Update(updated)
+	_, err = s.engine.Where(`name = ? AND "cluster_id" = ?`, obj.Name, cluster.Id).Update(updated)
 	return existing, err
 }
 

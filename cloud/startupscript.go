@@ -307,7 +307,7 @@ kubeadm reset {{ .ForceKubeadmResetFlag }}
 
 mkdir -p /etc/kubernetes/ccm
 {{ if .CloudConfig }}
-cat > /etc/kubernetes/ccm/cloud-config <<EOF
+cat > {{ index .KubeletExtraArgs "cloud-config" }} <<EOF
 {{ .CloudConfig }}
 EOF
 {{ end }}
