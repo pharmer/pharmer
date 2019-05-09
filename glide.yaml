@@ -151,7 +151,7 @@ import:
 - package: sigs.k8s.io/yaml
   version: v1.1.0
 - package: github.com/pharmer/cloud
-  version: ce9f82b28b0a73b4d34e48da24a4d689c5bc8953
+  version: master
 testImport:
 - package: github.com/stretchr/testify
   version: v1.1.4

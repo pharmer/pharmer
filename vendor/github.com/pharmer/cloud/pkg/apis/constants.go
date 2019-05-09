@@ -1,9 +1,8 @@
 package apis
 
 import (
+	"go/build"
 	"path/filepath"
-
-	"github.com/appscode/go/runtime"
 )
 
 const (
@@ -30,5 +29,5 @@ var (
 )
 
 func init() {
-	DataDir = filepath.Join(runtime.GOPath(), "src/github.com/pharmer/cloud/data")
+	DataDir = filepath.Join(build.Default.GOPATH, "src/github.com/pharmer/cloud/data")
 }

@@ -27,7 +27,7 @@ import (
 )
 
 // Version is the NATS Streaming Go Client version
-const Version = "0.4.3"
+const Version = "0.4.2"
 
 const (
 	// DefaultNatsURL is the default URL the client connects to
@@ -50,39 +50,17 @@ const (
 // Conn represents a connection to the NATS Streaming subsystem. It can Publish and
 // Subscribe to messages within the NATS Streaming cluster.
 type Conn interface {
-	// Publish will publish to the cluster and wait for an ACK.
+	// Publish
 	Publish(subject string, data []byte) error
-
-	// PublishAsync will publish to the cluster and asynchronously process
-	// the ACK or error state. It will return the GUID for the message being sent.
 	PublishAsync(subject string, data []byte, ah AckHandler) (string, error)
 
-	// Subscribe will perform a subscription with the given options to the cluster.
-	//
-	// If no option is specified, DefaultSubscriptionOptions are used. The default start
-	// position is to receive new messages only (messages published after the subscription is
-	// registered in the cluster).
+	// Subscribe
 	Subscribe(subject string, cb MsgHandler, opts ...SubscriptionOption) (Subscription, error)
 
-	// QueueSubscribe will perform a queue subscription with the given options to the cluster.
-	//
-	// If no option is specified, DefaultSubscriptionOptions are used. The default start
-	// position is to receive new messages only (messages published after the subscription is
-	// registered in the cluster).
+	// QueueSubscribe
 	QueueSubscribe(subject, qgroup string, cb MsgHandler, opts ...SubscriptionOption) (Subscription, error)
 
-	// Close a connection to the cluster.
-	//
-	// If there are active subscriptions at the time of the close, they are implicitly closed
-	// (not unsubscribed) by the cluster. This means that durable subscriptions are maintained.
-	//
-	// The wait on asynchronous publish calls are canceled and ErrConnectionClosed will be
-	// reported to the registered AckHandler. It is possible that the cluster received and
-	// persisted these messages.
-	//
-	// If a NATS connection is provided as an option to the Connect() call, the NATS
-	// connection is NOT closed when this call is invoked. This connection needs to be
-	// managed by the application.
+	// Close
 	Close() error
 
 	// NatsConn returns the underlying NATS conn. Use this with care. For
@@ -128,46 +106,15 @@ type ConnectionLostHandler func(Conn, error)
 
 // Options can be used to a create a customized connection.
 type Options struct {
-	// NatsURL is an URL (or comma separated list of URLs) to a node or nodes
-	// in the cluster.
-	NatsURL string
-
-	// NatsConn is a user provided low-level NATS connection that the streaming
-	// connection will use to communicate with the cluster. When set, closing
-	// the NATS streaming connection does NOT close this NATS connection.
-	// It is the responsibility of the application to manage the lifetime of
-	// the supplied NATS connection.
-	NatsConn *nats.Conn
-
-	// ConnectTimeout is the timeout for the initial Connect(). This value is also
-	// used for some of the internal request/replies with the cluster.
-	ConnectTimeout time.Duration
-
-	// AckTimeout is how long to wait when a message is published for an ACK from
-	// the cluster. If the library does not receive an ACK after this timeout,
-	// the Publish() call (or the AckHandler) will return ErrTimeout.
-	AckTimeout time.Duration
-
-	// DiscoverPrefix is the prefix connect requests are sent to for this cluster.
-	// The default is "_STAN.discover".
-	DiscoverPrefix string
-
-	// MaxPubAcksInflight specifies how many messages can be published without
-	// getting ACKs back from the cluster before the Publish() or PublishAsync()
-	// calls block.
+	NatsURL            string
+	NatsConn           *nats.Conn
+	ConnectTimeout     time.Duration
+	AckTimeout         time.Duration
+	DiscoverPrefix     string
 	MaxPubAcksInflight int
-
-	// PingInterval is the interval at which client sends PINGs to the server
-	// to detect the loss of a connection.
-	PingIterval int
-
-	// PingMaxOut specifies the maximum number of PINGs without a corresponding
-	// PONG before declaring the connection permanently lost.
-	PingMaxOut int
-
-	// ConnectionLostCB specifies the handler to be invoked when the connection
-	// is permanently lost.
-	ConnectionLostCB ConnectionLostHandler
+	PingIterval        int // In seconds
+	PingMaxOut         int
+	ConnectionLostCB   ConnectionLostHandler
 }
 
 // DefaultOptions are the NATS Streaming client's default options
@@ -221,8 +168,7 @@ func MaxPubAcksInflight(max int) Option {
 }
 
 // NatsConn is an Option to set the underlying NATS connection to be used
-// by a streaming connection object. When such option is set, closing the
-// streaming connection does not close the provided NATS connection.
+// by a NATS Streaming Conn object.
 func NatsConn(nc *nats.Conn) Option {
 	return func(o *Options) error {
 		o.NatsConn = nc
@@ -341,7 +287,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	hbInbox := nats.NewInbox()
 	var err error
 	if c.hbSubscription, err = c.nc.Subscribe(hbInbox, c.processHeartBeat); err != nil {
-		c.failConnect(err)
+		c.Close()
 		return nil, err
 	}
 
@@ -349,7 +295,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	// going to need it, so that if that fails, it fails before initiating
 	// a connection.
 	if c.pingSub, err = c.nc.Subscribe(nats.NewInbox(), c.processPingResponse); err != nil {
-		c.failConnect(err)
+		c.Close()
 		return nil, err
 	}
 
@@ -366,7 +312,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	b, _ := req.Marshal()
 	reply, err := c.nc.Request(discoverSubject, b, c.opts.ConnectTimeout)
 	if err != nil {
-		c.failConnect(err)
+		c.Close()
 		if err == nats.ErrTimeout {
 			return nil, ErrConnectReqTimeout
 		}
@@ -376,16 +322,13 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	cr := &pb.ConnectResponse{}
 	err = cr.Unmarshal(reply.Data)
 	if err != nil {
-		c.failConnect(err)
+		c.Close()
 		return nil, err
 	}
 	if cr.Error != "" {
-		c.failConnect(err)
+		c.Close()
 		return nil, errors.New(cr.Error)
 	}
-
-	// Past this point, we need to call Close() on error because the server
-	// has accepted our connection.
 
 	// Capture cluster configuration endpoints to publish and subscribe/unsubscribe.
 	c.pubPrefix = cr.PubPrefix
@@ -412,7 +355,7 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	c.connLostCB = c.opts.ConnectionLostCB
 
 	unsubPingSub := true
-	// Do this with servers which are at least at protocolOne.
+	// Do this with servers which are at least at protcolOne.
 	if cr.Protocol >= protocolOne {
 		// Note that in the future server may override client ping
 		// interval value sent in ConnectRequest, so use the
@@ -452,16 +395,6 @@ func Connect(stanClusterID, clientID string, options ...Option) (Conn, error) {
 	runtime.SetFinalizer(&c, func(sc *conn) { sc.Close() })
 
 	return &c, nil
-}
-
-// Invoked on a failed connect.
-// Perform appropriate cleanup operations but do not attempt to send
-// a close request.
-func (sc *conn) failConnect(err error) {
-	sc.cleanupOnClose(err)
-	if sc.nc != nil && sc.ncOwned {
-		sc.nc.Close()
-	}
 }
 
 // Sends a PING (containing the connection's ID) to the server at intervals
@@ -528,7 +461,7 @@ func (sc *conn) closeDueToPing(err error) {
 	}
 	// Stop timer, unsubscribe, fail the pubs, etc..
 	sc.cleanupOnClose(err)
-	// No need to send Close protocol, so simply close the underlying
+	// No need to send Close prototol, so simply close the underlying
 	// NATS connection (if we own it, and if not already closed)
 	if sc.ncOwned && !sc.nc.IsClosed() {
 		sc.nc.Close()

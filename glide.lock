@@ -1,5 +1,5 @@
-hash: f2fdad9daa053fc34c41a92a65a4935f0f56d7f9ca34f4dded9d6b1d82560ae7
-updated: 2019-05-06T13:34:33.29814716-07:00
+hash: 4ca44c750709ae03f829fd4dd2c52996040df1a37f9f9595ed80ebdd4a206cc2
+updated: 2019-05-09T09:34:24.568678015+06:00
 imports:
 - name: cloud.google.com/go
   version: 0fd7230b2a7505833d5f69b75cbd6c9582401479
@@ -211,7 +211,7 @@ imports:
   - protoc-gen-gogo/descriptor
   - sortkeys
 - name: github.com/golang/glog
-  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+  version: 44145f04b68cf362d9c4df2182967c2275eaefed
 - name: github.com/golang/groupcache
   version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
   subpackages:
@@ -248,7 +248,7 @@ imports:
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/google/uuid
-  version: c2e93f3ae59f2904160ceaab466009f965df46d6
+  version: 0cd6bf5da1e1c83f8b45653022c74f71af0538a4
 - name: github.com/googleapis/gnostic
   version: 0c5108395e2debce0d731cf0287ddf7242066aba
   subpackages:
@@ -350,7 +350,7 @@ imports:
 - name: github.com/mitchellh/mapstructure
   version: 3536a929edddb9a5b34bd6861dc4a9647cb459fe
 - name: github.com/moby/moby
-  version: 619df5a8f60f41f70f67dd1c59e390f67fe78a89
+  version: 994007dd89fdbb2272fc1f2623d03610e7195616
   subpackages:
   - pkg/term
 - name: github.com/modern-go/concurrent
@@ -367,7 +367,7 @@ imports:
   - encoders/builtin
   - util
 - name: github.com/nats-io/go-nats-streaming
-  version: 3e2ff0719c7a6219b4e791e19c782de98c701f4a
+  version: 4366d43a0648b4997ed32080f937e8702ab86c48
   subpackages:
   - pb
 - name: github.com/nats-io/nkeys
@@ -419,7 +419,7 @@ imports:
 - name: github.com/peterbourgon/diskv
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
 - name: github.com/pharmer/cloud
-  version: ce9f82b28b0a73b4d34e48da24a4d689c5bc8953
+  version: 398aa2bc6bfb4d5300b5b6f9e949abebd3e94c40
   subpackages:
   - pkg/apis
   - pkg/apis/cloud/v1
@@ -490,7 +490,7 @@ imports:
   subpackages:
   - open
 - name: github.com/softlayer/softlayer-go
-  version: aa510384a41b6450fa6a50e943ed32f5e838fada
+  version: 7c592eb2559ce9537680cd21da26e1cea0d46ebb
   subpackages:
   - config
   - datatypes
@@ -1036,7 +1036,7 @@ imports:
   subpackages:
   - exec
 - name: kmodules.xyz/client-go
-  version: 85881479d87957cf3eab9424ec86bcc67dbfbac6
+  version: e4690d8026e75096e2bc385a9d1bb5b2a0e07ad0
   subpackages:
   - core/v1
   - meta
