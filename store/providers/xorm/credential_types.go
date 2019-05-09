@@ -19,7 +19,7 @@ type Credential struct {
 }
 
 func (Credential) TableName() string {
-	return `"ac_cluster_credential"`
+	return "ac_cluster_credential"
 }
 
 func encodeCredential(in *cloudapi.Credential) (*Credential, error) {

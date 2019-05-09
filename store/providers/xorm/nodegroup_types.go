@@ -25,7 +25,7 @@ type NodeGroup struct {
 }
 
 func (NodeGroup) TableName() string {
-	return `"cluster_nodegroup"`
+	return "cluster_nodegroup"
 }
 
 func encodeNodeGroup(in *api.NodeGroup) (*NodeGroup, error) {

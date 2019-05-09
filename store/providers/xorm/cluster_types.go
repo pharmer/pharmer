@@ -19,7 +19,7 @@ type Cluster struct {
 }
 
 func (Cluster) TableName() string {
-	return `"ac_cluster"`
+	return "ac_cluster"
 }
 
 func encodeCluster(in *api.Cluster) (*Cluster, error) {
