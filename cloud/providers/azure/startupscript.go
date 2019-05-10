@@ -187,6 +187,13 @@ ensure_basic_networking() {
 }
 
 ensure_basic_networking
+
+{{ end }}
+
+{{ define "cloud-config" }}
+cat > /etc/kubernetes/azure.json <<EOF
+{{ .CloudConfig }}
+EOF
 {{ end }}
 `
 )

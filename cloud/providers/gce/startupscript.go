@@ -174,6 +174,13 @@ ensure_basic_networking
 {{ define "mount-master-pd" }}
 pre-k mount-master-pd --provider=gce
 {{ end }}
+
+{{ define "cloud-config" }}
+mkdir -p /etc/kubernetes/ccm
+cat > /etc/kubernetes/ccm/cloud-config <<EOF
+{{ .CloudConfig }}
+EOF
+{{ end }}
 `
 )
 

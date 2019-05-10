@@ -3,10 +3,8 @@ package linode
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 
-	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,25 +46,9 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		if cluster.ClusterConfig().Cloud.CCMCredentialName == "" {
 			panic(errors.New("no cloud controller manager credential found"))
 		}
-
-		cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.ClusterConfig().Cloud.CCMCredentialName)
-		if err != nil {
-			panic(err)
-		}
-		typed := credential.Linode{CommonSpec: credential.CommonSpec(cred.Spec)}
-		if ok, err := typed.IsValid(); !ok {
-			panic(err)
-		}
-		cloudConfig := &api.LinodeCloudConfig{
-			Token: typed.APIToken(),
-			Zone:  cluster.ClusterConfig().Cloud.Zone,
-		}
-		data, err := json.Marshal(cloudConfig)
-		if err != nil {
-			panic(err)
-		}
-		td.CloudConfig = string(data)
 	}
+	joinConf, _ := td.JoinConfigurationYAML()
+	td.JoinConfiguration = joinConf
 	return td
 }
 

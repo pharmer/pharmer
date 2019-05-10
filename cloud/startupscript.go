@@ -305,12 +305,7 @@ kubeadm reset {{ .ForceKubeadmResetFlag }}
 
 {{ template "setup-certs" . }}
 
-mkdir -p /etc/kubernetes/ccm
-{{ if .CloudConfig }}
-cat > {{ index .KubeletExtraArgs "cloud-config" }} <<EOF
-{{ .CloudConfig }}
-EOF
-{{ end }}
+{{ template "cloud-config" . }}
 
 mkdir -p /etc/kubernetes/kubeadm
 
@@ -400,16 +395,6 @@ curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/{{ .PrekVe
 timedatectl set-timezone Etc/UTC
 {{ template "prepare-host" . }}
 
-{{ if not .ExternalProvider }}
-{{ if .CloudConfig }}
-mkdir -p /etc/kubernetes/ccm
-cat > /etc/kubernetes/ccm/cloud-config <<EOF
-{{ .CloudConfig }}
-EOF
-{{ end }}
-{{ end }}
-
-
 systemctl daemon-reload
 rm -rf /usr/sbin/policy-rc.d
 systemctl enable docker kubelet nfs-utils
@@ -445,6 +430,8 @@ exec_until_success() {
 `))
 
 	_ = template.Must(StartupScriptTemplate.New("init-os").Parse(``))
+
+	_ = template.Must(StartupScriptTemplate.New("cloud-config").Parse(``))
 
 	_ = template.Must(StartupScriptTemplate.New("prepare-host").Parse(``))
 

@@ -3,9 +3,7 @@ package packet
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 
-	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
@@ -46,26 +44,6 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		if cluster.ClusterConfig().Cloud.CCMCredentialName == "" {
 			panic(errors.New("no cloud controller manager credential found"))
 		}
-
-		cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.ClusterConfig().Cloud.CCMCredentialName)
-		if err != nil {
-			panic(err)
-		}
-		typed := credential.Packet{CommonSpec: credential.CommonSpec(cred.Spec)}
-		if ok, err := typed.IsValid(); !ok {
-			panic(err)
-		}
-		cloudConfig := &api.PacketCloudConfig{
-			Project: typed.ProjectID(),
-			ApiKey:  typed.APIKey(),
-			Zone:    cluster.ClusterConfig().Cloud.Zone,
-		}
-		data, err := json.Marshal(cloudConfig)
-		if err != nil {
-			panic(err)
-		}
-		td.CloudConfig = string(data)
-
 	}
 	return td
 }
