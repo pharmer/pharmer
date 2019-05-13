@@ -1,13 +1,9 @@
 package linode_config
 
 import (
-	"encoding/json"
-
 	"github.com/linode/linodego"
 	. "github.com/pharmer/pharmer/apis/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
@@ -76,43 +72,4 @@ func DescribeLoadBalancer(lb *linodego.NodeBalancer) *LinodeNodeBalancer {
 		ClientConnThrottle: lb.ClientConnThrottle,
 		Tags:               lb.Tags,
 	}
-}
-
-//func (c *Cluster) SetLinodeProviderConfig(cluster *clusterapi.Cluster, config *ClusterConfig) error {
-func SetLinodeClusterProviderConfig(cluster *clusterapi.Cluster, config *ClusterConfig) error {
-	conf := &LinodeMachineProviderSpec{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: LinodeProviderGroupName + "/" + LinodeProviderApiVersion,
-			Kind:       LinodeProviderKind,
-		},
-	}
-	bytes, err := json.Marshal(conf)
-	if err != nil {
-		return err
-
-	}
-	cluster.Spec.ProviderSpec = clusterapi.ProviderSpec{
-		Value: &runtime.RawExtension{
-			Raw: bytes,
-		},
-	}
-	return nil
-}
-
-func SetLinodeClusterProviderStatus(cluster *clusterapi.Cluster) error {
-	conf := &LinodeClusterProviderStatus{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: LinodeProviderGroupName + "/" + LinodeProviderApiVersion,
-			Kind:       LinodeProviderKind,
-		},
-	}
-	bytes, err := json.Marshal(conf)
-	if err != nil {
-		return err
-
-	}
-	cluster.Status.ProviderStatus = &runtime.RawExtension{
-		Raw: bytes,
-	}
-	return nil
 }

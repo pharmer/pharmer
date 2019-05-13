@@ -2,7 +2,6 @@ package linode
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/appscode/go/log"
 	linodeApi "github.com/pharmer/pharmer/apis/v1beta1/linode"
@@ -105,7 +104,7 @@ func (cm *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
 }
 
 func (cm *ClusterActuator) Delete(cluster *clusterapi.Cluster) error {
-	fmt.Println("Delete cluster %v", cluster.Name)
+	log.Infof("Delete cluster %v", cluster.Name)
 	return nil
 }
 

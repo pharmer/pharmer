@@ -3,7 +3,9 @@ package linode_config
 import (
 	"encoding/json"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -131,4 +133,25 @@ func EncodeClusterSpec(spec *LinodeClusterProviderSpec) (*runtime.RawExtension, 
 	return &runtime.RawExtension{
 		Raw: rawBytes,
 	}, nil
+}
+
+//func (c *Cluster) SetLinodeProviderConfig(cluster *clusterapi.Cluster, config *ClusterConfig) error {
+func SetLinodeClusterProviderConfig(cluster *clusterapi.Cluster) error {
+	conf := &LinodeMachineProviderSpec{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: LinodeProviderGroupName + "/" + LinodeProviderApiVersion,
+			Kind:       LinodeProviderKind,
+		},
+	}
+	bytes, err := json.Marshal(conf)
+	if err != nil {
+		return err
+
+	}
+	cluster.Spec.ProviderSpec = clusterapi.ProviderSpec{
+		Value: &runtime.RawExtension{
+			Raw: bytes,
+		},
+	}
+	return nil
 }

@@ -142,7 +142,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		Message:  "Startup script will be created/updated for master instance",
 	})
 	if !dryRun {
-		if _, err = cm.conn.createOrUpdateStackScript(cm.cluster, leaderMachine, "", cm.owner); err != nil {
+		if _, err = cm.conn.createOrUpdateStackScript(cm.cluster, leaderMachine, ""); err != nil {
 			return
 		}
 	}
@@ -168,7 +168,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				})
 			}
 
-			masterServer, err = cm.conn.CreateInstance(leaderMachine.Name, "", leaderMachine, cm.owner)
+			masterServer, err = cm.conn.CreateInstance(leaderMachine, "")
 			if err != nil {
 				return
 			}

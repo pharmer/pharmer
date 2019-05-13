@@ -12,6 +12,7 @@ import (
 	"github.com/linode/linodego"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	linode_config "github.com/pharmer/pharmer/apis/v1beta1/linode"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
@@ -181,11 +182,10 @@ const (
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) getStartupScriptID(machine *clusterv1.Machine) (int, error) {
-	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
+	machineConfig, err := linode_config.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return 0, err
 	}
-	fmt.Println("roles = " + machineConfig.Roles[0])
 	scriptName := conn.namer.StartupScriptName(machine.Name, string(machineConfig.Roles[0]))
 	filter := fmt.Sprintf(`{"label" : "%v"}`, scriptName)
 	listOpts := &linodego.ListOptions{nil, filter}
@@ -203,13 +203,13 @@ func (conn *cloudConnector) getStartupScriptID(machine *clusterv1.Machine) (int,
 	return scripts[0].ID, nil
 }
 
-func (conn *cloudConnector) createOrUpdateStackScript(cluster *api.Cluster, machine *clusterv1.Machine, token string, owner string) (int, error) {
-	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
+func (conn *cloudConnector) createOrUpdateStackScript(cluster *api.Cluster, machine *clusterv1.Machine, token string) (int, error) {
+	machineConfig, err := linode_config.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return 0, err
 	}
 	scriptName := conn.namer.StartupScriptName(machine.Name, string(machineConfig.Roles[0]))
-	script, err := conn.renderStartupScript(cluster, machine, token, owner)
+	script, err := conn.renderStartupScript(cluster, machine, token)
 	if err != nil {
 		return 0, err
 	}
@@ -269,20 +269,20 @@ func (conn *cloudConnector) DeleteStackScript(machineName string, role string) e
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-func (conn *cloudConnector) CreateInstance(name, token string, machine *clusterv1.Machine, owner string) (*api.NodeInfo, error) {
-	if _, err := conn.createOrUpdateStackScript(conn.cluster, machine, token, owner); err != nil {
+func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, token string) (*api.NodeInfo, error) {
+	if _, err := conn.createOrUpdateStackScript(conn.cluster, machine, token); err != nil {
 		return nil, err
 	}
 	scriptId, err := conn.getStartupScriptID(machine)
 	if err != nil {
 		return nil, err
 	}
-	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
+	machineConfig, err := linode_config.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return nil, err
 	}
 	createOpts := linodego.InstanceCreateOptions{
-		Label:    name,
+		Label:    machine.Name,
 		Region:   conn.cluster.ClusterConfig().Cloud.Zone,
 		Type:     machineConfig.Type,
 		RootPass: conn.cluster.ClusterConfig().Cloud.Linode.RootPassword,
@@ -290,7 +290,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, machine *clusterv
 			string(SSHKey(conn.ctx).PublicKey),
 		},
 		StackScriptData: map[string]string{
-			"hostname": name,
+			"hostname": machine.Name,
 		},
 		StackScriptID:  scriptId,
 		Image:          conn.cluster.ClusterConfig().Cloud.InstanceImage,

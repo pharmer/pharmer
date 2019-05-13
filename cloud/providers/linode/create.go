@@ -84,7 +84,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 		Phase: api.ClusterPending,
 	}
 	cluster.SetNetworkingDefaults("calico")
-	return linodeconfig.SetLinodeClusterProviderConfig(cluster.Spec.ClusterAPI, config)
+	return linodeconfig.SetLinodeClusterProviderConfig(cluster.Spec.ClusterAPI)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
