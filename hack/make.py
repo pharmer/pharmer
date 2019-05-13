@@ -101,8 +101,8 @@ def version():
 
 def fmt():
     libbuild.ungroup_go_imports('*.go', 'apis', 'apiserver', 'cloud', 'cmds', 'config', 'credential', 'hack', 'inspector', 'store', 'utils')
-    die(call('goimports -w *.go apis apiserver cloud cmds config credential hack/gendocs inspector store utils'))
-    call('gofmt -s -w *.go apis apiserver cloud cmds config credential hack/gendocs inspector store utils')
+    die(call('goimports -w *.go apis apiserver cloud cmds config credential hack/gendocs inspector notification store test utils'))
+    call('gofmt -s -w *.go apis apiserver cloud cmds config credential hack/gendocs inspector notification store test utils')
 
 
 def vet():

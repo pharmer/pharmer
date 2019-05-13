@@ -2,8 +2,9 @@ package notification
 
 import (
 	"fmt"
+
 	"github.com/appscode/go/log"
-	"github.com/nats-io/go-nats-streaming"
+	stan "github.com/nats-io/go-nats-streaming"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"golang.org/x/net/context"
 )
@@ -14,15 +15,15 @@ type NotificationMessage struct {
 }
 
 type Notifier struct {
-	ctx                    context.Context
-	client                 stan.Conn
+	ctx     context.Context
+	client  stan.Conn
 	subject string
 }
 
 var _ api.Logger = &Notifier{}
 
 func NewNotifier(ctx context.Context, conn stan.Conn, subject string) api.Logger {
-	return Notifier{ctx: ctx, client:conn, subject:subject}
+	return Notifier{ctx: ctx, client: conn, subject: subject}
 }
 
 func (a Notifier) Info(args ...interface{}) {
@@ -54,7 +55,7 @@ func (a Notifier) notify(event string, message interface{}) (string, error) {
 		Fingerprint string `json:"fingerprint"`
 	}
 	msg := message.(string)
-	err := a.client.Publish( a.subject, []byte(msg))
+	err := a.client.Publish(a.subject, []byte(msg))
 	if err != nil {
 		return "", err
 	}
@@ -62,9 +63,8 @@ func (a Notifier) notify(event string, message interface{}) (string, error) {
 }
 
 func (a Notifier) Notify(event string, details string) (string, error) {
-	return a.notify(event,  details)
+	return a.notify(event, details)
 }
-
 
 func (a Notifier) getPath() string {
 	return ""
