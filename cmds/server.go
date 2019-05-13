@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/term"
-	stan "github.com/nats-io/go-nats-streaming"
+	stan "github.com/nats-io/stan.go"
 	"github.com/pharmer/pharmer/apiserver"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"

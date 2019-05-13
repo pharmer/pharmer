@@ -5,7 +5,7 @@ import (
 	"io"
 	"log"
 
-	stan "github.com/nats-io/go-nats-streaming"
+	stan "github.com/nats-io/stan.go"
 )
 
 type Apiserver struct {

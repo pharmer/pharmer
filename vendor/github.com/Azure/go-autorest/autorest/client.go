@@ -16,7 +16,6 @@ package autorest
 
 import (
 	"bytes"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -28,6 +27,7 @@ import (
 
 	"github.com/Azure/go-autorest/logger"
 	"github.com/Azure/go-autorest/tracing"
+	"github.com/Azure/go-autorest/version"
 )
 
 const (
@@ -175,7 +175,7 @@ func NewClientWithUserAgent(ua string) Client {
 		PollingDuration: DefaultPollingDuration,
 		RetryAttempts:   DefaultRetryAttempts,
 		RetryDuration:   DefaultRetryDuration,
-		UserAgent:       UserAgent(),
+		UserAgent:       version.UserAgent(),
 	}
 	c.Sender = c.sender()
 	c.AddToUserAgent(ua)
@@ -231,11 +231,6 @@ func (c Client) Do(r *http.Request) (*http.Response, error) {
 func (c Client) sender() Sender {
 	if c.Sender == nil {
 		j, _ := cookiejar.New(nil)
-		tracing.Transport.Base = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				MinVersion: tls.VersionTLS12,
-			},
-		}
 		client := &http.Client{Jar: j, Transport: tracing.Transport}
 		return client
 	}

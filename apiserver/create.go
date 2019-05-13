@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/golang/glog"
-	stan "github.com/nats-io/go-nats-streaming"
+	stan "github.com/nats-io/stan.go"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/apiserver/options"
 	. "github.com/pharmer/pharmer/cloud"

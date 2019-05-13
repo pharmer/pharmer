@@ -293,15 +293,21 @@ type ProductVolumeConstraint struct {
 	MaxSize uint64 `json:"max_size,omitempty"`
 }
 
+// ProductVolumeConstraint contains any per volume constraint that the offer has
+type ProductPerVolumeConstraint struct {
+	LSsdConstraint ProductVolumeConstraint `json:"l_ssd,omitempty"`
+}
+
 // ProductServerOffer represents a specific offer
 type ProductServer struct {
-	Arch              string                  `json:"arch,omitempty"`
-	Ncpus             uint64                  `json:"ncpus,omitempty"`
-	Ram               uint64                  `json:"ram,omitempty"`
-	Baremetal         bool                    `json:"baremetal,omitempty"`
-	VolumesConstraint ProductVolumeConstraint `json:"volumes_constraint,omitempty"`
-	AltNames          []string                `json:"alt_names,omitempty"`
-	Network           ProductNetwork          `json:"network,omitempty"`
+	Arch                 string                     `json:"arch,omitempty"`
+	Ncpus                uint64                     `json:"ncpus,omitempty"`
+	Ram                  uint64                     `json:"ram,omitempty"`
+	Baremetal            bool                       `json:"baremetal,omitempty"`
+	VolumesConstraint    ProductVolumeConstraint    `json:"volumes_constraint,omitempty"`
+	PerVolumesConstraint ProductPerVolumeConstraint `json:"per_volume_constraint,omitempty"`
+	AltNames             []string                   `json:"alt_names,omitempty"`
+	Network              ProductNetwork             `json:"network,omitempty"`
 }
 
 // Products holds a map of all Scaleway servers
@@ -458,6 +464,9 @@ type ScalewaySecurityGroups struct {
 	Servers               []ScalewaySecurityGroup `json:"servers"`
 	EnableDefaultSecurity bool                    `json:"enable_default_security"`
 	OrganizationDefault   bool                    `json:"organization_default"`
+	Stateful              bool                    `json:"stateful"`
+	InboundDefaultPolicy  string                  `json:"inbound_default_policy"`
+	OutboundDefaultPolicy string                  `json:"outbound_default_policy"`
 }
 
 // ScalewayGetSecurityGroups represents the response of a GET /security_groups/
@@ -503,17 +512,23 @@ type ScalewaySecurityGroup struct {
 
 // ScalewayNewSecurityGroup definition POST request /security_groups
 type ScalewayNewSecurityGroup struct {
-	Organization string `json:"organization"`
-	Name         string `json:"name"`
-	Description  string `json:"description"`
+	Organization          string `json:"organization"`
+	Name                  string `json:"name"`
+	Description           string `json:"description"`
+	Stateful              bool   `json:"stateful"`
+	InboundDefaultPolicy  string `json:"inbound_default_policy"`
+	OutboundDefaultPolicy string `json:"outbound_default_policy"`
 }
 
 // ScalewayUpdateSecurityGroup definition PUT request /security_groups
 type ScalewayUpdateSecurityGroup struct {
-	Organization        string `json:"organization"`
-	Name                string `json:"name"`
-	Description         string `json:"description"`
-	OrganizationDefault bool   `json:"organization_default"`
+	Organization          string `json:"organization"`
+	Name                  string `json:"name"`
+	Description           string `json:"description"`
+	OrganizationDefault   bool   `json:"organization_default"`
+	Stateful              bool   `json:"stateful"`
+	InboundDefaultPolicy  string `json:"inbound_default_policy"`
+	OutboundDefaultPolicy string `json:"outbound_default_policy"`
 }
 
 // ScalewayServer represents a Scaleway server
@@ -544,6 +559,9 @@ type ScalewayServer struct {
 
 	// State is the current status of the server
 	State string `json:"state,omitempty"`
+
+	// BootType is the boot method used, can be local or bootscript
+	BootType string `json:"boot_type,omitempty"`
 
 	// StateDetail is the detailed status of the server
 	StateDetail string `json:"state_detail,omitempty"`
@@ -619,6 +637,33 @@ type ScalewayServerPatchDefinition struct {
 	Tags              *[]string                  `json:"tags,omitempty"`
 	IPV6              *ScalewayIPV6Definition    `json:"ipv6,omitempty"`
 	EnableIPV6        *bool                      `json:"enable_ipv6,omitempty"`
+	BootType          *string                    `json:"boot_type,omitempty"`
+}
+
+type ScalewayServerVolumeDefinition interface {
+	isScalewayServerVolumeDefinition()
+}
+
+type ScalewayServerVolumeDefinitionNew struct {
+	Name           string `json:"name"`
+	OrganizationId string `json:"organization"`
+	Size           uint64 `json:"size"`
+	VolumeType     string `json:"volume_type"`
+}
+
+func (*ScalewayServerVolumeDefinitionNew) isScalewayServerVolumeDefinition() {
+}
+
+type ScalewayServerVolumeDefinitionResize struct {
+	Size uint64 `json:"size"`
+}
+
+func (*ScalewayServerVolumeDefinitionResize) isScalewayServerVolumeDefinition() {
+}
+
+type ScalewayServerVolumeDefinitionFromId string
+
+func (ScalewayServerVolumeDefinitionFromId) isScalewayServerVolumeDefinition() {
 }
 
 // ScalewayServerDefinition represents a Scaleway server with image definition
@@ -630,7 +675,7 @@ type ScalewayServerDefinition struct {
 	Image *string `json:"image,omitempty"`
 
 	// Volumes are the attached volumes
-	Volumes map[string]string `json:"volumes,omitempty"`
+	Volumes map[string]ScalewayServerVolumeDefinition `json:"volumes,omitempty"`
 
 	// DynamicIPRequired is a flag that defines a server with a dynamic ip address attached
 	DynamicIPRequired *bool `json:"dynamic_ip_required,omitempty"`
@@ -652,6 +697,8 @@ type ScalewayServerDefinition struct {
 	EnableIPV6 bool `json:"enable_ipv6,omitempty"`
 
 	SecurityGroup string `json:"security_group,omitempty"`
+
+	BootType string `json:"boot_type,omitempty"`
 }
 
 // ScalewayOneServer represents the response of a GET /servers/UUID API call

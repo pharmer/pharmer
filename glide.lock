@@ -1,5 +1,5 @@
-hash: 4ca44c750709ae03f829fd4dd2c52996040df1a37f9f9595ed80ebdd4a206cc2
-updated: 2019-05-09T09:34:24.568678015+06:00
+hash: fee4a952d46e27b485d983f1385092a2eed706842ba5e49fb31ffbbac2c9f4fb
+updated: 2019-05-13T03:46:15.870236548-07:00
 imports:
 - name: cloud.google.com/go
   version: 0fd7230b2a7505833d5f69b75cbd6c9582401479
@@ -113,7 +113,7 @@ imports:
   subpackages:
   - winterm
 - name: github.com/Azure/go-autorest
-  version: 808755da8cf643e4b6b44e0117be7e092de0923c
+  version: 528b76fd0ebec0682f3e3da7c808cd472b999615
   subpackages:
   - autorest
   - autorest/adal
@@ -123,6 +123,7 @@ imports:
   - autorest/validation
   - logger
   - tracing
+  - version
 - name: github.com/beorn7/perks
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
   subpackages:
@@ -211,7 +212,7 @@ imports:
   - protoc-gen-gogo/descriptor
   - sortkeys
 - name: github.com/golang/glog
-  version: 44145f04b68cf362d9c4df2182967c2275eaefed
+  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/golang/groupcache
   version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
   subpackages:
@@ -248,7 +249,7 @@ imports:
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/google/uuid
-  version: 0cd6bf5da1e1c83f8b45653022c74f71af0538a4
+  version: 8c31c18f31ede9fc8eae72290a7e7a8064e9b3e3
 - name: github.com/googleapis/gnostic
   version: 0c5108395e2debce0d731cf0287ddf7242066aba
   subpackages:
@@ -320,7 +321,7 @@ imports:
   - oid
   - scram
 - name: github.com/linode/linodego
-  version: 42d84d42f3f28fe1fe1823c58c11715241eda24e
+  version: f6c9e8e3c302ffe5f80363501714beb4818804d1
 - name: github.com/mailru/easyjson
   version: 2f5df55504ebc322e4d52d34df6a1f5b503bf26d
   subpackages:
@@ -350,7 +351,7 @@ imports:
 - name: github.com/mitchellh/mapstructure
   version: 3536a929edddb9a5b34bd6861dc4a9647cb459fe
 - name: github.com/moby/moby
-  version: 994007dd89fdbb2272fc1f2623d03610e7195616
+  version: 3042254a87274ff5e9561f2da1a986a703dfc60f
   subpackages:
   - pkg/term
 - name: github.com/modern-go/concurrent
@@ -362,18 +363,24 @@ imports:
 - name: github.com/moul/gotty-client
   version: c1b82f1af3ebb2febba268415cb1c90686078f80
 - name: github.com/nats-io/go-nats
-  version: 36d30b0ba7aa260ae25b4f3d312b2a700106fd78
+  version: 4c154eb68ac6b3c6d9532b1756095cbb6c85f026
+- name: github.com/nats-io/go-nats-streaming
+  version: 69143c11242dab127bc292be6de71d454f0b2373
+  subpackages:
+  - pb
+- name: github.com/nats-io/nats-streaming-server
+  version: 25d6adac82242303ebfb63628e63685148e6a397
+- name: github.com/nats-io/nats.go
+  version: 4c154eb68ac6b3c6d9532b1756095cbb6c85f026
   subpackages:
   - encoders/builtin
   - util
-- name: github.com/nats-io/go-nats-streaming
-  version: 4366d43a0648b4997ed32080f937e8702ab86c48
-  subpackages:
-  - pb
 - name: github.com/nats-io/nkeys
   version: 1546a3320a8f195a5b5c84aef8309377c2e411d5
 - name: github.com/nats-io/nuid
   version: 4b96681fa6d28dd0ab5fe79bac63b3a493d9ee94
+- name: github.com/nats-io/stan.go
+  version: 7cd94c239033c0405a43454be55a0810d3a3ca89
 - name: github.com/ncw/swift
   version: 753d2090bb62619675997bd87a8e3af423a00f2d
 - name: github.com/onsi/ginkgo
@@ -419,7 +426,7 @@ imports:
 - name: github.com/peterbourgon/diskv
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
 - name: github.com/pharmer/cloud
-  version: 398aa2bc6bfb4d5300b5b6f9e949abebd3e94c40
+  version: 3ed819383d365c8fcbb4e8c4897492b94a5181ca
   subpackages:
   - pkg/apis
   - pkg/apis/cloud/v1
@@ -473,14 +480,13 @@ imports:
 - name: github.com/satori/go.uuid
   version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/scaleway/scaleway-cli
-  version: 0087e98352b955be176bb679fe214ba5f204bc3d
+  version: c54911b8b3c5ea63257263de5a8721e325b914a7
   subpackages:
   - pkg/api
   - pkg/sshcommand
   - pkg/utils
 - name: github.com/sergi/go-diff
-  version: 24e2351369ec4949b2ed0dc5c477afdd4c4034e8
-  repo: https://github.com/sergi/go-diff
+  version: 97b2266dfe4bd4ea1b81a463322f04f8b724801e
   subpackages:
   - diffmatchpatch
 - name: github.com/sirupsen/logrus
@@ -506,12 +512,11 @@ imports:
 - name: github.com/spf13/pflag
   version: 298182f68c66c05229eb03ac171abe6e309ee79a
 - name: github.com/yudai/gojsondiff
-  version: 0525c875b75ca60b9e67ddc44496aa16f21066b0
+  version: 7b1b7adf999dab73a6eb02669c3d82dbb27a3dd6
   subpackages:
   - formatter
 - name: github.com/yudai/golcs
   version: d1c525dea8ce39ea9a783d33cf08932305373f2c
-  repo: https://github.com/yudai/golcs
 - name: go.opencensus.io
   version: 17d7955af9d42886455ce010dd46878208041a58
   subpackages:

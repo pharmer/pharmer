@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/log"
-	stan "github.com/nats-io/go-nats-streaming"
+	stan "github.com/nats-io/stan.go"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"golang.org/x/net/context"
 )
