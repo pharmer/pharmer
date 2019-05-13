@@ -81,7 +81,7 @@ func (sm *StatusManager) UpdateInstanceStatus(machine *clusterv1.Machine) error 
 		return err
 	}
 
-	return sm.client.Status().Update(context.Background(), m)
+	return sm.client.Update(context.Background(), m)
 }
 
 // Gets the state of the instance stored on the given machine CRD

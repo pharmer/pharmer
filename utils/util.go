@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/appscode/go/log"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/spf13/cobra"
@@ -71,7 +72,7 @@ func RequireChainKeyUnchanged(key string) mergepatch.PreconditionFunc {
 	return func(patch interface{}) bool {
 		patchMap, ok := patch.(map[string]interface{})
 		if !ok {
-			fmt.Println("Invalid data")
+			log.Infoln("Invalid data")
 			return true
 		}
 		return checkChainKeyUnchanged(key, patchMap)

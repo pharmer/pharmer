@@ -2,7 +2,6 @@ package cloud
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	semver "github.com/appscode/go-version"
@@ -317,7 +316,7 @@ func CreateNamespace(kc kubernetes.Interface, namespace string) error {
 	}
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		if _, err := kc.CoreV1().Namespaces().Get(ns.Name, metav1.GetOptions{}); err == nil {
-			fmt.Printf("Namespace %q Already Exists, Ignoring", ns.Name)
+			log.Infof("Namespace %q Already Exists, Ignoring", ns.Name)
 			return true, nil
 		}
 

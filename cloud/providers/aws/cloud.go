@@ -1604,7 +1604,7 @@ func (conn *cloudConnector) releaseReservedIP() error {
 	}
 
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (done bool, err error) {
-		fmt.Println("waiting for elastic ip to be released")
+		log.Infoln("waiting for elastic ip to be released")
 		ips, err := conn.findElasticIP()
 		if err != nil {
 			return false, nil
@@ -1812,7 +1812,7 @@ func (conn *cloudConnector) deleteNatGateway(natID string) error {
 	}
 
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		fmt.Println("waiting for nat to be deleted")
+		log.Infoln("waiting for nat to be deleted")
 		out, err := conn.ec2.DescribeNatGateways(&ec2.DescribeNatGatewaysInput{
 			NatGatewayIds: []*string{
 				StringP(natID),

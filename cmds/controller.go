@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
@@ -35,8 +34,6 @@ func newCmdController() *cobra.Command {
 			cfgFile, _ := pharmerConf.GetConfigFile(cmd.Flags())
 			cfg, err := pharmerConf.LoadConfig(cfgFile)
 			term.ExitOnError(err)
-
-			fmt.Println(provider)
 
 			ctx := cloud.NewContext(context.Background(), cfg, pharmerConf.GetEnv(cmd.Flags()))
 
