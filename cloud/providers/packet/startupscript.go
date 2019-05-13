@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
-func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine, token string, owner string) TemplateData {
+func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine, token string) TemplateData {
 	td := TemplateData{
 		ClusterName:       cluster.Name,
 		KubernetesVersion: cluster.ClusterConfig().KubernetesVersion,
@@ -45,11 +45,13 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 			panic(errors.New("no cloud controller manager credential found"))
 		}
 	}
+	joinConf, _ := td.JoinConfigurationYAML()
+	td.JoinConfiguration = joinConf
 	return td
 }
 
-func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine, owner string) TemplateData {
-	td := newNodeTemplateData(ctx, cluster, machine, "", owner)
+func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine) TemplateData {
+	td := newNodeTemplateData(ctx, cluster, machine, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
 	}.String()
@@ -131,7 +133,7 @@ exec_until_success "$cmd"
 `
 )
 
-func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *clusterv1.Machine, token string, owner string) (string, error) {
+func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *clusterv1.Machine, token string) (string, error) {
 	tpl, err := StartupScriptTemplate.Clone()
 	if err != nil {
 		return "", err
@@ -143,11 +145,11 @@ func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *c
 
 	var script bytes.Buffer
 	if util.IsControlPlaneMachine(machine) {
-		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, cluster, machine, owner)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, cluster, machine)); err != nil {
 			return "", err
 		}
 	} else {
-		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, cluster, machine, token, owner)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, cluster, machine, token)); err != nil {
 			return "", err
 		}
 	}

@@ -2,7 +2,6 @@ package packet
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/appscode/go/log"
 	packet_config "github.com/pharmer/pharmer/apis/v1beta1/packet"
@@ -52,16 +51,16 @@ func NewClusterActuator(m manager.Manager, params ClusterActuatorParams) *Cluste
 }
 
 func (cm *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
-	log.Info("Reconciling cluster: %q", cluster.Name)
+	log.Infof("Reconciling cluster: %q", cluster.Name)
 
 	if err := packet_config.SetPacketClusterProviderStatus(cluster); err != nil {
-		log.Debug("Error setting providre status for cluster %q: %v", cluster.Name, err)
+		log.Debugf("Error setting providre status for cluster %q: %v", cluster.Name, err)
 		return err
 	}
 	return cm.client.Status().Update(cm.ctx, cluster)
 }
 
 func (cm *ClusterActuator) Delete(cluster *clusterapi.Cluster) error {
-	fmt.Println("Delete cluster %v", cluster.Name)
+	log.Infof("Deleting cluster %v", cluster.Name)
 	return nil
 }

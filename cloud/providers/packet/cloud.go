@@ -143,8 +143,8 @@ func (conn *cloudConnector) deleteSSHKey(id string) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) CreateInstance(name, token string, machine *clusterv1.Machine, owner string) (*api.NodeInfo, error) {
-	script, err := conn.renderStartupScript(conn.cluster, machine, token, owner)
+func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, token, owner string) (*api.NodeInfo, error) {
+	script, err := conn.renderStartupScript(conn.cluster, machine, token)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, machine *clusterv
 		return nil, err
 	}
 	server, _, err := conn.client.Devices.Create(&packngo.DeviceCreateRequest{
-		Hostname:     name,
+		Hostname:     machine.Name,
 		Plan:         machineConfig.Plan,
 		Facility:     []string{conn.cluster.ClusterConfig().Cloud.Zone},
 		OS:           conn.cluster.ClusterConfig().Cloud.InstanceImage,
@@ -166,7 +166,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, machine *clusterv
 	if err != nil {
 		return nil, err
 	}
-	Logger(conn.ctx).Infof("Instance %v created", name)
+	Logger(conn.ctx).Infof("Instance %v created", machine.Name)
 
 	err = conn.waitForInstance(server.ID, "active")
 	if err != nil {

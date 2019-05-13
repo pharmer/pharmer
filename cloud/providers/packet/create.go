@@ -42,7 +42,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 		sku = ins.Spec.SKU
 	}
 	//config := cluster.Spec.Config
-	spec := &packetconfig.PacketMachineProviderConfig{
+	spec := &packetconfig.PacketMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: packetconfig.PacketProviderGroupName + "/" + packetconfig.PacketProviderApiVersion,
 			Kind:       packetconfig.PacketProviderKind,
