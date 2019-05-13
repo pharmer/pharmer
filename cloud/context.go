@@ -165,10 +165,11 @@ func NewStoreProvider(ctx context.Context, cfg *api.PharmerConfig) store.Interfa
 	} else if cfg.Store.Postgres != nil {
 		storeType = xorm.UID
 	} else {
-
+		storeType = fake.UID
 	}
-	if store, err := store.GetProvider(storeType, ctx, cfg); err == nil {
-		return store
+	store, err := store.GetProvider(storeType, ctx, cfg)
+	if err != nil {
+		panic(err)
 	}
-	return &fake.FakeStore{}
+	return store
 }

@@ -51,7 +51,7 @@ func (s *sshKeyFileStore) Get(name string) ([]byte, []byte, error) {
 		return nil, nil, errors.Errorf("SSH `id_%s.pub` does not exist", name)
 	}
 
-	privKey, privOK := s.container[s.pubKeyID(name)]
+	privKey, privOK := s.container[s.privKeyID(name)]
 	if !privOK {
 		return nil, nil, errors.Errorf("SSH key `id_%s` does not exist", name)
 	}

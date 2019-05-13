@@ -53,19 +53,19 @@ func Create(ctx context.Context, cluster *api.Cluster, owner string) (*api.Clust
 
 	cm, err := GetCloudManager(config.Cloud.CloudProvider, ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get cloud manager")
 	}
 	cm.SetOwner(owner)
 	if err = cm.SetDefaultCluster(cluster, config); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to set default cluster")
 	}
 	if exists {
 		if cluster, err = Store(ctx).Owner(owner).Clusters().Update(cluster); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to update cluster object")
 		}
 	} else {
 		if cluster, err = Store(ctx).Owner(owner).Clusters().Create(cluster); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to create cluster object in store")
 		}
 	}
 

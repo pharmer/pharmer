@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/crypto/ssh"
+	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/util/cert"
@@ -14,7 +15,7 @@ import (
 )
 
 func CreateCACertificates(ctx context.Context, cluster *api.Cluster, owner string) (context.Context, error) {
-	Logger(ctx).Infoln("Generating CA certificate for cluster")
+	log.Infoln("Generating CA certificate for cluster")
 
 	certStore := Store(ctx).Owner(owner).Certificates(cluster.Name)
 
@@ -36,10 +37,6 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster, owner strin
 		if err = certStore.Create(cluster.Spec.Config.CACertName, caCert, caKey); err != nil {
 			return ctx, err
 		}
-
-		if _, err := Store(ctx).Owner(owner).Clusters().Update(cluster); err != nil {
-			return nil, errors.Wrap(err, "Error updating cluster object")
-		}
 	}
 
 	// -----------------------------------------------
@@ -59,18 +56,14 @@ func CreateCACertificates(ctx context.Context, cluster *api.Cluster, owner strin
 		if err = certStore.Create(cluster.Spec.Config.FrontProxyCACertName, frontProxyCACert, frontProxyCAKey); err != nil {
 			return ctx, err
 		}
-
-		if _, err := Store(ctx).Owner(owner).Clusters().Update(cluster); err != nil {
-			return nil, errors.Wrap(err, "Error updating cluster object")
-		}
 	}
 
-	Logger(ctx).Infoln("CA certificates generated successfully.")
+	log.Infoln("CA certificates generated successfully.")
 	return ctx, nil
 }
 
 func CreateServiceAccountKey(ctx context.Context, cluster *api.Cluster, owner string) (context.Context, error) {
-	Logger(ctx).Infoln("Generating Service account signing key for cluster")
+	log.Infoln("Generating Service account signing key for cluster")
 	certStore := Store(ctx).Owner(owner).Certificates(cluster.Name)
 
 	saSigningKey, err := cert.NewPrivateKey()
@@ -91,12 +84,12 @@ func CreateServiceAccountKey(ctx context.Context, cluster *api.Cluster, owner st
 		return ctx, err
 	}
 
-	Logger(ctx).Infoln("Service account key generated successfully.")
+	log.Infoln("Service account key generated successfully.")
 	return ctx, nil
 }
 
 func CreateEtcdCertificates(ctx context.Context, cluster *api.Cluster, owner string) (context.Context, error) {
-	Logger(ctx).Infoln("Generating ETCD CA certificate for etcd")
+	log.Infoln("Generating ETCD CA certificate for etcd")
 
 	certStore := Store(ctx).Owner(owner).Certificates(cluster.Name)
 
@@ -116,7 +109,7 @@ func CreateEtcdCertificates(ctx context.Context, cluster *api.Cluster, owner str
 		return ctx, err
 	}
 
-	Logger(ctx).Infoln("ETCD CA certificates generated successfully.")
+	log.Infoln("ETCD CA certificates generated successfully.")
 	return ctx, nil
 }
 
