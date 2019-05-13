@@ -10,6 +10,7 @@ import (
 	. "github.com/appscode/go/context"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/apis/v1beta1/vultr"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -198,7 +199,7 @@ func (conn *cloudConnector) releaseReservedIP(ip string) error {
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) getStartupScriptID(machine *clusterv1.Machine) (int, error) {
-	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
+	machineConfig, err := vultr.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return 0, err
 	}
@@ -222,7 +223,7 @@ func (conn *cloudConnector) getStartupScriptID(machine *clusterv1.Machine) (int,
 }
 
 func (conn *cloudConnector) createOrUpdateStartupScript(machine *clusterv1.Machine, token string, owner string) (int, error) {
-	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
+	machineConfig, err := vultr.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return 0, err
 	}
@@ -276,7 +277,7 @@ func (conn *cloudConnector) CreateInstance(name, token string, machine *clusterv
 	if err != nil {
 		return nil, err
 	}
-	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
+	machineConfig, err := vultr.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return nil, err
 	}

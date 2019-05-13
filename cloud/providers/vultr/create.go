@@ -28,7 +28,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 		roles = []api.MachineRole{api.MasterRole}
 	}
 	config := cluster.Spec.Config
-	spec := &vultrconfig.VultrMachineProviderConfig{
+	spec := &vultrconfig.VultrMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: vultrconfig.VultrProviderGroupName + "/" + vultrconfig.VultrProviderApiVersion,
 			Kind:       vultrconfig.VultrProviderKind,

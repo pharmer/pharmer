@@ -51,6 +51,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 	if machine.Spec.Versions.ControlPlane == "" {
 		td.KubernetesVersion = machine.Spec.Versions.Kubelet
 	}
+	joinConf, _ := td.JoinConfigurationYAML()
+	td.JoinConfiguration = joinConf
 	return td
 }
 

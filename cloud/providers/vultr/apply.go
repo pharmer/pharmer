@@ -173,32 +173,6 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
 				return
 			}
-
-			var kc kubernetes.Interface
-			kc, err = cm.GetAdminClient()
-			if err != nil {
-				return
-			}
-			// wait for nodes to start
-			if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
-				return
-			}
-			// needed to get master_internal_ip
-			cm.cluster.Status.Phase = api.ClusterReady
-			if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
-				return
-			}
-			// need to run ccm
-			if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster, cm.owner); err != nil {
-				return
-			}
-			ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, cm.conn)
-			if err != nil {
-				return acts, err
-			}
-			if err := ca.Apply(ControllerManager); err != nil {
-				return acts, err
-			}
 		}
 	} else {
 		acts = append(acts, api.Action{
@@ -207,6 +181,27 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  "master instance(s) already exist",
 		})
 	}
+
+	kc, err := cm.GetAdminClient()
+	if err != nil {
+		return
+	}
+	// wait for nodes to start
+	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
+		return
+	}
+	// need to run ccm
+	if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster, cm.owner); err != nil {
+		return
+	}
+	ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, cm.conn)
+	if err != nil {
+		return acts, err
+	}
+	if err := ca.Apply(ControllerManager); err != nil {
+		return acts, err
+	}
+
 	return
 }
 
