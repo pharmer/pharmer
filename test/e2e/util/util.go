@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pharmer/cloud/pkg/apis"
+
 	"flag"
 
 	"github.com/onsi/gomega/gexec"
@@ -45,14 +47,18 @@ var (
 )
 
 var defaultZone = map[string]string{
-	"aws":   "us-east-1b",
-	"azure": "eastus2",
-	"gce":   "us-central1-f",
+	apis.AWS:          "us-east-1b",
+	apis.Azure:        "eastus2",
+	apis.GCE:          "us-central1-f",
+	apis.DigitalOcean: "nyc1",
+	apis.Linode:       "us-central",
 }
 var defaultNodes = map[string]string{
-	"aws":   "t2.medium",
-	"azure": "Standard_B2ms",
-	"gce":   "n1-standard-2",
+	apis.AWS:          "t2.medium",
+	apis.Azure:        "Standard_B2ms",
+	apis.GCE:          "n1-standard-2",
+	apis.DigitalOcean: "2gb",
+	apis.Linode:       "g6-standard-2",
 }
 
 func init() {

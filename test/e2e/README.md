@@ -31,6 +31,6 @@ GOOGLE_APPLICATION_CREDENTIALS=<path-to-service-account-key.json>
 ## Run the command for each provider
 
 ```bash
-$ ginkgo -r --v --progress --trace test  -- --providers aws,azure,gce
+$ ginkgo -r --v --progress --trace test  -- --providers aws,azure,gce,digitalocean,linode
 ```
 
