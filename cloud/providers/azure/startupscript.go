@@ -201,21 +201,21 @@ EOF
 func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *clusterapi.Machine, owner, token string) (string, error) {
 	tpl, err := StartupScriptTemplate.Clone()
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to get startupscript template")
 	}
 	tpl, err = tpl.Parse(customTemplate)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to parse startupscript template")
 	}
 
 	var script bytes.Buffer
 	if util.IsControlPlaneMachine(machine) {
 		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, conn.cluster, machine, owner)); err != nil {
-			return "", err
+			return "", errors.Wrap(err, "failed to execute master template")
 		}
 	} else {
 		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, conn.cluster, machine, owner, token)); err != nil {
-			return "", err
+			return "", errors.Wrap(err, "failed to execute node template")
 		}
 	}
 	return script.String(), nil
