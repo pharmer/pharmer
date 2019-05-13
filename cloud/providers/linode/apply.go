@@ -116,7 +116,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Load Balancer",
-			Message:  fmt.Sprintf("Load Balancer %q found", lb.Label),
+			Message:  fmt.Sprintf("Load Balancer %q found", *lb.Label),
 		})
 	}
 
@@ -176,18 +176,6 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			if err = cm.conn.addNodeToBalancer(*lb.Label, leaderMachine.Name, masterServer.PrivateIP); err != nil {
 				return
 			}
-			/*if masterServer.PrivateIP != "" {
-				nodeAddresses = append(nodeAddresses, core.NodeAddress{
-					Type:    core.NodeInternalIP,
-					Address: masterServer.PrivateIP,
-				})
-			}
-			if masterServer.PublicIP != "" {
-				nodeAddresses = append(nodeAddresses, core.NodeAddress{
-					Type:    core.NodeExternalIP,
-					Address: masterServer.PublicIP,
-				})
-			}*/
 
 			if err = cm.cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
 				return
@@ -202,32 +190,26 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
 			return
 		}
-
-		var kc kubernetes.Interface
-		kc, err = cm.GetAdminClient()
-		if err != nil {
-			return
-		}
-		// wait for nodes to start
-		if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
-			return
-		}
-		// needed to get master_internal_ip
-		cm.cluster.Status.Phase = api.ClusterReady
-		if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
-			return
-		}
-		// need to run ccm
-		if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster, cm.owner); err != nil {
-			return
-		}
-		ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, cm.conn)
-		if err != nil {
-			return acts, err
-		}
-		if err := ca.Apply(ControllerManager); err != nil {
-			return acts, err
-		}
+	}
+	var kc kubernetes.Interface
+	kc, err = cm.GetAdminClient()
+	if err != nil {
+		return
+	}
+	// wait for nodes to start
+	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
+		return
+	}
+	// need to run ccm
+	if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster, cm.owner); err != nil {
+		return
+	}
+	ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, cm.conn)
+	if err != nil {
+		return acts, err
+	}
+	if err := ca.Apply(ControllerManager); err != nil {
+		return acts, err
 	}
 
 	log.Infof("Adding other master machines")

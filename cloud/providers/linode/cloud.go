@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/linode/linodego"
 	"github.com/pharmer/cloud/pkg/credential"
@@ -359,7 +360,7 @@ func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*linod
 		}
 	}
 
-	return nil, fmt.Errorf("no droplet found with %v name", machine.Name)
+	return nil, fmt.Errorf("no vm found with %v name", machine.Name)
 }
 
 func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data map[string]string) error {
@@ -374,7 +375,13 @@ func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data
 		Type:       core.SecretTypeOpaque,
 	}
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
+		_, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).Get(secret.Name, metav1.GetOptions{})
+		if err == nil {
+			log.Infoln("secret %q found, skipping secret creation", secret.Name)
+			return true, nil
+		}
+
+		_, err = kc.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
 		return err == nil, nil
 	})
 }
