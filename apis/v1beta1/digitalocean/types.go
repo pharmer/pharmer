@@ -1,13 +1,8 @@
 package digitalocean
 
 import (
-	"encoding/json"
-
 	"github.com/digitalocean/godo"
-	. "github.com/pharmer/pharmer/apis/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
@@ -64,45 +59,6 @@ type DigitalOceanLoadBalancer struct {
 	StickySessions      *godo.StickySessions  `json:"sticky_sessions,omitempty"`
 	Region              string                `json:"region,omitempty"`
 	RedirectHttpToHttps bool                  `json:"redirect_http_to_https,omitempty"`
-}
-
-//func (c *Cluster) SetLinodeProviderConfig(cluster *clusterapi.Cluster, config *ClusterConfig) error {
-func SetDigitalOceanClusterProviderConfig(cluster *clusterapi.Cluster, config *ClusterConfig) error {
-	conf := &DigitalOceanClusterProviderSpec{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: DigitalOceanProviderGroupName + "/" + DigitalOceanProviderApiVersion,
-			Kind:       DigitalOceanProviderKind,
-		},
-	}
-	bytes, err := json.Marshal(conf)
-	if err != nil {
-		return err
-
-	}
-	cluster.Spec.ProviderSpec = clusterapi.ProviderSpec{
-		Value: &runtime.RawExtension{
-			Raw: bytes,
-		},
-	}
-	return nil
-}
-
-func SetDigitalOceanClusterProviderStatus(cluster *clusterapi.Cluster) error {
-	conf := &DigitalOceanClusterProviderStatus{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: DigitalOceanProviderGroupName + "/" + DigitalOceanProviderApiVersion,
-			Kind:       DigitalOceanProviderKind,
-		},
-	}
-	bytes, err := json.Marshal(conf)
-	if err != nil {
-		return err
-
-	}
-	cluster.Status.ProviderStatus = &runtime.RawExtension{
-		Raw: bytes,
-	}
-	return nil
 }
 
 func DescribeLoadBalancer(lb *godo.LoadBalancer) *DigitalOceanLoadBalancer {

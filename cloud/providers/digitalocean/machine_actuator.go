@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/appscode/go/log"
+	"github.com/pharmer/pharmer/cloud"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/machinesetup"
 	"github.com/pkg/errors"
@@ -94,23 +95,19 @@ func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster,
 
 	machineConfig, err := doCapi.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
-		log.Debugf("Error decoding machineconfig for machine %q: %v", machine.Name, err)
-		return fmt.Errorf("error decoding provided machineConfig: %v", err)
+		return errors.Wrapf(err, "error decoding provider config for macine %s", machine.Name)
 	}
 
 	if err := do.validateMachine(machineConfig); err != nil {
-		log.Debugf("Error validating machineconfig for machine %q: %v", machine.Name, err)
-		return err
+		return errors.Wrapf(err, "failed to valide machine config for machien %s", machine.Name)
 	}
 
 	if do.conn, err = PrepareCloud(do.ctx, cluster.Name, do.owner); err != nil {
-		log.Debugf("Error in PrepareCloud for machine %q: %v", machine.Name, err)
-		return err
+		return errors.Wrapf(err, "failed to prepare cloud")
 	}
 	exists, err := do.Exists(do.ctx, cluster, machine)
 	if err != nil {
-		log.Debugf("Error while checking existance for machine %q", machine.Name)
-		return err
+		return errors.Wrapf(err, "failed to check existance of machine %s", machine.Name)
 	}
 
 	if exists {
@@ -120,17 +117,24 @@ func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster,
 
 		token, err := do.getKubeadmToken()
 		if err != nil {
-			log.Debugf("Error creating kubeadm token for machine %q: %v", machine.Name, err)
-			return err
+			return errors.Wrap(err, "failed to generate kubeadm token")
 		}
 
 		if _, err := do.conn.CreateInstance(do.conn.cluster, machine, token); err != nil {
-			log.Debugf("Error creating instance for machine %q: %v", machine.Name, err)
-			return err
+			return errors.Wrap(err, "failed to create instance")
 		}
 	}
 
-	if err := do.updateMachineStatus(machine); err != nil {
+	// set machine annotation
+	sm := cloud.NewStatusManager(do.client, do.scheme)
+	err = sm.UpdateInstanceStatus(machine)
+	if err != nil {
+		return errors.Wrap(err, "failed to set machine annotation")
+	}
+
+	// update machine provider status
+	err = do.updateMachineStatus(machine)
+	if err != nil {
 		return err
 	}
 
@@ -231,15 +235,14 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 	log.Infof("Updating machine %q in cluster %q", goalMachine.Name, cluster.Name)
 
 	var err error
-	if do.conn, err = PrepareCloud(do.ctx, cluster.Name, do.owner); err != nil {
-		log.Infof("Error in preparecloud: %v", err)
-		return err
+	do.conn, err = PrepareCloud(do.ctx, cluster.Name, do.owner)
+	if err != nil {
+		return errors.Wrap(err, "failed to prepare cloud")
 	}
 
 	goalConfig, err := doCapi.MachineConfigFromProviderSpec(goalMachine.Spec.ProviderSpec)
 	if err != nil {
-		log.Debugf("Error decoding machineconfig for machine %q: %v", goalMachine.Name, err)
-		return err
+		return errors.Wrap(err, "failed to decode provider spec")
 	}
 
 	if err := do.validateMachine(goalConfig); err != nil {
@@ -247,20 +250,26 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		return err
 	}
 
+	exists, err := do.Exists(do.ctx, cluster, goalMachine)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check existance of machine %s", goalMachine.Name)
+	}
+
+	if !exists {
+		log.Infof("vm not found, creating vm for machine %q", goalMachine.Name)
+		return do.Create(do.ctx, cluster, goalMachine)
+	}
+
 	sm := NewStatusManager(do.client, do.scheme)
 	status, err := sm.InstanceStatus(goalMachine)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to get instance status of machine %s", goalMachine.Name)
 	}
 
 	currentMachine := (*clusterv1.Machine)(status)
 	if currentMachine == nil {
-		return errors.New("status annotation not set")
-	}
-
-	pharmerCluster, err := Store(do.ctx).Owner(do.owner).Clusters().Get(cluster.Name)
-	if err != nil {
-		return err
+		log.Infof("status annotation not set, setting annotation")
+		return sm.UpdateInstanceStatus(goalMachine)
 	}
 
 	if !do.requiresUpdate(currentMachine, goalMachine) {
@@ -268,28 +277,33 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		return nil
 	}
 
+	pharmerCluster, err := Store(do.ctx).Owner(do.owner).Clusters().Get(cluster.Name)
+	if err != nil {
+		return errors.Wrap(err, "failed to get pharmercluster")
+	}
+
 	kc, err := GetKubernetesClient(do.ctx, pharmerCluster, do.owner)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get kubeclient")
 	}
 	upm := NewUpgradeManager(do.ctx, kc, do.conn.cluster, do.owner)
 	if util.IsControlPlaneMachine(currentMachine) {
 		if currentMachine.Spec.Versions.ControlPlane != goalMachine.Spec.Versions.ControlPlane {
 			log.Infof("Doing an in-place upgrade for master.\n")
 			if err := upm.MasterUpgrade(currentMachine, goalMachine); err != nil {
-				return err
+				return errors.Wrap(err, "failed to upgrade master")
 			}
 		}
 	} else {
 		//TODO(): Do we replace node or inplace upgrade?
 		log.Infof("Doing an in-place upgrade for master.\n")
 		if err := upm.NodeUpgrade(currentMachine, goalMachine); err != nil {
-			return err
+			return errors.Wrap(err, "failed to upgrade node")
 		}
 	}
 
 	if err := do.updateMachineStatus(goalMachine); err != nil {
-		return err
+		return errors.Wrap(err, "failed to update machine status")
 	}
 
 	log.Infof("Updated machine %q successfully", goalMachine.Name)
@@ -312,27 +326,6 @@ func (do *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluste
 	if err != nil {
 		log.Infof("Error checking machine existance: %v", err)
 		return false, nil
-	}
-
-	if util.IsControlPlaneMachine(machine) {
-		publicIP, err := i.PublicIPv4()
-		if err != nil {
-			return false, err
-		}
-		if publicIP != "" {
-			cluster.Status.APIEndpoints = []clusterv1.APIEndpoint{
-				{
-					Host: publicIP,
-					Port: 6443,
-				},
-			}
-		}
-		if err = doCapi.SetDigitalOceanClusterProviderStatus(cluster); err != nil {
-			return false, err
-		}
-		if err = do.client.Status().Update(ctx, cluster); err != nil {
-			return false, err
-		}
 	}
 
 	return i != nil, nil

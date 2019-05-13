@@ -85,9 +85,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 	}
 	cm.cluster = cluster
 	cluster.SetNetworkingDefaults("calico")
-	return doCapi.SetDigitalOceanClusterProviderConfig(cluster.Spec.ClusterAPI, config)
-	// add provider config to cluster
-	//return cm.SetClusterProviderConfig()
+	return doCapi.SetDigitalOceanClusterProviderConfig(cluster.Spec.ClusterAPI)
 }
 
 // IsValid TODO: Add Description

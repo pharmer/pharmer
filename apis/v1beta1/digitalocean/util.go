@@ -3,6 +3,7 @@ package digitalocean
 import (
 	"encoding/json"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
@@ -131,4 +132,25 @@ func EncodeClusterSpec(spec *DigitalOceanClusterProviderSpec) (*runtime.RawExten
 	return &runtime.RawExtension{
 		Raw: rawBytes,
 	}, nil
+}
+
+//func (c *Cluster) SetLinodeProviderConfig(cluster *clusterapi.Cluster, config *ClusterConfig) error {
+func SetDigitalOceanClusterProviderConfig(cluster *clusterv1.Cluster) error {
+	conf := &DigitalOceanClusterProviderSpec{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: DigitalOceanProviderGroupName + "/" + DigitalOceanProviderApiVersion,
+			Kind:       DigitalOceanProviderKind,
+		},
+	}
+	bytes, err := json.Marshal(conf)
+	if err != nil {
+		return err
+
+	}
+	cluster.Spec.ProviderSpec = clusterv1.ProviderSpec{
+		Value: &runtime.RawExtension{
+			Raw: bytes,
+		},
+	}
+	return nil
 }
