@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
@@ -69,7 +70,11 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	{
 		a, err := cm.applyScale(dryRun)
 		if err != nil {
-			return nil, err
+			if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
+				log.Infoln(err)
+			} else {
+				return nil, err
+			}
 		}
 		acts = append(acts, a...)
 	}

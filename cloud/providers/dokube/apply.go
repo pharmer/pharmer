@@ -2,8 +2,8 @@ package dokube
 
 import (
 	"fmt"
-	"log"
 
+	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
@@ -45,7 +45,11 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	{
 		a, err := cm.applyScale(dryRun)
 		if err != nil {
-			return nil, err
+			if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
+				log.Infoln(err)
+			} else {
+				return nil, err
+			}
 		}
 		acts = append(acts, a...)
 	}
@@ -86,11 +90,11 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		}
 		err = cm.StoreCertificate(cm.ctx, cm.conn.client, cm.owner)
 		if err != nil {
-			log.Println(err)
+			log.Infof(err.Error())
 			return acts, err
 		}
 		if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
-			log.Println(err)
+			log.Infof(err.Error())
 			return acts, err
 		}
 		var kc kubernetes.Interface
