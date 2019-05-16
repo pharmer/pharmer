@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	version "github.com/appscode/go-version"
 	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
 	_aws "github.com/aws/aws-sdk-go/aws"
@@ -22,6 +21,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
+	version "gomodules.xyz/version"
 	"k8s.io/apimachinery/pkg/util/wait" //"github.com/pharmer/pharmer/cloud/providers/eks/assets"
 )
 

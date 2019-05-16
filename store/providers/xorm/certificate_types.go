@@ -5,7 +5,7 @@ import (
 	"crypto/x509"
 	"time"
 
-	"k8s.io/client-go/util/cert"
+	"gomodules.xyz/cert"
 )
 
 type Certificate struct {

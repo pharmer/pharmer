@@ -3,9 +3,9 @@ import:
 - package: cloud.google.com/go
   version: v0.23.0
 - package: github.com/Azure/azure-sdk-for-go
-  version: v26.6.0
+  version: v29.0.0
 - package: github.com/Azure/go-autorest
-  version: v11.2.7
+  version: v12.0.0
 - package: github.com/JamesClonk/vultr
   version: 1.15.0
 - package: github.com/appscode/go
@@ -13,7 +13,7 @@ import:
 - package: github.com/appscode/go-dns
   version: master
 - package: github.com/appscode/go-hetzner
-- package: github.com/appscode/go-version
+- package: gomodules.xyz/version
   version: master
 - package: github.com/aws/aws-sdk-go
   version: v1.17.5
@@ -147,15 +147,17 @@ import:
 - package: sigs.k8s.io/cluster-api
   version: 26aa37ad8bcffd5b69e2a514b5e9a8ac30744134
 - package: sigs.k8s.io/controller-runtime
-  version: v0.1.9
+  version: v0.1.10
 - package: sigs.k8s.io/yaml
   version: v1.1.0
 - package: github.com/pharmer/cloud
-  version: master
+  version: v0.1.0
 - package: github.com/nats-io/stan.go
   version: v0.4.4
 - package: github.com/nats-io/nats-streaming-server
   version: v0.14.1
+- package: gomodules.xyz/cert
+  version: v1.0.0
 testImport:
 - package: github.com/stretchr/testify
   version: v1.1.4

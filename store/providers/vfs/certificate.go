@@ -10,7 +10,7 @@ import (
 	"github.com/graymeta/stow"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
-	"k8s.io/client-go/util/cert"
+	"gomodules.xyz/cert"
 )
 
 type certificateFileStore struct {

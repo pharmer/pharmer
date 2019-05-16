@@ -10,7 +10,7 @@ import (
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
-	"k8s.io/client-go/util/cert"
+	"gomodules.xyz/cert"
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 

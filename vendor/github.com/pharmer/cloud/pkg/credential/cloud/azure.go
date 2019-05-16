@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/2017-03-09/resources/mgmt/subscriptions"
+	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/resources/mgmt/subscriptions"
 	aauthz "github.com/Azure/azure-sdk-for-go/profiles/latest/authorization/mgmt/authorization"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/graphrbac/graphrbac"
 	"github.com/Azure/azure-sdk-for-go/profiles/preview/preview/apimanagement/mgmt/apimanagement"
@@ -68,7 +68,7 @@ func IssueAzureCredential(name string) (*api.Credential, error) {
 	client := autorest.NewClientWithUserAgent(subscriptions.UserAgent())
 	client.Authorizer = autorest.NewBearerAuthorizer(spt)
 
-	tenantsClient := subscriptions.NewTenantsClientWithBaseURI(subscriptions.DefaultBaseURI)
+	tenantsClient := subscriptions.NewTenantsGroupClientWithBaseURI(subscriptions.DefaultBaseURI)
 	tenantsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 	tenants, err := tenantsClient.List(context.TODO())
 	if err != nil {

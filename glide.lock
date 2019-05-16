@@ -1,5 +1,5 @@
-hash: fee4a952d46e27b485d983f1385092a2eed706842ba5e49fb31ffbbac2c9f4fb
-updated: 2019-05-13T03:46:15.870236548-07:00
+hash: 32acf4165a96890224bcbfb3df84b4c40497554b2408314cb7258bed391cc7b2
+updated: 2019-05-16T00:27:13.879114541-07:00
 imports:
 - name: cloud.google.com/go
   version: 0fd7230b2a7505833d5f69b75cbd6c9582401479
@@ -33,8 +33,6 @@ imports:
   version: bd80385eb90659c917837aabe1bdbc0b8ec6f437
 - name: github.com/appscode/go-hetzner
   version: c038e08b19b1c760484d443de8958880e35bd879
-- name: github.com/appscode/go-version
-  version: 7aba545c679b0f45679eeb406dc662d2c8a04c26
 - name: github.com/appscode/jsonpatch
   version: 7c0e3b262f30165a8ec3d0b4c6059fd92703bfb2
 - name: github.com/aws/aws-sdk-go
@@ -88,23 +86,24 @@ imports:
   - service/s3/s3manager
   - service/sts
 - name: github.com/Azure/azure-sdk-for-go
-  version: 3cd86d9cfda8d44225747bb5633234fcdf842b94
+  version: 77258e94d84ea36012a72c0e0a1e2faa409c6396
   subpackages:
-  - profiles/2017-03-09/resources/mgmt/subscriptions
+  - profiles/2019-03-01/resources/mgmt/subscriptions
   - profiles/latest/authorization/mgmt/authorization
   - profiles/latest/containerservice/mgmt/containerservice
   - profiles/latest/graphrbac/graphrbac
   - profiles/preview/preview/apimanagement/mgmt/apimanagement
   - services/authorization/mgmt/2015-07-01/authorization
-  - services/compute/mgmt/2017-12-01/compute
   - services/compute/mgmt/2018-10-01/compute
+  - services/compute/mgmt/2019-03-01/compute
   - services/containerservice/mgmt/2017-09-30/containerservice
-  - services/containerservice/mgmt/2019-02-01/containerservice
+  - services/containerservice/mgmt/2019-04-30/containerservice
   - services/graphrbac/1.6/graphrbac
   - services/network/mgmt/2018-12-01/network
   - services/preview/apimanagement/mgmt/2018-06-01-preview/apimanagement
   - services/resources/mgmt/2016-06-01/subscriptions
   - services/resources/mgmt/2017-05-10/resources
+  - services/resources/mgmt/2019-03-01/resources
   - services/storage/mgmt/2017-10-01/storage
   - storage
   - version
@@ -113,7 +112,7 @@ imports:
   subpackages:
   - winterm
 - name: github.com/Azure/go-autorest
-  version: 528b76fd0ebec0682f3e3da7c808cd472b999615
+  version: fe1ebaab71ae2a2ab8a55f62ebe54cffd842acc2
   subpackages:
   - autorest
   - autorest/adal
@@ -123,7 +122,6 @@ imports:
   - autorest/validation
   - logger
   - tracing
-  - version
 - name: github.com/beorn7/perks
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
   subpackages:
@@ -330,10 +328,6 @@ imports:
   - jwriter
 - name: github.com/MakeNowJust/heredoc
   version: bb23615498cded5e105af4ce27de75b089cbe851
-- name: github.com/marstr/guid
-  version: 8bdf7d1a087ccc975cf37dd6507da50698fd19ca
-- name: github.com/mattbaird/jsonpatch
-  version: 81af80346b1a01caae0cbc27fd3c1ba5b11e189f
 - name: github.com/mattn/go-colorable
   version: 3a70a971f94a22f2fa562ffcc7a0eb45f5daf045
 - name: github.com/mattn/go-isatty
@@ -351,7 +345,7 @@ imports:
 - name: github.com/mitchellh/mapstructure
   version: 3536a929edddb9a5b34bd6861dc4a9647cb459fe
 - name: github.com/moby/moby
-  version: 3042254a87274ff5e9561f2da1a986a703dfc60f
+  version: 34b56728ed7101c6b3cc0405f5fd6351073a8253
   subpackages:
   - pkg/term
 - name: github.com/modern-go/concurrent
@@ -363,7 +357,7 @@ imports:
 - name: github.com/moul/gotty-client
   version: c1b82f1af3ebb2febba268415cb1c90686078f80
 - name: github.com/nats-io/go-nats
-  version: 4c154eb68ac6b3c6d9532b1756095cbb6c85f026
+  version: 8318b38a21e4eb0620826c552673ebd891b09fed
 - name: github.com/nats-io/go-nats-streaming
   version: 69143c11242dab127bc292be6de71d454f0b2373
   subpackages:
@@ -371,7 +365,7 @@ imports:
 - name: github.com/nats-io/nats-streaming-server
   version: 25d6adac82242303ebfb63628e63685148e6a397
 - name: github.com/nats-io/nats.go
-  version: 4c154eb68ac6b3c6d9532b1756095cbb6c85f026
+  version: 8318b38a21e4eb0620826c552673ebd891b09fed
   subpackages:
   - encoders/builtin
   - util
@@ -426,7 +420,7 @@ imports:
 - name: github.com/peterbourgon/diskv
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
 - name: github.com/pharmer/cloud
-  version: 3ed819383d365c8fcbb4e8c4897492b94a5181ca
+  version: 47137eaa6c7b0bbff40985279931ff8a07012f05
   subpackages:
   - pkg/apis
   - pkg/apis/cloud/v1
@@ -518,7 +512,7 @@ imports:
 - name: github.com/yudai/golcs
   version: d1c525dea8ce39ea9a783d33cf08932305373f2c
 - name: go.opencensus.io
-  version: 17d7955af9d42886455ce010dd46878208041a58
+  version: f24e56296b3a742d13b8368bbb1e831f9b0d2c7f
   subpackages:
   - internal
   - internal/tagencoding
@@ -621,6 +615,10 @@ imports:
   version: f51c12702a4d776e4c1fa9b0fabab841babae631
   subpackages:
   - rate
+- name: gomodules.xyz/cert
+  version: 399217be4892abd574d7d99e16607832831893f3
+- name: gomodules.xyz/version
+  version: 7cec7ee542d33f2f96567de581394bb157684337
 - name: google.golang.org/api
   version: 3639d6d93f377f39a1de765fa4ef37b3c7ca8bd9
   subpackages:
@@ -1070,7 +1068,7 @@ imports:
   - pkg/kubeadm
   - pkg/util
 - name: sigs.k8s.io/controller-runtime
-  version: f6f0bc9611363b43664d08fb097ab13243ef621d
+  version: 12d98582e72927b6cd0123e2b4e819f9341ce62c
   subpackages:
   - pkg/cache
   - pkg/cache/internal

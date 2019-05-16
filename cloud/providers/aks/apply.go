@@ -3,7 +3,7 @@ package aks
 import (
 	"context"
 
-	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-02-01/containerservice"
+	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-04-30/containerservice"
 	. "github.com/appscode/go/context"
 	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -158,8 +158,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		return
 	}
 
-	var cluster containersvc.ManagedCluster
-	cluster, err = cm.conn.managedClient.Get(context.Background(), cm.namer.ResourceGroupName(), cm.cluster.Name)
+	cluster, err := cm.conn.managedClient.Get(context.Background(), cm.namer.ResourceGroupName(), cm.cluster.Name)
 
 	agentPools := make([]containersvc.ManagedClusterAgentPoolProfile, 0)
 	for _, ng := range nodeGroups {

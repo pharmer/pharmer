@@ -3,8 +3,10 @@ package azure
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/2017-03-09/resources/mgmt/subscriptions"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-12-01/compute"
+	"github.com/appscode/go/log"
+
+	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/resources/mgmt/subscriptions"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
@@ -15,7 +17,7 @@ import (
 
 type Client struct {
 	SubscriptionId string
-	GroupsClient   subscriptions.Client
+	GroupsClient   subscriptions.GroupClient
 	VmSizesClient  compute.VirtualMachineSizesClient
 }
 
@@ -35,7 +37,7 @@ func NewClient(opts credential.Azure) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	g.GroupsClient = subscriptions.NewClient()
+	g.GroupsClient = subscriptions.NewGroupClient()
 	g.GroupsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
 	g.VmSizesClient = compute.NewVirtualMachineSizesClient(opts.SubscriptionID())
@@ -90,7 +92,8 @@ func (g *Client) ListMachineTypes() ([]v1.MachineType, error) {
 	for _, zone := range zones {
 		instanceList, err := g.VmSizesClient.List(context.Background(), zone)
 		if err != nil {
-			return nil, err
+			log.Infoln(err.Error())
+			continue
 		}
 		for _, ins := range *instanceList.Value {
 			instance, err := ParseInstance(&ins)

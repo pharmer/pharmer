@@ -12,7 +12,7 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes" //"fmt"
-	"k8s.io/client-go/rest"       //"k8s.io/client-go/util/cert"
+	"k8s.io/client-go/rest"       //"gomodules.xyz/cert"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 

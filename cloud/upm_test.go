@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	version "github.com/appscode/go-version"
+	version "gomodules.xyz/version"
 )
 
 func TestUpgradeScript(t *testing.T) {

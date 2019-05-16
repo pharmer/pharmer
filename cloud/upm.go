@@ -18,8 +18,8 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 
 	//client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
-	semver "github.com/appscode/go-version"
 	"github.com/pkg/errors"
+	semver "gomodules.xyz/version"
 )
 
 type GenericUpgradeManager struct {

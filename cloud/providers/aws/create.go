@@ -9,9 +9,9 @@ import (
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
+	"gomodules.xyz/cert"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/util/cert"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )

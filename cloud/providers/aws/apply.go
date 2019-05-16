@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	semver "github.com/appscode/go-version"
 	. "github.com/appscode/go/context"
 	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
@@ -13,6 +12,7 @@ import (
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
+	semver "gomodules.xyz/version"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
