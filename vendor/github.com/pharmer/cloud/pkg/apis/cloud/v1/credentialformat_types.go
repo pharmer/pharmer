@@ -39,6 +39,7 @@ type CredentialField struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:nonNamespaced
 // +genclient:skipVerbs=updateStatus,watch
+// +kubebuilder:object:root=true
 
 // CredentialFormat is the Schema for the credentialformats API
 // +k8s:openapi-gen=true
@@ -51,6 +52,7 @@ type CredentialFormat struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:nonNamespaced
+// +kubebuilder:object:root=true
 
 // CredentialFormatList contains a list of CredentialFormat
 type CredentialFormatList struct {

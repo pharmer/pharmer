@@ -1,6 +1,7 @@
 package packngo
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -27,8 +28,8 @@ type devicesRoot struct {
 	Meta    meta     `json:"meta"`
 }
 
-// Device represents a Packet device
-type Device struct {
+// DeviceRaw represents a Packet device from API
+type DeviceRaw struct {
 	ID                  string                 `json:"id"`
 	Href                string                 `json:"href,omitempty"`
 	Hostname            string                 `json:"hostname,omitempty"`
@@ -60,8 +61,71 @@ type Device struct {
 	SSHKeys             []SSHKey               `json:"ssh_keys,omitempty"`
 }
 
+type Device struct {
+	DeviceRaw
+	NetworkType string
+}
+
+func (d *Device) UnmarshalJSON(b []byte) error {
+	dJSON := DeviceRaw{}
+	if err := json.Unmarshal(b, &dJSON); err != nil {
+		return err
+	}
+	d.DeviceRaw = dJSON
+	if len(dJSON.NetworkPorts) > 0 {
+		networkType, err := dJSON.GetNetworkType()
+		if err != nil {
+			return err
+		}
+		d.NetworkType = networkType
+	}
+	return nil
+}
+
+type NetworkInfo struct {
+	PublicIPv4  string
+	PublicIPv6  string
+	PrivateIPv4 string
+}
+
+func (d *Device) GetNetworkInfo() NetworkInfo {
+	ni := NetworkInfo{}
+	for _, ip := range d.Network {
+		// Initial device IPs are fixed and marked as "Management"
+		if ip.Management {
+			if ip.AddressFamily == 4 {
+				if ip.Public {
+					ni.PublicIPv4 = ip.Address
+				} else {
+					ni.PrivateIPv4 = ip.Address
+				}
+			} else {
+				ni.PublicIPv6 = ip.Address
+			}
+		}
+	}
+	return ni
+}
+
 func (d Device) String() string {
 	return Stringify(d)
+}
+
+func (d DeviceRaw) GetNetworkType() (string, error) {
+	if len(d.NetworkPorts) == 0 {
+		return "", fmt.Errorf("Device has no network ports listed")
+	}
+	for _, p := range d.NetworkPorts {
+		if p.Name == "bond0" {
+			return p.NetworkType, nil
+		}
+	}
+	return "", fmt.Errorf("Bound port not found")
+}
+
+type IPAddressCreateRequest struct {
+	AddressFamily int  `json:"address_family"`
+	Public        bool `json:"public"`
 }
 
 // DeviceCreateRequest type used to create a Packet device
@@ -92,8 +156,9 @@ type DeviceCreateRequest struct {
 	// is supplied, only the listed SSHKeys will go to the device.
 	// Any other Project SSHKeys and any User SSHKeys will not be present
 	// in the device.
-	ProjectSSHKeys []string          `json:"project_ssh_keys,omitempty"`
-	Features       map[string]string `json:"features,omitempty"`
+	ProjectSSHKeys []string                 `json:"project_ssh_keys,omitempty"`
+	Features       map[string]string        `json:"features,omitempty"`
+	IPAddresses    []IPAddressCreateRequest `json:"ip_addresses,omitempty"`
 }
 
 // DeviceUpdateRequest type used to update a Packet device
@@ -177,7 +242,6 @@ func (s *DeviceServiceOp) Create(createRequest *DeviceCreateRequest) (*Device, *
 	if err != nil {
 		return nil, resp, err
 	}
-
 	return device, resp, err
 }
 

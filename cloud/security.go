@@ -178,7 +178,7 @@ func LoadEtcdCertificate(ctx context.Context, cluster *api.Cluster, owner string
 func CreateAdminCertificate(ctx context.Context) (*x509.Certificate, *rsa.PrivateKey, error) {
 	cfg := cert.Config{
 		CommonName:   "cluster-admin",
-		Organization: []string{kubeadmconst.MastersGroup},
+		Organization: []string{kubeadmconst.SystemPrivilegedGroup},
 		Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	}
 

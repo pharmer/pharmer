@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/pharmer/cloud/pkg/credential"
-
 	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
+	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"

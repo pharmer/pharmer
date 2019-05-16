@@ -42,7 +42,7 @@ type paramK8sClient struct{}
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 	ma := NewMachineActuator(MachineActuatorParams{
 		Ctx:           cm.ctx,
-		EventRecorder: mgr.GetRecorder(Recorder),
+		EventRecorder: mgr.GetEventRecorderFor(Recorder),
 		Client:        mgr.GetClient(),
 		Scheme:        mgr.GetScheme(),
 		Owner:         cm.owner,

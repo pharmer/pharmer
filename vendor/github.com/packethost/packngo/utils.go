@@ -12,10 +12,15 @@ var (
 	Facilities    = []string{
 		"yyz1", "nrt1", "atl1", "mrs1", "hkg1", "ams1",
 		"ewr1", "sin1", "dfw1", "lax1", "syd1", "sjc1",
-		"ord1", "iad1", "fra1", "sea1"}
+		"ord1", "iad1", "fra1", "sea1", "dfw2"}
 	FacilityFeatures = []string{
 		"baremetal", "layer_2", "backend_transfer", "storage", "global_ipv4"}
-	UtilizationLevels = []string{"unavailable", "limited", "normal"}
+	UtilizationLevels = []string{"unavailable", "critical", "limited", "normal"}
+	DevicePlans       = []string{"c2.medium.x86", "g2.large.x86",
+		"m2.xlarge.x86", "x2.xlarge.x86", "baremetal_2a", "baremetal_2a2",
+		"baremetal_1", "baremetal_3", "baremetal_2", "baremetal_s",
+		"baremetal_0", "baremetal_1e",
+	}
 )
 
 // Stringify creates a string representation of the provided message

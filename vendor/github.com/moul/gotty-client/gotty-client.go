@@ -17,8 +17,8 @@ import (
 
 	"github.com/creack/goselect"
 	"github.com/gorilla/websocket"
-	"github.com/moby/moby/pkg/term"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // message types for gotty
@@ -246,9 +246,6 @@ func (c *Client) Connect() error {
 		return err
 	}
 
-	// Initialize message types for gotty
-	c.initMessageType()
-
 	go c.pingLoop()
 
 	return nil
@@ -303,6 +300,8 @@ func (c *Client) ExitLoop() {
 
 // Loop will look indefinitely for new messages
 func (c *Client) Loop() error {
+	// Initialize message types for gotty
+	c.initMessageType()
 
 	if !c.Connected {
 		err := c.Connect()
@@ -310,16 +309,6 @@ func (c *Client) Loop() error {
 			return err
 		}
 	}
-
-	fd, isTerm := term.GetFdInfo(c.Output)
-	if !isTerm {
-		return fmt.Errorf("c.Output is not a valid terminal")
-	}
-	termios, err := term.SetRawTerminal(fd)
-	if err != nil {
-		return fmt.Errorf("Error setting raw terminal: %v", err)
-	}
-	defer term.RestoreTerminal(fd, termios)
 
 	wg := &sync.WaitGroup{}
 
@@ -417,6 +406,10 @@ func (c *Client) writeLoop(wg *sync.WaitGroup) posionReason {
 	fname := "writeLoop"
 
 	buff := make([]byte, 128)
+	oldState, err := terminal.MakeRaw(0)
+	if err == nil {
+		defer terminal.Restore(0, oldState)
+	}
 
 	rdfs := &goselect.FDSet{}
 	reader := io.ReadCloser(os.Stdin)

@@ -93,7 +93,7 @@ func (nc *Conn) oldRequestWithContext(ctx context.Context, subj string, data []b
 	inbox := NewInbox()
 	ch := make(chan *Msg, RequestChanLen)
 
-	s, err := nc.subscribe(inbox, _EMPTY_, nil, ch, true)
+	s, err := nc.subscribe(inbox, _EMPTY_, nil, ch)
 	if err != nil {
 		return nil, err
 	}

@@ -18,7 +18,7 @@ func init() {
 	AddToManagerFuncs = append(AddToManagerFuncs, func(ctx context.Context, m manager.Manager, owner string) error {
 		actuator := NewClusterActuator(m, ClusterActuatorParams{
 			Ctx:           ctx,
-			EventRecorder: m.GetRecorder(Recorder),
+			EventRecorder: m.GetEventRecorderFor(Recorder),
 			Scheme:        m.GetScheme(),
 		})
 		return cluster.AddWithActuator(m, actuator)

@@ -39,7 +39,7 @@ func init() {
 	AddToManagerFuncs = append(AddToManagerFuncs, func(ctx context.Context, m manager.Manager, owner string) error {
 		actuator := NewMachineActuator(MachineActuatorParams{
 			Ctx:           ctx,
-			EventRecorder: m.GetRecorder(Recorder),
+			EventRecorder: m.GetEventRecorderFor(Recorder),
 			Client:        m.GetClient(),
 			Scheme:        m.GetScheme(),
 			Owner:         owner,

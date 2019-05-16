@@ -38,6 +38,7 @@ type MachineTypeSpec struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:nonNamespaced
 // +genclient:skipVerbs=updateStatus,watch
+// +kubebuilder:object:root=true
 
 // MachineType is the Schema for the machinetypes API
 // +k8s:openapi-gen=true
@@ -53,6 +54,7 @@ type MachineType struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:nonNamespaced
+// +kubebuilder:object:root=true
 
 // MachineTypeList contains a list of MachineType
 type MachineTypeList struct {

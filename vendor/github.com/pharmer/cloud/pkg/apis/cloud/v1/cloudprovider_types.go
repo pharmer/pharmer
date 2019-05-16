@@ -32,6 +32,7 @@ type CloudProviderSpec struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:nonNamespaced
 // +genclient:skipVerbs=updateStatus,watch
+// +kubebuilder:object:root=true
 
 // CloudProvider is the Schema for the cloudproviders API
 // +k8s:openapi-gen=true
@@ -44,6 +45,7 @@ type CloudProvider struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:nonNamespaced
+// +kubebuilder:object:root=true
 
 // CloudProviderList contains a list of CloudProvider
 type CloudProviderList struct {

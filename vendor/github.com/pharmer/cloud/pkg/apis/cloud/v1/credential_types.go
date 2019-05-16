@@ -38,6 +38,7 @@ type CredentialSpec struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:nonNamespaced
+// +kubebuilder:object:root=true
 
 // Credential is the Schema for the credentials API
 // +k8s:openapi-gen=true
@@ -50,6 +51,7 @@ type Credential struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:nonNamespaced
+// +kubebuilder:object:root=true
 
 // CredentialList contains a list of Credential
 type CredentialList struct {

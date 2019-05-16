@@ -22,11 +22,12 @@ limitations under the License.
 // +k8s:conversion-gen=github.com/pharmer/cloud/pkg/apis/cloud
 // +k8s:defaulter-gen=TypeMeta
 // +groupName=cloud.pharmer.io
+// +kubebuilder:object:generate=true
 package v1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
 var (
