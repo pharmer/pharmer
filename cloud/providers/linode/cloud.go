@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/linode/linodego"
 	"github.com/pharmer/cloud/pkg/credential"
@@ -16,10 +15,7 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
-	core "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -361,29 +357,6 @@ func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*linod
 	}
 
 	return nil, fmt.Errorf("no vm found with %v name", machine.Name)
-}
-
-func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data map[string]string) error {
-	cred := make(map[string]string)
-	cred["apiToken"] = data["token"]
-	cred["region"] = conn.cluster.ClusterConfig().Cloud.Region
-	secret := &core.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "ccm-" + conn.cluster.ClusterConfig().Cloud.CloudProvider,
-		},
-		StringData: cred,
-		Type:       core.SecretTypeOpaque,
-	}
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := kc.CoreV1().Secrets(metav1.NamespaceSystem).Get(secret.Name, metav1.GetOptions{})
-		if err == nil {
-			log.Infoln("secret %q found, skipping secret creation", secret.Name)
-			return true, nil
-		}
-
-		_, err = kc.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
-		return err == nil, nil
-	})
 }
 
 func (conn *cloudConnector) createLoadBalancer(name string) (*linodego.NodeBalancer, error) {

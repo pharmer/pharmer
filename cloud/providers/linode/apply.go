@@ -204,11 +204,14 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
 		return
 	}
-	// need to run ccm
-	if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster, cm.owner); err != nil {
-		return
+
+	// create necessary credentials
+	err = cm.createSecrets(kc)
+	if err != nil {
+		return acts, errors.Wrapf(err, "failed to create secrets")
 	}
-	ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, cm.conn)
+
+	ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, nil)
 	if err != nil {
 		return acts, err
 	}
@@ -238,6 +241,31 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	return acts, err
+}
+
+// createSecrets creates all the secrets necessary for creating a cluster
+// it creates credential for ccm, pharmer-flex, pharmer-provisioner
+func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
+	// create secret for pharmer-flex and provisioner
+	err := CreateCredentialSecret(cm.ctx, kc, cm.cluster, cm.owner)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create credential for pharmer-flex")
+	}
+
+	// create ccm secret
+	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(cm.cluster.Spec.Config.CredentialName)
+	if err != nil {
+		return err
+	}
+
+	err = CreateSecret(kc, "ccm-linode", metav1.NamespaceSystem, map[string][]byte{
+		"apiToken": []byte(cred.Spec.Data["token"]),
+		"region":   []byte(cm.cluster.ClusterConfig().Cloud.Region),
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create ccm-secret")
+	}
+	return nil
 }
 
 // Scales up/down regular node groups
