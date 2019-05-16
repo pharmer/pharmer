@@ -160,11 +160,11 @@ func (ca *ClusterApi) updateMachineStatus(namespace string, masterMachine *clust
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		m, err := ca.clusterapiClient.ClusterV1alpha1().Machines(namespace).Get(masterMachine.Name, metav1.GetOptions{})
 		if err != nil {
-			return false, err
+			return false, nil
 		}
 		m.Status.ProviderStatus = masterMachine.Status.ProviderStatus
 		if _, err := ca.clusterapiClient.ClusterV1alpha1().Machines(namespace).UpdateStatus(m); err != nil {
-			return false, err
+			return false, nil
 		}
 		return true, nil
 	})

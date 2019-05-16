@@ -6,6 +6,7 @@ import (
 
 	semver "github.com/appscode/go-version"
 	"github.com/appscode/go/log"
+	"github.com/pharmer/cloud/pkg/credential"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 
 	//"context"
@@ -246,9 +247,18 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	// need to run ccm
-	if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster, cm.owner); err != nil {
-		return
+	// create ccm secret
+	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(cm.cluster.Spec.Config.CredentialName)
+
+	if err != nil {
+		return acts, err
+	}
+	err = CreateSecret(kc, "digitalocean", metav1.NamespaceSystem, map[string][]byte{
+		"access-token": []byte(cred.Spec.Data[credential.DigitalOceanToken]), //for ccm
+		"token":        []byte(cred.Spec.Data[credential.DigitalOceanToken]), //for pharmer-flex and provisioner
+	})
+	if err != nil {
+		return acts, errors.Wrapf(err, "failed to create ccm-secret for digitalocean")
 	}
 
 	ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, nil)
