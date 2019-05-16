@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pharmer/cloud/pkg/credential"
+
 	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -32,6 +34,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	if cm.conn, err = PrepareCloud(cm.ctx, in.Name, cm.owner); err != nil {
 		return nil, err
 	}
+	cm.ctx = cm.conn.ctx
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
@@ -181,8 +184,8 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	// need to run ccm
-	if err = CreateCredentialSecret(cm.ctx, kc, cm.cluster, cm.owner); err != nil {
+	err = cm.createSecrets(kc)
+	if err != nil {
 		return
 	}
 
@@ -254,6 +257,42 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 	}
 
 	return
+}
+
+// createSecrets creates all the secrets necessary for creating a cluster
+// it creates credential for ccm, pharmer-flex, pharmer-provisioner
+func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
+	// pharmer-flex secret
+	if err := CreateCredentialSecret(cm.ctx, kc, cm.cluster, cm.owner); err != nil {
+		return errors.Wrapf(err, "failed to create flex-secret")
+	}
+
+	// ccm-secret
+	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(cm.cluster.ClusterConfig().Cloud.CCMCredentialName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get cluster cred")
+	}
+	typed := credential.Packet{CommonSpec: credential.CommonSpec(cred.Spec)}
+	ok, err := typed.IsValid()
+	if !ok {
+		return errors.New("credential not valid")
+	}
+	cloudConfig := &api.PacketCloudConfig{
+		Project: typed.ProjectID(),
+		ApiKey:  typed.APIKey(),
+		Zone:    cm.cluster.ClusterConfig().Cloud.Zone,
+	}
+	data, err := json.Marshal(cloudConfig)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal cloud-config")
+	}
+	err = CreateSecret(kc, "cloud-config", metav1.NamespaceSystem, map[string][]byte{
+		"cloud-config": data,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create cloud-config")
+	}
+	return nil
 }
 
 // Deletes master(s) and releases other cloud resources

@@ -52,6 +52,7 @@ var defaultZone = map[string]string{
 	apis.GCE:          "us-central1-f",
 	apis.DigitalOcean: "nyc1",
 	apis.Linode:       "us-central",
+	apis.Packet:       "ewr1",
 }
 var defaultNodes = map[string]string{
 	apis.AWS:          "t2.medium",
@@ -59,6 +60,7 @@ var defaultNodes = map[string]string{
 	apis.GCE:          "n1-standard-2",
 	apis.DigitalOcean: "2gb",
 	apis.Linode:       "g6-standard-2",
+	apis.Packet:       "baremetal_0",
 }
 
 func init() {

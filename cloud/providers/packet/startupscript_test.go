@@ -23,7 +23,7 @@ func getCluster() *v1beta1.Cluster {
 			Config: &v1beta1.ClusterConfig{
 				Cloud: v1beta1.CloudSpec{
 					NetworkProvider: v1beta1.PodNetworkCalico,
-					CloudProvider:   "linode",
+					CloudProvider:   "packet",
 					Zone:            "us-central-1f",
 				},
 				CredentialName:    "test",
@@ -85,7 +85,7 @@ func Test_cloudConnector_renderStartupScript(t *testing.T) {
 		t.Fatalf("failed to create cluster :%v", err)
 	}
 
-	cmInterface, err := cloud.GetCloudManager("linode", ctx)
+	cmInterface, err := cloud.GetCloudManager("packet", ctx)
 	if err != nil {
 		t.Fatalf("failed to get cloud manager :%v", err)
 	}
@@ -105,7 +105,7 @@ func Test_cloudConnector_renderStartupScript(t *testing.T) {
 
 	machine := getMachine()
 
-	script, err := cm.conn.renderStartupScript(cm.conn.cluster, machine, "token", cm.owner)
+	script, err := cm.conn.renderStartupScript(cm.conn.cluster, machine, "token")
 	if err != nil {
 		t.Fatalf("failed to generate startupscript: %v", err)
 	}

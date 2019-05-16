@@ -65,9 +65,18 @@ func PrepareCloud(ctx context.Context, clusterName string, owner string) (*cloud
 		return conn, err
 	}
 
+	if ctx, err = LoadEtcdCertificate(ctx, cluster, owner); err != nil {
+		return nil, err
+	}
+
 	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
 		return conn, err
 	}
+
+	if ctx, err = LoadSaKey(ctx, cluster, owner); err != nil {
+		return conn, err
+	}
+
 	if conn, err = NewConnector(ctx, cluster, owner); err != nil {
 		return nil, err
 	}
