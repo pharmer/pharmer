@@ -16,7 +16,7 @@ aliases:
 
 # Running Kubernetes on [Packet](https://app.packet.net)
 
-Following example will use `pharmer ` to create a Kubernetes cluster with 1 worker node server and a master server (i,e, 2 servers in you cluster).
+Following example will use `pharmer ` to create a Kubernetes cluster with 1 worker node server and a master node (i,e, 2 nodes in your cluster).
 
 ### Before you start
 
@@ -27,7 +27,7 @@ mkdir -p $(go env GOPATH)/src/github.com/pharmer
 cd $(go env GOPATH)/src/github.com/pharmer
 git clone https://github.com/pharmer/pharmer
 cd pharmer
-go install -v
+./hack/make.py
 
 pharmer -h
 ```
@@ -70,7 +70,7 @@ spec:
   data:
     apiKey: <api-key>
     projectID: <project-id>
-  provider: Packet
+  provider: packet
 ```
 Here,
  - `spec.data.projectID` is the packet project id
@@ -85,11 +85,11 @@ To see the all credentials you need to run following command.
 ```console
 $ pharmer get credentials
 NAME         Provider       Data
-pack         Packet         projectID=6df2d99d...., apiKey=*****
+pack         packet         projectID=6df2d99d...., apiKey=*****
 ```
 You can also see the stored credential from the following location:
 ```console
-~/.pharmer/store.d/credentials/pack.json
+~/.pharmer/store.d/$USER/credentials/pack.json
 ```
 
 You can find other credential operations [here](/docs/credential.md)
@@ -105,13 +105,13 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `packet`
     - Provider: Packet
     - Cluster name: p1
     - Location: ewr1 (NYC Metro, NY, USA)
-    - Number of nodes: 2
+    - Number of nodes: 1
     - Node sku: baremetal_0 (TYPE 0: 4 x86 64bit Cores, 8GB DDR3 RAM)
-    - Kubernetes version: 1.11.0
+    - Kubernetes version: 1.13.5
     - Credential name: [pack](#credential-importing)
 
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/packet/cloud.json)
+For location code and sku details click [hrere](https://github.com/pharmer/cloud/blob/master/data/json/apis/cloud.pharmer.io/v1/cloudproviders/packet.json)
  Available options in `pharmer` to create a cluster are:
  ```console
  $ pharmer create cluster -h
@@ -130,8 +130,11 @@ Flags:
       --credential-uid string       Use preconfigured cloud credential uid
   -h, --help                        help for cluster
       --kubernetes-version string   Kubernetes version
+      --masters int                 Number of masters (default 1)
+      --namespace string            Namespace (default "default")
       --network-provider string     Name of CNI plugin. Available options: calico, flannel, kubenet, weavenet (default "calico")
       --nodes stringToInt           Node set configuration (default [])
+  -o, --owner string                Current user id (default "tahsin")
       --provider string             Provider name
       --zone string                 Cloud provider zone name
 
@@ -139,11 +142,13 @@ Global Flags:
       --alsologtostderr                  log to standard error as well as files
       --analytics                        Send analytical events to Google Guard (default true)
       --config-file string               Path to Pharmer config file
-      --env string                       Environment used to enable debugging (default "dev")
+      --env string                       Environment used to enable debugging (default "prod")
+      --kubeconfig string                Paths to a kubeconfig. Only required if out-of-cluster.
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files (default true)
-      --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+      --master string                    The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.
+      --stderrthreshold severity         logs at or above this threshold go to stderr
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
  ```
@@ -157,7 +162,7 @@ $ pharmer create cluster p1 \
 	--zone=ewr1 \
 	--nodes=baremetal_0=1 \
 	--credential-uid=pack \
-	--kubernetes-version=v1.11.0
+	--kubernetes-version=v1.13.5
 ```
 
 To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](/docs/networking.md)
@@ -165,94 +170,99 @@ To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-adminis
 The directory structure of the storage provider will be look like:
 
 ```console
-~/.pharmer/store.d/clusters/
-        |-- v1
-        |    |__ nodegroups
-        |    |       |__ master.json
-        |    |       |
-        |    |       |__ baremetal-0-pool.json
-        |    |
-        |    |--- pki
-        |    |     |__ ca.crt
-        |    |     |
-        |    |     |__ ca.key
-        |    |     |
-        |    |     |__ front-proxy-ca.crt
-        |    |     |
-        |    |     |__ fron-proxy-ca.key
-        |    |
-        |    |__ ssh
-        |          |__ id_p1-xt523x
-        |          |
-        |          |__ id_p1-xt523x.pub
-        |
-        |__ p1.json
+~/.pharmer/store.d/$USER/clusters/
+/home/<user>/.pharmer/store.d/<user>/clusters/
+├── p1
+│   ├── machine
+│   │   ├── p1-master-0.json
+│   │   ├── p1-master-1.json
+│   │   └── p1-master-2.json
+│   ├── machineset
+│   │   └── baremetal-0-pool.json
+│   ├── pki
+│   │   ├── ca.crt
+│   │   ├── ca.key
+│   │   ├── etcd
+│   │   │   ├── ca.crt
+│   │   │   └── ca.key
+│   │   ├── front-proxy-ca.crt
+│   │   ├── front-proxy-ca.key
+│   │   ├── sa.crt
+│   │   └── sa.key
+│   └── ssh
+│       ├── id_p1-sshkey
+│       └── id_p1-sshkey.pub
+└── p1.json
+
+6 directories, 15 files
 ```
 Here,
 
-   - `/v1/nodegroups/`: contains the node groups information. [Check below](#cluster-scaling) for node group operations.You can see the node group list using following command.
-   ```console
-$ pharmer get nodegroups -k p1
-```
-   - `v1/pki`: contains the cluster certificate information containing `ca` and `front-proxy-ca`.
-   - `v1/ssh`: has the ssh credentials on cluster's nodes. With this key you can `ssh` into any node on a cluster
-   - `v1.json`: contains the cluster resource information
-You can view your cluster configuration file by following command.
+ - `machine`: conntains information about the master machines to be deployed
+  - `machineset`: contains information about the machinesets to be deployed
+  - `pki`: contains the cluster certificate information containing `ca`, `front-proxy-ca`, `etcd/ca` and service account keys `sa`
+  - `ssh`: has the ssh credentials on cluster's nodes. With this key you can `ssh` into any node on a cluster
+  - `p1.json`: contains the cluster resource information 
 
 ```yaml
 $ pharmer get cluster p1 -o yaml
-apiVersion: v1alpha1
+
 kind: Cluster
+apiVersion: cluster.pharmer.io/v1beta1
 metadata:
-  creationTimestamp: 2017-11-29T04:54:31Z
-  generation: 1511931271886126461
   name: p1
-  uid: 635c5399-d4c1-11e7-9959-382c4a73a7c4
+  uid: a057bb8d-785a-11e9-901f-e0d55ee85d14
+  generation: 1558066624400477400
+  creationTimestamp: '2019-05-17T04:17:04Z'
 spec:
-  api:
-    advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    enable-admission-plugins: Initializers,NodeRestriction,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ValidatingAdmissionWebhook,DefaultTolerationSeconds,MutatingAdmissionWebhook,ResourceQuota
-    kubelet-preferred-address-types: InternalIP,ExternalIP
-    runtime-config: admissionregistration.k8s.io/v1alpha1
-  caCertName: ca
-  cloud:
-    ccmCredentialName: pack
-    cloudProvider: packet
-    instanceImage: ubuntu_16_04
-    region: ewr1
-    sshKeyName: p1-xt523x
-    zone: ewr1
-  credentialName: pack
-  frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.11.0
-  networking:
-    dnsDomain: cluster.local
-    networkProvider: calico
-    nonMasqueradeCIDR: 10.0.0.0/8
-    podSubnet: 192.168.0.0/16
-    serviceSubnet: 10.96.0.0/12
+  clusterApi:
+    kind: Cluster
+    apiVersion: cluster.k8s.io/v1alpha1
+    metadata:
+      name: p1
+      namespace: default
+      creationTimestamp: 
+    spec:
+      clusterNetwork:
+        services:
+          cidrBlocks:
+          - 10.96.0.0/12
+        pods:
+          cidrBlocks:
+          - 192.168.0.0/16
+        serviceDomain: cluster.local
+      providerSpec:
+        value:
+          kind: PacketClusterProviderConfig
+          apiVersion: Packetproviderconfig/v1alpha1
+          metadata:
+            creationTimestamp: 
+    status: {}
+  config:
+    masterCount: 1
+    cloud:
+      cloudProvider: packet
+      region: ewr1
+      zone: ewr1
+      instanceImage: ubuntu_16_04
+      networkProvider: calico
+      ccmCredentialName: pack
+      sshKeyName: p1-sshkey
+    kubernetesVersion: v1.13.5
+    caCertName: ca
+    frontProxyCACertName: front-proxy-ca
+    credentialName: pack
+    apiServerExtraArgs:
+      kubelet-preferred-address-types: InternalIP,ExternalIP
 status:
-  cloud: {}
   phase: Pending
+  cloud:
+    loadBalancer:
+      dns: ''
+      ip: ''
+      port: 0
+
 ```
-
-Here,
-
-* `metadata.name` refers the cluster name, which should be unique within your cluster list.
-* `metadata.uid` is a unique ACID, which is generated by pharmer
-* `spec.cloud` specifies the cloud provider information. pharmer uses `ubuntu-16-04-x64` image by default. don't change the instance images, otherwise cluster may not be working.
-* `spc.cloud.sshKeyName` shows which ssh key added to cluster instance.
-* `spec.api.bindPort` is the api server port.
-* `spec.networking` specifies the network information of the cluster
-    * `networkProvider`: by default it is `calico`. To modify it click [here](/docs/networking.md).
-    * `podSubnet`: in order for network policy to work correctly this field is needed. For flannel it will be `10.244.0.0/16`
-* `spec.kubernetesVersion` is the cluster server version. It can be modified.
-* `spec.credentialName` is the credential name which is provider during cluster creation command.
-* `spec.apiServerExtraArgs` specifies which value will be forwarded to apiserver during cluster installation.
-* `spec.authorizationMode` refers the cluster authorization mode
-* `status.phase` may be `Pending`, `Ready`, `Deleting`, `Deleted`, `Upgrading` depending on current cluster status.
 
 You can modify this configuration by:
 ```console
@@ -270,48 +280,71 @@ $ pharmer apply p1
  the cluster will be look like
 ```yaml
 $ pharmer get cluster p1 -o yaml
-apiVersion: v1alpha1
+---
 kind: Cluster
+apiVersion: cluster.pharmer.io/v1beta1
 metadata:
-  creationTimestamp: 2017-11-29T04:54:31Z
-  generation: 1511931271886126461
   name: p1
-  uid: 635c5399-d4c1-11e7-9959-382c4a73a7c4
+  uid: 157599fa-7861-11e9-9009-e0d55ee85d14
+  generation: 1558069397870031400
+  creationTimestamp: '2019-05-17T05:03:17Z'
 spec:
-  api:
-    advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    enable-admission-plugins: Initializers,NodeRestriction,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ValidatingAdmissionWebhook,DefaultTolerationSeconds,MutatingAdmissionWebhook,ResourceQuota
-    kubelet-preferred-address-types: InternalIP,ExternalIP
-    runtime-config: admissionregistration.k8s.io/v1alpha1
-  caCertName: ca
-  cloud:
-    ccmCredentialName: pack
-    cloudProvider: packet
-    instanceImage: ubuntu_16_04
-    project: 6df2d99d-3291-4b08-bb03-dbdb488200e3
-    region: ewr1
-    sshKeyName: p1-xt523x
-    zone: ewr1
-  credentialName: pack
-  frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.11.0
-  networking:
-    dnsDomain: cluster.local
-    networkProvider: calico
-    nonMasqueradeCIDR: 10.0.0.0/8
-    podSubnet: 192.168.0.0/16
-    serviceSubnet: 10.96.0.0/12
+  clusterApi:
+    kind: Cluster
+    apiVersion: cluster.k8s.io/v1alpha1
+    metadata:
+      name: p1
+      namespace: default
+      creationTimestamp: 
+    spec:
+      clusterNetwork:
+        services:
+          cidrBlocks:
+          - 10.96.0.0/12
+        pods:
+          cidrBlocks:
+          - 192.168.0.0/16
+        serviceDomain: cluster.local
+      providerSpec:
+        value:
+          kind: PacketClusterProviderConfig
+          apiVersion: Packetproviderconfig/v1alpha1
+          metadata:
+            creationTimestamp: 
+    status:
+      apiEndpoints:
+      - host: 147.75.192.173
+        port: 6443
+      providerStatus:
+        apiVersion: Packetproviderconfig/v1alpha1
+        kind: PacketClusterProviderConfig
+        metadata:
+          creationTimestamp: 
+  config:
+    masterCount: 1
+    cloud:
+      cloudProvider: packet
+      region: ewr1
+      zone: ewr1
+      instanceImage: ubuntu_16_04
+      networkProvider: calico
+      ccmCredentialName: pack
+      sshKeyName: p1-sshkey
+    kubernetesVersion: 1.13.5
+    caCertName: ca
+    frontProxyCACertName: front-proxy-ca
+    credentialName: pack
+    apiServerExtraArgs:
+      kubelet-preferred-address-types: InternalIP,ExternalIP
 status:
-  apiServer:
-  - address: 10.99.81.129
-    type: InternalIP
-  - address: 147.75.74.213
-    type: ExternalIP
+  phase: Pending
   cloud:
-    sshKeyExternalID: d909b72c-2d23-4b83-90d6-e6e4e2000e71
-  phase: Ready
+    sshKeyExternalID: 35f3eff3-2148-4384-8c71-8ab63e4c86b6
+    loadBalancer:
+      dns: ''
+      ip: ''
+      port: 0
+
 ```
 Here,
 
@@ -323,275 +356,140 @@ $ pharmer use cluster p1
 ```
 If you don't have `kubectl` installed click [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 
-Now you can run `kubectl get nodes` and verify that your kubernetes 1.11.0 is running.
+Now you can run `kubectl get nodes` and verify that your kubernetes 1.13.5 is running.
 
 ```console
 $ kubectl get nodes
-NAME                      STATUS    AGE       VERSION
-baremetal-0-pool-z5t4gh   Ready     2m        v1.11.0
-p1-master                 Ready     10m       v1.11.0
-```
-
-If you want to `ssh` into your instance run the following command
-```console
-$ pharmer ssh node p1-master  -k p1
+baremetal-0-pool   Ready    node     13m   v1.13.5
+p1-master-0        Ready    master   29m   v1.13.5
 ```
 
 ### Cluster Scaling
 
-Scaling a cluster refers following meanings:-
- 1. Increment the number of nodes of a certain node group
- 2. Decrement the number of nodes of a certain node group
- 3. Introduce a new node group with a number of nodes
- 4. Drop existing node group
+Scaling a cluster refers following meanings
+- Add new master and worker machines
+- Increment the number of nodes of a certain machine-set and machine-deployment
+- Decrement the number of nodes of a certain machine-set and machine-deployment
+- Introduce a new machine-set and machine-deployment with a number of nodes
+- Delete existing machine, machine-set and machine-deployments
 
-To see the current node groups list, you need to run following command:
+You can see the machine and machine-sets deployed in the cluster
 
 ```console
-$ pharmer get nodegroups -k p1
-NAME               Cluster   Node      SKU
-baremetal-0-pool   p1        1         baremetal_0
-master             p1        1         baremetal_0
+$ kubectl get machines
+NAME               AGE
+baremetal-0-pool   1m
+p1-master-0        2m
+
+$ kubectl get machinesets
+NAME               AGE
+baremetal-0-pool   2m
 ```
 
-* **Updating existing NG**
+#### Create new worker machines
 
-For scenario 1 & 2 we need to update our existing node group. To update existing node group configuration run
-the following command.
+You can create new worker machines by deploying the following yaml
+```yaml
+kind: Machine
+apiVersion: cluster.k8s.io/v1alpha1
+metadata:
+  name: worker-1
+  labels:
+    cluster.k8s.io/cluster-name: p1
+    node-role.kubernetes.io/master: ''
+    set: node
+spec:
+  providerSpec:
+    value:
+      kind: PacketClusterProviderConfig
+      apiVersion: Packetproviderconfig/v1alpha1
+      plan: baremetal_0
+      type: Regular
+  versions:
+    kubelet: v1.13.5
+```
+#### Create new machinesets
+
+You can deploy new machinesets by deploying the following yaml
 
 ```yaml
-$ pharmer edit nodegroup  baremetal-0-pool -k p1
-
-# Please edit the object below. Lines beginning with a '#' will be ignored,
-# and an empty file will abort the edit. If an error occurs while saving this file will be
-# reopened with the relevant failures.
-#
-apiVersion: v1alpha1
-kind: NodeGroup
+kind: MachineSet
+apiVersion: cluster.k8s.io/v1alpha1
 metadata:
-  clusterName: p1
-  creationTimestamp: 2017-11-29T04:54:32Z
-  labels:
-    node-role.kubernetes.io/node: ""
   name: baremetal-0-pool
-  uid: 63d39baf-d4c1-11e7-9959-382c4a73a7c4
 spec:
-  nodes: 1
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.k8s.io/cluster-name: p1
+      cluster.pharmer.io/mg: baremetal_0
   template:
+    metadata:
+      labels:
+        cluster.k8s.io/cluster-name: p1
+        cluster.pharmer.io/cluster: p1
+        cluster.pharmer.io/mg: baremetal_0
+        node-role.kubernetes.io/node: ''
+        set: node
     spec:
-      sku: baremetal_0
-      type: regular
-status:
-  nodes: 0
-
+      providerSpec:
+        value:
+          kind: PacketClusterProviderConfig
+          apiVersion: Packetproviderconfig/v1alpha1
+          plan: baremetal_0
+          type: Regular
+      versions:
+        kubelet: v1.13.5
 ```
 
-Here,
-* `metadata.name` refers the node group name, which is unique within a cluster.
-* `metadata.labels` specifies the label of the nodegroup, which will be add to all nodes of following node group.
-    * For master label will be `"node-role.kubernetes.io/master": ""`
-    * For node label will be like `"node-role.kubernetes.io/node": ""`
-* `metadata.clusterName` indicates the cluster, which has this node group.
-* `spec.nodes` shows the number of nodes for this following group.
-* `spec.template.sku` refers the size of the machine
-* `status.node` shows the number of nodes that are really present on the current cluster while scaling
+#### Create new machine-deployments
 
-To update number of nodes for this nodegroup modify the `node` number under `spec` field.
+You can deploy new machine-deployments by deploying the following yaml
 
-* **Introduce new NG**
-
-To add a new node group for an existing cluster you need to run
-```console
-$pharmer create ng --nodes=baremetal_2=1 -k p1
-```
-If you want to create a ng with **spot** instance run
-```console
-$pharmer create ng --nodes=baremetal_3=1 --type=spot --spot-price-max=1  -k p1
-
-$ pharmer get nodegroups -k p1
-NAME               Cluster   Node      SKU
-baremetal-0-pool   p1        1         baremetal_0
-baremetal-2-pool   p1        1         baremetal_2
-baremetal-3-pool   p1        1         baremetal_3
-master             p1        1         baremetal_0
-```
-You can see the yaml of newly created node group, you need to run
 ```yaml
-$ pharmer get nodegroups -k p1 baremetal-3-pool -o yaml
-apiVersion: v1alpha1
-kind: NodeGroup
+kind: MachineDeployment
+apiVersion: cluster.k8s.io/v1alpha1
 metadata:
-  clusterName: p1
-  creationTimestamp: 2017-11-29T05:57:51Z
-  labels:
-    node-role.kubernetes.io/node: ""
-  name: baremetal-3-pool
-  uid: 3c331393-d4ca-11e7-9b27-382c4a73a7c4
+  name: baremetal-0-pool
 spec:
-  nodes: 1
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.k8s.io/cluster-name: p1
+      cluster.pharmer.io/mg: baremetal_0
   template:
+    metadata:
+      labels:
+        cluster.k8s.io/cluster-name: p1
+        cluster.pharmer.io/cluster: p1
+        cluster.pharmer.io/mg: baremetal_0
+        node-role.kubernetes.io/node: ''
+        set: node
     spec:
-      sku: baremetal_3
-      spotPriceMax: 1
-      type: spot
-status:
-  nodes: 0
-
-```
-
-Here,
- - `spec.template.spec.type` = `spot`, for spot type nodes
- - `spec.template.spec.spotPriceMax` is the maximum price of a node
-
-* **Delete existing NG**
-
-If you want delete existing node group following command will help.
-```yaml
-$  pharmer delete ng baremetal-2-pool -k p1
-
-$ pharmer get ng baremetal-2-pool -k p1 -o yaml
-apiVersion: v1alpha1
-kind: NodeGroup
-metadata:
-  clusterName: p1
-  creationTimestamp: 2017-11-29T05:56:25Z
-  deletionTimestamp: 2017-11-29T06:00:14Z
-  labels:
-    node-role.kubernetes.io/node: ""
-  name: baremetal-2-pool
-  uid: 088dd229-d4ca-11e7-b1a3-382c4a73a7c4
-spec:
-  nodes: 1
-  template:
-    spec:
-      sku: baremetal_2
-      type: regular
-status:
-  nodes: 0
-
-```
-Here,
-
- - `metadata.deletionTimestamp`: will appear if node group deleted command was run
-
-After completing your change on the node groups, you need to apply that via `pharmer` so that changes will be applied
-on provider cluster.
-
-```console
-$ pharmer apply p1
-```
-This command will take care of your actions that you applied on the node groups recently.
-
-```console
- $ pharmer get nodegroups -k p1
-NAME               Cluster   Node      SKU
-baremetal-0-pool   p1        1         baremetal_0
-baremetal-3-pool   p1        1         baremetal_3
-master             p1        1         baremetal_0
+      providerSpec:
+        value:
+          kind: PacketClusterProviderConfig
+          apiVersion: Packetproviderconfig/v1alpha1
+          plan: baremetal_0
+          type: Regular
+      versions:
+        kubelet: v1.13.5
 ```
 
 ### Cluster Upgrading
+#### Upgrade master machines
+You can deploy new master machines with specifying new version in `spec.version.controlPlane` and `spec.version.kubelet`. After new master machines are ready, you can safely delete old ones
 
-To upgrade your cluster firstly you need to check if there any update available for your cluster and latest kubernetes version.
-To check run:
-```console
-$ pharmer describe cluster p1
-Name:		p1
-Version:	v1.11.0
-NodeGroup:
-  Name               Node
-  ----               ------
-  baremetal-0-pool   1
-  master             1
-[upgrade/versions] Cluster version: v1.11.0
-[upgrade/versions] kubeadm version: v1.11.0
-[upgrade/versions] Latest stable version: v1.11.1
-[upgrade/versions] Latest version in the v1.1 series: v1.1.8
-Components that will be upgraded after you've upgraded the control plane:
-COMPONENT   CURRENT       AVAILABLE
-Kubelet     2 x v1.11.0   v1.11.1
-
-Upgrade to the latest stable version:
-
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.11.0   v1.11.1
-Controller Manager   v1.11.0   v1.11.1
-Scheduler            v1.11.0   v1.11.1
-Kube Proxy           v1.11.0   v1.11.1
-Kube DNS             1.1.3     1.1.3
-
-You can now apply the upgrade by executing the following command:
-
-	pharmer edit cluster p1 --kubernetes-version=v1.11.1
-
-_____________________________________________________________________
-
+#### Upgrade worker machines
+You can upgrade worker machines by editing machine-deployment
+``` console
+$ kubectl edit machinedeployments <machinedeployment-name>
 ```
+and updating the `spec.version.kubelet`
 
-Then, if you decided to upgrade you cluster run the command that are showing on describe command.
-```console
-$ pharmer edit cluster p1 --kubernetes-version=v1.11.1
-cluster "p1" updated
-```
-You can verify your changes by checking the yaml of the cluster.
-```yaml
-$ pharmer get cluster p1 -o yaml
-apiVersion: v1alpha1
-kind: Cluster
-metadata:
-  creationTimestamp: 2017-11-29T04:54:31Z
-  generation: 1511935358112781246
-  name: p1
-  uid: 635c5399-d4c1-11e7-9959-382c4a73a7c4
-spec:
-  api:
-    advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    enable-admission-plugins: Initializers,NodeRestriction,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ValidatingAdmissionWebhook,DefaultTolerationSeconds,MutatingAdmissionWebhook,ResourceQuota
-    kubelet-preferred-address-types: InternalIP,ExternalIP
-    runtime-config: admissionregistration.k8s.io/v1alpha1
-  caCertName: ca
-  cloud:
-    ccmCredentialName: pack
-    cloudProvider: packet
-    instanceImage: ubuntu_16_04
-    project: 6df2d99d-3291-4b08-bb03-dbdb488200e3
-    region: ewr1
-    sshKeyName: p1-xt523x
-    zone: ewr1
-  credentialName: pack
-  frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.11.1
-  networking:
-    dnsDomain: cluster.local
-    networkProvider: calico
-    nonMasqueradeCIDR: 10.0.0.0/8
-    podSubnet: 192.168.0.0/16
-    serviceSubnet: 10.96.0.0/12
-status:
-  apiServer:
-  - address: 10.99.81.129
-    type: InternalIP
-  - address: 147.75.74.213
-    type: ExternalIP
-  cloud:
-    sshKeyExternalID: d909b72c-2d23-4b83-90d6-e6e4e2000e71
-  phase: Ready
+To upgrade machinesets, you have to deploy new machinesets with specifying new version in `spec.template.spec.version.kubelet`
 
-```
-Here, `spec.kubernetesVersion` is changed to `v1.11.1` from `v1.11.0`
-
-If everything looks ok, then run:
-```console
-$ pharmer apply p1
-```
-You can check your cluster upgraded or not by running following command on your cluster.
-```console
-$ kubectl version
-Client Version: version.Info{Major:"1", Minor:"11", GitVersion:"v1.11.0", GitCommit:"91e7b4fd31fcd3d5f436da26c980becec37ceefe", GitTreeState:"clean", BuildDate:"2018-06-27T20:17:28Z", GoVersion:"go1.10.2", Compiler:"gc", Platform:"linux/amd64"}
-Server Version: version.Info{Major:"1", Minor:"11", GitVersion:"v1.11.0", GitCommit:"91e7b4fd31fcd3d5f436da26c980becec37ceefe", GitTreeState:"clean", BuildDate:"2018-06-27T20:08:34Z", GoVersion:"go1.10.2", Compiler:"gc", Platform:"linux/amd64"}
-```
+After new machines are ready, you can safely delete old machine-sets
 
 ## Cluster Deleting
 
@@ -599,56 +497,26 @@ To delete your cluster run
 ```console
 $ pharmer delete cluster p1
 ```
-
 Then, the yaml file looks like
+
 ```yaml
 $ pharmer get cluster p1 -o yaml
-apiVersion: v1alpha1
 kind: Cluster
+apiVersion: cluster.pharmer.io/v1beta1
 metadata:
-  creationTimestamp: 2017-11-29T04:54:31Z
-  deletionTimestamp: 2017-11-29T06:03:28Z
-  generation: 1511935358112781246
   name: p1
-  uid: 635c5399-d4c1-11e7-9959-382c4a73a7c4
-spec:
-  api:
-    advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    enable-admission-plugins: Initializers,NodeRestriction,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ValidatingAdmissionWebhook,DefaultTolerationSeconds,MutatingAdmissionWebhook,ResourceQuota
-    kubelet-preferred-address-types: InternalIP,ExternalIP
-    runtime-config: admissionregistration.k8s.io/v1alpha1
-  caCertName: ca
-  cloud:
-    ccmCredentialName: pack
-    cloudProvider: packet
-    instanceImage: ubuntu_16_04
-    project: 6df2d99d-3291-4b08-bb03-dbdb488200e3
-    region: ewr1
-    sshKeyName: p1-xt523x
-    zone: ewr1
-  credentialName: pack
-  frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.11.1
-  networking:
-    dnsDomain: cluster.local
-    networkProvider: calico
-    nonMasqueradeCIDR: 10.0.0.0/8
-    podSubnet: 192.168.0.0/16
-    serviceSubnet: 10.96.0.0/12
+  uid: 379d4d7f-77c1-11e9-b997-e0d55ee85d14
+  generation: 1558000735696016100
+  creationTimestamp: '2019-05-16T09:58:55Z'
+  deletionTimestamp: '2019-05-16T10:38:54Z'
+...
+...
 status:
-  apiServer:
-  - address: 10.99.81.129
-    type: InternalIP
-  - address: 147.75.74.213
-    type: ExternalIP
-  cloud:
-    sshKeyExternalID: d909b72c-2d23-4b83-90d6-e6e4e2000e71
   phase: Deleting
+...
+...
 
 ```
-
 Here,
 
 - `metadata.deletionTimestamp`: is set when cluster deletion command was applied.

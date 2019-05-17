@@ -107,7 +107,7 @@ gce          GoogleCloud    projectID=k8s-qa, serviceAccount=<data>
 ```
 You can also see the stored credential from the following location:
 ```console
-~/.pharmer/store.d/credentials/gce.json
+~/.pharmer/store.d/$USER/credentials/gce.json
 ```
 
 
@@ -127,7 +127,7 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `gce`
     - Kubernetes version: 1.10.4-gke.2
     - Credential name: [gce](#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/gke/cloud.json)
+For location code and sku details click [hrere](https://github.com/pharmer/cloud/blob/master/data/json/apis/cloud.pharmer.io/v1/cloudproviders/gke.json)
 
 Available options in `pharmer` to create a cluster are:
  ```console
@@ -181,7 +181,7 @@ To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-adminis
 The directory structure of the storage provider will be look like:
 
 ```console
-~/.pharmer/store.d/clusters/
+~/.pharmer/store.d/$USER/clusters/
         |-- v1
         |    |__ nodegroups
         |    |       |

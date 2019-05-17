@@ -21,16 +21,17 @@ This project is spread over 5 repositories:
   - [Microsoft Azure](https://azure.microsoft.com/en-us/)
   - [Azure Kubernetes Servic AKS](https://docs.microsoft.com/en-us/azure/aks/)
   - [Packet](https://www.packet.net/)
-  - [Scaleway](https://www.scaleway.com/)
+  <!-- - [Scaleway](https://www.scaleway.com/)
   - [Softlayer](http://www.softlayer.com/)
-  - [Vultr](https://www.vultr.com/)
+  - [Vultr](https://www.vultr.com/) -->
 
 - [pharmer/cloud-controller-manager](https://github.com/pharmer/cloud-controller-manager): Implements Cloud Controller manager for following cloud providers:
   - [Linode](https://www.linode.com/)
   - [Packet](https://www.packet.net/)
-  - [Scaleway](https://www.scaleway.com/)
-  - [Softlayer](http://www.softlayer.com/)
-  - [Vultr](https://www.vultr.com/)
+  - [Digitalocean](https://digitalocean.com)
+  <!-- - [Scaleway](https://www.scaleway.com/) -->
+  <!-- - [Softlayer](http://www.softlayer.com/) -->
+  <!-- - [Vultr](https://www.vultr.com/) -->
 
 - [pharmer/flexvolumes](https://github.com/pharmer/flexvolumes): Implements Flex Volume drivers for following cloud providers:
   - [DigitalOcean](https://www.digitalocean.com/)
@@ -49,17 +50,18 @@ This project is spread over 5 repositories:
  - [Create & manage a Kubernetes cluster in DigitalOcean](/docs/cloud/digitalocean/README.md)
  - [Create & manage a Kubernetes cluster in Linode](/docs/cloud/linode/README.md)
  - [Create & manage a Kubernetes cluster in Packet](/docs/cloud/packet/README.md)
- - [Create & manage a Kubernetes cluster in Scaleway](/docs/cloud/scaleway/README.md)
- - [Create & manage a Kubernetes cluster in Vultr](/docs/cloud/vultr/README.md)
+ <!-- - [Create & manage a Kubernetes cluster in Scaleway](/docs/cloud/scaleway/README.md)
+ - [Create & manage a Kubernetes cluster in Vultr](/docs/cloud/vultr/README.md) -->
 
 ## Supported Versions Matrix
 
-| pharmer version | k8s 1.9.x | k8s 1.10.x | k8s 1.11.x | k8s 1.12.x | k8s 1.13.x |
-|-----------------|-----------|------------|------------|------------|-------------
-| 0.2.0           | &#10007;  | &#10007;   | &#10007;   | &#10003;   | &#10003;
-| 0.1.1           | &#10007;  | &#10007;   | &#10003;   | &#10003;   | &#10007;
-| 0.1.0-rc.5      | &#10007;  | &#10003;   | &#10003;   | &#10007;   | &#10007;
-| 0.1.0-rc.4      | &#10003;  | &#10003;   | &#10007;   | &#10007;   | &#10007;
+| pharmer version | k8s 1.9.x | k8s 1.10.x | k8s 1.11.x | k8s 1.12.x | k8s 1.13.x | k8s 1.14.x
+|-----------------|-----------|------------|------------|------------|---------|---------------
+| 0.3.0           | &#10007;  | &#10007;   | &#10007;   |&#10007;    | &#10003;| &#10003;
+| 0.2.0           | &#10007;  | &#10007;   | &#10007;   | &#10003;   | &#10003;| &#10007;
+| 0.1.1           | &#10007;  | &#10007;   | &#10003;   | &#10003;   | &#10007;| &#10007;
+| 0.1.0-rc.5      | &#10007;  | &#10003;   | &#10003;   | &#10007;   | &#10007;| &#10007;
+| 0.1.0-rc.4      | &#10003;  | &#10003;   | &#10007;   | &#10007;   | &#10007;| &#10007;
 
 ## Contribution guidelines
 Want to help improve Pharmer? Please start [here](/CONTRIBUTING.md).

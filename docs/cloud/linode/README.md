@@ -20,14 +20,18 @@ Following example will use `pharmer ` to create a Kubernetes cluster with 2 work
 
 ### Before you start
 
-As a prerequisite, you need to have `pharmer` installed.  To install `pharmer` run the following command:
+Following example will use `pharmer ` to create a Kubernetes cluster with 1 worker nodes and 3 master nodes (i,e, 4 nodes in you cluster).
+
+### Before you start
+
+As a prerequisite, you need to have `pharmer` installed.  To install `pharmer` run the following command.
 
 ```console
 mkdir -p $(go env GOPATH)/src/github.com/pharmer
 cd $(go env GOPATH)/src/github.com/pharmer
 git clone https://github.com/pharmer/pharmer
 cd pharmer
-go install -v
+./hack/make.py
 
 pharmer -h
 ```
@@ -67,7 +71,7 @@ metadata:
 spec:
   data:
     token: <your token>
-  provider: Linode
+  provider: linode
 
 ```
 Here, `spec.data.token` is the access token that you provided which can be edited by following command:
@@ -85,7 +89,7 @@ linode       Linode         token=*****
 
 You can also see the stored credential from the following location:
 ```console
-~/.pharmer/store.d/credentials/linode.json
+~/.pharmer/store.d/$USER/credentials/linode.json
 ```
 
 You can find other credential operations [here](/docs/credential.md)
@@ -97,61 +101,70 @@ In first step `pharmer` create basic configuration file with user choice. Then i
 information to create cluster on specific provider.
 
 Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `linode`
+
  * **Cluster Creating:** We want to create a cluster with following information:
     - Provider: Linode
     - Cluster name: l1
-    - Location: 3 (Fremont, CA, USA)
-    - Number of nodes: 2
-    - Node sku: 1 (Linode 1024)
-    - Kubernetes version: 1.11.0
+    - Location: us-central
+    - Number of nodes: 1
+    - Node sku: g6-standard-2
+    - Kubernetes version: 1.13.5
     - Credential name: [linode](#credential-importing)
 
-For location code and sku details click [here](https://github.com/pharmer/pharmer/blob/master/data/files/linode/cloud.json)
+For location code and sku details click [here](https://github.com/pharmer/pharmer/blob/master/data/files/linode.json)
+ 
  Available options in `pharmer` to create a cluster are:
-  ```console
+ 
+ ```console
  $ pharmer create cluster -h
  Create a Kubernetes cluster for a given cloud provider
 
- Usage:
-   pharmer create cluster [flags]
+Usage:
+  pharmer create cluster [flags]
 
- Aliases:
-   cluster, clusters, Cluster
+Aliases:
+  cluster, clusters, Cluster
 
- Examples:
- pharmer create cluster demo-cluster
+Examples:
+pharmer create cluster demo-cluster
 
- Flags:
-       --credential-uid string       Use preconfigured cloud credential uid
-   -h, --help                        help for cluster
-       --kubernetes-version string   Kubernetes version
-       --networking string           Networking mode to use. calico(default), flannel (default "calico")
-       --nodes stringToInt           Node set configuration (default [])
-       --provider string             Provider name
-       --zone string                 Cloud provider zone name
+Flags:
+      --credential-uid string       Use preconfigured cloud credential uid
+  -h, --help                        help for cluster
+      --kubernetes-version string   Kubernetes version
+      --masters int                 Number of masters (default 1)
+      --namespace string            Namespace (default "default")
+      --network-provider string     Name of CNI plugin. Available options: calico, flannel, kubenet, weavenet (default "calico")
+      --nodes stringToInt           Node set configuration (default [])
+  -o, --owner string                Current user id (default "tahsin")
+      --provider string             Provider name
+      --zone string                 Cloud provider zone name
 
- Global Flags:
-       --alsologtostderr                  log to standard error as well as files
-       --analytics                        Send analytical events to Google Guard (default true)
-       --config-file string               Path to Pharmer config file
-       --env string                       Environment used to enable debugging (default "dev")
-       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-       --log_dir string                   If non-empty, write log files in this directory
-       --logtostderr                      log to standard error instead of files (default true)
-       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-   -v, --v Level                          log level for V logs
-       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+Global Flags:
+      --alsologtostderr                  log to standard error as well as files
+      --analytics                        Send analytical events to Google Guard (default true)
+      --config-file string               Path to Pharmer config file
+      --env string                       Environment used to enable debugging (default "prod")
+      --kubeconfig string                Paths to a kubeconfig. Only required if out-of-cluster.
+      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+      --log_dir string                   If non-empty, write log files in this directory
+      --logtostderr                      log to standard error instead of files (default true)
+      --master string                    The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.
+      --stderrthreshold severity         logs at or above this threshold go to stderr
+  -v, --v Level                          log level for V logs
+      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
  ```
+
 
 So, we need to run following command to create cluster with our information:
 
  ```console
 $ pharmer create cluster l1 \
-	--provider=linode \
-	--zone=3 \
-	--nodes=1=2 \
-	--credential-uid=linode \
-	--kubernetes-version=v1.11.0
+  --provider=linode \
+  --zone=us-central \
+  --nodes=g6-standard-2=1 \
+  --credential-uid=linode \
+  --kubernetes-version=v1.13.5
 ```
 
 To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](/docs/networking.md)
@@ -159,93 +172,100 @@ To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-adminis
 The directory structure of the storage provider will be look like:
 
 ```console
-~/.pharmer/store.d/clusters/
-        |-- v1
-        |    |__ nodegroups
-        |    |       |__ master.json
-        |    |       |
-        |    |       |__ 1-pool.json
-        |    |
-        |    |--- pki
-        |    |     |__ ca.crt
-        |    |     |
-        |    |     |__ ca.key
-        |    |     |
-        |    |     |__ front-proxy-ca.crt
-        |    |     |
-        |    |     |__ fron-proxy-ca.key
-        |    |
-        |    |__ ssh
-        |          |__ id_l1-25woji
-        |          |
-        |          |__ id_l1-25woji.pub
-        |
-        |__ l1.json
+~/.pharmer/store.d/$USER/clusters/
+├── li
+│   ├── machine
+│   │   ├── li-master-0.json
+│   │   ├── li-master-1.json
+│   │   └── li-master-2.json
+│   ├── machineset
+│   │   └── g6-standard-2-pool.json
+│   ├── pki
+│   │   ├── ca.crt
+│   │   ├── ca.key
+│   │   ├── etcd
+│   │   │   ├── ca.crt
+│   │   │   └── ca.key
+│   │   ├── front-proxy-ca.crt
+│   │   ├── front-proxy-ca.key
+│   │   ├── sa.crt
+│   │   └── sa.key
+│   └── ssh
+│       ├── id_li-sshkey
+│       └── id_li-sshkey.pub
+└── li.json
+
+6 directories, 15 files
 ```
+
 Here,
 
-   - `/v1/nodegroups/`: contains the node groups information. [This](#Cluster scalling) describes node groups operation.You can see the node group list using following command:
-   ```console
-$ pharmer get nodegroups -k v1
-```
-   - `v1/pki`: contains the cluster certificate information containing `ca` and `front-proxy-ca`.
-   - `v1/ssh`: has the ssh credentials on cluster's nodes. With this key you can `ssh` into any node on a cluster.
-   - `v1.json`: contains the cluster resource information.
-You can view your cluster configuration file by following command.
+ - `machine`: conntains information about the master machines to be deployed
+  - `machineset`: contains information about the machinesets to be deployed
+  - `pki`: contains the cluster certificate information containing `ca`, `front-proxy-ca`, `etcd/ca` and service account keys `sa`
+  - `ssh`: has the ssh credentials on cluster's nodes. With this key you can `ssh` into any node on a cluster
+  - `li.json`: contains the cluster resource information 
+
 ```yaml
 $ pharmer get cluster l1 -o yaml
-apiVersion: v1alpha1
 kind: Cluster
+apiVersion: cluster.pharmer.io/v1beta1
 metadata:
-  creationTimestamp: 2017-11-22T09:15:40Z
-  generation: 1511342140472556499
   name: l1
-  uid: b5aca10d-cf65-11e7-a3f3-382c4a73a7c4
+  uid: 47ed5e2a-7856-11e9-8051-e0d55ee85d14
+  generation: 1558064758076986000
+  creationTimestamp: '2019-05-17T03:45:58Z'
 spec:
-  api:
-    advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    enable-admission-plugins: Initializers,NodeRestriction,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ValidatingAdmissionWebhook,DefaultTolerationSeconds,MutatingAdmissionWebhook,ResourceQuota
-    kubelet-preferred-address-types: InternalIP,ExternalIP
-    runtime-config: admissionregistration.k8s.io/v1alpha1
-  caCertName: ca
-  cloud:
-    ccmCredentialName: linode
-    cloudProvider: linode
-    linode:
-      rootPassword: YueW_Qam8eUHQvws
-    region: "3"
-    zone: "3"
-  credentialName: linode
-  frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.11.0
-  networking:
-    dnsDomain: cluster.local
-    networkProvider: calico
-    nonMasqueradeCIDR: 10.0.0.0/8
-    podSubnet: 192.168.0.0/16
-    serviceSubnet: 10.96.0.0/12
+  clusterApi:
+    kind: Cluster
+    apiVersion: cluster.k8s.io/v1alpha1
+    metadata:
+      name: l1
+      namespace: default
+      creationTimestamp: 
+    spec:
+      clusterNetwork:
+        services:
+          cidrBlocks:
+          - 10.96.0.0/12
+        pods:
+          cidrBlocks:
+          - 192.168.0.0/16
+        serviceDomain: cluster.local
+      providerSpec:
+        value:
+          kind: LinodeClusterProviderConfig
+          apiVersion: linodeproviderconfig/v1alpha1
+          metadata:
+            creationTimestamp: 
+    status: {}
+  config:
+    masterCount: 1
+    cloud:
+      cloudProvider: linode
+      region: us-central
+      zone: us-central
+      instanceImage: linode/ubuntu16.04lts
+      networkProvider: calico
+      ccmCredentialName: linode
+      sshKeyName: l1-sshkey
+      linode:
+        rootPassword: 9GPOgQZbSZ4gwxT0
+    kubernetesVersion: v1.13.5
+    caCertName: ca
+    frontProxyCACertName: front-proxy-ca
+    credentialName: linode
+    apiServerExtraArgs:
+      kubelet-preferred-address-types: InternalIP,ExternalIP
 status:
-  cloud: {}
   phase: Pending
-  sshKeyExternalID: l1-25woji
-```
-Here,
+  cloud:
+    loadBalancer:
+      dns: ''
+      ip: ''
+      port: 0
 
-* `metadata.name` refers to the cluster name, which should be unique within your cluster list.
-* `metadata.uid` is a unique ACID, which is generated by pharmer
-* `spec.cloud` specifies the cloud provider information. pharmer uses `ubuntu-16-04-x64` image by default. Don't change the instance images, otherwise cluster may not be working.
-* `spec.api.bindPort` is the api server port.
-* `spec.networking` specifies the network information of the cluster.
-    * `networkProvider`: by default it is `calico`. To modify it click [here](/docs/networking.md).
-    * `podSubnet`: in order for network policy to work correctly this field is needed. For flannel it will be `10.244.0.0/16`
-* `spec.kubernetesVersion` is the cluster server version. It can be modified.
-* `spec.credentialName` is the credential name which is provider during cluster creation command.
-* `spec.apiServerExtraArgs` specifies which value will be forwarded to apiserver during cluster installation.
-* `spec.authorizationMode` refers to the cluster authorization mode.
-* `status.phase` may be `Pending`, `Ready`, `Deleting`, `Deleted`, `Upgrading` depending on current cluster status.
-* `status.sshKeyExternalID` shows which ssh key added to cluster instance.
+```
 
 You can modify this configuration by:
 ```console
@@ -262,49 +282,81 @@ $ pharmer apply l1
  the cluster will look like:
 ```yaml
 pharmer get cluster l1 -o yaml
-apiVersion: v1alpha1
+---
 kind: Cluster
+apiVersion: cluster.pharmer.io/v1beta1
 metadata:
-  creationTimestamp: 2017-11-22T09:15:40Z
-  generation: 1511342140472556499
   name: l1
-  uid: b5aca10d-cf65-11e7-a3f3-382c4a73a7c4
+  uid: 47ed5e2a-7856-11e9-8051-e0d55ee85d14
+  generation: 1558065344523630600
+  creationTimestamp: '2019-05-17T03:45:58Z'
 spec:
-  api:
-    advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    enable-admission-plugins: Initializers,NodeRestriction,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ValidatingAdmissionWebhook,DefaultTolerationSeconds,MutatingAdmissionWebhook,ResourceQuota
-    kubelet-preferred-address-types: InternalIP,ExternalIP
-    runtime-config: admissionregistration.k8s.io/v1alpha1
-  caCertName: ca
-  cloud:
-    ccmCredentialName: linode
-    cloudProvider: linode
-    instanceImage: "146"
-    linode:
-      kernelId: 138
-      rootPassword: YueW_Qam8eUHQvws
-    region: "3"
-    zone: "3"
-  credentialName: linode
-  frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.11.0
-  networking:
-    dnsDomain: cluster.local
-    networkProvider: calico
-    nonMasqueradeCIDR: 10.0.0.0/8
-    podSubnet: 192.168.0.0/16
-    serviceSubnet: 10.96.0.0/12
+  clusterApi:
+    kind: Cluster
+    apiVersion: cluster.k8s.io/v1alpha1
+    metadata:
+      name: l1
+      namespace: default
+      creationTimestamp: 
+    spec:
+      clusterNetwork:
+        services:
+          cidrBlocks:
+          - 10.96.0.0/12
+        pods:
+          cidrBlocks:
+          - 192.168.0.0/16
+        serviceDomain: cluster.local
+      providerSpec:
+        value:
+          apiVersion: linodeproviderconfig/v1alpha1
+          kind: LinodeClusterProviderConfig
+          metadata:
+            creationTimestamp: 
+    status:
+      apiEndpoints:
+      - host: 96.126.119.162
+        port: 6443
+      providerStatus:
+        metadata:
+          creationTimestamp: 
+        network:
+          apiServerLb:
+            client_conn_throttle: 20
+            hostname: nb-96-126-119-162.dallas.nodebalancer.linode.com
+            id: 47809
+            ipv4: 96.126.119.162
+            ipv6: 2600:3c00:1::607e:77a2
+            label: l1-lb
+            region: us-central
+            tags: []
+  config:
+    masterCount: 3
+    cloud:
+      cloudProvider: linode
+      region: us-central
+      zone: us-central
+      instanceImage: linode/ubuntu16.04lts
+      networkProvider: calico
+      ccmCredentialName: linode
+      sshKeyName: l1-sshkey
+      linode:
+        rootPassword: 9GPOgQZbSZ4gwxT0
+        kernelId: linode/latest-64bit
+    kubernetesVersion: v1.13.5
+    caCertName: ca
+    frontProxyCACertName: front-proxy-ca
+    credentialName: linode
+    apiServerExtraArgs:
+      kubelet-preferred-address-types: InternalIP,ExternalIP
 status:
-  apiServer:
-  - address: 192.168.196.71
-    type: InternalIP
-  - address: 198.74.51.221
-    type: ExternalIP
-  cloud: {}
   phase: Ready
-  sshKeyExternalID: l1-25woji
+  cloud:
+    loadBalancer:
+      dns: ''
+      ip: 96.126.119.162
+      port: 6443
+
 ```
 
 Here,
@@ -317,334 +369,218 @@ $ pharmer use cluster l1
 ```
 If you don't have `kubectl` installed click [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 
-Now you can run `kubectl get nodes` and verify that your kubernetes 1.11.0 is running.
+Now you can run `kubectl get nodes` and verify that your kubernetes 1.13.5 is running.
 
 ```console
 $ kubectl get nodes
 
-NAME                 STATUS    ROLES     AGE       VERSION
-l1-023-239-003-219   Ready     node      48s       v1.11.0
-l1-104-200-024-144   Ready     node      35s       v1.11.0
-l1-198-074-051-221   Ready     master    6m        v1.11.0
 ```
 
-If you want to `ssh` into your instance run the following command:
-```console
-$ pharmer ssh  node l1-198-074-051-221  -k l1
-```
 
 ### Cluster Scaling
 
-Scaling a cluster refers following meanings:-
- 1. Increment the number of nodes of a certain node group.
- 2. Decrement the number of nodes of a certain node group.
- 3. Introduce a new node group with a number of nodes.
- 4. Drop existing node group.
+Scaling a cluster refers following meanings
+- Add new master and worker machines
+- Increment the number of nodes of a certain machine-set and machine-deployment
+- Decrement the number of nodes of a certain machine-set and machine-deployment
+- Introduce a new machine-set and machine-deployment with a number of nodes
+- Delete existing machine, machine-set and machine-deployments
 
-To see the current node groups list, you need to run following command:
+You can see the machine and machine-sets deployed in the cluster
+
 ```console
-$ pharmer get nodegroup -k l1
-NAME      Cluster   Node      SKU
-1-pool    l1        2         1
-master    l1        1         3
-```
-* **Updating existing NG**
+$ kubectl get machines
+==========
+NAME                       AGE
+g6-standard-2-pool-pft6v   4m
+l1-master-0                4m
+l1-master-1                4m
+l1-master-2                4m
 
-For scenario 1 & 2 we need to update our existing node group. To update existing node group configuration run
-the following command:
+$ kubectl get machinesets
+NAME                 AGE
+g6-standard-2-pool   5m
+```
+#### Create new master machines
+
+You can create new master machine by the deploying the following yaml
 
 ```yaml
-$ pharmer edit nodegroup 1-pool -k l1
-
-# Please edit the object below. Lines beginning with a '#' will be ignored,
-# and an empty file will abort the edit. If an error occurs while saving this file will be
-# reopened with the relevant failures.
-#
-apiVersion: v1alpha1
-kind: NodeGroup
+kind: Machine
+apiVersion: cluster.k8s.io/v1alpha1
 metadata:
-  clusterName: l1
-  creationTimestamp: 2017-11-22T09:15:40Z
+  name: l1-master-3
   labels:
-    node-role.kubernetes.io/node: ""
-  name: 1-pool
-  uid: b5e7c87f-cf65-11e7-a3f3-382c4a73a7c4
+    cluster.k8s.io/cluster-name: l1
+    node-role.kubernetes.io/master: ''
+    set: controlplane
 spec:
-  nodes: 2
+  providerSpec:
+    value:
+      kind: LinodeClusterProviderConfig
+      apiVersion: linodeproviderconfig/v1alpha1
+      roles:
+      - Master
+      region: us-central
+      type: g6-standard-2
+      image: linode/ubuntu16.04lts
+      pubkey: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+e0+nNjre2JoHDySl1HiWsWmwLyIs1+KbQIM/15JKgQLA4PpkrVwOQkxjZOA+ozBoBgilAFLbca5ERUXeMz8nMoF1+JxwUoqSAeeA7PB1ZyU78r7c0nb1OMcMxituHZnpwtXxbsAAWMXBiEQx8IrlttJrlaD/7IP+jlSzwCyLOAVU/86euC+2bVi6SxnbVNy+POmrwncAx1VXHLP2o1zM9L+ENhYwR1YNfBeQse1zqSafgxEFU9SCrJGbnq6mJNS3U/dVg96Aj4QCYuC8wB7Nmca7U7/3EjTa+rXHzc5g1lqcHI2s26niK34kPLiu8vxp9k2Gkw2Me88Z4J60dScD
+  versions:
+    kubelet: v1.13.5
+    controlPlane: v1.13.5
+```
+
+#### Create new worker machines
+
+You can create new worker machines by deploying the following yaml
+```yaml
+kind: Machine
+apiVersion: cluster.k8s.io/v1alpha1
+metadata:
+  name: l1-master-0
+  creationTimestamp: '2019-05-17T03:45:59Z'
+  labels:
+    cluster.k8s.io/cluster-name: l1
+    node-role.kubernetes.io/node: ''
+    set: node
+spec:
+  providerSpec:
+    value:
+      kind: LinodeClusterProviderConfig
+      apiVersion: linodeproviderconfig/v1alpha1
+      roles:
+      - Node
+      region: us-central
+      type: g6-standard-2
+      image: linode/ubuntu16.04lts
+      pubkey: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+e0+nNjre2JoHDySl1HiWsWmwLyIs1+KbQIM/15JKgQLA4PpkrVwOQkxjZOA+ozBoBgilAFLbca5ERUXeMz8nMoF1+JxwUoqSAeeA7PB1ZyU78r7c0nb1OMcMxituHZnpwtXxbsAAWMXBiEQx8IrlttJrlaD/7IP+jlSzwCyLOAVU/86euC+2bVi6SxnbVNy+POmrwncAx1VXHLP2o1zM9L+ENhYwR1YNfBeQse1zqSafgxEFU9SCrJGbnq6mJNS3U/dVg96Aj4QCYuC8wB7Nmca7U7/3EjTa+rXHzc5g1lqcHI2s26niK34kPLiu8vxp9k2Gkw2Me88Z4J60dScD
+  versions:
+    kubelet: v1.13.5
+```
+#### Create new machinesets
+
+You can deploy new machinesets by deploying the following yaml
+
+```yaml
+kind: MachineSet
+apiVersion: cluster.k8s.io/v1alpha1
+metadata:
+  name: g6-standard-2-pool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.k8s.io/cluster-name: l1
+      cluster.pharmer.io/mg: g6-standard-2
   template:
+    metadata:
+      labels:
+        cluster.k8s.io/cluster-name: l1
+        cluster.pharmer.io/cluster: l1
+        cluster.pharmer.io/mg: g6-standard-2
+        node-role.kubernetes.io/node: ''
+        set: node
     spec:
-      sku: "1"
-status:
-  nodes: 0
-
+      providerSpec:
+        value:
+          kind: LinodeClusterProviderConfig
+          apiVersion: linodeproviderconfig/v1alpha1
+          roles:
+          - Node
+          region: us-central
+          type: g6-standard-2
+          image: linode/ubuntu16.04lts
+          pubkey: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+e0+nNjre2JoHDySl1HiWsWmwLyIs1+KbQIM/15JKgQLA4PpkrVwOQkxjZOA+ozBoBgilAFLbca5ERUXeMz8nMoF1+JxwUoqSAeeA7PB1ZyU78r7c0nb1OMcMxituHZnpwtXxbsAAWMXBiEQx8IrlttJrlaD/7IP+jlSzwCyLOAVU/86euC+2bVi6SxnbVNy+POmrwncAx1VXHLP2o1zM9L+ENhYwR1YNfBeQse1zqSafgxEFU9SCrJGbnq6mJNS3U/dVg96Aj4QCYuC8wB7Nmca7U7/3EjTa+rXHzc5g1lqcHI2s26niK34kPLiu8vxp9k2Gkw2Me88Z4J60dScD
+      versions:
+        kubelet: v1.13.5
 ```
-Here,
-* `metadata.name` refers to the node group name, which is unique within a cluster.
-* `metadata.labels` specifies the label of the nodegroup, which will be add to all nodes of following node group.
-    * For master label will be `"node-role.kubernetes.io/master": ""`
-    * For node label will be like `"node-role.kubernetes.io/node": ""`
-* `metadata.clusterName` indicates the cluster, which has this node group.
-* `spec.nodes` shows the number of nodes for this following group.
-* `spec.template.sku` refers to the size of the machine.
-* `status.node` shows the number of nodes that are really present on the current cluster while scaling.
 
-To update number of nodes for this nodegroup modify the `node` number under `spec` field.
+#### Create new machine-deployments
 
-* **Introduce new NG**
+You can deploy new machine-deployments by deploying the following yaml
 
-To add a new node group for an existing cluster you need to run:
-
-```console
-$ pharmer create ng --nodes=2=1 -k l1
-
-$ pharmer get nodegroups -k l1
-NAME      Cluster   Node      SKU
-1-pool    l1        2         1
-2-pool    l1        1         2
-master    l1        1         3
-
-```
-You can see the yaml of newly created node group, you need to run:
 ```yaml
-$ pharmer get ng 2-pool -k l1 -o yaml
-  apiVersion: v1alpha1
-  kind: NodeGroup
-  metadata:
-    clusterName: l1
-    creationTimestamp: 2017-11-22T10:26:27Z
-    labels:
-      node-role.kubernetes.io/node: ""
-    name: 2-pool
-    uid: 991f8e0e-cf6f-11e7-bb02-382c4a73a7c4
-  spec:
-    nodes: 1
-    template:
-      spec:
-        sku: "2"
-  status:
-    nodes: 0
-```
-
-
-* **Delete existing NG**
-
-If you want to delete existing node group, the following command will help:
-```yaml
-$ pharmer delete ng 1-pool -k l1
-
-$ pharmer get ng 1-pool -k l1 -o yaml
-  apiVersion: v1alpha1
-  kind: NodeGroup
-  metadata:
-    clusterName: l1
-    creationTimestamp: 2017-11-22T09:15:40Z
-    deletionTimestamp: 2017-11-22T10:29:23Z
-    labels:
-      node-role.kubernetes.io/node: ""
-    name: 1-pool
-    uid: b5e7c87f-cf65-11e7-a3f3-382c4a73a7c4
-  spec:
-    nodes: 2
-    template:
-      spec:
-        sku: "1"
-  status:
-    nodes: 0
-```
-Here,
-
- - `metadata.deletionTimestamp`: will appear if node group deleted command was run.
-
-After completing your change on the node groups, you need to apply that via `pharmer` so that changes will be applied
-on provider cluster:
-
-```console
-$ pharmer apply l1
-```
-This command will take care of your actions that you applied on the node groups recently:
-
-```console
-$ pharmer get ng -k l1
-NAME      Cluster   Node      SKU
-2-pool    l1        1         2
-master    l1        1         3
+kind: MachineDeployment
+apiVersion: cluster.k8s.io/v1alpha1
+metadata:
+  name: g6-standard-2-pool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.k8s.io/cluster-name: l1
+      cluster.pharmer.io/mg: g6-standard-2
+  template:
+    metadata:
+      labels:
+        cluster.k8s.io/cluster-name: l1
+        cluster.pharmer.io/cluster: l1
+        cluster.pharmer.io/mg: g6-standard-2
+        node-role.kubernetes.io/node: ''
+        set: node
+    spec:
+      providerSpec:
+        value:
+          kind: LinodeClusterProviderConfig
+          apiVersion: linodeproviderconfig/v1alpha1 
+          roles:
+          - Node
+          region: us-central
+          type: g6-standard-2
+          image: linode/ubuntu16.04lts
+          pubkey: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+e0+nNjre2JoHDySl1HiWsWmwLyIs1+KbQIM/15JKgQLA4PpkrVwOQkxjZOA+ozBoBgilAFLbca5ERUXeMz8nMoF1+JxwUoqSAeeA7PB1ZyU78r7c0nb1OMcMxituHZnpwtXxbsAAWMXBiEQx8IrlttJrlaD/7IP+jlSzwCyLOAVU/86euC+2bVi6SxnbVNy+POmrwncAx1VXHLP2o1zM9L+ENhYwR1YNfBeQse1zqSafgxEFU9SCrJGbnq6mJNS3U/dVg96Aj4QCYuC8wB7Nmca7U7/3EjTa+rXHzc5g1lqcHI2s26niK34kPLiu8vxp9k2Gkw2Me88Z4J60dScD
+      versions:
+        kubelet: v1.13.5
 ```
 
 ### Cluster Upgrading
+#### Upgrade master machines
+You can deploy new master machines with specifying new version in `spec.version.controlPlane` and `spec.version.kubelet`. After new master machines are ready, you can safely delete old ones
 
-To upgrade your cluster firstly you need to check if there any update available for your cluster and latest kubernetes version.
-To check, run:
-
-```console
-$ pharmer describe cluster l1
-Name:		l1
-Version:	v1.11.0
-NodeGroup:
-  Name     Node
-  ----     ------
-  3-pool   1
-  master   1
-[upgrade/versions] Cluster version: v1.11.0
-[upgrade/versions] kubeadm version: v1.11.0
-[upgrade/versions] Latest stable version: v1.11.1
-[upgrade/versions] Latest version in the v1.1 series: v1.1.8
-Components that will be upgraded after you've upgraded the control plane:
-COMPONENT   CURRENT       AVAILABLE
-Kubelet     2 x v1.11.0   v1.11.1
-
-Upgrade to the latest stable version:
-
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.11.0   v1.11.1
-Controller Manager   v1.11.0   v1.11.1
-Scheduler            v1.11.0   v1.11.1
-Kube Proxy           v1.11.0   v1.11.1
-Kube DNS             1.1.3     1.1.3
-
-You can now apply the upgrade by executing the following command:
-
-	pharmer edit cluster l1 --kubernetes-version=v1.11.1
-
-Note: Before you do can perform this upgrade, you have to update kubeadm to v1.11.1
-
-_____________________________________________________________________
+#### Upgrade worker machines
+You can upgrade worker machines by editing machine-deployment
+``` console
+$ kubectl edit machinedeployments <machinedeployment-name>
 ```
+and updating the `spec.version.kubelet`
 
-Then, if you decided to upgrade you cluster run the command that are showing on describe command:
+To upgrade machinesets, you have to deploy new machinesets with specifying new version in `spec.template.spec.version.kubelet`
 
-```console
-$ pharmer edit cluster l1 --kubernetes-version=v1.11.1
-cluster "l1" updated
-```
-You can verify your changes by checking the yaml of the cluster:
+After new machines are ready, you can safely delete old machine-sets
 
-```console
-$ pharmer get cluster l1 -o yaml
-apiVersion: v1alpha1
-kind: Cluster
-metadata:
-  creationTimestamp: 2017-11-22T09:15:40Z
-  generation: 1511347216320193468
-  name: l1
-  uid: b5aca10d-cf65-11e7-a3f3-382c4a73a7c4
-spec:
-  api:
-    advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    enable-admission-plugins: Initializers,NodeRestriction,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ValidatingAdmissionWebhook,DefaultTolerationSeconds,MutatingAdmissionWebhook,ResourceQuota
-    kubelet-preferred-address-types: InternalIP,ExternalIP
-    runtime-config: admissionregistration.k8s.io/v1alpha1
-  caCertName: ca
-  cloud:
-    ccmCredentialName: linode
-    cloudProvider: linode
-    instanceImage: "146"
-    linode:
-      kernelId: 138
-      rootPassword: YueW_Qam8eUHQvws
-    region: "3"
-    zone: "3"
-  credentialName: linode
-  frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.11.1
-  networking:
-    dnsDomain: cluster.local
-    networkProvider: calico
-    nonMasqueradeCIDR: 10.0.0.0/8
-    podSubnet: 192.168.0.0/16
-    serviceSubnet: 10.96.0.0/12
-status:
-  apiServer:
-  - address: 192.168.196.71
-    type: InternalIP
-  - address: 198.74.51.221
-    type: ExternalIP
-  cloud: {}
-  phase: Ready
-  sshKeyExternalID: l1-25woji
-```
-
-Here, `spec.kubernetesVersion` is changed to `v1.11.1` from `v1.11.0`.
-
-If everything looks ok, then run:
-
-```console
-$ pharmer apply v1
-```
-
-You can check your cluster upgraded or not by running following command on your cluster:
-
-```console
-$ kubectl version
-Client Version: version.Info{Major:"1", Minor:"11", GitVersion:"v1.11.0", GitCommit:"91e7b4fd31fcd3d5f436da26c980becec37ceefe", GitTreeState:"clean", BuildDate:"2018-06-27T20:17:28Z", GoVersion:"go1.10.2", Compiler:"gc", Platform:"linux/amd64"}
-Server Version: version.Info{Major:"1", Minor:"11", GitVersion:"v1.11.0", GitCommit:"91e7b4fd31fcd3d5f436da26c980becec37ceefe", GitTreeState:"clean", BuildDate:"2018-06-27T20:08:34Z", GoVersion:"go1.10.2", Compiler:"gc", Platform:"linux/amd64"}
-```
 ## Cluster Deleting
 
 To delete your cluster run
 ```console
 $ pharmer delete cluster l1
 ```
-
-Then, the yaml file looks like:
+Then, the yaml file looks like
 
 ```yaml
 $ pharmer get cluster l1 -o yaml
-
-apiVersion: v1alpha1
 kind: Cluster
+apiVersion: cluster.pharmer.io/v1beta1
 metadata:
-  creationTimestamp: 2017-11-22T09:15:40Z
-  deletionTimestamp: 2017-11-22T10:43:24Z
-  generation: 1511347216320193468
   name: l1
-  uid: b5aca10d-cf65-11e7-a3f3-382c4a73a7c4
-spec:
-  api:
-    advertiseAddress: ""
-    bindPort: 6443
-  apiServerExtraArgs:
-    enable-admission-plugins: Initializers,NodeRestriction,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ValidatingAdmissionWebhook,DefaultTolerationSeconds,MutatingAdmissionWebhook,ResourceQuota
-    kubelet-preferred-address-types: InternalIP,ExternalIP
-    runtime-config: admissionregistration.k8s.io/v1alpha1
-  caCertName: ca
-  cloud:
-    ccmCredentialName: linode
-    cloudProvider: linode
-    instanceImage: "146"
-    linode:
-      kernelId: 138
-      rootPassword: YueW_Qam8eUHQvws
-    region: "3"
-    zone: "3"
-  credentialName: linode
-  frontProxyCACertName: front-proxy-ca
-  kubernetesVersion: v1.11.1
-  networking:
-    dnsDomain: cluster.local
-    networkProvider: calico
-    nonMasqueradeCIDR: 10.0.0.0/8
-    podSubnet: 192.168.0.0/16
-    serviceSubnet: 10.96.0.0/12
+  uid: 379d4d7f-77c1-11e9-b997-e0d55ee85li4
+  generation: 1558000735696016100
+  creationTimestamp: '2019-05-16T09:58:55Z'
+  deletionTimestamp: '2019-05-16T10:38:54Z'
+...
+...
 status:
-  apiServer:
-  - address: 192.168.196.71
-    type: InternalIP
-  - address: 198.74.51.221
-    type: ExternalIP
-  cloud: {}
   phase: Deleting
-  sshKeyExternalID: l1-25woji
+...
+...
+
 ```
 Here,
 
 - `metadata.deletionTimestamp`: is set when cluster deletion command was applied.
 
-Now, to apply delete on provider cluster run:
+Now, to apply delete on provider cluster run
 ```console
-$ pharmer apply l1
+$ pharmer apply li
 ```
 
 **Congratulations !!!** , you're an official `pharmer` user now.
-

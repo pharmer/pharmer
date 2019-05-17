@@ -58,7 +58,7 @@ spec:
     clientSecret: <client secret>
     subscriptionID: <subscription id>
     tenantID: <tenant id>
-  provider: Azure
+  provider: azure
 
 ```
 
@@ -80,7 +80,7 @@ azur         Azure          tenantID=77226, subscriptionID=1bfc, clientID=bfd2fe
 ```
 You can also see the stored credential from the following location:
 ```console
-~/.pharmer/store.d/credentials/azur.json
+~/.pharmer/store.d/$USER/credentials/azur.json
 ```
 
 You can find other credential operations [here](/docs/credential.md)
@@ -102,7 +102,7 @@ Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `azure`
     - Kubernetes version: 1.10.3
     - Credential name: [azur](#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/pharmer/pharmer/blob/master/data/files/azure/cloud.json)
+For location code and sku details click [hrere](https://github.com/pharmer/cloud/blob/master/data/json/apis/cloud.pharmer.io/v1/cloudproviders/azure.json)
  Available options in `pharmer` to create a cluster are:
  ```console
 $ pharmer create cluster -h
@@ -157,7 +157,7 @@ To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-adminis
 The directory structure of the storage provider will be look like:
 
 ```console
-~/.pharmer/store.d/clusters/
+~/.pharmer/store.d/$USER/clusters/
         |-- v1
         |    |__ nodegroups
         |    |       |

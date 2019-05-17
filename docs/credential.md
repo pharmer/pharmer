@@ -93,7 +93,7 @@ Here,
 
 If you use local storage can also see the stored credential from the following location:
 ```console
-$ cd ~/.pharmer/store.d/credentials/
+$ cd ~/.pharmer/store.d/$USER/credentials/
 ```
 
 ### Editing
