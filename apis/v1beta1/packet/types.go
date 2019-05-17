@@ -24,7 +24,7 @@ type PacketMachineProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Plan         string `json:"region,omitempty"`
+	Plan         string `json:"plan,omitempty"`
 	SpotInstance string `json:"type,omitempty"`
 }
 

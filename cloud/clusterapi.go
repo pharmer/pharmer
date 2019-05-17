@@ -45,7 +45,7 @@ type ApiServerTemplate struct {
 	ClusterOwner        string
 }
 
-var MachineControllerImage = "pharmer/machine-controller:latest"
+var MachineControllerImage = "pharmer/machine-controller:0.3.0"
 
 const (
 	BasePath = ".pharmer/config.d"

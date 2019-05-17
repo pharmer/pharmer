@@ -724,7 +724,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
-        image: pharmer/cluster-api-provider-aws
+        image: pharmer/cluster-api-provider-aws:0.0.1
         imagePullPolicy: IfNotPresent
         name: manager
         resources:

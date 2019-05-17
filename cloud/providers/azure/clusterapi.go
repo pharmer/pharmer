@@ -658,7 +658,7 @@ spec:
             secretKeyRef:
               key: subscription-id
               name: azure-provider-azure-controller-secrets
-        image: pharmer/cluster-api-provider-azure
+        image: pharmer/cluster-api-provider-azure:0.0.1
         imagePullPolicy: IfNotPresent
         name: manager
         volumeMounts:

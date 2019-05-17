@@ -737,7 +737,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
-        image: pharmer/gce-controller:latest
+        image: pharmer/gce-controller:0.0.1
         name: manager
         resources:
           limits:

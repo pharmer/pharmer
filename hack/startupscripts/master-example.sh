@@ -153,7 +153,7 @@ kubectl apply \
   --kubeconfig /etc/kubernetes/admin.conf
 
 kubectl apply \
-  -f https://raw.githubusercontent.com/pharmer/addons/master/kubeadm-probe/ds.yaml \
+  -f https://raw.githubusercontent.com/pharmer/addons/release-1.13.1/kubeadm-probe/ds.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 
 mkdir -p ~/.kube
