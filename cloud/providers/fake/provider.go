@@ -3,14 +3,33 @@ package fake
 import (
 	"context"
 
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	core "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type ClusterManager struct {
 	cfg   *api.PharmerConfig
 	owner string
+}
+
+// AddToManager adds all Controllers to the Manager
+func (cm *ClusterManager) AddToManager(ctx context.Context, m manager.Manager) error {
+	return ErrNotImplemented
+}
+
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (v1alpha1.ProviderSpec, error) {
+	return v1alpha1.ProviderSpec{}, ErrNotImplemented
+}
+
+func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
+	return ErrNotImplemented
+}
+func (cm *ClusterManager) SetDefaultCluster(in *api.Cluster, conf *api.ClusterConfig) error {
+	return ErrNotImplemented
 }
 
 var _ Interface = &ClusterManager{}

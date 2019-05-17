@@ -26,23 +26,23 @@ func (c *clusterInvocation) GetSkeleton() (*api.Cluster, error) {
 	}
 	cluster := &api.Cluster{}
 	cluster.Name = c.GetName()
-	cluster.Spec.Cloud.CloudProvider = "digitalocean"
-	cluster.Spec.Cloud.Zone = "nyc3"
-	cluster.Spec.CredentialName = "do"
-	cluster.Spec.KubernetesVersion = "v1.9.0"
+	cluster.Spec.Config.Cloud.CloudProvider = "digitalocean"
+	cluster.Spec.Config.Cloud.Zone = "nyc3"
+	cluster.Spec.Config.CredentialName = "do"
+	cluster.Spec.Config.KubernetesVersion = "v1.9.0"
 	fmt.Println(cm)
 	//err = cm.SetDefaults(cluster)
 	return cluster, err
 }
 
 func (c *clusterInvocation) Update(cluster *api.Cluster) error {
-	cluster.Spec.KubernetesVersion = "v1.8.1"
+	cluster.Spec.Config.KubernetesVersion = "v1.8.1"
 	_, err := c.Storage.Clusters().Update(cluster)
 	return err
 }
 
 func (c *clusterInvocation) CheckUpdate(cluster *api.Cluster) error {
-	if cluster.Spec.KubernetesVersion == "v1.8.1" {
+	if cluster.Spec.Config.KubernetesVersion == "v1.8.1" {
 		return nil
 	}
 	return errors.Errorf("cluster was not updated")
