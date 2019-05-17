@@ -483,7 +483,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	for _, m := range machines {
 		spec, err := clusterapi_aws.MachineConfigFromProviderSpec(m.Spec.ProviderSpec)
 		if err != nil {
-			log.Debug("Error decoding provider spec for machine %q", m.Name)
+			log.Infof("Error decoding provider spec for machine %q", m.Name)
 			return nil, err
 		}
 
@@ -538,7 +538,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			// update master machine spec
 			spec, err := clusterapi_aws.MachineConfigFromProviderSpec(leaderMachine.Spec.ProviderSpec)
 			if err != nil {
-				log.Debug("Error decoding provider spec for machine %q", leaderMachine.Name)
+				log.Infof("Error decoding provider spec for machine %q", leaderMachine.Name)
 				return nil, err
 			}
 

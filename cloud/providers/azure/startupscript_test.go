@@ -12,6 +12,7 @@ import (
 )
 
 func Test_cloudConnector_renderStartupScript(t *testing.T) {
+
 	RegisterFailHandler(Fail)
 
 	ctx := cloud.NewContext(context.Background(), &v1beta1.PharmerConfig{}, "")
