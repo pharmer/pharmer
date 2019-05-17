@@ -54,7 +54,7 @@ func (i *Inspector) runNodeExecutor(podName, podIp, namespace, containerName str
 		time.Sleep(5 * time.Second)
 		retry--
 	}
-	return errors.Errorf("Network is not ok from", podName, "to", podIp)
+	return errors.Errorf("Network is not ok from %v to %v", podName, podIp)
 }
 
 func (i *Inspector) runMasterExecutor(masterNode core.Node, podIp string) error {

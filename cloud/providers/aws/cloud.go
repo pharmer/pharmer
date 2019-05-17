@@ -1675,7 +1675,7 @@ func (conn *cloudConnector) deleteSecurityGroup(vpcID string) error {
 				GroupId: sg.GroupId,
 			})
 			if err != nil {
-				log.Infof("failed to delete security group %s: %v", sg.GroupName, err)
+				log.Infof("failed to delete security group %v: %v", sg.GroupName, err)
 				return false, nil
 			}
 		}

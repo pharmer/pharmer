@@ -27,27 +27,27 @@ func NewNotifier(ctx context.Context, conn stan.Conn, subject string) api.Logger
 }
 
 func (a Notifier) Info(args ...interface{}) {
-	a.notify(api.JobStatus_Running, fmt.Sprint(args))
+	a.notify(api.JobStatus_Running, fmt.Sprint(args...))
 }
 
 func (a Notifier) Infoln(args ...interface{}) {
-	a.notify(api.JobStatus_Running, fmt.Sprintln(args))
+	a.notify(api.JobStatus_Running, fmt.Sprintln(args...))
 }
 
 func (a Notifier) Infof(format string, args ...interface{}) {
-	a.notify(api.JobStatus_Running, fmt.Sprintf(format, args))
+	a.notify(api.JobStatus_Running, fmt.Sprintf(format, args...))
 }
 
 func (a Notifier) Debug(args ...interface{}) {
-	log.Debugln(args)
+	log.Debugln(args...)
 }
 
 func (a Notifier) Debugln(args ...interface{}) {
-	log.Debugln(args)
+	log.Debugln(args...)
 }
 
 func (a Notifier) Debugf(format string, args ...interface{}) {
-	log.Debugf(format, args)
+	log.Debugf(format, args...)
 }
 
 func (a Notifier) notify(event string, message interface{}) (string, error) {
