@@ -113,7 +113,7 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 			return err
 		}
 	} else {
-		cf := credential.GetFormat(opts.Provider)
+		cf := credential.GetFormat(provider)
 		commonSpec.Data = make(map[string]string)
 		for _, f := range cf.Spec.Fields {
 			if f.Input == "password" {
