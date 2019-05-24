@@ -47,7 +47,7 @@ menu_name: product_pharmer_{{ .Version }}
 section_menu_id: reference
 {{- if .RootCmd }}
 aliases:
-  - products/pharmer/{{ .Version }}/reference/
+  - /products/pharmer/{{ .Version }}/reference/
 {{ end }}
 ---
 `))

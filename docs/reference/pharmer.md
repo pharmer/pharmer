@@ -11,7 +11,7 @@ product_name: pharmer
 menu_name: product_pharmer_0.3.1
 section_menu_id: reference
 aliases:
-  - products/pharmer/0.3.1/reference/
+  - /products/pharmer/0.3.1/reference/
 
 ---
 ## pharmer

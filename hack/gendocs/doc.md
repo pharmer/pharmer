@@ -1,22 +1,22 @@
 ---
 title: {{ .Provider.Capital }} Overview
 menu:
-product_pharmer_{{ .Release }}
-identifier: {{ .Provider.Small }}-overview
-name: Overview
-parent: {{ .Provider.Small }}
-weight: 10
+  product_pharmer_{{ .Release }}:
+    identifier: {{ .Provider.Small }}-overview
+    name: Overview
+    parent: {{ .Provider.Small }}
+    weight: 10
 product_name: pharmer
 menu_name: product_pharmer_{{ .Release }}
 section_menu_id: cloud
 url: /products/pharmer/{{ .Release }}/cloud/{{ .Provider.Small}}/
 aliases:
-- /products/pharmer/{{ .Release }}/cloud/{{ .Provider.Small }}/README/
+  - /products/pharmer/{{ .Release }}/cloud/{{ .Provider.Small }}/README/
 ---
 
 # Running Kubernetes on [{{ .Provider.Capital}}]({{ .Provider.URL }})
 
-Following example will use `pharmer` to create a Kubernetes cluster with 1 worker nodes and 3 master nodes (i,e, 4 nodes in you cluster).
+Following example will use `pharmer` to create a Kubernetes cluster with 1 worker nodes and 3 master nodes (i,e, 4 nodes in your cluster).
 
 ### Before you start
 
@@ -140,7 +140,7 @@ You can modify this configuration by:
 $ pharmer edit cluster {{ .Provider.ClusterName }}
 ```
 
-#### Applying 
+#### Applying
 
 If everything looks ok, we can now apply the resources. This actually creates resources on `{{ .Provider.Small }}`.
 Up to now we've only been working locally.
@@ -190,7 +190,7 @@ You can see the machine and machine-sets deployed in the cluster
 #### Deploy new master machines
 You can create new master machine by the deploying the following yaml
 {{ template "master-machine" . }}
-{{ end }} 
+{{ end }}
 
 #### Create new worker machines
 
@@ -215,8 +215,8 @@ You can create new machine-deployments by deploying the following yaml
 You can also update number of nodes of an existing machine-set and machine-deployment using
 
 ```console
-$ kubectl edit <machineset-name> 
-$ kubectl edit <machinedeployment-name> 
+$ kubectl edit <machineset-name>
+$ kubectl edit <machinedeployment-name>
 ```
 and update the `spec.replicas` field
 

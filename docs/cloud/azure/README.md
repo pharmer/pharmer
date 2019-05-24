@@ -1,22 +1,22 @@
 ---
 title: Azure Overview
 menu:
-product_pharmer_0.3.1
-identifier: azure-overview
-name: Overview
-parent: azure
-weight: 10
+  product_pharmer_0.3.1:
+    identifier: azure-overview
+    name: Overview
+    parent: azure
+    weight: 10
 product_name: pharmer
 menu_name: product_pharmer_0.3.1
 section_menu_id: cloud
 url: /products/pharmer/0.3.1/cloud/azure/
 aliases:
-- /products/pharmer/0.3.1/cloud/azure/README/
+  - /products/pharmer/0.3.1/cloud/azure/README/
 ---
 
 # Running Kubernetes on [Azure](https://azure.microsoft.com)
 
-Following example will use `pharmer` to create a Kubernetes cluster with 1 worker nodes and 3 master nodes (i,e, 4 nodes in you cluster).
+Following example will use `pharmer` to create a Kubernetes cluster with 1 worker nodes and 3 master nodes (i,e, 4 nodes in your cluster).
 
 ### Before you start
 
@@ -331,7 +331,7 @@ You can modify this configuration by:
 $ pharmer edit cluster az1
 ```
 
-#### Applying 
+#### Applying
 
 If everything looks ok, we can now apply the resources. This actually creates resources on `azure`.
 Up to now we've only been working locally.
@@ -610,7 +610,7 @@ spec:
     controlPlane: v1.13.5
 ```
 
- 
+
 
 #### Create new worker machines
 
@@ -767,8 +767,8 @@ spec:
 You can also update number of nodes of an existing machine-set and machine-deployment using
 
 ```console
-$ kubectl edit <machineset-name> 
-$ kubectl edit <machinedeployment-name> 
+$ kubectl edit <machineset-name>
+$ kubectl edit <machinedeployment-name>
 ```
 and update the `spec.replicas` field
 
