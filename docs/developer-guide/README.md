@@ -2,17 +2,17 @@
 title: Overview | Developer Guide
 description: Developer Guide Overview
 menu:
-  product_pharmer_0.1.0-alpha.1:
+  product_pharmer_0.3.0:
     identifier: developer-guide-readme
     name: Overview
     parent: developer-guide
     weight: 15
 product_name: pharmer
-menu_name: product_pharmer_0.1.0-alpha.1
+menu_name: product_pharmer_0.3.0
 section_menu_id: developer-guide
-url: /products/pharmer/0.1.0-alpha.1/developer-guide/
+url: /products/pharmer/0.3.0/developer-guide/
 aliases:
-  - /products/pharmer/0.1.0-alpha.1/developer-guide/README/
+  - /products/pharmer/0.3.0/developer-guide/README/
 ---
 
 ## Development Guide

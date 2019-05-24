@@ -1,51 +1,48 @@
 ---
 title: Linode Overview
 menu:
-  product_pharmer_0.1.0-alpha.1:
-    identifier: linode-overview
-    name: Overview
-    parent: linode
-    weight: 30
+product_pharmer_0.3.0
+identifier: linode-overview
+name: Overview
+parent: linode
+weight: 10
 product_name: pharmer
-menu_name: product_pharmer_0.1.0-alpha.1
+menu_name: product_pharmer_0.3.0
 section_menu_id: cloud
-url: /products/pharmer/0.1.0-alpha.1/cloud/linode/
+url: /products/pharmer/0.3.0/cloud/linode/
 aliases:
-  - /products/pharmer/0.1.0-alpha.1/cloud/linode/README/
+- /products/pharmer/0.3.0/cloud/linode/README/
 ---
 
-# Running Kubernetes on [Linode](https://www.linode.com/)
+# Running Kubernetes on [Linode](https://linode.com)
 
-Following example will use `pharmer ` to create a Kubernetes cluster with 2 worker node instances and a master instance (i,e, 3 instance in you cluster).
-
-### Before you start
-
-Following example will use `pharmer ` to create a Kubernetes cluster with 1 worker nodes and 3 master nodes (i,e, 4 nodes in you cluster).
+Following example will use `pharmer` to create a Kubernetes cluster with 1 worker nodes and 3 master nodes (i,e, 4 nodes in you cluster).
 
 ### Before you start
 
 As a prerequisite, you need to have `pharmer` installed.  To install `pharmer` run the following command.
 
 ```console
-mkdir -p $(go env GOPATH)/src/github.com/pharmer
-cd $(go env GOPATH)/src/github.com/pharmer
-git clone https://github.com/pharmer/pharmer
-cd pharmer
-./hack/make.py
+$ mkdir -p $(go env GOPATH)/src/github.com/pharmer
+$ cd $(go env GOPATH)/src/github.com/pharmer
+$ git clone https://github.com/pharmer/pharmer
+$ cd pharmer
+$ ./hack/make.py
 
-pharmer -h
+$ pharmer -h
 ```
 
 ### Pharmer storage
 
-To store your cluster and credential resource, `pharmer` uses [vfs](/docs/cli/vfs.md) as the default storage
-provider. There is another provider [postgres database](/docs/cli/xorm.md) available for storing resources.
+To store your cluster  and credential resource, `pharmer` use [vfs](/docs/cli/vfs.md) as default storage provider. There is another provider [postgres database](/docs/cli/xorm.md) available for storing resources.
 
-To know more click [here](/docs/cli/datastore.md).
+To know more click [here](/docs/cli/datastore.md)
 
 In this document we will use local file system ([vfs](/docs/cli/vfs.md)) as a storage provider.
 
 ### Credential importing
+
+
 
 To get access on [Linode](https://www.linode.com/), `pharmer` needs credentials of `Linode`. To get the api key go to the **API Keys** section
 under **my profile** option. Here you see the `Add an API key`, create and copy that key.
@@ -84,7 +81,7 @@ To see the all credentials you need to run following command:
 ```console
 $ pharmer get credentials
 NAME         Provider       Data
-linode       Linode         token=*****
+linode       linode         token=*****
 ```
 
 You can also see the stored credential from the following location:
@@ -94,27 +91,29 @@ You can also see the stored credential from the following location:
 
 You can find other credential operations [here](/docs/credential.md)
 
+
 ### Cluster provisioning
 
-There are two steps to create a Kubernetes cluster using `pharmer`.
-In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those
-information to create cluster on specific provider.
+There are two steps to create a Kubernetes cluster using `pharmer`. In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those information to create cluster on specific provider.
 
 Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `linode`
 
- * **Cluster Creating:** We want to create a cluster with following information:
-    - Provider: Linode
-    - Cluster name: l1
-    - Location: us-central
-    - Number of nodes: 1
-    - Node sku: g6-standard-2
-    - Kubernetes version: 1.13.5
-    - Credential name: [linode](#credential-importing)
+#### Cluster Creating
 
-For location code and sku details click [here](https://github.com/pharmer/pharmer/blob/master/data/files/linode.json)
- 
- Available options in `pharmer` to create a cluster are:
- 
+We want to create a cluster with following information:
+
+- Provider: linode
+- Cluster name: linode
+- Location: us-central
+- Number of master nodes: 3
+- Number of worker nodes: 1
+- Worker Node sku: g6-standard-2 (cpu: 2, memory: 7.5 Gb)
+- Kubernetes version: v1.13.5
+- Credential name: [linode](#credential-importing)
+
+For location code and sku details click [hrere](https://github.com/pharmer/cloud/blob/master/data/json/apis/cloud.pharmer.io/v1/cloudproviders/linode.json)
+
+Available options in `pharmer` to create a cluster are:
  ```console
  $ pharmer create cluster -h
  Create a Kubernetes cluster for a given cloud provider
@@ -155,29 +154,30 @@ Global Flags:
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
  ```
 
+So, we need to run following command to create cluster with our information.
 
-So, we need to run following command to create cluster with our information:
-
- ```console
-$ pharmer create cluster l1 \
-  --provider=linode \
-  --zone=us-central \
-  --nodes=g6-standard-2=1 \
-  --credential-uid=linode \
-  --kubernetes-version=v1.13.5
+```console
+$ pharmer create cluster linode-1 \
+    --masters 3 \
+    --provider linode \
+    --zone us-central \
+    --nodes g6-standard-2=1 \
+    --credential-uid linode \
+    --kubernetes-version v1.13.5
 ```
 
 To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](/docs/networking.md)
 
 The directory structure of the storage provider will be look like:
 
+
 ```console
 ~/.pharmer/store.d/$USER/clusters/
-├── li
+├── l1
 │   ├── machine
-│   │   ├── li-master-0.json
-│   │   ├── li-master-1.json
-│   │   └── li-master-2.json
+│   │   ├── l1-master-0.json
+│   │   ├── l1-master-1.json
+│   │   └── l1-master-2.json
 │   ├── machineset
 │   │   └── g6-standard-2-pool.json
 │   ├── pki
@@ -191,20 +191,23 @@ The directory structure of the storage provider will be look like:
 │   │   ├── sa.crt
 │   │   └── sa.key
 │   └── ssh
-│       ├── id_li-sshkey
-│       └── id_li-sshkey.pub
-└── li.json
+│       ├── id_l1-sshkey
+│       └── id_l1-sshkey.pub
+└── l1.json
 
 6 directories, 15 files
 ```
 
-Here,
 
- - `machine`: conntains information about the master machines to be deployed
+Here,
+  - `machine`: conntains information about the master machines to be deployed
   - `machineset`: contains information about the machinesets to be deployed
   - `pki`: contains the cluster certificate information containing `ca`, `front-proxy-ca`, `etcd/ca` and service account keys `sa`
   - `ssh`: has the ssh credentials on cluster's nodes. With this key you can `ssh` into any node on a cluster
-  - `li.json`: contains the cluster resource information 
+  - `l1.json`: contains the cluster resource information
+
+You can view your cluster configuration file by following command.
+
 
 ```yaml
 $ pharmer get cluster l1 -o yaml
@@ -264,22 +267,28 @@ status:
       dns: ''
       ip: ''
       port: 0
-
 ```
+
 
 You can modify this configuration by:
 ```console
 $ pharmer edit cluster l1
 ```
-* **Applying:** If everything looks ok, we can now apply the resources. This actually creates resources on `Linode`.
- Up to now we've only been working locally.
 
- To apply run:
+#### Applying 
+
+If everything looks ok, we can now apply the resources. This actually creates resources on `linode`.
+Up to now we've only been working locally.
+
+To apply run:
+
  ```console
 $ pharmer apply l1
 ```
- Now, `pharmer` will apply that configuration, thus create a Kubernetes cluster. After completing task the configuration file of
- the cluster will look like:
+
+Now, `pharmer` will apply that configuration, this create a Kubernetes cluster. After completing task the configuration file of the cluster will be look like
+
+
 ```yaml
 pharmer get cluster l1 -o yaml
 ---
@@ -356,25 +365,36 @@ status:
       dns: ''
       ip: 96.126.119.162
       port: 6443
-
 ```
+
 
 Here,
 
-  `status.phase`: is ready. So, you can use your cluster from local machine.
+  - `status.phase`: is ready. So, you can use your cluster from local machine.
+  - `status.clusterApi.status.apiEndpoints` is the cluster's apiserver address
 
-To get the `kubectl` configuration file(kubeconfig) on your local filesystem run the following command:
+To get the `kubectl` configuration file(kubeconfig) on your local filesystem run the following command.
+
 ```console
 $ pharmer use cluster l1
 ```
 If you don't have `kubectl` installed click [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 
-Now you can run `kubectl get nodes` and verify that your kubernetes 1.13.5 is running.
+Now you can run `kubectl get nodes` and verify that your kubernetes v1.13.5 is running.
 
+
+Now you can run `kubectl get nodes` and verify that your kubernetes 1.13.5 is running.
 ```console
 $ kubectl get nodes
-
+NAME                       STATUS   ROLES    AGE     VERSION
+l1-master-0                Ready    master   6m21s   v1.13.5
+l1-master-1                Ready    master   3m10s   v1.13.5
+l1-master-2                Ready    master   2m7s    v1.13.5
+g6-standard-2-pool-5pft6   Ready    node     56s     v1.13.5
 ```
+
+
+
 
 
 ### Cluster Scaling
@@ -388,9 +408,9 @@ Scaling a cluster refers following meanings
 
 You can see the machine and machine-sets deployed in the cluster
 
+
 ```console
 $ kubectl get machines
-==========
 NAME                       AGE
 g6-standard-2-pool-pft6v   4m
 l1-master-0                4m
@@ -401,8 +421,10 @@ $ kubectl get machinesets
 NAME                 AGE
 g6-standard-2-pool   5m
 ```
-#### Create new master machines
 
+
+
+#### Deploy new master machines
 You can create new master machine by the deploying the following yaml
 
 ```yaml
@@ -430,9 +452,13 @@ spec:
     controlPlane: v1.13.5
 ```
 
+ 
+
 #### Create new worker machines
 
 You can create new worker machines by deploying the following yaml
+
+
 ```yaml
 kind: Machine
 apiVersion: cluster.k8s.io/v1alpha1
@@ -457,9 +483,12 @@ spec:
   versions:
     kubelet: v1.13.5
 ```
+
+
 #### Create new machinesets
 
-You can deploy new machinesets by deploying the following yaml
+You can create new machinesets by deploying the following yaml
+
 
 ```yaml
 kind: MachineSet
@@ -495,9 +524,11 @@ spec:
         kubelet: v1.13.5
 ```
 
+
 #### Create new machine-deployments
 
-You can deploy new machine-deployments by deploying the following yaml
+You can create new machine-deployments by deploying the following yaml
+
 
 ```yaml
 kind: MachineDeployment
@@ -533,28 +564,62 @@ spec:
         kubelet: v1.13.5
 ```
 
+
+#### Scale Cluster
+
+You can also update number of nodes of an existing machine-set and machine-deployment using
+
+```console
+$ kubectl edit <machineset-name> 
+$ kubectl edit <machinedeployment-name> 
+```
+and update the `spec.replicas` field
+
+#### Delete nodes
+
+You can delete machines using
+
+```console
+$ kubectl delete machine <machine-name>
+```
+Warning: if the machine is controlled by a machineset, a new machine will be created. You should update/delete machineset in that case
+
+You can delete machine-set and machine-deployments using
+
+```console
+$ kubectl delete machineset <machineset-name>
+$ kubectl delete machinedeployment <machinedeployment-name>
+```
+
 ### Cluster Upgrading
+
 #### Upgrade master machines
+
 You can deploy new master machines with specifying new version in `spec.version.controlPlane` and `spec.version.kubelet`. After new master machines are ready, you can safely delete old ones
 
 #### Upgrade worker machines
+
 You can upgrade worker machines by editing machine-deployment
+
 ``` console
 $ kubectl edit machinedeployments <machinedeployment-name>
 ```
+
 and updating the `spec.version.kubelet`
 
 To upgrade machinesets, you have to deploy new machinesets with specifying new version in `spec.template.spec.version.kubelet`
-
 After new machines are ready, you can safely delete old machine-sets
 
 ## Cluster Deleting
 
 To delete your cluster run
+
 ```console
 $ pharmer delete cluster l1
 ```
+
 Then, the yaml file looks like
+
 
 ```yaml
 $ pharmer get cluster l1 -o yaml
@@ -572,15 +637,18 @@ status:
   phase: Deleting
 ...
 ...
-
 ```
+
+
 Here,
 
 - `metadata.deletionTimestamp`: is set when cluster deletion command was applied.
 
-Now, to apply delete on provider cluster run
+Now, to apply delete operation of the cluster, run
+
 ```console
-$ pharmer apply li
+$ pharmer apply l1
 ```
 
 **Congratulations !!!** , you're an official `pharmer` user now.
+

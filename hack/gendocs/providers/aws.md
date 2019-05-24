@@ -1,48 +1,4 @@
----
-title: AWS Overview
-menu:
-product_pharmer_0.3.0
-identifier: aws-overview
-name: Overview
-parent: aws
-weight: 10
-product_name: pharmer
-menu_name: product_pharmer_0.3.0
-section_menu_id: cloud
-url: /products/pharmer/0.3.0/cloud/aws/
-aliases:
-- /products/pharmer/0.3.0/cloud/aws/README/
----
-
-# Running Kubernetes on [AWS](https://aws.amazon.com)
-
-Following example will use `pharmer` to create a Kubernetes cluster with 1 worker nodes and 3 master nodes (i,e, 4 nodes in you cluster).
-
-### Before you start
-
-As a prerequisite, you need to have `pharmer` installed.  To install `pharmer` run the following command.
-
-```console
-$ mkdir -p $(go env GOPATH)/src/github.com/pharmer
-$ cd $(go env GOPATH)/src/github.com/pharmer
-$ git clone https://github.com/pharmer/pharmer
-$ cd pharmer
-$ ./hack/make.py
-
-$ pharmer -h
-```
-
-### Pharmer storage
-
-To store your cluster  and credential resource, `pharmer` use [vfs](/docs/cli/vfs.md) as default storage provider. There is another provider [postgres database](/docs/cli/xorm.md) available for storing resources.
-
-To know more click [here](/docs/cli/datastore.md)
-
-In this document we will use local file system ([vfs](/docs/cli/vfs.md)) as a storage provider.
-
-### Credential importing
-
-
+{{ define "credential-importing" }}
 #### Setup IAM User
 
 In order to create cluster within [AWS](https://aws.amazon.com/), `pharmer` needs a dedicated IAM user. `pharmer` use this user's API credential.
@@ -118,102 +74,39 @@ You can also see the stored credential from the following location:
 #### Cluster IAM User
 
  While creating cluster within AWS `pharmer` creates following IAM roles and policies
- * [IAM master policy](https://github.com/pharmer/pharmer/blob/0.3.0/cloud/providers/aws/iam.go#L6)
- * [IAM controller policy](https://github.com/pharmer/pharmer/blob/0.3.0/cloud/providers/aws/iam.go#L77)
- * [IAM master role](https://github.com/pharmer/pharmer/blob/0.3.0/cloud/providers/aws/iam.go#L160)
- * [IAM node policy](https://github.com/pharmer/pharmer/blob/0.3.0/cloud/providers/aws/iam.go#L175)
- * [IAM node role](https://github.com/pharmer/pharmer/blob/0.3.0/cloud/providers/aws/iam.go#L200)
+ * [IAM master policy](https://github.com/pharmer/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L6)
+ * [IAM controller policy](https://github.com/pharmer/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L77)
+ * [IAM master role](https://github.com/pharmer/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L160)
+ * [IAM node policy](https://github.com/pharmer/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L175)
+ * [IAM node role](https://github.com/pharmer/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L200)
+{{ end }}
 
-
-### Cluster provisioning
-
-There are two steps to create a Kubernetes cluster using `pharmer`. In first step `pharmer` create basic configuration file with user choice. Then in second step `pharmer` applies those information to create cluster on specific provider.
-
-Here, we discuss how to use `pharmer` to create a Kubernetes cluster on `aws`
-
-#### Cluster Creating
-
-We want to create a cluster with following information:
-
-- Provider: aws
-- Cluster name: aws
-- Location: us-east-1b
-- Number of master nodes: 3
-- Number of worker nodes: 1
-- Worker Node sku: t2.medium (cpu: 2, memory: 4 Gb)
-- Kubernetes version: v1.13.5
-- Credential name: [aws](#credential-importing)
-
-For location code and sku details click [hrere](https://github.com/pharmer/cloud/blob/master/data/json/apis/cloud.pharmer.io/v1/cloudproviders/aws.json)
-
-Available options in `pharmer` to create a cluster are:
- ```console
- $ pharmer create cluster -h
- Create a Kubernetes cluster for a given cloud provider
-
-Usage:
-  pharmer create cluster [flags]
-
-Aliases:
-  cluster, clusters, Cluster
-
-Examples:
-pharmer create cluster demo-cluster
-
-Flags:
-      --credential-uid string       Use preconfigured cloud credential uid
-  -h, --help                        help for cluster
-      --kubernetes-version string   Kubernetes version
-      --masters int                 Number of masters (default 1)
-      --namespace string            Namespace (default "default")
-      --network-provider string     Name of CNI plugin. Available options: calico, flannel, kubenet, weavenet (default "calico")
-      --nodes stringToInt           Node set configuration (default [])
-  -o, --owner string                Current user id (default "tahsin")
-      --provider string             Provider name
-      --zone string                 Cloud provider zone name
-
-Global Flags:
-      --alsologtostderr                  log to standard error as well as files
-      --analytics                        Send analytical events to Google Guard (default true)
-      --config-file string               Path to Pharmer config file
-      --env string                       Environment used to enable debugging (default "prod")
-      --kubeconfig string                Paths to a kubeconfig. Only required if out-of-cluster.
-      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-      --log_dir string                   If non-empty, write log files in this directory
-      --logtostderr                      log to standard error instead of files (default true)
-      --master string                    The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.
-      --stderrthreshold severity         logs at or above this threshold go to stderr
-  -v, --v Level                          log level for V logs
-      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
- ```
-
-So, we need to run following command to create cluster with our information.
-
+{{ define "get-machines" }}
 ```console
-$ pharmer create cluster aws-1 \
-    --masters 3 \
-    --provider aws \
-    --zone us-east-1b \
-    --nodes t2.medium=1 \
-    --credential-uid aws \
-    --kubernetes-version v1.13.5
+$ kubectl get machines
+NAME                   AGE
+aws-1-master-0         27m
+aws-1-master-1         27m
+aws-1-master-2         27m
+t2.medium-pool-4mnwg   27m
+
+$ kubectl get machinesets
+NAME             AGE
+t2.medium-pool   27m
 ```
-
-To know about [pod networks](https://kubernetes.io/docs/concepts/cluster-administration/networking/) supports in `pharmer` click [here](/docs/networking.md)
-
-The directory structure of the storage provider will be look like:
-
-
+{{ end }}
+ 
+{{ define "tree" }}
 ```console
 $ tree ~/.pharmer/store.d/$USER/clusters/
 /home/<user>/.pharmer/store.d/<user>/clusters/
-├── aws-1
+├── {{ .Provider.ClusterName }}
 │   ├── machine
-│   │   ├── aws-1-master-0.json
-│   │   ├── aws-1-master-1.json
-│   │   └── aws-1-master-2.json
+│   │   ├── {{ .Provider.ClusterName }}-master-0.json
+│   │   ├── {{ .Provider.ClusterName }}-master-1.json
+│   │   └── {{ .Provider.ClusterName }}-master-2.json
 │   ├── machineset
-│   │   └── t2.medium-pool.json
+│   │   └── {{ .Provider.NodeSpec.SKU }}-pool.json
 │   ├── pki
 │   │   ├── ca.crt
 │   │   ├── ca.key
@@ -225,32 +118,23 @@ $ tree ~/.pharmer/store.d/$USER/clusters/
 │   │   ├── sa.crt
 │   │   └── sa.key
 │   └── ssh
-│       ├── id_aws-1-sshkey
-│       └── id_aws-1-sshkey.pub
-└── aws-1.json
+│       ├── id_{{ .Provider.ClusterName }}-sshkey
+│       └── id_{{ .Provider.ClusterName }}-sshkey.pub
+└── {{ .Provider.ClusterName }}.json
 
 6 directories, 15 files
 ```
-
-
-Here,
-  - `machine`: conntains information about the master machines to be deployed
-  - `machineset`: contains information about the machinesets to be deployed
-  - `pki`: contains the cluster certificate information containing `ca`, `front-proxy-ca`, `etcd/ca` and service account keys `sa`
-  - `ssh`: has the ssh credentials on cluster's nodes. With this key you can `ssh` into any node on a cluster
-  - `aws-1.json`: contains the cluster resource information
-
-You can view your cluster configuration file by following command.
-
+{{ end }}
  
+{{ define "pending-cluster" }} 
 ```yaml
-$ pharmer get cluster aws-1 -o yaml
+$ pharmer get cluster {{ .Provider.ClusterName }} -o yaml
 apiVersion: cluster.pharmer.io/v1beta1
 kind: Cluster
 metadata:
   creationTimestamp: "2019-05-16T06:26:31Z"
   generation: 1557987991689291249
-  name: aws-1
+  name: {{ .Provider.ClusterName }}
   uid: 8b9832d9-77a3-11e9-a68a-e0d55ee85d14
 spec:
   clusterApi:
@@ -258,7 +142,7 @@ spec:
     kind: Cluster
     metadata:
       creationTimestamp: null
-      name: aws-1
+      name: {{ .Provider.ClusterName }}
       namespace: default
     spec:
       clusterNetwork:
@@ -299,14 +183,14 @@ spec:
           kind: AWSClusterProviderSpec
           metadata:
             creationTimestamp: null
-            name: aws-1
+            name: {{ .Provider.ClusterName }}
           networkSpec:
             vpc: {}
           region: us-east-1
           saKeyPair:
             cert: null
             key: null
-          sshKeyName: aws-1-sshkey
+          sshKeyName: {{ .Provider.ClusterName }}-sshkey
     status: {}
   config:
     apiServerExtraArgs:
@@ -314,12 +198,12 @@ spec:
       kubelet-preferred-address-types: InternalIP,InternalDNS,ExternalDNS,ExternalIP
     cloud:
       aws:
-        bastionSGName: aws-1-bastion
-        iamProfileMaster: master.aws-1.pharmer
-        iamProfileNode: node.aws-1.pharmer
+        bastionSGName: {{ .Provider.ClusterName }}-bastion
+        iamProfileMaster: master.{{ .Provider.ClusterName }}.pharmer
+        iamProfileNode: node.{{ .Provider.ClusterName }}.pharmer
         masterIPSuffix: ".9"
-        masterSGName: aws-1-controlplane
-        nodeSGName: aws-1-node
+        masterSGName: {{ .Provider.ClusterName }}-controlplane
+        nodeSGName: {{ .Provider.ClusterName }}-node
         privateSubnetCidr: 10.0.0.0/24
         publicSubnetCidr: 10.0.1.0/24
         vpcCIDR: 10.0.0.0/16
@@ -327,11 +211,11 @@ spec:
       cloudProvider: aws
       networkProvider: calico
       region: us-east-1
-      sshKeyName: aws-1-sshkey
-      zone: us-east-1b
+      sshKeyName: {{ .Provider.ClusterName }}-sshkey
+      zone: {{ .Provider.Location }}
     credentialName: aws
-    kubernetesVersion: v1.13.5
-    masterCount: 3
+    kubernetesVersion: {{ .KubernetesVersion }}
+    masterCount: {{ .Provider.MasterNodeCount }}
 status:
   cloud:
     aws: {}
@@ -341,35 +225,18 @@ status:
       port: 0
   phase: Pending
 ```
-
-
-You can modify this configuration by:
-```console
-$ pharmer edit cluster aws-1
-```
-
-#### Applying 
-
-If everything looks ok, we can now apply the resources. This actually creates resources on `aws`.
-Up to now we've only been working locally.
-
-To apply run:
-
- ```console
-$ pharmer apply aws-1
-```
-
-Now, `pharmer` will apply that configuration, this create a Kubernetes cluster. After completing task the configuration file of the cluster will be look like
-
+{{ end }}
  
+
+{{ define "ready-cluster" }} 
 ```yaml
-$ pharmer get cluster aws-1 -o yaml
+$ pharmer get cluster {{ .Provider.ClusterName }} -o yaml
 apiVersion: cluster.pharmer.io/v1beta1
 kind: Cluster
 metadata:
   creationTimestamp: "2019-05-16T06:40:11Z"
   generation: 1557988811187811647
-  name: aws-1
+  name: {{ .Provider.ClusterName }}
   uid: 740dbfc4-77a5-11e9-9087-e0d55ee85d14
 spec:
   clusterApi:
@@ -377,7 +244,7 @@ spec:
     kind: Cluster
     metadata:
       creationTimestamp: null
-      name: aws-1
+      name: {{ .Provider.ClusterName }}
       namespace: default
     spec:
       clusterNetwork:
@@ -418,7 +285,7 @@ spec:
           kind: AWSClusterProviderSpec
           metadata:
             creationTimestamp: null
-            name: aws-1
+            name: {{ .Provider.ClusterName }}
           networkSpec:
             subnets:
             - availabilityZone: us-east-1b
@@ -442,10 +309,10 @@ spec:
           saKeyPair:
             cert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1RENDQWN5Z0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFqTVNFd0h3WURWUVFERXhoellTMWoKWlhKMGFXWnBZMkYwWlMxaGRYUm9iM0pwZEhrd0hoY05NVGt3TlRFMk1EWTBNREV5V2hjTk1qa3dOVEV6TURZMApNREV5V2pBak1TRXdId1lEVlFRREV4aHpZUzFqWlhKMGFXWnBZMkYwWlMxaGRYUm9iM0pwZEhrd2dnRWlNQTBHCkNTcUdTSWIzRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCQVFERURBOWh3WGl1RU5Ra2lNTHhaUm5VSEIvV2NoWDAKRkkzVDduejBTaE1KM09zU3ZUZE5vdkdEMjdQdTg3cWRhSUlTWjZDQmMybERoYmw4MjZtL3c1ZXZ4bU91K3BTUApaUTVTQUYrSlZkbXNNK0ZNTnZZU05CRndIT0t3MXFvUmRBa05peUtIOTlVcmxtelkyN1lDdE1WOXZMN0hldllrCkhoRzg0VDZpQTZwNGNXK0dZOFpxNVloOThSUnBndU9Zb1RmSFlGZDk5a2ZYWk9MNzc2dDJ3Nk1QSEthM3JSbWEKWjZWK0xpTENhUE81UThvS0hoN1JubDRXYVVFbndvcHpZRExOY2tNTlhvYTBuc0hXcitXZzByMUhBTFhISk9vVgo2cktWd1hvTFRsK3dua0s1eTByeGRFUmRrRnk5alpLVUFaVHlmUHZvY2RlRS91SVNFWS9sTTlnUkFnTUJBQUdqCkl6QWhNQTRHQTFVZER3RUIvd1FFQXdJQ3BEQVBCZ05WSFJNQkFmOEVCVEFEQVFIL01BMEdDU3FHU0liM0RRRUIKQ3dVQUE0SUJBUUEyc2Fkd1MzbVltSnBvYi9Fd3NSb3F3VjRlYVBzUUN0aHZVdXgwT3drcHFKYWgweWJ4eWthUQpCUVlIcllrLzJ5SSt4ZXQwc29IYUVKTGZrMkZjZmdsWjM5WFJMZnBTblJTMENZajdJeWFqMTdGT1QzUXN2b0kwCjVUdUw3bngzQWhVZ1I4K2dnR0tXSVRuWnlEODNTa3h5bERjSU5DSFNpZ04vcmpuVHVHWXN0Qit5Q3BZeStjVXkKUGpiR0VTdnBvM1BYR2FKSnlKQTNtaWxjWFdmbUFoaG8zbGFuOGFOeE5STlpKSkhQOElJbkVYdHZ0NUNsT0tDcgo2dGhsYXF5TWJjRnoydCtxdWVtKy93UjQ4bkJ3VEJDSm5iaG9FWHQrNmk5aHloL3hoZ3RlSVYxejlkeCs1Z1FHCnJGVFo3aU8wQVZMWW1XWjh0MityRFQySGZzNi95clBkCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
             key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBeEF3UFljRjRyaERVSklqQzhXVVoxQndmMW5JVjlCU04wKzU4OUVvVENkenJFcjAzClRhTHhnOXV6N3ZPNm5XaUNFbWVnZ1hOcFE0VzVmTnVwdjhPWHI4WmpydnFVajJVT1VnQmZpVlhackRQaFREYjIKRWpRUmNCemlzTmFxRVhRSkRZc2loL2ZWSzVaczJOdTJBclRGZmJ5K3gzcjJKQjRSdk9FK29nT3FlSEZ2aG1QRwphdVdJZmZFVWFZTGptS0UzeDJCWGZmWkgxMlRpKysrcmRzT2pEeHltdDYwWm1tZWxmaTRpd21qenVVUEtDaDRlCjBaNWVGbWxCSjhLS2MyQXl6WEpERFY2R3RKN0IxcS9sb05LOVJ3QzF4eVRxRmVxeWxjRjZDMDVmc0o1Q3VjdEsKOFhSRVhaQmN2WTJTbEFHVThuejc2SEhYaFA3aUVoR1A1VFBZRVFJREFRQUJBb0lCQUUvMC96MEdkRnJCNEZQNgpOMC9PeFNiK1JYbm4wODVWcDdhZEdQZGxVcmgrRXAzMDhCNUk2Nm0wcklFemhKUDRjTHhpNlZLQ3FKYnlia0ZmCk1hOVZiWU15TGF2SzVWWktoL21uejA4cTVYbFhPM2NqSDE4elB6MXplbjFYUDh1WWdLeTJaMkgvRVVFU3U5Z0MKWEF4a2YvdVZSRllGYjJneG4xaGlvWEhnZnVGWjQ3UkgxV0JqampuWjVpL1RMdURTRWNMMTlwU0J6NDl1RE9FUQp1UUQzLzNZbmNYRFlpU2RsRWl2NEIxZFg0czZoVnYyTzRiQXgzdWg5N3BTbDVIV293L1J4QTZFYldDVlZYWEJLCmRNZTBVVVBhOVJwSzl3RTVvTEhlQlI1Y3JWY1BqeWx3M2gvMS9iWGlUOHVlSXMvVmhpSDUrYVZOODI1T29TczAKM2NjMnhNVUNnWUVBNUtpMDU4enNUanFQWlRmU0VrOHhsUUg3RDlhbzV1MWNNaGpwWXNLeWhZeGsrZy9jQzFUYgppY2UvcURBZ0JpcUFXODg1dWFJWlZncXQzZlFHWGlKTHgzREQydklqYmNiNFZvbTBLVW0zRndyai9zSzIwbDY4Cko0aElaVkVCL2o1VDZiZU8zSUdVdnZtbUpqbjBxY1hiTmI2WnZFTlpQSWlwUkRBYmVoZ3A5eDhDZ1lFQTIzMFkKNkJqSFFWczRGQzdmRDZNWHRUQkQ2QVE5V3NYTHhqNW9pa0ZweWs3MkFta2tGWVhJUFp0L1ZSbXBpVEJkYzZsYQpISUFacnorUlN3K2FrSElEMkIrWWRyT1ZDYzd3ZWJWd0V3UWdhMWNseTMzcGJpYlU0TnFOTWEvUUZkTDZOYTFLCnZDUk4vZ3pkSDVoeXk4UW9QOW14dkdqbm1Xd01FTkRKekdXNE9zOENnWUVBdmhCSmh4LzhFQzUzQVJCOEtrSHYKbWNjeXRBQ2ZGb3lZQlFCV0JvU0Z0YUowVUxNY0djTW9WUWRYRk9zancxeFNvMzNGb3JyTnlvcEg2V1VzWWRTcQpIcFpxQmpVZEkrT3VpdWdkZS9CTkl2Y25lcHpKTUdZVWlkdXJLYVJEUHR6NkRSeEp3SnBwVkxEWTNZOXhBaWwzClE5NHhsWjU1cjJwOUlEUElzeDBnek1zQ2dZQmdEOGsxMDVwcGpVM203M2lxOUZ0czdublo4dmtUWUZ4R0lJeEsKYmtTcHlaTThETjVCR1ROQlcyd0lSOW4rZEErQ2pvMGt5aC96cG1PbHNXZVpibjBtT3ZYVWhkWmwyNDgrQlYzTwp4TkNYaWlXOWdSY0lJYkNyMUp0Vk1yaGt4TmpEWTF2QktqYUVTUWNDVEF0NkNSa0FrUHVNRlhHL29SMUt3c1ovClVjbW0yd0tCZ0Y4U3RuRllOWFFyNWc2R1hYQyt5WlVLUWpwVG84VmdDZktkcnFxUDNTaXgzckt6bTJmM1MzckQKM09UcUl6YXgrY3EwZzFRdkU4YmtZZCtuamM3NFgxR3dkQ2pEelh1NFhFUGhDQnhDMk5JcHQ0b0lPRGdZVU1nQwo2L1ZQTHpMSk1lM0JtcjVRU0lDb0I4N1RpK1hWcm44TkNVZzR2Sjd5YkQrMy9JWGVwQ0JlCi0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
-          sshKeyName: aws-1-sshkey
+          sshKeyName: {{ .Provider.ClusterName }}-sshkey
     status:
       apiEndpoints:
-      - host: aws-1-apiserver-1328099475.us-east-1.elb.amazonaws.com
+      - host: {{ .Provider.ClusterName }}-apiserver-1328099475.us-east-1.elb.amazonaws.com
         port: 6443
       providerStatus:
         bastion:
@@ -454,15 +321,15 @@ spec:
           id: i-0d7016536acfd17b9
           imageId: ami-41e0b93b
           instanceState: running
-          keyName: aws-1-sshkey
+          keyName: {{ .Provider.ClusterName }}-sshkey
           privateIp: 10.0.1.245
           publicIp: 34.205.72.251
           securityGroupIds:
           - sg-0f4d0cf3df30c6efd
           subnetId: subnet-085c030daeb5f069c
           tags:
-            Name: aws-1-bastion
-            kubernetes.io/cluster/aws-1: owned
+            Name: {{ .Provider.ClusterName }}-bastion
+            kubernetes.io/cluster/{{ .Provider.ClusterName }}: owned
             sigs.k8s.io/cluster-api-provider-aws/managed: "true"
             sigs.k8s.io/cluster-api-provider-aws/role: bastion
           type: t2.micro
@@ -472,8 +339,8 @@ spec:
           apiServerElb:
             attributes:
               idleTimeout: 600000000000
-            dnsName: aws-1-apiserver-1328099475.us-east-1.elb.amazonaws.com
-            name: aws-1-apiserver
+            dnsName: {{ .Provider.ClusterName }}-apiserver-1328099475.us-east-1.elb.amazonaws.com
+            name: {{ .Provider.ClusterName }}-apiserver
             scheme: internet-facing
             securityGroupIds:
             - sg-0f10cf6bc1e94a354
@@ -490,10 +357,10 @@ spec:
                 protocol: tcp
                 sourceSecurityGroupIds: null
                 toPort: 22
-              name: aws-1-bastion
+              name: {{ .Provider.ClusterName }}-bastion
               tags:
-                Name: aws-1-bastion
-                kubernetes.io/cluster/aws-1: owned
+                Name: {{ .Provider.ClusterName }}-bastion
+                kubernetes.io/cluster/{{ .Provider.ClusterName }}: owned
                 sigs.k8s.io/cluster-api-provider-aws/managed: "true"
                 sigs.k8s.io/cluster-api-provider-aws/role: bastion
             controlplane:
@@ -543,10 +410,10 @@ spec:
                 - sg-0b732196e2c4771ee
                 - sg-0f10cf6bc1e94a354
                 toPort: 0
-              name: aws-1-controlplane
+              name: {{ .Provider.ClusterName }}-controlplane
               tags:
-                Name: aws-1-controlplane
-                kubernetes.io/cluster/aws-1: owned
+                Name: {{ .Provider.ClusterName }}-controlplane
+                kubernetes.io/cluster/{{ .Provider.ClusterName }}: owned
                 sigs.k8s.io/cluster-api-provider-aws/managed: "true"
                 sigs.k8s.io/cluster-api-provider-aws/role: controlplane
             node:
@@ -589,10 +456,10 @@ spec:
                 - sg-0b732196e2c4771ee
                 - sg-0f10cf6bc1e94a354
                 toPort: 0
-              name: aws-1-node
+              name: {{ .Provider.ClusterName }}-node
               tags:
-                Name: aws-1-node
-                kubernetes.io/cluster/aws-1: owned
+                Name: {{ .Provider.ClusterName }}-node
+                kubernetes.io/cluster/{{ .Provider.ClusterName }}: owned
                 sigs.k8s.io/cluster-api-provider-aws/managed: "true"
                 sigs.k8s.io/cluster-api-provider-aws/role: node
   config:
@@ -602,12 +469,12 @@ spec:
     caCertName: ca
     cloud:
       aws:
-        bastionSGName: aws-1-bastion
-        iamProfileMaster: master.aws-1.pharmer
-        iamProfileNode: node.aws-1.pharmer
+        bastionSGName: {{ .Provider.ClusterName }}-bastion
+        iamProfileMaster: master.{{ .Provider.ClusterName }}.pharmer
+        iamProfileNode: node.{{ .Provider.ClusterName }}.pharmer
         masterIPSuffix: ".9"
-        masterSGName: aws-1-controlplane
-        nodeSGName: aws-1-node
+        masterSGName: {{ .Provider.ClusterName }}-controlplane
+        nodeSGName: {{ .Provider.ClusterName }}-node
         privateSubnetCidr: 10.0.0.0/24
         publicSubnetCidr: 10.0.1.0/24
         vpcCIDR: 10.0.0.0/16
@@ -617,11 +484,11 @@ spec:
       networkProvider: calico
       os: ubuntu
       region: us-east-1
-      sshKeyName: aws-1-sshkey
+      sshKeyName: {{ .Provider.ClusterName }}-sshkey
       zone: us-east-1b
     credentialName: aws
     frontProxyCACertName: front-proxy-ca
-    kubernetesVersion: v1.13.5
+    kubernetesVersion: {{ .KubernetesVersion }}
     masterCount: 3
 status:
   cloud:
@@ -630,44 +497,31 @@ status:
       masterSGID: sg-0f10cf6bc1e94a354
       nodeSGID: sg-0b732196e2c4771ee
     loadBalancer:
-      dns: aws-1-apiserver-1328099475.us-east-1.elb.amazonaws.com
+      dns: {{ .Provider.ClusterName }}-apiserver-1328099475.us-east-1.elb.amazonaws.com
       ip: ""
       port: 6443
   phase: Ready
 ```
+{{ end }}
 
-
-Here,
-
-  - `status.phase`: is ready. So, you can use your cluster from local machine.
-  - `status.clusterApi.status.apiEndpoints` is the cluster's apiserver address
-
-To get the `kubectl` configuration file(kubeconfig) on your local filesystem run the following command.
-
-```console
-$ pharmer use cluster aws-1
-```
-If you don't have `kubectl` installed click [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-
-Now you can run `kubectl get nodes` and verify that your kubernetes v1.13.5 is running.
-
-
+{{ define "get-nodes" }}
 NAME                         STATUS   ROLES    AGE     VERSION
-ip-10-0-0-101.ec2.internal   Ready    master   5m37s   v1.13.5
-ip-10-0-0-239.ec2.internal   Ready    master   6m28s   v1.13.5
-ip-10-0-0-27.ec2.internal    Ready    node     5m37s   v1.13.5
-ip-10-0-0-71.ec2.internal    Ready    master   8m36s   v1.13.5
+ip-10-0-0-101.ec2.internal   Ready    master   5m37s   {{ .KubernetesVersion }}
+ip-10-0-0-239.ec2.internal   Ready    master   6m28s   {{ .KubernetesVersion }}
+ip-10-0-0-27.ec2.internal    Ready    node     5m37s   {{ .KubernetesVersion }}
+ip-10-0-0-71.ec2.internal    Ready    master   8m36s   {{ .KubernetesVersion }}
+{{ end }}
 
 
-
+{{ define "ssh" }}
 
 You can ssh to the nodes from bastion node.
 
 First, ssh to bastion node
 ```console
-$ cd ~/.pharmer/store.d/$USER/clusters/aws-1/ssh/
-$ ssh-add id_aws-1-sshkey
-Identity added: id_aws-1-sshkey (id_aws-1-sshkey)
+$ cd ~/.pharmer/store.d/$USER/clusters/{{ .Provider.ClusterName }}/ssh/
+$ ssh-add id_{{ .Provider.ClusterName }}-sshkey
+Identity added: id_{{ .Provider.ClusterName }}-sshkey (id_{{ .Provider.ClusterName }}-sshkey)
 $ ssh -A ubuntu@34.205.72.251 #bastion-ip
 ```
 Then you can ssh to any node in the cluster from bastion node using its private ip
@@ -677,44 +531,15 @@ ubuntu@ip-10-0-1-245:~$ ssh 10.0.0.71
 ubuntu@ip-10-0-0-71:~$ 
 ```
 
+{{ end }}
 
-
-### Cluster Scaling
-
-Scaling a cluster refers following meanings
-- Add new master and worker machines
-- Increment the number of nodes of a certain machine-set and machine-deployment
-- Decrement the number of nodes of a certain machine-set and machine-deployment
-- Introduce a new machine-set and machine-deployment with a number of nodes
-- Delete existing machine, machine-set and machine-deployments
-
-You can see the machine and machine-sets deployed in the cluster
-
-
-```console
-$ kubectl get machines
-NAME                   AGE
-aws-1-master-0         27m
-aws-1-master-1         27m
-aws-1-master-2         27m
-t2.medium-pool-4mnwg   27m
-
-$ kubectl get machinesets
-NAME             AGE
-t2.medium-pool   27m
-```
-
-
-
-#### Deploy new master machines
-You can create new master machine by the deploying the following yaml
-
+{{ define "master-machine" }}
 ```yaml
 apiVersion: cluster.k8s.io/v1alpha1
 kind: Machine
 metadata:
   labels:
-    cluster.k8s.io/cluster-name: aws-1
+    cluster.k8s.io/cluster-name: {{ .Provider.ClusterName }}
     node-role.kubernetes.io/master: ""
     set: controlplane
   name: new-master
@@ -724,26 +549,21 @@ spec:
     value:
       apiVersion: awsprovider/v1alpha1
       kind: AWSMachineProviderSpec
-      iamInstanceProfile: master.aws-1.pharmer
+      iamInstanceProfile: master.{{ .Provider.ClusterName }}.pharmer
       instanceType: t2.large
-      keyName: aws-1-sshkey
+      keyName: {{ .Provider.ClusterName }}-sshkey
   versions:
-    controlPlane: v1.13.5
-    kubelet: v1.13.5
+    controlPlane: {{ .KubernetesVersion }}
+    kubelet: {{ .KubernetesVersion }}
+{{ end }}
 
- 
-
-#### Create new worker machines
-
-You can create new worker machines by deploying the following yaml
-
-
+{{ define "worker-machine" }}
 ```yaml
 apiVersion: cluster.k8s.io/v1alpha1
 kind: Machine
 metadata:
   labels:
-    cluster.k8s.io/cluster-name: aws-1
+    cluster.k8s.io/cluster-name: {{ .Provider.ClusterName }}
     node-role.kubernetes.io/node: ""
     set: node
   name: new-node
@@ -753,19 +573,15 @@ spec:
     value:
       apiVersion: awsprovider/v1alpha1
       kind: AWSMachineProviderSpec
-      iamInstanceProfile: node.aws-1.pharmer
+      iamInstanceProfile: node.{{ .Provider.ClusterName }}.pharmer
       instanceType: t2.large
-      keyName: aws-1-sshkey
+      keyName: {{ .Provider.ClusterName }}-sshkey
   versions:
-    kubelet: v1.13.5
+    kubelet: {{ .KubernetesVersion }}
 ```
+{{ end }}
 
-
-#### Create new machinesets
-
-You can create new machinesets by deploying the following yaml
-
-
+{{ define "machineset" }}
 ```yaml
 apiVersion: cluster.k8s.io/v1alpha1
 kind: MachineSet
@@ -776,34 +592,30 @@ spec:
   replicas: 2
   selector:
     matchLabels:
-      cluster.k8s.io/cluster-name: aws-1
-      cluster.pharmer.io/mg: t2.medium
+      cluster.k8s.io/cluster-name: {{ .Provider.ClusterName }}
+      cluster.pharmer.io/mg: {{ .Provider.NodeSpec.SKU }}
   template:
     metadata:
       labels:
-        cluster.k8s.io/cluster-name: aws-1
-        cluster.pharmer.io/cluster: aws-1
-        cluster.pharmer.io/mg: t2.medium
+        cluster.k8s.io/cluster-name: {{ .Provider.ClusterName }}
+        cluster.pharmer.io/cluster: {{ .Provider.ClusterName }}
+        cluster.pharmer.io/mg: {{ .Provider.NodeSpec.SKU }}
         node-role.kubernetes.io/node: ""
         set: node
     spec:
       providerSpec:
         value:
           apiVersion: awsprovider/v1alpha1
-          iamInstanceProfile: node.aws-1.pharmer
-          instanceType: t2.medium
-          keyName: aws-1-sshkey
+          iamInstanceProfile: node.{{ .Provider.ClusterName }}.pharmer
+          instanceType: {{ .Provider.NodeSpec.SKU }}
+          keyName: {{ .Provider.ClusterName }}-sshkey
           kind: AWSMachineProviderSpec
       versions:
-        kubelet: v1.13.5
+        kubelet: {{ .KubernetesVersion }}
 ```
+{{ end }}
 
-
-#### Create new machine-deployments
-
-You can create new machine-deployments by deploying the following yaml
-
- 
+{{ define "machinedeployment" }} 
 
 ```yaml
 apiVersion: cluster.k8s.io/v1alpha1
@@ -815,91 +627,36 @@ spec:
   replicas: 2
   selector:
     matchLabels:
-      cluster.k8s.io/cluster-name: aws-1
-      cluster.pharmer.io/mg: t2.medium
+      cluster.k8s.io/cluster-name: {{ .Provider.ClusterName }}
+      cluster.pharmer.io/mg: {{ .Provider.NodeSpec.SKU }}
   template:
     metadata:
       labels:
-        cluster.k8s.io/cluster-name: aws-1
-        cluster.pharmer.io/cluster: aws-1
-        cluster.pharmer.io/mg: t2.medium
+        cluster.k8s.io/cluster-name: {{ .Provider.ClusterName }}
+        cluster.pharmer.io/cluster: {{ .Provider.ClusterName }}
+        cluster.pharmer.io/mg: {{ .Provider.NodeSpec.SKU }}
         node-role.kubernetes.io/node: ""
         set: node
     spec:
       providerSpec:
         value:
           apiVersion: awsprovider/v1alpha1
-          iamInstanceProfile: node.aws-1.pharmer
-          instanceType: t2.medium
-          keyName: aws-1-sshkey
+          iamInstanceProfile: node.{{ .Provider.ClusterName }}.pharmer
+          instanceType: {{ .Provider.NodeSpec.SKU }}
+          keyName: {{ .Provider.ClusterName }}-sshkey
           kind: AWSMachineProviderSpec
       versions:
-        kubelet: v1.13.5
+        kubelet: {{ .KubernetesVersion }}
 ```
+{{ end }}
 
-
-#### Scale Cluster
-
-You can also update number of nodes of an existing machine-set and machine-deployment using
-
-```console
-$ kubectl edit <machineset-name> 
-$ kubectl edit <machinedeployment-name> 
-```
-and update the `spec.replicas` field
-
-#### Delete nodes
-
-You can delete machines using
-
-```console
-$ kubectl delete machine <machine-name>
-```
-Warning: if the machine is controlled by a machineset, a new machine will be created. You should update/delete machineset in that case
-
-You can delete machine-set and machine-deployments using
-
-```console
-$ kubectl delete machineset <machineset-name>
-$ kubectl delete machinedeployment <machinedeployment-name>
-```
-
-### Cluster Upgrading
-
-#### Upgrade master machines
-
-You can deploy new master machines with specifying new version in `spec.version.controlPlane` and `spec.version.kubelet`. After new master machines are ready, you can safely delete old ones
-
-#### Upgrade worker machines
-
-You can upgrade worker machines by editing machine-deployment
-
-``` console
-$ kubectl edit machinedeployments <machinedeployment-name>
-```
-
-and updating the `spec.version.kubelet`
-
-To upgrade machinesets, you have to deploy new machinesets with specifying new version in `spec.template.spec.version.kubelet`
-After new machines are ready, you can safely delete old machine-sets
-
-## Cluster Deleting
-
-To delete your cluster run
-
-```console
-$ pharmer delete cluster aws-1
-```
-
-Then, the yaml file looks like
-
-
+{{ define "deleted-cluster" }}
 ```yaml
 $ pharmer get cluster a1 -o yaml
 kind: Cluster
 apiVersion: cluster.pharmer.io/v1beta1
 metadata:
-  name: aws-1
+  name: {{ .Provider.ClusterName }}
   uid: 740dbfc4-77a5-11e9-9087-e0d55ee85d14
   generation: 1557988811187811600
   creationTimestamp: '2019-05-16T06:40:11Z'
@@ -912,17 +669,4 @@ status:
 ...
 ...
 ```
-
-
-Here,
-
-- `metadata.deletionTimestamp`: is set when cluster deletion command was applied.
-
-Now, to apply delete operation of the cluster, run
-
-```console
-$ pharmer apply aws-1
-```
-
-**Congratulations !!!** , you're an official `pharmer` user now.
-
+{{ end }}

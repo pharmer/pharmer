@@ -3,12 +3,13 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/appscode/go/log"
 
 	"github.com/appscode/go/runtime"
 	"github.com/pharmer/pharmer/cmds"
@@ -16,7 +17,7 @@ import (
 )
 
 const (
-	version = "0.1.0-alpha.1"
+	version = "0.3.0"
 )
 
 var (
@@ -104,5 +105,10 @@ func main() {
 	}
 	if err := f.Close(); err != nil {
 		log.Fatalln(err)
+	}
+
+	err = genCloudProviderDocs()
+	if err != nil {
+		log.Fatalf("failed to update cloud provider docs: %v", err)
 	}
 }

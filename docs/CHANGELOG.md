@@ -1,11 +1,115 @@
 # Change Log
 
-## [Unreleased](https://github.com/pharmer/pharmer/tree/HEAD)
+## [0.3.0](https://github.com/pharmer/pharmer/tree/0.3.0) (2019-05-17)
+[Full Changelog](https://github.com/pharmer/pharmer/compare/0.2.1...0.3.0)
 
-[Full Changelog](https://github.com/pharmer/pharmer/compare/0.1.0-rc.1...HEAD)
+**Closed issues:**
+
+- Support Kubernetes version 1.13 [\#468](https://github.com/pharmer/pharmer/issues/468)
+- Cut release for flex volumes [\#413](https://github.com/pharmer/pharmer/issues/413)
+- AWS Lightsail [\#291](https://github.com/pharmer/pharmer/issues/291)
 
 **Merged pull requests:**
 
+- Fix travis tests [\#483](https://github.com/pharmer/pharmer/pull/483) ([tahsinrahman](https://github.com/tahsinrahman))
+- Use official linode client and CCM, fix various bugs \(\#3\) [\#482](https://github.com/pharmer/pharmer/pull/482) ([sanjid133](https://github.com/sanjid133))
+- Add support for kubernetes v1.14.0 [\#481](https://github.com/pharmer/pharmer/pull/481) ([tahsinrahman](https://github.com/tahsinrahman))
+- Update README.md [\#477](https://github.com/pharmer/pharmer/pull/477) ([patrickbeam](https://github.com/patrickbeam))
+- Update ccm for kubernetes 1.13 [\#470](https://github.com/pharmer/pharmer/pull/470) ([sanjid133](https://github.com/sanjid133))
+
+## [0.2.1](https://github.com/pharmer/pharmer/tree/0.2.1) (2018-12-10)
+[Full Changelog](https://github.com/pharmer/pharmer/compare/0.2.0...0.2.1)
+
+**Merged pull requests:**
+
+- Add Kubernetes v1.13 support [\#469](https://github.com/pharmer/pharmer/pull/469) ([sanjid133](https://github.com/sanjid133))
+
+## [0.2.0](https://github.com/pharmer/pharmer/tree/0.2.0) (2018-12-07)
+[Full Changelog](https://github.com/pharmer/pharmer/compare/0.1.1...0.2.0)
+
+**Closed issues:**
+
+- scaleway create cluster errors [\#466](https://github.com/pharmer/pharmer/issues/466)
+- ssh connection refused  [\#462](https://github.com/pharmer/pharmer/issues/462)
+
+## [0.1.1](https://github.com/pharmer/pharmer/tree/0.1.1) (2018-10-29)
+[Full Changelog](https://github.com/pharmer/pharmer/compare/0.1.0...0.1.1)
+
+**Merged pull requests:**
+
+- ssh issue fix [\#463](https://github.com/pharmer/pharmer/pull/463) ([sanjid133](https://github.com/sanjid133))
+
+## [0.1.0](https://github.com/pharmer/pharmer/tree/0.1.0) (2018-10-13)
+[Full Changelog](https://github.com/pharmer/pharmer/compare/0.1.0-rc.5...0.1.0)
+
+**Closed issues:**
+
+- Getting pod network error on kubernetes 1.10.0 [\#454](https://github.com/pharmer/pharmer/issues/454)
+- Support Kubernetes version 1.11 [\#445](https://github.com/pharmer/pharmer/issues/445)
+- Use Mutex if fake store [\#76](https://github.com/pharmer/pharmer/issues/76)
+- Use authorized key file format for SSH key [\#62](https://github.com/pharmer/pharmer/issues/62)
+- Mount Local disk for etcd [\#50](https://github.com/pharmer/pharmer/issues/50)
+- Refactor credential loader [\#18](https://github.com/pharmer/pharmer/issues/18)
+- Cleanup versions by env [\#8](https://github.com/pharmer/pharmer/issues/8)
+- Convert api objects to proto [\#4](https://github.com/pharmer/pharmer/issues/4)
+
+**Merged pull requests:**
+
+- Kubernets 1.12 support added [\#461](https://github.com/pharmer/pharmer/pull/461) ([sanjid133](https://github.com/sanjid133))
+- Use kubernetes-1.11.3 [\#460](https://github.com/pharmer/pharmer/pull/460) ([tamalsaha](https://github.com/tamalsaha))
+- Revendor dependencies [\#458](https://github.com/pharmer/pharmer/pull/458) ([tamalsaha](https://github.com/tamalsaha))
+- Doc updated for kubernetes version 1.11.0 [\#457](https://github.com/pharmer/pharmer/pull/457) ([sanjid133](https://github.com/sanjid133))
+- wait for completing master upgrade [\#456](https://github.com/pharmer/pharmer/pull/456) ([sanjid133](https://github.com/sanjid133))
+- calico 2.6 support for 1.10 or less [\#455](https://github.com/pharmer/pharmer/pull/455) ([sanjid133](https://github.com/sanjid133))
+
+## [0.1.0-rc.5](https://github.com/pharmer/pharmer/tree/0.1.0-rc.5) (2018-07-20)
+[Full Changelog](https://github.com/pharmer/pharmer/compare/0.1.0-rc.4...0.1.0-rc.5)
+
+**Fixed bugs:**
+
+- pharmer ssh fails with "failed to detect external Ip for node..." [\#429](https://github.com/pharmer/pharmer/issues/429)
+
+**Closed issues:**
+
+- \[digitalocean\] 2 nodes are creating instead of one when using `nodes=4gb=1` [\#440](https://github.com/pharmer/pharmer/issues/440)
+- Trouble with Packet / cloud-controller-manager [\#432](https://github.com/pharmer/pharmer/issues/432)
+- Update conformance tests for 1.10 [\#408](https://github.com/pharmer/pharmer/issues/408)
+
+**Merged pull requests:**
+
+- Update addons branch [\#450](https://github.com/pharmer/pharmer/pull/450) ([sanjid133](https://github.com/sanjid133))
+- Admission control value update for 1.11 [\#449](https://github.com/pharmer/pharmer/pull/449) ([sanjid133](https://github.com/sanjid133))
+- Update dependencies to Kubernetes 1.11 release [\#444](https://github.com/pharmer/pharmer/pull/444) ([tamalsaha](https://github.com/tamalsaha))
+- Format shell scripts [\#443](https://github.com/pharmer/pharmer/pull/443) ([tamalsaha](https://github.com/tamalsaha))
+- EKS, GKE and AKS documentation added [\#442](https://github.com/pharmer/pharmer/pull/442) ([sanjid133](https://github.com/sanjid133))
+- guard login command added for eks [\#441](https://github.com/pharmer/pharmer/pull/441) ([sanjid133](https://github.com/sanjid133))
+-  Amazon EKS added [\#439](https://github.com/pharmer/pharmer/pull/439) ([sanjid133](https://github.com/sanjid133))
+- Linode [\#436](https://github.com/pharmer/pharmer/pull/436) ([sanjid133](https://github.com/sanjid133))
+- Fix typo [\#435](https://github.com/pharmer/pharmer/pull/435) ([nightfury1204](https://github.com/nightfury1204))
+- cluster name converted to lower [\#434](https://github.com/pharmer/pharmer/pull/434) ([sanjid133](https://github.com/sanjid133))
+- Fix release script [\#428](https://github.com/pharmer/pharmer/pull/428) ([tamalsaha](https://github.com/tamalsaha))
+- concourse tests [\#404](https://github.com/pharmer/pharmer/pull/404) ([tahsinrahman](https://github.com/tahsinrahman))
+
+## [0.1.0-rc.4](https://github.com/pharmer/pharmer/tree/0.1.0-rc.4) (2018-05-16)
+[Full Changelog](https://github.com/pharmer/pharmer/compare/0.1.0-rc.3...0.1.0-rc.4)
+
+**Merged pull requests:**
+
+- pre-k provider flag added for aws and gce [\#427](https://github.com/pharmer/pharmer/pull/427) ([sanjid133](https://github.com/sanjid133))
+
+## [0.1.0-rc.3](https://github.com/pharmer/pharmer/tree/0.1.0-rc.3) (2018-05-16)
+[Full Changelog](https://github.com/pharmer/pharmer/compare/0.1.0-rc.2...0.1.0-rc.3)
+
+**Merged pull requests:**
+
+- Return error for ValidateFlag methods [\#426](https://github.com/pharmer/pharmer/pull/426) ([tamalsaha](https://github.com/tamalsaha))
+
+## [0.1.0-rc.2](https://github.com/pharmer/pharmer/tree/0.1.0-rc.2) (2018-05-14)
+[Full Changelog](https://github.com/pharmer/pharmer/compare/0.1.0-rc.1...0.1.0-rc.2)
+
+**Merged pull requests:**
+
+- Add changelog [\#425](https://github.com/pharmer/pharmer/pull/425) ([tamalsaha](https://github.com/tamalsaha))
 - Revendor [\#424](https://github.com/pharmer/pharmer/pull/424) ([tamalsaha](https://github.com/tamalsaha))
 - scaleway:: remove bootscript while creating server [\#423](https://github.com/pharmer/pharmer/pull/423) ([sanjid133](https://github.com/sanjid133))
 - Fixed some spelling and grammar issues [\#420](https://github.com/pharmer/pharmer/pull/420) ([yoshizzle](https://github.com/yoshizzle))
@@ -86,7 +190,6 @@
 - Digital Ocean Key Issue [\#318](https://github.com/pharmer/pharmer/issues/318)
 - AWS IAM roles [\#307](https://github.com/pharmer/pharmer/issues/307)
 - Improve README for Packet [\#257](https://github.com/pharmer/pharmer/issues/257)
-- Mount Local disk for etcd [\#50](https://github.com/pharmer/pharmer/issues/50)
 
 **Merged pull requests:**
 
@@ -159,7 +262,6 @@
 - Change the default kubeadm bootstrap token TTL from infinite to 24 hours [\#64](https://github.com/pharmer/pharmer/issues/64)
 - Integrate Vault [\#53](https://github.com/pharmer/pharmer/issues/53)
 - docker install error: no sockets found via socket activation: make sure the service was started by systemd [\#40](https://github.com/pharmer/pharmer/issues/40)
-- Convert api objects to proto [\#4](https://github.com/pharmer/pharmer/issues/4)
 
 **Merged pull requests:**
 
@@ -288,13 +390,10 @@
 ## [0.1.0-alpha.0](https://github.com/pharmer/pharmer/tree/0.1.0-alpha.0) (2017-09-29)
 **Closed issues:**
 
-- Use Mutex if fake store [\#76](https://github.com/pharmer/pharmer/issues/76)
-- Use authorized key file format for SSH key [\#62](https://github.com/pharmer/pharmer/issues/62)
+- Identify-ing master [\#92](https://github.com/pharmer/pharmer/issues/92)
 - Upgrade to Kube 1.7 [\#58](https://github.com/pharmer/pharmer/issues/58)
 - Implement out-of-tree cloud providers [\#37](https://github.com/pharmer/pharmer/issues/37)
-- Refactor credential loader [\#18](https://github.com/pharmer/pharmer/issues/18)
 - Delete system pkg [\#15](https://github.com/pharmer/pharmer/issues/15)
-- Cleanup versions by env [\#8](https://github.com/pharmer/pharmer/issues/8)
 
 **Merged pull requests:**
 
