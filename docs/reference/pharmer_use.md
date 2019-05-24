@@ -1,12 +1,12 @@
 ---
 title: Pharmer Use
 menu:
-  product_pharmer_0.3.0:
+  product_pharmer_0.3.1:
     identifier: pharmer-use
     name: Pharmer Use
     parent: reference
 product_name: pharmer
-menu_name: product_pharmer_0.3.0
+menu_name: product_pharmer_0.3.1
 section_menu_id: reference
 ---
 ## pharmer use

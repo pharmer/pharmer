@@ -1,17 +1,17 @@
 ---
 title: Amazon EKS
 menu:
-  product_pharmer_0.3.0:
+  product_pharmer_0.3.1:
     identifier: eks-overview
     name: Overview
     parent: eks
     weight: 30
 product_name: pharmer
-menu_name: product_pharmer_0.3.0
+menu_name: product_pharmer_0.3.1
 section_menu_id: cloud
-url: /products/pharmer/0.3.0/cloud/eks/
+url: /products/pharmer/0.3.1/cloud/eks/
 aliases:
-  - /products/pharmer/0.3.0/cloud/eks/README/
+  - /products/pharmer/0.3.1/cloud/eks/README/
 ---
 
 # Running Kubernetes on [Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html)

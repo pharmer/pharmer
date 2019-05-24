@@ -1,17 +1,17 @@
 ---
 title: GKE
 menu:
-  product_pharmer_0.3.0:
+  product_pharmer_0.3.1:
     identifier: gke-overview
     name: Overview
     parent: eks
     weight: 30
 product_name: pharmer
-menu_name: product_pharmer_0.3.0
+menu_name: product_pharmer_0.3.1
 section_menu_id: cloud
-url: /products/pharmer/0.3.0/cloud/gke/
+url: /products/pharmer/0.3.1/cloud/gke/
 aliases:
-  - /products/pharmer/0.3.0/cloud/gke/README/
+  - /products/pharmer/0.3.1/cloud/gke/README/
 ---
 
 # Running Kubernetes on [Google Kubernetes Engine](https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html)

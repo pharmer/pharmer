@@ -14,7 +14,7 @@ import (
 
 const (
 	docFileName       = "doc.md"
-	releaseVersion    = "0.3.0"
+	releaseVersion    = "0.3.1"
 	kubernetesVersion = "v1.13.5"
 )
 

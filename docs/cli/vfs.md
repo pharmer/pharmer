@@ -1,16 +1,16 @@
 ---
 title: Virtual File System
 menu:
-  product_pharmer_0.3.0:
+  product_pharmer_0.3.1:
     identifier: vfs
     name: VFS
     parent: cli
     weight: 10
 product_name: pharmer
-menu_name: product_pharmer_0.3.0
+menu_name: product_pharmer_0.3.1
 section_menu_id: cli
 aliases:
-  - /products/pharmer/0.3.0/cli/
+  - /products/pharmer/0.3.1/cli/
 ---
 
 ## Virtual file system (Vfs)

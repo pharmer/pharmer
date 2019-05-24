@@ -1,13 +1,13 @@
 ---
 title: Data Store
 menu:
-  product_pharmer_0.3.0:
+  product_pharmer_0.3.1:
     identifier: datastore
     name: Data Store
     parent: cli
     weight: 20
 product_name: pharmer
-menu_name: product_pharmer_0.3.0
+menu_name: product_pharmer_0.3.1
 section_menu_id: cli
 ---
 

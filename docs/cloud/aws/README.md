@@ -1,17 +1,17 @@
 ---
 title: AWS Overview
 menu:
-product_pharmer_0.3.0
+product_pharmer_0.3.1
 identifier: aws-overview
 name: Overview
 parent: aws
 weight: 10
 product_name: pharmer
-menu_name: product_pharmer_0.3.0
+menu_name: product_pharmer_0.3.1
 section_menu_id: cloud
-url: /products/pharmer/0.3.0/cloud/aws/
+url: /products/pharmer/0.3.1/cloud/aws/
 aliases:
-- /products/pharmer/0.3.0/cloud/aws/README/
+- /products/pharmer/0.3.1/cloud/aws/README/
 ---
 
 # Running Kubernetes on [AWS](https://aws.amazon.com)
@@ -118,11 +118,11 @@ You can also see the stored credential from the following location:
 #### Cluster IAM User
 
  While creating cluster within AWS `pharmer` creates following IAM roles and policies
- * [IAM master policy](https://github.com/pharmer/pharmer/blob/0.3.0/cloud/providers/aws/iam.go#L6)
- * [IAM controller policy](https://github.com/pharmer/pharmer/blob/0.3.0/cloud/providers/aws/iam.go#L77)
- * [IAM master role](https://github.com/pharmer/pharmer/blob/0.3.0/cloud/providers/aws/iam.go#L160)
- * [IAM node policy](https://github.com/pharmer/pharmer/blob/0.3.0/cloud/providers/aws/iam.go#L175)
- * [IAM node role](https://github.com/pharmer/pharmer/blob/0.3.0/cloud/providers/aws/iam.go#L200)
+ * [IAM master policy](https://github.com/pharmer/pharmer/blob/0.3.1/cloud/providers/aws/iam.go#L6)
+ * [IAM controller policy](https://github.com/pharmer/pharmer/blob/0.3.1/cloud/providers/aws/iam.go#L77)
+ * [IAM master role](https://github.com/pharmer/pharmer/blob/0.3.1/cloud/providers/aws/iam.go#L160)
+ * [IAM node policy](https://github.com/pharmer/pharmer/blob/0.3.1/cloud/providers/aws/iam.go#L175)
+ * [IAM node role](https://github.com/pharmer/pharmer/blob/0.3.1/cloud/providers/aws/iam.go#L200)
 
 
 ### Cluster provisioning

@@ -1,17 +1,17 @@
 ---
 title: Google Cloud Service Overview
 menu:
-product_pharmer_0.3.0
+product_pharmer_0.3.1
 identifier: gce-overview
 name: Overview
 parent: gce
 weight: 10
 product_name: pharmer
-menu_name: product_pharmer_0.3.0
+menu_name: product_pharmer_0.3.1
 section_menu_id: cloud
-url: /products/pharmer/0.3.0/cloud/gce/
+url: /products/pharmer/0.3.1/cloud/gce/
 aliases:
-- /products/pharmer/0.3.0/cloud/gce/README/
+- /products/pharmer/0.3.1/cloud/gce/README/
 ---
 
 # Running Kubernetes on [Google Cloud Service](https://console.cloud.google.com)

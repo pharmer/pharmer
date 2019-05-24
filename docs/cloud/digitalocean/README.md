@@ -1,17 +1,17 @@
 ---
 title: DigitalOcean Overview
 menu:
-product_pharmer_0.3.0
+product_pharmer_0.3.1
 identifier: digitalocean-overview
 name: Overview
 parent: digitalocean
 weight: 10
 product_name: pharmer
-menu_name: product_pharmer_0.3.0
+menu_name: product_pharmer_0.3.1
 section_menu_id: cloud
-url: /products/pharmer/0.3.0/cloud/digitalocean/
+url: /products/pharmer/0.3.1/cloud/digitalocean/
 aliases:
-- /products/pharmer/0.3.0/cloud/digitalocean/README/
+- /products/pharmer/0.3.1/cloud/digitalocean/README/
 ---
 
 # Running Kubernetes on [DigitalOcean](https://cloud.digitalocean.com)

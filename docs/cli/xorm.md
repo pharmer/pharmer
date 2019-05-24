@@ -1,13 +1,13 @@
 ---
 title: Postgres Database XORM
 menu:
-  product_pharmer_0.3.0:
+  product_pharmer_0.3.1:
     identifier: xorm
     name: XORM
     parent: cli
     weight: 15
 product_name: pharmer
-menu_name: product_pharmer_0.3.0
+menu_name: product_pharmer_0.3.1
 section_menu_id: cli
 ---
 

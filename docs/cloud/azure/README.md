@@ -1,17 +1,17 @@
 ---
 title: Azure Overview
 menu:
-product_pharmer_0.3.0
+product_pharmer_0.3.1
 identifier: azure-overview
 name: Overview
 parent: azure
 weight: 10
 product_name: pharmer
-menu_name: product_pharmer_0.3.0
+menu_name: product_pharmer_0.3.1
 section_menu_id: cloud
-url: /products/pharmer/0.3.0/cloud/azure/
+url: /products/pharmer/0.3.1/cloud/azure/
 aliases:
-- /products/pharmer/0.3.0/cloud/azure/README/
+- /products/pharmer/0.3.1/cloud/azure/README/
 ---
 
 # Running Kubernetes on [Azure](https://azure.microsoft.com)
