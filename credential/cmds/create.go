@@ -107,7 +107,7 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 	commonSpec.Provider = provider
 
 	if opts.FromEnv {
-		commonSpec.LoadFromEnv(credential.GetFormat(opts.Provider))
+		commonSpec.LoadFromEnv(credential.GetFormat(provider))
 	} else if opts.FromFile != "" {
 		if commonSpec, err = credential.LoadCredentialDataFromJson(provider, opts.FromFile); err != nil {
 			return err
