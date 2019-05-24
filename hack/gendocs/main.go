@@ -10,7 +10,6 @@ import (
 	"text/template"
 
 	"github.com/appscode/go/log"
-
 	"github.com/appscode/go/runtime"
 	"github.com/pharmer/pharmer/cmds"
 	"github.com/spf13/cobra/doc"

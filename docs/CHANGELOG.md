@@ -1,5 +1,18 @@
 # Change Log
 
+## [0.3.1](https://github.com/pharmer/pharmer/tree/0.3.1) (2019-05-24)
+[Full Changelog](https://github.com/pharmer/pharmer/compare/0.3.0...0.3.1)
+
+**Closed issues:**
+
+- panic: unknown provider [\#484](https://github.com/pharmer/pharmer/issues/484)
+- Document flex volumes on Packet [\#381](https://github.com/pharmer/pharmer/issues/381)
+- Cluster bootstrapping docs [\#223](https://github.com/pharmer/pharmer/issues/223)
+
+**Merged pull requests:**
+
+- Fix unknown credential provider error [\#485](https://github.com/pharmer/pharmer/pull/485) ([sanjid133](https://github.com/sanjid133))
+
 ## [0.3.0](https://github.com/pharmer/pharmer/tree/0.3.0) (2019-05-17)
 [Full Changelog](https://github.com/pharmer/pharmer/compare/0.2.1...0.3.0)
 
