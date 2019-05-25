@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -186,9 +188,12 @@ func genCloudProviderDocs() error {
 			return errors.Wrapf(err, "failed to execute template for %s", provider)
 		}
 
-		err = ioutil.WriteFile(
-			fmt.Sprintf("%s/src/github.com/pharmer/pharmer/docs/cloud/%s/README.md",
-				runtime.GOPath(), provider), buf.Bytes(), 0)
+		dir := fmt.Sprintf("%s/src/github.com/pharmer/docs/docs/cloud/%s", runtime.GOPath(), provider)
+		err = os.MkdirAll(dir, 0755)
+		if err != nil {
+			return err
+		}
+		err = ioutil.WriteFile(filepath.Join(dir, "README.md"), buf.Bytes(), 0)
 		if err != nil {
 			return errors.Wrapf(err, "failed to update doc for %s", provider)
 		}
