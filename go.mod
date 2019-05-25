@@ -7,12 +7,10 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Azure/go-autorest v12.0.0+incompatible
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b // indirect
-	github.com/appscode/go v0.0.0-20190424183524-60025f1135c9
+	github.com/appscode/go v0.0.0-20190523031839-1468ee3a76e8
 	github.com/armon/go-metrics v0.0.0-20190430140413-ec5e00d3c878 // indirect
 	github.com/aws/aws-sdk-go v1.19.31
-	github.com/cpuguy83/go-md2man v1.0.10 // indirect
 	github.com/creack/goselect v0.1.0 // indirect
-	github.com/davecgh/go-spew v1.1.1
 	github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3 // indirect
 	github.com/digitalocean/godo v1.14.0
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
@@ -38,6 +36,7 @@ require (
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/linode/linodego v0.8.0
 	github.com/mailru/easyjson v0.0.0-20190403194419-1ea4449da983 // indirect
+	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
@@ -55,9 +54,10 @@ require (
 	github.com/packethost/packngo v0.1.1-0.20190507131943-1343be729ca2
 	github.com/pharmer/cloud v0.2.0
 	github.com/pkg/errors v0.8.1
-	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829 // indirect
-	github.com/prometheus/common v0.4.0 // indirect
-	github.com/spf13/cobra v0.0.3
+	github.com/prometheus/client_golang v0.9.3 // indirect
+	github.com/prometheus/common v0.4.1 // indirect
+	github.com/sirupsen/logrus v1.4.2 // indirect
+	github.com/spf13/cobra v0.0.4
 	github.com/spf13/pflag v1.0.3
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f
@@ -78,8 +78,9 @@ require (
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/cluster-bootstrap v0.0.0-20181204005900-2d1c733eadd0
 	k8s.io/component-base v0.0.0-20190515024022-2354f2393ad4 // indirect
-	k8s.io/kubernetes v1.14.1
-	kmodules.xyz/client-go v0.0.0-20190515205239-a16030cc2e50
+	k8s.io/klog v0.3.1 // indirect
+	k8s.io/kubernetes v1.14.2
+	kmodules.xyz/client-go v0.0.0-20190524133821-9c8a87771aea
 	sigs.k8s.io/cluster-api v0.0.0-20190508175234-0f911c1f65a5
 	sigs.k8s.io/controller-runtime v0.2.0-alpha.1
 )

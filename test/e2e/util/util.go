@@ -2,6 +2,7 @@ package util
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -9,27 +10,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pharmer/cloud/pkg/apis"
-
-	"flag"
-
-	"github.com/onsi/gomega/gexec"
-
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/log"
-
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
-
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
+	"github.com/pharmer/cloud/pkg/apis"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 var (

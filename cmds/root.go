@@ -29,7 +29,7 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 	)
 	rootCmd := &cobra.Command{
 		Use:               "pharmer [command]",
-		Short:             `Pharmer by Appscode - Manages farms`,
+		Short:             `Pharmer by Appscode - Kubernetes Cluster Manager for Kubeadm`,
 		DisableAutoGenTag: true,
 		PersistentPreRunE: func(c *cobra.Command, args []string) error {
 			c.Flags().VisitAll(func(flag *pflag.Flag) {

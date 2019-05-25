@@ -4,11 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/pharmer/pharmer/test/e2e/util"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	. "github.com/pharmer/pharmer/test/e2e/util"
 )
 
 func TestE2e(t *testing.T) {
