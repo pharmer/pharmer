@@ -14,7 +14,7 @@ import (
 
 func (conn *cloudConnector) getControllerManager() (string, error) {
 	config := conn.cluster.ClusterConfig()
-	cred, err := Store(conn.ctx).Owner(conn.owner).Credentials().Get(config.CredentialName)
+	cred, err := Store(conn.ctx).Credentials().Get(config.CredentialName)
 	if err != nil {
 		return "", err
 	}

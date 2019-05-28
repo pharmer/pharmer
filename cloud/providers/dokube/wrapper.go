@@ -37,7 +37,7 @@ func (cm *ClusterManager) StoreCertificate(ctx context.Context, c *godo.Client, 
 
 	currentContext := kc.CurrentContext
 
-	certStore := Store(cm.ctx).Owner(owner).Certificates(cm.cluster.Name)
+	certStore := Store(cm.ctx).Certificates(cm.cluster.Name)
 	_, caKey, err := certStore.Get(cm.cluster.Spec.Config.CACertName)
 	if err == nil {
 		if err = certStore.Delete(cm.cluster.Spec.Config.CACertName); err != nil {

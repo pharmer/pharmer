@@ -69,7 +69,7 @@ func RunGetCredential(ctx context.Context, opts *options.CredentialGetConfig, ou
 func getCredentialList(ctx context.Context, args []string, owner string) (credentialList []*cloudapi.Credential, err error) {
 	if len(args) != 0 {
 		for _, arg := range args {
-			credential, er2 := cloud.Store(ctx).Owner(owner).Credentials().Get(arg)
+			credential, er2 := cloud.Store(ctx).Credentials().Get(arg)
 			if er2 != nil {
 				return nil, er2
 			}
@@ -77,7 +77,7 @@ func getCredentialList(ctx context.Context, args []string, owner string) (creden
 		}
 
 	} else {
-		credentialList, err = cloud.Store(ctx).Owner(owner).Credentials().List(metav1.ListOptions{})
+		credentialList, err = cloud.Store(ctx).Credentials().List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}

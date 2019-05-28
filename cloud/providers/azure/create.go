@@ -38,7 +38,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 		sku = "Standard_B2ms"
 	}
 
-	pubkey, privkey, err := store.StoreProvider.Owner(cm.owner).SSHKeys(cluster.Name).Get(cluster.GenSSHKeyExternalID())
+	pubkey, privkey, err := store.StoreProvider.SSHKeys(cluster.Name).Get(cluster.GenSSHKeyExternalID())
 	if err != nil {
 		return clusterapi.ProviderSpec{}, errors.Wrap(err, "failed to get ssh keys")
 	}
@@ -88,7 +88,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	config.APIServerExtraArgs["cloud-config"] = "/etc/kubernetes/azure.json"
 
 	credentialName := cluster.Spec.Config.CredentialName
-	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(credentialName)
+	cred, err := Store(cm.ctx).Credentials().Get(credentialName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get credential %q", credentialName)
 	}
@@ -172,7 +172,7 @@ func (cm *ClusterManager) SetupCerts() error {
 
 	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
 
-	if _, err := Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
+	if _, err := Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
 		return err
 	}
 	return nil

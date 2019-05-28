@@ -49,7 +49,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 			return nil, err
 		} else if upgrade {
 			cm.cluster.Status.Phase = api.ClusterUpgrading
-			_, _ = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
+			_, _ = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 			return cm.applyUpgrade(dryRun)
 		}
 	}
@@ -63,14 +63,14 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 
 	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		machines, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+		machines, err := Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
 		var replicas int32 = 0
 		for _, machine := range machines {
 			machine.Spec.Replicas = &replicas
-			_, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).Update(machine)
+			_, err := Store(cm.ctx).MachineSet(cm.cluster.Name).Update(machine)
 			if err != nil {
 				return nil, err
 			}
@@ -158,7 +158,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 	// ------------------------------- ASSETS ----------------------------------
 	var machines []*clusterv1.Machine
-	machines, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).List(metav1.ListOptions{})
+	machines, err = Store(cm.ctx).Machine(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		err = errors.Wrap(err, ID(cm.ctx))
 		return
@@ -202,7 +202,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		Port: api.DefaultKubernetesBindPort,
 	}
 
-	machineSets, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+	machineSets, err := Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +243,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			}
 			m.Spec.ProviderSpec.Value = rawcfg
 
-			_, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Update(m)
+			_, err = Store(cm.ctx).Machine(cm.cluster.Name).Update(m)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to update machine %q to store", m.Name)
 			}
@@ -251,7 +251,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	// needed for master start-up config
-	if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
+	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 		cm.cluster.Status.Reason = err.Error()
 		err = errors.Wrap(err, ID(cm.ctx))
 		return
@@ -299,7 +299,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 	}
 
-	if cm.cluster, err = Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
+	if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
 		return
 	}
 
@@ -317,7 +317,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return acts, err
 	}
 
-	leaderMachine, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).UpdateStatus(leaderMachine)
+	leaderMachine, err = Store(cm.ctx).Machine(cm.cluster.Name).UpdateStatus(leaderMachine)
 	if err != nil {
 		return
 	}
@@ -358,7 +358,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	cm.cluster.Status.Phase = api.ClusterReady
-	if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
+	if _, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
 		return
 	}
 
@@ -370,7 +370,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 	Logger(cm.ctx).Infoln("Scaling Machine Sets")
 	var machineSets []*clusterv1.MachineSet
 	var existingMachineSet []*clusterv1.MachineSet
-	machineSets, err = Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+	machineSets, err = Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -391,7 +391,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 			if err = bc.Delete(string(data)); err != nil {
 				return nil, err
 			}
-			if err = Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).Delete(machineSet.Name); err != nil {
+			if err = Store(cm.ctx).MachineSet(cm.cluster.Name).Delete(machineSet.Name); err != nil {
 				return nil, err
 			}
 		}
@@ -421,11 +421,11 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		}
 	}
 
-	_, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return nil, err
 	}
-	_, err = Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster)
+	_, err = Store(cm.ctx).Clusters().Update(cm.cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -444,13 +444,13 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
 	}
-	_, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return
 	}
 
 	var machines []*clusterv1.Machine
-	machines, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).List(metav1.ListOptions{})
+	machines, err = Store(cm.ctx).Machine(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
@@ -470,11 +470,11 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 					Logger(cm.ctx).Infof("Error deleting instance `%v`. Reason: %v", machine.Spec.Name, err)
 				}
 
-				err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Delete(machine.Spec.Name)
+				err = Store(cm.ctx).Machine(cm.cluster.Name).Delete(machine.Spec.Name)
 				if err != nil {
 					return nil, err
 				}
-				err = Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).Delete(machine.Name)
+				err = Store(cm.ctx).MachineSet(cm.cluster.Name).Delete(machine.Name)
 				if err != nil {
 					return nil, err
 				}
@@ -530,7 +530,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 
 	if !dryRun {
 		cm.cluster.Status.Phase = api.ClusterDeleted
-		_, err := Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster)
+		_, err := Store(cm.ctx).Clusters().Update(cm.cluster)
 		if err != nil {
 			return acts, err
 		}
@@ -548,7 +548,7 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 
 	var masterMachine *clusterv1.Machine
 	masterName := fmt.Sprintf("%v-master", cm.cluster.Name)
-	masterMachine, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Get(masterName)
+	masterMachine, err = Store(cm.ctx).Machine(cm.cluster.Name).Get(masterName)
 	if err != nil {
 		return
 	}
@@ -577,7 +577,7 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 	}
 
 	var machineSets []*clusterv1.MachineSet
-	machineSets, err = Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+	machineSets, err = Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
@@ -595,7 +595,7 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 
 	if !dryRun {
 		cm.cluster.Status.Phase = api.ClusterReady
-		if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
+		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 			return
 		}
 	}

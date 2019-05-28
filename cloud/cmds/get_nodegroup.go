@@ -61,7 +61,7 @@ func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out 
 	if clusterName != "" {
 		clusterList = append(clusterList, clusterName)
 	} else {
-		clusters, err := cloud.Store(ctx).Owner(opts.Owner).Clusters().List(metav1.ListOptions{})
+		clusters, err := cloud.Store(ctx).Clusters().List(metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
@@ -95,14 +95,14 @@ func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out 
 func GetMachineSetList(ctx context.Context, cluster, owner string, args ...string) (machineSetList []*clusterv1.MachineSet, err error) {
 	if len(args) != 0 {
 		for _, arg := range args {
-			ms, er2 := cloud.Store(ctx).Owner(owner).MachineSet(cluster).Get(arg)
+			ms, er2 := cloud.Store(ctx).MachineSet(cluster).Get(arg)
 			if err != nil {
 				return nil, er2
 			}
 			machineSetList = append(machineSetList, ms)
 		}
 	} else {
-		machineSetList, err = cloud.Store(ctx).Owner(owner).MachineSet(cluster).List(metav1.ListOptions{})
+		machineSetList, err = cloud.Store(ctx).MachineSet(cluster).List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}
@@ -113,7 +113,7 @@ func GetMachineSetList(ctx context.Context, cluster, owner string, args ...strin
 func GetNodeGroupList(ctx context.Context, cluster, owner string, args ...string) (nodeGroupList []*api.NodeGroup, err error) {
 	if len(args) != 0 {
 		for _, arg := range args {
-			nodeGroup, er2 := cloud.Store(ctx).Owner(owner).NodeGroups(cluster).Get(arg)
+			nodeGroup, er2 := cloud.Store(ctx).NodeGroups(cluster).Get(arg)
 			if er2 != nil {
 				return nil, er2
 			}
@@ -121,7 +121,7 @@ func GetNodeGroupList(ctx context.Context, cluster, owner string, args ...string
 		}
 
 	} else {
-		nodeGroupList, err = cloud.Store(ctx).Owner(owner).NodeGroups(cluster).List(metav1.ListOptions{})
+		nodeGroupList, err = cloud.Store(ctx).NodeGroups(cluster).List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}

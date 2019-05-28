@@ -48,7 +48,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 			return nil, err
 		} else if upgrade {
 			cm.cluster.Status.Phase = api.ClusterUpgrading
-			_, err := Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
+			_, err := Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 			if err != nil {
 				return nil, err
 			}
@@ -65,13 +65,13 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 
 	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		nodeGroups, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+		nodeGroups, err := Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
 		for _, ng := range nodeGroups {
 			ng.Spec.Replicas = Int32P(int32(0))
-			_, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).Update(ng)
+			_, err := Store(cm.ctx).MachineSet(cm.cluster.Name).Update(ng)
 			if err != nil {
 				return nil, err
 			}
@@ -162,7 +162,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			if err = cm.cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
 				return
 			}
-			if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
+			if _, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
 				return
 			}
 		}
@@ -206,7 +206,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 
 	var machineSets []*clusterv1.MachineSet
 	var existingMachineSet []*clusterv1.MachineSet
-	machineSets, err = Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+	machineSets, err = Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
@@ -226,7 +226,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 			if err = bc.Delete(string(data)); err != nil {
 				return
 			}
-			if cm.cluster, err = Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
+			if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
 				return
 			}
 		}
@@ -267,7 +267,7 @@ func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
 	}
 
 	// ccm-secret
-	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(cm.cluster.ClusterConfig().CredentialName)
+	cred, err := Store(cm.ctx).Credentials().Get(cm.cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get cluster cred")
 	}
@@ -301,7 +301,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
 	}
-	_, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return
 	}
@@ -343,7 +343,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	}
 
 	cm.cluster.Status.Phase = api.ClusterDeleted
-	_, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return
 	}
@@ -366,7 +366,7 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 	acts = append(acts, a...)
 	if !dryRun {
 		cm.cluster.Status.Phase = api.ClusterReady
-		if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
+		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 			return
 		}
 	}

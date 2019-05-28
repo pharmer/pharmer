@@ -28,7 +28,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
-	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Config.CredentialName)
+	cred, err := Store(ctx).Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 }
 
 func (conn *cloudConnector) createCluster(cluster *api.Cluster, owner string) (*godo.KubernetesCluster, error) {
-	nodeGroups, err := Store(conn.ctx).Owner(owner).MachineSet(cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err := Store(conn.ctx).MachineSet(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

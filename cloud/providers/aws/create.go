@@ -129,7 +129,7 @@ func (cm *ClusterManager) SetupCerts() error {
 
 	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
 
-	if _, err := Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
+	if _, err := Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
 		return err
 	}
 

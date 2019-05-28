@@ -226,7 +226,7 @@ func DeleteDyanamicVolumes(client kubernetes.Interface) error {
 }
 
 func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cluster *api.Cluster, owner string) error {
-	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Config.CredentialName)
+	cred, err := Store(ctx).Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return err
 	}

@@ -110,7 +110,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		if err = cm.retrieveClusterStatus(cluster); err != nil {
 			return
 		}
-		if cm.cluster, err = Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
+		if cm.cluster, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
 			return
 		}
 		err = cm.StoreCertificate(cluster, cm.owner)
@@ -130,7 +130,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		}
 
 		cm.cluster.Status.Phase = api.ClusterReady
-		if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
+		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
 			return acts, err
 		}
 	}
@@ -140,7 +140,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
 	var nodeGroups []*clusterapi.MachineSet
-	nodeGroups, err = Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err = Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
@@ -153,8 +153,8 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 		}
 		acts = append(acts, a2...)
 	}
-	Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
-	Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster)
+	Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+	Store(cm.ctx).Clusters().Update(cm.cluster)
 	return
 }
 
@@ -162,7 +162,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
 	}
-	_, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
+	_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
 	if err != nil {
 		return
 	}
@@ -180,7 +180,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 
 	if !dryRun {
 		cm.cluster.Status.Phase = api.ClusterDeleted
-		Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster)
+		Store(cm.ctx).Clusters().Update(cm.cluster)
 	}
 
 	return

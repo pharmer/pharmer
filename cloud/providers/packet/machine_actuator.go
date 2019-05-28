@@ -268,7 +268,7 @@ func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Clus
 		return nil
 	}
 
-	pharmerCluster, err := Store(packet.ctx).Owner(packet.owner).Clusters().Get(cluster.Name)
+	pharmerCluster, err := Store(packet.ctx).Clusters().Get(cluster.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to get pharmercluster")
 	}

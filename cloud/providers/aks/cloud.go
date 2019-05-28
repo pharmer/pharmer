@@ -40,7 +40,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
-	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Config.CredentialName)
+	cred, err := Store(ctx).Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (conn *cloudConnector) deleteResourceGroup() error {
 }
 
 func (conn *cloudConnector) upsertAKS(agentPools []cs.ManagedClusterAgentPoolProfile) error {
-	cred, err := Store(conn.ctx).Owner(conn.owner).Credentials().Get(conn.cluster.Spec.Config.CredentialName)
+	cred, err := Store(conn.ctx).Credentials().Get(conn.cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return err
 	}

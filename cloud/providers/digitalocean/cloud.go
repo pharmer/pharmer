@@ -37,7 +37,7 @@ type cloudConnector struct {
 var _ InstanceManager = &cloudConnector{}
 
 func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
-	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.ClusterConfig().CredentialName)
+	cred, err := Store(ctx).Credentials().Get(cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data
 func PrepareCloud(ctx context.Context, clusterName, owner string) (*cloudConnector, error) {
 	var err error
 	var conn *cloudConnector
-	//cluster, err := Store(ctx).Owner(owner).Clusters().Get(clusterName)
+	//cluster, err := Store(ctx).Clusters().Get(clusterName)
 	//if err != nil {
 	//	return conn, fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
 	//}

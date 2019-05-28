@@ -44,7 +44,7 @@ func (igm *DokubeNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err er
 			if err = igm.conn.deleteNodePool(igm.ng); err != nil {
 				return acts, err
 			}
-			err = Store(igm.ctx).Owner(igm.owner).MachineSet(igm.conn.cluster.Name).Delete(igm.ng.Name)
+			err = Store(igm.ctx).MachineSet(igm.conn.cluster.Name).Delete(igm.ng.Name)
 			if err != nil {
 				return acts, err
 			}
@@ -63,7 +63,7 @@ func (igm *DokubeNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err er
 		}
 	}
 	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas
-	_, err = Store(igm.ctx).Owner(igm.owner).MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
+	_, err = Store(igm.ctx).MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
 	if err != nil {
 		return nil, err
 	}

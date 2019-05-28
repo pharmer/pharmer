@@ -26,7 +26,7 @@ import (
 var managedProviders = sets.NewString("aks", "gke", "eks", "dokube")
 
 func List(ctx context.Context, opts metav1.ListOptions, owner string) ([]*api.Cluster, error) {
-	return Store(ctx).Owner(owner).Clusters().List(opts)
+	return Store(ctx).Clusters().List(opts)
 }
 
 func Get(name string) (*api.Cluster, error) {
@@ -140,14 +140,14 @@ func Delete(ctx context.Context, name string, owner string) (*api.Cluster, error
 		return nil, errors.New("missing cluster name")
 	}
 
-	cluster, err := Store(ctx).Owner(owner).Clusters().Get(name)
+	cluster, err := Store(ctx).Clusters().Get(name)
 	if err != nil {
 		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	}
 	cluster.DeletionTimestamp = &metav1.Time{Time: time.Now()}
 	cluster.Status.Phase = api.ClusterDeleting
 
-	return Store(ctx).Owner(owner).Clusters().Update(cluster)
+	return Store(ctx).Clusters().Update(cluster)
 }
 
 func DeleteMachineSet(ctx context.Context, clusterName, setName, owner string) error {
@@ -158,13 +158,13 @@ func DeleteMachineSet(ctx context.Context, clusterName, setName, owner string) e
 		return errors.New("missing machineset name")
 	}
 
-	mSet, err := Store(ctx).Owner(owner).MachineSet(clusterName).Get(setName)
+	mSet, err := Store(ctx).MachineSet(clusterName).Get(setName)
 	if err != nil {
 		return errors.Errorf(`machinset not found in pharmer db, try using kubectl`)
 	}
 	tm := metav1.Now()
 	mSet.DeletionTimestamp = &tm
-	_, err = Store(ctx).Owner(owner).MachineSet(clusterName).Update(mSet)
+	_, err = Store(ctx).MachineSet(clusterName).Update(mSet)
 	return err
 }
 
@@ -252,7 +252,7 @@ func Apply(ctx context.Context, opts *options.ApplyConfig) ([]api.Action, error)
 	//	return nil, errors.New("missing cluster name")
 	//}
 	//
-	//cluster, err := Store(ctx).Owner(opts.Owner).Clusters().Get(opts.ClusterName)
+	//cluster, err := Store(ctx).Clusters().Get(opts.ClusterName)
 	//if err != nil {
 	//	return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", opts.ClusterName, err)
 	//}
@@ -272,7 +272,7 @@ func CheckForUpdates(ctx context.Context, name, owner string) (string, error) {
 	//	return "", errors.New("missing cluster name")
 	//}
 	//
-	//cluster, err := Store(ctx).Owner(owner).Clusters().Get(name)
+	//cluster, err := Store(ctx).Clusters().Get(name)
 	//if err != nil {
 	//	return "", errors.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
 	//}
@@ -314,14 +314,14 @@ func UpdateSpec(ctx context.Context, cluster *api.Cluster, owner string) (*api.C
 		return nil, errors.New("missing cluster version")
 	}
 
-	existing, err := Store(ctx).Owner(owner).Clusters().Get(cluster.Name)
+	existing, err := Store(ctx).Clusters().Get(cluster.Name)
 	if err != nil {
 		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", cluster.Name, err)
 	}
 	cluster.Status = existing.Status
 	cluster.Generation = time.Now().UnixNano()
 
-	return Store(ctx).Owner(owner).Clusters().Update(cluster)
+	return Store(ctx).Clusters().Update(cluster)
 }
 
 func GetBooststrapClient(ctx context.Context, cluster *api.Cluster, owner string) (clusterclient.Client, error) {
@@ -352,7 +352,7 @@ func GetKubernetesClient(ctx context.Context, cluster *api.Cluster, owner string
 }
 
 func GetLeaderMachine(ctx context.Context, cluster *v1beta1.Cluster, owner string) (*clusterapi.Machine, error) {
-	machine, err := Store(ctx).Owner(owner).Machine(cluster.Name).Get(cluster.Name + "-master-0")
+	machine, err := Store(ctx).Machine(cluster.Name).Get(cluster.Name + "-master-0")
 	if err != nil {
 		return nil, err
 	}

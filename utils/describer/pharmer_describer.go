@@ -16,7 +16,7 @@ const statusUnknown = "Unknown"
 
 func (d *humanReadableDescriber) describeCluster(item *api.Cluster, describerSettings describe.DescriberSettings) (string, error) {
 
-	nodeGroups, err := cloud.Store(d.ctx).Owner(d.owner).MachineSet(item.Name).List(metav1.ListOptions{})
+	nodeGroups, err := cloud.Store(d.ctx).MachineSet(item.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}

@@ -47,7 +47,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "azure" // requires --cloud-config
 
-		cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Config.CredentialName)
+		cred, err := Store(ctx).Credentials().Get(cluster.Spec.Config.CredentialName)
 		if err != nil {
 			panic(err)
 		}

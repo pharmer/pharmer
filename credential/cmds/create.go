@@ -72,7 +72,7 @@ func runCreateCredential(opts *options.CredentialCreateConfig) error {
 			if err != nil {
 				term.Fatalln(err)
 			}
-			_, err = store.StoreProvider.Owner(opts.Owner).Credentials().Create(cred)
+			_, err = store.StoreProvider.Credentials().Create(cred)
 			if err != nil {
 				term.Fatalln(err)
 			}

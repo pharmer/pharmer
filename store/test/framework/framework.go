@@ -9,7 +9,7 @@ import (
 )
 
 type Framework struct {
-	Storage store.Interface
+	Storage store.ResourceInterface
 	Config  *api.PharmerConfig
 
 	ClusterName string

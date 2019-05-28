@@ -179,7 +179,7 @@ func CreateMachineSet(cluster *api.Cluster, owner, role, sku string, nodeType ap
 	//	},
 	//}
 	//
-	//_, err = store.StoreProvider.Owner(owner).MachineSet(cluster.Name).Create(&machineSet)
+	//_, err = store.StoreProvider.MachineSet(cluster.Name).Create(&machineSet)
 	//
 	//return err
 	return nil

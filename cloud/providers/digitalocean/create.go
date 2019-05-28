@@ -25,7 +25,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}
 	config := cluster.Spec.Config
 
-	pubkey, _, err := store.StoreProvider.Owner(cm.owner).SSHKeys(cluster.Name).Get(cluster.GenSSHKeyExternalID())
+	pubkey, _, err := store.StoreProvider.SSHKeys(cluster.Name).Get(cluster.GenSSHKeyExternalID())
 	if err != nil {
 		return clusterapi.ProviderSpec{}, errors.Wrap(err, " failed to get ssh keys")
 	}

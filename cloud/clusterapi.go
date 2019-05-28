@@ -147,7 +147,7 @@ func (ca *ClusterApi) updateProviderStatus() error {
 		}
 		if cluster.Status.ProviderStatus != nil {
 			ca.cluster.Spec.ClusterAPI.Status.ProviderStatus = cluster.Status.ProviderStatus
-			if _, err := Store(ca.ctx).Owner(ca.Owner).Clusters().Update(ca.cluster); err != nil {
+			if _, err := Store(ca.ctx).Clusters().Update(ca.cluster); err != nil {
 				return false, nil
 			}
 			return true, nil
@@ -186,7 +186,7 @@ func (ca *ClusterApi) CreateMachineController(controllerManager string) error {
 func (ca *ClusterApi) CreatePharmerSecret() error {
 	providerConfig := ca.cluster.ClusterConfig()
 
-	cred, err := Store(ca.ctx).Owner(ca.Owner).Credentials().Get(ca.cluster.ClusterConfig().CredentialName)
+	cred, err := Store(ca.ctx).Credentials().Get(ca.cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 		return err
 	}
 
-	publicKey, privateKey, err := Store(ca.ctx).Owner(ca.Owner).SSHKeys(ca.cluster.Name).Get(ca.cluster.ClusterConfig().Cloud.SSHKeyName)
+	publicKey, privateKey, err := Store(ca.ctx).SSHKeys(ca.cluster.Name).Get(ca.cluster.ClusterConfig().Cloud.SSHKeyName)
 	if err != nil {
 		return err
 	}

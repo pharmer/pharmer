@@ -57,7 +57,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
-	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(cm.cluster.Spec.Config.CredentialName)
+	cred, err := Store(cm.ctx).Credentials().Get(cm.cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}

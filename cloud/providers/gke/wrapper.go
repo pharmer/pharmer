@@ -16,7 +16,7 @@ import (
 )
 
 func encodeCluster(ctx context.Context, cluster *api.Cluster, owner string) (*container.Cluster, error) {
-	nodeGroups, err := Store(ctx).Owner(owner).MachineSet(cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err := Store(ctx).MachineSet(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		err = errors.Wrap(err, ID(ctx))
 		return nil, err
@@ -75,7 +75,7 @@ func (cm *ClusterManager) retrieveClusterStatus(cluster *container.Cluster) erro
 }
 
 func (cm *ClusterManager) StoreCertificate(cluster *container.Cluster, owner string) error {
-	certStore := Store(cm.ctx).Owner(owner).Certificates(cluster.Name)
+	certStore := Store(cm.ctx).Certificates(cluster.Name)
 	config := cm.cluster.Spec.Config
 	_, caKey, err := certStore.Get(api.CACertCommonName)
 	if err == nil {

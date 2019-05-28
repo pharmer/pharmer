@@ -54,7 +54,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
-	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(cm.cluster.ClusterConfig().CredentialName)
+	cred, err := Store(cm.ctx).Credentials().Get(cm.cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -512,7 +512,7 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 		cluster.Spec.ClusterAPI.ObjectMeta.Annotations = make(map[string]string)
 	}
 	cluster.Spec.ClusterAPI.ObjectMeta.Annotations[firewallRuleAnnotationPrefix+ruleClusterInternal] = "true"
-	if conn.cluster, err = Store(conn.ctx).Owner(conn.owner).Clusters().Update(cluster); err != nil {
+	if conn.cluster, err = Store(conn.ctx).Clusters().Update(cluster); err != nil {
 		return err
 	}
 
@@ -568,7 +568,7 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 	}
 
 	cluster.Spec.ClusterAPI.ObjectMeta.Annotations[firewallRuleAnnotationPrefix+ruleApiPublic] = "true"
-	if conn.cluster, err = Store(conn.ctx).Owner(conn.owner).Clusters().Update(cluster); err != nil {
+	if conn.cluster, err = Store(conn.ctx).Clusters().Update(cluster); err != nil {
 		return err
 	}
 	return nil

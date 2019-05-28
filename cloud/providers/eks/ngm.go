@@ -82,7 +82,7 @@ func (igm *EKSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 				if err = igm.deleteNodeAuthConfigMap(igm.conn.getOutput(ngInfo, "NodeInstanceRole")); err != nil {
 					return
 				}
-				err = Store(igm.ctx).Owner(igm.owner).MachineSet(igm.conn.cluster.Name).Delete(fileName)
+				err = Store(igm.ctx).MachineSet(igm.conn.cluster.Name).Delete(fileName)
 				if err != nil {
 					return acts, err
 				}
@@ -107,7 +107,7 @@ func (igm *EKSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 		}
 	}
 	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas
-	Store(igm.ctx).Owner(igm.owner).MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
+	Store(igm.ctx).MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
 
 	return acts, err
 }
