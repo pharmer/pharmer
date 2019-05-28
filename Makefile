@@ -272,6 +272,20 @@ release: docker-manifest
 	fi
 	@$(MAKE) clean all-push --no-print-directory
 
+.PHONY: install
+install:
+	@echo "installing pharmer"
+	@ARCH=$(ARCH)                                       \
+	OS=$(OS)                                            \
+	VERSION=$(VERSION)                                  \
+	version_strategy=$(version_strategy)                \
+	git_branch=$(git_branch)                            \
+	git_tag=$(git_tag)                                  \
+	commit_hash=$(commit_hash)                          \
+	commit_timestamp=$(commit_timestamp)                \
+	./hack/build.sh                                     
+
+
 .PHONY: clean
 clean:
 	rm -rf .go bin
