@@ -1,7 +1,6 @@
 package fake
 
 import (
-	"context"
 	"crypto/rsa"
 	"crypto/x509"
 	"sync"
@@ -17,7 +16,7 @@ const (
 )
 
 func init() {
-	store.RegisterProvider(UID, func(ctx context.Context, cfg *api.PharmerConfig) (store.Interface, error) {
+	store.RegisterProvider(UID, func(cfg *api.PharmerConfig) (store.Interface, error) {
 		return New(), nil
 	})
 }

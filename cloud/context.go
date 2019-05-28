@@ -150,11 +150,11 @@ func NewContext(parent context.Context, cfg *api.PharmerConfig, env _env.Environ
 	c = WithEnv(c, env)
 	c = WithNameGenerator(c, &api.NullNameGenerator{})
 	c = WithLogger(c, log.New(c))
-	c = WithStore(c, NewStoreProvider(parent, cfg))
+	c = WithStore(c, NewStoreProvider(cfg))
 	return c
 }
 
-func NewStoreProvider(ctx context.Context, cfg *api.PharmerConfig) store.Interface {
+func NewStoreProvider(cfg *api.PharmerConfig) store.Interface {
 	var storeType string
 	if cfg.Store.Local != nil ||
 		cfg.Store.S3 != nil ||
@@ -167,7 +167,7 @@ func NewStoreProvider(ctx context.Context, cfg *api.PharmerConfig) store.Interfa
 	} else {
 		storeType = fake.UID
 	}
-	store, err := store.GetProvider(storeType, ctx, cfg)
+	store, err := store.GetProvider(storeType, cfg)
 	if err != nil {
 		panic(err)
 	}

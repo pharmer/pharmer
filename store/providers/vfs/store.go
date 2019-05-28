@@ -1,7 +1,6 @@
 package vfs
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -19,6 +18,7 @@ import (
 	"github.com/graymeta/stow/azure"
 	"github.com/graymeta/stow/google"
 	"github.com/graymeta/stow/local"
+
 	"github.com/graymeta/stow/s3"
 	"github.com/graymeta/stow/swift"
 	"github.com/pharmer/cloud/pkg/credential"
@@ -33,7 +33,7 @@ const (
 )
 
 func init() {
-	store.RegisterProvider(UID, func(ctx context.Context, cfg *api.PharmerConfig) (store.Interface, error) {
+	store.RegisterProvider(UID, func(cfg *api.PharmerConfig) (store.Interface, error) {
 		if cfg.Store.Local != nil {
 			stowCfg := stow.ConfigMap{
 				local.ConfigKeyPath: filepath.Dir(cfg.Store.Local.Path),

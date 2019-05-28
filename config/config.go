@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -12,9 +11,6 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/store"
-	"github.com/pharmer/pharmer/store/providers/fake"
-	"github.com/pharmer/pharmer/store/providers/vfs"
 	flag "github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/homedir"
@@ -89,11 +85,4 @@ func NewDefaultConfig() *api.PharmerConfig {
 			},
 		},
 	}
-}
-
-func NewStoreProvider(ctx context.Context, cfg *api.PharmerConfig) store.Interface {
-	if store, err := store.GetProvider(vfs.UID, ctx, cfg); err == nil {
-		return store
-	}
-	return &fake.FakeStore{}
 }

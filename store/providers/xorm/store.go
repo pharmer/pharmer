@@ -1,7 +1,6 @@
 package xorm
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -19,7 +18,7 @@ const (
 )
 
 func init() {
-	store.RegisterProvider(UID, func(ctx context.Context, cfg *api.PharmerConfig) (store.Interface, error) {
+	store.RegisterProvider(UID, func(cfg *api.PharmerConfig) (store.Interface, error) {
 		if cfg.Store.Postgres != nil {
 			dbCfg := cfg.Store.Postgres
 			log.Debugf("Connecting to %v db on host %v with user %v", dbCfg.DbName, dbCfg.Host, dbCfg.User)

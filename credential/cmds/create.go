@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pharmer/pharmer/store"
+
 	"github.com/appscode/go/term"
 	"github.com/pharmer/cloud/pkg/apis"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
@@ -15,8 +17,7 @@ import (
 	"github.com/pharmer/pharmer/credential/cmds/options"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"golang.org/x/net/context"
-	survey "gopkg.in/AlecAivazis/survey.v1"
+	"gopkg.in/AlecAivazis/survey.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -43,9 +44,9 @@ func NewCmdCreateCredential() *cobra.Command {
 			if err != nil {
 				term.Fatalln(err)
 			}
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
+			storeProvider := cloud.NewStoreProvider(cfg)
 
-			if err := RunCreateCredential(ctx, opts); err != nil {
+			if err := runCreateCredential(storeProvider, opts); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -55,7 +56,7 @@ func NewCmdCreateCredential() *cobra.Command {
 	return cmd
 }
 
-func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConfig) error {
+func runCreateCredential(storeProvider store.Interface, opts *options.CredentialCreateConfig) error {
 	// Get Cloud provider
 	provider := opts.Provider
 	if provider == "" {
@@ -81,7 +82,7 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 			if err != nil {
 				term.Fatalln(err)
 			}
-			_, err = cloud.Store(ctx).Owner(opts.Owner).Credentials().Create(cred)
+			_, err = storeProvider.Owner(opts.Owner).Credentials().Create(cred)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -125,6 +126,6 @@ func RunCreateCredential(ctx context.Context, opts *options.CredentialCreateConf
 	}
 
 	cred.Spec.Data = commonSpec.Data
-	_, err = cloud.Store(ctx).Owner(opts.Owner).Credentials().Create(cred)
+	_, err = storeProvider.Owner(opts.Owner).Credentials().Create(cred)
 	return err
 }
