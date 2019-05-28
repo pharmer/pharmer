@@ -3,7 +3,6 @@ package packet
 import (
 	"encoding/json"
 	"net"
-	"strings"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	packetconfig "github.com/pharmer/pharmer/apis/v1beta1/packet"
@@ -64,36 +63,14 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
-	n := namer{cluster: cluster}
-
-	if err := api.AssignTypeKind(cluster); err != nil {
-		return err
-	}
-	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
-		return err
-	}
-	// Init spec
-	cluster.ClusterConfig().Cloud.Region = cluster.ClusterConfig().Cloud.Zone
-	cluster.ClusterConfig().Cloud.SSHKeyName = n.GenSSHKeyExternalID()
-	//cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	cluster.ClusterConfig().Cloud.CCMCredentialName = cluster.ClusterConfig().CredentialName
 	cluster.ClusterConfig().Cloud.InstanceImage = "ubuntu_16_04" // 1b9b78e3-de68-466e-ba00-f2123e89c112
-	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
-	cluster.ClusterConfig().APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
-	cluster.ClusterConfig().APIServerExtraArgs = map[string]string{
-		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
-		"kubelet-preferred-address-types": strings.Join([]string{
-			string(core.NodeInternalIP),
-			string(core.NodeExternalIP),
-		}, ","),
-	}
 
 	// Init status
 	cluster.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,
 	}
-	cluster.SetNetworkingDefaults("calico")
 
 	return packetconfig.SetPacketClusterProviderConfig(cluster.Spec.ClusterAPI)
 }

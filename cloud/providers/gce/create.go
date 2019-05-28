@@ -2,8 +2,9 @@ package gce
 
 import (
 	"net"
-	"strings"
 	"time"
+
+	"github.com/davecgh/go-spew/spew"
 
 	"github.com/google/uuid"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -49,9 +50,10 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 		return clusterapi.ProviderSpec{}, errors.Wrap(err, "Error encoding provider spec for gce cluster")
 	}
 
-	cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
-
-	return cluster.Spec.ClusterAPI.Spec.ProviderSpec, nil
+	return clusterapi.ProviderSpec{
+		Value:     rawSpec,
+		ValueFrom: nil,
+	}, nil
 }
 
 // SetupCerts Loads necessary certs in Cluster Spec
@@ -91,75 +93,39 @@ func (cm *ClusterManager) SetupCerts() error {
 	return nil
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	n := namer{cluster: cluster}
-
+	config := cluster.Spec.Config
 	// Init object meta
 	uid, _ := uuid.NewUUID()
 	cluster.ObjectMeta.UID = types.UID(uid.String())
 	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
 	cluster.ObjectMeta.Generation = time.Now().UnixNano()
 
-	if err := api.AssignTypeKind(cluster); err != nil {
-		return err
-	}
-
-	// Init Spec
-	cluster.Spec.Config.Cloud.Region = cluster.Spec.Config.Cloud.Zone[0:strings.LastIndex(cluster.Spec.Config.Cloud.Zone, "-")]
-	cluster.Spec.Config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
-
-	cluster.Spec.Config.Cloud.InstanceImageProject = "ubuntu-os-cloud"
-	cluster.Spec.Config.Cloud.InstanceImage = "ubuntu-1604-xenial-v20170721"
-	cluster.Spec.Config.Cloud.OS = "ubuntu-1604-lts"
-	cluster.Spec.Config.Cloud.CCMCredentialName = cluster.Spec.Config.CredentialName
-	cluster.Spec.Config.Cloud.GCE = &api.GoogleSpec{
+	config.Cloud.InstanceImageProject = "ubuntu-os-cloud"
+	config.Cloud.InstanceImage = "ubuntu-1604-xenial-v20170721"
+	config.Cloud.OS = "ubuntu-1604-lts"
+	config.Cloud.CCMCredentialName = config.CredentialName
+	config.Cloud.GCE = &api.GoogleSpec{
 		NetworkName: "default",
 		NodeTags:    []string{n.NodePrefix()},
 	}
 
-	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
-		return err
-	}
-	cluster.Spec.Config.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
-	cluster.Spec.Config.APIServerExtraArgs = map[string]string{
-		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
-		"kubelet-preferred-address-types": strings.Join([]string{
-			string(core.NodeExternalDNS),
-			string(core.NodeExternalIP),
-			string(core.NodeHostName),
-			string(core.NodeInternalDNS),
-			string(core.NodeInternalIP),
-		}, ","),
-		"cloud-config":   "/etc/kubernetes/ccm/cloud-config",
-		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
-	}
+	config.APIServerExtraArgs["cloud-config"] = "/etc/kubernetes/ccm/cloud-config"
 
-	//cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
-
-	//cluster.InitializeClusterApi ()
 	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
-	cluster.Spec.Config.ControllerManagerExtraArgs = map[string]string{
+	config.ControllerManagerExtraArgs = map[string]string{
 		"cloud-config":   "/etc/kubernetes/ccm/cloud-config",
-		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
-	}
-
-	//kube.Spec.AuthorizationModes = strings.Split(kubeadmapi.DefaultAuthorizationModes, ",")
-
-	// Init status
-	cluster.Status = api.PharmerClusterStatus{
-		Phase: api.ClusterPending,
+		"cloud-provider": config.Cloud.CloudProvider,
 	}
 
 	if cluster.Spec.ClusterAPI.ObjectMeta.Annotations == nil {
 		cluster.Spec.ClusterAPI.ObjectMeta.Annotations = make(map[string]string)
 	}
 
-	// Init status
-	cluster.Status = api.PharmerClusterStatus{
-		Phase: api.ClusterPending,
-	}
+	spew.Dump(cluster)
 
-	return clusterapiGCE.SetGCEclusterProviderConfig(cluster.Spec.ClusterAPI, cluster.Spec.Config)
+	return clusterapiGCE.SetGCEclusterProviderConfig(cluster.Spec.ClusterAPI, config)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {

@@ -3,7 +3,8 @@ package digitalocean
 import (
 	"encoding/json"
 	"net"
-	"strings"
+
+	"github.com/pharmer/pharmer/store"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	doCapi "github.com/pharmer/pharmer/apis/v1beta1/digitalocean"
@@ -24,6 +25,12 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 		sku = "2gb"
 	}
 	config := cluster.Spec.Config
+
+	pubkey, _, err := store.StoreProvider.Owner(cm.owner).SSHKeys(cluster.Name).Get(cluster.GenSSHKeyExternalID())
+	if err != nil {
+		return clusterapi.ProviderSpec{}, errors.Wrap(err, " failed to get ssh keys")
+	}
+
 	spec := &doCapi.DigitalOceanMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: doCapi.DigitalOceanProviderGroupName + "/" + doCapi.DigitalOceanProviderApiVersion,
@@ -34,7 +41,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 		Image:  config.Cloud.InstanceImage,
 		Tags:   []string{"KubernetesCluster:" + cluster.Name},
 		SSHPublicKeys: []string{
-			string(SSHKey(cm.ctx).PublicKey),
+			string(pubkey),
 		},
 		PrivateNetworking: true,
 		Backups:           false,
@@ -54,37 +61,11 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
-	n := namer{cluster: cluster}
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
+	config := cluster.Spec.Config
 
-	if err := api.AssignTypeKind(cluster); err != nil {
-		return err
-	}
-	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
-		return err
-	}
-	config.Cloud.Region = config.Cloud.Zone
-	config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
 	config.Cloud.InstanceImage = "ubuntu-18-04-x64"
-
-	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
-	config.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
-	config.APIServerExtraArgs = map[string]string{
-		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
-		"kubelet-preferred-address-types": strings.Join([]string{
-			string(core.NodeExternalDNS),
-			string(core.NodeExternalIP),
-			string(core.NodeInternalIP),
-		}, ","),
-		//	"endpoint-reconciler-type": "lease",
-	}
-
-	// Init status
-	cluster.Status = api.PharmerClusterStatus{
-		Phase: api.ClusterPending,
-	}
 	cm.cluster = cluster
-	cluster.SetNetworkingDefaults("calico")
 	return doCapi.SetDigitalOceanClusterProviderConfig(cluster.Spec.ClusterAPI)
 }
 

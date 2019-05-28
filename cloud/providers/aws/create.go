@@ -3,7 +3,6 @@ package aws
 import (
 	"fmt"
 	"net"
-	"strings"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
@@ -47,33 +46,9 @@ func (cm *ClusterManager) SetOwner(owner string) {
 	cm.owner = owner
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	n := namer{cluster: cluster}
 
-	if err := api.AssignTypeKind(cluster); err != nil {
-		return err
-	}
-	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
-		return err
-	}
-
-	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
-
-	config.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
-	config.APIServerExtraArgs = map[string]string{
-		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
-		"kubelet-preferred-address-types": strings.Join([]string{
-			string(core.NodeInternalIP),
-			string(core.NodeInternalDNS),
-			string(core.NodeExternalDNS),
-			string(core.NodeExternalIP),
-		}, ","),
-		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
-	}
-
-	// Init spec
-	cluster.Spec.Config.Cloud.Region = cluster.Spec.Config.Cloud.Zone[0 : len(cluster.Spec.Config.Cloud.Zone)-1]
-	cluster.Spec.Config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
 	if cluster.Spec.Config.Cloud.AWS == nil {
 		cluster.Spec.Config.Cloud.AWS = &api.AWSSpec{}
 	}
@@ -89,9 +64,6 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 	cluster.Spec.Config.Cloud.AWS.PublicSubnetCIDR = "10.0.1.0/24"
 	cluster.Spec.Config.Cloud.AWS.PrivateSubnetCIDR = "10.0.0.0/24"
 
-	if cluster.IsMinorVersion("1.9") {
-		config.APIServerExtraArgs["admission-control"] = api.DeprecatedV19AdmissionControl
-	}
 	// Init status
 	cluster.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,

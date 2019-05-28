@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pharmer/pharmer/store"
+
 	"github.com/appscode/go/analytics"
 	v "github.com/appscode/go/version"
 	ga "github.com/jpillora/go-ogle-analytics"
@@ -48,6 +50,9 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 					return config.Save(config.NewDefaultConfig(), cfgFile)
 				}
 			}
+
+			store.SetProvider(c)
+
 			return nil
 		},
 	}

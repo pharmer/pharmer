@@ -3,7 +3,6 @@ package gke
 import (
 	"encoding/json"
 	"net"
-	"strings"
 
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -44,36 +43,17 @@ func (cm *ClusterManager) SetOwner(owner string) {
 	cm.owner = owner
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	n := namer{cluster: cluster}
+	config := cluster.Spec.Config
 
-	if err := api.AssignTypeKind(cluster); err != nil {
-		return err
-	}
-	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
-		return err
-	}
-
-	// Init spec
-	config.Cloud.Region = config.Cloud.Zone[0:strings.LastIndex(config.Cloud.Zone, "-")]
-	config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
-	//cluster.Spec.API.BindPort = kubeadmapi.DefaultAPIBindPort
-	// REGISTER_MASTER_KUBELET = false // always false, keep master lightweight
-	// PREEMPTIBLE_NODE = false // Removed Support
-
-	//cluster.Spec.Cloud.InstanceImageProject = "ubuntu-os-cloud"
 	config.Cloud.InstanceImage = "Ubuntu"
-	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
-
 	config.Cloud.GKE = &api.GKESpec{
 		UserName:    n.AdminUsername(),
 		Password:    rand.GeneratePassword(),
 		NetworkName: "default",
 	}
-	// Init status
-	cluster.Status = api.PharmerClusterStatus{
-		Phase: api.ClusterPending,
-	}
+
 	return cluster.SetGKEProviderConfig(cluster.Spec.ClusterAPI, config)
 }
 

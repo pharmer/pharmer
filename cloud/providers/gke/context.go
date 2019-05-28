@@ -37,11 +37,11 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, func(ctx context.Context) (Interface, error) { return New(ctx), nil })
+	RegisterCloudManager(UID, New())
 }
 
-func New(ctx context.Context) Interface {
-	return &ClusterManager{ctx: ctx}
+func New() Interface {
+	return &ClusterManager{}
 }
 
 // AddToManager adds all Controllers to the Manager

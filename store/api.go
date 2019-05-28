@@ -13,6 +13,14 @@ import (
 
 var ErrNotImplemented = errors.New("not implemented")
 
+var StoreProvider Interface
+
+const (
+	vfsUID  = "vfs"
+	xormUID = "xorm"
+	fakeUID = "fake"
+)
+
 type Interface interface {
 	Owner(string) ResourceInterface
 	ResourceInterface

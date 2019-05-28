@@ -3,7 +3,8 @@ package linode
 import (
 	"encoding/json"
 	"net"
-	"strings"
+
+	"github.com/pharmer/pharmer/store"
 
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -27,6 +28,12 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 		roles = []api.MachineRole{api.MasterRole}
 	}
 	config := cluster.Spec.Config
+
+	pubkey, _, err := store.StoreProvider.Owner(cm.owner).SSHKeys(cluster.Name).Get(cluster.GenSSHKeyExternalID())
+	if err != nil {
+		return clusterapi.ProviderSpec{}, errors.Wrap(err, " failed to get ssh keys")
+	}
+
 	spec := &linodeconfig.LinodeMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: linodeconfig.LinodeProviderGroupName + "/" + linodeconfig.LinodeProviderApiVersion,
@@ -36,7 +43,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 		Region: config.Cloud.Region,
 		Type:   sku,
 		Image:  config.Cloud.InstanceImage,
-		Pubkey: string(SSHKey(cm.ctx).PublicKey),
+		Pubkey: string(pubkey),
 	}
 
 	providerSpecValue, err := json.Marshal(spec)
@@ -51,31 +58,12 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
-	n := namer{cluster: cluster}
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
+	config := cluster.Spec.Config
 
-	if err := api.AssignTypeKind(cluster); err != nil {
-		return err
-	}
-	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
-		return err
-	}
-
-	// Init spec
-	cluster.Spec.Config.Cloud.Region = cluster.Spec.Config.Cloud.Zone
-	cluster.Spec.Config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
 	config.Cloud.InstanceImage = "linode/ubuntu16.04lts"
-	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
-	config.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
-	config.APIServerExtraArgs = map[string]string{
-		"kubelet-preferred-address-types": strings.Join([]string{
-			string(core.NodeInternalIP),
-			string(core.NodeExternalIP),
-		}, ","),
-	}
-
-	cluster.ClusterConfig().Cloud.CCMCredentialName = cluster.ClusterConfig().CredentialName
-	cluster.ClusterConfig().Cloud.Linode = &api.LinodeSpec{
+	config.Cloud.CCMCredentialName = cluster.ClusterConfig().CredentialName
+	config.Cloud.Linode = &api.LinodeSpec{
 		RootPassword: rand.GeneratePassword(),
 	}
 
@@ -83,7 +71,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 	cluster.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,
 	}
-	cluster.SetNetworkingDefaults("calico")
+
 	return linodeconfig.SetLinodeClusterProviderConfig(cluster.Spec.ClusterAPI)
 }
 

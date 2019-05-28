@@ -1,7 +1,7 @@
 package cloud
 
 import (
-	"context"
+	"errors"
 	"sync"
 
 	"github.com/golang/glog"
@@ -11,17 +11,17 @@ import (
 // The config parameter provides an io.Reader handler to the factory in
 // order to load specific configurations. If no configuration is provided
 // the parameter is nil.
-type Factory func(ctx context.Context) (Interface, error)
+//type Factory func() (Interface, error)
 
 // All registered cloud providers.
 var (
 	providersMutex sync.Mutex
-	providers      = make(map[string]Factory)
+	providers      = make(map[string]Interface)
 )
 
 // RegisterCloudManager registers a cloud.Factory by name.  This
 // is expected to happen during app startup.
-func RegisterCloudManager(name string, cloud Factory) {
+func RegisterCloudManager(name string, cloud Interface) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	if _, found := providers[name]; found {
@@ -57,12 +57,12 @@ func CloudManagers() []string {
 // was known but failed to initialize. The config parameter specifies the
 // io.Reader handler of the configuration file for the cloud provider, or nil
 // for no configuation.
-func GetCloudManager(name string, ctx context.Context) (Interface, error) {
+func GetCloudManager(name string) (Interface, error) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	f, found := providers[name]
 	if !found {
-		return nil, nil
+		return nil, errors.New("not registerd")
 	}
-	return f(ctx)
+	return f, nil
 }

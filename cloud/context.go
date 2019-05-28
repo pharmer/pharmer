@@ -11,9 +11,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/machinesetup"
 	"github.com/pharmer/pharmer/store"
-	"github.com/pharmer/pharmer/store/providers/fake"
-	"github.com/pharmer/pharmer/store/providers/vfs"
-	"github.com/pharmer/pharmer/store/providers/xorm"
 )
 
 type paramEnv struct{}
@@ -150,26 +147,6 @@ func NewContext(parent context.Context, cfg *api.PharmerConfig, env _env.Environ
 	c = WithEnv(c, env)
 	c = WithNameGenerator(c, &api.NullNameGenerator{})
 	c = WithLogger(c, log.New(c))
-	c = WithStore(c, NewStoreProvider(cfg))
+	//c = WithStore(c, NewStoreProvider(cfg))
 	return c
-}
-
-func NewStoreProvider(cfg *api.PharmerConfig) store.Interface {
-	var storeType string
-	if cfg.Store.Local != nil ||
-		cfg.Store.S3 != nil ||
-		cfg.Store.GCS != nil ||
-		cfg.Store.Azure != nil ||
-		cfg.Store.Swift != nil {
-		storeType = vfs.UID
-	} else if cfg.Store.Postgres != nil {
-		storeType = xorm.UID
-	} else {
-		storeType = fake.UID
-	}
-	store, err := store.GetProvider(storeType, cfg)
-	if err != nil {
-		panic(err)
-	}
-	return store
 }

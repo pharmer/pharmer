@@ -27,8 +27,7 @@ type Interface interface {
 	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
 	SetOwner(owner string)
-
-	SetDefaultCluster(in *api.Cluster, conf *api.ClusterConfig) error
+	SetDefaultCluster(in *api.Cluster) error
 	GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterv1.ProviderSpec, error)
 }
 

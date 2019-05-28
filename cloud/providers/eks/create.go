@@ -32,29 +32,11 @@ func (cm *ClusterManager) SetOwner(owner string) {
 	cm.owner = owner
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
-	n := namer{cluster: cluster}
-
-	if err := api.AssignTypeKind(cluster); err != nil {
-		return err
-	}
-	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
-		return err
-	}
-
-	// Init spec
-	config.Cloud.Region = config.Cloud.Zone[0 : len(config.Cloud.Zone)-1]
-	config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
-
-	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
-
-	// cluster.Spec.Cloud.InstanceImage = "ubuntu_16_04_1"
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
+	config := cluster.Spec.Config
 	// Init status
-	cluster.Status = api.PharmerClusterStatus{
-		Phase: api.ClusterPending,
-		Cloud: api.CloudStatus{
-			EKS: &api.EKSStatus{},
-		},
+	cluster.Status.Cloud = api.CloudStatus{
+		EKS: &api.EKSStatus{},
 	}
 
 	return cluster.SetEKSProviderConfig(cluster.Spec.ClusterAPI, config)

@@ -3,6 +3,10 @@ package store
 import (
 	"sync"
 
+	"github.com/appscode/go/term"
+	"github.com/pharmer/pharmer/config"
+	"github.com/spf13/cobra"
+
 	"github.com/golang/glog"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 )
@@ -65,4 +69,33 @@ func GetProvider(name string, cfg *api.PharmerConfig) (Interface, error) {
 		return nil, nil
 	}
 	return f(cfg)
+}
+
+func SetProvider(cmd *cobra.Command) {
+	cfgFile, _ := config.GetConfigFile(cmd.Flags())
+	cfg, err := config.LoadConfig(cfgFile)
+	if err != nil {
+		term.Fatalln(err)
+	}
+	StoreProvider = NewStoreProvider(cfg)
+}
+
+func NewStoreProvider(cfg *api.PharmerConfig) Interface {
+	var storeType string
+	if cfg.Store.Local != nil ||
+		cfg.Store.S3 != nil ||
+		cfg.Store.GCS != nil ||
+		cfg.Store.Azure != nil ||
+		cfg.Store.Swift != nil {
+		storeType = vfsUID
+	} else if cfg.Store.Postgres != nil {
+		storeType = xormUID
+	} else {
+		storeType = fakeUID
+	}
+	store, err := GetProvider(storeType, cfg)
+	if err != nil {
+		panic(err)
+	}
+	return store
 }

@@ -353,3 +353,7 @@ func (c Cluster) IsLessThanVersion(in string) bool {
 	}
 	return v.LessThan(inVer)
 }
+
+func (c *Cluster) GenSSHKeyExternalID() string {
+	return c.Name + "-sshkey"
+}

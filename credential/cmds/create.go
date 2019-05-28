@@ -12,8 +12,6 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	cc "github.com/pharmer/cloud/pkg/credential/cloud"
 	"github.com/pharmer/cloud/pkg/providers"
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential/cmds/options"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -39,14 +37,7 @@ func NewCmdCreateCredential() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				term.Fatalln(err)
-			}
-			storeProvider := cloud.NewStoreProvider(cfg)
-
-			if err := runCreateCredential(storeProvider, opts); err != nil {
+			if err := runCreateCredential(opts); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -56,7 +47,7 @@ func NewCmdCreateCredential() *cobra.Command {
 	return cmd
 }
 
-func runCreateCredential(storeProvider store.Interface, opts *options.CredentialCreateConfig) error {
+func runCreateCredential(opts *options.CredentialCreateConfig) error {
 	// Get Cloud provider
 	provider := opts.Provider
 	if provider == "" {
@@ -82,7 +73,7 @@ func runCreateCredential(storeProvider store.Interface, opts *options.Credential
 			if err != nil {
 				term.Fatalln(err)
 			}
-			_, err = storeProvider.Owner(opts.Owner).Credentials().Create(cred)
+			_, err = store.StoreProvider.Owner(opts.Owner).Credentials().Create(cred)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -126,6 +117,6 @@ func runCreateCredential(storeProvider store.Interface, opts *options.Credential
 	}
 
 	cred.Spec.Data = commonSpec.Data
-	_, err = storeProvider.Owner(opts.Owner).Credentials().Create(cred)
+	_, err = store.StoreProvider.Owner(opts.Owner).Credentials().Create(cred)
 	return err
 }

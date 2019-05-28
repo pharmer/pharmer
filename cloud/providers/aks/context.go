@@ -10,8 +10,8 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes" //"fmt"
-	"k8s.io/client-go/rest"       //"gomodules.xyz/cert"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -20,7 +20,7 @@ type ClusterManager struct {
 	ctx     context.Context
 	cluster *api.Cluster
 	conn    *cloudConnector
-	// Deprecated
+
 	namer namer
 	m     sync.Mutex
 
@@ -36,11 +36,11 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, func(ctx context.Context) (Interface, error) { return New(ctx), nil })
+	RegisterCloudManager(UID, New())
 }
 
-func New(ctx context.Context) Interface {
-	return &ClusterManager{ctx: ctx}
+func New() Interface {
+	return &ClusterManager{}
 }
 
 // AddToManager adds all Controllers to the Manager

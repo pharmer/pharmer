@@ -1,13 +1,10 @@
 package cmds
 
 import (
-	"context"
-
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
-	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
 )
 
@@ -27,13 +24,7 @@ func NewCmdCreateCluster() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				term.Fatalln(err)
-			}
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			cluster, err := cloud.Create(ctx, opts.Cluster, opts.Owner)
+			cluster, err := cloud.Create(opts.Cluster, opts.Owner)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -41,7 +32,7 @@ func NewCmdCreateCluster() *cobra.Command {
 				nodeOpts := options.NewNodeGroupCreateConfig()
 				nodeOpts.ClusterName = cluster.Name
 				nodeOpts.Nodes = opts.Nodes
-				CreateMachineSets(ctx, nodeOpts)
+				CreateMachineSets(nodeOpts)
 			}
 		},
 	}

@@ -55,23 +55,10 @@ func (cm *ClusterManager) SetOwner(owner string) {
 	cm.owner = owner
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
+func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	n := namer{cluster: cluster}
 
-	if err := api.AssignTypeKind(cluster); err != nil {
-		return err
-	}
-	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
-		return err
-	}
-
-	// Init spec
-	config.Cloud.Region = config.Cloud.Zone
-	config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
-
-	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
-
-	config.Cloud.Azure = &api.AzureSpec{
+	cluster.Spec.Config.Cloud.Azure = &api.AzureSpec{
 		ResourceGroup:      n.ResourceGroupName(),
 		SubnetName:         n.SubnetName(),
 		SecurityGroupName:  n.NetworkSecurityGroupName(),
@@ -87,8 +74,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 		Phase: api.ClusterPending,
 	}
 
-	return cluster.SetAKSProviderConfig(cluster.Spec.ClusterAPI, config)
-
+	return cluster.SetAKSProviderConfig(cluster.Spec.ClusterAPI, cluster.Spec.Config)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {

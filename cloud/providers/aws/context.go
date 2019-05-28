@@ -13,7 +13,7 @@ type ClusterManager struct {
 	ctx     context.Context
 	cluster *api.Cluster
 	conn    *cloudConnector
-	// Deprecated
+
 	namer namer
 	m     sync.Mutex
 
@@ -27,11 +27,11 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, func(ctx context.Context) (Interface, error) { return New(ctx), nil })
+	RegisterCloudManager(UID, New())
 }
 
-func New(ctx context.Context) Interface {
-	return &ClusterManager{ctx: ctx}
+func New() Interface {
+	return &ClusterManager{}
 }
 
 type paramK8sClient struct{}
