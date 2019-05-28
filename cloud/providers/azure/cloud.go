@@ -142,24 +142,24 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 }
 
 func PrepareCloud(cm *ClusterManager) error {
-	var err error
-
-	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return err
-	}
-	if cm.ctx, err = LoadEtcdCertificate(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return err
-	}
-	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return err
-	}
-	if cm.ctx, err = LoadSaKey(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return err
-	}
-
-	if cm.conn, err = NewConnector(cm); err != nil {
-		return err
-	}
+	//var err error
+	//
+	////if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
+	//	return err
+	//}
+	//if cm.ctx, err = LoadEtcdCertificate(cm.ctx, cm.cluster, cm.owner); err != nil {
+	//	return err
+	//}
+	//if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster, cm.owner); err != nil {
+	//	return err
+	//}
+	//if cm.ctx, err = LoadSaKey(cm.ctx, cm.cluster, cm.owner); err != nil {
+	//	return err
+	//}
+	//
+	//if cm.conn, err = NewConnector(cm); err != nil {
+	//	return err
+	//}
 
 	return nil
 }

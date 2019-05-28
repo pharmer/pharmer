@@ -14,7 +14,6 @@ import (
 	_ "github.com/pharmer/pharmer/cloud/providers"
 	"github.com/pharmer/pharmer/config"
 	cfgCmd "github.com/pharmer/pharmer/config/cmds"
-	"github.com/pharmer/pharmer/store"
 	_ "github.com/pharmer/pharmer/store/providers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -49,8 +48,6 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 					return config.Save(config.NewDefaultConfig(), cfgFile)
 				}
 			}
-
-			store.SetProvider(c)
 
 			return nil
 		},

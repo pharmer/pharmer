@@ -52,7 +52,8 @@ func (a *Apiserver) CreateCluster() error {
 			noti := notification.NewNotifier(a.ctx, a.natsConn, strconv.Itoa(int(obj.ClusterID)))
 			newCtx := WithLogger(a.ctx, noti)
 
-			cluster, err = Create(cluster, strconv.Itoa(int(obj.UserID)))
+			// todo fix
+			cluster, err = Create(cluster)
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}

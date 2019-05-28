@@ -76,7 +76,6 @@ func (cm *ClusterManager) retrieveClusterStatus(cluster *container.Cluster) erro
 
 func (cm *ClusterManager) StoreCertificate(cluster *container.Cluster, owner string) error {
 	certStore := Store(cm.ctx).Certificates(cluster.Name)
-	config := cm.cluster.Spec.Config
 	_, caKey, err := certStore.Get(api.CACertCommonName)
 	if err == nil {
 		if err = certStore.Delete(api.CACertName); err != nil {

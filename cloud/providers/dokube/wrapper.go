@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/digitalocean/godo"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"gomodules.xyz/cert"
 	"k8s.io/client-go/tools/clientcmd"
@@ -38,9 +39,9 @@ func (cm *ClusterManager) StoreCertificate(ctx context.Context, c *godo.Client, 
 	currentContext := kc.CurrentContext
 
 	certStore := Store(cm.ctx).Certificates(cm.cluster.Name)
-	_, caKey, err := certStore.Get(cm.cluster.Spec.Config.CACertName)
+	_, caKey, err := certStore.Get(api.CACertName)
 	if err == nil {
-		if err = certStore.Delete(cm.cluster.Spec.Config.CACertName); err != nil {
+		if err = certStore.Delete(api.CACertName); err != nil {
 			return err
 		}
 	}
@@ -50,7 +51,7 @@ func (cm *ClusterManager) StoreCertificate(ctx context.Context, c *godo.Client, 
 		return err
 	}
 
-	if err := certStore.Create(cm.cluster.Spec.Config.CACertName, caCrt[0], caKey); err != nil {
+	if err := certStore.Create(api.CACertName, caCrt[0], caKey); err != nil {
 		return err
 	}
 

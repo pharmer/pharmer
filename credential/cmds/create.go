@@ -116,6 +116,6 @@ func runCreateCredential(opts *options.CredentialCreateConfig) error {
 	}
 
 	cred.Spec.Data = commonSpec.Data
-	_, err = store.StoreProvider.Owner(opts.Owner).Credentials().Create(cred)
+	_, err = store.StoreProvider.Credentials().Create(cred)
 	return err
 }

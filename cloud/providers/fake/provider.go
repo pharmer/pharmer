@@ -11,6 +11,9 @@ import (
 )
 
 type ClusterManager struct {
+	cluster *api.Cluster
+	certs   *api.PharmerCertificates
+
 	cfg   *api.PharmerConfig
 	owner string
 }
@@ -38,11 +41,16 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, New())
+	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
+		return New(cluster, certs)
+	})
 }
 
-func New() Interface {
-	return &ClusterManager{}
+func New(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
+	return &ClusterManager{
+		cluster: cluster,
+		certs:   certs,
+	}
 }
 
 func (cm *ClusterManager) SetDefaults(in *api.Cluster) error {

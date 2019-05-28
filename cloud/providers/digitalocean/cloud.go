@@ -79,7 +79,6 @@ func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data
 }
 
 func PrepareCloud(ctx context.Context, clusterName, owner string) (*cloudConnector, error) {
-	var err error
 	var conn *cloudConnector
 	//cluster, err := Store(ctx).Clusters().Get(clusterName)
 	//if err != nil {

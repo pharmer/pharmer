@@ -96,11 +96,10 @@ func NewDokubeAdminClient(ctx context.Context, cluster *api.Cluster, owner strin
 }
 
 func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
-	var err error
-	cm.ctx, err = LoadCACertificates(cm.ctx, cluster, cm.owner)
-	if err != nil {
-		return nil, err
-	}
+	//cm.ctx, err = LoadCACertificates(cm.ctx, cluster, cm.owner)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	var (
 		clusterName = fmt.Sprintf("%s.pharmer", cluster.Name)

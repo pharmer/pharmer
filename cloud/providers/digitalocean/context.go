@@ -71,10 +71,10 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 	}
 	var err error
 
-	cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		return nil, err
-	}
+	//cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner)
+	//if err != nil {
+	//	return nil, err
+	//}
 	kc, err := NewAdminClient(cm.ctx, cm.cluster)
 	if err != nil {
 		return nil, err

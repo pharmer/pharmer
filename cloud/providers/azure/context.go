@@ -11,11 +11,13 @@ import (
 )
 
 type ClusterManager struct {
-	ctx     context.Context
 	cluster *api.Cluster
-	conn    *cloudConnector
-	namer   namer
-	m       sync.Mutex
+	certs   *api.PharmerCertificates
+
+	ctx   context.Context
+	conn  *cloudConnector
+	namer namer
+	m     sync.Mutex
 
 	owner string
 }
@@ -27,11 +29,16 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, New())
+	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
+		return New(cluster, certs)
+	})
 }
 
-func New() Interface {
-	return &ClusterManager{}
+func New(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
+	return &ClusterManager{
+		cluster: cluster,
+		certs:   certs,
+	}
 }
 
 // AddToManager adds all Controllers to the Manager

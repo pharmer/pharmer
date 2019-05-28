@@ -25,9 +25,9 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 	cm.cluster = in
 	cm.namer = namer{cluster: cm.cluster}
-	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return nil, err
-	}
+	//if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
+	//	return nil, err
+	//}
 	/*if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster); err != nil {
 		return nil, err
 	}*/
@@ -117,9 +117,9 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		if err != nil {
 			return acts, err
 		}
-		if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
-			return acts, err
-		}
+		//if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
+		//	return acts, err
+		//}
 		var kc kubernetes.Interface
 		if kc, err = cm.GetAdminClient(); err != nil {
 			return acts, err

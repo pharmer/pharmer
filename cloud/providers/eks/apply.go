@@ -29,12 +29,12 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	}
 	cm.cluster = in
 	cm.namer = namer{cluster: cm.cluster}
-	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return nil, err
-	}
-	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return nil, err
-	}
+	//if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
+	//	return nil, err
+	//}
+	//if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster, cm.owner); err != nil {
+	//	return nil, err
+	//}
 	if cm.conn, err = NewConnector(cm.ctx, cm.cluster, cm.owner); err != nil {
 		return nil, err
 	}

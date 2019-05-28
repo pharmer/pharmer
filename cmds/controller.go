@@ -37,7 +37,8 @@ func newCmdController() *cobra.Command {
 
 			ctx := cloud.NewContext(context.Background(), cfg, pharmerConf.GetEnv(cmd.Flags()))
 
-			cm, err := cloud.GetCloudManager(provider)
+			//todo:fix
+			cm, err := cloud.GetCloudManager(provider, nil, nil)
 			term.ExitOnError(err)
 
 			err = cm.InitializeMachineActuator(mgr)
