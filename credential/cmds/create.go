@@ -4,8 +4,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pharmer/pharmer/store"
-
 	"github.com/appscode/go/term"
 	"github.com/pharmer/cloud/pkg/apis"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
@@ -13,6 +11,7 @@ import (
 	cc "github.com/pharmer/cloud/pkg/credential/cloud"
 	"github.com/pharmer/cloud/pkg/providers"
 	"github.com/pharmer/pharmer/credential/cmds/options"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/AlecAivazis/survey.v1"

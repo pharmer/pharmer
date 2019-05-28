@@ -1,11 +1,8 @@
 package framework
 
 import (
-	"context"
-
 	. "github.com/onsi/gomega"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/store"
 )
@@ -22,7 +19,7 @@ func New(configFile string) *Framework {
 	Expect(err).NotTo(HaveOccurred())
 
 	return &Framework{
-		Storage: cloud.NewStoreProvider(context.Background(), conf),
+		Storage: store.NewStoreProvider(conf),
 		Config:  conf,
 	}
 }

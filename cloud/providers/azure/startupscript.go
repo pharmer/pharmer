@@ -46,11 +46,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "azure" // requires --cloud-config
-		if cluster.Spec.Config.Cloud.CCMCredentialName == "" {
-			panic(errors.New("no cloud controller manager credential found"))
-		}
 
-		cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Config.Cloud.CCMCredentialName)
+		cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Config.CredentialName)
 		if err != nil {
 			panic(err)
 		}

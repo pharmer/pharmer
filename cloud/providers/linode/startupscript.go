@@ -3,7 +3,6 @@ package linode
 import (
 	"bytes"
 	"context"
-	"errors"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
@@ -43,9 +42,6 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
 		td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
 		td.KubeletExtraArgs["keep-terminated-pod-volumes"] = "true"
-		if cluster.ClusterConfig().Cloud.CCMCredentialName == "" {
-			panic(errors.New("no cloud controller manager credential found"))
-		}
 	}
 	joinConf, _ := td.JoinConfigurationYAML()
 	td.JoinConfiguration = joinConf

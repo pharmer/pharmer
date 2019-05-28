@@ -6,7 +6,6 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
@@ -43,9 +42,6 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
 		td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
 		td.KubeletExtraArgs["keep-terminated-pod-volumes"] = "true"
-		if cluster.ClusterConfig().Cloud.CCMCredentialName == "" {
-			panic(errors.New("no cloud controller manager credential found"))
-		}
 	}
 	joinConf, _ := td.JoinConfigurationYAML()
 	td.JoinConfiguration = joinConf

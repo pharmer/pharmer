@@ -66,7 +66,6 @@ type CloudSpec struct {
 	OS                   string      `json:"os,omitempty"`
 	InstanceImageProject string      `json:"instanceImageProject,omitempty"`
 	NetworkProvider      string      `json:"networkProvider,omitempty"` // kubenet, flannel, calico, opencontrail
-	CCMCredentialName    string      `json:"ccmCredentialName,omitempty"`
 	SSHKeyName           string      `json:"sshKeyName,omitempty"`
 	AWS                  *AWSSpec    `json:"aws,omitempty"`
 	GCE                  *GoogleSpec `json:"gce,omitempty"`

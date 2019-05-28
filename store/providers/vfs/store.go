@@ -18,7 +18,6 @@ import (
 	"github.com/graymeta/stow/azure"
 	"github.com/graymeta/stow/google"
 	"github.com/graymeta/stow/local"
-
 	"github.com/graymeta/stow/s3"
 	"github.com/graymeta/stow/swift"
 	"github.com/pharmer/cloud/pkg/credential"

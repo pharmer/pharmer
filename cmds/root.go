@@ -7,8 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pharmer/pharmer/store"
-
 	"github.com/appscode/go/analytics"
 	v "github.com/appscode/go/version"
 	ga "github.com/jpillora/go-ogle-analytics"
@@ -16,6 +14,7 @@ import (
 	_ "github.com/pharmer/pharmer/cloud/providers"
 	"github.com/pharmer/pharmer/config"
 	cfgCmd "github.com/pharmer/pharmer/config/cmds"
+	"github.com/pharmer/pharmer/store"
 	_ "github.com/pharmer/pharmer/store/providers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

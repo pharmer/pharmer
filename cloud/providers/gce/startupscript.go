@@ -7,9 +7,8 @@ import (
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
-	ini "gopkg.in/ini.v1"
+	"gopkg.in/ini.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
@@ -46,10 +45,6 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = cluster.ClusterConfig().Cloud.CloudProvider // requires --cloud-config
 		// ref: https://github.com/kubernetes/kubernetes/blob/release-1.5/cluster/gce/configure-vm.sh#L846
-
-		if cluster.ClusterConfig().Cloud.CCMCredentialName == "" {
-			panic(errors.New("no cloud controller manager credential found"))
-		}
 
 		n := namer{cluster}
 

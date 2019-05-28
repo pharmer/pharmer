@@ -27,7 +27,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 	return ErrNotImplemented
 }
-func (cm *ClusterManager) SetDefaultCluster(in *api.Cluster, conf *api.ClusterConfig) error {
+func (cm *ClusterManager) SetDefaultCluster(in *api.Cluster) error {
 	return ErrNotImplemented
 }
 
@@ -38,10 +38,10 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, func(ctx context.Context) (Interface, error) { return New(ctx), nil })
+	RegisterCloudManager(UID, New())
 }
 
-func New(ctx context.Context) Interface {
+func New() Interface {
 	return &ClusterManager{}
 }
 

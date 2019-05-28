@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"net"
 
-	"github.com/pharmer/pharmer/store"
-
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	linodeconfig "github.com/pharmer/pharmer/apis/v1beta1/linode"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,7 +61,6 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	config := cluster.Spec.Config
 
 	config.Cloud.InstanceImage = "linode/ubuntu16.04lts"
-	config.Cloud.CCMCredentialName = cluster.ClusterConfig().CredentialName
 	config.Cloud.Linode = &api.LinodeSpec{
 		RootPassword: rand.GeneratePassword(),
 	}

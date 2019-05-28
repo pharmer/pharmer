@@ -4,14 +4,13 @@ import (
 	"encoding/base64"
 	"net"
 
-	"github.com/pharmer/pharmer/store"
-
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/log"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	core "k8s.io/api/core/v1"
@@ -87,12 +86,11 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	config := cluster.Spec.Config
 
 	config.APIServerExtraArgs["cloud-config"] = "/etc/kubernetes/azure.json"
-	config.Cloud.CCMCredentialName = cluster.Spec.Config.CredentialName
 
-	cred, err := store.StoreProvider.Owner(cm.owner).Credentials().Get(cluster.Spec.Config.Cloud.CCMCredentialName)
+	credentialName := cluster.Spec.Config.CredentialName
+	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(credentialName)
 	if err != nil {
-		log.Infof("Error getting credential %q: %v", cluster.Spec.Config.Cloud.CCMCredentialName, err)
-		return err
+		return errors.Wrapf(err, "failed to get credential %q", credentialName)
 	}
 	typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {

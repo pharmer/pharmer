@@ -4,8 +4,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/google/uuid"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
@@ -105,7 +103,6 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	config.Cloud.InstanceImageProject = "ubuntu-os-cloud"
 	config.Cloud.InstanceImage = "ubuntu-1604-xenial-v20170721"
 	config.Cloud.OS = "ubuntu-1604-lts"
-	config.Cloud.CCMCredentialName = config.CredentialName
 	config.Cloud.GCE = &api.GoogleSpec{
 		NetworkName: "default",
 		NodeTags:    []string{n.NodePrefix()},
@@ -122,8 +119,6 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	if cluster.Spec.ClusterAPI.ObjectMeta.Annotations == nil {
 		cluster.Spec.ClusterAPI.ObjectMeta.Annotations = make(map[string]string)
 	}
-
-	spew.Dump(cluster)
 
 	return clusterapiGCE.SetGCEclusterProviderConfig(cluster.Spec.ClusterAPI, config)
 }

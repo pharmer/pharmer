@@ -64,7 +64,6 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 }
 
 func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
-	cluster.ClusterConfig().Cloud.CCMCredentialName = cluster.ClusterConfig().CredentialName
 	cluster.ClusterConfig().Cloud.InstanceImage = "ubuntu_16_04" // 1b9b78e3-de68-466e-ba00-f2123e89c112
 
 	// Init status

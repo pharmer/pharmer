@@ -1,10 +1,8 @@
 package framework
 
 import (
-	"context"
 	"fmt"
 
-	_env "github.com/appscode/go/env"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
@@ -18,9 +16,7 @@ func (c *clusterInvocation) GetName() string {
 }
 
 func (c *clusterInvocation) GetSkeleton() (*api.Cluster, error) {
-	ctx := cloud.NewContext(context.Background(), c.Config, _env.Dev)
-
-	cm, err := cloud.GetCloudManager(provider, ctx)
+	cm, err := cloud.GetCloudManager(provider)
 	if err != nil {
 		return nil, err
 	}

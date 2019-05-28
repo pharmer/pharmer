@@ -267,7 +267,7 @@ func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
 	}
 
 	// ccm-secret
-	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(cm.cluster.ClusterConfig().Cloud.CCMCredentialName)
+	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(cm.cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get cluster cred")
 	}

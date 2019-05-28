@@ -4,11 +4,10 @@ import (
 	"sync"
 
 	"github.com/appscode/go/term"
-	"github.com/pharmer/pharmer/config"
-	"github.com/spf13/cobra"
-
 	"github.com/golang/glog"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/config"
+	"github.com/spf13/cobra"
 )
 
 // Factory is a function that returns a storage.Interface.
