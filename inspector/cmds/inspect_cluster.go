@@ -39,7 +39,7 @@ func NewCmdInspectCluster() *cobra.Command {
 			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
 			owner := utils.GetLocalOwner()
-			cluster, err := cloud.Get(clusterName)
+			cluster, err := cloud.GetCluster(clusterName)
 			if err != nil {
 				term.Fatalln(err)
 			}

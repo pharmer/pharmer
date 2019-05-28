@@ -5,6 +5,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 )
 
@@ -26,19 +27,25 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			CreateMachineSets(opts)
+			store.SetProvider(cmd, opts.Owner)
+
+			cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
+			if err != nil {
+				term.Fatalln(err)
+			}
+
+			cm, err := cloud.GetCloudManager(cluster)
+			if err != nil {
+				term.Fatalln(err)
+			}
+
+			err = cloud.CreateMachineSetsFromOptions(cm, opts)
+			if err != nil {
+				term.Fatalln(err)
+			}
 		},
 	}
 	opts.AddFlags(cmd.Flags())
 
 	return cmd
-}
-
-func CreateMachineSets(opts *options.NodeGroupCreateConfig) {
-	cluster, err := cloud.Get(opts.ClusterName)
-	term.ExitOnError(err)
-	for sku, count := range opts.Nodes {
-		err := cloud.CreateMachineSet(cluster, opts.Owner, api.RoleNode, sku, api.NodeType(opts.NodeType), int32(count), opts.SpotPriceMax)
-		term.ExitOnError(err)
-	}
 }

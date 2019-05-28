@@ -27,7 +27,7 @@ func NewCmdCreateCluster() *cobra.Command {
 
 			store.SetProvider(cmd, opts.Owner)
 
-			cluster, err := cloud.Create(opts.Cluster)
+			cm, cluster, err := cloud.Create(opts.Cluster)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -35,7 +35,10 @@ func NewCmdCreateCluster() *cobra.Command {
 				nodeOpts := options.NewNodeGroupCreateConfig()
 				nodeOpts.ClusterName = cluster.Name
 				nodeOpts.Nodes = opts.Nodes
-				CreateMachineSets(nodeOpts)
+				err := cloud.CreateMachineSetsFromOptions(cm, nodeOpts)
+				if err != nil {
+					term.Fatalln(err)
+				}
 			}
 		},
 	}

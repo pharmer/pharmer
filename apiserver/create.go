@@ -53,7 +53,7 @@ func (a *Apiserver) CreateCluster() error {
 			newCtx := WithLogger(a.ctx, noti)
 
 			// todo fix
-			cluster, err = Create(cluster)
+			_, cluster, err = Create(cluster)
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}

@@ -98,8 +98,8 @@ func CreateSSHKey(storeProvider store.ResourceInterface, cluster *api.Cluster) (
 	return sshKey.PublicKey, sshKey.PrivateKey, nil
 }
 
-func LoadSSHKey(cluster *api.Cluster) ([]byte, []byte, error) {
-	publicKey, privateKey, err := store.StoreProvider.SSHKeys(cluster.Name).Get(cluster.Spec.Config.Cloud.SSHKeyName)
+func LoadSSHKey(name string) ([]byte, []byte, error) {
+	publicKey, privateKey, err := store.StoreProvider.SSHKeys(name).Get(name)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to get SSH key. Reason: %v", err)
 	}

@@ -53,15 +53,23 @@ func CloudManagers() []string {
 	return names
 }
 
+func GetCloudManager(cluster *api.Cluster) (Interface, error) {
+	certs, err := getPharmerCerts(cluster.Name)
+	if err != nil {
+		return nil, err
+	}
+	return GetCloudManagerWithCerts(cluster, certs)
+}
+
 // GetCloudManager creates an instance of the named cloud provider, or nil if
 // the name is not known.  The error return is only used if the named provider
 // was known but failed to initialize. The config parameter specifies the
 // io.Reader handler of the configuration file for the cloud provider, or nil
 // for no configuation.
-func GetCloudManager(name string, cluster *api.Cluster, certs *api.PharmerCertificates) (Interface, error) {
+func GetCloudManagerWithCerts(cluster *api.Cluster, certs *api.PharmerCertificates) (Interface, error) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
-	f, found := providers[name]
+	f, found := providers[cluster.Spec.Config.Cloud.CloudProvider]
 	if !found {
 		return nil, errors.New("not registerd")
 	}

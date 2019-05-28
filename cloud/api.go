@@ -18,6 +18,8 @@ var (
 )
 
 type Interface interface {
+	GetCluster() *api.Cluster
+
 	InitializeMachineActuator(mgr manager.Manager) error
 	AddToManager(ctx context.Context, m manager.Manager) error
 

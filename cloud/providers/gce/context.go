@@ -47,6 +47,10 @@ func New(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
 	}
 }
 
+func (cm *ClusterManager) GetCluster() *api.Cluster {
+	return cm.cluster
+}
+
 type paramK8sClient struct{}
 
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
