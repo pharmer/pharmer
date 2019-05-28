@@ -12,9 +12,11 @@ import (
 )
 
 type ClusterManager struct {
-	ctx     context.Context
 	cluster *api.Cluster
-	conn    *cloudConnector
+	certs   *api.PharmerCertificates
+
+	ctx  context.Context
+	conn *cloudConnector
 
 	actuator *ClusterActuator
 
@@ -33,11 +35,16 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, New())
+	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
+		return New(cluster, certs)
+	})
 }
 
-func New() Interface {
-	return &ClusterManager{}
+func New(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
+	return &ClusterManager{
+		cluster: cluster,
+		certs:   certs,
+	}
 }
 
 type paramK8sClient struct{}

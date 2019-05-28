@@ -5,12 +5,10 @@ import (
 
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type Inspector struct {
@@ -23,33 +21,34 @@ type Inspector struct {
 }
 
 func New(ctx context.Context, cluster *api.Cluster, owner string) (*Inspector, error) {
-	if cluster.ClusterConfig().Cloud.CloudProvider == "" {
-		return nil, errors.Errorf("cluster %v has no provider", cluster.Name)
-	}
-	var err error
-	if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
-		return nil, err
-	}
-	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
-		return nil, err
-	}
-	kc, err := NewAdminClient(ctx, cluster)
-	if err != nil {
-		return nil, err
-	}
+	//if cluster.ClusterConfig().Cloud.CloudProvider == "" {
+	//	return nil, errors.Errorf("cluster %v has no provider", cluster.Name)
+	//}
+	//var err error
+	//if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
+	//	return nil, err
+	//}
+	//if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
+	//	return nil, err
+	//}
+	//kc, err := NewAdminClient(ctx, cluster)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//adminConfig, err := GetAdminConfig(ctx, cluster, owner)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//out := api.Convert_KubeConfig_To_Config(adminConfig)
+	//clientConfig := clientcmd.NewDefaultClientConfig(*out, &clientcmd.ConfigOverrides{})
+	//restConfig, err := clientConfig.ClientConfig()
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	adminConfig, err := GetAdminConfig(ctx, cluster, owner)
-	if err != nil {
-		return nil, err
-	}
-	out := api.Convert_KubeConfig_To_Config(adminConfig)
-	clientConfig := clientcmd.NewDefaultClientConfig(*out, &clientcmd.ConfigOverrides{})
-	restConfig, err := clientConfig.ClientConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	return &Inspector{ctx: ctx, client: kc, cluster: cluster, config: restConfig, owner: owner}, nil
+	//return &Inspector{ctx: ctx, client: kc, cluster: cluster, config: restConfig, owner: owner}, nil
+	return nil, nil
 }
 
 func (i *Inspector) NativeCheck() error {

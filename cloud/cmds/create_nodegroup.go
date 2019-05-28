@@ -35,7 +35,7 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 }
 
 func CreateMachineSets(opts *options.NodeGroupCreateConfig) {
-	cluster, err := cloud.Get(opts.ClusterName, opts.Owner)
+	cluster, err := cloud.Get(opts.ClusterName)
 	term.ExitOnError(err)
 	for sku, count := range opts.Nodes {
 		err := cloud.CreateMachineSet(cluster, opts.Owner, api.RoleNode, sku, api.NodeType(opts.NodeType), int32(count), opts.SpotPriceMax)

@@ -70,16 +70,16 @@ func GetProvider(name string, cfg *api.PharmerConfig) (Interface, error) {
 	return f(cfg)
 }
 
-func SetProvider(cmd *cobra.Command) {
+func SetProvider(cmd *cobra.Command, owner string) {
 	cfgFile, _ := config.GetConfigFile(cmd.Flags())
 	cfg, err := config.LoadConfig(cfgFile)
 	if err != nil {
 		term.Fatalln(err)
 	}
-	StoreProvider = NewStoreProvider(cfg)
+	StoreProvider = NewStoreProvider(cfg, owner)
 }
 
-func NewStoreProvider(cfg *api.PharmerConfig) Interface {
+func NewStoreProvider(cfg *api.PharmerConfig, owner string) ResourceInterface {
 	var storeType string
 	if cfg.Store.Local != nil ||
 		cfg.Store.S3 != nil ||
@@ -96,5 +96,5 @@ func NewStoreProvider(cfg *api.PharmerConfig) Interface {
 	if err != nil {
 		panic(err)
 	}
-	return store
+	return store.Owner(owner)
 }

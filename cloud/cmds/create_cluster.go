@@ -5,6 +5,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +25,9 @@ func NewCmdCreateCluster() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			cluster, err := cloud.Create(opts.Cluster, opts.Owner)
+			store.SetProvider(cmd, opts.Owner)
+
+			cluster, err := cloud.Create(opts.Cluster)
 			if err != nil {
 				term.Fatalln(err)
 			}

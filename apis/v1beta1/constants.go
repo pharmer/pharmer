@@ -1,6 +1,10 @@
 package v1beta1
 
-import "time"
+import (
+	"time"
+
+	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+)
 
 const (
 	RoleMaster    = "master"
@@ -36,4 +40,13 @@ const (
 	PodNetworkCalico  = "calico"
 	PodNetworkFlannel = "flannel"
 	PodNetworkCanal   = "canal"
+
+	CACertName                 = kubeadmconst.CACertAndKeyBaseName
+	CACertCommonName           = kubeadmconst.CACertAndKeyBaseName
+	FrontProxyCACertName       = kubeadmconst.FrontProxyCACertAndKeyBaseName
+	FrontProxyCACertCommonName = kubeadmconst.FrontProxyCACertAndKeyBaseName
+	SAKeyName                  = kubeadmconst.ServiceAccountKeyBaseName
+	SAKeyCommonName            = kubeadmconst.ServiceAccountKeyBaseName
+	ETCDCACertName             = kubeadmconst.EtcdCACertAndKeyBaseName
+	ETCDCACertCommonName       = "kubernetes"
 )

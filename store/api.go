@@ -13,7 +13,7 @@ import (
 
 var ErrNotImplemented = errors.New("not implemented")
 
-var StoreProvider Interface
+var StoreProvider ResourceInterface
 
 const (
 	vfsUID  = "vfs"

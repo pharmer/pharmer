@@ -1,10 +1,7 @@
 package framework
 
 import (
-	"fmt"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -16,19 +13,19 @@ func (c *clusterInvocation) GetName() string {
 }
 
 func (c *clusterInvocation) GetSkeleton() (*api.Cluster, error) {
-	cm, err := cloud.GetCloudManager(provider)
-	if err != nil {
-		return nil, err
-	}
+	//cm, err := cloud.GetCloudManager(provider)
+	//if err != nil {
+	//	return nil, err
+	//}
 	cluster := &api.Cluster{}
 	cluster.Name = c.GetName()
 	cluster.Spec.Config.Cloud.CloudProvider = "digitalocean"
 	cluster.Spec.Config.Cloud.Zone = "nyc3"
 	cluster.Spec.Config.CredentialName = "do"
 	cluster.Spec.Config.KubernetesVersion = "v1.9.0"
-	fmt.Println(cm)
-	//err = cm.SetDefaults(cluster)
-	return cluster, err
+	//fmt.Println(cm)
+	////err = cm.SetDefaults(cluster)
+	return cluster, nil
 }
 
 func (c *clusterInvocation) Update(cluster *api.Cluster) error {

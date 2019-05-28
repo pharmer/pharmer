@@ -12,8 +12,10 @@ import (
 )
 
 type ClusterManager struct {
+	cluster *api.Cluster
+	certs   *api.PharmerCertificates
+
 	ctx      context.Context
-	cluster  *api.Cluster
 	conn     *cloudConnector
 	actuator *ClusterActuator
 	namer    namer
@@ -30,11 +32,16 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, New())
+	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
+		return New(cluster, certs)
+	})
 }
 
-func New() Interface {
-	return &ClusterManager{}
+func New(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
+	return &ClusterManager{
+		cluster: cluster,
+		certs:   certs,
+	}
 }
 
 type paramK8sClient struct{}
@@ -61,10 +68,10 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 	}
 
 	var err error
-	cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		return nil, err
-	}
+	//cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner)
+	//if err != nil {
+	//	return nil, err
+	//}
 	kc, err := NewAdminClient(cm.ctx, cm.cluster)
 	if err != nil {
 		return nil, err

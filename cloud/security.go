@@ -4,10 +4,8 @@ import (
 	"context"
 	"crypto/rsa"
 	"crypto/x509"
-	"fmt"
 
 	"github.com/appscode/go/crypto/ssh"
-	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
@@ -15,155 +13,49 @@ import (
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
-func CreateCACertificates(storeProvider store.Interface, cluster *api.Cluster, owner string) error {
-	log.Infoln("Generating CA certificate for cluster")
-
-	certStore := storeProvider.Owner(owner).Certificates(cluster.Name)
-
-	if cluster.Spec.Config.CACertName == "" {
-		cluster.Spec.Config.CACertName = kubeadmconst.CACertAndKeyBaseName
-
-		caKey, err := cert.NewPrivateKey()
-		if err != nil {
-			return errors.Wrap(err, "failed to generate private key")
-		}
-		caCert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: cluster.Spec.Config.CACertName}, caKey)
-		if err != nil {
-			return errors.Errorf("failed to generate self-signed certificate. Reason: %v", err)
-		}
-
-		if err = certStore.Create(cluster.Spec.Config.CACertName, caCert, caKey); err != nil {
-			return err
-		}
-	}
-
-	if cluster.Spec.Config.FrontProxyCACertName == "" {
-		cluster.Spec.Config.FrontProxyCACertName = kubeadmconst.FrontProxyCACertAndKeyBaseName
-		frontProxyCAKey, err := cert.NewPrivateKey()
-		if err != nil {
-			return errors.Errorf("failed to generate private key. Reason: %v", err)
-		}
-		frontProxyCACert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: cluster.Spec.Config.CACertName}, frontProxyCAKey)
-		if err != nil {
-			return errors.Errorf("failed to generate self-signed certificate. Reason: %v", err)
-		}
-
-		if err = certStore.Create(cluster.Spec.Config.FrontProxyCACertName, frontProxyCACert, frontProxyCAKey); err != nil {
-			return err
-		}
-	}
-
-	log.Infoln("CA certificates generated successfully.")
-	return nil
+func CreateCACertificates(storeProvider store.ResourceInterface, clusterName string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	return CreateCertificates(storeProvider, clusterName, api.CACertName, api.CACertCommonName)
 }
 
-func CreateServiceAccountKey(storeProvider store.Interface, cluster *api.Cluster, owner string) error {
-	log.Infoln("Generating Service account signing key for cluster")
-	certStore := storeProvider.Owner(owner).Certificates(cluster.Name)
-
-	saSigningKey, err := cert.NewPrivateKey()
-	if err != nil {
-		return errors.Errorf("failure while creating service account token signing key: %v", err)
-	}
-	cfg := cert.Config{
-		CommonName: fmt.Sprintf("%v-certificate-authority", kubeadmconst.ServiceAccountKeyBaseName),
-	}
-	SaSigningCert, err := cert.NewSelfSignedCACert(cfg, saSigningKey)
-	if err != nil {
-		return errors.Errorf("failed to generate self-signed certificate. Reason: %v", err)
-	}
-
-	if err = certStore.Create(kubeadmconst.ServiceAccountKeyBaseName, SaSigningCert, saSigningKey); err != nil {
-		return err
-	}
-
-	log.Infoln("Service account key generated successfully.")
-	return nil
+func CreateFrontProxyCACertificates(storeProvider store.ResourceInterface, clusterName string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	return CreateCertificates(storeProvider, clusterName, api.FrontProxyCACertName, api.FrontProxyCACertCommonName)
 }
 
-func CreateEtcdCertificates(storeProvider store.Interface, cluster *api.Cluster, owner string) error {
-	log.Infoln("Generating ETCD CA certificate for etcd")
+func CreateSACertificate(storeProvider store.ResourceInterface, clusterName string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	return CreateCertificates(storeProvider, clusterName, api.SAKeyName, api.SAKeyCommonName)
+}
 
-	certStore := storeProvider.Owner(owner).Certificates(cluster.Name)
+func CreateEtcdCACertificate(storeProvider store.ResourceInterface, clusterName string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	return CreateCertificates(storeProvider, clusterName, api.ETCDCACertName, api.ETCDCACertCommonName)
+}
 
-	// -----------------------------------------------
+func CreateCertificates(storeProvider store.ResourceInterface, clusterName, name, commonName string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	certStore := storeProvider.Certificates(clusterName)
+
 	caKey, err := cert.NewPrivateKey()
 	if err != nil {
-		return errors.Errorf("failed to generate private key. Reason: %v", err)
+		return nil, nil, errors.Wrap(err, "failed to generate private key")
 	}
-	caCert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: "kubernetes"}, caKey)
+	caCert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: commonName}, caKey)
 	if err != nil {
-		return errors.Errorf("failed to generate self-signed certificate. Reason: %v", err)
+		return nil, nil, errors.Errorf("failed to generate self-signed certificate. Reason: %v", err)
 	}
 
-	if err = certStore.Create(EtcdCACertAndKeyBaseName, caCert, caKey); err != nil {
-		return err
+	if err = certStore.Create(name, caCert, caKey); err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to create %q certificate", name)
 	}
 
-	log.Infoln("ETCD CA certificates generated successfully.")
-	return nil
+	return caCert, caKey, nil
 }
 
-func LoadCACertificates(ctx context.Context, cluster *api.Cluster, owner string) (context.Context, error) {
-	certStore := Store(ctx).Owner(owner).Certificates(cluster.Name)
+func LoadCACertificates(clusterName, name string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	certStore := store.StoreProvider.Certificates(clusterName)
 
-	caCert, caKey, err := certStore.Get(cluster.Spec.Config.CACertName)
+	caCert, caKey, err := certStore.Get(name)
 	if err != nil {
-		return ctx, errors.Errorf("failed to get CA certificates. Reason: %v", err)
+		return nil, nil, errors.Wrapf(err, "failed to get CA certificates")
 	}
-	ctx = context.WithValue(ctx, paramCACert{}, caCert)
-	ctx = context.WithValue(ctx, paramCAKey{}, caKey)
-
-	frontProxyCACert, frontProxyCAKey, err := certStore.Get(cluster.Spec.Config.FrontProxyCACertName)
-	if err != nil {
-		return ctx, errors.Errorf("failed to get front proxy CA certificates. Reason: %v", err)
-	}
-	ctx = context.WithValue(ctx, paramFrontProxyCACert{}, frontProxyCACert)
-	ctx = context.WithValue(ctx, paramFrontProxyCAKey{}, frontProxyCAKey)
-
-	return ctx, nil
-}
-
-func LoadApiserverCertificate(ctx context.Context, cluster *api.Cluster, owner string) (context.Context, error) {
-	certStore := Store(ctx).Owner(owner).Certificates(cluster.Name)
-	apiserverCaCert, apiserverCaKey, err := certStore.Get(kubeadmconst.APIServerCertAndKeyBaseName + "-ca")
-	if err != nil {
-		return ctx, errors.Errorf("failed to get apiserver certificates. Reason: %v", err)
-	}
-	ctx = context.WithValue(ctx, paramApiServerCaCert{}, apiserverCaCert)
-	ctx = context.WithValue(ctx, paramApiServerCaKey{}, apiserverCaKey)
-
-	apiserverCert, apiserverKey, err := certStore.Get(kubeadmconst.APIServerCertAndKeyBaseName)
-	if err != nil {
-		return ctx, errors.Errorf("failed to get apiserver certificates. Reason: %v", err)
-	}
-	ctx = context.WithValue(ctx, paramApiServerCert{}, apiserverCert)
-	ctx = context.WithValue(ctx, paramApiServerKey{}, apiserverKey)
-
-	return ctx, nil
-}
-
-func LoadSaKey(ctx context.Context, cluster *api.Cluster, owner string) (context.Context, error) {
-	certStore := Store(ctx).Owner(owner).Certificates(cluster.Name)
-	cert, key, err := certStore.Get(kubeadmconst.ServiceAccountKeyBaseName)
-	if err != nil {
-		return ctx, errors.Errorf("failed to get service account key. Reason: %v", err)
-	}
-	ctx = context.WithValue(ctx, paramSaKey{}, key)
-	ctx = context.WithValue(ctx, paramSaCert{}, cert)
-	return ctx, nil
-}
-
-func LoadEtcdCertificate(ctx context.Context, cluster *api.Cluster, owner string) (context.Context, error) {
-	certStore := Store(ctx).Owner(owner).Certificates(cluster.Name)
-	etcdCaCert, etcdCaKey, err := certStore.Get(EtcdCACertAndKeyBaseName)
-	if err != nil {
-		return ctx, errors.Errorf("failed to get etcd certificates. Reason: %v", err)
-	}
-	ctx = context.WithValue(ctx, paramEtcdCACert{}, etcdCaCert)
-	ctx = context.WithValue(ctx, paramEtcdCAKey{}, etcdCaKey)
-
-	return ctx, nil
+	return caCert, caKey, nil
 }
 
 func CreateAdminCertificate(ctx context.Context) (*x509.Certificate, *rsa.PrivateKey, error) {
@@ -193,28 +85,29 @@ func GetAdminCertificate(ctx context.Context, cluster *api.Cluster, owner string
 	return admCert, admKey, nil
 }
 
-func CreateSSHKey(storeProvider store.Interface, cluster *api.Cluster, owner string) error {
+func CreateSSHKey(storeProvider store.ResourceInterface, cluster *api.Cluster) ([]byte, []byte, error) {
 	sshKey, err := ssh.NewSSHKeyPair()
 	if err != nil {
-		return err
+		return nil, nil, errors.Wrap(err, "failed to create new ssh key pair")
 	}
-	err = storeProvider.Owner(owner).SSHKeys(cluster.Name).Create(cluster.Spec.Config.Cloud.SSHKeyName, sshKey.PublicKey, sshKey.PrivateKey)
+	err = storeProvider.SSHKeys(cluster.Name).Create(cluster.Spec.Config.Cloud.SSHKeyName, sshKey.PublicKey, sshKey.PrivateKey)
 	if err != nil {
-		return err
+		return nil, nil, errors.Wrap(err, "failed to store ssh keys")
 	}
-	return nil
+
+	return sshKey.PublicKey, sshKey.PrivateKey, nil
 }
 
-func LoadSSHKey(ctx context.Context, cluster *api.Cluster, owner string) (context.Context, error) {
-	publicKey, privateKey, err := Store(ctx).Owner(owner).SSHKeys(cluster.Name).Get(cluster.Spec.Config.Cloud.SSHKeyName)
+func LoadSSHKey(cluster *api.Cluster) ([]byte, []byte, error) {
+	publicKey, privateKey, err := store.StoreProvider.SSHKeys(cluster.Name).Get(cluster.Spec.Config.Cloud.SSHKeyName)
 	if err != nil {
-		return ctx, errors.Errorf("failed to get SSH key. Reason: %v", err)
+		return nil, nil, errors.Errorf("failed to get SSH key. Reason: %v", err)
 	}
 
-	protoSSH, err := ssh.ParseSSHKeyPair(string(publicKey), string(privateKey))
+	sshkeys, err := ssh.ParseSSHKeyPair(string(publicKey), string(privateKey))
 	if err != nil {
-		return ctx, errors.Errorf("failed to parse SSH key. Reason: %v", err)
+		return nil, nil, errors.Wrap(err, "failed to parse SSH key")
 	}
-	ctx = context.WithValue(ctx, paramSSHKey{}, protoSSH)
-	return ctx, nil
+
+	return sshkeys.PublicKey, sshkeys.PrivateKey, nil
 }

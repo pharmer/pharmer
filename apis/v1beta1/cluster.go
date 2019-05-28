@@ -34,13 +34,11 @@ type PharmerClusterSpec struct {
 }
 
 type ClusterConfig struct {
-	MasterCount          int       `json:"masterCount"`
-	Cloud                CloudSpec `json:"cloud"`
-	KubernetesVersion    string    `json:"kubernetesVersion,omitempty"`
-	Locked               bool      `json:"locked,omitempty"`
-	CACertName           string    `json:"caCertName,omitempty"`
-	FrontProxyCACertName string    `json:"frontProxyCACertName,omitempty"`
-	CredentialName       string    `json:"credentialName,omitempty"`
+	MasterCount       int       `json:"masterCount"`
+	Cloud             CloudSpec `json:"cloud"`
+	KubernetesVersion string    `json:"kubernetesVersion,omitempty"`
+	Locked            bool      `json:"locked,omitempty"`
+	CredentialName    string    `json:"credentialName,omitempty"`
 
 	KubeletExtraArgs           map[string]string `json:"kubeletExtraArgs,omitempty"`
 	APIServerExtraArgs         map[string]string `json:"apiServerExtraArgs,omitempty"`

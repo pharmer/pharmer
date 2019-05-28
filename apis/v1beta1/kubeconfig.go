@@ -31,7 +31,7 @@ type NamedCluster struct {
 	Name string `json:"name"`
 	// Server is the address of the kubernetes cluster (https://hostname:port).
 	Server string `json:"server"`
-	// CertificateAuthorityData contains PEM-encoded certificate authority certificates. Overrides CertificateAuthorityData
+	// CertificateAuthorityData contains PEM-encoded CertKeyPair authority certificates. Overrides CertificateAuthorityData
 	// +optional
 	CertificateAuthorityData []byte `json:"certificateAuthorityData,omitempty"`
 }
