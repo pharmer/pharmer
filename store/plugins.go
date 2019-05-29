@@ -3,6 +3,8 @@ package store
 import (
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"github.com/appscode/go/term"
 	"github.com/golang/glog"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -65,7 +67,7 @@ func GetProvider(name string, cfg *api.PharmerConfig) (Interface, error) {
 	defer providersMutex.Unlock()
 	f, found := providers[name]
 	if !found {
-		return nil, nil
+		return nil, errors.Errorf("provider %s not registered", name)
 	}
 	return f(cfg)
 }
