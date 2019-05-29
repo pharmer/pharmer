@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	. "github.com/appscode/go/context"
+	"github.com/appscode/go/log"
 	"github.com/packethost/packngo"
 	"github.com/pharmer/cloud/pkg/credential"
 	"github.com/pharmer/cloud/pkg/providers"
@@ -92,7 +93,7 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 		if err != nil {
 			return false, nil
 		}
-		Logger(conn.ctx).Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, server.ID, server.State)
+		log.Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, server.ID, server.State)
 		if strings.ToLower(server.State) == status {
 			return true, nil
 		}
@@ -124,7 +125,7 @@ func (conn *cloudConnector) getPublicKey() (bool, string, error) {
 }
 
 func (conn *cloudConnector) importPublicKey() (string, error) {
-	Logger(conn.ctx).Debugln("Adding SSH public key")
+	log.Debugln("Adding SSH public key")
 	sk, _, err := conn.client.SSHKeys.Create(&packngo.SSHKeyCreateRequest{
 		Key:       string(SSHKey(conn.ctx).PublicKey),
 		Label:     conn.cluster.ClusterConfig().Cloud.SSHKeyName,
@@ -138,12 +139,12 @@ func (conn *cloudConnector) importPublicKey() (string, error) {
 		}
 		return keyID, err
 	}
-	Logger(conn.ctx).Debugf("Created new ssh key with fingerprint=%v", SSHKey(conn.ctx).OpensshFingerprint)
+	log.Debugf("Created new ssh key with fingerprint=%v", SSHKey(conn.ctx).OpensshFingerprint)
 	return sk.ID, nil
 }
 
 func (conn *cloudConnector) deleteSSHKey(id string) error {
-	Logger(conn.ctx).Infof("Deleting SSH key for cluster %s", conn.cluster.Name)
+	log.Infof("Deleting SSH key for cluster %s", conn.cluster.Name)
 	return wait.PollImmediate(RetryInterval, RetryInterval, func() (bool, error) {
 		_, err := conn.client.SSHKeys.Delete(id)
 		return err == nil, nil
@@ -175,7 +176,7 @@ func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, token, ow
 	if err != nil {
 		return nil, err
 	}
-	Logger(conn.ctx).Infof("Instance %v created", machine.Name)
+	log.Infof("Instance %v created", machine.Name)
 
 	err = conn.waitForInstance(server.ID, "active")
 	if err != nil {
@@ -211,7 +212,7 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("Server %v deleted", serverID)
+	log.Infof("Server %v deleted", serverID)
 	return nil
 }
 
@@ -237,7 +238,7 @@ func serverIDFromProviderID(providerID string) (string, error) {
 
 // reboot does not seem to run /etc/rc.local
 func (conn *cloudConnector) reboot(id string) error {
-	Logger(conn.ctx).Infof("Rebooting instance %v", id)
+	log.Infof("Rebooting instance %v", id)
 	_, err := conn.client.Devices.Reboot(id)
 	if err != nil {
 		return errors.Wrap(err, ID(conn.ctx))

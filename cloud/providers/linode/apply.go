@@ -38,11 +38,11 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 	if cm.cluster.Spec.Config.Cloud.InstanceImage, err = cm.conn.DetectInstanceImage(); err != nil {
 		return nil, err
 	}
-	Logger(cm.ctx).Debugln("Linode instance image", cm.cluster.Spec.Config.Cloud.InstanceImage)
+	log.Debugln("Linode instance image", cm.cluster.Spec.Config.Cloud.InstanceImage)
 	if cm.cluster.Spec.Config.Cloud.Linode.KernelId, err = cm.conn.DetectKernel(); err != nil {
 		return nil, err
 	}
-	Logger(cm.ctx).Infof("Linode kernel %v found", cm.cluster.Spec.Config.Cloud.Linode.KernelId)
+	log.Infof("Linode kernel %v found", cm.cluster.Spec.Config.Cloud.Linode.KernelId)
 
 	if cm.cluster.Status.Phase == api.ClusterUpgrading {
 		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
@@ -151,7 +151,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		}
 	}
 	if d, _ := cm.conn.instanceIfExists(leaderMachine); d == nil {
-		Logger(cm.ctx).Info("Creating master instance")
+		log.Info("Creating master instance")
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "MasterInstance",
@@ -270,7 +270,7 @@ func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
 
 // Scales up/down regular node groups
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
-	Logger(cm.ctx).Infoln("scaling machine set")
+	log.Infoln("scaling machine set")
 
 	var machineSets []*clusterv1.MachineSet
 	var existingMachineSet []*clusterv1.MachineSet
@@ -328,7 +328,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 
 //Deletes master(s) and releases other cloud resources
 func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error) {
-	Logger(cm.ctx).Infoln("deleting cluster")
+	log.Infoln("deleting cluster")
 
 	if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
@@ -355,16 +355,16 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		}).String(),
 	})
 	if err != nil && !kerr.IsNotFound(err) {
-		Logger(cm.ctx).Infof("node instance not found. Reason: %v", err)
+		log.Infof("node instance not found. Reason: %v", err)
 	} else if err == nil {
 		for _, mi := range nodeInstances.Items {
 
 			if err = cm.conn.DeleteStackScript(mi.Name, api.RoleNode); err != nil {
-				Logger(cm.ctx).Infof("Reason: %v", err)
+				log.Infof("Reason: %v", err)
 			}
 			err = kc.CoreV1().Nodes().Delete(mi.Name, nil)
 			if err != nil {
-				Logger(cm.ctx).Infof("Failed to delete node %s. Reason: %s", mi.Name, err)
+				log.Infof("Failed to delete node %s. Reason: %s", mi.Name, err)
 			}
 		}
 	}
@@ -376,7 +376,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		}).String(),
 	})
 	if err != nil && !kerr.IsNotFound(err) {
-		Logger(cm.ctx).Infof("master instance not found. Reason: %v", err)
+		log.Infof("master instance not found. Reason: %v", err)
 	} else if err == nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionDelete,
@@ -386,12 +386,12 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		if !dryRun {
 			for _, mi := range masterInstances.Items {
 				if err = cm.conn.DeleteStackScript(mi.Name, api.RoleMaster); err != nil {
-					Logger(cm.ctx).Infof("Reason: %v", err)
+					log.Infof("Reason: %v", err)
 				}
 
 				err = cm.conn.DeleteInstanceByProviderID(mi.Spec.ProviderID)
 				if err != nil {
-					Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", mi.Spec.ProviderID, err)
+					log.Infof("Failed to delete instance %s. Reason: %s", mi.Spec.ProviderID, err)
 				}
 			}
 
@@ -425,7 +425,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	Logger(cm.ctx).Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
+	log.Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
 	return
 }
 

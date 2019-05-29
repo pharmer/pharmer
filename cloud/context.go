@@ -4,7 +4,6 @@ import (
 	"context"
 
 	_env "github.com/appscode/go/env"
-	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/machinesetup"
 	"github.com/pharmer/pharmer/store"
@@ -143,7 +142,7 @@ func NewContext(parent context.Context, cfg *api.PharmerConfig, env _env.Environ
 	c := parent
 	c = WithEnv(c, env)
 	c = WithNameGenerator(c, &api.NullNameGenerator{})
-	c = WithLogger(c, log.New(c))
+	//c = WithLogger(c, log.New(c))
 	//c = WithStore(c, NewStoreProvider(cfg))
 	return c
 }

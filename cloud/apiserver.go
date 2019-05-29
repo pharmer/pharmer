@@ -279,7 +279,7 @@ func waitForServiceAccount(ctx context.Context, client kubernetes.Interface) err
 	attempt := 0
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		attempt++
-		Logger(ctx).Infof("Attempt %v: Waiting for the service account to exist...", attempt)
+		log.Infof("Attempt %v: Waiting for the service account to exist...", attempt)
 
 		_, err := client.CoreV1().ServiceAccounts(ServiceAccountNs).Get(ServiceAccountName, metav1.GetOptions{})
 		return err == nil, nil

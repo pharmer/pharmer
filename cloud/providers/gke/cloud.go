@@ -4,6 +4,7 @@ import (
 	"context"
 
 	. "github.com/appscode/go/context"
+	"github.com/appscode/go/log"
 	"github.com/appscode/go/wait"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -87,7 +88,7 @@ func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 			return false, nil
 		}
 
-		Logger(conn.ctx).Infof("Attempt %v: Operation %v is %v ...", attempt, operation, r1.Status)
+		log.Infof("Attempt %v: Operation %v is %v ...", attempt, operation, r1.Status)
 		if r1.Status == "DONE" {
 			return true, nil
 		}
@@ -96,24 +97,24 @@ func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 }
 
 func (conn *cloudConnector) ensureNetworks() error {
-	Logger(conn.ctx).Infof("Retrieving network %v for project %v", defaultNetwork, conn.cluster.Spec.Config.Cloud.Project)
+	log.Infof("Retrieving network %v for project %v", defaultNetwork, conn.cluster.Spec.Config.Cloud.Project)
 	r2, err := conn.computeService.Networks.Insert(conn.cluster.Spec.Config.Cloud.Project, &compute.Network{
 		IPv4Range: conn.cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
 		Name:      defaultNetwork,
 	}).Do()
-	Logger(conn.ctx).Debug("Created new network", r2, err)
+	log.Debug("Created new network", r2, err)
 	if err != nil {
 		return errors.Wrap(err, ID(conn.ctx))
 	}
-	Logger(conn.ctx).Infof("New network %v is created", defaultNetwork)
+	log.Infof("New network %v is created", defaultNetwork)
 
 	return nil
 }
 
 func (conn *cloudConnector) getNetworks() (bool, error) {
-	Logger(conn.ctx).Infof("Retrieving network %v for project %v", defaultNetwork, conn.cluster.Spec.Config.Cloud.Project)
+	log.Infof("Retrieving network %v for project %v", defaultNetwork, conn.cluster.Spec.Config.Cloud.Project)
 	r1, err := conn.computeService.Networks.Get(conn.cluster.Spec.Config.Cloud.Project, defaultNetwork).Do()
-	Logger(conn.ctx).Debug("Retrieve network result", r1, err)
+	log.Debug("Retrieve network result", r1, err)
 	if err != nil {
 		return false, err
 	}
@@ -127,7 +128,7 @@ func (conn *cloudConnector) createCluster(cluster *container.Cluster) (string, e
 	}
 
 	resp, err := conn.containerService.Projects.Zones.Clusters.Create(conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Zone, clusterRequest).Do()
-	Logger(conn.ctx).Debug("Created kubernetes cluster", resp, err)
+	log.Debug("Created kubernetes cluster", resp, err)
 	if err != nil {
 		return "", err
 	}
@@ -136,7 +137,7 @@ func (conn *cloudConnector) createCluster(cluster *container.Cluster) (string, e
 
 func (conn *cloudConnector) deleteCluster() (string, error) {
 	resp, err := conn.containerService.Projects.Zones.Clusters.Delete(conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Zone, conn.cluster.Name).Do()
-	Logger(conn.ctx).Debug("Deleted kubernetes cluster", resp, err)
+	log.Debug("Deleted kubernetes cluster", resp, err)
 	if err != nil {
 		return "", err
 	}

@@ -117,7 +117,7 @@ func (conn *cloudConnector) WaitForInstance(id int, status string) error {
 		if err != nil {
 			return false, nil
 		}
-		Logger(conn.ctx).Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, id, droplet.Status)
+		log.Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, id, droplet.Status)
 		if strings.ToLower(droplet.Status) == status {
 			return true, nil
 		}
@@ -139,7 +139,7 @@ func (conn *cloudConnector) getPublicKey() (bool, int, error) {
 }
 
 func (conn *cloudConnector) importPublicKey() (string, error) {
-	Logger(conn.ctx).Infof("Adding SSH public key")
+	log.Infof("Adding SSH public key")
 	id, _, err := conn.client.Keys.Create(context.TODO(), &godo.KeyCreateRequest{
 		//	Name:      conn.cluster.Spec.Cloud.SSHKeyName,
 		PublicKey: string(SSHKey(conn.ctx).PublicKey),
@@ -147,7 +147,7 @@ func (conn *cloudConnector) importPublicKey() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	Logger(conn.ctx).Info("SSH public key added")
+	log.Info("SSH public key added")
 	return strconv.Itoa(id.ID), nil
 }
 
@@ -159,7 +159,7 @@ func (conn *cloudConnector) deleteSSHKey() error {
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("SSH key for cluster %v deleted", conn.cluster.Name)
+	log.Infof("SSH key for cluster %v deleted", conn.cluster.Name)
 	return nil
 }
 
@@ -186,7 +186,7 @@ func (conn *cloudConnector) createTags() error {
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("Tag %v created", tag)
+	log.Infof("Tag %v created", tag)
 	return nil
 }
 
@@ -199,7 +199,7 @@ func (conn *cloudConnector) applyTag(dropletID int) error {
 			},
 		},
 	})
-	Logger(conn.ctx).Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+conn.cluster.Name, dropletID)
+	log.Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+conn.cluster.Name, dropletID)
 	return err
 }
 
@@ -223,7 +223,7 @@ func (conn *cloudConnector) createReserveIP() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	Logger(conn.ctx).Infof("New floating ip %v reserved", fip.IP)
+	log.Infof("New floating ip %v reserved", fip.IP)
 	return fip.IP, nil
 }
 
@@ -232,17 +232,17 @@ func (conn *cloudConnector) assignReservedIP(ip string, dropletID int) error {
 	if err != nil {
 		return errors.Wrap(err, ID(conn.ctx))
 	}
-	Logger(conn.ctx).Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
+	log.Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
 	return nil
 }
 
 func (conn *cloudConnector) releaseReservedIP(ip string) error {
 	resp, err := conn.client.FloatingIPs.Delete(context.TODO(), ip)
-	Logger(conn.ctx).Debugln("DO response", resp, " errors", err)
+	log.Debugln("DO response", resp, " errors", err)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	Logger(conn.ctx).Infof("Floating ip %v deleted", ip)
+	log.Infof("Floating ip %v deleted", ip)
 	return nil
 }
 
@@ -287,7 +287,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 	if err != nil {
 		return nil, err
 	}
-	Logger(conn.ctx).Infof("Droplet %v created", host.Name)
+	log.Infof("Droplet %v created", host.Name)
 
 	if err = conn.WaitForInstance(host.ID, "active"); err != nil {
 		return nil, err
@@ -342,7 +342,7 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("Droplet %v deleted", dropletID)
+	log.Infof("Droplet %v deleted", dropletID)
 	return nil
 }
 
@@ -422,7 +422,7 @@ func (conn *cloudConnector) addNodeToBalancer(ctx context.Context, lbName string
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("Added master %v to loadbalancer %v", id, lbName)
+	log.Infof("Added master %v to loadbalancer %v", id, lbName)
 
 	return nil
 }
@@ -530,7 +530,7 @@ func (conn *cloudConnector) waitActive(lbID string) (*godo.LoadBalancer, error) 
 		if err != nil {
 			return false, nil
 		}
-		Logger(conn.ctx).Infof("Attempt %v: LoadBalancer `%v` is in status `%s`", attempt, lbID, lb.Status)
+		log.Infof("Attempt %v: LoadBalancer `%v` is in status `%s`", attempt, lbID, lb.Status)
 		if strings.ToLower(lb.Status) == "active" {
 			return true, nil
 		}

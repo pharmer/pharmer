@@ -109,7 +109,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 
 	found, err := cm.conn.getResourceGroup()
 	if err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -121,7 +121,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 			if _, err = cm.conn.ensureResourceGroup(); err != nil {
 				return acts, err
 			}
-			Logger(cm.ctx).Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.cluster.Spec.Config.Cloud.Zone)
+			log.Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.cluster.Spec.Config.Cloud.Zone)
 		}
 	} else {
 		acts = append(acts, api.Action{
@@ -477,7 +477,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 }
 
 func (cm *ClusterManager) applyScale(dryRun bool) error {
-	Logger(cm.ctx).Infoln("scaling machine set")
+	log.Infoln("scaling machine set")
 
 	//var msc *clusterv1.MachineSet
 	machineSets, err := Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})

@@ -109,7 +109,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	}
 
 	config.APIServerExtraArgs["cloud-config"] = "/etc/kubernetes/ccm/cloud-config"
-
+	cluster.Spec.Config.Cloud.Region = cluster.Spec.Config.Cloud.Zone[0 : len(cluster.Spec.Config.Cloud.Zone)-2]
 	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
 	config.ControllerManagerExtraArgs = map[string]string{
 		"cloud-config":   "/etc/kubernetes/ccm/cloud-config",

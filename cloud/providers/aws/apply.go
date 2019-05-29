@@ -113,7 +113,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	var found bool
 
 	if found, err = cm.conn.getIAMProfile(); err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -135,7 +135,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if found, err = cm.conn.getPublicKey(); err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 
 	if !found {
@@ -159,7 +159,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 	var vpcID string
 	if vpcID, found, err = cm.conn.getVpc(); err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -182,7 +182,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 	var publicSubnetID string
 	if publicSubnetID, found, err = cm.conn.getSubnet(vpcID, "public"); err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -205,7 +205,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 	var privateSubnetID string
 	if privateSubnetID, found, err = cm.conn.getSubnet(vpcID, "private"); err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -228,7 +228,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 	var gatewayID string
 	if gatewayID, found, err = cm.conn.getInternetGateway(vpcID); err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -251,7 +251,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 	var natID string
 	if natID, found, err = cm.conn.getNatGateway(vpcID); err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -274,7 +274,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 	var publicRouteTableID, privateRouteTableID string
 	if publicRouteTableID, found, err = cm.conn.getRouteTable("public", vpcID); err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -296,7 +296,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if privateRouteTableID, found, err = cm.conn.getRouteTable("private", vpcID); err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -318,7 +318,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if _, found, err = cm.conn.getSecurityGroupID(vpcID, cm.cluster.Spec.Config.Cloud.AWS.MasterSGName); err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -345,7 +345,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if found, err = cm.conn.getBastion(); err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -370,7 +370,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 	var loadbalancerDNS string
 	if loadbalancerDNS, err = cm.conn.getLoadBalancer(); err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if !found {
 		acts = append(acts, api.Action{
@@ -502,10 +502,10 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if found, err = cm.conn.getMaster(leaderMachine.Name); err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if !found {
-		Logger(cm.ctx).Info("Creating master instance")
+		log.Info("Creating master instance")
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "MasterInstance",
@@ -629,7 +629,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 }
 
 func (cm *ClusterManager) applyScale(dryRun bool) error {
-	Logger(cm.ctx).Infoln("scaling machine set")
+	log.Infoln("scaling machine set")
 
 	//var msc *clusterv1.MachineSet
 	machineSets, err := Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
@@ -688,7 +688,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) error {
 func (cm *ClusterManager) applyDelete(dryRun bool) ([]api.Action, error) {
 	var acts []api.Action
 
-	Logger(cm.ctx).Infoln("deleting cluster")
+	log.Infoln("deleting cluster")
 
 	if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
@@ -709,7 +709,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) ([]api.Action, error) {
 	})
 	if !dryRun {
 		if err := cm.conn.deleteInstance("controlplane"); err != nil {
-			Logger(cm.ctx).Infof("Failed to delete master instance. Reason: %s", err)
+			log.Infof("Failed to delete master instance. Reason: %s", err)
 		}
 	}
 
@@ -720,7 +720,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) ([]api.Action, error) {
 	})
 	if !dryRun {
 		if err := cm.conn.deleteSSHKey(); err != nil {
-			Logger(cm.ctx).Infoln(err)
+			log.Infoln(err)
 		}
 	}
 

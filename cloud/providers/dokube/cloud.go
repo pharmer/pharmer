@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/appscode/go/log"
 	"github.com/appscode/go/wait"
 	"github.com/digitalocean/godo"
 	"github.com/pharmer/cloud/pkg/credential"
@@ -129,7 +130,7 @@ func (conn *cloudConnector) waitForClusterCreation(cluster *godo.KubernetesClust
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		attempt++
 		cluster, _, _ := conn.client.Kubernetes.Get(conn.ctx, cluster.ID)
-		Logger(conn.ctx).Infof("Attempt %v: Creating Cluster %v ...", attempt, cluster.Name)
+		log.Infof("Attempt %v: Creating Cluster %v ...", attempt, cluster.Name)
 		if cluster.Status.State == "provisioning" {
 			return false, nil
 		}

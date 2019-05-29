@@ -195,7 +195,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if d, _ := cm.conn.instanceIfExists(leaderMachine); d == nil {
-		Logger(cm.ctx).Info("Creating master instance")
+		log.Info("Creating master instance")
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "MasterInstance",
@@ -296,7 +296,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 // Scales up/down regular node groups
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
-	Logger(cm.ctx).Infoln("scaling machine set")
+	log.Infoln("scaling machine set")
 
 	var machineSets []*clusterv1.MachineSet
 	var existingMachineSet []*clusterv1.MachineSet
@@ -355,7 +355,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 
 // Deletes master(s) and releases other cloud resources
 func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error) {
-	Logger(cm.ctx).Infoln("deleting cluster")
+	log.Infoln("deleting cluster")
 	var found bool
 
 	if cm.cluster.Status.Phase == api.ClusterReady {
@@ -383,7 +383,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		}).String(),
 	})
 	if err != nil && !kerr.IsNotFound(err) {
-		Logger(cm.ctx).Infof("master instance not found. Reason: %v", err)
+		log.Infof("master instance not found. Reason: %v", err)
 	} else if err == nil {
 		acts = append(acts, api.Action{
 			Action:   api.ActionDelete,
@@ -394,7 +394,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 			for _, mi := range masterInstances.Items {
 				err = cm.conn.DeleteInstanceByProviderID(mi.Spec.ProviderID)
 				if err != nil {
-					Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", mi.Spec.ProviderID, err)
+					log.Infof("Failed to delete instance %s. Reason: %s", mi.Spec.ProviderID, err)
 				}
 			}
 		}
@@ -404,9 +404,9 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	tag := "KubernetesCluster:" + cm.cluster.Name
 	_, err = cm.conn.client.Droplets.DeleteByTag(cm.ctx, tag)
 	if err != nil {
-		Logger(cm.ctx).Infof("Failed to delete resources by tag %s. Reason: %s", tag, err)
+		log.Infof("Failed to delete resources by tag %s. Reason: %s", tag, err)
 	}
-	Logger(cm.ctx).Infof("Deleted droplet by tag %s", tag)
+	log.Infof("Deleted droplet by tag %s", tag)
 
 	// Delete SSH key
 	found, _, err = cm.conn.getPublicKey()
@@ -465,7 +465,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	Logger(cm.ctx).Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
+	log.Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
 	return
 }
 

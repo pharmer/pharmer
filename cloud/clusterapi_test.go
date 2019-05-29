@@ -14,7 +14,7 @@ import (
 //	}
 //	ctx := NewContext(context.Background(), cfg, _env.Dev)
 //
-//	cluster, err := Store(ctx).Clusters().Get("doc6")
+//	cluster, err := store.StoreProvider.Clusters().Get("doc6")
 //	fmt.Println(err)
 //
 //	if ctx, err = LoadCACertificates(ctx, cluster); err != nil {

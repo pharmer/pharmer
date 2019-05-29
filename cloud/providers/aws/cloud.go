@@ -185,7 +185,7 @@ func (conn *cloudConnector) detectUbuntuImage() error {
 		return err
 	}
 	conn.cluster.Spec.Config.Cloud.InstanceImage = *r1.Images[0].ImageId
-	Logger(conn.ctx).Infof("Ubuntu image with %v detected", conn.cluster.Spec.Config.Cloud.InstanceImage)
+	log.Infof("Ubuntu image with %v detected", conn.cluster.Spec.Config.Cloud.InstanceImage)
 	return nil
 }
 
@@ -248,7 +248,7 @@ func (conn *cloudConnector) ensureIAMProfile() error {
 		if err != nil {
 			return err
 		}
-		Logger(conn.ctx).Infof("Master instance profile %v created", conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster)
+		log.Infof("Master instance profile %v created", conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster)
 	}
 	r2, err := conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode})
 	if err != nil && !strings.Contains(err.Error(), "NoSuchEntity") {
@@ -259,17 +259,17 @@ func (conn *cloudConnector) ensureIAMProfile() error {
 		if err != nil {
 			return err
 		}
-		Logger(conn.ctx).Infof("Node instance profile %v created", conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode)
+		log.Infof("Node instance profile %v created", conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode)
 	}
 	return nil
 }
 
 func (conn *cloudConnector) deleteIAMProfile() error {
 	if err := conn.deleteRolePolicy(conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster); err != nil {
-		Logger(conn.ctx).Infoln("Failed to delete IAM instance-policy ", conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster, err)
+		log.Infoln("Failed to delete IAM instance-policy ", conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster, err)
 	}
 	if err := conn.deleteRolePolicy(conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode); err != nil {
-		Logger(conn.ctx).Infoln("Failed to delete IAM instance-policy ", conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode, err)
+		log.Infoln("Failed to delete IAM instance-policy ", conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode, err)
 	}
 	return nil
 }
@@ -279,14 +279,14 @@ func (conn *cloudConnector) deleteRolePolicy(role string) error {
 		InstanceProfileName: &role,
 		RoleName:            &role,
 	}); err != nil {
-		Logger(conn.ctx).Infoln("Failed to remove role from instance profile", role, err)
+		log.Infoln("Failed to remove role from instance profile", role, err)
 	}
 
 	if _, err := conn.iam.DeleteRolePolicy(&_iam.DeleteRolePolicyInput{
 		PolicyName: &role,
 		RoleName:   &role,
 	}); err != nil {
-		Logger(conn.ctx).Infoln("Failed to delete role policy", role, err)
+		log.Infoln("Failed to delete role policy", role, err)
 	}
 
 	if role == conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster {
@@ -294,26 +294,26 @@ func (conn *cloudConnector) deleteRolePolicy(role string) error {
 			PolicyName: &conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode,
 			RoleName:   &role,
 		}); err != nil {
-			Logger(conn.ctx).Infoln("Failed to delete role policy", role, err)
+			log.Infoln("Failed to delete role policy", role, err)
 		}
 		if _, err := conn.iam.DeleteRolePolicy(&_iam.DeleteRolePolicyInput{
 			PolicyName: StringP(conn.namer.ControlPlanePolicyName()),
 			RoleName:   &role,
 		}); err != nil {
-			Logger(conn.ctx).Infoln("Failed to delete role policy", role, err)
+			log.Infoln("Failed to delete role policy", role, err)
 		}
 	}
 
 	if _, err := conn.iam.DeleteRole(&_iam.DeleteRoleInput{
 		RoleName: &role,
 	}); err != nil {
-		Logger(conn.ctx).Infoln("Failed to delete role", role, err)
+		log.Infoln("Failed to delete role", role, err)
 	}
 
 	if _, err := conn.iam.DeleteInstanceProfile(&_iam.DeleteInstanceProfileInput{
 		InstanceProfileName: &role,
 	}); err != nil {
-		Logger(conn.ctx).Infoln("Failed to delete instance profile", role, err)
+		log.Infoln("Failed to delete instance profile", role, err)
 	}
 	return nil
 }
@@ -341,8 +341,8 @@ func (conn *cloudConnector) createIAMProfile(role, key string) error {
 		reqRole.AssumeRolePolicyDocument = StringP(strings.TrimSpace(IAMNodeRole))
 	}
 	r1, err := conn.iam.CreateRole(reqRole)
-	Logger(conn.ctx).Debug("Created IAM role", r1, err)
-	Logger(conn.ctx).Infof("IAM role %v created", key)
+	log.Debug("Created IAM role", r1, err)
+	log.Infof("IAM role %v created", key)
 	if err != nil {
 		return err
 	}
@@ -392,21 +392,21 @@ func (conn *cloudConnector) createIAMProfile(role, key string) error {
 	r3, err := conn.iam.CreateInstanceProfile(&_iam.CreateInstanceProfileInput{
 		InstanceProfileName: &key,
 	})
-	Logger(conn.ctx).Debug("Created IAM instance-policy", r3, err)
+	log.Debug("Created IAM instance-policy", r3, err)
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("IAM instance-policy %v created", key)
+	log.Infof("IAM instance-policy %v created", key)
 
 	r4, err := conn.iam.AddRoleToInstanceProfile(&_iam.AddRoleToInstanceProfileInput{
 		InstanceProfileName: &key,
 		RoleName:            &key,
 	})
-	Logger(conn.ctx).Debug("Added IAM role to instance-policy", r4, err)
+	log.Debug("Added IAM role to instance-policy", r4, err)
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("IAM role %v added to instance-policy %v", key, key)
+	log.Infof("IAM role %v added to instance-policy %v", key, key)
 	return nil
 }
 
@@ -428,24 +428,24 @@ func (conn *cloudConnector) importPublicKey() error {
 		KeyName:           StringP(conn.cluster.Spec.Config.Cloud.SSHKeyName),
 		PublicKeyMaterial: SSHKey(conn.ctx).PublicKey,
 	})
-	Logger(conn.ctx).Debug("Imported SSH key", resp, err)
+	log.Debug("Imported SSH key", resp, err)
 	if err != nil {
 		return err
 	}
 	// TODO ignore "InvalidKeyPair.Duplicate" error
 	if err != nil {
-		Logger(conn.ctx).Info("Error importing public key", resp, err)
+		log.Info("Error importing public key", resp, err)
 		//os.Exit(1)
 		return err
 
 	}
-	Logger(conn.ctx).Infof("SSH key with (AWS) fingerprint %v imported", SSHKey(conn.ctx).AwsFingerprint)
+	log.Infof("SSH key with (AWS) fingerprint %v imported", SSHKey(conn.ctx).AwsFingerprint)
 
 	return nil
 }
 
 func (conn *cloudConnector) getVpc() (string, bool, error) {
-	Logger(conn.ctx).Infof("Checking VPC tagged with %v", conn.cluster.Name)
+	log.Infof("Checking VPC tagged with %v", conn.cluster.Name)
 	r1, err := conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -462,9 +462,9 @@ func (conn *cloudConnector) getVpc() (string, bool, error) {
 			},
 		},
 	})
-	Logger(conn.ctx).Debug("VPC described", r1, err)
+	log.Debug("VPC described", r1, err)
 	if len(r1.Vpcs) > 0 {
-		Logger(conn.ctx).Infof("VPC %v found", *r1.Vpcs[0].VpcId)
+		log.Infof("VPC %v found", *r1.Vpcs[0].VpcId)
 		return *r1.Vpcs[0].VpcId, true, nil
 	}
 
@@ -472,16 +472,16 @@ func (conn *cloudConnector) getVpc() (string, bool, error) {
 }
 
 func (conn *cloudConnector) setupVpc() (string, error) {
-	Logger(conn.ctx).Info("No VPC found, creating new VPC")
+	log.Info("No VPC found, creating new VPC")
 	r2, err := conn.ec2.CreateVpc(&_ec2.CreateVpcInput{
 		CidrBlock: StringP(conn.cluster.Spec.Config.Cloud.AWS.VpcCIDR),
 	})
-	Logger(conn.ctx).Debug("VPC created", r2, err)
+	log.Debug("VPC created", r2, err)
 
 	if err != nil {
 		return "", err
 	}
-	Logger(conn.ctx).Infof("VPC %v created", *r2.Vpc.VpcId)
+	log.Infof("VPC %v created", *r2.Vpc.VpcId)
 
 	wReq := &ec2.DescribeVpcsInput{VpcIds: []*string{r2.Vpc.VpcId}}
 	if err := conn.ec2.WaitUntilVpcAvailable(wReq); err != nil {
@@ -523,11 +523,11 @@ func (conn *cloudConnector) addTag(id string, key string, value string) error {
 			},
 		},
 	})
-	Logger(conn.ctx).Debug("Added tag ", resp, err)
+	log.Debug("Added tag ", resp, err)
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("Added tag %v:%v to id %v", key, value, id)
+	log.Infof("Added tag %v:%v to id %v", key, value, id)
 	return nil
 }
 
@@ -622,7 +622,7 @@ func (conn *cloudConnector) setupLoadBalancer(publicSubnetID string) (string, er
 }
 
 func (conn *cloudConnector) getSubnet(vpcID, privacy string) (string, bool, error) {
-	Logger(conn.ctx).Infof("Checking for existing %s subnet", privacy)
+	log.Infof("Checking for existing %s subnet", privacy)
 	r1, err := conn.ec2.DescribeSubnets(&_ec2.DescribeSubnetsInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -645,7 +645,7 @@ func (conn *cloudConnector) getSubnet(vpcID, privacy string) (string, bool, erro
 			},
 		},
 	})
-	Logger(conn.ctx).Debug(fmt.Sprintf("Retrieved %s subnet", privacy), r1, err)
+	log.Debug(fmt.Sprintf("Retrieved %s subnet", privacy), r1, err)
 	if err != nil {
 		return "", false, err
 	}
@@ -653,26 +653,26 @@ func (conn *cloudConnector) getSubnet(vpcID, privacy string) (string, bool, erro
 	if len(r1.Subnets) == 0 {
 		return "", false, errors.Errorf("No %s subnet found", privacy)
 	}
-	Logger(conn.ctx).Infof("%s Subnet %v found with CIDR %v", privacy, r1.Subnets[0].SubnetId, r1.Subnets[0].CidrBlock)
+	log.Infof("%s Subnet %v found with CIDR %v", privacy, r1.Subnets[0].SubnetId, r1.Subnets[0].CidrBlock)
 
 	return *r1.Subnets[0].SubnetId, true, nil
 
 }
 
 func (conn *cloudConnector) setupPrivateSubnet(vpcID string) (string, error) {
-	Logger(conn.ctx).Info("No subnet found, creating new subnet")
+	log.Info("No subnet found, creating new subnet")
 	r2, err := conn.ec2.CreateSubnet(&_ec2.CreateSubnetInput{
 		CidrBlock:        StringP(conn.cluster.Spec.Config.Cloud.AWS.PrivateSubnetCIDR),
 		VpcId:            StringP(vpcID),
 		AvailabilityZone: StringP(conn.cluster.Spec.Config.Cloud.Zone),
 	})
-	Logger(conn.ctx).Debug("Created subnet", r2, err)
+	log.Debug("Created subnet", r2, err)
 	if err != nil {
 		return "", err
 	}
 
 	id := *r2.Subnet.SubnetId
-	Logger(conn.ctx).Infof("Subnet %v created", id)
+	log.Infof("Subnet %v created", id)
 
 	time.Sleep(preTagDelay)
 
@@ -691,17 +691,17 @@ func (conn *cloudConnector) setupPrivateSubnet(vpcID string) (string, error) {
 }
 
 func (conn *cloudConnector) setupPublicSubnet(vpcID string) (string, error) {
-	Logger(conn.ctx).Info("No subnet found, creating new subnet")
+	log.Info("No subnet found, creating new subnet")
 	r2, err := conn.ec2.CreateSubnet(&_ec2.CreateSubnetInput{
 		CidrBlock:        StringP(conn.cluster.Spec.Config.Cloud.AWS.PublicSubnetCIDR),
 		VpcId:            StringP(vpcID),
 		AvailabilityZone: StringP(conn.cluster.Spec.Config.Cloud.Zone),
 	})
-	Logger(conn.ctx).Debug("Created subnet", r2, err)
+	log.Debug("Created subnet", r2, err)
 	if err != nil {
 		return "", err
 	}
-	Logger(conn.ctx).Infof("Subnet %v created", *r2.Subnet.SubnetId)
+	log.Infof("Subnet %v created", *r2.Subnet.SubnetId)
 
 	wReq := &ec2.DescribeSubnetsInput{SubnetIds: []*string{r2.Subnet.SubnetId}}
 	if err := conn.ec2.WaitUntilSubnetAvailable(wReq); err != nil {
@@ -735,7 +735,7 @@ func (conn *cloudConnector) setupPublicSubnet(vpcID string) (string, error) {
 }
 
 func (conn *cloudConnector) getInternetGateway(vpcID string) (string, bool, error) {
-	Logger(conn.ctx).Infof("Checking IGW with attached VPCID %v", vpcID)
+	log.Infof("Checking IGW with attached VPCID %v", vpcID)
 	r1, err := conn.ec2.DescribeInternetGateways(&_ec2.DescribeInternetGatewaysInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -746,38 +746,38 @@ func (conn *cloudConnector) getInternetGateway(vpcID string) (string, bool, erro
 			},
 		},
 	})
-	Logger(conn.ctx).Debug("Retrieved IGW", r1, err)
+	log.Debug("Retrieved IGW", r1, err)
 	if err != nil {
 		return "", false, err
 	}
 	if len(r1.InternetGateways) == 0 {
 		return "", false, errors.Errorf("IGW not found")
 	}
-	Logger(conn.ctx).Infof("IGW %v found", *r1.InternetGateways[0].InternetGatewayId)
+	log.Infof("IGW %v found", *r1.InternetGateways[0].InternetGatewayId)
 	return *r1.InternetGateways[0].InternetGatewayId, true, nil
 }
 
 func (conn *cloudConnector) setupInternetGateway(vpcID string) (string, error) {
-	Logger(conn.ctx).Info("No IGW found, creating new IGW")
+	log.Info("No IGW found, creating new IGW")
 	r2, err := conn.ec2.CreateInternetGateway(&_ec2.CreateInternetGatewayInput{})
-	Logger(conn.ctx).Debug("Created IGW", r2, err)
+	log.Debug("Created IGW", r2, err)
 	if err != nil {
 		return "", err
 	}
 	time.Sleep(preTagDelay)
-	Logger(conn.ctx).Infof("IGW %v created", *r2.InternetGateway.InternetGatewayId)
+	log.Infof("IGW %v created", *r2.InternetGateway.InternetGatewayId)
 
 	r3, err := conn.ec2.AttachInternetGateway(&_ec2.AttachInternetGatewayInput{
 		InternetGatewayId: StringP(*r2.InternetGateway.InternetGatewayId),
 		VpcId:             StringP(vpcID),
 	})
-	Logger(conn.ctx).Debug("Attached IGW to VPC", r3, err)
+	log.Debug("Attached IGW to VPC", r3, err)
 	if err != nil {
 		return "", err
 	}
 
 	id := *r2.InternetGateway.InternetGatewayId
-	Logger(conn.ctx).Infof("Attached IGW %v to VPCID %v", id, vpcID)
+	log.Infof("Attached IGW %v to VPCID %v", id, vpcID)
 
 	tags := map[string]string{
 		"Name": conn.cluster.Name + "-igw",
@@ -794,7 +794,7 @@ func (conn *cloudConnector) setupInternetGateway(vpcID string) (string, error) {
 }
 
 func (conn *cloudConnector) getNatGateway(vpcID string) (string, bool, error) {
-	Logger(conn.ctx).Infof("Checking NAT with attached VPCID %v", vpcID)
+	log.Infof("Checking NAT with attached VPCID %v", vpcID)
 	r1, err := conn.ec2.DescribeNatGateways(&_ec2.DescribeNatGatewaysInput{
 		Filter: []*_ec2.Filter{
 			{
@@ -812,7 +812,7 @@ func (conn *cloudConnector) getNatGateway(vpcID string) (string, bool, error) {
 			},
 		},
 	})
-	Logger(conn.ctx).Debug("Retrieved NAT", r1, err)
+	log.Debug("Retrieved NAT", r1, err)
 	if err != nil {
 		return "", false, err
 	}
@@ -820,12 +820,12 @@ func (conn *cloudConnector) getNatGateway(vpcID string) (string, bool, error) {
 		return "", false, errors.Errorf("NAT not found")
 	}
 
-	Logger(conn.ctx).Infof("NAT %v found", *r1.NatGateways[0].NatGatewayId)
+	log.Infof("NAT %v found", *r1.NatGateways[0].NatGatewayId)
 	return *r1.NatGateways[0].NatGatewayId, true, nil
 }
 
 func (conn *cloudConnector) setupNatGateway(publicSubnetID string) (string, error) {
-	Logger(conn.ctx).Info("No NAT Gateway found, creating new")
+	log.Info("No NAT Gateway found, creating new")
 
 	id, _, err := conn.allocateElasticIP()
 	if err != nil {
@@ -842,12 +842,12 @@ func (conn *cloudConnector) setupNatGateway(publicSubnetID string) (string, erro
 		return "", errors.Wrapf(err, "failed to wait for nat gateway %q in subnet %q", *out.NatGateway.NatGatewayId, publicSubnetID)
 	}
 
-	Logger(conn.ctx).Debug("Created NAT", out, err)
+	log.Debug("Created NAT", out, err)
 	if err != nil {
 		return "", err
 	}
 
-	Logger(conn.ctx).Infof("Nat Gateway %v created", *out.NatGateway.NatGatewayId)
+	log.Infof("Nat Gateway %v created", *out.NatGateway.NatGatewayId)
 
 	tags := map[string]string{
 		"Name": conn.cluster.Name + "-nat",
@@ -864,7 +864,7 @@ func (conn *cloudConnector) setupNatGateway(publicSubnetID string) (string, erro
 }
 
 func (conn *cloudConnector) getRouteTable(privacy, vpcID string) (string, bool, error) {
-	Logger(conn.ctx).Infof("Checking %v route table for VPCID %v", privacy, vpcID)
+	log.Infof("Checking %v route table for VPCID %v", privacy, vpcID)
 	r1, err := conn.ec2.DescribeRouteTables(&_ec2.DescribeRouteTablesInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -887,24 +887,24 @@ func (conn *cloudConnector) getRouteTable(privacy, vpcID string) (string, bool, 
 			},
 		},
 	})
-	Logger(conn.ctx).Debug("found %v route table", privacy, err)
+	log.Debug("found %v route table", privacy, err)
 	if err != nil {
 		return "", false, err
 	}
 	if len(r1.RouteTables) == 0 {
 		return "", false, errors.Errorf("Route table not found")
 	}
-	Logger(conn.ctx).Infof("%v Route table %v found", privacy, *r1.RouteTables[0].RouteTableId)
+	log.Infof("%v Route table %v found", privacy, *r1.RouteTables[0].RouteTableId)
 
 	return *r1.RouteTables[0].RouteTableId, true, nil
 }
 
 func (conn *cloudConnector) setupRouteTable(privacy, vpcID, igwID, natID, publicSubnetID, privateSubnetID string) (string, error) {
-	Logger(conn.ctx).Infof("No route %v table found for VPCID %v, creating new route table", privacy, vpcID)
+	log.Infof("No route %v table found for VPCID %v, creating new route table", privacy, vpcID)
 	out, err := conn.ec2.CreateRouteTable(&_ec2.CreateRouteTableInput{
 		VpcId: StringP(vpcID),
 	})
-	Logger(conn.ctx).Debug("Created %v route table", privacy, out, err)
+	log.Debug("Created %v route table", privacy, out, err)
 	if err != nil {
 		return "", err
 	}
@@ -966,7 +966,7 @@ func (conn *cloudConnector) setupRouteTable(privacy, vpcID, igwID, natID, public
 			return "", errors.Wrapf(err, "failed to associate route table to subnet %q", privateSubnetID)
 		}
 	}
-	Logger(conn.ctx).Infof("Route added to route table %v", id)
+	log.Infof("Route added to route table %v", id)
 
 	return id, nil
 }
@@ -982,7 +982,7 @@ func (conn *cloudConnector) setupSecurityGroups(vpcID string) error {
 		if err != nil {
 			return err
 		}
-		Logger(conn.ctx).Infof("Master security group %v created", conn.cluster.Spec.Config.Cloud.AWS.MasterSGName)
+		log.Infof("Master security group %v created", conn.cluster.Spec.Config.Cloud.AWS.MasterSGName)
 	}
 	if conn.cluster.Status.Cloud.AWS.NodeSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.cluster.Spec.Config.Cloud.AWS.NodeSGName); !ok {
 		if err != nil {
@@ -992,7 +992,7 @@ func (conn *cloudConnector) setupSecurityGroups(vpcID string) error {
 		if err != nil {
 			return err
 		}
-		Logger(conn.ctx).Infof("Node security group %v created", conn.cluster.Spec.Config.Cloud.AWS.NodeSGName)
+		log.Infof("Node security group %v created", conn.cluster.Spec.Config.Cloud.AWS.NodeSGName)
 	}
 	if conn.cluster.Status.Cloud.AWS.BastionSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.cluster.Spec.Config.Cloud.AWS.BastionSGName); !ok {
 		if err != nil {
@@ -1002,7 +1002,7 @@ func (conn *cloudConnector) setupSecurityGroups(vpcID string) error {
 		if err != nil {
 			return err
 		}
-		Logger(conn.ctx).Infof("Bastion security group %v created", conn.cluster.Spec.Config.Cloud.AWS.BastionSGName)
+		log.Infof("Bastion security group %v created", conn.cluster.Spec.Config.Cloud.AWS.BastionSGName)
 	}
 
 	err = conn.detectSecurityGroups(vpcID)
@@ -1322,7 +1322,7 @@ func getBastionAMI(region string) string {
 }
 
 func (conn *cloudConnector) getSecurityGroupID(vpcID, groupName string) (string, bool, error) {
-	Logger(conn.ctx).Infof("Checking security group %v", groupName)
+	log.Infof("Checking security group %v", groupName)
 	r1, err := conn.ec2.DescribeSecurityGroups(&_ec2.DescribeSecurityGroupsInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -1339,26 +1339,26 @@ func (conn *cloudConnector) getSecurityGroupID(vpcID, groupName string) (string,
 			},
 		},
 	})
-	Logger(conn.ctx).Debug("Retrieved security group", r1, err)
+	log.Debug("Retrieved security group", r1, err)
 	if err != nil {
 		return "", false, err
 	}
 	if len(r1.SecurityGroups) == 0 {
-		Logger(conn.ctx).Infof("No security group %v found", groupName)
+		log.Infof("No security group %v found", groupName)
 		return "", false, nil
 	}
-	Logger(conn.ctx).Infof("Security group %v found", groupName)
+	log.Infof("Security group %v found", groupName)
 	return *r1.SecurityGroups[0].GroupId, true, nil
 }
 
 func (conn *cloudConnector) createSecurityGroup(vpcID, groupName string, instanceType string) error {
-	Logger(conn.ctx).Infof("Creating security group %v", groupName)
+	log.Infof("Creating security group %v", groupName)
 	r2, err := conn.ec2.CreateSecurityGroup(&_ec2.CreateSecurityGroupInput{
 		GroupName:   StringP(groupName),
 		Description: StringP("kubernetes security group for " + instanceType),
 		VpcId:       StringP(vpcID),
 	})
-	Logger(conn.ctx).Debug("Created security group", r2, err)
+	log.Debug("Created security group", r2, err)
 	if err != nil {
 		return err
 	}
@@ -1382,20 +1382,20 @@ func (conn *cloudConnector) detectSecurityGroups(vpcID string) error {
 		if conn.cluster.Status.Cloud.AWS.MasterSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.cluster.Spec.Config.Cloud.AWS.MasterSGName); !ok {
 			return errors.Errorf("[%s] could not detect Kubernetes master security group.  Make sure you've launched a cluster with appctl", ID(conn.ctx))
 		}
-		Logger(conn.ctx).Infof("Master security group %v with id %v detected", conn.cluster.Spec.Config.Cloud.AWS.MasterSGName, conn.cluster.Status.Cloud.AWS.MasterSGId)
+		log.Infof("Master security group %v with id %v detected", conn.cluster.Spec.Config.Cloud.AWS.MasterSGName, conn.cluster.Status.Cloud.AWS.MasterSGId)
 
 	}
 	if conn.cluster.Status.Cloud.AWS.NodeSGId == "" {
 		if conn.cluster.Status.Cloud.AWS.NodeSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.cluster.Spec.Config.Cloud.AWS.NodeSGName); !ok {
 			return errors.Errorf("[%s] could not detect Kubernetes node security group.  Make sure you've launched a cluster with appctl", ID(conn.ctx))
 		}
-		Logger(conn.ctx).Infof("Node security group %v with id %v detected", conn.cluster.Spec.Config.Cloud.AWS.NodeSGName, conn.cluster.Status.Cloud.AWS.NodeSGId)
+		log.Infof("Node security group %v with id %v detected", conn.cluster.Spec.Config.Cloud.AWS.NodeSGName, conn.cluster.Status.Cloud.AWS.NodeSGId)
 	}
 	if conn.cluster.Status.Cloud.AWS.BastionSGId == "" {
 		if conn.cluster.Status.Cloud.AWS.BastionSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.cluster.Spec.Config.Cloud.AWS.BastionSGName); !ok {
 			return errors.Errorf("[%s] could not detect Kubernetes bastion security group.  Make sure you've launched a cluster with appctl", ID(conn.ctx))
 		}
-		Logger(conn.ctx).Infof("Bastion security group %v with id %v detected", conn.cluster.Spec.Config.Cloud.AWS.BastionSGName, conn.cluster.Status.Cloud.AWS.BastionSGId)
+		log.Infof("Bastion security group %v with id %v detected", conn.cluster.Spec.Config.Cloud.AWS.BastionSGName, conn.cluster.Status.Cloud.AWS.BastionSGId)
 	}
 	if err != nil {
 		return err
@@ -1492,13 +1492,13 @@ func (conn *cloudConnector) startMaster(machine *clusterv1.Machine, sku, private
 
 	masterInstance := out.Instances[0]
 
-	Logger(conn.ctx).Info("Waiting for master instance to be ready")
+	log.Info("Waiting for master instance to be ready")
 	// We are not able to add an elastic ip, a route or volume to the instance until that instance is in "running" state.
 	err = conn.waitForInstanceState(*masterInstance.InstanceId, "running")
 	if err != nil {
 		return nil, err
 	}
-	Logger(conn.ctx).Info("Master instance is ready")
+	log.Info("Master instance is ready")
 
 	lbinput := &elb.RegisterInstancesWithLoadBalancerInput{
 		Instances:        []*elb.Instance{{InstanceId: masterInstance.InstanceId}},
@@ -1531,8 +1531,8 @@ func (conn *cloudConnector) waitForInstanceState(instanceID, state string) error
 		if curState == state {
 			break
 		}
-		Logger(conn.ctx).Infof("Waiting for instance %v to be %v (currently %v)", instanceID, state, curState)
-		Logger(conn.ctx).Infof("Sleeping for 5 seconds...")
+		log.Infof("Waiting for instance %v to be %v (currently %v)", instanceID, state, curState)
+		log.Infof("Sleeping for 5 seconds...")
 		time.Sleep(5 * time.Second)
 	}
 	return nil
@@ -1542,11 +1542,11 @@ func (conn *cloudConnector) allocateElasticIP() (string, string, error) {
 	r1, err := conn.ec2.AllocateAddress(&_ec2.AllocateAddressInput{
 		Domain: StringP("vpc"),
 	})
-	Logger(conn.ctx).Debug("Allocated elastic IP", r1, err)
+	log.Debug("Allocated elastic IP", r1, err)
 	if err != nil {
 		return "", "", err
 	}
-	Logger(conn.ctx).Infof("Elastic IP %v allocated", *r1.PublicIp)
+	log.Infof("Elastic IP %v allocated", *r1.PublicIp)
 	time.Sleep(5 * time.Second)
 
 	tags := map[string]string{
@@ -1712,7 +1712,7 @@ func (conn *cloudConnector) deleteSubnetID(vpcID string) error {
 		if err != nil {
 			return err
 		}
-		Logger(conn.ctx).Infof("Subnet ID in VPC %v is deleted", *subnet.SubnetId)
+		log.Infof("Subnet ID in VPC %v is deleted", *subnet.SubnetId)
 	}
 	return nil
 }
@@ -1747,7 +1747,7 @@ func (conn *cloudConnector) deleteInternetGateway(vpcID string) error {
 			return err
 		}
 	}
-	Logger(conn.ctx).Infof("Internet gateway for cluster %v are deleted", conn.cluster.Name)
+	log.Infof("Internet gateway for cluster %v are deleted", conn.cluster.Name)
 	return nil
 }
 
@@ -1795,7 +1795,7 @@ func (conn *cloudConnector) deleteRouteTable(vpcID string) error {
 			}
 		}
 	}
-	Logger(conn.ctx).Infof("Route tables for cluster %v are deleted", conn.cluster.Name)
+	log.Infof("Route tables for cluster %v are deleted", conn.cluster.Name)
 	return nil
 }
 
@@ -1840,7 +1840,7 @@ func (conn *cloudConnector) deleteVpc(vpcID string) error {
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("VPC for cluster %v is deleted", conn.cluster.Name)
+	log.Infof("VPC for cluster %v is deleted", conn.cluster.Name)
 	return nil
 }
 
@@ -1852,7 +1852,7 @@ func (conn *cloudConnector) deleteSSHKey() error {
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("SSH key for cluster %v is deleted", conn.cluster.Name)
+	log.Infof("SSH key for cluster %v is deleted", conn.cluster.Name)
 
 	return err
 }
@@ -1891,7 +1891,7 @@ func (conn *cloudConnector) deleteInstance(role string) error {
 	}
 
 	fmt.Printf("TerminateInstances %v", instances)
-	Logger(conn.ctx).Infof("Terminating %v instance for cluster %v", role, conn.cluster.Name)
+	log.Infof("Terminating %v instance for cluster %v", role, conn.cluster.Name)
 	_, err = conn.ec2.TerminateInstances(&_ec2.TerminateInstancesInput{
 		InstanceIds: instances,
 	})
@@ -1902,6 +1902,6 @@ func (conn *cloudConnector) deleteInstance(role string) error {
 		InstanceIds: instances,
 	}
 	err = conn.ec2.WaitUntilInstanceTerminated(instanceInput)
-	Logger(conn.ctx).Infof("%v instance for cluster %v is terminated", role, conn.cluster.Name)
+	log.Infof("%v instance for cluster %v is terminated", role, conn.cluster.Name)
 	return err
 }

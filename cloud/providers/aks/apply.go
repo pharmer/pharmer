@@ -5,6 +5,7 @@ import (
 
 	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-04-30/containerservice"
 	. "github.com/appscode/go/context"
+	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
@@ -97,7 +98,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			if _, err = cm.conn.ensureResourceGroup(); err != nil {
 				return
 			}
-			Logger(cm.ctx).Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.cluster.Spec.Config.Cloud.Zone)
+			log.Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.cluster.Spec.Config.Cloud.Zone)
 		}
 	} else {
 		acts = append(acts, api.Action{

@@ -113,7 +113,7 @@ func (conn *cloudConnector) WaitForStackOperation(name string, expectedStatus st
 			return false, nil
 		}
 		status := *resp.Stacks[0].StackStatus
-		Logger(conn.ctx).Infof("Attempt %v: operation `%s` is in status `%s`", attempt, name, status)
+		log.Infof("Attempt %v: operation `%s` is in status `%s`", attempt, name, status)
 		return status == expectedStatus, nil
 	})
 }
@@ -131,7 +131,7 @@ func (conn *cloudConnector) WaitForControlPlaneOperation(name string) error {
 		}
 		status := *resp.Cluster.Status
 
-		Logger(conn.ctx).Infof("Attempt %v: operation `%s` is in status `%s`", attempt, name, status)
+		log.Infof("Attempt %v: operation `%s` is in status `%s`", attempt, name, status)
 		return status == _eks.ClusterStatusActive, nil
 	})
 }
@@ -244,7 +244,7 @@ func (conn *cloudConnector) getStack(name string) (*cloudformation.Stack, error)
 }
 
 func (conn *cloudConnector) isStackExists(name string) (bool, error) {
-	Logger(conn.ctx).Infof("Checking if %v exists...", name)
+	log.Infof("Checking if %v exists...", name)
 	params := &cloudformation.DescribeStacksInput{
 		StackName: StringP(name),
 	}
@@ -259,7 +259,7 @@ func (conn *cloudConnector) isStackExists(name string) (bool, error) {
 }
 
 func (conn *cloudConnector) isControlPlaneExists(name string) (bool, error) {
-	Logger(conn.ctx).Infof("Checking for control plane %v exists...", name)
+	log.Infof("Checking for control plane %v exists...", name)
 	params := &_eks.DescribeClusterInput{
 		Name: StringP(name),
 	}
@@ -302,7 +302,7 @@ func (conn *cloudConnector) createStack(name, url string, params map[string]stri
 }
 
 func (conn *cloudConnector) deleteStack(name string) error {
-	Logger(conn.ctx).Infoln("Deleting stack ", name)
+	log.Infoln("Deleting stack ", name)
 	params := &cloudformation.DeleteStackInput{
 		StackName: StringP(name),
 	}
@@ -359,18 +359,18 @@ func (conn *cloudConnector) importPublicKey() error {
 		KeyName:           StringP(conn.cluster.Spec.Config.Cloud.SSHKeyName),
 		PublicKeyMaterial: SSHKey(conn.ctx).PublicKey,
 	})
-	Logger(conn.ctx).Debug("Imported SSH key", resp, err)
+	log.Debug("Imported SSH key", resp, err)
 	if err != nil {
 		return err
 	}
 	// TODO ignore "InvalidKeyPair.Duplicate" error
 	if err != nil {
-		Logger(conn.ctx).Info("Error importing public key", resp, err)
+		log.Info("Error importing public key", resp, err)
 		//os.Exit(1)
 		return err
 
 	}
-	Logger(conn.ctx).Infof("SSH key with (AWS) fingerprint %v imported", SSHKey(conn.ctx).AwsFingerprint)
+	log.Infof("SSH key with (AWS) fingerprint %v imported", SSHKey(conn.ctx).AwsFingerprint)
 
 	return nil
 }
@@ -383,7 +383,7 @@ func (conn *cloudConnector) deleteSSHKey() error {
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("SSH key for cluster %v is deleted", conn.cluster.Name)
+	log.Infof("SSH key for cluster %v is deleted", conn.cluster.Name)
 	//updates := &storage.SSHKey{IsDeleted: 1}
 	//cond := &storage.SSHKey{PHID: cluster.Spec.ctx.SSHKeyPHID}
 	// _, err = cluster.Spec.store.StoreProvider.Engine.Update(updates, cond)

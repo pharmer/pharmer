@@ -75,7 +75,7 @@ func getPharmerCerts(clusterName string) (*api.PharmerCertificates, error) {
 		Key:  key,
 	}
 
-	pubKey, privKey, err := LoadSSHKey(GenSSHKeyName(clusterName))
+	pubKey, privKey, err := LoadSSHKey(clusterName, GenSSHKeyName(clusterName))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load ssh keys")
 	}
@@ -348,7 +348,10 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 
 	cluster := cm.GetCluster()
 
-	kc := cm.GetAdminClient()
+	kc, err := CreateAdminClient(cm)
+	if err != nil {
+		return acts, err
+	}
 
 	if err = WaitForReadyMaster(kc); err != nil {
 		cluster.Status.Reason = err.Error()
@@ -400,8 +403,8 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 	}
 
 	cluster.Status.Phase = api.ClusterReady
-	if _, err = store.StoreProvider.Clusters().Update(cluster); err != nil {
-		return
+	if _, err = store.StoreProvider.Clusters().UpdateStatus(cluster); err != nil {
+		return acts, err
 	}
 
 	return acts, nil
@@ -678,11 +681,13 @@ func CreateAdminClient(cm Interface) (kubernetes.Interface, error) {
 	if kc := cm.GetAdminClient(); kc != nil {
 		return kc, nil
 	}
-	kc, err := NewAdminClient(cm, cm.GetCluster())
 
+	kc, err := NewAdminClient(cm, cm.GetCluster())
 	if err != nil {
 		return nil, err
 	}
+
+	cm.SetAdminClient(kc)
 
 	return kc, nil
 }

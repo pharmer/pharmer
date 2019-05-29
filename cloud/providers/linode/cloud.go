@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/linode/linodego"
 	"github.com/pharmer/cloud/pkg/credential"
@@ -143,7 +144,7 @@ func (conn *cloudConnector) waitForStatus(id int, status linodego.InstanceStatus
 		if instance == nil {
 			return false, nil
 		}
-		Logger(conn.ctx).Infof("Attempt %v: Instance `%v` is in status `%v`", attempt, instance.Label, instance.Status)
+		log.Infof("Attempt %v: Instance `%v` is in status `%v`", attempt, instance.Label, instance.Status)
 		if instance.Status == status {
 			return true, nil
 		}
@@ -232,7 +233,7 @@ func (conn *cloudConnector) createOrUpdateStackScript(cluster *api.Cluster, mach
 		if err != nil {
 			return 0, err
 		}
-		Logger(conn.ctx).Infof("Stack script for role %v created", string(machineConfig.Roles[0]))
+		log.Infof("Stack script for role %v created", string(machineConfig.Roles[0]))
 		return stackScript.ID, nil
 	}
 
@@ -244,7 +245,7 @@ func (conn *cloudConnector) createOrUpdateStackScript(cluster *api.Cluster, mach
 		return 0, err
 	}
 
-	Logger(conn.ctx).Infof("Stack script for role %v updated", string(machineConfig.Roles[0]))
+	log.Infof("Stack script for role %v updated", string(machineConfig.Roles[0]))
 	return stackScript.ID, nil
 }
 
@@ -324,7 +325,7 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 		return err
 	}
 
-	Logger(conn.ctx).Infof("Instance %v deleted", id)
+	log.Infof("Instance %v deleted", id)
 	return nil
 }
 
@@ -452,7 +453,7 @@ func (conn *cloudConnector) addNodeToBalancer(lbName string, nodeName, ip string
 		return err
 	}
 
-	Logger(conn.ctx).Infof("Added master %v to loadbalancer %v", nodeName, lbName)
+	log.Infof("Added master %v to loadbalancer %v", nodeName, lbName)
 
 	return nil
 }

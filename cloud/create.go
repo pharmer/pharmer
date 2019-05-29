@@ -33,6 +33,12 @@ func Create(cluster *api.Cluster) (Interface, *api.Cluster, error) {
 		return nil, nil, errors.New("cluster already exists")
 	}
 
+	// set common cluster configs
+	err = SetDefaultCluster(cluster)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to set default cluster")
+	}
+
 	certs, err := createPharmerCerts(cluster)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create certificates")
@@ -41,12 +47,6 @@ func Create(cluster *api.Cluster) (Interface, *api.Cluster, error) {
 	cm, err := GetCloudManagerWithCerts(cluster, certs)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to get cloud manager")
-	}
-
-	// set common cluster configs
-	err = SetDefaultCluster(cluster)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to set default cluster")
 	}
 
 	// set cloud-specific configs
@@ -106,6 +106,9 @@ func SetDefaultCluster(cluster *api.Cluster) error {
 
 	cluster.Spec.Config.Cloud.Region = cluster.Spec.Config.Cloud.Zone[0 : len(cluster.Spec.Config.Cloud.Zone)-1]
 	cluster.Spec.Config.Cloud.SSHKeyName = cluster.GenSSHKeyExternalID()
+	cluster.Status = api.PharmerClusterStatus{
+		Phase: api.ClusterPending,
+	}
 
 	return nil
 }

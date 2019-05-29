@@ -44,7 +44,14 @@ func New(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
 	return &ClusterManager{
 		cluster: cluster,
 		certs:   certs,
+		namer: namer{
+			cluster: cluster,
+		},
 	}
+}
+
+func (cm *ClusterManager) SetAdminClient(kc kubernetes.Interface) {
+	cm.adminClient = kc
 }
 
 func (cm *ClusterManager) GetCluster() *api.Cluster {

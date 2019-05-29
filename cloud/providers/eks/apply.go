@@ -221,7 +221,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 }
 
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
-	Logger(cm.ctx).Infoln("scaling node group...")
+	log.Infoln("scaling node group...")
 	var nodeGroups []*clusterapi.MachineSet
 	nodeGroups, err = Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
@@ -247,7 +247,7 @@ func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error)
 }
 
 func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error) {
-	Logger(cm.ctx).Infoln("deleting cluster...")
+	log.Infoln("deleting cluster...")
 	if cm.cluster.Status.Phase == api.ClusterReady {
 		cm.cluster.Status.Phase = api.ClusterDeleting
 	}
@@ -258,21 +258,21 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	}
 	found, err = cm.conn.isControlPlaneExists(cm.cluster.Name)
 	if err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if found {
 		if err = cm.conn.deleteControlPlane(); err != nil {
-			Logger(cm.ctx).Infof("Error on deleting control plane. Reason: %v", err)
+			log.Infof("Error on deleting control plane. Reason: %v", err)
 		}
 	}
 
 	found, err = cm.conn.isStackExists(cm.namer.GetStackServiceRole())
 	if err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if found {
 		if err = cm.conn.deleteStack(cm.namer.GetStackServiceRole()); err != nil {
-			Logger(cm.ctx).Infof("Error on deleting stack service role. Reason: %v", err)
+			log.Infof("Error on deleting stack service role. Reason: %v", err)
 		}
 	}
 
@@ -282,17 +282,17 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	}
 	if found {
 		if err = cm.conn.deleteStack(cm.namer.GetClusterVPC()); err != nil {
-			Logger(cm.ctx).Infof("Error on deleting cluster vpc. Reason: %v", err)
+			log.Infof("Error on deleting cluster vpc. Reason: %v", err)
 		}
 	}
 
 	found, err = cm.conn.getPublicKey()
 	if err != nil {
-		Logger(cm.ctx).Infoln(err)
+		log.Infoln(err)
 	}
 	if found {
 		if err = cm.conn.deleteSSHKey(); err != nil {
-			Logger(cm.ctx).Infof("Error on deleting SSH Key. Reason: %v", err)
+			log.Infof("Error on deleting SSH Key. Reason: %v", err)
 		}
 	}
 

@@ -86,7 +86,7 @@ func GetClusterClient(cm Interface, cluster *api.Cluster) (clientset.Interface, 
 }
 
 func (ca *ClusterApi) Apply(controllerManager string) error {
-	Logger(ca.ctx).Infof("Deploying the addon apiserver and controller manager...")
+	log.Infof("Deploying the addon apiserver and controller manager...")
 	if err := ca.CreateMachineController(controllerManager); err != nil {
 		return errors.Wrap(err, "can't create machine controller")
 	}
@@ -122,7 +122,7 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 	masterMachine.Annotations = make(map[string]string)
 	masterMachine.Annotations[InstanceStatusAnnotationKey] = ""
 
-	Logger(ca.ctx).Infof("Adding master machines...")
+	log.Infof("Adding master machines...")
 	err = phases.ApplyMachines(ca.bootstrapClient, namespace, []*clusterv1.Machine{masterMachine})
 	if err != nil && !api.ErrAlreadyExist(err) && !api.ErrObjectModified(err) {
 		return errors.Wrap(err, "failed to add master machine")
@@ -169,12 +169,12 @@ func (ca *ClusterApi) updateMachineStatus(namespace string, masterMachine *clust
 }
 
 func (ca *ClusterApi) CreateMachineController(controllerManager string) error {
-	Logger(ca.ctx).Infoln("creating pharmer secret")
+	log.Infoln("creating pharmer secret")
 	if err := ca.CreatePharmerSecret(); err != nil {
 		return err
 	}
 
-	Logger(ca.ctx).Infoln("creating apiserver and controller")
+	log.Infoln("creating apiserver and controller")
 	if err := ca.CreateApiServerAndController(controllerManager); err != nil && !api.ErrObjectModified(err) {
 		return err
 	}

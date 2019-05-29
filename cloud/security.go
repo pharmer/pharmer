@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
+	"fmt"
 
 	"github.com/appscode/go/crypto/ssh"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -92,6 +93,7 @@ func CreateSSHKey(storeProvider store.ResourceInterface, cluster *api.Cluster) (
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create new ssh key pair")
 	}
+	fmt.Println(cluster.Spec.Config.Cloud.SSHKeyName)
 	err = storeProvider.SSHKeys(cluster.Name).Create(cluster.Spec.Config.Cloud.SSHKeyName, sshKey.PublicKey, sshKey.PrivateKey)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to store ssh keys")
@@ -100,8 +102,8 @@ func CreateSSHKey(storeProvider store.ResourceInterface, cluster *api.Cluster) (
 	return sshKey.PublicKey, sshKey.PrivateKey, nil
 }
 
-func LoadSSHKey(name string) ([]byte, []byte, error) {
-	publicKey, privateKey, err := store.StoreProvider.SSHKeys(name).Get(name)
+func LoadSSHKey(clusterName, keyName string) ([]byte, []byte, error) {
+	publicKey, privateKey, err := store.StoreProvider.SSHKeys(clusterName).Get(keyName)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to get SSH key. Reason: %v", err)
 	}

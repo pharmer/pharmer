@@ -13,6 +13,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	. "github.com/appscode/go/context"
+	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/go/wait"
 	"github.com/pharmer/cloud/pkg/credential"
@@ -117,7 +118,7 @@ func (conn *cloudConnector) ensureAvailabilitySet() (compute.AvailabilitySet, er
 
 func (conn *cloudConnector) deleteResourceGroup() error {
 	_, err := conn.groupsClient.Delete(context.TODO(), conn.namer.ResourceGroupName())
-	Logger(conn.ctx).Infof("Resource group %v deleted", conn.namer.ResourceGroupName())
+	log.Infof("Resource group %v deleted", conn.namer.ResourceGroupName())
 	return err
 }
 
@@ -173,7 +174,7 @@ func (conn *cloudConnector) WaitForClusterOperation() error {
 		if err != nil {
 			return false, nil
 		}
-		Logger(conn.ctx).Infof("Attempt %v: Operation %v is %v ...", attempt, *r.Name, *r.ProvisioningState)
+		log.Infof("Attempt %v: Operation %v is %v ...", attempt, *r.Name, *r.ProvisioningState)
 		if *r.ProvisioningState == "Succeeded" {
 			return true, nil
 		}

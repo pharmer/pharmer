@@ -52,7 +52,7 @@ type cloudConnector struct {
 	storageService *gcs.Service
 	updateService  *rupdate.Service
 
-	owner string
+	//owner string
 }
 
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
@@ -107,7 +107,6 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 		computeService:      computeService,
 		storageService:      storageService,
 		updateService:       updateService,
-		owner:               cm.owner,
 		namer:               cm.namer,
 	}
 	if ok, msg := conn.IsUnauthorized(typed.ProjectID()); !ok {
@@ -372,7 +371,6 @@ func errDeleted(err error) bool {
 }
 
 func (conn *cloudConnector) importPublicKey() error {
-	log.Infof("Importing SSH key with fingerprint: %v", conn.SSHKey)
 	pubKey := string(conn.SSHKey.PublicKey)
 	r1, err := conn.computeService.Projects.SetCommonInstanceMetadata(conn.cluster.Spec.Config.Cloud.Project, &compute.Metadata{
 		Items: []*compute.MetadataItems{

@@ -1,6 +1,7 @@
 package options
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pharmer/pharmer/utils"
@@ -30,6 +31,7 @@ func (c *ApplyConfig) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (c *ApplyConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
+	fmt.Println(args)
 	if len(args) == 0 {
 		return errors.New("missing cluster name")
 	}

@@ -5,6 +5,7 @@ import (
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 )
 
@@ -18,6 +19,8 @@ func NewCmdApply() *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
+
+			store.SetProvider(cmd, opts.Owner)
 
 			acts, err := cloud.Apply(opts)
 			if err != nil {

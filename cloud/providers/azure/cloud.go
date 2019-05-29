@@ -250,7 +250,7 @@ func (conn *cloudConnector) ensureVirtualNetwork() (network.VirtualNetwork, erro
 		return network.VirtualNetwork{}, err
 	}
 
-	Logger(conn.ctx).Infof("Virtual network %v created", name)
+	log.Infof("Virtual network %v created", name)
 	return vn, nil
 }
 
@@ -319,7 +319,7 @@ func (conn *cloudConnector) createNetworkSecurityGroup(isControlPlane bool) (net
 	if err != nil {
 		return network.SecurityGroup{}, errors.Wrap(err, "result error")
 	}
-	Logger(conn.ctx).Infof("created security group %s", name)
+	log.Infof("created security group %s", name)
 	return sg, nil
 }
 
@@ -622,7 +622,7 @@ func (conn *cloudConnector) createRouteTable() (network.RouteTable, error) {
 	if err != nil {
 		return network.RouteTable{}, errors.Wrap(err, "result error")
 	}
-	Logger(conn.ctx).Infof("successfully created route table %s", name)
+	log.Infof("successfully created route table %s", name)
 	return rt, nil
 }
 
@@ -797,7 +797,7 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, vmName, 
 	if err != nil {
 		return compute.VirtualMachine{}, err
 	}
-	Logger(conn.ctx).Infof("Running startup script in virtual machine %v", vmName)
+	log.Infof("Running startup script in virtual machine %v", vmName)
 
 	vmextName := "startupScript"
 
@@ -826,12 +826,12 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, vmName, 
 	}
 
 	vm, err := conn.vmClient.Get(context.TODO(), conn.namer.ResourceGroupName(), vmName, compute.InstanceView)
-	Logger(conn.ctx).Infof("Found virtual machine %v", vm)
+	log.Infof("Found virtual machine %v", vm)
 	return vm, err
 }
 
 func (conn *cloudConnector) deleteResourceGroup() error {
 	_, err := conn.groupsClient.Delete(context.TODO(), conn.namer.ResourceGroupName())
-	Logger(conn.ctx).Infof("Resource group %v deleted", conn.namer.ResourceGroupName())
+	log.Infof("Resource group %v deleted", conn.namer.ResourceGroupName())
 	return err
 }

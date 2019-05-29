@@ -25,6 +25,7 @@ type Interface interface {
 	GetCaCertPair() *api.CertKeyPair
 	GetPharmerCertificates() *api.PharmerCertificates
 	GetConnector() ClusterApiProviderComponent
+	SetAdminClient(kc kubernetes.Interface)
 
 	InitializeMachineActuator(mgr manager.Manager) error
 	AddToManager(ctx context.Context, m manager.Manager) error
