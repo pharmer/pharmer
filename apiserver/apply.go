@@ -10,7 +10,7 @@ import (
 )
 
 func ApplyCluster(ctx context.Context, opt *opts.ApplyConfig, obj *api.Operation) {
-	_, err := Apply(ctx, opt)
+	_, err := Apply(opt)
 	if err != nil {
 		glog.Errorf("err = %v]\n", err)
 		return

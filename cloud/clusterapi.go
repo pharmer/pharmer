@@ -22,19 +22,17 @@ import (
 )
 
 type ClusterApi struct {
-	ctx     context.Context
-	cluster *api.Cluster
-
-	namespace string
-	token     string
-	kc        kubernetes.Interface
+	ctx                 context.Context
+	cluster             *api.Cluster
+	pharmerCertificates *api.PharmerCertificates
+	namespace           string
+	token               string
+	kc                  kubernetes.Interface
 
 	providerComponenet ClusterApiProviderComponent
 
 	clusterapiClient clientset.Interface
 	bootstrapClient  clusterclient.Client
-
-	Owner string
 }
 
 type ApiServerTemplate struct {
@@ -42,7 +40,6 @@ type ApiServerTemplate struct {
 	Provider            string
 	ControllerNamespace string
 	ControllerImage     string
-	ClusterOwner        string
 }
 
 var MachineControllerImage = "pharmer/machine-controller:0.3.0"
@@ -51,36 +48,37 @@ const (
 	BasePath = ".pharmer/config.d"
 )
 
-func NewClusterApi(ctx context.Context, cluster *api.Cluster, owner, namespace string, kc kubernetes.Interface, pc ClusterApiProviderComponent) (*ClusterApi, error) {
+func NewClusterApi(cm Interface, cluster *api.Cluster, namespace string, kc kubernetes.Interface, pc ClusterApiProviderComponent) (*ClusterApi, error) {
 	var token string
 	var err error
 	if token, err = GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration); err != nil {
 		return nil, err
 	}
 
-	bc, err := GetBooststrapClient(ctx, cluster, owner)
+	bc, err := GetBooststrapClient(cm, cluster)
 	if err != nil {
 		return nil, err
 	}
-	clusterClient, err := GetClusterClient(ctx, cluster)
+	clusterClient, err := GetClusterClient(cm, cluster)
 	if err != nil {
 		return nil, err
 	}
+
+	pharmerCertificates := cm.GetPharmerCertificates()
 
 	return &ClusterApi{
-		ctx:                ctx,
-		cluster:            cluster,
-		Owner:              owner,
-		namespace:          namespace,
-		kc:                 kc,
-		clusterapiClient:   clusterClient,
-		providerComponenet: pc,
-		token:              token,
-		bootstrapClient:    bc}, nil
+		cluster:             cluster,
+		namespace:           namespace,
+		pharmerCertificates: pharmerCertificates,
+		kc:                  kc,
+		clusterapiClient:    clusterClient,
+		providerComponenet:  pc,
+		token:               token,
+		bootstrapClient:     bc}, nil
 }
 
-func GetClusterClient(ctx context.Context, cluster *api.Cluster) (clientset.Interface, error) {
-	conf, err := NewRestConfig(ctx, cluster)
+func GetClusterClient(cm Interface, cluster *api.Cluster) (clientset.Interface, error) {
+	conf, err := NewRestConfig(cm, cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get rest config")
 	}
@@ -116,7 +114,7 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 		return errors.Wrap(err, "failed to update provider status")
 	}
 
-	masterMachine, err := GetLeaderMachine(ca.ctx, ca.cluster, ca.Owner)
+	masterMachine, err := GetLeaderMachine(ca.cluster)
 	if err != nil {
 		return errors.Wrap(err, "failed to get leader machine")
 	}
@@ -233,19 +231,19 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 	}
 
 	if err = CreateSecret(ca.kc, "pharmer-certificate", ca.namespace, map[string][]byte{
-		"ca.crt":             cert.EncodeCertPEM(CACert(ca.ctx)),
-		"ca.key":             cert.EncodePrivateKeyPEM(CAKey(ca.ctx)),
-		"front-proxy-ca.crt": cert.EncodeCertPEM(FrontProxyCACert(ca.ctx)),
-		"front-proxy-ca.key": cert.EncodePrivateKeyPEM(FrontProxyCAKey(ca.ctx)),
-		"sa.crt":             cert.EncodeCertPEM(SaCert(ca.ctx)),
-		"sa.key":             cert.EncodePrivateKeyPEM(SaKey(ca.ctx)),
+		"ca.crt":             cert.EncodeCertPEM(ca.pharmerCertificates.CACert.Cert),
+		"ca.key":             cert.EncodePrivateKeyPEM(ca.pharmerCertificates.CACert.Key),
+		"front-proxy-ca.crt": cert.EncodeCertPEM(ca.pharmerCertificates.FrontProxyCACert.Cert),
+		"front-proxy-ca.key": cert.EncodePrivateKeyPEM(ca.pharmerCertificates.FrontProxyCACert.Key),
+		"sa.crt":             cert.EncodeCertPEM(ca.pharmerCertificates.ServiceAccountCert.Cert),
+		"sa.key":             cert.EncodePrivateKeyPEM(ca.pharmerCertificates.ServiceAccountCert.Key),
 	}); err != nil {
 		return err
 	}
 
 	if err = CreateSecret(ca.kc, "pharmer-etcd", ca.namespace, map[string][]byte{
-		"ca.crt": cert.EncodeCertPEM(EtcdCaCert(ca.ctx)),
-		"ca.key": cert.EncodePrivateKeyPEM(EtcdCaKey(ca.ctx)),
+		"ca.crt": cert.EncodeCertPEM(ca.pharmerCertificates.EtcdCACert.Cert),
+		"ca.key": cert.EncodePrivateKeyPEM(ca.pharmerCertificates.EtcdCACert.Key),
 	}); err != nil {
 		return err
 	}
@@ -264,7 +262,6 @@ func (ca *ClusterApi) CreateApiServerAndController(controllerManager string) err
 		Provider:            ca.cluster.ClusterConfig().Cloud.CloudProvider,
 		ControllerNamespace: ca.namespace,
 		ControllerImage:     MachineControllerImage,
-		ClusterOwner:        ca.Owner,
 	})
 	if err != nil {
 		return err

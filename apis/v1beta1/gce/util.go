@@ -3,6 +3,8 @@ package gce
 import (
 	"encoding/json"
 
+	"gomodules.xyz/cert"
+
 	. "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -108,13 +110,29 @@ func EncodeClusterSpec(spec *GCEClusterProviderSpec) (*runtime.RawExtension, err
 }
 
 // SetGCEClusterProvidreConfig sets default gce cluster providerSpec
-func SetGCEclusterProviderConfig(cluster *clusterv1.Cluster, config *ClusterConfig) error {
+func SetGCEclusterProviderConfig(cluster *clusterv1.Cluster, config *ClusterConfig, certs *PharmerCertificates) error {
 	conf := &GCEClusterProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GCEProviderGroupName + "/" + GCEProviderApiVersion,
 			Kind:       GCEClusterProviderKind,
 		},
 		Project: config.Cloud.Project,
+		CAKeyPair: KeyPair{
+			Cert: cert.EncodeCertPEM(certs.CACert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(certs.CACert.Key),
+		},
+		EtcdCAKeyPair: KeyPair{
+			Cert: cert.EncodeCertPEM(certs.EtcdCACert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(certs.EtcdCACert.Key),
+		},
+		FrontProxyCAKeyPair: KeyPair{
+			Cert: cert.EncodeCertPEM(certs.FrontProxyCACert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(certs.FrontProxyCACert.Key),
+		},
+		SAKeyPair: KeyPair{
+			Cert: cert.EncodeCertPEM(certs.ServiceAccountCert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(certs.ServiceAccountCert.Key),
+		},
 	}
 
 	rawConf, err := EncodeClusterSpec(conf)

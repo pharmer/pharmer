@@ -2,7 +2,6 @@ package gce
 
 import (
 	"bytes"
-	"context"
 
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -16,16 +15,16 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
-func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine, token string) TemplateData {
+func newNodeTemplateData(conn *cloudConnector, cluster *api.Cluster, machine *clusterv1.Machine, token string) TemplateData {
 	td := TemplateData{
 		ClusterName:       cluster.Name,
 		KubernetesVersion: machine.Spec.Versions.ControlPlane,
 		KubeadmToken:      token,
-		CAHash:            pubkeypin.Hash(CACert(ctx)),
-		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
-		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
+		CAHash:            pubkeypin.Hash(conn.CACert.Cert),
+		CAKey:             string(cert.EncodePrivateKeyPEM(conn.CACert.Key)),
+		SAKey:             string(cert.EncodePrivateKeyPEM(conn.ServiceAccountCert.Key)),
+		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(conn.FrontProxyCACert.Key)),
+		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(conn.EtcdCACert.Key)),
 		APIServerAddress:  cluster.APIServerAddress(),
 		NetworkProvider:   cluster.ClusterConfig().Cloud.NetworkProvider,
 		Provider:          cluster.ClusterConfig().Cloud.CloudProvider,
@@ -79,8 +78,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 	return td
 }
 
-func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine) TemplateData {
-	td := newNodeTemplateData(ctx, cluster, machine, "")
+func newMasterTemplateData(conn *cloudConnector, cluster *api.Cluster, machine *clusterv1.Machine) TemplateData {
+	td := newNodeTemplateData(conn, cluster, machine, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
 	}.String()
@@ -191,11 +190,11 @@ func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *c
 
 	var script bytes.Buffer
 	if util.IsControlPlaneMachine(machine) {
-		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn.ctx, cluster, machine)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn, cluster, machine)); err != nil {
 			return "", err
 		}
 	} else {
-		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn.ctx, cluster, machine, token)); err != nil {
+		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn, cluster, machine, token)); err != nil {
 			return "", err
 		}
 	}

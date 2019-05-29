@@ -9,7 +9,6 @@ import (
 )
 
 type GCENodeGroupManager struct {
-	ctx   context.Context
 	conn  *cloudConnector
 	namer namer
 	ng    *api.NodeGroup
@@ -19,7 +18,7 @@ type GCENodeGroupManager struct {
 }
 
 func NewGCENodeGroupManager(ctx context.Context, conn *cloudConnector, namer namer, ng *api.NodeGroup, kc kubernetes.Interface, token string) *GCENodeGroupManager {
-	return &GCENodeGroupManager{ctx: ctx, conn: conn, namer: namer, ng: ng, kc: kc, token: token}
+	return &GCENodeGroupManager{conn: conn, namer: namer, ng: ng, kc: kc, token: token}
 }
 
 func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
@@ -76,10 +75,10 @@ func (igm *GCENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 						nd.Node = node.Name
 						if er := nd.DeleteNode(); er != nil {
 							// ignore error while deleting node
-							Logger(igm.ctx).Infoln("Failed to delete node ", node.Name, er)
+							log.Infoln("Failed to delete node ", node.Name, er)
 						}
 					}
-					Store(igm.ctx).NodeGroups(igm.ng.ClusterName).Delete(igm.ng.Name)
+					store.StoreProvider.NodeGroups(igm.ng.ClusterName).Delete(igm.ng.Name)
 				}
 
 			} else if igm.ng.Spec.Nodes == igm.ng.Status.Nodes {
@@ -158,7 +157,7 @@ func (igm *GCENodeGroupManager) deleteNodeWithDrain(nodes []core.Node) error {
 				return err
 			}
 			if err = nd.DeleteNode(); err != nil {
-				Logger(igm.ctx).Infoln("Failed to delete node ", node.Name, err)
+				log.Infoln("Failed to delete node ", node.Name, err)
 			}
 
 		}

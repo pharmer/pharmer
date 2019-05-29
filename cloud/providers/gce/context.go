@@ -1,7 +1,6 @@
 package gce
 
 import (
-	"context"
 	"errors"
 	"sync"
 
@@ -20,10 +19,11 @@ type ClusterManager struct {
 	cluster *api.Cluster
 	certs   *api.PharmerCertificates
 
-	ctx   context.Context
-	conn  *cloudConnector
-	namer namer
-	m     sync.Mutex
+	//ctx         context.Context
+	conn        *cloudConnector
+	namer       namer
+	m           sync.Mutex
+	adminClient kubernetes.Interface
 
 	owner string
 }
@@ -51,22 +51,24 @@ func (cm *ClusterManager) GetCluster() *api.Cluster {
 	return cm.cluster
 }
 
-type paramK8sClient struct{}
+func (cm *ClusterManager) GetAdminClient() kubernetes.Interface {
+	return cm.adminClient
+}
 
-func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
-	cm.m.Lock()
-	defer cm.m.Unlock()
-	v := cm.ctx.Value(paramK8sClient{})
-	if kc, ok := v.(kubernetes.Interface); ok && kc != nil {
-		return kc, nil
-	}
-	kc, err := NewAdminClient(cm.ctx, cm.cluster)
+func (cm *ClusterManager) GetMutex() *sync.Mutex {
+	return &cm.m
+}
 
-	if err != nil {
-		return nil, err
-	}
-	cm.ctx = context.WithValue(cm.ctx, paramK8sClient{}, kc)
-	return kc, nil
+func (cm *ClusterManager) GetCaCertPair() *api.CertKeyPair {
+	return &cm.certs.CACert
+}
+
+func (cm *ClusterManager) GetPharmerCertificates() *api.PharmerCertificates {
+	return cm.certs
+}
+
+func (cm *ClusterManager) GetConnector() ClusterApiProviderComponent {
+	return cm.conn
 }
 
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {

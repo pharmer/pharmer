@@ -1,13 +1,10 @@
 package cmds
 
 import (
-	"context"
-
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
-	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
 )
 
@@ -22,14 +19,7 @@ func NewCmdApply() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-
-			acts, err := cloud.Apply(ctx, opts)
+			acts, err := cloud.Apply(opts)
 			if err != nil {
 				log.Fatalln(err)
 			}

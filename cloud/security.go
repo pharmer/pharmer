@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"context"
+	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
 
@@ -58,7 +59,7 @@ func LoadCACertificates(clusterName, name string) (*x509.Certificate, *rsa.Priva
 	return caCert, caKey, nil
 }
 
-func CreateAdminCertificate(ctx context.Context) (*x509.Certificate, *rsa.PrivateKey, error) {
+func CreateAdminCertificate(caCert *x509.Certificate, caKey crypto.Signer) (*x509.Certificate, *rsa.PrivateKey, error) {
 	cfg := cert.Config{
 		CommonName:   "cluster-admin",
 		Organization: []string{kubeadmconst.SystemPrivilegedGroup},
@@ -69,7 +70,8 @@ func CreateAdminCertificate(ctx context.Context) (*x509.Certificate, *rsa.Privat
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to generate private key. Reason: %v", err)
 	}
-	adminCert, err := cert.NewSignedCert(cfg, adminKey, CACert(ctx), CAKey(ctx))
+
+	adminCert, err := cert.NewSignedCert(cfg, adminKey, caCert, caKey)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to generate server certificate. Reason: %v", err)
 	}

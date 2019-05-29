@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/pharmer/pharmer/store"
+
 	"github.com/appscode/go/log"
 	stringz "github.com/appscode/go/strings"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -54,8 +56,9 @@ func IsNodeReady(node *core.Node) bool {
 	return false
 }
 
-func NewRestConfig(ctx context.Context, cluster *api.Cluster) (*rest.Config, error) {
-	adminCert, adminKey, err := CreateAdminCertificate(ctx)
+func NewRestConfig(cm Interface, cluster *api.Cluster) (*rest.Config, error) {
+	caCertPair := cm.GetCaCertPair()
+	adminCert, adminKey, err := CreateAdminCertificate(caCertPair.Cert, caCertPair.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +71,7 @@ func NewRestConfig(ctx context.Context, cluster *api.Cluster) (*rest.Config, err
 	cfg := &rest.Config{
 		Host: host,
 		TLSClientConfig: rest.TLSClientConfig{
-			CAData:   cert.EncodeCertPEM(CACert(ctx)),
+			CAData:   cert.EncodeCertPEM(caCertPair.Cert),
 			CertData: cert.EncodeCertPEM(adminCert),
 			KeyData:  cert.EncodePrivateKeyPEM(adminKey),
 		},
@@ -79,31 +82,31 @@ func NewRestConfig(ctx context.Context, cluster *api.Cluster) (*rest.Config, err
 
 // WARNING:
 // Returned KubeClient uses admin client cert. This should only be used for cluster provisioning operations.
-func NewAdminClient(ctx context.Context, cluster *api.Cluster) (kubernetes.Interface, error) {
-	cfg, err := NewRestConfig(ctx, cluster)
+func NewAdminClient(cm Interface, cluster *api.Cluster) (kubernetes.Interface, error) {
+	cfg, err := NewRestConfig(cm, cluster)
 	if err != nil {
 		return nil, err
 	}
 	return kubernetes.NewForConfig(cfg)
 }
 
-func waitForReadyAPIServer(ctx context.Context, client kubernetes.Interface) error {
+func waitForReadyAPIServer(client kubernetes.Interface) error {
 	attempt := 0
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		attempt++
-		Logger(ctx).Infof("Attempt %v: Probing Kubernetes api server ...", attempt)
+		log.Infof("Attempt %v: Probing Kubernetes api server ...", attempt)
 
 		_, err := client.CoreV1().Pods(core.NamespaceAll).List(metav1.ListOptions{})
 		return err == nil, nil
 	})
 }
 
-func WaitForReadyMasterVersion(ctx context.Context, client kubernetes.Interface, desiredVersion *semver.Version) error {
+func WaitForReadyMasterVersion(client kubernetes.Interface, desiredVersion *semver.Version) error {
 	attempt := 0
 	var masterInstance *core.Node
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		attempt++
-		Logger(ctx).Infof("Attempt %v: Upgrading to version %v ...", attempt, desiredVersion.String())
+		log.Infof("Attempt %v: Upgrading to version %v ...", attempt, desiredVersion.String())
 		masterInstances, err := client.CoreV1().Nodes().List(metav1.ListOptions{
 			LabelSelector: labels.SelectorFromSet(map[string]string{
 				api.RoleMasterKey: "",
@@ -131,11 +134,11 @@ func WaitForReadyMasterVersion(ctx context.Context, client kubernetes.Interface,
 
 }
 
-func waitForReadyComponents(ctx context.Context, client kubernetes.Interface) error {
+func waitForReadyComponents(client kubernetes.Interface) error {
 	attempt := 0
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		attempt++
-		Logger(ctx).Infof("Attempt %v: Probing components ...", attempt)
+		log.Infof("Attempt %v: Probing components ...", attempt)
 
 		resp, err := client.CoreV1().ComponentStatuses().List(metav1.ListOptions{
 			LabelSelector: labels.Everything().String(),
@@ -146,7 +149,7 @@ func waitForReadyComponents(ctx context.Context, client kubernetes.Interface) er
 		for _, status := range resp.Items {
 			for _, cond := range status.Conditions {
 				if cond.Type == core.ComponentHealthy && cond.Status != core.ConditionTrue {
-					Logger(ctx).Infof("Component %v is in condition %v with status %v", status.Name, cond.Type, cond.Status)
+					log.Infof("Component %v is in condition %v with status %v", status.Name, cond.Type, cond.Status)
 					return false, nil
 				}
 			}
@@ -155,12 +158,12 @@ func waitForReadyComponents(ctx context.Context, client kubernetes.Interface) er
 	})
 }
 
-func WaitForReadyMaster(ctx context.Context, client kubernetes.Interface) error {
-	err := waitForReadyAPIServer(ctx, client)
+func WaitForReadyMaster(client kubernetes.Interface) error {
+	err := waitForReadyAPIServer(client)
 	if err != nil {
 		return err
 	}
-	return waitForReadyComponents(ctx, client)
+	return waitForReadyComponents(client)
 }
 
 var restrictedNamespaces []string = []string{"appscode", "kube-system"}
@@ -225,8 +228,8 @@ func DeleteDyanamicVolumes(client kubernetes.Interface) error {
 	})
 }
 
-func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cluster *api.Cluster, owner string) error {
-	cred, err := Store(ctx).Credentials().Get(cluster.Spec.Config.CredentialName)
+func CreateCredentialSecret(client kubernetes.Interface, cluster *api.Cluster) error {
+	cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return err
 	}
@@ -252,7 +255,7 @@ func CreateCredentialSecret(ctx context.Context, client kubernetes.Interface, cl
 }
 
 func NewClusterApiClient(ctx context.Context, cluster *api.Cluster) (client.Client, error) {
-	adminCert, adminKey, err := CreateAdminCertificate(ctx)
+	/*adminCert, adminKey, err := CreateAdminCertificate(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +271,8 @@ func NewClusterApiClient(ctx context.Context, cluster *api.Cluster) (client.Clie
 			KeyData:  cert.EncodePrivateKeyPEM(adminKey),
 		},
 	}
-	return client.New(cfg, client.Options{})
+	return client.New(cfg, client.Options{})*/
+	return nil, nil
 }
 
 func waitForServiceAccount(ctx context.Context, client kubernetes.Interface) error {

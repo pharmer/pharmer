@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"context"
+	"sync"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
@@ -19,6 +20,11 @@ var (
 
 type Interface interface {
 	GetCluster() *api.Cluster
+	GetMutex() *sync.Mutex
+	GetAdminClient() kubernetes.Interface
+	GetCaCertPair() *api.CertKeyPair
+	GetPharmerCertificates() *api.PharmerCertificates
+	GetConnector() ClusterApiProviderComponent
 
 	InitializeMachineActuator(mgr manager.Manager) error
 	AddToManager(ctx context.Context, m manager.Manager) error
@@ -26,9 +32,11 @@ type Interface interface {
 	SSHGetter
 	ProviderKubeConfig
 
-	Apply(in *api.Cluster, dryRun bool) ([]api.Action, error)
+	PrepareCloud() error
+	ApplyCreate(dryRun bool) (acts []api.Action, leaderMachine *clusterv1.Machine, machines []*clusterv1.Machine, err error)
+	ApplyDelete(dryRun bool) ([]api.Action, error)
+	ApplyUpgrade(dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
-	SetOwner(owner string)
 	SetDefaultCluster(in *api.Cluster) error
 	GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterv1.ProviderSpec, error)
 }
@@ -50,6 +58,7 @@ type InstanceManager interface {
 
 type ClusterApiProviderComponent interface {
 	CreateCredentialSecret(kc kubernetes.Interface, data map[string]string) error
+	GetControllerManager() (string, error)
 }
 
 type UpgradeManager interface {

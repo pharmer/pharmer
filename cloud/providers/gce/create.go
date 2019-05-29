@@ -10,7 +10,6 @@ import (
 	proconfig "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
-	"gomodules.xyz/cert"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -54,40 +53,41 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
+// TODO Tahsin
 // SetupCerts Loads necessary certs in Cluster Spec
 func (cm *ClusterManager) SetupCerts() error {
-	conf, err := clusterapiGCE.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
-	if err != nil {
-		return err
-	}
-
-	conf.CAKeyPair = clusterapiGCE.KeyPair{
-		Cert: cert.EncodeCertPEM(CACert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(CAKey(cm.ctx)),
-	}
-	conf.FrontProxyCAKeyPair = clusterapiGCE.KeyPair{
-		Cert: cert.EncodeCertPEM(FrontProxyCACert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(FrontProxyCAKey(cm.ctx)),
-	}
-	conf.EtcdCAKeyPair = clusterapiGCE.KeyPair{
-		Cert: cert.EncodeCertPEM(EtcdCaCert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(EtcdCaKey(cm.ctx)),
-	}
-	conf.SAKeyPair = clusterapiGCE.KeyPair{
-		Cert: cert.EncodeCertPEM(SaCert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(SaKey(cm.ctx)),
-	}
-
-	rawSpec, err := clusterapiGCE.EncodeClusterSpec(conf)
-	if err != nil {
-		return err
-	}
-
-	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
-
-	if _, err := Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
-		return err
-	}
+	//conf, err := clusterapiGCE.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//conf.CAKeyPair = clusterapiGCE.KeyPair{
+	//	Cert: cert.EncodeCertPEM(cm.certs.CACert.Cert),
+	//	Key:  cert.EncodePrivateKeyPEM(cm.certs.CACert),
+	//}
+	//conf.FrontProxyCAKeyPair = clusterapiGCE.KeyPair{
+	//	Cert: cert.EncodeCertPEM(FrontProxyCACert(cm.ctx)),
+	//	Key:  cert.EncodePrivateKeyPEM(FrontProxyCAKey(cm.ctx)),
+	//}
+	//conf.EtcdCAKeyPair = clusterapiGCE.KeyPair{
+	//	Cert: cert.EncodeCertPEM(EtcdCaCert(cm.ctx)),
+	//	Key:  cert.EncodePrivateKeyPEM(EtcdCaKey(cm.ctx)),
+	//}
+	//conf.SAKeyPair = clusterapiGCE.KeyPair{
+	//	Cert: cert.EncodeCertPEM(SaCert(cm.ctx)),
+	//	Key:  cert.EncodePrivateKeyPEM(SaKey(cm.ctx)),
+	//}
+	//
+	//rawSpec, err := clusterapiGCE.EncodeClusterSpec(conf)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
+	//
+	//if _, err := store.StoreProvider.Clusters().Update(cm.cluster); err != nil {
+	//	return err
+	//}
 	return nil
 }
 
@@ -120,7 +120,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 		cluster.Spec.ClusterAPI.ObjectMeta.Annotations = make(map[string]string)
 	}
 
-	return clusterapiGCE.SetGCEclusterProviderConfig(cluster.Spec.ClusterAPI, config)
+	return clusterapiGCE.SetGCEclusterProviderConfig(cluster.Spec.ClusterAPI, config, cm.certs)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
@@ -130,7 +130,7 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
 	n := namer{cluster: cluster}
 	cfg := &api.SSHConfig{
-		PrivateKey: SSHKey(cm.ctx).PrivateKey,
+		PrivateKey: cm.certs.SSHKey.PrivateKey,
 		User:       n.AdminUsername(),
 		HostPort:   int32(22),
 	}

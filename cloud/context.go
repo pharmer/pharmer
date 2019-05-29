@@ -2,10 +2,7 @@ package cloud
 
 import (
 	"context"
-	"crypto/rsa"
-	"crypto/x509"
 
-	"github.com/appscode/go/crypto/ssh"
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -92,55 +89,55 @@ func WithNameGenerator(parent context.Context, v api.NameGenerator) context.Cont
 	return context.WithValue(parent, paramNameGen{}, v)
 }
 
-func CACert(ctx context.Context) *x509.Certificate {
-	return ctx.Value(paramCACert{}).(*x509.Certificate)
-}
-func CAKey(ctx context.Context) *rsa.PrivateKey {
-	return ctx.Value(paramCAKey{}).(*rsa.PrivateKey)
-}
-
-func FrontProxyCACert(ctx context.Context) *x509.Certificate {
-	return ctx.Value(paramFrontProxyCACert{}).(*x509.Certificate)
-}
-func FrontProxyCAKey(ctx context.Context) *rsa.PrivateKey {
-	return ctx.Value(paramFrontProxyCAKey{}).(*rsa.PrivateKey)
-}
-
-func ApiServerCaCert(ctx context.Context) *x509.Certificate {
-	return ctx.Value(paramApiServerCaCert{}).(*x509.Certificate)
-}
-
-func ApiServerCaKey(ctx context.Context) *rsa.PrivateKey {
-	return ctx.Value(paramApiServerCaKey{}).(*rsa.PrivateKey)
-}
-
-func ApiServerCert(ctx context.Context) *x509.Certificate {
-	return ctx.Value(paramApiServerCert{}).(*x509.Certificate)
-}
-
-func ApiServerKey(ctx context.Context) *rsa.PrivateKey {
-	return ctx.Value(paramApiServerKey{}).(*rsa.PrivateKey)
-}
-
-func EtcdCaCert(ctx context.Context) *x509.Certificate {
-	return ctx.Value(paramEtcdCACert{}).(*x509.Certificate)
-}
-
-func EtcdCaKey(ctx context.Context) *rsa.PrivateKey {
-	return ctx.Value(paramEtcdCAKey{}).(*rsa.PrivateKey)
-}
-
-func SSHKey(ctx context.Context) *ssh.SSHKey {
-	return ctx.Value(paramSSHKey{}).(*ssh.SSHKey)
-}
-
-func SaKey(ctx context.Context) *rsa.PrivateKey {
-	return ctx.Value(paramSaKey{}).(*rsa.PrivateKey)
-}
-
-func SaCert(ctx context.Context) *x509.Certificate {
-	return ctx.Value(paramSaCert{}).(*x509.Certificate)
-}
+//func CACert(ctx context.Context) *x509.Certificate {
+//	return ctx.Value(paramCACert{}).(*x509.Certificate)
+//}
+//func CAKey(ctx context.Context) *rsa.PrivateKey {
+//	return ctx.Value(paramCAKey{}).(*rsa.PrivateKey)
+//}
+//
+//func FrontProxyCACert(ctx context.Context) *x509.Certificate {
+//	return ctx.Value(paramFrontProxyCACert{}).(*x509.Certificate)
+//}
+//func FrontProxyCAKey(ctx context.Context) *rsa.PrivateKey {
+//	return ctx.Value(paramFrontProxyCAKey{}).(*rsa.PrivateKey)
+//}
+//
+//func ApiServerCaCert(ctx context.Context) *x509.Certificate {
+//	return ctx.Value(paramApiServerCaCert{}).(*x509.Certificate)
+//}
+//
+//func ApiServerCaKey(ctx context.Context) *rsa.PrivateKey {
+//	return ctx.Value(paramApiServerCaKey{}).(*rsa.PrivateKey)
+//}
+//
+//func ApiServerCert(ctx context.Context) *x509.Certificate {
+//	return ctx.Value(paramApiServerCert{}).(*x509.Certificate)
+//}
+//
+//func ApiServerKey(ctx context.Context) *rsa.PrivateKey {
+//	return ctx.Value(paramApiServerKey{}).(*rsa.PrivateKey)
+//}
+//
+//func EtcdCaCert(ctx context.Context) *x509.Certificate {
+//	return ctx.Value(paramEtcdCACert{}).(*x509.Certificate)
+//}
+//
+//func EtcdCaKey(ctx context.Context) *rsa.PrivateKey {
+//	return ctx.Value(paramEtcdCAKey{}).(*rsa.PrivateKey)
+//}
+//
+//func SSHKey(ctx context.Context) *ssh.SSHKey {
+//	return ctx.Value(paramSSHKey{}).(*ssh.SSHKey)
+//}
+//
+//func SaKey(ctx context.Context) *rsa.PrivateKey {
+//	return ctx.Value(paramSaKey{}).(*rsa.PrivateKey)
+//}
+//
+//func SaCert(ctx context.Context) *x509.Certificate {
+//	return ctx.Value(paramSaCert{}).(*x509.Certificate)
+//}
 
 func NewContext(parent context.Context, cfg *api.PharmerConfig, env _env.Environment) context.Context {
 	c := parent

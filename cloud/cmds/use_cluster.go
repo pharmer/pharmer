@@ -33,7 +33,13 @@ func NewCmdUse() *cobra.Command {
 			if err != nil {
 				term.Fatalln(err)
 			}
-			c2, err := cloud.GetAdminConfig(ctx, cluster, opts.Owner)
+
+			cm, cluster, err := cloud.Create(cluster)
+			if err != nil {
+				term.Fatalln(err)
+			}
+
+			c2, err := cloud.GetAdminConfig(cm, cluster)
 			if err != nil {
 				log.Fatalln(err)
 			}

@@ -49,8 +49,7 @@ spec:
       - args:
         - controller
         - --provider={{ .Provider }}
-        - --kubeconfig=/etc/kubernetes/admin.conf 
-        - --owner={{ .ClusterOwner }}
+        - --kubeconfig=/etc/kubernetes/admin.conf
         env:
         image: {{ .ControllerImage }}
         name: manager
@@ -67,7 +66,7 @@ spec:
         - mountPath: /etc/ssl/certs
           name: certs
         - name: sshkeys
-          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters/{{ .ClusterName }}/ssh
+          mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/ssh
         - name: certificates
           mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters/{{ .ClusterName }}/pki
         - name: cluster

@@ -9,12 +9,13 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	yaml "gopkg.in/yaml.v2"
 )
 
-func (conn *cloudConnector) getControllerManager() (string, error) {
+func (conn *cloudConnector) GetControllerManager() (string, error) {
 	config := conn.cluster.ClusterConfig()
-	cred, err := Store(conn.ctx).Credentials().Get(config.CredentialName)
+	cred, err := store.StoreProvider.Credentials().Get(config.CredentialName)
 	if err != nil {
 		return "", err
 	}
@@ -33,8 +34,8 @@ func (conn *cloudConnector) getControllerManager() (string, error) {
 	err = tmpl.Execute(&tmplBuf, controllerManagerConfig{
 		MachineConfig:   machineSetupConfig,
 		ServiceAccount:  base64.StdEncoding.EncodeToString([]byte(typed.ServiceAccount())),
-		SSHPrivateKey:   base64.StdEncoding.EncodeToString((SSHKey(conn.ctx).PrivateKey)),
-		SSHPublicKey:    base64.StdEncoding.EncodeToString((SSHKey(conn.ctx).PublicKey)),
+		SSHPrivateKey:   base64.StdEncoding.EncodeToString(conn.SSHKey.PrivateKey),
+		SSHPublicKey:    base64.StdEncoding.EncodeToString(conn.SSHKey.PublicKey),
 		SSHUser:         base64.StdEncoding.EncodeToString([]byte("clusterapi")),
 		ControllerImage: MachineControllerImage,
 	})
