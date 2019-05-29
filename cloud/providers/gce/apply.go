@@ -215,6 +215,21 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 	return acts, leaderMachine, machines, err
 }
 
+//func ensureNetwork() {
+//	found, _ = cm.conn.getNetworks()
+//
+//	if !found {
+//		addActs(acts, api.ActionNOP, network, foundNetworkMessage)
+//		if !dryRun {
+//			if err = cm.conn.ensureNetworks(); err != nil {
+//				return
+//			}
+//		}
+//	} else {
+//		addActs(acts, api.ActionNOP, network, notFoundNetworkMessage)
+//	}
+//}
+
 // TODO: Apparently Not needed
 
 func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error) {

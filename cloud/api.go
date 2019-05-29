@@ -33,7 +33,7 @@ type Interface interface {
 	SSHGetter
 	ProviderKubeConfig
 
-	PrepareCloud() error
+	GetCloudConnector() error
 	ApplyCreate(dryRun bool) (acts []api.Action, leaderMachine *clusterv1.Machine, machines []*clusterv1.Machine, err error)
 	ApplyDelete(dryRun bool) ([]api.Action, error)
 	ApplyUpgrade(dryRun bool) ([]api.Action, error)
