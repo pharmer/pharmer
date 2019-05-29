@@ -8,6 +8,7 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,7 +48,7 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "azure" // requires --cloud-config
 
-		cred, err := Store(ctx).Credentials().Get(cluster.Spec.Config.CredentialName)
+		cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 		if err != nil {
 			panic(err)
 		}

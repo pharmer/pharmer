@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -13,7 +12,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
-	"github.com/pharmer/pharmer/config"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils"
 	"github.com/pharmer/pharmer/utils/editor"
 	"github.com/pharmer/pharmer/utils/printer"
@@ -40,14 +39,8 @@ func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				term.Fatalln(err)
-			}
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := RunUpdateNodeGroup(ctx, opts, out, outErr); err != nil {
+			if err := RunUpdateNodeGroup(opts, outErr); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -57,7 +50,7 @@ func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunUpdateNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, out, errOut io.Writer) error {
+func RunUpdateNodeGroup(opts *options.NodeGroupEditConfig, errOut io.Writer) error {
 	clusterName := opts.ClusterName
 	// If file is provided
 	if opts.File != "" {
@@ -68,47 +61,47 @@ func RunUpdateNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, 
 			return err
 		}
 
-		updated, err := cloud.Store(ctx).MachineSet(clusterName).Get(local.Name)
+		updated, err := store.StoreProvider.MachineSet(clusterName).Get(local.Name)
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = local.ObjectMeta
 		updated.Spec = local.Spec
 
-		original, err := cloud.Store(ctx).MachineSet(clusterName).Get(updated.Name)
+		original, err := store.StoreProvider.MachineSet(clusterName).Get(updated.Name)
 		if err != nil {
 			return err
 		}
-		if err := UpdateNodeGroup(ctx, original, updated, clusterName, opts.Owner); err != nil {
+		if err := UpdateNodeGroup(original, updated, clusterName, opts.Owner); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`nodegroup "%s" replaced`, original.Name))
 		return nil
 	}
 
-	original, err := cloud.Store(ctx).MachineSet(clusterName).Get(opts.NgName)
+	original, err := store.StoreProvider.MachineSet(clusterName).Get(opts.NgName)
 	if err != nil {
 		return err
 	}
 
 	// Check if flags are provided to update
 	if opts.DoNotDelete {
-		updated, err := cloud.Store(ctx).MachineSet(clusterName).Get(opts.NgName)
+		updated, err := store.StoreProvider.MachineSet(clusterName).Get(opts.NgName)
 		if err != nil {
 			return err
 		}
 
-		if err := UpdateNodeGroup(ctx, original, updated, clusterName, opts.Owner); err != nil {
+		if err := UpdateNodeGroup(original, updated, clusterName, opts.Owner); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`nodegroup "%s" updated`, original.Name))
 		return nil
 	}
 
-	return editNodeGroup(ctx, opts, original, errOut)
+	return editNodeGroup(opts, original, errOut)
 }
 
-func editNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, original *clusterv1.MachineSet, errOut io.Writer) error {
+func editNodeGroup(opts *options.NodeGroupEditConfig, original *clusterv1.MachineSet, errOut io.Writer) error {
 
 	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
@@ -180,7 +173,7 @@ func editNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, origi
 
 			containsError = false
 
-			if err := UpdateNodeGroup(ctx, original, updated, opts.ClusterName, opts.Owner); err != nil {
+			if err := UpdateNodeGroup(original, updated, opts.ClusterName, opts.Owner); err != nil {
 				return err
 			}
 
@@ -193,7 +186,7 @@ func editNodeGroup(ctx context.Context, opts *options.NodeGroupEditConfig, origi
 	return editFn()
 }
 
-func UpdateNodeGroup(ctx context.Context, original, updated *clusterv1.MachineSet, clusterName, owner string) error {
+func UpdateNodeGroup(original, updated *clusterv1.MachineSet, clusterName, owner string) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
@@ -235,7 +228,7 @@ func UpdateNodeGroup(ctx context.Context, original, updated *clusterv1.MachineSe
 		return err
 	}
 
-	_, err = cloud.Store(ctx).MachineSet(clusterName).Update(updated)
+	_, err = store.StoreProvider.MachineSet(clusterName).Update(updated)
 	if err != nil {
 		return err
 	}

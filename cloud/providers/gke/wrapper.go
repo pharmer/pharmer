@@ -8,6 +8,7 @@ import (
 	. "github.com/appscode/go/context"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	"google.golang.org/api/container/v1"
@@ -16,7 +17,7 @@ import (
 )
 
 func encodeCluster(ctx context.Context, cluster *api.Cluster, owner string) (*container.Cluster, error) {
-	nodeGroups, err := Store(ctx).MachineSet(cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err := store.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		err = errors.Wrap(err, ID(ctx))
 		return nil, err

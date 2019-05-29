@@ -1,13 +1,12 @@
 package cmds
 
 import (
-	"context"
+	"github.com/pharmer/pharmer/store"
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
-	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
 )
 
@@ -22,14 +21,8 @@ func NewCmdUse() *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			cluster, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
+			cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -43,7 +36,7 @@ func NewCmdUse() *cobra.Command {
 			if err != nil {
 				log.Fatalln(err)
 			}
-			cloud.UseCluster(ctx, opts, c2)
+			cloud.UseCluster(opts, c2)
 		},
 	}
 	opts.AddFlags(cmd.Flags())

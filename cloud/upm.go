@@ -1,12 +1,13 @@
 package cloud
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"sort"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/appscode/go/log"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"golang.org/x/crypto/ssh"
@@ -23,20 +24,20 @@ import (
 )
 
 type GenericUpgradeManager struct {
-	ctx context.Context
+	//ctx context.Context
 	//ssh     SSHGetter
 	kc      kubernetes.Interface
 	cluster *api.Cluster
 
-	owner string
+	//owner string
 	//client    client.ClusterV1alpha1Interface
 	clientSet clientset.Interface
 }
 
 var _ UpgradeManager = &GenericUpgradeManager{}
 
-func NewUpgradeManager(ctx context.Context, kc kubernetes.Interface, cluster *api.Cluster, owner string) UpgradeManager {
-	return &GenericUpgradeManager{ctx: ctx, kc: kc, cluster: cluster, owner: owner}
+func NewUpgradeManager(kc kubernetes.Interface, cluster *api.Cluster) UpgradeManager {
+	return &GenericUpgradeManager{kc: kc, cluster: cluster}
 }
 
 func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error) {
@@ -147,7 +148,7 @@ func (upm *GenericUpgradeManager) ExecuteSSHCommand(command string, machine *clu
 	if err != nil {
 		return "", err
 	}
-	cfg, err := GetSSHConfig(upm.ctx, upm.owner, node.Name, upm.cluster)
+	cfg, err := GetSSHConfig(node.Name, upm.cluster)
 	if err != nil {
 		return "", err
 	}
@@ -333,7 +334,7 @@ func (upm *GenericUpgradeManager) MasterUpgrade(oldMachine *clusterv1.Machine, n
 	// TODO(): Do you update each component seperately??
 
 	cmd = fmt.Sprintf("sh -c '%s'", strings.Join(steps, "; "))
-	Logger(upm.ctx).Infof("Upgrading machine %s using `%s`", oldMachine.Name, cmd)
+	log.Infof("Upgrading machine %s using `%s`", oldMachine.Name, cmd)
 
 	if _, err := upm.ExecuteSSHCommand(cmd, oldMachine); err != nil {
 
@@ -393,7 +394,7 @@ func (upm *GenericUpgradeManager) NodeUpgrade(oldMachine *clusterv1.Machine, new
 				`nohup /usr/bin/pharmer.sh >> /var/log/pharmer.log 2>&1 &`,
 			)
 			cmd := fmt.Sprintf("sh -c '%s'", strings.Join(steps, "; "))
-			Logger(upm.ctx).Infof("Upgrading server %s using `%s`", oldMachine.Name, cmd)
+			log.Infof("Upgrading server %s using `%s`", oldMachine.Name, cmd)
 
 			if _, err = upm.ExecuteSSHCommand(cmd, oldMachine); err != nil {
 				return err

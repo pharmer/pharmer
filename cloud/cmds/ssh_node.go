@@ -1,7 +1,6 @@
 package cmds
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -9,7 +8,7 @@ import (
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
-	"github.com/pharmer/pharmer/config"
+	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
@@ -27,18 +26,12 @@ func NewCmdSSH() *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			cluster, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
+			cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
 			if err != nil {
 				term.Fatalln(err)
 			}
-			sshConfig, err := cloud.GetSSHConfig(ctx, opts.Owner, opts.NodeName, cluster)
+			sshConfig, err := cloud.GetSSHConfig(opts.NodeName, cluster)
 			if err != nil {
 				log.Fatalln(err)
 			}

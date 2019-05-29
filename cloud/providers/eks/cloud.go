@@ -20,6 +20,7 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	version "gomodules.xyz/version"
 	"k8s.io/apimachinery/pkg/util/wait" //"github.com/pharmer/pharmer/cloud/providers/eks/assets"
@@ -39,7 +40,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
-	cred, err := Store(ctx).Credentials().Get(cluster.Spec.Config.CredentialName)
+	cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +386,7 @@ func (conn *cloudConnector) deleteSSHKey() error {
 	Logger(conn.ctx).Infof("SSH key for cluster %v is deleted", conn.cluster.Name)
 	//updates := &storage.SSHKey{IsDeleted: 1}
 	//cond := &storage.SSHKey{PHID: cluster.Spec.ctx.SSHKeyPHID}
-	// _, err = cluster.Spec.Store(ctx).Engine.Update(updates, cond)
+	// _, err = cluster.Spec.store.StoreProvider.Engine.Update(updates, cond)
 
 	return err
 }

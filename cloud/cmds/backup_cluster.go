@@ -1,14 +1,13 @@
 package cmds
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
-	"github.com/pharmer/pharmer/config"
+	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -31,14 +30,7 @@ func NewCmdBackup() *cobra.Command {
 			}
 			restConfig, err := SearchLocalKubeConfig(opts.ClusterName)
 			if err != nil || restConfig == nil {
-				cfgFile, _ := config.GetConfigFile(cmd.Flags())
-				cfg, err := config.LoadConfig(cfgFile)
-				if err != nil {
-					term.Fatalln(err)
-				}
-				ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-
-				cluster, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
+				cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
 				if err != nil {
 					term.Fatalln(err)
 				}

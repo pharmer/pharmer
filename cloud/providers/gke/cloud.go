@@ -8,6 +8,7 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
@@ -28,7 +29,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
-	cred, err := Store(ctx).Credentials().Get(cluster.Spec.Config.CredentialName)
+	cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}

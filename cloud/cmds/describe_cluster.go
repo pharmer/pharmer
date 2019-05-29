@@ -1,7 +1,6 @@
 package cmds
 
 import (
-	"context"
 	"fmt"
 	"io"
 
@@ -9,7 +8,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
-	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/utils/describer"
 	"github.com/spf13/cobra"
 	"k8s.io/kubernetes/pkg/kubectl/describe"
@@ -30,12 +28,8 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
-			term.ExitOnError(err)
 
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			err = RunDescribeCluster(ctx, opts, out)
+			err := RunDescribeCluster(opts, out)
 			term.ExitOnError(err)
 		},
 	}
@@ -44,11 +38,11 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunDescribeCluster(ctx context.Context, opts *options.ClusterDescribeConfig, out io.Writer) error {
-	rDescriber := describer.NewDescriber(ctx, opts.Owner)
+func RunDescribeCluster(opts *options.ClusterDescribeConfig, out io.Writer) error {
+	rDescriber := describer.NewDescriber()
 
 	first := true
-	clusters, err := getClusterList(ctx, opts.Clusters, opts.Owner)
+	clusters, err := getClusterList(opts.Clusters)
 	if err != nil {
 		return err
 	}
@@ -65,7 +59,7 @@ func RunDescribeCluster(ctx context.Context, opts *options.ClusterDescribeConfig
 			fmt.Fprintf(out, "\n\n%s", s)
 		}
 
-		if resp, err := cloud.CheckForUpdates(ctx, cluster.Name, opts.Owner); err == nil {
+		if resp, err := cloud.CheckForUpdates(cluster.Name); err == nil {
 			term.Println(resp)
 		} else {
 			term.ExitOnError(err)

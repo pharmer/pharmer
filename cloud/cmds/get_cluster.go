@@ -1,14 +1,12 @@
 package cmds
 
 import (
-	"context"
 	"io"
 
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
-	"github.com/pharmer/pharmer/config"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils/printer"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,12 +27,11 @@ func NewCmdGetCluster(out io.Writer) *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
-			term.ExitOnError(err)
 
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			RunGetCluster(ctx, opts, out)
+			err := RunGetCluster(opts, out)
+			if err != nil {
+				term.ExitOnError(err)
+			}
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -42,7 +39,7 @@ func NewCmdGetCluster(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunGetCluster(ctx context.Context, opts *options.ClusterGetConfig, out io.Writer) error {
+func RunGetCluster(opts *options.ClusterGetConfig, out io.Writer) error {
 
 	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
@@ -51,7 +48,7 @@ func RunGetCluster(ctx context.Context, opts *options.ClusterGetConfig, out io.W
 
 	w := printer.GetNewTabWriter(out)
 
-	clusters, err := getClusterList(ctx, opts.Clusters, opts.Owner)
+	clusters, err := getClusterList(opts.Clusters)
 	if err != nil {
 		return err
 	}
@@ -66,10 +63,10 @@ func RunGetCluster(ctx context.Context, opts *options.ClusterGetConfig, out io.W
 	return nil
 }
 
-func getClusterList(ctx context.Context, clusters []string, owner string) (clusterList []*api.Cluster, err error) {
+func getClusterList(clusters []string) (clusterList []*api.Cluster, err error) {
 	if len(clusters) != 0 {
 		for _, arg := range clusters {
-			cluster, er2 := cloud.Store(ctx).Clusters().Get(arg)
+			cluster, er2 := store.StoreProvider.Clusters().Get(arg)
 			if er2 != nil {
 				return nil, er2
 			}
@@ -77,7 +74,7 @@ func getClusterList(ctx context.Context, clusters []string, owner string) (clust
 		}
 
 	} else {
-		clusterList, err = cloud.Store(ctx).Clusters().List(metav1.ListOptions{})
+		clusterList, err = store.StoreProvider.Clusters().List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}

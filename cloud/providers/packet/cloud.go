@@ -12,6 +12,7 @@ import (
 	"github.com/pharmer/cloud/pkg/providers"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -26,7 +27,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
-	cred, err := Store(ctx).Credentials().Get(cluster.ClusterConfig().CredentialName)
+	cred, err := store.StoreProvider.Credentials().Get(cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +56,7 @@ func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*clo
 
 func PrepareCloud(ctx context.Context, clusterName string, owner string) (*cloudConnector, error) {
 	var conn *cloudConnector
-	//cluster, err := Store(ctx).Clusters().Get(clusterName)
+	//cluster, err := store.StoreProvider.Clusters().Get(clusterName)
 	//if err != nil {
 	//	return conn, fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
 	//}

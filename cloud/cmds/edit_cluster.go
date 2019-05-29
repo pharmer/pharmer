@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -13,7 +12,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
-	"github.com/pharmer/pharmer/config"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils"
 	"github.com/pharmer/pharmer/utils/editor"
 	"github.com/pharmer/pharmer/utils/printer"
@@ -39,14 +38,8 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				term.Fatalln(err)
-			}
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := RunUpdateCluster(ctx, opts, out, outErr); err != nil {
+			if err := RunUpdateCluster(opts, outErr); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -56,7 +49,7 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out, errOut io.Writer) error {
+func RunUpdateCluster(opts *options.ClusterEditConfig, errOut io.Writer) error {
 	// If file is provided
 	if opts.File != "" {
 		fileName := opts.File
@@ -66,25 +59,25 @@ func RunUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out,
 			return err
 		}
 
-		updated, err := cloud.Store(ctx).Clusters().Get(local.Name)
+		updated, err := store.StoreProvider.Clusters().Get(local.Name)
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = local.ObjectMeta
 		updated.Spec = local.Spec
 
-		original, err := cloud.Store(ctx).Clusters().Get(updated.Name)
+		original, err := store.StoreProvider.Clusters().Get(updated.Name)
 		if err != nil {
 			return err
 		}
-		if err := UpdateCluster(ctx, original, updated, opts.Owner); err != nil {
+		if err := UpdateCluster(original, updated, opts.Owner); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`cluster "%s" replaced`, original.Name))
 		return nil
 	}
 
-	original, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
+	original, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
 	if err != nil {
 		return err
 	}
@@ -92,7 +85,7 @@ func RunUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out,
 	// Check if flags are provided to update
 	// TODO: Provide list of flag names. If any of them is provided, update
 	if opts.CheckForUpdateFlags() {
-		updated, err := cloud.Store(ctx).Clusters().Get(opts.ClusterName)
+		updated, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
 		if err != nil {
 			return err
 		}
@@ -105,17 +98,17 @@ func RunUpdateCluster(ctx context.Context, opts *options.ClusterEditConfig, out,
 			updated.Spec.Config.KubernetesVersion = opts.KubernetesVersion
 		}
 
-		if err := UpdateCluster(ctx, original, updated, opts.Owner); err != nil {
+		if err := UpdateCluster(original, updated, opts.Owner); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`cluster "%s" updated`, original.Name))
 		return nil
 	}
 
-	return editCluster(ctx, opts, original, errOut)
+	return editCluster(opts, original, errOut)
 }
 
-func editCluster(ctx context.Context, opts *options.ClusterEditConfig, original *api.Cluster, errOut io.Writer) error {
+func editCluster(opts *options.ClusterEditConfig, original *api.Cluster, errOut io.Writer) error {
 	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
 		return err
@@ -186,7 +179,7 @@ func editCluster(ctx context.Context, opts *options.ClusterEditConfig, original 
 
 			containsError = false
 
-			if err := UpdateCluster(ctx, original, updated, opts.Owner); err != nil {
+			if err := UpdateCluster(original, updated, opts.Owner); err != nil {
 				return err
 			}
 
@@ -199,7 +192,7 @@ func editCluster(ctx context.Context, opts *options.ClusterEditConfig, original 
 	return editFn()
 }
 
-func UpdateCluster(ctx context.Context, original, updated *api.Cluster, owner string) error {
+func UpdateCluster(original, updated *api.Cluster, owner string) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
@@ -241,7 +234,7 @@ func UpdateCluster(ctx context.Context, original, updated *api.Cluster, owner st
 		return err
 	}
 
-	_, err = cloud.UpdateSpec(ctx, updated, owner)
+	_, err = cloud.UpdateSpec(updated)
 	if err != nil {
 		return err
 	}

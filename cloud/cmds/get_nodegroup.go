@@ -1,14 +1,12 @@
 package cmds
 
 import (
-	"context"
 	"io"
 
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
-	"github.com/pharmer/pharmer/config"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils/printer"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,14 +29,9 @@ func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
-			term.ExitOnError(err)
 
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			err = RunGetNodeGroup(ctx, opts, out)
+			err := RunGetNodeGroup(opts, out)
 			term.ExitOnError(err)
-
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -46,8 +39,7 @@ func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out io.Writer) error {
-
+func RunGetNodeGroup(opts *options.NodeGroupGetConfig, out io.Writer) error {
 	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
 		return err
@@ -61,7 +53,7 @@ func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out 
 	if clusterName != "" {
 		clusterList = append(clusterList, clusterName)
 	} else {
-		clusters, err := cloud.Store(ctx).Clusters().List(metav1.ListOptions{})
+		clusters, err := store.StoreProvider.Clusters().List(metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
@@ -71,7 +63,7 @@ func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out 
 	}
 
 	for _, cluster := range clusterList {
-		nodegroups, err := GetMachineSetList(ctx, cluster, opts.Owner, opts.NodeGroups...)
+		nodegroups, err := GetMachineSetList(cluster, opts.NodeGroups...)
 		if err != nil {
 			return err
 		}
@@ -92,17 +84,17 @@ func RunGetNodeGroup(ctx context.Context, opts *options.NodeGroupGetConfig, out 
 	return nil
 }
 
-func GetMachineSetList(ctx context.Context, cluster, owner string, args ...string) (machineSetList []*clusterv1.MachineSet, err error) {
+func GetMachineSetList(cluster string, args ...string) (machineSetList []*clusterv1.MachineSet, err error) {
 	if len(args) != 0 {
 		for _, arg := range args {
-			ms, er2 := cloud.Store(ctx).MachineSet(cluster).Get(arg)
+			ms, er2 := store.StoreProvider.MachineSet(cluster).Get(arg)
 			if err != nil {
 				return nil, er2
 			}
 			machineSetList = append(machineSetList, ms)
 		}
 	} else {
-		machineSetList, err = cloud.Store(ctx).MachineSet(cluster).List(metav1.ListOptions{})
+		machineSetList, err = store.StoreProvider.MachineSet(cluster).List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}
@@ -110,10 +102,10 @@ func GetMachineSetList(ctx context.Context, cluster, owner string, args ...strin
 	return
 }
 
-func GetNodeGroupList(ctx context.Context, cluster, owner string, args ...string) (nodeGroupList []*api.NodeGroup, err error) {
+func GetNodeGroupList(cluster string, args ...string) (nodeGroupList []*api.NodeGroup, err error) {
 	if len(args) != 0 {
 		for _, arg := range args {
-			nodeGroup, er2 := cloud.Store(ctx).NodeGroups(cluster).Get(arg)
+			nodeGroup, er2 := store.StoreProvider.NodeGroups(cluster).Get(arg)
 			if er2 != nil {
 				return nil, er2
 			}
@@ -121,7 +113,7 @@ func GetNodeGroupList(ctx context.Context, cluster, owner string, args ...string
 		}
 
 	} else {
-		nodeGroupList, err = cloud.Store(ctx).NodeGroups(cluster).List(metav1.ListOptions{})
+		nodeGroupList, err = store.StoreProvider.NodeGroups(cluster).List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}

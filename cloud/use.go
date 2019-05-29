@@ -1,7 +1,6 @@
 package cloud
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,7 +16,7 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-func UseCluster(ctx context.Context, opts *options.ClusterUseConfig, konf *api.KubeConfig) {
+func UseCluster(opts *options.ClusterUseConfig, konf *api.KubeConfig) {
 	var konfig *clientcmdapi.Config
 	if _, err := os.Stat(KubeConfigPath()); err == nil {
 		// ~/.kube/config exists

@@ -51,7 +51,7 @@ func (a *Apiserver) DeleteCluster() error {
 			noti := notification.NewNotifier(a.ctx, a.natsConn, strconv.Itoa(int(obj.ClusterID)))
 			newCtx := WithLogger(a.ctx, noti)
 
-			cluster, err = Delete(newCtx, cluster.Name, strconv.Itoa(int(obj.UserID)))
+			cluster, err = Delete(cluster.Name)
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}
