@@ -512,8 +512,12 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 			Message:  fmt.Sprintf("Master instance %s will be created", leaderMachine.Name),
 		})
 		if !dryRun {
+			script, err := RenderStartupScript(cm, leaderMachine, "", customTemplate)
+			if err != nil {
+				return nil, err
+			}
 
-			masterInstance, err := cm.conn.startMaster(leaderMachine, sku, privateSubnetID)
+			masterInstance, err := cm.conn.startMaster(leaderMachine, sku, privateSubnetID, script)
 			if err != nil {
 				cm.cluster.Status.Reason = err.Error()
 				err = errors.Wrap(err, ID(cm.ctx))

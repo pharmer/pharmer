@@ -118,7 +118,12 @@ func (packet *MachineActuator) Create(_ context.Context, cluster *clusterv1.Clus
 			return errors.Wrap(err, "failed to generate kubeadm token")
 		}
 
-		_, err = packet.conn.CreateInstance(machine, token, packet.owner)
+		script, err := RenderStartupScript(cm, machine, token, customTemplate) // ClusterManager is needed here
+		if err != nil {
+			return err
+		}
+
+		_, err = packet.conn.CreateInstance(machine, script)
 		if err != nil {
 			return errors.Wrap(err, "failed to create instance")
 		}

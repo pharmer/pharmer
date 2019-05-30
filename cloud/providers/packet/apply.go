@@ -142,7 +142,13 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		if !dryRun {
 			var masterServer *api.NodeInfo
 			nodeAddresses := make([]core.NodeAddress, 0)
-			masterServer, err = cm.conn.CreateInstance(masterMachine, "", cm.owner)
+
+			script, err := RenderStartupScript(cm, masterMachine, "", customTemplate)
+			if err != nil {
+				return nil, err
+			}
+
+			masterServer, err = cm.conn.CreateInstance(masterMachine, script)
 			if err != nil {
 				return
 			}

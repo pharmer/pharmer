@@ -7,8 +7,8 @@ import (
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func newNodeTemplateData(cm *CloudManager, cluster *api.Cluster, machine *clusterapi.Machine, token string) TemplateData {
-	td := NewNodeTemplateData(cm, cluster, machine, token)
+func (cm *ClusterManager) NewNodeTemplateData(cluster *api.Cluster, machine *clusterapi.Machine, token string) TemplateData {
+	td := NewNodeTemplateData(cm, machine, token)
 	td.ExternalProvider = false // AWS does not use out-of-tree CCM
 
 	// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
@@ -31,10 +31,6 @@ func (cm *ClusterManager) NewMasterTemplateData(machine *clusterapi.Machine, tok
 	}
 
 	return td
-}
-
-func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *clusterapi.Machine, token string) (string, error) {
-	return RenderStartupScript(machine, customTemplate, newMasterTemplateData(conn.CloudManager, cluster, machine), newNodeTemplateData(conn.CloudManager, cluster, machine, token))
 }
 
 var (

@@ -352,7 +352,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) ([]api.Action, error) {
 			Message:  fmt.Sprintf("Virtual machine %v will be created", leaderMachine.Name),
 		})
 		if !dryRun {
-			script, err := cm.conn.renderStartupScript(cm.cluster, leaderMachine, cm.owner, "")
+			script, err := RenderStartupScript(cm, leaderMachine, "", customTemplate)
 			if err != nil {
 				return acts, err
 			}

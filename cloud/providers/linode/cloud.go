@@ -201,17 +201,12 @@ func (conn *cloudConnector) getStartupScriptID(machine *clusterv1.Machine) (int,
 	return scripts[0].ID, nil
 }
 
-func (conn *cloudConnector) createOrUpdateStackScript(cluster *api.Cluster, machine *clusterv1.Machine, token string) (int, error) {
+func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine, script string) (int, error) {
 	machineConfig, err := linode_config.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return 0, err
 	}
 	scriptName := conn.namer.StartupScriptName(machine.Name, string(machineConfig.Roles[0]))
-	script, err := conn.renderStartupScript(cluster, machine, token)
-	if err != nil {
-		return 0, err
-	}
-
 	filter := fmt.Sprintf(`{"label" : "%v"}`, scriptName)
 	listOpts := &linodego.ListOptions{nil, filter}
 
@@ -266,9 +261,8 @@ func (conn *cloudConnector) DeleteStackScript(machineName string, role string) e
 	return nil
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, token string) (*api.NodeInfo, error) {
-	if _, err := conn.createOrUpdateStackScript(conn.cluster, machine, token); err != nil {
+func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, script string) (*api.NodeInfo, error) {
+	if _, err := conn.createOrUpdateStackScript(machine, script); err != nil {
 		return nil, err
 	}
 	scriptId, err := conn.getStartupScriptID(machine)

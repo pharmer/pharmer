@@ -249,7 +249,7 @@ func (conn *cloudConnector) releaseReservedIP(ip string) error {
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error) {
-	script, err := conn.renderStartupScript(cluster, machine, token)
+	script, err := RenderStartupScript(cm, machine, token, customTemplate)
 	if err != nil {
 		return nil, err
 	}

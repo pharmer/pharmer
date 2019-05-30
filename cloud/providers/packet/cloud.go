@@ -153,11 +153,7 @@ func (conn *cloudConnector) deleteSSHKey(id string) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, token, owner string) (*api.NodeInfo, error) {
-	script, err := conn.renderStartupScript(conn.cluster, machine, token)
-	if err != nil {
-		return nil, err
-	}
+func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, script string) (*api.NodeInfo, error) {
 	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return nil, err

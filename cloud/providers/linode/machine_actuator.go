@@ -110,7 +110,12 @@ func (li *MachineActuator) Create(ctx context.Context, cluster *clusterv1.Cluste
 			return errors.Wrap(err, "failed to generate kubeadm token")
 		}
 
-		server, err := li.conn.CreateInstance(machine, token)
+		script, err := cloud.RenderStartupScript(cm, machine, token, customTemplate)
+		if err != nil {
+			return err
+		}
+
+		server, err := li.conn.CreateInstance(machine, script)
 		if err != nil {
 			return errors.Wrap(err, "failed to create instance")
 		}

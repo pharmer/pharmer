@@ -1429,15 +1429,10 @@ func (conn *cloudConnector) getMaster(name string) (bool, error) {
 	return true, err
 }
 
-func (conn *cloudConnector) startMaster(machine *clusterv1.Machine, sku, privateSubnetID string) (*ec2.Instance, error) {
+func (conn *cloudConnector) startMaster(machine *clusterv1.Machine, sku, privateSubnetID, script string) (*ec2.Instance, error) {
 	sshKeyName := conn.cluster.Spec.Config.Cloud.SSHKeyName
 
 	if err := conn.detectUbuntuImage(); err != nil {
-		return nil, err
-	}
-
-	script, err := conn.renderStartupScript(machine, "")
-	if err != nil {
 		return nil, err
 	}
 
