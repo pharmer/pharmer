@@ -44,7 +44,7 @@ func UseCluster(opts *options.ClusterUseConfig, konf *api.KubeConfig) {
 		}
 	}
 
-	ctxName := fmt.Sprintf("cluster-admin@%s.pharmer", opts.ClusterName)
+	ctxName := fmt.Sprintf("Cluster-admin@%s.pharmer", opts.ClusterName)
 
 	if !opts.Overwrite {
 		if konfig.CurrentContext == ctxName {
@@ -55,7 +55,7 @@ func UseCluster(opts *options.ClusterUseConfig, konf *api.KubeConfig) {
 
 	_, found := konfig.Contexts[ctxName]
 	if !found || opts.Overwrite {
-		// Upsert cluster
+		// Upsert Cluster
 		konfig.Clusters[konf.Cluster.Name] = toCluster(konf.Cluster)
 
 		// Upsert user
@@ -75,7 +75,7 @@ func UseCluster(opts *options.ClusterUseConfig, konf *api.KubeConfig) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	term.Successln(fmt.Sprintf("kubectl context set to cluster `%s`.", opts.ClusterName))
+	term.Successln(fmt.Sprintf("kubectl context set to Cluster `%s`.", opts.ClusterName))
 }
 
 func toCluster(desired api.NamedCluster) *clientcmdapi.Cluster {

@@ -17,7 +17,6 @@ import (
 )
 
 func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMachine *clusterv1.Machine, machines []*clusterv1.Machine, err error) {
-
 	var found bool
 	if !dryRun {
 		if err = cm.conn.importPublicKey(); err != nil {
@@ -58,7 +57,7 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 			if err = cm.conn.ensureFirewallRules(); err != nil {
 				return
 			}
-			cm.cluster = cm.conn.cluster
+			cm.Cluster = cm.conn.cluster
 		}
 	} else {
 		acts = append(acts, api.Action{
@@ -68,13 +67,13 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 		})
 	}
 
-	machines, err = store.StoreProvider.Machine(cm.cluster.Name).List(metav1.ListOptions{})
+	machines, err = store.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		err = errors.Wrap(err, "")
 		return
 	}
 
-	leaderMachine, err = GetLeaderMachine(cm.cluster)
+	leaderMachine, err = GetLeaderMachine(cm.Cluster)
 	if err != nil {
 		return
 	}
@@ -98,7 +97,7 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 			Message:  "Load Balancer found",
 		})
 	}
-	cm.cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
+	cm.Cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
 		IP:   loadBalancerIP,
 		Port: api.DefaultKubernetesBindPort,
 	}
@@ -107,12 +106,12 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 		return nil, nil, nil, errors.Wrap(err, "load balancer can't be empty")
 	}
 
-	cm.cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
+	cm.Cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
 		IP:   loadBalancerIP,
 		Port: api.DefaultKubernetesBindPort,
 	}
 
-	machineSets, err := store.StoreProvider.MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+	machineSets, err := store.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -153,7 +152,7 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 			}
 			m.Spec.ProviderSpec.Value = rawcfg
 
-			_, err = store.StoreProvider.Machine(cm.cluster.Name).Update(m)
+			_, err = store.StoreProvider.Machine(cm.Cluster.Name).Update(m)
 			if err != nil {
 				return nil, nil, nil, errors.Wrapf(err, "failed to update machine %q to store", m.Name)
 			}
@@ -161,8 +160,8 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 	}
 
 	// needed for master start-up config
-	if _, err = store.StoreProvider.Clusters().UpdateStatus(cm.cluster); err != nil {
-		cm.cluster.Status.Reason = err.Error()
+	if _, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster); err != nil {
+		cm.Cluster.Status.Reason = err.Error()
 		err = errors.Wrap(err, "")
 		return
 	}
@@ -180,7 +179,7 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 		if !dryRun {
 			var op1 string
 			log.Infoln("Creating Master Instance")
-			if op1, err = cm.conn.createMasterIntance(cm.cluster); err != nil {
+			if op1, err = cm.conn.createMasterIntance(cm.Cluster); err != nil {
 				return
 			}
 
@@ -197,7 +196,7 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 
 			log.Info("Waiting for cluster initialization")
 
-			if err = cm.cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
+			if err = cm.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
 				return acts, nil, nil, errors.Wrap(err, "Error setting controlplane endpoints")
 			}
 		}
@@ -232,21 +231,21 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error) {
 	log.Infoln("Deleting cluster...")
 
-	err = DeleteAllWorkerMachines(cm, cm.cluster)
+	err = DeleteAllWorkerMachines(cm, cm.Cluster)
 	if err != nil {
 		log.Infof("failed to delete nodes: %v", err)
 	}
 
-	if cm.cluster.Status.Phase == api.ClusterReady {
-		cm.cluster.Status.Phase = api.ClusterDeleting
+	if cm.Cluster.Status.Phase == api.ClusterReady {
+		cm.Cluster.Status.Phase = api.ClusterDeleting
 	}
-	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.cluster)
+	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
 		return
 	}
 
 	var machines []*clusterv1.Machine
-	machines, err = store.StoreProvider.Machine(cm.cluster.Name).List(metav1.ListOptions{})
+	machines, err = store.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
@@ -266,11 +265,11 @@ func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error
 					log.Infof("Error deleting instance `%v`. Reason: %v", machine.Spec.Name, err)
 				}
 
-				err = store.StoreProvider.Machine(cm.cluster.Name).Delete(machine.Spec.Name)
+				err = store.StoreProvider.Machine(cm.Cluster.Name).Delete(machine.Spec.Name)
 				if err != nil {
 					return nil, err
 				}
-				err = store.StoreProvider.MachineSet(cm.cluster.Name).Delete(machine.Name)
+				err = store.StoreProvider.MachineSet(cm.Cluster.Name).Delete(machine.Name)
 				if err != nil {
 					return nil, err
 				}
@@ -296,12 +295,12 @@ func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error
 	acts = append(acts, api.Action{
 		Action:   api.ActionDelete,
 		Resource: "Cluster Firewall Rule",
-		Message:  fmt.Sprintf("%v cluster firewall rule will be deleted", cm.cluster.Name),
+		Message:  fmt.Sprintf("%v cluster firewall rule will be deleted", cm.Cluster.Name),
 	})
 	if !dryRun {
 		log.Infoln("Deleting Firewall rules")
 		if err = cm.conn.deleteFirewalls(); err != nil {
-			cm.cluster.Status.Reason = err.Error()
+			cm.Cluster.Status.Reason = err.Error()
 		}
 	}
 
@@ -325,8 +324,8 @@ func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error
 	}
 
 	if !dryRun {
-		cm.cluster.Status.Phase = api.ClusterDeleted
-		_, err := store.StoreProvider.Clusters().Update(cm.cluster)
+		cm.Cluster.Status.Phase = api.ClusterDeleted
+		_, err := store.StoreProvider.Clusters().Update(cm.Cluster)
 		if err != nil {
 			return acts, err
 		}

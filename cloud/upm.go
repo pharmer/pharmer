@@ -18,7 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 
-	//client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
+	//client "sigs.k8s.io/Cluster-api/pkg/client/clientset_generated/clientset/typed/Cluster/v1alpha1"
 	"github.com/pkg/errors"
 	semver "gomodules.xyz/version"
 )
@@ -63,7 +63,7 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 		stableVersionStr, stableVersion = kubeadmVersionStr, kubeadmVersion
 	}
 
-	// Get the kubelet versions in the cluster
+	// Get the kubelet versions in the Cluster
 	kubeletVersions, err := v.KubeletVersions()
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 
 	canDoMinorUpgrade := clusterVersion.LessThan(stableVersion)
 
-	// A patch version doesn't exist if the cluster version is higher than or equal to the current stable version
+	// A patch version doesn't exist if the Cluster version is higher than or equal to the current stable version
 	// in the case that a user is trying to upgrade from, let's say, v1.8.0-beta.2 to v1.8.0-rc.1 (given we support such upgrades experimentally)
 	// a stable-1.8 branch doesn't exist yet. Hence this check.
 
@@ -93,7 +93,7 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 		versionLabel := fmt.Sprintf("stable-%s", currentBranch)
 		description := fmt.Sprintf("version in the v%s series", currentBranch)
 
-		// Get and output the latest patch version for the cluster branch
+		// Get and output the latest patch version for the Cluster branch
 		patchVersionStr, patchVersion, err := v.VersionFromCILabel(versionLabel, description)
 		if err != nil {
 			return nil, err
@@ -103,7 +103,7 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 		// It's only possible if the latest patch version is higher than the current patch version
 		// If that's the case, they must be on different branches => a newer minor version can be upgraded to
 		canDoMinorUpgrade = minorUpgradePossibleWithPatchRelease(stableVersion, patchVersion)
-		// If the cluster version is lower than the newest patch version, we should inform about the possible upgrade
+		// If the Cluster version is lower than the newest patch version, we should inform about the possible upgrade
 		if patchUpgradePossible(clusterVersion, patchVersion) {
 
 			// The kubeadm version has to be upgraded to the latest patch version
@@ -217,7 +217,7 @@ func (upm *GenericUpgradeManager) PrintAvailableUpgrades(upgrades []*api.Upgrade
 		fmt.Fprintln(w, "")
 		fmt.Fprintln(w, "You can now apply the upgrade by executing the following command:")
 		fmt.Fprintln(w, "")
-		fmt.Fprintf(w, "\tpharmer edit cluster %s --kubernetes-version=%s\n", upm.cluster.Name, upgrade.After.KubeVersion)
+		fmt.Fprintf(w, "\tpharmer edit Cluster %s --kubernetes-version=%s\n", upm.cluster.Name, upgrade.After.KubeVersion)
 		fmt.Fprintln(w, "")
 
 		if upgrade.Before.KubeadmVersion != upgrade.After.KubeadmVersion {
@@ -235,7 +235,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 		Resource: "Master upgrade",
 		Message:  fmt.Sprintf("Master instance will be upgraded to %v", upm.cluster.ClusterConfig().KubernetesVersion),
 	})
-	/*upm.clientSet, err = NewClusterApiClient(upm.ctx, upm.cluster)
+	/*upm.clientSet, err = NewClusterApiClient(upm.ctx, upm.Cluster)
 	if err != nil {
 		return
 	}
@@ -248,7 +248,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 		for _, machine := range machineList.Items {
 			fmt.Println(machine)
 			if IsMaster(&machine) {
-				machine.Spec.Versions.ControlPlane = upm.cluster.Spec.KubernetesVersion
+				machine.Spec.Versions.ControlPlane = upm.Cluster.Spec.KubernetesVersion
 				_, err = upm.client.Machines(core.NamespaceDefault).Update(&machine)
 				if err != nil {
 					return acts, err
@@ -256,7 +256,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 			}
 		}
 
-			desiredVersion, _ := semver.NewVersion(upm.cluster.ClusterConfig().KubernetesVersion)
+			desiredVersion, _ := semver.NewVersion(upm.Cluster.ClusterConfig().KubernetesVersion)
 			if err = WaitForReadyMasterVersion(upm.ctx, upm.kc, desiredVersion); err != nil {
 				return
 			}
@@ -269,7 +269,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 	acts = append(acts, api.Action{
 		Action:   api.ActionUpdate,
 		Resource: "Node group upgrade",
-		Message:  fmt.Sprintf("Node group will be upgraded to %v", upm.cluster.ClusterConfig().KubernetesVersion),
+		Message:  fmt.Sprintf("Node group will be upgraded to %v", upm.Cluster.ClusterConfig().KubernetesVersion),
 	})
 	if !dryRun {
 		machineSetList, err := upm.client.MachineSets(core.NamespaceDefault).List(metav1.ListOptions{})
@@ -278,7 +278,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 		}
 
 		for _, ms := range machineSetList.Items {
-			ms.Spec.Template.Spec.Versions.ControlPlane = upm.cluster.ClusterConfig().KubernetesVersion
+			ms.Spec.Template.Spec.Versions.ControlPlane = upm.Cluster.ClusterConfig().KubernetesVersion
 			_, err := upm.client.MachineSets(core.NamespaceDefault).Update(&ms)
 			if err != nil {
 				return acts, err

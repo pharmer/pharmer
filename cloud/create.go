@@ -22,23 +22,23 @@ import (
 func Create(cluster *api.Cluster) (Interface, *api.Cluster, error) {
 	config := cluster.Spec.Config
 	if cluster == nil {
-		return nil, nil, errors.New("missing cluster")
+		return nil, nil, errors.New("missing Cluster")
 	} else if cluster.Name == "" {
-		return nil, nil, errors.New("missing cluster name")
+		return nil, nil, errors.New("missing Cluster name")
 	} else if config.KubernetesVersion == "" {
-		return nil, nil, errors.New("missing cluster version")
+		return nil, nil, errors.New("missing Cluster version")
 	}
 
-	// create should return error=cluster already exists if cluster already exists
+	// create should return error=Cluster already exists if Cluster already exists
 	_, err := store.StoreProvider.Clusters().Get(cluster.Name)
 	if err == nil {
-		return nil, nil, errors.New("cluster already exists")
+		return nil, nil, errors.New("Cluster already exists")
 	}
 
-	// set common cluster configs
+	// set common Cluster configs
 	err = SetDefaultCluster(cluster)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to set default cluster")
+		return nil, nil, errors.Wrap(err, "failed to set default Cluster")
 	}
 
 	certs, err := createPharmerCerts(cluster)
@@ -53,7 +53,7 @@ func Create(cluster *api.Cluster) (Interface, *api.Cluster, error) {
 
 	// set cloud-specific configs
 	if err = cm.SetDefaultCluster(cluster); err != nil {
-		return nil, nil, errors.Wrap(err, "failed to set default cluster")
+		return nil, nil, errors.Wrap(err, "failed to set default Cluster")
 	}
 
 	if !managedProviders.Has(cluster.ClusterConfig().Cloud.CloudProvider) {

@@ -47,16 +47,16 @@ type cloudConnector struct {
 }
 
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
-	cred, err := store.StoreProvider.Credentials().Get(cm.cluster.ClusterConfig().CredentialName)
+	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
 	}
 	typed := credential.GCE{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.Wrapf(err, "credential %s is invalid", cm.cluster.Spec.Config.CredentialName)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cm.Cluster.Spec.Config.CredentialName)
 	}
 
-	cm.cluster.Spec.Config.Cloud.Project = typed.ProjectID()
+	cm.Cluster.Spec.Config.Cloud.Project = typed.ProjectID()
 	conf, err := google.JWTConfigFromJSON([]byte(typed.ServiceAccount()),
 		compute.ComputeScope,
 		compute.DevstorageReadWriteScope,
@@ -78,22 +78,22 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 		return nil, errors.Wrap(err, "")
 	}
 
-	clusterConfig, err := clusterapiGCE.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	clusterConfig, err := clusterapiGCE.ClusterConfigFromProviderSpec(cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error decoding cluster specs from provider config")
 	}
-	clusterConfig.Project = cm.cluster.Spec.Config.Cloud.Project
+	clusterConfig.Project = cm.Cluster.Spec.Config.Cloud.Project
 
 	rawSpec, err := clusterapiGCE.EncodeClusterSpec(clusterConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to encode cluster spec")
 	}
-	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
+	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
 
 	pharmerCertificates := cm.GetPharmerCertificates()
 
 	conn := cloudConnector{
-		cluster:             cm.cluster,
+		cluster:             cm.Cluster,
 		PharmerCertificates: pharmerCertificates,
 		computeService:      computeService,
 		storageService:      storageService,
@@ -101,7 +101,7 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 		namer:               cm.namer,
 	}
 	if ok, msg := conn.IsUnauthorized(typed.ProjectID()); !ok {
-		return nil, errors.Errorf("Credential %s does not have necessary authorization. Reason: %s.", cm.cluster.Spec.Config.CredentialName, msg)
+		return nil, errors.Errorf("Credential %s does not have necessary authorization. Reason: %s.", cm.Cluster.Spec.Config.CredentialName, msg)
 	}
 	return &conn, nil
 }

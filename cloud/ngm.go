@@ -18,7 +18,7 @@ type GenericNodeGroupManager struct {
 	ng      *api.NodeGroup
 	im      InstanceManager
 	kc      kubernetes.Interface
-	cluster *apiv1.Cluster
+	Cluster *apiv1.Cluster
 	token   string
 	// preHook is run once before a set of nodes are added. This can be used to create or update startup scripts. Since this will be
 	// called, nodes are added, make sure this method can handle create/update scenarios for a NodeGroup.
@@ -31,13 +31,13 @@ type GenericNodeGroupManager struct {
 
 var _ NodeGroupManager = &GenericNodeGroupManager{}
 
-func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, cluster *api.Cluster, owner, token string, initHook HookFunc, gcHook HookFunc) NodeGroupManager {
+func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, Cluster *api.Cluster, owner, token string, initHook HookFunc, gcHook HookFunc) NodeGroupManager {
 	return &GenericNodeGroupManager{
 		ctx:     ctx,
 		ng:      ng,
 		im:      im,
 		kc:      kc,
-		cluster: cluster,
+		Cluster: Cluster,
 		token:   token,
 		preHook: initHook,
 		gcHook:  gcHook,
@@ -153,7 +153,7 @@ if err != nil {
 }
 
 func (igm *GenericNodeGroupManager) DeleteNodes(nodes []core.Node) error {
-	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.cluster, igm.owner)
+	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.Cluster, igm.owner)
 	if err != nil {
 		return err
 	}

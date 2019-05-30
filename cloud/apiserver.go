@@ -56,8 +56,7 @@ func IsNodeReady(node *core.Node) bool {
 	return false
 }
 
-func NewRestConfig(cm Interface, cluster *api.Cluster) (*rest.Config, error) {
-	caCertPair := cm.GetCaCertPair()
+func NewRestConfig(caCertPair *api.CertKeyPair, cluster *api.Cluster) (*rest.Config, error) {
 	adminCert, adminKey, err := CreateAdminCertificate(caCertPair.Cert, caCertPair.Key)
 	if err != nil {
 		return nil, err
@@ -65,7 +64,7 @@ func NewRestConfig(cm Interface, cluster *api.Cluster) (*rest.Config, error) {
 
 	host := cluster.APIServerURL()
 	if host == "" {
-		return nil, errors.Errorf("failed to detect api server url for cluster %s", cluster.Name)
+		return nil, errors.Errorf("failed to detect api server url for Cluster %s", cluster.Name)
 	}
 
 	cfg := &rest.Config{
@@ -81,9 +80,9 @@ func NewRestConfig(cm Interface, cluster *api.Cluster) (*rest.Config, error) {
 }
 
 // WARNING:
-// Returned KubeClient uses admin client cert. This should only be used for cluster provisioning operations.
-func NewAdminClient(cm Interface, cluster *api.Cluster) (kubernetes.Interface, error) {
-	cfg, err := NewRestConfig(cm, cluster)
+// Returned KubeClient uses admin client cert. This should only be used for Cluster provisioning operations.
+func NewAdminClient(caCertPair *api.CertKeyPair, cluster *api.Cluster) (kubernetes.Interface, error) {
+	cfg, err := NewRestConfig(caCertPair, cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +170,7 @@ var restrictedNamespaces []string = []string{"appscode", "kube-system"}
 func HasNoUserApps(client kubernetes.Interface) (bool, error) {
 	pods, err := client.CoreV1().Pods(core.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
-		// If we can't connect to kube apiserver, then delete cluster.
+		// If we can't connect to kube apiserver, then delete Cluster.
 		// Cluster probably failed to create.
 		return true, nil
 	}
@@ -259,9 +258,9 @@ func NewClusterApiClient(ctx context.Context, cluster *api.Cluster) (client.Clie
 	if err != nil {
 		return nil, err
 	}
-	host := cluster.APIServerURL()
+	host := Cluster.APIServerURL()
 	if host == "" {
-		return nil, errors.Errorf("failed to detect api server url for cluster %s", cluster.Name)
+		return nil, errors.Errorf("failed to detect api server url for Cluster %s", Cluster.Name)
 	}
 	cfg := &rest.Config{
 		Host: host,

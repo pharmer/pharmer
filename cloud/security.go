@@ -62,7 +62,7 @@ func LoadCACertificates(clusterName, name string) (*x509.Certificate, *rsa.Priva
 
 func CreateAdminCertificate(caCert *x509.Certificate, caKey crypto.Signer) (*x509.Certificate, *rsa.PrivateKey, error) {
 	cfg := cert.Config{
-		CommonName:   "cluster-admin",
+		CommonName:   "Cluster-admin",
 		Organization: []string{kubeadmconst.SystemPrivilegedGroup},
 		Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	}

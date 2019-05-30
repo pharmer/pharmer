@@ -14,16 +14,13 @@ import (
 var (
 	ErrNotFound       = errors.New("node not found")
 	ErrNotImplemented = errors.New("not implemented")
-	ErrNoMasterNG     = errors.New("cluster has no master NodeGroup")
+	ErrNoMasterNG     = errors.New("Cluster has no master NodeGroup")
 )
 
 type Interface interface {
-	GetCluster() *api.Cluster
-	GetAdminClient() kubernetes.Interface
-	GetCaCertPair() *api.CertKeyPair
-	GetPharmerCertificates() *api.PharmerCertificates
+	CloudManagerInterface
+
 	GetConnector() ClusterApiProviderComponent
-	SetAdminClient(kc kubernetes.Interface)
 
 	InitializeMachineActuator(mgr manager.Manager) error
 	AddToManager(ctx context.Context, m manager.Manager) error

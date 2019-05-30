@@ -102,9 +102,9 @@ func FetchFromURL(url string) (string, error) {
 
 // Easy to implement a fake variant of this interface for unit testing
 type VersionGetter interface {
-	// IsUpgradeRequested returns true if cluster.spec.kubernetesVersion is different from version reported from cluster.
+	// IsUpgradeRequested returns true if Cluster.spec.kubernetesVersion is different from version reported from Cluster.
 	IsUpgradeRequested() (bool, error)
-	// ClusterVersion should return the version of the cluster i.e. the API Server version
+	// ClusterVersion should return the version of the Cluster i.e. the API Server version
 	ClusterVersion() (string, *versionutil.Version, error)
 	// MasterKubeadmVersion should return the version of the kubeadm CLI
 	KubeadmVersion() (string, *versionutil.Version, error)
@@ -130,7 +130,7 @@ func NewKubeVersionGetter(client kubernetes.Interface, cluster *api.Cluster) Ver
 	}
 }
 
-// IsUpgradeRequested returns true if cluster.spec.kubernetesVersion is different from version reported from cluster.
+// IsUpgradeRequested returns true if Cluster.spec.kubernetesVersion is different from version reported from Cluster.
 func (g *KubeVersionGetter) IsUpgradeRequested() (bool, error) {
 	if g.cluster.Status.Phase == api.ClusterReady {
 		cur, _, err := g.ClusterVersion()
@@ -158,13 +158,13 @@ func (g *KubeVersionGetter) IsUpgradeRequested() (bool, error) {
 func (g *KubeVersionGetter) ClusterVersion() (string, *versionutil.Version, error) {
 	clusterVersionInfo, err := g.client.Discovery().ServerVersion()
 	if err != nil {
-		return "", nil, errors.Errorf("Couldn't fetch cluster version from the API Server: %v", err)
+		return "", nil, errors.Errorf("Couldn't fetch Cluster version from the API Server: %v", err)
 	}
 	fmt.Println(fmt.Sprintf("[upgrade/versions] Cluster version: %s", clusterVersionInfo.String()))
 
 	clusterVersion, err := versionutil.ParseSemantic(clusterVersionInfo.String())
 	if err != nil {
-		return "", nil, errors.Errorf("Couldn't parse cluster version: %v", err)
+		return "", nil, errors.Errorf("Couldn't parse Cluster version: %v", err)
 	}
 	return clusterVersionInfo.String(), clusterVersion, nil
 }
@@ -208,10 +208,10 @@ func (g *KubeVersionGetter) KubeadmVersion() (string, *versionutil.Version, erro
 		LabelSelector: selector.String(),
 	})
 	if err != nil {
-		return "", nil, errors.Errorf("couldn't list master instances in cluster, Reason: %s", err)
+		return "", nil, errors.Errorf("couldn't list master instances in Cluster, Reason: %s", err)
 	}
 	if len(nodes.Items) == 0 {
-		return "", nil, errors.Errorf("couldn't list master instances in cluster")
+		return "", nil, errors.Errorf("couldn't list master instances in Cluster")
 	}
 	verStr, found := nodes.Items[0].Annotations[api.KubeadmVersionKey]
 	if !found {
@@ -244,11 +244,11 @@ func (g *KubeVersionGetter) VersionFromCILabel(ciVersionLabel, description strin
 	return versionStr, ver, nil
 }
 
-// KubeletVersions gets the versions of the kubelets in the cluster
+// KubeletVersions gets the versions of the kubelets in the Cluster
 func (g *KubeVersionGetter) KubeletVersions() (map[string]uint32, error) {
 	nodes, err := g.client.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
-		return nil, errors.Errorf("couldn't list all nodes in cluster")
+		return nil, errors.Errorf("couldn't list all nodes in Cluster")
 	}
 	return computeKubeletVersions(nodes.Items), nil
 }

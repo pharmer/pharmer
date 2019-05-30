@@ -49,14 +49,14 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 // TODO Tahsin
 // SetupCerts Loads necessary certs in Cluster Spec
 func (cm *ClusterManager) SetupCerts() error {
-	//conf, err := clusterapiGCE.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	//conf, err := clusterapiGCE.ClusterConfigFromProviderSpec(cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	//if err != nil {
 	//	return err
 	//}
 	//
 	//conf.CAKeyPair = clusterapiGCE.KeyPair{
-	//	Cert: cert.EncodeCertPEM(cm.certs.CACert.Cert),
-	//	Key:  cert.EncodePrivateKeyPEM(cm.certs.CACert),
+	//	Cert: cert.EncodeCertPEM(cm.Certs.CACert.Cert),
+	//	Key:  cert.EncodePrivateKeyPEM(cm.Certs.CACert),
 	//}
 	//conf.FrontProxyCAKeyPair = clusterapiGCE.KeyPair{
 	//	Cert: cert.EncodeCertPEM(FrontProxyCACert(cm.ctx)),
@@ -76,9 +76,9 @@ func (cm *ClusterManager) SetupCerts() error {
 	//	return err
 	//}
 	//
-	//cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
+	//cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
 	//
-	//if _, err := store.StoreProvider.Clusters().Update(cm.cluster); err != nil {
+	//if _, err := store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
 	//	return err
 	//}
 	return nil
@@ -108,7 +108,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 		cluster.Spec.ClusterAPI.ObjectMeta.Annotations = make(map[string]string)
 	}
 
-	return clusterapiGCE.SetGCEclusterProviderConfig(cluster.Spec.ClusterAPI, config, cm.certs)
+	return clusterapiGCE.SetGCEclusterProviderConfig(cluster.Spec.ClusterAPI, config, cm.Certs)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
@@ -118,7 +118,7 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
 	n := namer{cluster: cluster}
 	cfg := &api.SSHConfig{
-		PrivateKey: cm.certs.SSHKey.PrivateKey,
+		PrivateKey: cm.Certs.SSHKey.PrivateKey,
 		User:       n.AdminUsername(),
 		HostPort:   int32(22),
 	}

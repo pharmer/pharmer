@@ -20,25 +20,24 @@ import (
 func Apply(opts *options.ApplyConfig) ([]api.Action, error) {
 	dryRun := opts.DryRun
 	if opts.ClusterName == "" {
-		return nil, errors.New("missing cluster name")
+		return nil, errors.New("missing Cluster name")
 	}
 
 	cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "cluster `%s` does not exist", opts.ClusterName)
+		return nil, errors.Wrapf(err, "Cluster `%s` does not exist", opts.ClusterName)
 	}
 
-	var acts []api.Action
 
 	if cluster.Status.Phase == "" {
-		return nil, errors.Errorf("cluster `%s` is in unknown phase", cluster.Name)
+		return nil, errors.Errorf("Cluster `%s` is in unknown phase", cluster.Name)
 	}
 	if cluster.Status.Phase == api.ClusterDeleted {
 		return nil, nil
 	}
 
 	if cluster.Status.Phase == api.ClusterUpgrading {
-		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cluster.Name)
+		return nil, errors.Errorf("Cluster `%s` is upgrading. Retry after Cluster returns to Ready state", cluster.Name)
 	}
 
 	cm, err := GetCloudManager(cluster)
@@ -52,7 +51,7 @@ func Apply(opts *options.ApplyConfig) ([]api.Action, error) {
 
 	if cluster.Status.Phase == api.ClusterReady {
 		var kc kubernetes.Interface
-		kc, err = CreateAdminClient(cm)
+		kc, err = cm.GetAdminClient()
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get admin client")
 		}
@@ -65,6 +64,7 @@ func Apply(opts *options.ApplyConfig) ([]api.Action, error) {
 		}
 	}
 
+	var acts []api.Action
 	if cluster.Status.Phase == api.ClusterPending {
 		a, err := ApplyCreate(dryRun, cm)
 		if err != nil {
@@ -91,7 +91,7 @@ func Apply(opts *options.ApplyConfig) ([]api.Action, error) {
 	{
 		a, err := ApplyScale(cm)
 		if err != nil {
-			// ignore error if cluster is deleted
+			// ignore error if Cluster is deleted
 			if cluster.DeletionTimestamp != nil && cluster.Status.Phase != api.ClusterDeleted {
 				log.Infoln(err)
 			} else {
@@ -120,7 +120,7 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 
 	cluster := cm.GetCluster()
 
-	kc, err := CreateAdminClient(cm)
+	kc, err := cm.GetAdminClient()
 	if err != nil {
 		return acts, err
 	}
@@ -151,7 +151,7 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 
 	ca, err := NewClusterApi(cm, cluster, "cloud-provider-system", kc, conn)
 	if err != nil {
-		return acts, errors.Wrap(err, "Error creating cluster-api components")
+		return acts, errors.Wrap(err, "Error creating Cluster-api components")
 	}
 
 	if err := ca.Apply(controllerManager); err != nil {
@@ -159,7 +159,7 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 	}
 
 	log.Infof("Adding other master machines")
-	client, err := GetClusterClient(cm, cluster)
+	client, err := GetClusterClient(cm.GetCaCertPair(), cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -251,9 +251,9 @@ func ApplyScale(cm Interface) (acts []api.Action, err error) {
 }
 
 func ApplyUpgrade(dryRun bool, cm Interface) (acts []api.Action, err error) {
-	kc, err := CreateAdminClient(cm)
+	kc, err := cm.GetAdminClient()
 	if err != nil {
-		return acts, err
+		return nil, err
 	}
 
 	cluster := cm.GetCluster()

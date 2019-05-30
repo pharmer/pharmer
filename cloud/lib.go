@@ -38,7 +38,7 @@ func getPharmerCerts(clusterName string) (*api.PharmerCertificates, error) {
 
 	cert, key, err := LoadCACertificates(clusterName, kubeadmconst.CACertAndKeyBaseName)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load ca certs")
+		return nil, errors.Wrap(err, "failed to load ca Certs")
 	}
 	pharmerCerts.CACert = api.CertKeyPair{
 		Cert: cert,
@@ -47,7 +47,7 @@ func getPharmerCerts(clusterName string) (*api.PharmerCertificates, error) {
 
 	cert, key, err = LoadCACertificates(clusterName, kubeadmconst.FrontProxyCACertAndKeyBaseName)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load fpca certs")
+		return nil, errors.Wrap(err, "failed to load fpca Certs")
 	}
 	pharmerCerts.FrontProxyCACert = api.CertKeyPair{
 		Cert: cert,
@@ -141,12 +141,12 @@ func createPharmerCerts(cluster *api.Cluster) (*api.PharmerCertificates, error) 
 
 func Delete(name string) (*api.Cluster, error) {
 	if name == "" {
-		return nil, errors.New("missing cluster name")
+		return nil, errors.New("missing Cluster name")
 	}
 
 	cluster, err := store.StoreProvider.Clusters().Get(name)
 	if err != nil {
-		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
+		return nil, errors.Errorf("Cluster `%s` does not exist. Reason: %v", name, err)
 	}
 	cluster.DeletionTimestamp = &metav1.Time{Time: time.Now()}
 	cluster.Status.Phase = api.ClusterDeleting
@@ -156,7 +156,7 @@ func Delete(name string) (*api.Cluster, error) {
 
 func DeleteMachineSet(clusterName, setName string) error {
 	if clusterName == "" {
-		return errors.New("missing cluster name")
+		return errors.New("missing Cluster name")
 	}
 	if setName == "" {
 		return errors.New("missing machineset name")
@@ -174,11 +174,11 @@ func DeleteMachineSet(clusterName, setName string) error {
 
 func GetSSHConfig(nodeName string, cluster *api.Cluster) (*api.SSHConfig, error) {
 	//var err error
-	//ctx, err = LoadCACertificates(ctx, cluster, owner)
+	//ctx, err = LoadCACertificates(ctx, Cluster, owner)
 	//if err != nil {
 	//	return nil, err
 	//}
-	//client, err := NewAdminClient(ctx, cluster)
+	//client, err := NewAdminClient(ctx, Cluster)
 	//if err != nil {
 	//	return nil, err
 	//}
@@ -186,16 +186,16 @@ func GetSSHConfig(nodeName string, cluster *api.Cluster) (*api.SSHConfig, error)
 	//if err != nil {
 	//	return nil, err
 	//}
-	//ctx, err = LoadSSHKey(ctx, cluster, owner)
+	//ctx, err = LoadSSHKey(ctx, Cluster, owner)
 	//if err != nil {
 	//	return nil, err
 	//}
 	//
-	//cm, err := GetCloudManager(cluster.ClusterConfig().Cloud.CloudProvider)
+	//cm, err := GetCloudManager(Cluster.ClusterConfig().Cloud.CloudProvider)
 	//if err != nil {
 	//	return nil, err
 	//}
-	//return cm.GetSSHConfig(cluster, node)
+	//return cm.GetSSHConfig(Cluster, node)
 	return nil, nil
 }
 
@@ -213,8 +213,8 @@ func GetAdminConfig(cm Interface, cluster *api.Cluster) (*api.KubeConfig, error)
 
 	var (
 		clusterName = fmt.Sprintf("%s.pharmer", cluster.Name)
-		userName    = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
-		ctxName     = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
+		userName    = fmt.Sprintf("Cluster-admin@%s.pharmer", cluster.Name)
+		ctxName     = fmt.Sprintf("Cluster-admin@%s.pharmer", cluster.Name)
 	)
 	cfg := api.KubeConfig{
 		TypeMeta: metav1.TypeMeta{
@@ -245,29 +245,29 @@ func GetAdminConfig(cm Interface, cluster *api.Cluster) (*api.KubeConfig, error)
 
 func CheckForUpdates(name string) (string, error) {
 	//if name == "" {
-	//	return "", errors.New("missing cluster name")
+	//	return "", errors.New("missing Cluster name")
 	//}
 	//
-	//cluster, err := store.StoreProvider.Clusters().Get(name)
+	//Cluster, err := store.StoreProvider.Clusters().Get(name)
 	//if err != nil {
-	//	return "", errors.Errorf("cluster `%s` does not exist. Reason: %v", name, err)
+	//	return "", errors.Errorf("Cluster `%s` does not exist. Reason: %v", name, err)
 	//}
-	//if cluster.Status.Phase == "" {
-	//	return "", errors.Errorf("cluster `%s` is in unknown phase", cluster.Name)
+	//if Cluster.Status.Phase == "" {
+	//	return "", errors.Errorf("Cluster `%s` is in unknown phase", Cluster.Name)
 	//}
-	//if cluster.Status.Phase != api.ClusterReady {
-	//	return "", errors.Errorf("cluster `%s` is not ready", cluster.Name)
+	//if Cluster.Status.Phase != api.ClusterReady {
+	//	return "", errors.Errorf("Cluster `%s` is not ready", Cluster.Name)
 	//}
-	//if cluster.Status.Phase == api.ClusterDeleted {
+	//if Cluster.Status.Phase == api.ClusterDeleted {
 	//	return "", nil
 	//}
 	//
-	//kc, err := NewAdminClient(cm, cluster)
+	//kc, err := NewAdminClient(cm, Cluster)
 	//if err != nil {
 	//	return "", err
 	//}
 	//
-	//upm := NewUpgradeManager(kc, cluster)
+	//upm := NewUpgradeManager(kc, Cluster)
 	//upgrades, err := upm.GetAvailableUpgrades()
 	//if err != nil {
 	//	return "", err
@@ -278,16 +278,16 @@ func CheckForUpdates(name string) (string, error) {
 
 func UpdateSpec(cluster *api.Cluster) (*api.Cluster, error) {
 	if cluster == nil {
-		return nil, errors.New("missing cluster")
+		return nil, errors.New("missing Cluster")
 	} else if cluster.Name == "" {
-		return nil, errors.New("missing cluster name")
+		return nil, errors.New("missing Cluster name")
 	} else if cluster.ClusterConfig().KubernetesVersion == "" {
-		return nil, errors.New("missing cluster version")
+		return nil, errors.New("missing Cluster version")
 	}
 
 	existing, err := store.StoreProvider.Clusters().Get(cluster.Name)
 	if err != nil {
-		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", cluster.Name, err)
+		return nil, errors.Errorf("Cluster `%s` does not exist. Reason: %v", cluster.Name, err)
 	}
 	cluster.Status = existing.Status
 	cluster.Generation = time.Now().UnixNano()
@@ -436,19 +436,4 @@ func deleteMachines(client clusterclient.Client) error {
 		log.Infof("successfully deleted non-controlplane machines")
 		return true, nil
 	})
-}
-
-func CreateAdminClient(cm Interface) (kubernetes.Interface, error) {
-	if kc := cm.GetAdminClient(); kc != nil {
-		return kc, nil
-	}
-
-	kc, err := NewAdminClient(cm, cm.GetCluster())
-	if err != nil {
-		return nil, err
-	}
-
-	cm.SetAdminClient(kc)
-
-	return kc, nil
 }

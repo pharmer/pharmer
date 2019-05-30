@@ -59,7 +59,7 @@ func NewClusterApi(cm Interface, cluster *api.Cluster, namespace string, kc kube
 	if err != nil {
 		return nil, err
 	}
-	clusterClient, err := GetClusterClient(cm, cluster)
+	clusterClient, err := GetClusterClient(cm.GetCaCertPair(), cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -77,8 +77,8 @@ func NewClusterApi(cm Interface, cluster *api.Cluster, namespace string, kc kube
 		bootstrapClient:     bc}, nil
 }
 
-func GetClusterClient(cm Interface, cluster *api.Cluster) (clientset.Interface, error) {
-	conf, err := NewRestConfig(cm, cluster)
+func GetClusterClient(caCert *api.CertKeyPair, cluster *api.Cluster) (clientset.Interface, error) {
+	conf, err := NewRestConfig(caCert, cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get rest config")
 	}
@@ -92,7 +92,7 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 	}
 
 	if err := phases.ApplyCluster(ca.bootstrapClient, ca.cluster.Spec.ClusterAPI); err != nil && !api.ErrAlreadyExist(err) {
-		return errors.Wrap(err, "failed to add cluster")
+		return errors.Wrap(err, "failed to add Cluster")
 	}
 	namespace := ca.cluster.Spec.ClusterAPI.Namespace
 	if namespace == "" {
@@ -101,12 +101,12 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 
 	c, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(namespace).Get(ca.cluster.Name, metav1.GetOptions{})
 	if err != nil {
-		return errors.Wrap(err, "failed to update cluster provider status")
+		return errors.Wrap(err, "failed to update Cluster provider status")
 	}
 
 	c.Status = ca.cluster.Spec.ClusterAPI.Status
 	if _, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(namespace).UpdateStatus(c); err != nil && !api.ErrObjectModified(err) {
-		return errors.Wrap(err, "failed to update cluster")
+		return errors.Wrap(err, "failed to update Cluster")
 	}
 
 	if err := ca.updateProviderStatus(); err != nil {
@@ -213,7 +213,7 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 	if err != nil {
 		return err
 	}
-	if err = CreateSecret(ca.kc, "pharmer-cluster", ca.namespace, map[string][]byte{
+	if err = CreateSecret(ca.kc, "pharmer-Cluster", ca.namespace, map[string][]byte{
 		fmt.Sprintf("%v.json", ca.cluster.Name): cluster,
 	}); err != nil {
 		return err

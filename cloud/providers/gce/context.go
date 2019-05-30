@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -14,29 +14,33 @@ const (
 )
 
 type ClusterManager struct {
-	cluster     *api.Cluster
-	certs       *api.PharmerCertificates
+	*cloud.CloudManager
+
+
+	//ctx         context.Context
 	conn        *cloudConnector
 	namer       namer
 	adminClient kubernetes.Interface
 }
 
-var _ Interface = &ClusterManager{}
+var _ cloud.Interface = &ClusterManager{}
 
 const (
 	UID = "gce"
 )
 
 func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
+	cloud.RegisterCloudManager(UID, func(cluster *api.Cluster, certs *api.PharmerCertificates) cloud.Interface {
 		return New(cluster, certs)
 	})
 }
 
-func New(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
+func New(cluster *api.Cluster, certs *api.PharmerCertificates) cloud.Interface {
 	return &ClusterManager{
-		cluster: cluster,
-		certs:   certs,
+		CloudManager: &cloud.CloudManager{
+			Cluster: cluster,
+			Certs: certs,
+		},
 		namer: namer{
 			cluster: cluster,
 		},
@@ -47,23 +51,27 @@ func (cm *ClusterManager) SetAdminClient(kc kubernetes.Interface) {
 	cm.adminClient = kc
 }
 
-func (cm *ClusterManager) GetCluster() *api.Cluster {
-	return cm.cluster
-}
-
-func (cm *ClusterManager) GetAdminClient() kubernetes.Interface {
-	return cm.adminClient
-}
-
-func (cm *ClusterManager) GetCaCertPair() *api.CertKeyPair {
-	return &cm.certs.CACert
-}
-
-func (cm *ClusterManager) GetPharmerCertificates() *api.PharmerCertificates {
-	return cm.certs
-}
-
-func (cm *ClusterManager) GetConnector() ClusterApiProviderComponent {
+//func (cm *ClusterManager) GetCluster() *api.Cluster {
+//	return cm.cluster
+//}
+//
+//func (cm *ClusterManager) GetAdminClient() kubernetes.Interface {
+//	return cm.adminClient
+//}
+//
+//func (cm *ClusterManager) GetMutex() *sync.Mutex {
+//	return &cm.m
+//}
+//
+//func (cm *ClusterManager) GetCaCertPair() *api.CertKeyPair {
+//	return &cm.certs.CACert
+//}
+//
+//func (cm *ClusterManager) GetPharmerCertificates() *api.PharmerCertificates {
+//	return cm.certs
+//}
+//
+func (cm *ClusterManager) GetConnector() cloud.ClusterApiProviderComponent {
 	return cm.conn
 }
 

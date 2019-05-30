@@ -14,32 +14,32 @@ import (
 //	}
 //	ctx := NewContext(context.Background(), cfg, _env.Dev)
 //
-//	cluster, err := store.StoreProvider.Clusters().Get("doc6")
+//	Cluster, err := store.StoreProvider.Clusters().Get("doc6")
 //	fmt.Println(err)
 //
-//	if ctx, err = LoadCACertificates(ctx, cluster); err != nil {
+//	if ctx, err = LoadCACertificates(ctx, Cluster); err != nil {
 //		fmt.Println(err, "----")
 //	}
-//	if ctx, err = LoadSSHKey(ctx, cluster); err != nil {
+//	if ctx, err = LoadSSHKey(ctx, Cluster); err != nil {
 //		fmt.Println(err)
 //	}
-//	/*if cm.conn, err = NewConnector(cm.ctx, cm.cluster); err != nil {
+//	/*if cm.conn, err = NewConnector(cm.ctx, cm.Cluster); err != nil {
 //		return err
 //	}*/
 //
-//	fmt.Println(cluster.Spec.Masters[0].ClusterName)
+//	fmt.Println(Cluster.Spec.Masters[0].ClusterName)
 //	os.Exit(1)
 //
-//	kc, err := NewAdminClient(ctx, cluster)
+//	kc, err := NewAdminClient(ctx, Cluster)
 //	if err != nil {
 //		fmt.Println(err)
 //	}
 //
-//	ca, err := NewClusterApi(ctx, cluster, kc)
+//	ca, err := NewClusterApi(ctx, Cluster, kc)
 //	if err != nil {
 //		fmt.Println(err)
 //	}
-//	c, err := ca.client.Clusters(core.NamespaceDefault).Create(ca.cluster.Spec.ClusterAPI)
+//	c, err := ca.client.Clusters(core.NamespaceDefault).Create(ca.Cluster.Spec.ClusterAPI)
 //	fmt.Println(c)
 //	if err != nil {
 //		fmt.Println(err)
@@ -55,8 +55,8 @@ func TestExists(t *testing.T) {
 	/*machine := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				"cluster.pharmer.io/cluster": "doco9",
-				"cluster.pharmer.io/mg":      "2gb",
+				"Cluster.pharmer.io/Cluster": "doco9",
+				"Cluster.pharmer.io/mg":      "2gb",
 			},
 			Name: "2gb-pool-phg2q",
 		},
