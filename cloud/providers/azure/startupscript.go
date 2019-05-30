@@ -7,7 +7,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
@@ -79,65 +78,15 @@ func newNodeTemplateData(cm *CloudManager, cluster *api.Cluster, machine *cluste
 	return td
 }
 
-func newMasterTemplateData(cm *CloudManager, cluster *api.Cluster, machine *clusterapi.Machine) TemplateData {
-	td := newNodeTemplateData(cm, cluster, machine, "")
-	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
-		api.NodePoolKey: machine.Name,
-	}.String()
-
+func (cm *ClusterManager) NewMasterTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData {
 	hostPath := kubeadmapi.HostPathMount{
 		Name:      "cloud-config",
 		HostPath:  "/etc/kubernetes/azure.json",
 		MountPath: "/etc/kubernetes/azure.json",
 	}
-	ifg := kubeadmapi.InitConfiguration{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1beta1",
-			Kind:       "InitConfiguration",
-		},
 
-		NodeRegistration: kubeadmapi.NodeRegistrationOptions{
-			KubeletExtraArgs: td.KubeletExtraArgs,
-		},
-		LocalAPIEndpoint: kubeadmapi.APIEndpoint{
-			//AdvertiseAddress: cluster.Spec.API.AdvertiseAddress,
-			BindPort: 6443, //         cluster.Spec.API.BindPort,
-		},
-	}
-	td.InitConfiguration = &ifg
+	td.ClusterConfiguration = GetDefaultKubeadmClusterConfig(cm.Cluster, hostPath)
 
-	cfg := kubeadmapi.ClusterConfiguration{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1beta1",
-			Kind:       "ClusterConfiguration",
-		},
-		APIServer: kubeadmapi.APIServer{
-			ControlPlaneComponent: kubeadmapi.ControlPlaneComponent{
-				ExtraVolumes: []kubeadmapi.HostPathMount{hostPath},
-				ExtraArgs:    cluster.Spec.Config.APIServerExtraArgs,
-			},
-			CertSANs: cluster.Spec.Config.APIServerCertSANs,
-		},
-		ControllerManager: kubeadmapi.ControlPlaneComponent{
-			ExtraVolumes: []kubeadmapi.HostPathMount{hostPath},
-			ExtraArgs:    cluster.Spec.Config.ControllerManagerExtraArgs,
-		},
-		Scheduler: kubeadmapi.ControlPlaneComponent{
-			ExtraArgs: cluster.Spec.Config.SchedulerExtraArgs,
-		},
-
-		Networking: kubeadmapi.Networking{
-			ServiceSubnet: cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Services.CIDRBlocks[0],
-			PodSubnet:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
-			DNSDomain:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.ServiceDomain,
-		},
-		KubernetesVersion: cluster.Spec.Config.KubernetesVersion,
-	}
-	td.ControlPlaneEndpointsFromLB(&cfg, cluster)
-
-	cfg.APIServer.CertSANs = append(cfg.APIServer.CertSANs, cluster.Spec.Config.Cloud.Azure.InternalLBIPAddress)
-
-	td.ClusterConfiguration = &cfg
 	return td
 }
 

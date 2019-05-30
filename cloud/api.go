@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -36,6 +37,9 @@ type Interface interface {
 	IsValid(cluster *api.Cluster) (bool, error)
 	SetDefaultCluster(in *api.Cluster) error
 	GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterv1.ProviderSpec, error)
+
+	NewMasterTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData
+	NewNodeTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData
 }
 
 type SSHGetter interface {

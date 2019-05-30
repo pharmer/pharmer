@@ -40,7 +40,7 @@ var providerIdRE = regexp.MustCompile(`^` + ProviderName + `://([^/]+)/([^/]+)/(
 type cloudConnector struct {
 	*CloudManager
 
-	namer namer
+	namer          namer
 	computeService *compute.Service
 	storageService *gcs.Service
 	updateService  *rupdate.Service
@@ -91,11 +91,11 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
 
 	conn := cloudConnector{
-		CloudManager: cm.CloudManager,
-		namer: namer{cm.Cluster},
-		computeService:      computeService,
-		storageService:      storageService,
-		updateService:       updateService,
+		CloudManager:   cm.CloudManager,
+		namer:          namer{cm.Cluster},
+		computeService: computeService,
+		storageService: storageService,
+		updateService:  updateService,
 	}
 	if ok, msg := conn.IsUnauthorized(typed.ProjectID()); !ok {
 		return nil, errors.Errorf("Credential %s does not have necessary authorization. Reason: %s.", cm.Cluster.Spec.Config.CredentialName, msg)
@@ -595,18 +595,13 @@ func (conn *cloudConnector) getMasterInstance(machine *clusterv1.Machine) (bool,
 	return true, nil
 }
 
-func (conn *cloudConnector) createMasterIntance(cluster *api.Cluster) (string, error) {
+func (conn *cloudConnector) createMasterIntance(cluster *api.Cluster, script string) (string, error) {
 	// MachineType:  "projects/tigerworks-kube/zones/us-central1-b/machineTypes/n1-standard-1",
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
 	machine, err := GetLeaderMachine(conn.Cluster)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get leader machine")
-	}
-
-	script, err := conn.renderStartupScript(cluster, machine, "")
-	if err != nil {
-		return "", err
 	}
 
 	if found, _ := conn.getMasterPDDisk(conn.namer.MachineDiskName(machine)); !found {

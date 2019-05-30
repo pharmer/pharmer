@@ -16,11 +16,14 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
-func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMachine *clusterv1.Machine, machines []*clusterv1.Machine, err error) {
+func (cm *ClusterManager) ApplyCreate(dryRun bool) ([]api.Action, *clusterv1.Machine, []*clusterv1.Machine, error) {
+	var acts []api.Action
+
 	var found bool
+
 	if !dryRun {
-		if err = cm.conn.importPublicKey(); err != nil {
-			return
+		if err := cm.conn.importPublicKey(); err != nil {
+			return nil, nil, nil, err
 		}
 	}
 
@@ -34,8 +37,8 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 			Message:  "Not found, will add default network with ipv4 range 10.240.0.0/16",
 		})
 		if !dryRun {
-			if err = cm.conn.ensureNetworks(); err != nil {
-				return
+			if err := cm.conn.ensureNetworks(); err != nil {
+				return nil, nil, nil, err
 			}
 		}
 	} else {
@@ -54,8 +57,8 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 			Message:  "default-allow-internal, default-allow-ssh, https rules will be created",
 		})
 		if !dryRun {
-			if err = cm.conn.ensureFirewallRules(); err != nil {
-				return
+			if err := cm.conn.ensureFirewallRules(); err != nil {
+				return nil, nil, nil, err
 			}
 			cm.Cluster = cm.conn.Cluster
 		}
@@ -67,15 +70,15 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 		})
 	}
 
-	machines, err = store.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
+	machines, err := store.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		err = errors.Wrap(err, "")
-		return
+		return nil, nil, nil, err
 	}
 
-	leaderMachine, err = GetLeaderMachine(cm.Cluster)
+	leaderMachine, err := GetLeaderMachine(cm.Cluster)
 	if err != nil {
-		return
+		return nil, nil, nil, err
 	}
 
 	loadBalancerIP, err := cm.conn.getLoadBalancer()
@@ -163,7 +166,7 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 	if _, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster); err != nil {
 		cm.Cluster.Status.Reason = err.Error()
 		err = errors.Wrap(err, "")
-		return
+		return nil, nil, nil, err
 	}
 
 	log.Info("Preparing Master Instance")
@@ -179,12 +182,18 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 		if !dryRun {
 			var op1 string
 			log.Infoln("Creating Master Instance")
-			if op1, err = cm.conn.createMasterIntance(cm.Cluster); err != nil {
-				return
+
+			script, err := RenderStartupScript(cm, leaderMachine, "", customTemplate)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+
+			if op1, err = cm.conn.createMasterIntance(cm.Cluster, script); err != nil {
+				return nil, nil, nil, err
 			}
 
 			if err = cm.conn.waitForZoneOperation(op1); err != nil {
-				return
+				return nil, nil, nil, err
 			}
 
 			nodeAddresses := []corev1.NodeAddress{
@@ -208,7 +217,7 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 		})
 	}
 
-	return acts, leaderMachine, machines, err
+	return acts, leaderMachine, machines, nil
 }
 
 //func ensureNetwork() {
