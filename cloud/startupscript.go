@@ -1,12 +1,16 @@
 package cloud
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"text/template"
 
+	"sigs.k8s.io/cluster-api/pkg/util"
+
 	"gomodules.xyz/cert"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 
 	"github.com/ghodss/yaml"
@@ -472,16 +476,16 @@ kubectl apply \
 `))
 )
 
-func NewNodeTemplateData(conn ClusterApiProviderComponent, cluster *api.Cluster, machine clusterv1.Machine, token string) TemplateData {
+func NewNodeTemplateData(cm *CloudManager, cluster *api.Cluster, machine *clusterv1.Machine, token string) TemplateData {
 	td := TemplateData{
 		ClusterName:       cluster.Name,
 		KubeadmToken:      token,
 		KubernetesVersion: cluster.Spec.Config.KubernetesVersion,
-		CAHash:            pubkeypin.Hash(CACert(ctx)),
-		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
-		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
+		CAHash:            pubkeypin.Hash(cm.Certs.CACert.Cert),
+		CAKey:             string(cert.EncodePrivateKeyPEM(cm.Certs.CACert.Key)),
+		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(cm.Certs.FrontProxyCACert.Key)),
+		SAKey:             string(cert.EncodePrivateKeyPEM(cm.Certs.ServiceAccountCert.Key)),
+		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(cm.Certs.EtcdCACert.Key)),
 		APIServerAddress:  cluster.APIServerAddress(),
 		NetworkProvider:   cluster.ClusterConfig().Cloud.NetworkProvider,
 		Provider:          cluster.ClusterConfig().Cloud.CloudProvider,
@@ -496,4 +500,28 @@ func NewNodeTemplateData(conn ClusterApiProviderComponent, cluster *api.Cluster,
 		api.RoleNodeKey: "",
 	}.String()
 
+	return td
+}
+
+func RenderStartupScript(machine *clusterapi.Machine, customTemplate string, masterTemplateData, nodeTemplateData TemplateData) (string, error) {
+	tpl, err := StartupScriptTemplate.Clone()
+	if err != nil {
+		return "", err
+	}
+	tpl, err = tpl.Parse(customTemplate)
+	if err != nil {
+		return "", err
+	}
+
+	var script bytes.Buffer
+	if util.IsControlPlaneMachine(machine) {
+		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, masterTemplateData); err != nil {
+			return "", err
+		}
+	} else {
+		if err := tpl.ExecuteTemplate(&script, api.RoleNode, nodeTemplateData); err != nil {
+			return "", err
+		}
+	}
+	return script.String(), nil
 }
