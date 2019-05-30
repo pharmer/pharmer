@@ -113,6 +113,10 @@ func newMasterTemplateData(cm *CloudManager, cluster *api.Cluster, machine *clus
 	return td
 }
 
+func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *clusterapi.Machine, token string) (string, error) {
+	return RenderStartupScript(machine, customTemplate, newMasterTemplateData(conn.CloudManager, cluster, machine), newNodeTemplateData(conn.CloudManager, cluster, machine, token))
+}
+
 var (
 	customTemplate = `
 {{ define "init-os" }}
@@ -150,7 +154,3 @@ EOF
 {{ end }}
 `
 )
-
-func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *clusterapi.Machine, token string) (string, error) {
-	return RenderStartupScript(machine, customTemplate, newMasterTemplateData(conn.CloudManager, cluster, machine), newNodeTemplateData(conn.CloudManager, cluster, machine, token))
-}

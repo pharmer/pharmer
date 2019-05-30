@@ -1,18 +1,15 @@
 package aws
 
 import (
-	"bytes"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
-func newNodeTemplateData(conn *cloudConnector, cluster *api.Cluster, machine clusterapi.Machine, token string) TemplateData {
-	td := NewNodeTemplateData(conn, cluster, machine, token)
+func newNodeTemplateData(cm *CloudManager, cluster *api.Cluster, machine *clusterapi.Machine, token string) TemplateData {
+	td := NewNodeTemplateData(cm, cluster, machine, token)
 	td.ExternalProvider = false // AWS does not use out-of-tree CCM
 
 	// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
@@ -21,8 +18,8 @@ func newNodeTemplateData(conn *cloudConnector, cluster *api.Cluster, machine clu
 	return td
 }
 
-func newMasterTemplateData(conn *cloudConnector, cluster *api.Cluster, machine *clusterapi.Machine) TemplateData {
-	td := newNodeTemplateData(conn, cluster, *machine, "")
+func newMasterTemplateData(cm *CloudManager, cluster *api.Cluster, machine *clusterapi.Machine) TemplateData {
+	td := newNodeTemplateData(cm, cluster, machine, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
 	}.String()
@@ -86,6 +83,10 @@ func newMasterTemplateData(conn *cloudConnector, cluster *api.Cluster, machine *
 	return td
 }
 
+func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *clusterapi.Machine, token string) (string, error) {
+	return RenderStartupScript(machine, customTemplate, newMasterTemplateData(conn.CloudManager, cluster, machine), newNodeTemplateData(conn.CloudManager, cluster, machine, token))
+}
+
 var (
 	customTemplate = `
 {{ define "prepare-host" }}
@@ -99,26 +100,3 @@ NODE_NAME=$(curl http://169.254.169.254/2007-01-19/meta-data/local-hostname)
 /*{{ define "mount-master-pd" }}
 pre-k mount-master-pd --provider=aws
 {{ end }}*/
-
-func (conn *cloudConnector) renderStartupScript(machine *clusterapi.Machine, token string) (string, error) {
-	tpl, err := StartupScriptTemplate.Clone()
-	if err != nil {
-		return "", err
-	}
-	tpl, err = tpl.Parse(customTemplate)
-	if err != nil {
-		return "", err
-	}
-
-	var script bytes.Buffer
-	if util.IsControlPlaneMachine(machine) {
-		if err := tpl.ExecuteTemplate(&script, api.RoleMaster, newMasterTemplateData(conn, conn.cluster, machine)); err != nil {
-			return "", err
-		}
-	} else {
-		if err := tpl.ExecuteTemplate(&script, api.RoleNode, newNodeTemplateData(conn, conn.cluster, *machine, token)); err != nil {
-			return "", err
-		}
-	}
-	return script.String(), nil
-}
