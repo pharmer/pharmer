@@ -251,7 +251,10 @@ func ApplyScale(cm Interface) (acts []api.Action, err error) {
 }
 
 func ApplyUpgrade(dryRun bool, cm Interface) (acts []api.Action, err error) {
-	kc := cm.GetAdminClient()
+	kc, err := CreateAdminClient(cm)
+	if err != nil {
+		return acts, err
+	}
 
 	cluster := cm.GetCluster()
 	var masterMachine *clusterv1.Machine

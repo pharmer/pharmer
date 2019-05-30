@@ -2,7 +2,6 @@ package gce
 
 import (
 	"errors"
-	"sync"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
@@ -11,21 +10,15 @@ import (
 )
 
 const (
-	maxInstancesPerMIG = 5 // Should be 500
-	defaultNetwork     = "default"
+	defaultNetwork = "default"
 )
 
 type ClusterManager struct {
-	cluster *api.Cluster
-	certs   *api.PharmerCertificates
-
-	//ctx         context.Context
+	cluster     *api.Cluster
+	certs       *api.PharmerCertificates
 	conn        *cloudConnector
 	namer       namer
-	m           sync.Mutex
 	adminClient kubernetes.Interface
-
-	owner string
 }
 
 var _ Interface = &ClusterManager{}
@@ -60,10 +53,6 @@ func (cm *ClusterManager) GetCluster() *api.Cluster {
 
 func (cm *ClusterManager) GetAdminClient() kubernetes.Interface {
 	return cm.adminClient
-}
-
-func (cm *ClusterManager) GetMutex() *sync.Mutex {
-	return &cm.m
 }
 
 func (cm *ClusterManager) GetCaCertPair() *api.CertKeyPair {

@@ -2,7 +2,6 @@ package cloud
 
 import (
 	"context"
-	"sync"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
@@ -20,7 +19,6 @@ var (
 
 type Interface interface {
 	GetCluster() *api.Cluster
-	GetMutex() *sync.Mutex
 	GetAdminClient() kubernetes.Interface
 	GetCaCertPair() *api.CertKeyPair
 	GetPharmerCertificates() *api.PharmerCertificates

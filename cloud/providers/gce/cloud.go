@@ -33,26 +33,17 @@ const (
 	firewallRuleAnnotationPrefix = "gce.clusterapi.k8s.io/firewall"
 	firewallRuleInternalSuffix   = "-allow-cluster-internal"
 	firewallRuleApiSuffix        = "-allow-api-public"
-
-	ProjectAnnotationKey = "gcp-project"
-	ZoneAnnotationKey    = "gcp-zone"
-	NameAnnotationKey    = "gcp-name"
 )
 
 var providerIdRE = regexp.MustCompile(`^` + ProviderName + `://([^/]+)/([^/]+)/([^/]+)$`)
-var templateNameRE = regexp.MustCompile(`^` + TemplateURI + `([^/]+)/global/instanceTemplates/([^/]+)$`)
 
 type cloudConnector struct {
-	//ctx     context.Context
 	*api.PharmerCertificates
-	cluster *api.Cluster
-	namer   namer
-
+	cluster        *api.Cluster
+	namer          namer
 	computeService *compute.Service
 	storageService *gcs.Service
 	updateService  *rupdate.Service
-
-	//owner string
 }
 
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {

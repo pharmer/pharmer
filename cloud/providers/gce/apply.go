@@ -232,7 +232,7 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error) {
 	log.Infoln("Deleting cluster...")
 
-	err = DeleteAllWorkerMachines(cm, cm.cluster, cm.owner)
+	err = DeleteAllWorkerMachines(cm, cm.cluster)
 	if err != nil {
 		log.Infof("failed to delete nodes: %v", err)
 	}

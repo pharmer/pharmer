@@ -340,7 +340,7 @@ func GetLeaderMachine(cluster *v1beta1.Cluster) (*clusterapi.Machine, error) {
 }*/
 
 // DeleteAllWorkerMachines waits for all nodes to be deleted
-func DeleteAllWorkerMachines(cm Interface, cluster *v1beta1.Cluster, owner string) error {
+func DeleteAllWorkerMachines(cm Interface, cluster *v1beta1.Cluster) error {
 	log.Infof("Deleting non-controlplane machines")
 
 	client, err := GetBooststrapClient(cm, cluster)
@@ -439,10 +439,6 @@ func deleteMachines(client clusterclient.Client) error {
 }
 
 func CreateAdminClient(cm Interface) (kubernetes.Interface, error) {
-	m := cm.GetMutex()
-	m.Lock()
-	defer m.Unlock()
-
 	if kc := cm.GetAdminClient(); kc != nil {
 		return kc, nil
 	}

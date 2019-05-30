@@ -2,9 +2,7 @@ package gce
 
 import (
 	"net"
-	"time"
 
-	"github.com/google/uuid"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	proconfig "github.com/pharmer/pharmer/apis/v1beta1/gce"
@@ -12,13 +10,8 @@ import (
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
-
-func (cm *ClusterManager) SetOwner(owner string) {
-	cm.owner = owner
-}
 
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
 	config := cluster.Spec.Config
@@ -94,11 +87,6 @@ func (cm *ClusterManager) SetupCerts() error {
 func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	n := namer{cluster: cluster}
 	config := cluster.Spec.Config
-	// Init object meta
-	uid, _ := uuid.NewUUID()
-	cluster.ObjectMeta.UID = types.UID(uid.String())
-	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
-	cluster.ObjectMeta.Generation = time.Now().UnixNano()
 
 	config.Cloud.InstanceImageProject = "ubuntu-os-cloud"
 	config.Cloud.InstanceImage = "ubuntu-1604-xenial-v20170721"

@@ -7,12 +7,14 @@ import (
 
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 
-	"github.com/appscode/go/types"
+	"github.com/google/uuid"
 
+	"github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	api_types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/apis/core"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
@@ -74,16 +76,13 @@ func Create(cluster *api.Cluster) (Interface, *api.Cluster, error) {
 	return cm, cluster, nil
 }
 
-func CreateMachineSetsFromOptions(cm Interface, opts *options.NodeGroupCreateConfig) error {
-	for sku, count := range opts.Nodes {
-		err := CreateMachineSet(cm, sku, int32(count))
-		return err
-	}
-	return nil
-}
-
 func SetDefaultCluster(cluster *api.Cluster) error {
 	config := cluster.Spec.Config
+
+	uid, _ := uuid.NewUUID()
+	cluster.ObjectMeta.UID = api_types.UID(uid.String())
+	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
+	cluster.ObjectMeta.Generation = time.Now().UnixNano()
 
 	if err := api.AssignTypeKind(cluster); err != nil {
 		return err
@@ -120,14 +119,9 @@ func CreateMasterMachines(cm Interface, index int) (*clusterapi.Machine, error) 
 		return nil, err
 	}
 
-	/*role := api.RoleMember
-	if ind == 0 {
-		role = api.RoleLeader
-	}*/
 	machine := &clusterapi.Machine{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%v-master-%v", cluster.Name, index),
-			//	UID:               uuid.NewUUID(),
+			Name:              fmt.Sprintf("%v-master-%v", cluster.Name, index),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 			Labels: map[string]string{
 				"set":                              "controlplane",
@@ -195,4 +189,12 @@ func CreateMachineSet(cm Interface, sku string, count int32) error {
 	_, err = store.StoreProvider.MachineSet(cluster.Name).Create(&machineSet)
 
 	return err
+}
+
+func CreateMachineSetsFromOptions(cm Interface, opts *options.NodeGroupCreateConfig) error {
+	for sku, count := range opts.Nodes {
+		err := CreateMachineSet(cm, sku, int32(count))
+		return err
+	}
+	return nil
 }
