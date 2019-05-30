@@ -6,80 +6,57 @@ import (
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
-	"gomodules.xyz/cert"
 	"gopkg.in/ini.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
-	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
-func newNodeTemplateData(conn *cloudConnector, cluster *api.Cluster, machine *clusterv1.Machine, token string) TemplateData {
-	td := TemplateData{
-		ClusterName:       cluster.Name,
-		KubernetesVersion: machine.Spec.Versions.ControlPlane,
-		KubeadmToken:      token,
-		CAHash:            pubkeypin.Hash(conn.Certs.CACert.Cert),
-		CAKey:             string(cert.EncodePrivateKeyPEM(conn.Certs.CACert.Key)),
-		SAKey:             string(cert.EncodePrivateKeyPEM(conn.Certs.ServiceAccountCert.Key)),
-		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(conn.Certs.FrontProxyCACert.Key)),
-		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(conn.Certs.EtcdCACert.Key)),
-		APIServerAddress:  cluster.APIServerAddress(),
-		NetworkProvider:   cluster.ClusterConfig().Cloud.NetworkProvider,
-		Provider:          cluster.ClusterConfig().Cloud.CloudProvider,
-		ExternalProvider:  false, // GCE does not use out-of-tree CCM
+func newNodeTemplateData(conn *cloudConnector, cluster *api.Cluster, machine clusterapi.Machine, token string) TemplateData {
+	td := NewNodeTemplateData(conn, cluster, machine, token)
+	td.ExternalProvider = false // GCE does not use out-of-tree CCM
+
+	// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
+	td.KubeletExtraArgs["cloud-provider"] = cluster.ClusterConfig().Cloud.CloudProvider // requires --cloud-config
+	// ref: https://github.com/kubernetes/kubernetes/blob/release-1.5/cluster/gce/configure-vm.sh#L846
+
+	n := namer{cluster}
+
+	cloudConfig := &api.GCECloudConfig{
+		ProjectID:          cluster.Spec.Config.Cloud.Project,
+		NetworkName:        cluster.Spec.Config.Cloud.GCE.NetworkName,
+		NodeTags:           cluster.Spec.Config.Cloud.GCE.NodeTags,
+		NodeInstancePrefix: n.NodePrefix(),
+		Multizone:          false,
 	}
 
-	{
-		td.KubeletExtraArgs = map[string]string{}
-		for k, v := range cluster.Spec.Config.KubeletExtraArgs {
-			td.KubeletExtraArgs[k] = v
-		}
-
-		td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
-			api.NodePoolKey: machine.Name,
-			api.RoleNodeKey: "",
-		}.String()
-		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
-		td.KubeletExtraArgs["cloud-provider"] = cluster.ClusterConfig().Cloud.CloudProvider // requires --cloud-config
-		// ref: https://github.com/kubernetes/kubernetes/blob/release-1.5/cluster/gce/configure-vm.sh#L846
-
-		n := namer{cluster}
-
-		cloudConfig := &api.GCECloudConfig{
-			ProjectID:          cluster.Spec.Config.Cloud.Project,
-			NetworkName:        cluster.Spec.Config.Cloud.GCE.NetworkName,
-			NodeTags:           cluster.Spec.Config.Cloud.GCE.NodeTags,
-			NodeInstancePrefix: n.NodePrefix(),
-			Multizone:          false,
-		}
-
-		cfg := ini.Empty()
-		err := cfg.Section("global").ReflectFrom(cloudConfig)
-		if err != nil {
-			log.Info(err)
-		}
-		if err != nil {
-			panic(err)
-		}
-		var buf bytes.Buffer
-		_, err = cfg.WriteTo(&buf)
-		if err != nil {
-			panic(err)
-		}
-		td.CloudConfig = buf.String()
-
-		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L41
-		// Kubeadm will send cloud-config to kube-apiserver and kube-controller-manager
-		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L193
-		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L230
+	cfg := ini.Empty()
+	err := cfg.Section("global").ReflectFrom(cloudConfig)
+	if err != nil {
+		log.Info(err)
 	}
+	if err != nil {
+		panic(err)
+	}
+	var buf bytes.Buffer
+	_, err = cfg.WriteTo(&buf)
+	if err != nil {
+		panic(err)
+	}
+	td.CloudConfig = buf.String()
+
+	// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L41
+	// Kubeadm will send cloud-config to kube-apiserver and kube-controller-manager
+	// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L193
+	// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L230
+
 	return td
 }
 
-func newMasterTemplateData(conn *cloudConnector, cluster *api.Cluster, machine *clusterv1.Machine) TemplateData {
-	td := newNodeTemplateData(conn, cluster, machine, "")
+func newMasterTemplateData(conn *cloudConnector, cluster *api.Cluster, machine *clusterapi.Machine) TemplateData {
+	td := newNodeTemplateData(conn, cluster, *machine, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
 	}.String()
@@ -100,8 +77,6 @@ func newMasterTemplateData(conn *cloudConnector, cluster *api.Cluster, machine *
 		},
 		LocalAPIEndpoint: kubeadmapi.APIEndpoint{
 			BindPort: 6443,
-			//AdvertiseAddress: cluster.Spec.Config.API.AdvertiseAddress,
-			//BindPort:         cluster.Spec.Config.API.BindPort,
 		},
 	}
 	td.InitConfiguration = &ifg

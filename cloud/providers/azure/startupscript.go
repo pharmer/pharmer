@@ -2,7 +2,6 @@ package azure
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 
 	"github.com/pharmer/cloud/pkg/credential"
@@ -10,41 +9,16 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
-	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
-	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
-func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterapi.Machine, owner, token string) TemplateData {
-	td := TemplateData{
-		ClusterName:       cluster.Name,
-		KubernetesVersion: machine.Spec.Versions.ControlPlane,
-		KubeadmToken:      token,
-		CAHash:            pubkeypin.Hash(CACert(ctx)),
-		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
-		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
-		APIServerAddress:  cluster.APIServerAddress(),
-		NetworkProvider:   cluster.ClusterConfig().Cloud.NetworkProvider,
-		Provider:          cluster.ClusterConfig().Cloud.CloudProvider,
-		ExternalProvider:  false, // Azure does not use out-of-tree CCM
-	}
+func newNodeTemplateData(conn *cloudConnector, cluster *api.Cluster, machine clusterapi.Machine, token string) TemplateData {
+	td := NewNodeTemplateData(conn, cluster, machine, token)
+	td.ExternalProvider = false // Azure does not use out-of-tree CCM
 	{
-		td.KubeletExtraArgs = map[string]string{}
-		for k, v := range cluster.Spec.Config.KubeletExtraArgs {
-			td.KubeletExtraArgs[k] = v
-		}
-		/*for k, v := range machine.Spec.Template.Spec.KubeletExtraArgs {
-			td.KubeletExtraArgs[k] = v
-		}*/
-		td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
-			api.NodePoolKey: machine.Name,
-			api.RoleNodeKey: "",
-		}.String()
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 		td.KubeletExtraArgs["cloud-provider"] = "azure" // requires --cloud-config
 
@@ -108,8 +82,8 @@ func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clu
 	return td
 }
 
-func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterapi.Machine, owner string) TemplateData {
-	td := newNodeTemplateData(ctx, cluster, machine, owner, "")
+func newMasterTemplateData(conn *cloudConnector, cluster *api.Cluster, machine *clusterapi.Machine) TemplateData {
+	td := newNodeTemplateData(conn, cluster, *machine, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
 	}.String()

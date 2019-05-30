@@ -5,6 +5,10 @@ import (
 	"strings"
 	"text/template"
 
+	"gomodules.xyz/cert"
+	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
@@ -467,3 +471,29 @@ kubectl apply \
   --kubeconfig /etc/kubernetes/admin.conf
 `))
 )
+
+func NewNodeTemplateData(conn ClusterApiProviderComponent, cluster *api.Cluster, machine clusterv1.Machine, token string) TemplateData {
+	td := TemplateData{
+		ClusterName:       cluster.Name,
+		KubeadmToken:      token,
+		KubernetesVersion: cluster.Spec.Config.KubernetesVersion,
+		CAHash:            pubkeypin.Hash(CACert(ctx)),
+		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
+		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
+		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
+		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
+		APIServerAddress:  cluster.APIServerAddress(),
+		NetworkProvider:   cluster.ClusterConfig().Cloud.NetworkProvider,
+		Provider:          cluster.ClusterConfig().Cloud.CloudProvider,
+	}
+
+	td.KubeletExtraArgs = map[string]string{}
+	for k, v := range cluster.ClusterConfig().KubeletExtraArgs {
+		td.KubeletExtraArgs[k] = v
+	}
+	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
+		api.NodePoolKey: machine.Name,
+		api.RoleNodeKey: "",
+	}.String()
+
+}

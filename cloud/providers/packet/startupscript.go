@@ -2,54 +2,31 @@ package packet
 
 import (
 	"bytes"
-	"context"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
-	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
-	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
-func newNodeTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine, token string) TemplateData {
-	td := TemplateData{
-		ClusterName:       cluster.Name,
-		KubernetesVersion: cluster.ClusterConfig().KubernetesVersion,
-		KubeadmToken:      token,
-		CAHash:            pubkeypin.Hash(CACert(ctx)),
-		CAKey:             string(cert.EncodePrivateKeyPEM(CAKey(ctx))),
-		SAKey:             string(cert.EncodePrivateKeyPEM(SaKey(ctx))),
-		FrontProxyKey:     string(cert.EncodePrivateKeyPEM(FrontProxyCAKey(ctx))),
-		ETCDCAKey:         string(cert.EncodePrivateKeyPEM(EtcdCaKey(ctx))),
-		APIServerAddress:  cluster.APIServerAddress(),
-		NetworkProvider:   cluster.ClusterConfig().Cloud.NetworkProvider,
-		Provider:          cluster.ClusterConfig().Cloud.CloudProvider,
-		ExternalProvider:  true, // Packet uses out-of-tree CCM
-	}
-	{
-		td.KubeletExtraArgs = map[string]string{}
-		for k, v := range cluster.ClusterConfig().KubeletExtraArgs {
-			td.KubeletExtraArgs[k] = v
-		}
-		td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
-			api.NodePoolKey: machine.Name,
-			api.RoleNodeKey: "",
-		}.String()
-		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
-		td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
-		td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
-		td.KubeletExtraArgs["keep-terminated-pod-volumes"] = "true"
-	}
+func newNodeTemplateData(conn *cloudConnector, cluster *api.Cluster, machine clusterapi.Machine, token string) TemplateData {
+	td := NewNodeTemplateData(conn, cluster, machine, token)
+	td.ExternalProvider = true // Packet uses out-of-tree CCM
+
+	// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
+	td.KubeletExtraArgs["cloud-provider"] = "external" // --cloud-config is not needed
+	td.KubeletExtraArgs["enable-controller-attach-detach"] = "false"
+	td.KubeletExtraArgs["keep-terminated-pod-volumes"] = "true"
+
 	joinConf, _ := td.JoinConfigurationYAML()
 	td.JoinConfiguration = joinConf
 	return td
 }
 
-func newMasterTemplateData(ctx context.Context, cluster *api.Cluster, machine *clusterv1.Machine) TemplateData {
-	td := newNodeTemplateData(ctx, cluster, machine, "")
+func newMasterTemplateData(conn *cloudConnector, cluster *api.Cluster, machine *clusterapi.Machine) TemplateData {
+	td := newNodeTemplateData(conn, cluster, *machine, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
 	}.String()
@@ -129,7 +106,7 @@ exec_until_success "$cmd"
 `
 )
 
-func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *clusterv1.Machine, token string) (string, error) {
+func (conn *cloudConnector) renderStartupScript(cluster *api.Cluster, machine *clusterapi.Machine, token string) (string, error) {
 	tpl, err := StartupScriptTemplate.Clone()
 	if err != nil {
 		return "", err
