@@ -57,7 +57,7 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 			if err = cm.conn.ensureFirewallRules(); err != nil {
 				return
 			}
-			cm.Cluster = cm.conn.cluster
+			cm.Cluster = cm.conn.Cluster
 		}
 	} else {
 		acts = append(acts, api.Action{
@@ -231,6 +231,8 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMac
 func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error) {
 	log.Infoln("Deleting cluster...")
 
+	// These are common
+	// -------common begins-----
 	err = DeleteAllWorkerMachines(cm, cm.Cluster)
 	if err != nil {
 		log.Infof("failed to delete nodes: %v", err)
@@ -243,6 +245,7 @@ func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error
 	if err != nil {
 		return
 	}
+	// --------common ends---------
 
 	var machines []*clusterv1.Machine
 	machines, err = store.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})

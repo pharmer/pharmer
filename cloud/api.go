@@ -20,6 +20,8 @@ var (
 type Interface interface {
 	CloudManagerInterface
 
+	CreateCCMCredential() error
+
 	GetConnector() ClusterApiProviderComponent
 
 	InitializeMachineActuator(mgr manager.Manager) error

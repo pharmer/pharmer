@@ -253,25 +253,13 @@ func CreateCredentialSecret(client kubernetes.Interface, cluster *api.Cluster) e
 	})
 }
 
-func NewClusterApiClient(ctx context.Context, cluster *api.Cluster) (client.Client, error) {
-	/*adminCert, adminKey, err := CreateAdminCertificate(ctx)
+func NewClusterApiClient(caCert *api.CertKeyPair, cluster *api.Cluster) (client.Client, error) {
+	cfg, err := NewRestConfig(caCert, cluster)
 	if err != nil {
 		return nil, err
 	}
-	host := Cluster.APIServerURL()
-	if host == "" {
-		return nil, errors.Errorf("failed to detect api server url for Cluster %s", Cluster.Name)
-	}
-	cfg := &rest.Config{
-		Host: host,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData:   cert.EncodeCertPEM(CACert(ctx)),
-			CertData: cert.EncodeCertPEM(adminCert),
-			KeyData:  cert.EncodePrivateKeyPEM(adminKey),
-		},
-	}
-	return client.New(cfg, client.Options{})*/
-	return nil, nil
+
+	return client.New(cfg, client.Options{})
 }
 
 func waitForServiceAccount(ctx context.Context, client kubernetes.Interface) error {

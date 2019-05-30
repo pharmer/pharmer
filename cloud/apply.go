@@ -136,10 +136,15 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 		return
 	}
 
-	log.Infoln("Creating secret credential...")
-	if err = CreateCredentialSecret(kc, cluster); err != nil {
-		return acts, errors.Wrap(err, "Error creating ccm secret credentials")
+	// create ccm credential
+	err = cm.CreateCCMCredential()
+	if err != nil {
+		return
 	}
+
+	//if err = CreateCredentialSecret(kc, cluster); err != nil {
+	//	return acts, errors.Wrap(err, "Error creating ccm secret credentials")
+	//}
 
 	conn := cm.GetConnector()
 	var controllerManager string

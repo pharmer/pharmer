@@ -14,7 +14,7 @@ import (
 )
 
 func (conn *cloudConnector) GetControllerManager() (string, error) {
-	config := conn.cluster.ClusterConfig()
+	config := conn.Cluster.ClusterConfig()
 	cred, err := store.StoreProvider.Credentials().Get(config.CredentialName)
 	if err != nil {
 		return "", err
@@ -34,8 +34,8 @@ func (conn *cloudConnector) GetControllerManager() (string, error) {
 	err = tmpl.Execute(&tmplBuf, controllerManagerConfig{
 		MachineConfig:   machineSetupConfig,
 		ServiceAccount:  base64.StdEncoding.EncodeToString([]byte(typed.ServiceAccount())),
-		SSHPrivateKey:   base64.StdEncoding.EncodeToString(conn.SSHKey.PrivateKey),
-		SSHPublicKey:    base64.StdEncoding.EncodeToString(conn.SSHKey.PublicKey),
+		SSHPrivateKey:   base64.StdEncoding.EncodeToString(conn.Certs.SSHKey.PrivateKey),
+		SSHPublicKey:    base64.StdEncoding.EncodeToString(conn.Certs.SSHKey.PublicKey),
 		SSHUser:         base64.StdEncoding.EncodeToString([]byte("clusterapi")),
 		ControllerImage: MachineControllerImage,
 	})
