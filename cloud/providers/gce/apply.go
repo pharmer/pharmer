@@ -1,7 +1,6 @@
 package gce
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/pharmer/pharmer/store"
@@ -11,10 +10,8 @@ import (
 	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
-	semver "gomodules.xyz/version"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
@@ -335,66 +332,6 @@ func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error
 		}
 	}
 	log.Infoln("Cluster deleted successfully...")
-
-	return
-}
-
-func (cm *ClusterManager) ApplyUpgrade(dryRun bool) (acts []api.Action, err error) {
-	kc := cm.adminClient
-
-	var masterMachine *clusterv1.Machine
-	masterName := fmt.Sprintf("%v-master", cm.cluster.Name)
-	masterMachine, err = store.StoreProvider.Machine(cm.cluster.Name).Get(masterName)
-	if err != nil {
-		return
-	}
-
-	masterMachine.Spec.Versions.ControlPlane = cm.cluster.Spec.Config.KubernetesVersion
-	masterMachine.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
-
-	var bc clusterclient.Client
-	bc, err = GetBooststrapClient(cm, cm.cluster)
-	if err != nil {
-		return
-	}
-
-	var data []byte
-	if data, err = json.Marshal(masterMachine); err != nil {
-		return
-	}
-	if err = bc.Apply(string(data)); err != nil {
-		return
-	}
-
-	// Wait until masterMachine is updated
-	desiredVersion, _ := semver.NewVersion(cm.cluster.ClusterConfig().KubernetesVersion)
-	if err = WaitForReadyMasterVersion(kc, desiredVersion); err != nil {
-		return
-	}
-
-	var machineSets []*clusterv1.MachineSet
-	machineSets, err = store.StoreProvider.MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return
-	}
-
-	for _, machineSet := range machineSets {
-		machineSet.Spec.Template.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
-		if data, err = json.Marshal(machineSet); err != nil {
-			return
-		}
-
-		if err = bc.Apply(string(data)); err != nil {
-			return
-		}
-	}
-
-	if !dryRun {
-		cm.cluster.Status.Phase = api.ClusterReady
-		if _, err = store.StoreProvider.Clusters().UpdateStatus(cm.cluster); err != nil {
-			return
-		}
-	}
 
 	return
 }

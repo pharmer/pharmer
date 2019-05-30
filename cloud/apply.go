@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -9,6 +10,8 @@ import (
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	semver "gomodules.xyz/version"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -58,7 +61,7 @@ func Apply(opts *options.ApplyConfig) ([]api.Action, error) {
 		} else if upgrade {
 			cluster.Status.Phase = api.ClusterUpgrading
 			_, _ = store.StoreProvider.Clusters().UpdateStatus(cluster)
-			return cm.ApplyUpgrade(dryRun)
+			return ApplyUpgrade(dryRun, cm)
 		}
 	}
 
@@ -245,4 +248,65 @@ func ApplyScale(cm Interface) (acts []api.Action, err error) {
 	}
 
 	return acts, nil
+}
+
+func ApplyUpgrade(dryRun bool, cm Interface) (acts []api.Action, err error) {
+	kc := cm.GetAdminClient()
+
+	cluster := cm.GetCluster()
+	var masterMachine *clusterv1.Machine
+	masterName := fmt.Sprintf("%v-master", cluster.Name)
+	masterMachine, err = store.StoreProvider.Machine(cluster.Name).Get(masterName)
+	if err != nil {
+		return
+	}
+
+	masterMachine.Spec.Versions.ControlPlane = cluster.Spec.Config.KubernetesVersion
+	masterMachine.Spec.Versions.Kubelet = cluster.Spec.Config.KubernetesVersion
+
+	var bc clusterclient.Client
+	bc, err = GetBooststrapClient(cm, cluster)
+	if err != nil {
+		return
+	}
+
+	var data []byte
+	if data, err = json.Marshal(masterMachine); err != nil {
+		return
+	}
+	if err = bc.Apply(string(data)); err != nil {
+		return
+	}
+
+	// Wait until masterMachine is updated
+	desiredVersion, _ := semver.NewVersion(cluster.ClusterConfig().KubernetesVersion)
+	if err = WaitForReadyMasterVersion(kc, desiredVersion); err != nil {
+		return
+	}
+
+	var machineSets []*clusterv1.MachineSet
+	machineSets, err = store.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
+	if err != nil {
+		return
+	}
+
+	for _, machineSet := range machineSets {
+		machineSet.Spec.Template.Spec.Versions.Kubelet = cluster.Spec.Config.KubernetesVersion
+		if data, err = json.Marshal(machineSet); err != nil {
+			return
+		}
+
+		if err = bc.Apply(string(data)); err != nil {
+			return
+		}
+	}
+
+	if !dryRun {
+		cluster.Status.Phase = api.ClusterReady
+		if _, err = store.StoreProvider.Clusters().UpdateStatus(cluster); err != nil {
+			return
+		}
+	}
+
+	return
 }

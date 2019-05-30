@@ -36,7 +36,6 @@ type Interface interface {
 	GetCloudConnector() error
 	ApplyCreate(dryRun bool) (acts []api.Action, leaderMachine *clusterv1.Machine, machines []*clusterv1.Machine, err error)
 	ApplyDelete(dryRun bool) ([]api.Action, error)
-	ApplyUpgrade(dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
 	SetDefaultCluster(in *api.Cluster) error
 	GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterv1.ProviderSpec, error)
