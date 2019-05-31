@@ -507,20 +507,12 @@ func NewNodeTemplateData(cm Interface, machine *clusterv1.Machine, token string)
 }
 
 func NewMasterTemplateData(cm Interface, machine *clusterv1.Machine, token string) TemplateData {
-	cluster := cm.GetCluster()
-
 	td := NewNodeTemplateData(cm, machine, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
 	}.String()
 
-	hostPath := kubeadmapi.HostPathMount{
-		Name:      "cloud-config",
-		HostPath:  "/etc/kubernetes/ccm",
-		MountPath: "/etc/kubernetes/ccm",
-	}
-
-	ifg := kubeadmapi.InitConfiguration{
+	td.InitConfiguration = &kubeadmapi.InitConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "kubeadm.k8s.io/v1beta1",
 			Kind:       "InitConfiguration",
@@ -533,35 +525,6 @@ func NewMasterTemplateData(cm Interface, machine *clusterv1.Machine, token strin
 			BindPort: 6443,
 		},
 	}
-	td.InitConfiguration = &ifg
-
-	cfg := kubeadmapi.ClusterConfiguration{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "kubeadm.k8s.io/v1beta1",
-			Kind:       "ClusterConfiguration",
-		},
-		Networking: kubeadmapi.Networking{
-			ServiceSubnet: cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Services.CIDRBlocks[0],
-			PodSubnet:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
-			DNSDomain:     cluster.Spec.ClusterAPI.Spec.ClusterNetwork.ServiceDomain,
-		},
-		KubernetesVersion: cluster.Spec.Config.KubernetesVersion,
-		APIServer: kubeadmapi.APIServer{
-			ControlPlaneComponent: kubeadmapi.ControlPlaneComponent{
-				ExtraArgs:    cluster.Spec.Config.APIServerExtraArgs,
-				ExtraVolumes: []kubeadmapi.HostPathMount{hostPath},
-			},
-			CertSANs: cluster.Spec.Config.APIServerCertSANs,
-		},
-		ControllerManager: kubeadmapi.ControlPlaneComponent{
-			ExtraArgs:    cluster.Spec.Config.ControllerManagerExtraArgs,
-			ExtraVolumes: []kubeadmapi.HostPathMount{hostPath},
-		},
-		Scheduler: kubeadmapi.ControlPlaneComponent{
-			ExtraArgs: cluster.Spec.Config.SchedulerExtraArgs,
-		},
-	}
-	td.ControlPlaneEndpointsFromLB(&cfg, cluster)
 
 	if token != "" {
 		td.ControlPlaneJoin = true
@@ -573,9 +536,7 @@ func NewMasterTemplateData(cm Interface, machine *clusterv1.Machine, token strin
 		td.JoinConfiguration = joinConf
 	}
 
-	td.ClusterConfiguration = &cfg
-
-	return td
+	return cm.NewMasterTemplateData(machine, token, td)
 }
 
 func RenderStartupScript(cm Interface, machine *clusterapi.Machine, token, customTemplate string) (string, error) {
