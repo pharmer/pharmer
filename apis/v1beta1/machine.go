@@ -33,18 +33,18 @@ const (
 type MachineRole string
 
 const (
-	MasterRole MachineRole = "Master"
-	NodeRole   MachineRole = "Node"
+	MasterMachineRole MachineRole = "Master"
+	NodeMachineRole   MachineRole = "Node"
 )
 
 func GetMachineRole(machine *clusterapi.Machine) MachineRole {
 	if _, found := machine.Labels["set"]; found {
 		l := machine.Labels["set"]
 		if strings.ToLower(l) == "master" {
-			return MasterRole
+			return MasterMachineRole
 		}
 	}
-	return NodeRole
+	return NodeMachineRole
 }
 
 type NodeSpec struct {
