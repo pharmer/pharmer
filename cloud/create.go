@@ -114,7 +114,7 @@ func SetDefaultCluster(cluster *api.Cluster) error {
 
 func CreateMasterMachines(cm Interface, index int) (*clusterapi.Machine, error) {
 	cluster := cm.GetCluster()
-	providerSpec, err := cm.GetDefaultMachineProviderSpec(cluster, "", api.MasterRole)
+	providerSpec, err := cm.GetDefaultMachineProviderSpec(cluster, "", api.MasterMachineRole)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func CreateMasterMachines(cm Interface, index int) (*clusterapi.Machine, error) 
 func CreateMachineSet(cm Interface, sku string, count int32) error {
 	cluster := cm.GetCluster()
 
-	providerSpec, err := cm.GetDefaultMachineProviderSpec(cluster, sku, api.RoleNode)
+	providerSpec, err := cm.GetDefaultMachineProviderSpec(cluster, sku, api.NodeMachineRole)
 	if err != nil {
 		return errors.Wrap(err, "failed to get default machine provider spec")
 	}

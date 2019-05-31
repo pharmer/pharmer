@@ -21,10 +21,10 @@ func (cm *ClusterManager) SetOwner(owner string) {
 }
 
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
-	roles := []api.MachineRole{api.NodeRole}
+	roles := []api.MachineRole{api.NodeMachineRole}
 	if sku == "" {
 		sku = "g6-standard-2"
-		roles = []api.MachineRole{api.MasterRole}
+		roles = []api.MachineRole{api.MasterMachineRole}
 	}
 	config := cluster.Spec.Config
 

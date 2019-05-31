@@ -158,7 +158,7 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 		return acts, errors.Wrap(err, "Error creating controller-manager")
 	}
 
-	ca, err := NewClusterApi(cm, "cloud-provider-system", kubeClient, conn)
+	ca, err := NewClusterApi(cm, "cloud-provider-system", kubeClient, true)
 	if err != nil {
 		return acts, errors.Wrap(err, "Error creating Cluster-api components")
 	}

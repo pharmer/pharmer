@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/pharmer/pharmer/store"
 	"text/template"
+
+	"github.com/pharmer/pharmer/store"
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/wait"
@@ -45,7 +46,6 @@ type ApiServerTemplate struct {
 	ControllerImage     string
 }
 
-
 func NewClusterApi(cm Interface, namespace string, kc kubernetes.Interface, externalController bool) (*ClusterAPI, error) {
 	token, err := GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration)
 	if err != nil {
@@ -63,8 +63,8 @@ func NewClusterApi(cm Interface, namespace string, kc kubernetes.Interface, exte
 	}
 
 	return &ClusterAPI{
-		Interface:        cm,
-		namespace:        namespace,
+		Interface:          cm,
+		namespace:          namespace,
 		externalController: externalController,
 
 		kubeClient:       kc,
@@ -205,23 +205,23 @@ func (ca *ClusterAPI) CreatePharmerSecret() error {
 	}
 
 	if ca.externalController == false {
-		CreateCredentialSecret()
-		if err = CreateCredentialSecretWb(ca.kubeClient, cred.Spec.Data); err != nil {
+		err := CreateCredentialSecret(ca.kubeClient, cluster, ca.namespace)
+		if err != nil {
 			return err
 		}
 	}
 
-	cluster, err := json.MarshalIndent(cluster, "", "  ")
+	clusterData, err := json.MarshalIndent(cluster, "", "  ")
 	if err != nil {
 		return err
 	}
-	if err = CreateSecret(ca.kubeClient, "pharmer-Cluster", ca.namespace, map[string][]byte{
-		fmt.Sprintf("%v.json", cluster.Name): cluster,
+	if err = CreateSecret(ca.kubeClient, "pharmer-cluster", ca.namespace, map[string][]byte{
+		fmt.Sprintf("%v.json", cluster.Name): clusterData,
 	}); err != nil {
 		return err
 	}
 
-	publicKey, privateKey, err := Store(ca.ctx).SSHKeys(ca.cluster.Name).Get(ca.cluster.ClusterConfig().Cloud.SSHKeyName)
+	publicKey, privateKey, err := store.StoreProvider.SSHKeys(cluster.Name).Get(cluster.ClusterConfig().Cloud.SSHKeyName)
 	if err != nil {
 		return err
 	}
@@ -232,20 +232,21 @@ func (ca *ClusterAPI) CreatePharmerSecret() error {
 		return err
 	}
 
+	certs := ca.GetPharmerCertificates()
 	if err = CreateSecret(ca.kubeClient, "pharmer-certificate", ca.namespace, map[string][]byte{
-		"ca.crt":             cert.EncodeCertPEM(ca.pharmerCertificates.CACert.Cert),
-		"ca.key":             cert.EncodePrivateKeyPEM(ca.pharmerCertificates.CACert.Key),
-		"front-proxy-ca.crt": cert.EncodeCertPEM(ca.pharmerCertificates.FrontProxyCACert.Cert),
-		"front-proxy-ca.key": cert.EncodePrivateKeyPEM(ca.pharmerCertificates.FrontProxyCACert.Key),
-		"sa.crt":             cert.EncodeCertPEM(ca.pharmerCertificates.ServiceAccountCert.Cert),
-		"sa.key":             cert.EncodePrivateKeyPEM(ca.pharmerCertificates.ServiceAccountCert.Key),
+		"ca.crt":             cert.EncodeCertPEM(certs.CACert.Cert),
+		"ca.key":             cert.EncodePrivateKeyPEM(certs.CACert.Key),
+		"front-proxy-ca.crt": cert.EncodeCertPEM(certs.FrontProxyCACert.Cert),
+		"front-proxy-ca.key": cert.EncodePrivateKeyPEM(certs.FrontProxyCACert.Key),
+		"sa.crt":             cert.EncodeCertPEM(certs.ServiceAccountCert.Cert),
+		"sa.key":             cert.EncodePrivateKeyPEM(certs.ServiceAccountCert.Key),
 	}); err != nil {
 		return err
 	}
 
 	if err = CreateSecret(ca.kubeClient, "pharmer-etcd", ca.namespace, map[string][]byte{
-		"ca.crt": cert.EncodeCertPEM(ca.pharmerCertificates.EtcdCACert.Cert),
-		"ca.key": cert.EncodePrivateKeyPEM(ca.pharmerCertificates.EtcdCACert.Key),
+		"ca.crt": cert.EncodeCertPEM(certs.EtcdCACert.Cert),
+		"ca.key": cert.EncodePrivateKeyPEM(certs.EtcdCACert.Key),
 	}); err != nil {
 		return err
 	}
@@ -258,10 +259,11 @@ func (ca *ClusterAPI) CreateApiServerAndController(controllerManager string) err
 	if err != nil {
 		return err
 	}
+	cluster := ca.GetCluster()
 	var tmplBuf bytes.Buffer
 	err = tmpl.Execute(&tmplBuf, ApiServerTemplate{
-		ClusterName:         ca.cluster.Name,
-		Provider:            ca.cluster.ClusterConfig().Cloud.CloudProvider,
+		ClusterName:         cluster.Name,
+		Provider:            cluster.ClusterConfig().Cloud.CloudProvider,
 		ControllerNamespace: ca.namespace,
 		ControllerImage:     MachineControllerImage,
 	})
