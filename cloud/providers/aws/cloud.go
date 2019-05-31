@@ -65,13 +65,15 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	conn := cloudConnector{
-		namer:     namer{cm.Cluster},
-		ec2:       _ec2.New(sess),
-		elb:       _elb.New(sess),
-		iam:       _iam.New(sess),
-		autoscale: autoscaling.New(sess),
-		s3:        _s3.New(sess),
+		CloudManager: cm.CloudManager,
+		namer:        namer{cm.Cluster},
+		ec2:          _ec2.New(sess),
+		elb:          _elb.New(sess),
+		iam:          _iam.New(sess),
+		autoscale:    autoscaling.New(sess),
+		s3:           _s3.New(sess),
 	}
 	if ok, msg := conn.IsUnauthorized(); !ok {
 		return nil, errors.Errorf("credential %s does not have necessary authorization. Reason: %s", cm.Cluster.Spec.Config.CredentialName, msg)
@@ -79,25 +81,11 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	return &conn, nil
 }
 
-func PrepareCloud(cm *ClusterManager) error {
-	//	var err error
-
-	//if cm.ctx, err = LoadCACertificates(cm.ctx, cm.Cluster, cm.owner); err != nil {
-	//	return err
-	//}
-	//if cm.ctx, err = LoadEtcdCertificate(cm.ctx, cm.Cluster, cm.owner); err != nil {
-	//	return err
-	//}
-	//if cm.ctx, err = LoadSSHKey(cm.ctx, cm.Cluster, cm.owner); err != nil {
-	//	return err
-	//}
-	//if cm.ctx, err = LoadSaKey(cm.ctx, cm.Cluster, cm.owner); err != nil {
-	//	return err
-	//}
-	//
-	//if cm.conn, err = NewConnector(cm); err != nil {
-	//	return err
-	//}
+func (cm *ClusterManager) GetCloudConnector() error {
+	var err error
+	if cm.conn, err = NewConnector(cm); err != nil {
+		return err
+	}
 
 	return nil
 }

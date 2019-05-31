@@ -13,16 +13,12 @@ type ClusterManager struct {
 	namer namer
 }
 
-func (cm *ClusterManager) CreateCCMCredential() error {
-	panic("implement me")
-}
-
 func (cm *ClusterManager) GetConnector() ClusterApiProviderComponent {
-	panic("implement me")
+	return cm.conn
 }
 
-func (cm *ClusterManager) GetCloudConnector() error {
-	panic("implement me")
+func (cm *ClusterManager) CreateCCMCredential() error {
+	return nil
 }
 
 var _ Interface = &ClusterManager{}

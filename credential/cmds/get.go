@@ -3,14 +3,13 @@ package cmds
 import (
 	"io"
 
+	"github.com/pharmer/pharmer/store"
+
 	"github.com/appscode/go/term"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential/cmds/options"
 	"github.com/pharmer/pharmer/utils/printer"
 	"github.com/spf13/cobra"
-	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -30,12 +29,11 @@ func NewCmdGetCredential(out io.Writer) *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
-			term.ExitOnError(err)
 
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
-			RunGetCredential(ctx, opts, out)
+			store.SetProvider(cmd, opts.Owner)
+
+			err := RunGetCredential(opts, out)
+			term.ExitOnError(err)
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -43,7 +41,7 @@ func NewCmdGetCredential(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunGetCredential(ctx context.Context, opts *options.CredentialGetConfig, out io.Writer) error {
+func RunGetCredential(opts *options.CredentialGetConfig, out io.Writer) error {
 	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
 		return err
@@ -51,7 +49,7 @@ func RunGetCredential(ctx context.Context, opts *options.CredentialGetConfig, ou
 
 	w := printer.GetNewTabWriter(out)
 
-	credentials, err := getCredentialList(ctx, opts.Credentials, opts.Owner)
+	credentials, err := getCredentialList(opts.Credentials, opts.Owner)
 	if err != nil {
 		return err
 	}
@@ -66,10 +64,10 @@ func RunGetCredential(ctx context.Context, opts *options.CredentialGetConfig, ou
 	return nil
 }
 
-func getCredentialList(ctx context.Context, args []string, owner string) (credentialList []*cloudapi.Credential, err error) {
+func getCredentialList(args []string, owner string) (credentialList []*cloudapi.Credential, err error) {
 	if len(args) != 0 {
 		for _, arg := range args {
-			credential, er2 := cloud.Store(ctx).Credentials().Get(arg)
+			credential, er2 := store.StoreProvider.Credentials().Get(arg)
 			if er2 != nil {
 				return nil, er2
 			}
@@ -77,7 +75,7 @@ func getCredentialList(ctx context.Context, args []string, owner string) (creden
 		}
 
 	} else {
-		credentialList, err = cloud.Store(ctx).Credentials().List(metav1.ListOptions{})
+		credentialList, err = store.StoreProvider.Credentials().List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}
