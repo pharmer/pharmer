@@ -5,6 +5,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +24,8 @@ func NewCmdDeleteCluster() *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
+
+			store.SetProvider(cmd, opts.Owner)
 
 			for _, clusterName := range opts.Clusters {
 				_, err := cloud.Delete(clusterName)
