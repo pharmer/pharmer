@@ -213,8 +213,8 @@ func GetAdminConfig(cm Interface, cluster *api.Cluster) (*api.KubeConfig, error)
 
 	var (
 		clusterName = fmt.Sprintf("%s.pharmer", cluster.Name)
-		userName    = fmt.Sprintf("Cluster-admin@%s.pharmer", cluster.Name)
-		ctxName     = fmt.Sprintf("Cluster-admin@%s.pharmer", cluster.Name)
+		userName    = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
+		ctxName     = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
 	)
 	cfg := api.KubeConfig{
 		TypeMeta: metav1.TypeMeta{

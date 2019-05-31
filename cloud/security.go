@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
+
 	"github.com/appscode/go/crypto/ssh"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
@@ -60,7 +61,7 @@ func LoadCACertificates(clusterName, name string) (*x509.Certificate, *rsa.Priva
 
 func CreateAdminCertificate(caCert *x509.Certificate, caKey crypto.Signer) (*x509.Certificate, *rsa.PrivateKey, error) {
 	cfg := cert.Config{
-		CommonName:   "Cluster-admin",
+		CommonName:   "cluster-admin",
 		Organization: []string{kubeadmconst.SystemPrivilegedGroup},
 		Usages:       []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	}
