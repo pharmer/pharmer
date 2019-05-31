@@ -15,10 +15,8 @@ const (
 type ClusterManager struct {
 	*cloud.CloudManager
 
-
-	//ctx         context.Context
-	conn        *cloudConnector
-	namer       namer
+	conn  *cloudConnector
+	namer namer
 }
 
 var _ cloud.Interface = &ClusterManager{}
@@ -37,7 +35,7 @@ func New(cluster *api.Cluster, certs *api.PharmerCertificates) cloud.Interface {
 	return &ClusterManager{
 		CloudManager: &cloud.CloudManager{
 			Cluster: cluster,
-			Certs: certs,
+			Certs:   certs,
 		},
 		namer: namer{
 			cluster: cluster,

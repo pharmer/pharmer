@@ -17,7 +17,7 @@ type GenericNodeGroupManager struct {
 	ctx     context.Context
 	ng      *api.NodeGroup
 	im      InstanceManager
-	kc      kubernetes.Interface
+	kubeClient      kubernetes.Interface
 	Cluster *apiv1.Cluster
 	token   string
 	// preHook is run once before a set of nodes are added. This can be used to create or update startup scripts. Since this will be
@@ -31,12 +31,12 @@ type GenericNodeGroupManager struct {
 
 var _ NodeGroupManager = &GenericNodeGroupManager{}
 
-func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kc kubernetes.Interface, Cluster *api.Cluster, owner, token string, initHook HookFunc, gcHook HookFunc) NodeGroupManager {
+func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceManager, kubeClient kubernetes.Interface, Cluster *api.Cluster, owner, token string, initHook HookFunc, gcHook HookFunc) NodeGroupManager {
 	return &GenericNodeGroupManager{
 		ctx:     ctx,
 		ng:      ng,
 		im:      im,
-		kc:      kc,
+		kubeClient:      kubeClient,
 		Cluster: Cluster,
 		token:   token,
 		preHook: initHook,
@@ -47,8 +47,8 @@ func NewNodeGroupManager(ctx context.Context, ng *api.NodeGroup, im InstanceMana
 
 func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
 	nodes := &core.NodeList{}
-	if igm.kc != nil {
-		nodes, err = igm.kc.CoreV1().Nodes().List(metav1.ListOptions{
+	if igm.kubeClient != nil {
+		nodes, err = igm.kubeClient.CoreV1().Nodes().List(metav1.ListOptions{
 			LabelSelector: labels.SelectorFromSet(map[string]string{
 				api.NodePoolKey: igm.ng.Name,
 			}).String(),
@@ -153,7 +153,7 @@ if err != nil {
 }
 
 func (igm *GenericNodeGroupManager) DeleteNodes(nodes []core.Node) error {
-	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.Cluster, igm.owner)
+	nd, err := NewNodeDrain(igm.ctx, igm.kubeClient, igm.Cluster, igm.owner)
 	if err != nil {
 		return err
 	}

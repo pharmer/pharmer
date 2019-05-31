@@ -208,6 +208,14 @@ func (cm *ClusterManager) ApplyCreate(dryRun bool) ([]api.Action, *clusterv1.Mac
 			if err = cm.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
 				return acts, nil, nil, errors.Wrap(err, "Error setting controlplane endpoints")
 			}
+
+			// TODO: update cluster object
+			// machine is created, but user pharmer somehow exited due to an error
+			// then user will see machine is found, but cluster api endpoint is nil
+			_, err = store.StoreProvider.Clusters().Update(cm.Cluster)
+			if err != nil {
+				return nil, nil, nil, errors.Wrapf(err, "failed to update cluster object")
+			}
 		}
 	} else {
 		acts = append(acts, api.Action{

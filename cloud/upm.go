@@ -257,11 +257,11 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 		}
 
 			desiredVersion, _ := semver.NewVersion(upm.Cluster.ClusterConfig().KubernetesVersion)
-			if err = WaitForReadyMasterVersion(upm.ctx, upm.kc, desiredVersion); err != nil {
+			if err = WaitForReadyMasterVersion(upm.ctx, upm.kubeClient, desiredVersion); err != nil {
 				return
 			}
 			// wait for nodes to start
-			if err = WaitForReadyMaster(upm.ctx, upm.kc); err != nil {
+			if err = WaitForReadyMaster(upm.ctx, upm.kubeClient); err != nil {
 				return
 			}
 	}

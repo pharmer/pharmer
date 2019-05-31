@@ -22,21 +22,26 @@ func NewCmdUse() *cobra.Command {
 				term.Fatalln(err)
 			}
 
+			store.SetProvider(cmd, opts.Owner)
+
 			cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
 			if err != nil {
 				term.Fatalln(err)
 			}
 
-			cm, cluster, err := cloud.Create(cluster)
+			cm, err := cloud.GetCloudManager(cluster)
 			if err != nil {
 				term.Fatalln(err)
 			}
 
-			c2, err := cloud.GetAdminConfig(cm, cluster)
+			kubeconfig, err := cloud.GetAdminConfig(cm, cluster)
 			if err != nil {
 				log.Fatalln(err)
 			}
-			cloud.UseCluster(opts, c2)
+			err = cloud.UseCluster(opts, kubeconfig)
+			if err != nil {
+				term.Fatalln(err)
+			}
 		},
 	}
 	opts.AddFlags(cmd.Flags())

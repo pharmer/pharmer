@@ -30,12 +30,12 @@ import (
 //	fmt.Println(Cluster.Spec.Masters[0].ClusterName)
 //	os.Exit(1)
 //
-//	kc, err := NewAdminClient(ctx, Cluster)
+//	kubeClient, err := NewAdminClient(ctx, Cluster)
 //	if err != nil {
 //		fmt.Println(err)
 //	}
 //
-//	ca, err := NewClusterApi(ctx, Cluster, kc)
+//	ca, err := NewClusterApi(ctx, Cluster, kubeClient)
 //	if err != nil {
 //		fmt.Println(err)
 //	}

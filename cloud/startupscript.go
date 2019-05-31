@@ -236,7 +236,7 @@ systemctl start docker kubelet nfs-utils
 
 kubeadm reset {{ .ForceKubeadmResetFlag }}
 
-{{ template "setup-Certs" . }}
+{{ template "setup-certs" . }}
 
 {{ template "cloud-config" . }}
 
@@ -280,7 +280,7 @@ sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
 sudo chown $(id -u):$(id -g) ~/.kube/config
 
 kubectl apply \
-  -f https://raw.githubusercontent.com/pharmer/addons/clusterapi/Cluster-api/Cluster-crd.yaml \
+  -f https://raw.githubusercontent.com/pharmer/addons/clusterapi/cluster-api/cluster-crd.yaml \
   --kubeconfig /etc/kubernetes/admin.conf
 
 {{ if .ExternalProvider }}
@@ -288,7 +288,7 @@ kubectl apply \
 {{ template "install-storage-plugin" . }}
 {{end}}
 
-{{ template "prepare-Cluster" . }}
+{{ template "prepare-cluster" . }}
 `))
 
 	_ = template.Must(StartupScriptTemplate.New(api.RoleNode).Parse(`
@@ -361,7 +361,7 @@ exec_until_success() {
 
 	_ = template.Must(StartupScriptTemplate.New("mount-master-pd").Parse(``))
 
-	_ = template.Must(StartupScriptTemplate.New("prepare-Cluster").Parse(``))
+	_ = template.Must(StartupScriptTemplate.New("prepare-cluster").Parse(``))
 	_ = template.Must(StartupScriptTemplate.New("install-docker-script").Parse(`
 apt-get update -y
 apt-get install -y \
@@ -382,7 +382,7 @@ apt-get update -y
 apt-get install -y docker-ce=18.06.1~ce~3-0~ubuntu
 `))
 
-	_ = template.Must(StartupScriptTemplate.New("setup-Certs").Parse(`
+	_ = template.Must(StartupScriptTemplate.New("setup-certs").Parse(`
 mkdir -p /etc/kubernetes/pki
 
 cat > /etc/kubernetes/pki/ca.key <<EOF
@@ -436,14 +436,14 @@ EOF
 {{ end }}
 
 {{ if .ClusterConfiguration }}
-cat > /etc/kubernetes/kubeadm/Cluster.yaml <<EOF
+cat > /etc/kubernetes/kubeadm/cluster.yaml <<EOF
 {{ .ClusterConfigurationYAML }}
 EOF
 {{ end }}
 
 pre-k merge config \
 	--init-config=/etc/kubernetes/kubeadm/init.yaml \
-    --Cluster-config=/etc/kubernetes/kubeadm/Cluster.yaml \
+    --cluster-config=/etc/kubernetes/kubeadm/cluster.yaml \
 	--apiserver-advertise-address=$(pre-k machine public-ips --all=false) \
 	--apiserver-cert-extra-sans=$(pre-k machine public-ips --routable) \
 	--apiserver-cert-extra-sans=$(pre-k machine private-ips) \

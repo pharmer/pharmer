@@ -57,6 +57,7 @@ type InstanceManager interface {
 	DeleteInstanceByProviderID(providerID string) error
 }
 
+// TODO: change name
 type ClusterApiProviderComponent interface {
 	CreateCredentialSecret(kc kubernetes.Interface, data map[string]string) error
 	GetControllerManager() (string, error)

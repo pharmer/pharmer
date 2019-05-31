@@ -81,6 +81,7 @@ type controllerManagerConfig struct {
 	ControllerImage string
 }
 
+// TODO: we're using our own forks now, so we should generate this yamls and use from them instead of hard-coding
 const ControllerManager = `
 ---
 apiVersion: v1

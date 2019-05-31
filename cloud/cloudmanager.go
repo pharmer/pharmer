@@ -1,13 +1,12 @@
 package cloud
 
 import (
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 )
-
 
 type CloudManagerInterface interface {
 	GetCluster() *api.Cluster

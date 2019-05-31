@@ -262,12 +262,12 @@ func CheckForUpdates(name string) (string, error) {
 	//	return "", nil
 	//}
 	//
-	//kc, err := NewAdminClient(cm, Cluster)
+	//kubeClient, err := NewAdminClient(cm, Cluster)
 	//if err != nil {
 	//	return "", err
 	//}
 	//
-	//upm := NewUpgradeManager(kc, Cluster)
+	//upm := NewUpgradeManager(kubeClient, Cluster)
 	//upgrades, err := upm.GetAvailableUpgrades()
 	//if err != nil {
 	//	return "", err

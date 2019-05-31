@@ -28,7 +28,6 @@ func Apply(opts *options.ApplyConfig) ([]api.Action, error) {
 		return nil, errors.Wrapf(err, "Cluster `%s` does not exist", opts.ClusterName)
 	}
 
-
 	if cluster.Status.Phase == "" {
 		return nil, errors.Errorf("Cluster `%s` is in unknown phase", cluster.Name)
 	}
@@ -113,6 +112,7 @@ func Apply(opts *options.ApplyConfig) ([]api.Action, error) {
 }
 
 func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
+	// TODO: should this return leadermachine?
 	acts, leaderMachine, machines, err := cm.ApplyCreate(dryRun)
 	if err != nil {
 		return acts, err
@@ -120,12 +120,12 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 
 	cluster := cm.GetCluster()
 
-	kc, err := cm.GetAdminClient()
+	kubeClient, err := cm.GetAdminClient()
 	if err != nil {
 		return acts, err
 	}
 
-	if err = WaitForReadyMaster(kc); err != nil {
+	if err = WaitForReadyMaster(kubeClient); err != nil {
 		cluster.Status.Reason = err.Error()
 		err = errors.Wrap(err, " error occurred while waiting for master")
 		return acts, err
@@ -142,10 +142,14 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 		return
 	}
 
-	//if err = CreateCredentialSecret(kc, cluster); err != nil {
+	//if err = CreateCredentialSecret(kubeClient, cluster); err != nil {
 	//	return acts, errors.Wrap(err, "Error creating ccm secret credentials")
 	//}
 
+	// TODO: should we move this to providers?
+	// for only do linode and packet we need to pass conn
+	// but now this is getting passed to all providers
+	// if it is not nil, then pharmer credential, certs etc secrts are created
 	conn := cm.GetConnector()
 	var controllerManager string
 	controllerManager, err = conn.GetControllerManager()
@@ -154,7 +158,7 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 		return acts, errors.Wrap(err, "Error creating controller-manager")
 	}
 
-	ca, err := NewClusterApi(cm, cluster, "cloud-provider-system", kc, conn)
+	ca, err := NewClusterApi(cm, "cloud-provider-system", kubeClient, conn)
 	if err != nil {
 		return acts, errors.Wrap(err, "Error creating Cluster-api components")
 	}
@@ -164,7 +168,7 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 	}
 
 	log.Infof("Adding other master machines")
-	client, err := GetClusterClient(cm.GetCaCertPair(), cluster)
+	capiClient, err := GetClusterClient(cm.GetCaCertPair(), cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +177,7 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 		if m.Name == leaderMachine.Name {
 			continue
 		}
-		if _, err := client.ClusterV1alpha1().Machines(cluster.Spec.ClusterAPI.Namespace).Create(m); err != nil && !api.ErrObjectModified(err) {
+		if _, err := capiClient.ClusterV1alpha1().Machines(cluster.Spec.ClusterAPI.Namespace).Create(m); err != nil && !api.ErrObjectModified(err) {
 			log.Infof("Error creating maching %q in namespace %q", m.Name, cluster.Spec.ClusterAPI.Namespace)
 			return acts, err
 		}

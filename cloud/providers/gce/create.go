@@ -46,44 +46,6 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-// TODO Tahsin
-// SetupCerts Loads necessary certs in Cluster Spec
-func (cm *ClusterManager) SetupCerts() error {
-	//conf, err := clusterapiGCE.ClusterConfigFromProviderSpec(cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//conf.CAKeyPair = clusterapiGCE.KeyPair{
-	//	Cert: cert.EncodeCertPEM(cm.Certs.CACert.Cert),
-	//	Key:  cert.EncodePrivateKeyPEM(cm.Certs.CACert),
-	//}
-	//conf.FrontProxyCAKeyPair = clusterapiGCE.KeyPair{
-	//	Cert: cert.EncodeCertPEM(FrontProxyCACert(cm.ctx)),
-	//	Key:  cert.EncodePrivateKeyPEM(FrontProxyCAKey(cm.ctx)),
-	//}
-	//conf.EtcdCAKeyPair = clusterapiGCE.KeyPair{
-	//	Cert: cert.EncodeCertPEM(EtcdCaCert(cm.ctx)),
-	//	Key:  cert.EncodePrivateKeyPEM(EtcdCaKey(cm.ctx)),
-	//}
-	//conf.SAKeyPair = clusterapiGCE.KeyPair{
-	//	Cert: cert.EncodeCertPEM(SaCert(cm.ctx)),
-	//	Key:  cert.EncodePrivateKeyPEM(SaKey(cm.ctx)),
-	//}
-	//
-	//rawSpec, err := clusterapiGCE.EncodeClusterSpec(conf)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
-	//
-	//if _, err := store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
-	//	return err
-	//}
-	return nil
-}
-
 func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	n := namer{cluster: cluster}
 	config := cluster.Spec.Config
@@ -111,6 +73,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	return clusterapiGCE.SetGCEclusterProviderConfig(cluster.Spec.ClusterAPI, config, cm.Certs)
 }
 
+// TODO: why this is needed?
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, ErrNotImplemented
 }
@@ -133,6 +96,7 @@ func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*
 	return cfg, nil
 }
 
+// todo: is this needed?
 func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
 	return nil, nil
 }

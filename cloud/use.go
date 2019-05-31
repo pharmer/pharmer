@@ -2,12 +2,12 @@ package cloud
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/appscode/go/ioutil"
-	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
@@ -16,19 +16,19 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-func UseCluster(opts *options.ClusterUseConfig, konf *api.KubeConfig) {
+func UseCluster(opts *options.ClusterUseConfig, konf *api.KubeConfig) error {
 	var konfig *clientcmdapi.Config
 	if _, err := os.Stat(KubeConfigPath()); err == nil {
-		// ~/.kube/config exists
+		// $HOME/.kube/config exists
 		konfig, err = clientcmd.LoadFromFile(KubeConfigPath())
 		if err != nil {
-			log.Fatalln(err)
+			return errors.Wrap(err, "failed to load kubeconfig from disk")
 		}
 
 		bakFile := KubeConfigPath() + ".bak." + time.Now().Format("2006-01-02T15-04")
 		err = ioutil.CopyFile(bakFile, KubeConfigPath())
 		if err != nil {
-			log.Fatalln(err)
+			return errors.Wrapf(err, "failed to create backup of current config")
 		}
 		term.Infoln(fmt.Sprintf("Current Kubeconfig is backed up as %s.", bakFile))
 	} else {
@@ -44,7 +44,7 @@ func UseCluster(opts *options.ClusterUseConfig, konf *api.KubeConfig) {
 		}
 	}
 
-	ctxName := fmt.Sprintf("Cluster-admin@%s.pharmer", opts.ClusterName)
+	ctxName := fmt.Sprintf("cluster-admin@%s.pharmer", opts.ClusterName)
 
 	if !opts.Overwrite {
 		if konfig.CurrentContext == ctxName {
@@ -55,7 +55,7 @@ func UseCluster(opts *options.ClusterUseConfig, konf *api.KubeConfig) {
 
 	_, found := konfig.Contexts[ctxName]
 	if !found || opts.Overwrite {
-		// Upsert Cluster
+		// Upsert cluster
 		konfig.Clusters[konf.Cluster.Name] = toCluster(konf.Cluster)
 
 		// Upsert user
@@ -69,13 +69,15 @@ func UseCluster(opts *options.ClusterUseConfig, konf *api.KubeConfig) {
 
 	err := os.MkdirAll(filepath.Dir(KubeConfigPath()), 0755)
 	if err != nil {
-		log.Fatalln(err)
+		return errors.Wrapf(err, "failed to create kubeconfig file")
 	}
 	err = clientcmd.WriteToFile(*konfig, KubeConfigPath())
 	if err != nil {
-		log.Fatalln(err)
+		return errors.Wrapf(err, "failed to write kubeconfig")
 	}
-	term.Successln(fmt.Sprintf("kubectl context set to Cluster `%s`.", opts.ClusterName))
+
+	term.Successln(fmt.Sprintf("kubectl context set to cluster `%s`.", opts.ClusterName))
+	return nil
 }
 
 func toCluster(desired api.NamedCluster) *clientcmdapi.Cluster {

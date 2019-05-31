@@ -227,50 +227,12 @@ func DeleteDyanamicVolumes(client kubernetes.Interface) error {
 	})
 }
 
-func CreateCredentialSecret(client kubernetes.Interface, cluster *api.Cluster) error {
+func CreateCredentialSecret(client kubernetes.Interface, cluster *api.Cluster, namespace string) error {
 	cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return err
 	}
-	secret := &core.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: cluster.ClusterConfig().Cloud.CloudProvider,
-		},
-		StringData: cred.Spec.Data,
-		Type:       core.SecretTypeOpaque,
-	}
-
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := client.CoreV1().Secrets(metav1.NamespaceSystem).Get(secret.Name, metav1.GetOptions{})
-		if err == nil {
-			return true, nil
-		}
-		_, err = client.CoreV1().Secrets(metav1.NamespaceSystem).Create(secret)
-		if err != nil {
-			return false, nil
-		}
-		return false, nil
-	})
-}
-
-func NewClusterApiClient(caCert *api.CertKeyPair, cluster *api.Cluster) (client.Client, error) {
-	cfg, err := NewRestConfig(caCert, cluster)
-	if err != nil {
-		return nil, err
-	}
-
-	return client.New(cfg, client.Options{})
-}
-
-func waitForServiceAccount(ctx context.Context, client kubernetes.Interface) error {
-	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		attempt++
-		log.Infof("Attempt %v: Waiting for the service account to exist...", attempt)
-
-		_, err := client.CoreV1().ServiceAccounts(ServiceAccountNs).Get(ServiceAccountName, metav1.GetOptions{})
-		return err == nil, nil
-	})
+	return CreateSecret(client, cluster.Spec.Config.Cloud.CloudProvider, namespace, ConvertCredentialData(cred.Spec.Data))
 }
 
 func CreateSecret(kc kubernetes.Interface, name, namespace string, data map[string][]byte) error {
@@ -295,6 +257,35 @@ func CreateSecret(kc kubernetes.Interface, name, namespace string, data map[stri
 		return err == nil, nil
 	})
 }
+
+func ConvertCredentialData(data map[string]string) map[string][]byte {
+	newData := make(map[string][]byte)
+	for key, value := range data {
+		newData[key] = []byte(value)
+	}
+	return newData
+}
+
+func NewClusterApiClient(caCert *api.CertKeyPair, cluster *api.Cluster) (client.Client, error) {
+	cfg, err := NewRestConfig(caCert, cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	return client.New(cfg, client.Options{})
+}
+
+func waitForServiceAccount(ctx context.Context, client kubernetes.Interface) error {
+	attempt := 0
+	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+		attempt++
+		log.Infof("Attempt %v: Waiting for the service account to exist...", attempt)
+
+		_, err := client.CoreV1().ServiceAccounts(ServiceAccountNs).Get(ServiceAccountName, metav1.GetOptions{})
+		return err == nil, nil
+	})
+}
+
 
 func CreateNamespace(kc kubernetes.Interface, namespace string) error {
 	ns := &core.Namespace{

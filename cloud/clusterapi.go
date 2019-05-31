@@ -2,9 +2,9 @@ package cloud
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pharmer/pharmer/store"
 	"text/template"
 
 	"github.com/appscode/go/log"
@@ -21,18 +21,21 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
 
-type ClusterApi struct {
-	ctx                 context.Context
-	cluster             *api.Cluster
-	pharmerCertificates *api.PharmerCertificates
-	namespace           string
-	token               string
-	kc                  kubernetes.Interface
+const (
+	MachineControllerImage = "pharmer/machine-controller:0.3.0"
+)
 
-	providerComponenet ClusterApiProviderComponent
+type ClusterAPI struct {
+	Interface
 
+	namespace string
+	token     string
+
+	kubeClient       kubernetes.Interface
 	clusterapiClient clientset.Interface
 	bootstrapClient  clusterclient.Client
+
+	externalController bool
 }
 
 type ApiServerTemplate struct {
@@ -42,19 +45,14 @@ type ApiServerTemplate struct {
 	ControllerImage     string
 }
 
-var MachineControllerImage = "pharmer/machine-controller:0.3.0"
 
-const (
-	BasePath = ".pharmer/config.d"
-)
-
-func NewClusterApi(cm Interface, cluster *api.Cluster, namespace string, kc kubernetes.Interface, pc ClusterApiProviderComponent) (*ClusterApi, error) {
-	var token string
-	var err error
-	if token, err = GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration); err != nil {
+func NewClusterApi(cm Interface, namespace string, kc kubernetes.Interface, externalController bool) (*ClusterAPI, error) {
+	token, err := GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration)
+	if err != nil {
 		return nil, err
 	}
 
+	cluster := cm.GetCluster()
 	bc, err := GetBooststrapClient(cm, cluster)
 	if err != nil {
 		return nil, err
@@ -64,17 +62,16 @@ func NewClusterApi(cm Interface, cluster *api.Cluster, namespace string, kc kube
 		return nil, err
 	}
 
-	pharmerCertificates := cm.GetPharmerCertificates()
+	return &ClusterAPI{
+		Interface:        cm,
+		namespace:        namespace,
+		externalController: externalController,
 
-	return &ClusterApi{
-		cluster:             cluster,
-		namespace:           namespace,
-		pharmerCertificates: pharmerCertificates,
-		kc:                  kc,
-		clusterapiClient:    clusterClient,
-		providerComponenet:  pc,
-		token:               token,
-		bootstrapClient:     bc}, nil
+		kubeClient:       kc,
+		clusterapiClient: clusterClient,
+		token:            token,
+		bootstrapClient:  bc,
+	}, nil
 }
 
 func GetClusterClient(caCert *api.CertKeyPair, cluster *api.Cluster) (clientset.Interface, error) {
@@ -85,26 +82,27 @@ func GetClusterClient(caCert *api.CertKeyPair, cluster *api.Cluster) (clientset.
 	return clientset.NewForConfig(conf)
 }
 
-func (ca *ClusterApi) Apply(controllerManager string) error {
+func (ca *ClusterAPI) Apply(controllerManager string) error {
 	log.Infof("Deploying the addon apiserver and controller manager...")
 	if err := ca.CreateMachineController(controllerManager); err != nil {
 		return errors.Wrap(err, "can't create machine controller")
 	}
 
-	if err := phases.ApplyCluster(ca.bootstrapClient, ca.cluster.Spec.ClusterAPI); err != nil && !api.ErrAlreadyExist(err) {
+	cluster := ca.GetCluster()
+	if err := phases.ApplyCluster(ca.bootstrapClient, cluster.Spec.ClusterAPI); err != nil && !api.ErrAlreadyExist(err) {
 		return errors.Wrap(err, "failed to add Cluster")
 	}
-	namespace := ca.cluster.Spec.ClusterAPI.Namespace
+	namespace := cluster.Spec.ClusterAPI.Namespace
 	if namespace == "" {
 		namespace = ca.bootstrapClient.GetContextNamespace()
 	}
 
-	c, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(namespace).Get(ca.cluster.Name, metav1.GetOptions{})
+	c, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(namespace).Get(cluster.Name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrap(err, "failed to update Cluster provider status")
 	}
 
-	c.Status = ca.cluster.Spec.ClusterAPI.Status
+	c.Status = cluster.Spec.ClusterAPI.Status
 	if _, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(namespace).UpdateStatus(c); err != nil && !api.ErrObjectModified(err) {
 		return errors.Wrap(err, "failed to update Cluster")
 	}
@@ -114,7 +112,7 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 		return errors.Wrap(err, "failed to update provider status")
 	}
 
-	masterMachine, err := GetLeaderMachine(ca.cluster)
+	masterMachine, err := GetLeaderMachine(cluster)
 	if err != nil {
 		return errors.Wrap(err, "failed to get leader machine")
 	}
@@ -137,15 +135,17 @@ func (ca *ClusterApi) Apply(controllerManager string) error {
 	return nil
 }
 
-func (ca *ClusterApi) updateProviderStatus() error {
+func (ca *ClusterAPI) updateProviderStatus() error {
+	pharmerCluster := ca.GetCluster()
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		cluster, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(ca.cluster.Spec.ClusterAPI.Namespace).Get(ca.cluster.Name, metav1.GetOptions{})
+		cluster, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(pharmerCluster.Spec.ClusterAPI.Namespace).Get(pharmerCluster.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, nil
 		}
 		if cluster.Status.ProviderStatus != nil {
-			ca.cluster.Spec.ClusterAPI.Status.ProviderStatus = cluster.Status.ProviderStatus
-			if _, err := Store(ca.ctx).Clusters().Update(ca.cluster); err != nil {
+			pharmerCluster.Spec.ClusterAPI.Status.ProviderStatus = cluster.Status.ProviderStatus
+			if _, err := store.StoreProvider.Clusters().Update(pharmerCluster); err != nil {
+				log.Info(err)
 				return false, nil
 			}
 			return true, nil
@@ -154,7 +154,7 @@ func (ca *ClusterApi) updateProviderStatus() error {
 	})
 }
 
-func (ca *ClusterApi) updateMachineStatus(namespace string, masterMachine *clusterv1.Machine) error {
+func (ca *ClusterAPI) updateMachineStatus(namespace string, masterMachine *clusterv1.Machine) error {
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
 		m, err := ca.clusterapiClient.ClusterV1alpha1().Machines(namespace).Get(masterMachine.Name, metav1.GetOptions{})
 		if err != nil {
@@ -168,7 +168,7 @@ func (ca *ClusterApi) updateMachineStatus(namespace string, masterMachine *clust
 	})
 }
 
-func (ca *ClusterApi) CreateMachineController(controllerManager string) error {
+func (ca *ClusterAPI) CreateMachineController(controllerManager string) error {
 	log.Infoln("creating pharmer secret")
 	if err := ca.CreatePharmerSecret(); err != nil {
 		return err
@@ -181,10 +181,11 @@ func (ca *ClusterApi) CreateMachineController(controllerManager string) error {
 	return nil
 }
 
-func (ca *ClusterApi) CreatePharmerSecret() error {
-	providerConfig := ca.cluster.ClusterConfig()
+func (ca *ClusterAPI) CreatePharmerSecret() error {
+	cluster := ca.GetCluster()
+	providerConfig := cluster.ClusterConfig()
 
-	cred, err := Store(ca.ctx).Credentials().Get(ca.cluster.ClusterConfig().CredentialName)
+	cred, err := store.StoreProvider.Credentials().Get(cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return err
 	}
@@ -193,28 +194,29 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 		return err
 	}
 
-	if err = CreateNamespace(ca.kc, ca.namespace); err != nil {
+	if err = CreateNamespace(ca.kubeClient, ca.namespace); err != nil {
 		return err
 	}
 
-	if err = CreateSecret(ca.kc, "pharmer-cred", ca.namespace, map[string][]byte{
-		fmt.Sprintf("%v.json", ca.cluster.ClusterConfig().CredentialName): credData,
+	if err = CreateSecret(ca.kubeClient, "pharmer-cred", ca.namespace, map[string][]byte{
+		fmt.Sprintf("%v.json", cluster.ClusterConfig().CredentialName): credData,
 	}); err != nil {
 		return err
 	}
 
-	if ca.providerComponenet != nil {
-		if err = ca.providerComponenet.CreateCredentialSecret(ca.kc, cred.Spec.Data); err != nil {
+	if ca.externalController == false {
+		CreateCredentialSecret()
+		if err = CreateCredentialSecretWb(ca.kubeClient, cred.Spec.Data); err != nil {
 			return err
 		}
 	}
 
-	cluster, err := json.MarshalIndent(ca.cluster, "", "  ")
+	cluster, err := json.MarshalIndent(cluster, "", "  ")
 	if err != nil {
 		return err
 	}
-	if err = CreateSecret(ca.kc, "pharmer-Cluster", ca.namespace, map[string][]byte{
-		fmt.Sprintf("%v.json", ca.cluster.Name): cluster,
+	if err = CreateSecret(ca.kubeClient, "pharmer-Cluster", ca.namespace, map[string][]byte{
+		fmt.Sprintf("%v.json", cluster.Name): cluster,
 	}); err != nil {
 		return err
 	}
@@ -223,14 +225,14 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 	if err != nil {
 		return err
 	}
-	if err = CreateSecret(ca.kc, "pharmer-ssh", ca.namespace, map[string][]byte{
+	if err = CreateSecret(ca.kubeClient, "pharmer-ssh", ca.namespace, map[string][]byte{
 		fmt.Sprintf("id_%v", providerConfig.Cloud.SSHKeyName):     privateKey,
 		fmt.Sprintf("id_%v.pub", providerConfig.Cloud.SSHKeyName): publicKey,
 	}); err != nil {
 		return err
 	}
 
-	if err = CreateSecret(ca.kc, "pharmer-certificate", ca.namespace, map[string][]byte{
+	if err = CreateSecret(ca.kubeClient, "pharmer-certificate", ca.namespace, map[string][]byte{
 		"ca.crt":             cert.EncodeCertPEM(ca.pharmerCertificates.CACert.Cert),
 		"ca.key":             cert.EncodePrivateKeyPEM(ca.pharmerCertificates.CACert.Key),
 		"front-proxy-ca.crt": cert.EncodeCertPEM(ca.pharmerCertificates.FrontProxyCACert.Cert),
@@ -241,7 +243,7 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 		return err
 	}
 
-	if err = CreateSecret(ca.kc, "pharmer-etcd", ca.namespace, map[string][]byte{
+	if err = CreateSecret(ca.kubeClient, "pharmer-etcd", ca.namespace, map[string][]byte{
 		"ca.crt": cert.EncodeCertPEM(ca.pharmerCertificates.EtcdCACert.Cert),
 		"ca.key": cert.EncodePrivateKeyPEM(ca.pharmerCertificates.EtcdCACert.Key),
 	}); err != nil {
@@ -251,7 +253,7 @@ func (ca *ClusterApi) CreatePharmerSecret() error {
 	return nil
 }
 
-func (ca *ClusterApi) CreateApiServerAndController(controllerManager string) error {
+func (ca *ClusterAPI) CreateApiServerAndController(controllerManager string) error {
 	tmpl, err := template.New("config").Parse(controllerManager)
 	if err != nil {
 		return err
@@ -270,7 +272,7 @@ func (ca *ClusterApi) CreateApiServerAndController(controllerManager string) err
 	return ca.bootstrapClient.Apply(tmplBuf.String())
 }
 
-func (ca *ClusterApi) GetMachines() (*[]clusterv1.Machine, error) {
+func (ca *ClusterAPI) GetMachines() (*[]clusterv1.Machine, error) {
 	machineList, err := ca.clusterapiClient.ClusterV1alpha1().Machines("default").List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -279,7 +281,7 @@ func (ca *ClusterApi) GetMachines() (*[]clusterv1.Machine, error) {
 	return &machineList.Items, err
 }
 
-func (ca *ClusterApi) UpdateMachine(machine *clusterv1.Machine) error {
+func (ca *ClusterAPI) UpdateMachine(machine *clusterv1.Machine) error {
 	_, err := ca.clusterapiClient.ClusterV1alpha1().Machines("default").Update(machine)
 
 	return err
