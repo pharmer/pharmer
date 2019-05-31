@@ -250,7 +250,7 @@ func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error
 
 	// These are common
 	// -------common begins-----
-	err = DeleteAllWorkerMachines(cm, cm.Cluster)
+	err = DeleteAllWorkerMachines(cm)
 	if err != nil {
 		log.Infof("failed to delete nodes: %v", err)
 	}

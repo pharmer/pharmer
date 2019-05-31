@@ -340,8 +340,10 @@ func GetLeaderMachine(cluster *v1beta1.Cluster) (*clusterapi.Machine, error) {
 }*/
 
 // DeleteAllWorkerMachines waits for all nodes to be deleted
-func DeleteAllWorkerMachines(cm Interface, cluster *v1beta1.Cluster) error {
+func DeleteAllWorkerMachines(cm Interface) error {
 	log.Infof("Deleting non-controlplane machines")
+
+	cluster := cm.GetCluster()
 
 	client, err := GetBooststrapClient(cm, cluster)
 	if err != nil {
