@@ -1,5 +1,9 @@
 package aws
 
+func (conn *cloudConnector) GetControllerManager() (string, error) {
+	return ControllerManager, nil
+}
+
 // ControllerManager defines the clusterapi crds and controllers
 const ControllerManager = `
 ---

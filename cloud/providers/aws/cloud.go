@@ -2,14 +2,12 @@ package aws
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"fmt"
 	"html/template"
 	"strings"
 	"time"
 
-	. "github.com/appscode/go/context"
 	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
 	"github.com/appscode/go/wait"
@@ -30,16 +28,16 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type cloudConnector struct {
-	ctx     context.Context
-	cluster *api.Cluster
-	namer   namer
+	*CloudManager
 
+	namer     namer
 	ec2       *_ec2.EC2
 	elb       *_elb.ELB
 	iam       *_iam.IAM
@@ -50,17 +48,17 @@ type cloudConnector struct {
 var _ ClusterApiProviderComponent = &cloudConnector{}
 
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
-	cred, err := Store(cm.ctx).Credentials().Get(cm.cluster.Spec.Config.CredentialName)
+	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
 	typed := credential.AWS{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.Errorf("credential %s is invalid. Reason: %v", cm.cluster.Spec.Config.CredentialName, err)
+		return nil, errors.Errorf("credential %s is invalid. Reason: %v", cm.Cluster.Spec.Config.CredentialName, err)
 	}
 
 	config := &_aws.Config{
-		Region:      &cm.cluster.Spec.Config.Cloud.Region,
+		Region:      &cm.Cluster.Spec.Config.Cloud.Region,
 		Credentials: credentials.NewStaticCredentials(typed.AccessKeyID(), typed.SecretAccessKey(), ""),
 	}
 	sess, err := session.NewSession(config)
@@ -68,17 +66,15 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 		return nil, err
 	}
 	conn := cloudConnector{
-		ctx:       cm.ctx,
-		cluster:   cm.cluster,
+		namer:     namer{cm.Cluster},
 		ec2:       _ec2.New(sess),
 		elb:       _elb.New(sess),
 		iam:       _iam.New(sess),
 		autoscale: autoscaling.New(sess),
 		s3:        _s3.New(sess),
-		namer:     cm.namer,
 	}
 	if ok, msg := conn.IsUnauthorized(); !ok {
-		return nil, errors.Errorf("credential %s does not have necessary authorization. Reason: %s", cm.cluster.Spec.Config.CredentialName, msg)
+		return nil, errors.Errorf("credential %s does not have necessary authorization. Reason: %s", cm.Cluster.Spec.Config.CredentialName, msg)
 	}
 	return &conn, nil
 }
@@ -86,16 +82,16 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 func PrepareCloud(cm *ClusterManager) error {
 	//	var err error
 
-	//if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
+	//if cm.ctx, err = LoadCACertificates(cm.ctx, cm.Cluster, cm.owner); err != nil {
 	//	return err
 	//}
-	//if cm.ctx, err = LoadEtcdCertificate(cm.ctx, cm.cluster, cm.owner); err != nil {
+	//if cm.ctx, err = LoadEtcdCertificate(cm.ctx, cm.Cluster, cm.owner); err != nil {
 	//	return err
 	//}
-	//if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster, cm.owner); err != nil {
+	//if cm.ctx, err = LoadSSHKey(cm.ctx, cm.Cluster, cm.owner); err != nil {
 	//	return err
 	//}
-	//if cm.ctx, err = LoadSaKey(cm.ctx, cm.cluster, cm.owner); err != nil {
+	//if cm.ctx, err = LoadSaKey(cm.ctx, cm.Cluster, cm.owner); err != nil {
 	//	return err
 	//}
 	//
@@ -169,7 +165,7 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 }
 
 func (conn *cloudConnector) detectUbuntuImage() error {
-	conn.cluster.Spec.Config.Cloud.OS = "ubuntu"
+	conn.Cluster.Spec.Config.Cloud.OS = "ubuntu"
 	r1, err := conn.ec2.DescribeImages(&_ec2.DescribeImagesInput{
 		Owners: []*string{StringP("099720109477")},
 		Filters: []*_ec2.Filter{
@@ -184,8 +180,8 @@ func (conn *cloudConnector) detectUbuntuImage() error {
 	if err != nil {
 		return err
 	}
-	conn.cluster.Spec.Config.Cloud.InstanceImage = *r1.Images[0].ImageId
-	log.Infof("Ubuntu image with %v detected", conn.cluster.Spec.Config.Cloud.InstanceImage)
+	conn.Cluster.Spec.Config.Cloud.InstanceImage = *r1.Images[0].ImageId
+	log.Infof("Ubuntu image with %v detected", conn.Cluster.Spec.Config.Cloud.InstanceImage)
 	return nil
 }
 
@@ -210,7 +206,7 @@ region = {{ .Region }}
 	}{
 		AccessKeyID:     data["accessKeyID"],
 		SecretAccessKey: data["secretAccessKey"],
-		Region:          conn.cluster.Spec.Config.Cloud.Region,
+		Region:          conn.Cluster.Spec.Config.Cloud.Region,
 	})
 	if err != nil {
 		return err
@@ -227,11 +223,11 @@ region = {{ .Region }}
 }
 
 func (conn *cloudConnector) getIAMProfile() (bool, error) {
-	r1, err := conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster})
+	r1, err := conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileMaster})
 	if r1.InstanceProfile == nil {
 		return false, err
 	}
-	r2, err := conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode})
+	r2, err := conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileNode})
 	if r2.InstanceProfile == nil {
 		return false, err
 	}
@@ -239,37 +235,37 @@ func (conn *cloudConnector) getIAMProfile() (bool, error) {
 }
 
 func (conn *cloudConnector) ensureIAMProfile() error {
-	r1, err := conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster})
+	r1, err := conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileMaster})
 	if err != nil && !strings.Contains(err.Error(), "NoSuchEntity") {
 		return err
 	}
 	if r1.InstanceProfile == nil {
-		err := conn.createIAMProfile(api.RoleMaster, conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster)
+		err := conn.createIAMProfile(api.RoleMaster, conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileMaster)
 		if err != nil {
 			return err
 		}
-		log.Infof("Master instance profile %v created", conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster)
+		log.Infof("Master instance profile %v created", conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileMaster)
 	}
-	r2, err := conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode})
+	r2, err := conn.iam.GetInstanceProfile(&_iam.GetInstanceProfileInput{InstanceProfileName: &conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileNode})
 	if err != nil && !strings.Contains(err.Error(), "NoSuchEntity") {
 		return err
 	}
 	if r2.InstanceProfile == nil {
-		err := conn.createIAMProfile(api.RoleNode, conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode)
+		err := conn.createIAMProfile(api.RoleNode, conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileNode)
 		if err != nil {
 			return err
 		}
-		log.Infof("Node instance profile %v created", conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode)
+		log.Infof("Node instance profile %v created", conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileNode)
 	}
 	return nil
 }
 
 func (conn *cloudConnector) deleteIAMProfile() error {
-	if err := conn.deleteRolePolicy(conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster); err != nil {
-		log.Infoln("Failed to delete IAM instance-policy ", conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster, err)
+	if err := conn.deleteRolePolicy(conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileMaster); err != nil {
+		log.Infoln("Failed to delete IAM instance-policy ", conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileMaster, err)
 	}
-	if err := conn.deleteRolePolicy(conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode); err != nil {
-		log.Infoln("Failed to delete IAM instance-policy ", conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode, err)
+	if err := conn.deleteRolePolicy(conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileNode); err != nil {
+		log.Infoln("Failed to delete IAM instance-policy ", conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileNode, err)
 	}
 	return nil
 }
@@ -289,9 +285,9 @@ func (conn *cloudConnector) deleteRolePolicy(role string) error {
 		log.Infoln("Failed to delete role policy", role, err)
 	}
 
-	if role == conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster {
+	if role == conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileMaster {
 		if _, err := conn.iam.DeleteRolePolicy(&_iam.DeleteRolePolicyInput{
-			PolicyName: &conn.cluster.Spec.Config.Cloud.AWS.IAMProfileNode,
+			PolicyName: &conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileNode,
 			RoleName:   &role,
 		}); err != nil {
 			log.Infoln("Failed to delete role policy", role, err)
@@ -412,7 +408,7 @@ func (conn *cloudConnector) createIAMProfile(role, key string) error {
 
 func (conn *cloudConnector) getPublicKey() (bool, error) {
 	resp, err := conn.ec2.DescribeKeyPairs(&_ec2.DescribeKeyPairsInput{
-		KeyNames: StringPSlice([]string{conn.cluster.Spec.Config.Cloud.SSHKeyName}),
+		KeyNames: StringPSlice([]string{conn.Cluster.Spec.Config.Cloud.SSHKeyName}),
 	})
 	if err != nil {
 		return false, err
@@ -425,8 +421,8 @@ func (conn *cloudConnector) getPublicKey() (bool, error) {
 
 func (conn *cloudConnector) importPublicKey() error {
 	resp, err := conn.ec2.ImportKeyPair(&_ec2.ImportKeyPairInput{
-		KeyName:           StringP(conn.cluster.Spec.Config.Cloud.SSHKeyName),
-		PublicKeyMaterial: SSHKey(conn.ctx).PublicKey,
+		KeyName:           StringP(conn.Cluster.Spec.Config.Cloud.SSHKeyName),
+		PublicKeyMaterial: conn.Certs.SSHKey.PublicKey,
 	})
 	log.Debug("Imported SSH key", resp, err)
 	if err != nil {
@@ -439,13 +435,12 @@ func (conn *cloudConnector) importPublicKey() error {
 		return err
 
 	}
-	log.Infof("SSH key with (AWS) fingerprint %v imported", SSHKey(conn.ctx).AwsFingerprint)
 
 	return nil
 }
 
 func (conn *cloudConnector) getVpc() (string, bool, error) {
-	log.Infof("Checking VPC tagged with %v", conn.cluster.Name)
+	log.Infof("Checking VPC tagged with %v", conn.Cluster.Name)
 	r1, err := conn.ec2.DescribeVpcs(&_ec2.DescribeVpcsInput{
 		Filters: []*_ec2.Filter{
 			{
@@ -457,7 +452,7 @@ func (conn *cloudConnector) getVpc() (string, bool, error) {
 			{
 				Name: StringP("tag-key"),
 				Values: []*string{
-					StringP("kubernetes.io/cluster/" + conn.cluster.Name),
+					StringP("kubernetes.io/cluster/" + conn.Cluster.Name),
 				},
 			},
 		},
@@ -474,7 +469,7 @@ func (conn *cloudConnector) getVpc() (string, bool, error) {
 func (conn *cloudConnector) setupVpc() (string, error) {
 	log.Info("No VPC found, creating new VPC")
 	r2, err := conn.ec2.CreateVpc(&_ec2.CreateVpcInput{
-		CidrBlock: StringP(conn.cluster.Spec.Config.Cloud.AWS.VpcCIDR),
+		CidrBlock: StringP(conn.Cluster.Spec.Config.Cloud.AWS.VpcCIDR),
 	})
 	log.Debug("VPC created", r2, err)
 
@@ -489,8 +484,8 @@ func (conn *cloudConnector) setupVpc() (string, error) {
 	}
 
 	tags := map[string]string{
-		"Name": conn.cluster.Name + "-vpc",
-		"kubernetes.io/cluster/" + conn.cluster.Name:   "owned",
+		"Name": conn.Cluster.Name + "-vpc",
+		"kubernetes.io/cluster/" + conn.Cluster.Name:   "owned",
 		"sigs.k8s.io/cluster-api-provider-aws/managed": "true",
 	}
 
@@ -533,7 +528,7 @@ func (conn *cloudConnector) addTag(id string, key string, value string) error {
 
 func (conn *cloudConnector) getLoadBalancer() (string, error) {
 	input := &elb.DescribeLoadBalancersInput{
-		LoadBalancerNames: aws.StringSlice([]string{fmt.Sprintf("%s-apiserver", conn.cluster.Name)}),
+		LoadBalancerNames: aws.StringSlice([]string{fmt.Sprintf("%s-apiserver", conn.Cluster.Name)}),
 	}
 	out, err := conn.elb.DescribeLoadBalancers(input)
 	if err != nil {
@@ -549,7 +544,7 @@ func (conn *cloudConnector) getLoadBalancer() (string, error) {
 func (conn *cloudConnector) deleteLoadBalancer() (bool, error) {
 	log.Infof("deleting load balancer")
 	input := &elb.DeleteLoadBalancerInput{
-		LoadBalancerName: StringP(fmt.Sprintf("%s-apiserver", conn.cluster.Name)),
+		LoadBalancerName: StringP(fmt.Sprintf("%s-apiserver", conn.Cluster.Name)),
 	}
 	if _, err := conn.elb.DeleteLoadBalancer(input); err != nil {
 		return false, err
@@ -570,9 +565,9 @@ func (conn *cloudConnector) deleteLoadBalancer() (bool, error) {
 
 func (conn *cloudConnector) setupLoadBalancer(publicSubnetID string) (string, error) {
 	input := elb.CreateLoadBalancerInput{
-		LoadBalancerName: StringP(fmt.Sprintf("%s-apiserver", conn.cluster.Name)),
+		LoadBalancerName: StringP(fmt.Sprintf("%s-apiserver", conn.Cluster.Name)),
 		Subnets:          []*string{StringP(publicSubnetID)},
-		SecurityGroups:   []*string{StringP(conn.cluster.Status.Cloud.AWS.MasterSGId)},
+		SecurityGroups:   []*string{StringP(conn.Cluster.Status.Cloud.AWS.MasterSGId)},
 		Scheme:           StringP("Internet-facing"),
 		Listeners: []*elb.Listener{
 			{
@@ -588,7 +583,7 @@ func (conn *cloudConnector) setupLoadBalancer(publicSubnetID string) (string, er
 				Value: StringP("apiserver"),
 			},
 			{
-				Key:   StringP(fmt.Sprintf("kubernetes.io/cluster/%s", conn.cluster.Name)),
+				Key:   StringP(fmt.Sprintf("kubernetes.io/cluster/%s", conn.Cluster.Name)),
 				Value: StringP("owned"),
 			},
 			{
@@ -628,7 +623,7 @@ func (conn *cloudConnector) getSubnet(vpcID, privacy string) (string, bool, erro
 			{
 				Name: StringP("availabilityZone"),
 				Values: []*string{
-					StringP(conn.cluster.Spec.Config.Cloud.Zone),
+					StringP(conn.Cluster.Spec.Config.Cloud.Zone),
 				},
 			},
 			{
@@ -640,7 +635,7 @@ func (conn *cloudConnector) getSubnet(vpcID, privacy string) (string, bool, erro
 			{
 				Name: StringP("tag:Name"),
 				Values: []*string{
-					StringP(fmt.Sprintf("%s-subnet-%s", conn.cluster.Name, privacy)),
+					StringP(fmt.Sprintf("%s-subnet-%s", conn.Cluster.Name, privacy)),
 				},
 			},
 		},
@@ -662,9 +657,9 @@ func (conn *cloudConnector) getSubnet(vpcID, privacy string) (string, bool, erro
 func (conn *cloudConnector) setupPrivateSubnet(vpcID string) (string, error) {
 	log.Info("No subnet found, creating new subnet")
 	r2, err := conn.ec2.CreateSubnet(&_ec2.CreateSubnetInput{
-		CidrBlock:        StringP(conn.cluster.Spec.Config.Cloud.AWS.PrivateSubnetCIDR),
+		CidrBlock:        StringP(conn.Cluster.Spec.Config.Cloud.AWS.PrivateSubnetCIDR),
 		VpcId:            StringP(vpcID),
-		AvailabilityZone: StringP(conn.cluster.Spec.Config.Cloud.Zone),
+		AvailabilityZone: StringP(conn.Cluster.Spec.Config.Cloud.Zone),
 	})
 	log.Debug("Created subnet", r2, err)
 	if err != nil {
@@ -677,8 +672,8 @@ func (conn *cloudConnector) setupPrivateSubnet(vpcID string) (string, error) {
 	time.Sleep(preTagDelay)
 
 	tags := map[string]string{
-		"Name": conn.cluster.Name + "-subnet-private",
-		"kubernetes.io/cluster/" + conn.cluster.Name:   "owned",
+		"Name": conn.Cluster.Name + "-subnet-private",
+		"kubernetes.io/cluster/" + conn.Cluster.Name:   "owned",
 		"sigs.k8s.io/cluster-api-provider-aws/managed": "true",
 		"sigs.k8s.io/cluster-api-provider-aws/role":    "common",
 	}
@@ -693,9 +688,9 @@ func (conn *cloudConnector) setupPrivateSubnet(vpcID string) (string, error) {
 func (conn *cloudConnector) setupPublicSubnet(vpcID string) (string, error) {
 	log.Info("No subnet found, creating new subnet")
 	r2, err := conn.ec2.CreateSubnet(&_ec2.CreateSubnetInput{
-		CidrBlock:        StringP(conn.cluster.Spec.Config.Cloud.AWS.PublicSubnetCIDR),
+		CidrBlock:        StringP(conn.Cluster.Spec.Config.Cloud.AWS.PublicSubnetCIDR),
 		VpcId:            StringP(vpcID),
-		AvailabilityZone: StringP(conn.cluster.Spec.Config.Cloud.Zone),
+		AvailabilityZone: StringP(conn.Cluster.Spec.Config.Cloud.Zone),
 	})
 	log.Debug("Created subnet", r2, err)
 	if err != nil {
@@ -721,8 +716,8 @@ func (conn *cloudConnector) setupPublicSubnet(vpcID string) (string, error) {
 	id := *r2.Subnet.SubnetId
 
 	tags := map[string]string{
-		"Name": conn.cluster.Name + "-subnet-public",
-		"kubernetes.io/cluster/" + conn.cluster.Name:   "owned",
+		"Name": conn.Cluster.Name + "-subnet-public",
+		"kubernetes.io/cluster/" + conn.Cluster.Name:   "owned",
 		"sigs.k8s.io/cluster-api-provider-aws/managed": "true",
 		"sigs.k8s.io/cluster-api-provider-aws/role":    "bastion",
 	}
@@ -780,8 +775,8 @@ func (conn *cloudConnector) setupInternetGateway(vpcID string) (string, error) {
 	log.Infof("Attached IGW %v to VPCID %v", id, vpcID)
 
 	tags := map[string]string{
-		"Name": conn.cluster.Name + "-igw",
-		"kubernetes.io/cluster/" + conn.cluster.Name:   "owned",
+		"Name": conn.Cluster.Name + "-igw",
+		"kubernetes.io/cluster/" + conn.Cluster.Name:   "owned",
 		"sigs.k8s.io/cluster-api-provider-aws/managed": "true",
 		"sigs.k8s.io/cluster-api-provider-aws/role":    "common",
 	}
@@ -850,8 +845,8 @@ func (conn *cloudConnector) setupNatGateway(publicSubnetID string) (string, erro
 	log.Infof("Nat Gateway %v created", *out.NatGateway.NatGatewayId)
 
 	tags := map[string]string{
-		"Name": conn.cluster.Name + "-nat",
-		"kubernetes.io/cluster/" + conn.cluster.Name:   "owned",
+		"Name": conn.Cluster.Name + "-nat",
+		"kubernetes.io/cluster/" + conn.Cluster.Name:   "owned",
 		"sigs.k8s.io/cluster-api-provider-aws/managed": "true",
 		"sigs.k8s.io/cluster-api-provider-aws/role":    "common",
 	}
@@ -876,13 +871,13 @@ func (conn *cloudConnector) getRouteTable(privacy, vpcID string) (string, bool, 
 			{
 				Name: StringP("tag-key"),
 				Values: []*string{
-					StringP(fmt.Sprintf("kubernetes.io/cluster/%s", conn.cluster.Name)),
+					StringP(fmt.Sprintf("kubernetes.io/cluster/%s", conn.Cluster.Name)),
 				},
 			},
 			{
 				Name: StringP("tag:Name"),
 				Values: []*string{
-					StringP(fmt.Sprintf("%s-rt-%s", conn.cluster.Name, privacy)),
+					StringP(fmt.Sprintf("%s-rt-%s", conn.Cluster.Name, privacy)),
 				},
 			},
 		},
@@ -914,8 +909,8 @@ func (conn *cloudConnector) setupRouteTable(privacy, vpcID, igwID, natID, public
 	id := *out.RouteTable.RouteTableId
 
 	tags := map[string]string{
-		"Name": fmt.Sprintf("%s-rt-%s", conn.cluster.Name, privacy),
-		"kubernetes.io/cluster/" + conn.cluster.Name:   "owned",
+		"Name": fmt.Sprintf("%s-rt-%s", conn.Cluster.Name, privacy),
+		"kubernetes.io/cluster/" + conn.Cluster.Name:   "owned",
 		"sigs.k8s.io/cluster-api-provider-aws/managed": "true",
 	}
 
@@ -974,35 +969,35 @@ func (conn *cloudConnector) setupRouteTable(privacy, vpcID, igwID, natID, public
 func (conn *cloudConnector) setupSecurityGroups(vpcID string) error {
 	var ok bool
 	var err error
-	if conn.cluster.Status.Cloud.AWS.MasterSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.cluster.Spec.Config.Cloud.AWS.MasterSGName); !ok {
+	if conn.Cluster.Status.Cloud.AWS.MasterSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.Cluster.Spec.Config.Cloud.AWS.MasterSGName); !ok {
 		if err != nil {
 			return err
 		}
-		err = conn.createSecurityGroup(vpcID, conn.cluster.Spec.Config.Cloud.AWS.MasterSGName, "controlplane")
+		err = conn.createSecurityGroup(vpcID, conn.Cluster.Spec.Config.Cloud.AWS.MasterSGName, "controlplane")
 		if err != nil {
 			return err
 		}
-		log.Infof("Master security group %v created", conn.cluster.Spec.Config.Cloud.AWS.MasterSGName)
+		log.Infof("Master security group %v created", conn.Cluster.Spec.Config.Cloud.AWS.MasterSGName)
 	}
-	if conn.cluster.Status.Cloud.AWS.NodeSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.cluster.Spec.Config.Cloud.AWS.NodeSGName); !ok {
+	if conn.Cluster.Status.Cloud.AWS.NodeSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.Cluster.Spec.Config.Cloud.AWS.NodeSGName); !ok {
 		if err != nil {
 			return err
 		}
-		err = conn.createSecurityGroup(vpcID, conn.cluster.Spec.Config.Cloud.AWS.NodeSGName, "node")
+		err = conn.createSecurityGroup(vpcID, conn.Cluster.Spec.Config.Cloud.AWS.NodeSGName, "node")
 		if err != nil {
 			return err
 		}
-		log.Infof("Node security group %v created", conn.cluster.Spec.Config.Cloud.AWS.NodeSGName)
+		log.Infof("Node security group %v created", conn.Cluster.Spec.Config.Cloud.AWS.NodeSGName)
 	}
-	if conn.cluster.Status.Cloud.AWS.BastionSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.cluster.Spec.Config.Cloud.AWS.BastionSGName); !ok {
+	if conn.Cluster.Status.Cloud.AWS.BastionSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.Cluster.Spec.Config.Cloud.AWS.BastionSGName); !ok {
 		if err != nil {
 			return err
 		}
-		err = conn.createSecurityGroup(vpcID, conn.cluster.Spec.Config.Cloud.AWS.BastionSGName, "bastion")
+		err = conn.createSecurityGroup(vpcID, conn.Cluster.Spec.Config.Cloud.AWS.BastionSGName, "bastion")
 		if err != nil {
 			return err
 		}
-		log.Infof("Bastion security group %v created", conn.cluster.Spec.Config.Cloud.AWS.BastionSGName)
+		log.Infof("Bastion security group %v created", conn.Cluster.Spec.Config.Cloud.AWS.BastionSGName)
 	}
 
 	err = conn.detectSecurityGroups(vpcID)
@@ -1047,11 +1042,11 @@ func (conn *cloudConnector) setupSecurityGroups(vpcID string) error {
 func (conn *cloudConnector) getGroupID(role string) (string, error) {
 	switch role {
 	case "bastion":
-		return conn.cluster.Status.Cloud.AWS.BastionSGId, nil
+		return conn.Cluster.Status.Cloud.AWS.BastionSGId, nil
 	case "controlplane":
-		return conn.cluster.Status.Cloud.AWS.MasterSGId, nil
+		return conn.Cluster.Status.Cloud.AWS.MasterSGId, nil
 	case "node":
-		return conn.cluster.Status.Cloud.AWS.NodeSGId, nil
+		return conn.Cluster.Status.Cloud.AWS.NodeSGId, nil
 	}
 	return "", errors.New("error")
 }
@@ -1082,7 +1077,7 @@ func (conn *cloudConnector) getIngressRules(role string) ([]*ec2.IpPermission, e
 				UserIdGroupPairs: []*ec2.UserIdGroupPair{
 					{
 						Description: StringP("SSH"),
-						GroupId:     StringP(conn.cluster.Status.Cloud.AWS.BastionSGId),
+						GroupId:     StringP(conn.Cluster.Status.Cloud.AWS.BastionSGId),
 					},
 				},
 			},
@@ -1104,7 +1099,7 @@ func (conn *cloudConnector) getIngressRules(role string) ([]*ec2.IpPermission, e
 				UserIdGroupPairs: []*ec2.UserIdGroupPair{
 					{
 						Description: StringP("etcd"),
-						GroupId:     StringP(conn.cluster.Status.Cloud.AWS.MasterSGId),
+						GroupId:     StringP(conn.Cluster.Status.Cloud.AWS.MasterSGId),
 					},
 				},
 			},
@@ -1115,7 +1110,7 @@ func (conn *cloudConnector) getIngressRules(role string) ([]*ec2.IpPermission, e
 				UserIdGroupPairs: []*ec2.UserIdGroupPair{
 					{
 						Description: StringP("etcd peer"),
-						GroupId:     StringP(conn.cluster.Status.Cloud.AWS.MasterSGId),
+						GroupId:     StringP(conn.Cluster.Status.Cloud.AWS.MasterSGId),
 					},
 				},
 			},
@@ -1126,11 +1121,11 @@ func (conn *cloudConnector) getIngressRules(role string) ([]*ec2.IpPermission, e
 				UserIdGroupPairs: []*ec2.UserIdGroupPair{
 					{
 						Description: StringP("bgp (calico)"),
-						GroupId:     StringP(conn.cluster.Status.Cloud.AWS.MasterSGId),
+						GroupId:     StringP(conn.Cluster.Status.Cloud.AWS.MasterSGId),
 					},
 					{
 						Description: StringP("bgp (calico)"),
-						GroupId:     StringP(conn.cluster.Status.Cloud.AWS.NodeSGId),
+						GroupId:     StringP(conn.Cluster.Status.Cloud.AWS.NodeSGId),
 					},
 				},
 			},
@@ -1145,7 +1140,7 @@ func (conn *cloudConnector) getIngressRules(role string) ([]*ec2.IpPermission, e
 				UserIdGroupPairs: []*ec2.UserIdGroupPair{
 					{
 						Description: StringP("SSH"),
-						GroupId:     StringP(conn.cluster.Status.Cloud.AWS.BastionSGId),
+						GroupId:     StringP(conn.Cluster.Status.Cloud.AWS.BastionSGId),
 					},
 				},
 			},
@@ -1167,7 +1162,7 @@ func (conn *cloudConnector) getIngressRules(role string) ([]*ec2.IpPermission, e
 				UserIdGroupPairs: []*ec2.UserIdGroupPair{
 					{
 						Description: StringP("Kubelet API"),
-						GroupId:     StringP(conn.cluster.Status.Cloud.AWS.MasterSGId),
+						GroupId:     StringP(conn.Cluster.Status.Cloud.AWS.MasterSGId),
 					},
 				},
 			},
@@ -1178,11 +1173,11 @@ func (conn *cloudConnector) getIngressRules(role string) ([]*ec2.IpPermission, e
 				UserIdGroupPairs: []*ec2.UserIdGroupPair{
 					{
 						Description: StringP("bgp (calico)"),
-						GroupId:     StringP(conn.cluster.Status.Cloud.AWS.MasterSGId),
+						GroupId:     StringP(conn.Cluster.Status.Cloud.AWS.MasterSGId),
 					},
 					{
 						Description: StringP("bgp (calico)"),
-						GroupId:     StringP(conn.cluster.Status.Cloud.AWS.NodeSGId),
+						GroupId:     StringP(conn.Cluster.Status.Cloud.AWS.NodeSGId),
 					},
 				},
 			},
@@ -1217,7 +1212,7 @@ func (conn *cloudConnector) getBastion() (bool, error) {
 	for _, res := range out.Reservations {
 		for _, instance := range res.Instances {
 			if aws.StringValue(instance.State.Name) != ec2.InstanceStateNameTerminated {
-				//conn.cluster.Status.Cloud.AWS.BastionID = *instance.InstanceId
+				//conn.Cluster.Status.Cloud.AWS.BastionID = *instance.InstanceId
 				return true, nil
 			}
 		}
@@ -1227,8 +1222,8 @@ func (conn *cloudConnector) getBastion() (bool, error) {
 }
 
 func (conn *cloudConnector) setupBastion(publicSubnetID string) error {
-	sshKeyName := conn.cluster.Spec.Config.Cloud.SSHKeyName
-	name := fmt.Sprintf("%s-bastion", conn.cluster.Name)
+	sshKeyName := conn.Cluster.Spec.Config.Cloud.SSHKeyName
+	name := fmt.Sprintf("%s-bastion", conn.Cluster.Name)
 
 	userData, err := clusterapi_aws.NewBastion(&clusterapi_aws.BastionInput{})
 	if err != nil {
@@ -1238,13 +1233,13 @@ func (conn *cloudConnector) setupBastion(publicSubnetID string) error {
 	input := &ec2.RunInstancesInput{
 		InstanceType: StringP("t2.micro"),
 		SubnetId:     StringP(publicSubnetID),
-		ImageId:      StringP(getBastionAMI(conn.cluster.Spec.Config.Cloud.Region)),
+		ImageId:      StringP(getBastionAMI(conn.Cluster.Spec.Config.Cloud.Region)),
 		KeyName:      &sshKeyName,
 		MaxCount:     Int64P(1),
 		MinCount:     Int64P(1),
 		UserData:     StringP(base64.StdEncoding.EncodeToString([]byte(userData))),
 		SecurityGroupIds: []*string{
-			StringP(conn.cluster.Status.Cloud.AWS.BastionSGId),
+			StringP(conn.Cluster.Status.Cloud.AWS.BastionSGId),
 		},
 		TagSpecifications: []*ec2.TagSpecification{
 			{
@@ -1259,7 +1254,7 @@ func (conn *cloudConnector) setupBastion(publicSubnetID string) error {
 						Value: StringP("bastion"),
 					},
 					{
-						Key:   StringP("kubernetes.io/cluster/" + conn.cluster.Name),
+						Key:   StringP("kubernetes.io/cluster/" + conn.Cluster.Name),
 						Value: StringP("owned"),
 					},
 					{
@@ -1366,8 +1361,8 @@ func (conn *cloudConnector) createSecurityGroup(vpcID, groupName string, instanc
 	time.Sleep(preTagDelay)
 
 	tags := map[string]string{
-		"Name": conn.cluster.Name + "-" + instanceType,
-		"kubernetes.io/cluster/" + conn.cluster.Name:   "owned",
+		"Name": conn.Cluster.Name + "-" + instanceType,
+		"kubernetes.io/cluster/" + conn.Cluster.Name:   "owned",
 		"sigs.k8s.io/cluster-api-provider-aws/managed": "true",
 		"sigs.k8s.io/cluster-api-provider-aws/role":    instanceType,
 	}
@@ -1378,24 +1373,24 @@ func (conn *cloudConnector) createSecurityGroup(vpcID, groupName string, instanc
 func (conn *cloudConnector) detectSecurityGroups(vpcID string) error {
 	var ok bool
 	var err error
-	if conn.cluster.Status.Cloud.AWS.MasterSGId == "" {
-		if conn.cluster.Status.Cloud.AWS.MasterSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.cluster.Spec.Config.Cloud.AWS.MasterSGName); !ok {
-			return errors.Errorf("[%s] could not detect Kubernetes master security group.  Make sure you've launched a cluster with appctl", ID(conn.ctx))
+	if conn.Cluster.Status.Cloud.AWS.MasterSGId == "" {
+		if conn.Cluster.Status.Cloud.AWS.MasterSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.Cluster.Spec.Config.Cloud.AWS.MasterSGName); !ok {
+			return errors.Errorf("[%s] could not detect Kubernetes master security group.  Make sure you've launched a cluster with appctl", "")
 		}
-		log.Infof("Master security group %v with id %v detected", conn.cluster.Spec.Config.Cloud.AWS.MasterSGName, conn.cluster.Status.Cloud.AWS.MasterSGId)
+		log.Infof("Master security group %v with id %v detected", conn.Cluster.Spec.Config.Cloud.AWS.MasterSGName, conn.Cluster.Status.Cloud.AWS.MasterSGId)
 
 	}
-	if conn.cluster.Status.Cloud.AWS.NodeSGId == "" {
-		if conn.cluster.Status.Cloud.AWS.NodeSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.cluster.Spec.Config.Cloud.AWS.NodeSGName); !ok {
-			return errors.Errorf("[%s] could not detect Kubernetes node security group.  Make sure you've launched a cluster with appctl", ID(conn.ctx))
+	if conn.Cluster.Status.Cloud.AWS.NodeSGId == "" {
+		if conn.Cluster.Status.Cloud.AWS.NodeSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.Cluster.Spec.Config.Cloud.AWS.NodeSGName); !ok {
+			return errors.Errorf("[%s] could not detect Kubernetes node security group.  Make sure you've launched a cluster with appctl", "")
 		}
-		log.Infof("Node security group %v with id %v detected", conn.cluster.Spec.Config.Cloud.AWS.NodeSGName, conn.cluster.Status.Cloud.AWS.NodeSGId)
+		log.Infof("Node security group %v with id %v detected", conn.Cluster.Spec.Config.Cloud.AWS.NodeSGName, conn.Cluster.Status.Cloud.AWS.NodeSGId)
 	}
-	if conn.cluster.Status.Cloud.AWS.BastionSGId == "" {
-		if conn.cluster.Status.Cloud.AWS.BastionSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.cluster.Spec.Config.Cloud.AWS.BastionSGName); !ok {
-			return errors.Errorf("[%s] could not detect Kubernetes bastion security group.  Make sure you've launched a cluster with appctl", ID(conn.ctx))
+	if conn.Cluster.Status.Cloud.AWS.BastionSGId == "" {
+		if conn.Cluster.Status.Cloud.AWS.BastionSGId, ok, err = conn.getSecurityGroupID(vpcID, conn.Cluster.Spec.Config.Cloud.AWS.BastionSGName); !ok {
+			return errors.Errorf("[%s] could not detect Kubernetes bastion security group.  Make sure you've launched a cluster with appctl", "")
 		}
-		log.Infof("Bastion security group %v with id %v detected", conn.cluster.Spec.Config.Cloud.AWS.BastionSGName, conn.cluster.Status.Cloud.AWS.BastionSGId)
+		log.Infof("Bastion security group %v with id %v detected", conn.Cluster.Spec.Config.Cloud.AWS.BastionSGName, conn.Cluster.Status.Cloud.AWS.BastionSGId)
 	}
 	if err != nil {
 		return err
@@ -1430,7 +1425,7 @@ func (conn *cloudConnector) getMaster(name string) (bool, error) {
 }
 
 func (conn *cloudConnector) startMaster(machine *clusterv1.Machine, sku, privateSubnetID, script string) (*ec2.Instance, error) {
-	sshKeyName := conn.cluster.Spec.Config.Cloud.SSHKeyName
+	sshKeyName := conn.Cluster.Spec.Config.Cloud.SSHKeyName
 
 	if err := conn.detectUbuntuImage(); err != nil {
 		return nil, err
@@ -1439,16 +1434,16 @@ func (conn *cloudConnector) startMaster(machine *clusterv1.Machine, sku, private
 	input := &ec2.RunInstancesInput{
 		InstanceType: StringP(sku),
 		SubnetId:     StringP(privateSubnetID),
-		ImageId:      StringP(conn.cluster.Spec.Config.Cloud.InstanceImage),
+		ImageId:      StringP(conn.Cluster.Spec.Config.Cloud.InstanceImage),
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
-			Name: StringP(conn.cluster.Spec.Config.Cloud.AWS.IAMProfileMaster),
+			Name: StringP(conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileMaster),
 		},
 		KeyName:  &sshKeyName,
 		MaxCount: Int64P(1),
 		MinCount: Int64P(1),
 		UserData: StringP(base64.StdEncoding.EncodeToString([]byte(script))),
 		SecurityGroupIds: []*string{
-			StringP(conn.cluster.Status.Cloud.AWS.MasterSGId),
+			StringP(conn.Cluster.Status.Cloud.AWS.MasterSGId),
 		},
 
 		TagSpecifications: []*ec2.TagSpecification{
@@ -1464,7 +1459,7 @@ func (conn *cloudConnector) startMaster(machine *clusterv1.Machine, sku, private
 						Value: StringP(machine.Labels["set"]),
 					},
 					{
-						Key:   StringP("kubernetes.io/cluster/" + conn.cluster.Name),
+						Key:   StringP("kubernetes.io/cluster/" + conn.Cluster.Name),
 						Value: StringP("owned"),
 					},
 					{
@@ -1497,7 +1492,7 @@ func (conn *cloudConnector) startMaster(machine *clusterv1.Machine, sku, private
 
 	lbinput := &elb.RegisterInstancesWithLoadBalancerInput{
 		Instances:        []*elb.Instance{{InstanceId: masterInstance.InstanceId}},
-		LoadBalancerName: StringP(fmt.Sprintf("%s-apiserver", conn.cluster.Name)),
+		LoadBalancerName: StringP(fmt.Sprintf("%s-apiserver", conn.Cluster.Name)),
 	}
 
 	if _, err := conn.elb.RegisterInstancesWithLoadBalancer(lbinput); err != nil {
@@ -1545,8 +1540,8 @@ func (conn *cloudConnector) allocateElasticIP() (string, string, error) {
 	time.Sleep(5 * time.Second)
 
 	tags := map[string]string{
-		"Name": conn.cluster.Name + "-eip-apiserver",
-		"kubernetes.io/cluster/" + conn.cluster.Name:   "owned",
+		"Name": conn.Cluster.Name + "-eip-apiserver",
+		"kubernetes.io/cluster/" + conn.Cluster.Name:   "owned",
 		"sigs.k8s.io/cluster-api-provider-aws/managed": "true",
 		"sigs.k8s.io/cluster-api-provider-aws/role":    "apiserver",
 	}
@@ -1564,13 +1559,13 @@ func (conn *cloudConnector) findElasticIP() ([]*ec2.Address, error) {
 			{
 				Name: StringP("tag:Name"),
 				Values: []*string{
-					StringP(conn.cluster.Name + "-eip-apiserver"),
+					StringP(conn.Cluster.Name + "-eip-apiserver"),
 				},
 			},
 			{
 				Name: StringP("tag-key"),
 				Values: []*string{
-					StringP("kubernetes.io/cluster/" + conn.cluster.Name),
+					StringP("kubernetes.io/cluster/" + conn.Cluster.Name),
 				},
 			},
 		},
@@ -1631,7 +1626,7 @@ func (conn *cloudConnector) deleteSecurityGroup(vpcID string) error {
 				{
 					Name: StringP("tag-key"),
 					Values: []*string{
-						StringP("kubernetes.io/cluster/" + conn.cluster.Name),
+						StringP("kubernetes.io/cluster/" + conn.Cluster.Name),
 					},
 				},
 			},
@@ -1692,7 +1687,7 @@ func (conn *cloudConnector) deleteSubnetID(vpcID string) error {
 			{
 				Name: StringP("tag-key"),
 				Values: []*string{
-					StringP("kubernetes.io/cluster/" + conn.cluster.Name),
+					StringP("kubernetes.io/cluster/" + conn.Cluster.Name),
 				},
 			},
 		},
@@ -1742,7 +1737,7 @@ func (conn *cloudConnector) deleteInternetGateway(vpcID string) error {
 			return err
 		}
 	}
-	log.Infof("Internet gateway for cluster %v are deleted", conn.cluster.Name)
+	log.Infof("Internet gateway for cluster %v are deleted", conn.Cluster.Name)
 	return nil
 }
 
@@ -1758,7 +1753,7 @@ func (conn *cloudConnector) deleteRouteTable(vpcID string) error {
 			{
 				Name: StringP("tag-key"),
 				Values: []*string{
-					StringP("kubernetes.io/cluster/" + conn.cluster.Name),
+					StringP("kubernetes.io/cluster/" + conn.Cluster.Name),
 				},
 			},
 		},
@@ -1790,7 +1785,7 @@ func (conn *cloudConnector) deleteRouteTable(vpcID string) error {
 			}
 		}
 	}
-	log.Infof("Route tables for cluster %v are deleted", conn.cluster.Name)
+	log.Infof("Route tables for cluster %v are deleted", conn.Cluster.Name)
 	return nil
 }
 
@@ -1835,19 +1830,19 @@ func (conn *cloudConnector) deleteVpc(vpcID string) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("VPC for cluster %v is deleted", conn.cluster.Name)
+	log.Infof("VPC for cluster %v is deleted", conn.Cluster.Name)
 	return nil
 }
 
 func (conn *cloudConnector) deleteSSHKey() error {
 	var err error
 	_, err = conn.ec2.DeleteKeyPair(&_ec2.DeleteKeyPairInput{
-		KeyName: StringP(conn.cluster.Spec.Config.Cloud.SSHKeyName),
+		KeyName: StringP(conn.Cluster.Spec.Config.Cloud.SSHKeyName),
 	})
 	if err != nil {
 		return err
 	}
-	log.Infof("SSH key for cluster %v is deleted", conn.cluster.Name)
+	log.Infof("SSH key for cluster %v is deleted", conn.Cluster.Name)
 
 	return err
 }
@@ -1865,7 +1860,7 @@ func (conn *cloudConnector) deleteInstance(role string) error {
 			{
 				Name: StringP("tag-key"),
 				Values: []*string{
-					StringP(fmt.Sprintf("kubernetes.io/cluster/%s", conn.cluster.Name)),
+					StringP(fmt.Sprintf("kubernetes.io/cluster/%s", conn.Cluster.Name)),
 				},
 			},
 		},
@@ -1886,7 +1881,7 @@ func (conn *cloudConnector) deleteInstance(role string) error {
 	}
 
 	fmt.Printf("TerminateInstances %v", instances)
-	log.Infof("Terminating %v instance for cluster %v", role, conn.cluster.Name)
+	log.Infof("Terminating %v instance for cluster %v", role, conn.Cluster.Name)
 	_, err = conn.ec2.TerminateInstances(&_ec2.TerminateInstancesInput{
 		InstanceIds: instances,
 	})
@@ -1897,6 +1892,6 @@ func (conn *cloudConnector) deleteInstance(role string) error {
 		InstanceIds: instances,
 	}
 	err = conn.ec2.WaitUntilInstanceTerminated(instanceInput)
-	log.Infof("%v instance for cluster %v is terminated", role, conn.cluster.Name)
+	log.Infof("%v instance for cluster %v is terminated", role, conn.Cluster.Name)
 	return err
 }

@@ -55,7 +55,7 @@ package aws
 // 		})
 // 		if !dryRun {
 // 			var nd NodeDrain
-// 			if nd, err = NewNodeDrain(igm.ctx, igm.kc, igm.conn.cluster); err != nil {
+// 			if nd, err = NewNodeDrain(igm.ctx, igm.kc, igm.conn.Cluster); err != nil {
 // 				return
 // 			}
 // 			for _, node := range nodes.Items {
@@ -140,7 +140,7 @@ package aws
 // 		Store(igm.ctx).NodeGroups(igm.ng.ClusterName).Update(igm.ng)
 
 // 	}
-// 	// Store(igm.ctx).Clusters().UpdateStatus(igm.cm.cluster)
+// 	// Store(igm.ctx).Clusters().UpdateStatus(igm.cm.Cluster)
 // 	return
 // }
 
@@ -157,7 +157,7 @@ package aws
 // }
 
 // func (igm *AWSNodeGroupManager) deleteNodeWithDrain(nodes []core.Node) error {
-// 	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.conn.cluster)
+// 	nd, err := NewNodeDrain(igm.ctx, igm.kc, igm.conn.Cluster)
 // 	if err != nil {
 // 		return err
 // 	}

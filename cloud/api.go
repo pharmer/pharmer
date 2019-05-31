@@ -8,7 +8,6 @@ import (
 	core "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -32,11 +31,11 @@ type Interface interface {
 	ProviderKubeConfig
 
 	GetCloudConnector() error
-	ApplyCreate(dryRun bool) (acts []api.Action, leaderMachine *clusterv1.Machine, machines []*clusterv1.Machine, err error)
+	ApplyCreate(dryRun bool) (acts []api.Action, leaderMachine *clusterapi.Machine, machines []*clusterapi.Machine, err error)
 	ApplyDelete(dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
 	SetDefaultCluster(in *api.Cluster) error
-	GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterv1.ProviderSpec, error)
+	GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error)
 
 	NewMasterTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData
 	NewNodeTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData
@@ -53,7 +52,7 @@ type NodeGroupManager interface {
 }
 
 type InstanceManager interface {
-	CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error)
+	CreateInstance(cluster *api.Cluster, machine *clusterapi.Machine, token string) (*api.NodeInfo, error)
 	DeleteInstanceByProviderID(providerID string) error
 }
 
@@ -67,8 +66,8 @@ type UpgradeManager interface {
 	GetAvailableUpgrades() ([]*api.Upgrade, error)
 	PrintAvailableUpgrades([]*api.Upgrade)
 	Apply(dryRun bool) ([]api.Action, error)
-	MasterUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error
-	NodeUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error
+	MasterUpgrade(oldMachine *clusterapi.Machine, newMachine *clusterapi.Machine) error
+	NodeUpgrade(oldMachine *clusterapi.Machine, newMachine *clusterapi.Machine) error
 }
 
 type ProviderKubeConfig interface {

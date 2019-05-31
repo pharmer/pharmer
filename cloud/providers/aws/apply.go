@@ -1,22 +1,18 @@
 package aws
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
-	. "github.com/appscode/go/context"
 	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
-	semver "gomodules.xyz/version"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -24,92 +20,7 @@ const (
 	preTagDelay = 5 * time.Second
 )
 
-func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
-	var err error
-	var acts []api.Action
-
-	if in.Status.Phase == "" {
-		return nil, errors.Errorf("cluster `%s` is in unknown phase", in.Name)
-	}
-	if in.Status.Phase == api.ClusterDeleted {
-		return nil, nil
-	}
-	cm.cluster = in
-	cm.namer = namer{cluster: cm.cluster}
-	if err = PrepareCloud(cm); err != nil {
-		return nil, err
-	}
-
-	if cm.cluster.Status.Phase == api.ClusterUpgrading {
-		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
-	}
-	if cm.cluster.Status.Phase == api.ClusterReady {
-		var kc kubernetes.Interface
-		kc, err = cm.GetAdminClient()
-		if err != nil {
-			return nil, err
-		}
-		if upgrade, err := NewKubeVersionGetter(kc, cm.cluster).IsUpgradeRequested(); err != nil {
-			return nil, err
-		} else if upgrade {
-			cm.cluster.Status.Phase = api.ClusterUpgrading
-
-			if _, err := Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
-				return nil, err
-			}
-			return cm.applyUpgrade(dryRun)
-		}
-	}
-
-	if cm.cluster.Status.Phase == api.ClusterPending {
-		a, err := cm.applyCreate(dryRun)
-		if err != nil {
-			return nil, err
-		}
-		acts = append(acts, a...)
-	}
-
-	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		nodeGroups, err := Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-		if err != nil {
-			return nil, err
-		}
-		for _, ng := range nodeGroups {
-			ng.Spec.Replicas = Int32P(0)
-			_, err := Store(cm.ctx).MachineSet(cm.cluster.Name).Update(ng)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	{
-		err := cm.applyScale(dryRun)
-		if err != nil {
-			if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-				log.Infoln(err)
-			} else {
-				return nil, err
-			}
-		}
-	}
-
-	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		a, err := cm.applyDelete(dryRun)
-		if err != nil {
-			return nil, err
-		}
-		acts = append(acts, a...)
-	}
-
-	return acts, nil
-}
-
-func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
-	if err := cm.SetupCerts(); err != nil {
-		return nil, err
-	}
-
+func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMachine *clusterv1.Machine, machines []*clusterv1.Machine, err error) {
 	var found bool
 
 	if found, err = cm.conn.getIAMProfile(); err != nil {
@@ -317,19 +228,19 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 	}
 
-	if _, found, err = cm.conn.getSecurityGroupID(vpcID, cm.cluster.Spec.Config.Cloud.AWS.MasterSGName); err != nil {
+	if _, found, err = cm.conn.getSecurityGroupID(vpcID, cm.Cluster.Spec.Config.Cloud.AWS.MasterSGName); err != nil {
 		log.Infoln(err)
 	}
 	if !found {
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Security group",
-			Message:  fmt.Sprintf("Master security group %v and node security group %v will be created", cm.cluster.Spec.Config.Cloud.AWS.MasterSGName, cm.cluster.Spec.Config.Cloud.AWS.NodeSGName),
+			Message:  fmt.Sprintf("Master security group %v and node security group %v will be created", cm.Cluster.Spec.Config.Cloud.AWS.MasterSGName, cm.Cluster.Spec.Config.Cloud.AWS.NodeSGName),
 		})
 		if !dryRun {
 			if err = cm.conn.setupSecurityGroups(vpcID); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				err = errors.Wrap(err, ID(cm.ctx))
+				cm.Cluster.Status.Reason = err.Error()
+				err = errors.Wrap(err, "")
 				return
 			}
 		}
@@ -340,7 +251,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "Security group",
-			Message:  fmt.Sprintf("Found master security group %v and node security group %v", cm.cluster.Spec.Config.Cloud.AWS.MasterSGName, cm.cluster.Spec.Config.Cloud.AWS.NodeSGName),
+			Message:  fmt.Sprintf("Found master security group %v and node security group %v", cm.Cluster.Spec.Config.Cloud.AWS.MasterSGName, cm.Cluster.Spec.Config.Cloud.AWS.NodeSGName),
 		})
 	}
 
@@ -355,8 +266,8 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 		if !dryRun {
 			if err = cm.conn.setupBastion(publicSubnetID); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				err = errors.Wrap(err, ID(cm.ctx))
+				cm.Cluster.Status.Reason = err.Error()
+				err = errors.Wrap(err, "")
 				return
 			}
 		}
@@ -380,8 +291,8 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 		if !dryRun {
 			if loadbalancerDNS, err = cm.conn.setupLoadBalancer(publicSubnetID); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				err = errors.Wrap(err, ID(cm.ctx))
+				cm.Cluster.Status.Reason = err.Error()
+				err = errors.Wrap(err, "")
 				return
 			}
 		}
@@ -394,16 +305,16 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 
 	if loadbalancerDNS == "" {
-		return nil, errors.New("load balancer dns can't be empty")
+		return nil, leaderMachine, machines, errors.New("load balancer dns can't be empty")
 	}
 
 	// update load balancer field
-	cm.cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
+	cm.Cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
 		DNS:  loadbalancerDNS,
 		Port: api.DefaultKubernetesBindPort,
 	}
 
-	clusterSpec, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	clusterSpec, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return
 	}
@@ -411,7 +322,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	clusterSpec.NetworkSpec = clusterapi_aws.NetworkSpec{
 		VPC: clusterapi_aws.VPCSpec{
 			ID:                vpcID,
-			CidrBlock:         cm.cluster.Spec.Config.Cloud.AWS.VpcCIDR,
+			CidrBlock:         cm.Cluster.Spec.Config.Cloud.AWS.VpcCIDR,
 			InternetGatewayID: StringP(gatewayID),
 			Tags: clusterapi_aws.Map{
 				"sigs.k8s.io/cluster-api-provider-aws/managed": "true",
@@ -420,16 +331,16 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		Subnets: clusterapi_aws.Subnets{
 			{
 				ID:               publicSubnetID,
-				CidrBlock:        cm.cluster.Spec.Config.Cloud.AWS.PublicSubnetCIDR,
-				AvailabilityZone: cm.cluster.Spec.Config.Cloud.Zone,
+				CidrBlock:        cm.Cluster.Spec.Config.Cloud.AWS.PublicSubnetCIDR,
+				AvailabilityZone: cm.Cluster.Spec.Config.Cloud.Zone,
 				IsPublic:         true,
 				RouteTableID:     StringP(publicRouteTableID),
 				NatGatewayID:     StringP(natID),
 			},
 			{
 				ID:               privateSubnetID,
-				CidrBlock:        cm.cluster.Spec.Config.Cloud.AWS.PrivateSubnetCIDR,
-				AvailabilityZone: cm.cluster.Spec.Config.Cloud.Zone,
+				CidrBlock:        cm.Cluster.Spec.Config.Cloud.AWS.PrivateSubnetCIDR,
+				AvailabilityZone: cm.Cluster.Spec.Config.Cloud.Zone,
 				IsPublic:         false,
 				RouteTableID:     StringP(privateRouteTableID),
 			},
@@ -441,26 +352,25 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawClusterSpec
-	if _, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
+	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawClusterSpec
+	if _, err = store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
 		return
 	}
 
-	var machines []*clusterv1.Machine
-	machines, err = Store(cm.ctx).Machine(cm.cluster.Name).List(metav1.ListOptions{})
+	machines, err = store.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
-		err = errors.Wrap(err, ID(cm.ctx))
+		err = errors.Wrap(err, "")
 		return
 	}
 
-	leaderMachine, err := GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
+	leaderMachine, err = GetLeaderMachine(cm.Cluster)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	machineSets, err := Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+	machineSets, err := store.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	totalNodes := NodeCount(machineSets)
 
@@ -484,20 +394,20 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		spec, err := clusterapi_aws.MachineConfigFromProviderSpec(m.Spec.ProviderSpec)
 		if err != nil {
 			log.Infof("Error decoding provider spec for machine %q", m.Name)
-			return nil, err
+			return nil, nil, nil, err
 		}
 
 		spec.InstanceType = sku
 
 		rawSpec, err := clusterapi_aws.EncodeMachineSpec(spec)
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 		m.Spec.ProviderSpec.Value = rawSpec
 
-		_, err = Store(cm.ctx).Machine(cm.cluster.Name).Update(m)
+		_, err = store.StoreProvider.Machine(cm.Cluster.Name).Update(m)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to update machine %q to store", m.Name)
+			return nil, nil, nil, errors.Wrapf(err, "failed to update machine %q to store", m.Name)
 		}
 	}
 
@@ -514,53 +424,53 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		if !dryRun {
 			script, err := RenderStartupScript(cm, leaderMachine, "", customTemplate)
 			if err != nil {
-				return nil, err
+				return nil, nil, nil, err
 			}
 
 			masterInstance, err := cm.conn.startMaster(leaderMachine, sku, privateSubnetID, script)
 			if err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				err = errors.Wrap(err, ID(cm.ctx))
-				return acts, err
+				cm.Cluster.Status.Reason = err.Error()
+				err = errors.Wrap(err, "")
+				return acts, nil, nil, err
 			}
 
 			nodeAddresses := []core.NodeAddress{
 				{
 					Type:    core.NodeExternalDNS,
-					Address: cm.cluster.Status.Cloud.LoadBalancer.DNS,
+					Address: cm.Cluster.Status.Cloud.LoadBalancer.DNS,
 				},
 			}
 
-			if err = cm.cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
-				return nil, err
+			if err = cm.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
+				return nil, nil, nil, err
 			}
 
-			if _, err = Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
-				return nil, err
+			if _, err = store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
+				return nil, nil, nil, err
 			}
 
 			// update master machine spec
 			spec, err := clusterapi_aws.MachineConfigFromProviderSpec(leaderMachine.Spec.ProviderSpec)
 			if err != nil {
 				log.Infof("Error decoding provider spec for machine %q", leaderMachine.Name)
-				return nil, err
+				return nil, nil, nil, err
 			}
 
 			spec.AMI = clusterapi_aws.AWSResourceReference{
-				ID: StringP(cm.cluster.Spec.Config.Cloud.InstanceImage),
+				ID: StringP(cm.Cluster.Spec.Config.Cloud.InstanceImage),
 			}
 			spec.InstanceType = sku
 
 			rootDeviceSize, err := cm.conn.getInstanceRootDeviceSize(masterInstance)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to get root device size for master instance")
+				return nil, nil, nil, errors.Wrap(err, "failed to get root device size for master instance")
 			}
 
 			spec.RootDeviceSize = *rootDeviceSize
 
 			rawSpec, err := clusterapi_aws.EncodeMachineSpec(spec)
 			if err != nil {
-				return nil, err
+				return nil, nil, nil, err
 			}
 			leaderMachine.Spec.ProviderSpec.Value = rawSpec
 
@@ -571,14 +481,14 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 			rawStatus, err := clusterapi_aws.EncodeMachineStatus(&statusConfig)
 			if err != nil {
-				return nil, err
+				return nil, nil, nil, err
 			}
 			leaderMachine.Status.ProviderStatus = rawStatus
 
 			// update in pharmer file
-			leaderMachine, err = Store(cm.ctx).Machine(cm.cluster.Name).Update(leaderMachine)
+			leaderMachine, err = store.StoreProvider.Machine(cm.Cluster.Name).Update(leaderMachine)
 			if err != nil {
-				return nil, errors.Wrap(err, "error updating master machine in pharmer storage")
+				return nil, nil, nil, errors.Wrap(err, "error updating master machine in pharmer storage")
 			}
 		}
 	} else {
@@ -589,119 +499,22 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 	}
 
-	var kc kubernetes.Interface
-	kc, err = cm.GetAdminClient()
-	if err != nil {
-		return
-	}
-	// wait for nodes to start
-	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
-		return
-	}
-
-	ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, cm.conn)
-	if err != nil {
-		return acts, err
-	}
-
-	if err := ca.Apply(ControllerManager); err != nil {
-		return acts, err
-	}
-
-	log.Infof("Adding other master machines")
-	client, err := GetClusterClient(cm.ctx, cm.cluster)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, m := range machines {
-		if m.Name == leaderMachine.Name {
-			continue
-		}
-		if _, err := client.ClusterV1alpha1().Machines(cm.cluster.Spec.ClusterAPI.Namespace).Create(m); err != nil && !api.ErrAlreadyExist(err) && !api.ErrObjectModified(err) {
-			log.Infof("Error creating maching %q in namespace %q", m.Name, cm.cluster.Spec.ClusterAPI.Namespace)
-			return acts, err
-		}
-	}
-
-	cm.cluster.Status.Phase = api.ClusterReady
-	if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
-		return
-	}
-
 	return
 }
 
-func (cm *ClusterManager) applyScale(dryRun bool) error {
-	log.Infoln("scaling machine set")
-
-	//var msc *clusterv1.MachineSet
-	machineSets, err := Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	bc, err := GetBooststrapClient(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		return err
-	}
-	var data []byte
-	for _, machineSet := range machineSets {
-		if machineSet.DeletionTimestamp != nil {
-			machineSet.DeletionTimestamp = nil
-			if data, err = json.Marshal(machineSet); err != nil {
-				return err
-			}
-
-			if err = bc.Delete(string(data)); err != nil {
-				return nil
-			}
-			if err = Store(cm.ctx).MachineSet(cm.cluster.Name).Delete(machineSet.Name); err != nil {
-				return nil
-			}
-		}
-
-		existingMachineSet, err := bc.GetMachineSets(bc.GetContextNamespace())
-		if err != nil {
-			return err
-		}
-
-		if data, err = json.Marshal(machineSet); err != nil {
-			return err
-		}
-		found := false
-		for _, ems := range existingMachineSet {
-			if ems.Name == machineSet.Name {
-				found = true
-				if err = bc.Apply(string(data)); err != nil {
-					return err
-				}
-				break
-			}
-		}
-
-		if !found {
-			if err = bc.CreateMachineSets([]*clusterv1.MachineSet{machineSet}, bc.GetContextNamespace()); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func (cm *ClusterManager) applyDelete(dryRun bool) ([]api.Action, error) {
+func (cm *ClusterManager) ApplyDelete(dryRun bool) ([]api.Action, error) {
 	var acts []api.Action
 
 	log.Infoln("deleting cluster")
 
-	if cm.cluster.Status.Phase == api.ClusterReady {
-		cm.cluster.Status.Phase = api.ClusterDeleting
+	if cm.Cluster.Status.Phase == api.ClusterReady {
+		cm.Cluster.Status.Phase = api.ClusterDeleting
 	}
-	if _, err := Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+	if _, err := store.StoreProvider.Clusters().UpdateStatus(cm.Cluster); err != nil {
 		return nil, err
 	}
 
-	err := DeleteAllWorkerMachines(cm.ctx, cm.cluster, cm.owner)
+	err := DeleteAllWorkerMachines(cm)
 	if err != nil {
 		log.Infof("failed to delete nodes: %v", err)
 	}
@@ -709,7 +522,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) ([]api.Action, error) {
 	acts = append(acts, api.Action{
 		Action:   api.ActionDelete,
 		Resource: "MasterInstance",
-		Message:  fmt.Sprintf("Will delete master instance with name %v-master", cm.cluster.Name),
+		Message:  fmt.Sprintf("Will delete master instance with name %v-master", cm.Cluster.Name),
 	})
 	if !dryRun {
 		if err := cm.conn.deleteInstance("controlplane"); err != nil {
@@ -767,7 +580,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) ([]api.Action, error) {
 		Message:  "Security Group will be deleted",
 	})
 
-	clusterSpec, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	clusterSpec, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return acts, err
 	}
@@ -860,72 +673,4 @@ func (cm *ClusterManager) applyDelete(dryRun bool) ([]api.Action, error) {
 	}
 
 	return acts, nil
-}
-
-func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err error) {
-	var kc kubernetes.Interface
-	if kc, err = cm.GetAdminClient(); err != nil {
-		return
-	}
-
-	var masterMachine *clusterv1.Machine
-	masterName := fmt.Sprintf("%v-master", cm.cluster.Name)
-	masterMachine, err = Store(cm.ctx).Machine(cm.cluster.Name).Get(masterName)
-	if err != nil {
-		return nil, err
-	}
-
-	masterMachine.Spec.Versions.ControlPlane = cm.cluster.Spec.Config.KubernetesVersion
-	masterMachine.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
-
-	var bc clusterclient.Client
-	bc, err = GetBooststrapClient(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		return nil, err
-	}
-
-	var data []byte
-	if data, err = json.Marshal(masterMachine); err != nil {
-		return
-	}
-	if err = bc.Apply(string(data)); err != nil {
-		return
-	}
-
-	// Wait until master updated
-	desiredVersion, err := semver.NewVersion(cm.cluster.ClusterConfig().KubernetesVersion)
-	if err != nil {
-		return
-	}
-	if err = WaitForReadyMasterVersion(cm.ctx, kc, desiredVersion); err != nil {
-		return
-	}
-	// wait for nodes to start
-	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
-		return
-	}
-
-	var machineSets []*clusterv1.MachineSet
-	machineSets, err = Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return
-	}
-
-	for _, machineSet := range machineSets {
-		machineSet.Spec.Template.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
-		if data, err = json.Marshal(machineSet); err != nil {
-			return
-		}
-		if err = bc.Apply(string(data)); err != nil {
-			return
-		}
-	}
-
-	if !dryRun {
-		cm.cluster.Status.Phase = api.ClusterReady
-		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
-			return
-		}
-	}
-	return
 }

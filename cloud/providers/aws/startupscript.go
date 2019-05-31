@@ -1,18 +1,16 @@
 package aws
 
 import (
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) NewNodeTemplateData(cluster *api.Cluster, machine *clusterapi.Machine, token string) TemplateData {
-	td := NewNodeTemplateData(cm, machine, token)
+func (cm *ClusterManager) NewNodeTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData {
 	td.ExternalProvider = false // AWS does not use out-of-tree CCM
 
 	// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
-	td.KubeletExtraArgs["cloud-provider"] = cluster.Spec.Config.Cloud.CloudProvider // --cloud-config is not needed, since IAM is used. //with provider not working
+	td.KubeletExtraArgs["cloud-provider"] = cm.Cluster.Spec.Config.Cloud.CloudProvider // --cloud-config is not needed, since IAM is used. //with provider not working
 
 	return td
 }
@@ -24,11 +22,14 @@ func (cm *ClusterManager) NewMasterTemplateData(machine *clusterapi.Machine, tok
 		MountPath: "/etc/kubernetes/ccm",
 	}
 
-	td.ClusterConfiguration = GetDefaultKubeadmClusterConfig(cm.Cluster, hostPath)
+	cfg := GetDefaultKubeadmClusterConfig(cm.Cluster, hostPath)
 
-	td.ClusterConfiguration.ControllerManager.ExtraArgs = map[string]string{
+	cfg.ControllerManager.ExtraArgs = map[string]string{
 		"cloud-provider": cm.Cluster.Spec.Config.Cloud.CloudProvider,
 	}
+
+	td.ControlPlaneEndpointsFromLB(cfg, cm.Cluster)
+	td.ClusterConfiguration = cfg
 
 	return td
 }

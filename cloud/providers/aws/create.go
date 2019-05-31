@@ -8,7 +8,6 @@ import (
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
-	"gomodules.xyz/cert"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -41,11 +40,6 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-// SetOwner sets owner field of ClusterManager
-func (cm *ClusterManager) SetOwner(owner string) {
-	cm.owner = owner
-}
-
 func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	n := namer{cluster: cluster}
 
@@ -71,7 +65,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 			AWS: &api.AWSStatus{},
 		},
 	}
-	cm.cluster = cluster
+	cm.Cluster = cluster
 
 	return cm.SetClusterProviderConfig()
 }
@@ -83,10 +77,10 @@ func (cm *ClusterManager) SetClusterProviderConfig() error {
 			Kind:       api.AWSClusterProviderKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: cm.cluster.Name,
+			Name: cm.Cluster.Name,
 		},
-		Region:     cm.cluster.Spec.Config.Cloud.Region,
-		SSHKeyName: cm.cluster.Spec.Config.Cloud.SSHKeyName,
+		Region:     cm.Cluster.Spec.Config.Cloud.Region,
+		SSHKeyName: cm.Cluster.Spec.Config.Cloud.SSHKeyName,
 	}
 
 	rawSpec, err := clusterapi_aws.EncodeClusterSpec(conf)
@@ -94,13 +88,13 @@ func (cm *ClusterManager) SetClusterProviderConfig() error {
 		return err
 	}
 
-	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
+	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
 
 	return nil
 }
 
-func (cm *ClusterManager) SetupCerts() error {
-	conf, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+/*func (cm *ClusterManager) SetupCerts() error {
+	conf, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return err
 	}
@@ -127,14 +121,14 @@ func (cm *ClusterManager) SetupCerts() error {
 		return err
 	}
 
-	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
+	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
 
-	if _, err := Store(cm.ctx).Clusters().Update(cm.cluster); err != nil {
+	if _, err := store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
 		return err
 	}
 
 	return nil
-}
+}*/
 
 // IsValid TODO:add description
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
@@ -143,7 +137,7 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
 	cfg := &api.SSHConfig{
-		PrivateKey: SSHKey(cm.ctx).PrivateKey,
+		PrivateKey: cm.Certs.SSHKey.PrivateKey,
 		User:       "ubuntu",
 		HostPort:   int32(22),
 	}

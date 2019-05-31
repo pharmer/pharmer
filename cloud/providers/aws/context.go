@@ -1,25 +1,28 @@
 package aws
 
 import (
-	"context"
-	"sync"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/cloud"
 	. "github.com/pharmer/pharmer/cloud"
-	"k8s.io/client-go/kubernetes"
 )
 
 type ClusterManager struct {
-	cluster *api.Cluster
-	certs   *api.PharmerCertificates
+	*cloud.CloudManager
 
-	ctx  context.Context
-	conn *cloudConnector
-
+	conn  *cloudConnector
 	namer namer
-	m     sync.Mutex
+}
 
-	owner string
+func (cm *ClusterManager) CreateCCMCredential() error {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) GetConnector() ClusterApiProviderComponent {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) GetCloudConnector() error {
+	panic("implement me")
 }
 
 var _ Interface = &ClusterManager{}
@@ -34,28 +37,14 @@ func init() {
 	})
 }
 
-func New(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
+func New(cluster *api.Cluster, certs *api.PharmerCertificates) cloud.Interface {
 	return &ClusterManager{
-		cluster: cluster,
-		certs:   certs,
+		CloudManager: &cloud.CloudManager{
+			Cluster: cluster,
+			Certs:   certs,
+		},
+		namer: namer{
+			cluster: cluster,
+		},
 	}
-}
-
-type paramK8sClient struct{}
-
-func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
-	cm.m.Lock()
-	defer cm.m.Unlock()
-
-	v := cm.ctx.Value(paramK8sClient{})
-	if kc, ok := v.(kubernetes.Interface); ok && kc != nil {
-		return kc, nil
-	}
-
-	kc, err := NewAdminClient(cm.ctx, cm.cluster)
-	if err != nil {
-		return nil, err
-	}
-	cm.ctx = context.WithValue(cm.ctx, paramK8sClient{}, kc)
-	return kc, nil
 }
