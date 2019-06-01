@@ -46,7 +46,9 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
+func (cm *ClusterManager) SetDefaultCluster() error {
+	cluster := cm.Cluster
+
 	n := namer{cluster: cluster}
 	config := cluster.Spec.Config
 
@@ -59,8 +61,9 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 	}
 
 	config.APIServerExtraArgs["cloud-config"] = "/etc/kubernetes/ccm/cloud-config"
+	config.KubeletExtraArgs["cloud-provider"] = cluster.ClusterConfig().Cloud.CloudProvider // requires --cloud-config
+
 	cluster.Spec.Config.Cloud.Region = cluster.Spec.Config.Cloud.Zone[0 : len(cluster.Spec.Config.Cloud.Zone)-2]
-	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
 	config.ControllerManagerExtraArgs = map[string]string{
 		"cloud-config":   "/etc/kubernetes/ccm/cloud-config",
 		"cloud-provider": config.Cloud.CloudProvider,
@@ -70,7 +73,8 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 		cluster.Spec.ClusterAPI.ObjectMeta.Annotations = make(map[string]string)
 	}
 
-	return clusterapiGCE.SetGCEclusterProviderConfig(cluster.Spec.ClusterAPI, config, cm.Certs)
+	// set clusterAPI provider-specs
+	return clusterapiGCE.SetGCEclusterProviderConfig(cluster.Spec.ClusterAPI, config.Cloud.Project, cm.Certs)
 }
 
 // TODO: why this is needed?

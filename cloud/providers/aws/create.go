@@ -40,7 +40,8 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
+func (cm *ClusterManager) SetDefaultCluster() error {
+	cluster := cm.Cluster
 	n := namer{cluster: cluster}
 
 	if cluster.Spec.Config.Cloud.AWS == nil {

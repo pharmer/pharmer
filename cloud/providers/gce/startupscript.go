@@ -14,8 +14,6 @@ import (
 func (cm *ClusterManager) NewNodeTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData {
 	td.ExternalProvider = false // GCE does not use out-of-tree CCM
 
-	td.KubeletExtraArgs["cloud-provider"] = cm.Cluster.ClusterConfig().Cloud.CloudProvider // requires --cloud-config
-
 	n := namer{cm.Cluster}
 
 	cloudConfig := &api.GCECloudConfig{
@@ -37,6 +35,7 @@ func (cm *ClusterManager) NewNodeTemplateData(machine *clusterapi.Machine, token
 	var buf bytes.Buffer
 	_, err = cfg.WriteTo(&buf)
 	if err != nil {
+		// TODO: should we handle error in better way?
 		panic(err)
 	}
 	td.CloudConfig = buf.String()

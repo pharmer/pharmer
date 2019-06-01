@@ -29,7 +29,7 @@ func Create(cluster *api.Cluster) (Interface, *api.Cluster, error) {
 		return nil, nil, errors.New("missing Cluster version")
 	}
 
-	// create should return error=Cluster already exists if Cluster already exists
+	// create should return error: Cluster already exists if Cluster already exists
 	_, err := store.StoreProvider.Clusters().Get(cluster.Name)
 	if err == nil {
 		return nil, nil, errors.New("Cluster already exists")
@@ -52,8 +52,8 @@ func Create(cluster *api.Cluster) (Interface, *api.Cluster, error) {
 	}
 
 	// set cloud-specific configs
-	if err = cm.SetDefaultCluster(cluster); err != nil {
-		return nil, nil, errors.Wrap(err, "failed to set default Cluster")
+	if err = cm.SetDefaultCluster(); err != nil {
+		return nil, nil, errors.Wrap(err, "failed to set provider defaults")
 	}
 
 	if !managedProviders.Has(cluster.ClusterConfig().Cloud.CloudProvider) {
@@ -79,16 +79,20 @@ func Create(cluster *api.Cluster) (Interface, *api.Cluster, error) {
 func SetDefaultCluster(cluster *api.Cluster) error {
 	config := cluster.Spec.Config
 
-	uid, _ := uuid.NewUUID()
+	uid, err := uuid.NewUUID()
+	if err != nil {
+		return errors.Wrap(err, "failed to create cluster uuid")
+	}
+
 	cluster.ObjectMeta.UID = api_types.UID(uid.String())
 	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
 	cluster.ObjectMeta.Generation = time.Now().UnixNano()
 
 	if err := api.AssignTypeKind(cluster); err != nil {
-		return err
+		return errors.Wrap(err, "failed to assign apiversion and kind to cluster")
 	}
 	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
-		return err
+		return errors.Wrap(err, "failed to assign apiversion and kind to clusterAPI object")
 	}
 
 	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)

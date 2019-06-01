@@ -494,10 +494,7 @@ func NewNodeTemplateData(cm Interface, machine *clusterv1.Machine, token string)
 		Provider:          cluster.ClusterConfig().Cloud.CloudProvider,
 	}
 
-	td.KubeletExtraArgs = map[string]string{}
-	for k, v := range cluster.ClusterConfig().KubeletExtraArgs {
-		td.KubeletExtraArgs[k] = v
-	}
+	td.KubeletExtraArgs = cluster.ClusterConfig().KubeletExtraArgs
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
 		api.RoleNodeKey: "",
