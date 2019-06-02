@@ -39,7 +39,7 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err = cloud.CreateMachineSetsFromOptions(cm, opts)
+			err = cloud.CreateMachineSets(cm, opts)
 			if err != nil {
 				term.Fatalln(err)
 			}

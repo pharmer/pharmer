@@ -13,7 +13,8 @@ import (
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+	cluster := cm.Cluster
 	config := cluster.Spec.Config
 
 	spec := clusterapiGCE.GCEMachineProviderSpec{
@@ -61,6 +62,8 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 	}
 
 	config.APIServerExtraArgs["cloud-config"] = "/etc/kubernetes/ccm/cloud-config"
+
+	config.KubeletExtraArgs = make(map[string]string)
 	config.KubeletExtraArgs["cloud-provider"] = cluster.ClusterConfig().Cloud.CloudProvider // requires --cloud-config
 
 	cluster.Spec.Config.Cloud.Region = cluster.Spec.Config.Cloud.Zone[0 : len(cluster.Spec.Config.Cloud.Zone)-2]

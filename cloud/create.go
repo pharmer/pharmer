@@ -19,64 +19,85 @@ import (
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func Create(cluster *api.Cluster) (Interface, *api.Cluster, error) {
+func Create(cluster *api.Cluster) (Interface, error) {
 	config := cluster.Spec.Config
 	if cluster == nil {
-		return nil, nil, errors.New("missing Cluster")
+		return nil, errors.New("missing Cluster")
 	} else if cluster.Name == "" {
-		return nil, nil, errors.New("missing Cluster name")
+		return nil, errors.New("missing Cluster name")
 	} else if config.KubernetesVersion == "" {
-		return nil, nil, errors.New("missing Cluster version")
+		return nil, errors.New("missing Cluster version")
 	}
 
 	// create should return error: Cluster already exists if Cluster already exists
 	_, err := store.StoreProvider.Clusters().Get(cluster.Name)
 	if err == nil {
-		return nil, nil, errors.New("Cluster already exists")
+		return nil, errors.New("Cluster already exists")
 	}
 
-	// set common Cluster configs
-	err = SetDefaultCluster(cluster)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to set default Cluster")
-	}
-
+	// prepare cm
 	certs, err := createPharmerCerts(cluster)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create certificates")
+		return nil, errors.Wrap(err, "failed to create certificates")
 	}
 
 	cm, err := GetCloudManagerWithCerts(cluster, certs)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get cloud manager")
+		return nil, errors.Wrap(err, "failed to get cloud manager")
+	}
+
+	// create cluster
+	if err := createPharmerCluster(cm); err != nil {
+		return nil, errors.Wrap(err, "failed to craet cluster")
+	}
+
+	// craete master machines
+	if err := createMasterMachines(cm); err != nil {
+		return nil, errors.Wrap(err, "failed to create master machines")
+	}
+
+	return cm, nil
+}
+
+func createPharmerCluster(cm Interface) error {
+	cluster := cm.GetCluster()
+
+	// set common cluster configs
+	err := setDefaultCluster(cluster)
+	if err != nil {
+		return errors.Wrap(err, "failed to set default Cluster")
 	}
 
 	// set cloud-specific configs
 	if err = cm.SetDefaultCluster(); err != nil {
-		return nil, nil, errors.Wrap(err, "failed to set provider defaults")
+		return errors.Wrap(err, "failed to set provider defaults")
 	}
 
+	_, err = store.StoreProvider.Clusters().Create(cluster)
+	if err != nil {
+		return errors.Wrap(err, "failed to store cluster")
+	}
+
+	return nil
+}
+
+func createMasterMachines(cm Interface) error {
+	cluster := cm.GetCluster()
 	if !managedProviders.Has(cluster.ClusterConfig().Cloud.CloudProvider) {
 		for i := 0; i < cluster.Spec.Config.MasterCount; i++ {
-			master, err := CreateMasterMachines(cm, i)
+			master, err := getMasterMachine(cm, fmt.Sprintf("%v-master-%v", cluster.Name, i))
 			if err != nil {
-				return nil, nil, err
+				return errors.Wrap(err, "failed to craete master machine")
 			}
 			if _, err = store.StoreProvider.Machine(cluster.Name).Create(master); err != nil {
-				return nil, nil, err
+				return errors.Wrap(err, "failed to store mastet machine")
 			}
 		}
 	}
-
-	cluster, err = store.StoreProvider.Clusters().Create(cluster)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return cm, cluster, nil
+	return nil
 }
 
-func SetDefaultCluster(cluster *api.Cluster) error {
+func setDefaultCluster(cluster *api.Cluster) error {
 	config := cluster.Spec.Config
 
 	uid, err := uuid.NewUUID()
@@ -116,16 +137,16 @@ func SetDefaultCluster(cluster *api.Cluster) error {
 	return nil
 }
 
-func CreateMasterMachines(cm Interface, index int) (*clusterapi.Machine, error) {
+func getMasterMachine(cm Interface, name string) (*clusterapi.Machine, error) {
 	cluster := cm.GetCluster()
-	providerSpec, err := cm.GetDefaultMachineProviderSpec(cluster, "", api.MasterMachineRole)
+	providerSpec, err := cm.GetDefaultMachineProviderSpec("", api.MasterMachineRole)
 	if err != nil {
 		return nil, err
 	}
 
 	machine := &clusterapi.Machine{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:              fmt.Sprintf("%v-master-%v", cluster.Name, index),
+			Name:              name,
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 			Labels: map[string]string{
 				"set":                              "controlplane",
@@ -142,21 +163,35 @@ func CreateMasterMachines(cm Interface, index int) (*clusterapi.Machine, error) 
 		},
 	}
 	if err := api.AssignTypeKind(machine); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to assign apiversion/kind to machine")
 	}
 
 	return machine, nil
 }
 
-func CreateMachineSet(cm Interface, sku string, count int32) error {
+func CreateMachineSets(cm Interface, opts *options.NodeGroupCreateConfig) error {
+	for sku, count := range opts.Nodes {
+		machineset, err := getMachineSet(cm, sku, int32(count))
+		if err != nil {
+			return errors.Wrap(err, "failed to create machineset")
+		}
+		_, err = store.StoreProvider.MachineSet(cm.GetCluster().Name).Create(machineset)
+		if err != nil {
+			return errors.Wrap(err, "failed to store machineset")
+		}
+	}
+	return nil
+}
+
+func getMachineSet(cm Interface, sku string, count int32) (*clusterapi.MachineSet, error) {
 	cluster := cm.GetCluster()
 
-	providerSpec, err := cm.GetDefaultMachineProviderSpec(cluster, sku, api.NodeMachineRole)
+	providerSpec, err := cm.GetDefaultMachineProviderSpec(sku, api.NodeMachineRole)
 	if err != nil {
-		return errors.Wrap(err, "failed to get default machine provider spec")
+		return nil, errors.Wrap(err, "failed to get default machine provider spec")
 	}
 
-	machineSet := clusterapi.MachineSet{
+	machineSet := &clusterapi.MachineSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              strings.Replace(strings.ToLower(sku), "_", "-", -1) + "-pool",
 			CreationTimestamp: metav1.Time{Time: time.Now()},
@@ -190,15 +225,5 @@ func CreateMachineSet(cm Interface, sku string, count int32) error {
 		},
 	}
 
-	_, err = store.StoreProvider.MachineSet(cluster.Name).Create(&machineSet)
-
-	return err
-}
-
-func CreateMachineSetsFromOptions(cm Interface, opts *options.NodeGroupCreateConfig) error {
-	for sku, count := range opts.Nodes {
-		err := CreateMachineSet(cm, sku, int32(count))
-		return err
-	}
-	return nil
+	return machineSet, nil
 }

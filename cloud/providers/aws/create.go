@@ -14,7 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
-func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+	cluster := cm.Cluster
 	spec := clusterapi_aws.AWSMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: api.AWSProviderGroupName + "/" + api.AWSProviderApiVersion,

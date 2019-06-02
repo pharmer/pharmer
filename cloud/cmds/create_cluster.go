@@ -26,23 +26,33 @@ func NewCmdCreateCluster() *cobra.Command {
 			}
 
 			store.SetProvider(cmd, opts.Owner)
-
-			cm, cluster, err := cloud.Create(opts.Cluster)
+			err := runCreateClusterCmd(opts)
 			if err != nil {
 				term.Fatalln(err)
 			}
-			if len(opts.Nodes) > 0 {
-				nodeOpts := options.NewNodeGroupCreateConfig()
-				nodeOpts.ClusterName = cluster.Name
-				nodeOpts.Nodes = opts.Nodes
-				err := cloud.CreateMachineSetsFromOptions(cm, nodeOpts)
-				if err != nil {
-					term.Fatalln(err)
-				}
-			}
+
 		},
 	}
 	opts.AddFlags(cmd.Flags())
 
 	return cmd
+}
+
+func runCreateClusterCmd(opts *options.ClusterCreateConfig) error {
+	cm, err := cloud.Create(opts.Cluster)
+	if err != nil {
+		return err
+	}
+
+	if len(opts.Nodes) > 0 {
+		nodeOpts := options.NewNodeGroupCreateConfig()
+		nodeOpts.ClusterName = cm.GetCluster().Name
+		nodeOpts.Nodes = opts.Nodes
+		err := cloud.CreateMachineSets(cm, nodeOpts)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

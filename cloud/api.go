@@ -35,7 +35,7 @@ type Interface interface {
 	ApplyDelete(dryRun bool) ([]api.Action, error)
 	IsValid(cluster *api.Cluster) (bool, error)
 	SetDefaultCluster() error
-	GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error)
+	GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error)
 
 	NewMasterTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData
 	NewNodeTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData

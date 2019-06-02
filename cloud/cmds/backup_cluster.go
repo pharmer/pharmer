@@ -35,7 +35,7 @@ func NewCmdBackup() *cobra.Command {
 					term.Fatalln(err)
 				}
 
-				cm, cluster, err := cloud.Create(cluster)
+				cm, err := cloud.Create(cluster)
 				if err != nil {
 					term.Fatalln(err)
 				}
