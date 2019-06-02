@@ -353,3 +353,7 @@ func (c Cluster) IsLessThanVersion(in string) bool {
 func (c *Cluster) GenSSHKeyExternalID() string {
 	return c.Name + "-sshkey"
 }
+
+func (c *Cluster) MasterMachineName(n int) string {
+	return fmt.Sprintf("%v-master-%v", c.Name, n)
+}

@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"gomodules.xyz/cert"
-
 	"github.com/appscode/go/log"
 	"github.com/pharmer/pharmer/apis/v1beta1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
+	"gomodules.xyz/cert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -33,14 +32,14 @@ func GetCluster(name string) (*api.Cluster, error) {
 	return store.StoreProvider.Clusters().Get(name)
 }
 
-func getPharmerCerts(clusterName string) (*api.PharmerCertificates, error) {
-	pharmerCerts := &api.PharmerCertificates{}
+func getPharmerCerts(clusterName string) (*PharmerCertificates, error) {
+	pharmerCerts := &PharmerCertificates{}
 
 	cert, key, err := LoadCACertificates(clusterName, kubeadmconst.CACertAndKeyBaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load ca Certs")
 	}
-	pharmerCerts.CACert = api.CertKeyPair{
+	pharmerCerts.CACert = CertKeyPair{
 		Cert: cert,
 		Key:  key,
 	}
@@ -49,7 +48,7 @@ func getPharmerCerts(clusterName string) (*api.PharmerCertificates, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load fpca Certs")
 	}
-	pharmerCerts.FrontProxyCACert = api.CertKeyPair{
+	pharmerCerts.FrontProxyCACert = CertKeyPair{
 		Cert: cert,
 		Key:  key,
 	}
@@ -58,7 +57,7 @@ func getPharmerCerts(clusterName string) (*api.PharmerCertificates, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load sa keys")
 	}
-	pharmerCerts.ServiceAccountCert = api.CertKeyPair{
+	pharmerCerts.ServiceAccountCert = CertKeyPair{
 		Cert: cert,
 		Key:  key,
 	}
@@ -67,7 +66,7 @@ func getPharmerCerts(clusterName string) (*api.PharmerCertificates, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load etcd-ca keys")
 	}
-	pharmerCerts.EtcdCACert = api.CertKeyPair{
+	pharmerCerts.EtcdCACert = CertKeyPair{
 		Cert: cert,
 		Key:  key,
 	}
@@ -76,7 +75,7 @@ func getPharmerCerts(clusterName string) (*api.PharmerCertificates, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load ssh keys")
 	}
-	pharmerCerts.SSHKey = api.SSHKey{
+	pharmerCerts.SSHKey = SSHKey{
 		PublicKey:  pubKey,
 		PrivateKey: privKey,
 	}
@@ -88,50 +87,50 @@ func GenSSHKeyName(clusterName string) string {
 	return clusterName + "-sshkey"
 }
 
-func createPharmerCerts(cluster *api.Cluster) (*api.PharmerCertificates, error) {
-	pharmerCerts := &api.PharmerCertificates{}
+func createPharmerCerts(store store.ResourceInterface, cluster *api.Cluster) (*PharmerCertificates, error) {
+	pharmerCerts := &PharmerCertificates{}
 
-	cert, key, err := CreateCACertificates(store.StoreProvider, cluster.Name)
+	cert, key, err := CreateCACertificates(store, cluster.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ca certificates")
 	}
-	pharmerCerts.CACert = api.CertKeyPair{
+	pharmerCerts.CACert = CertKeyPair{
 		Cert: cert,
 		Key:  key,
 	}
 
-	cert, key, err = CreateFrontProxyCACertificates(store.StoreProvider, cluster.Name)
+	cert, key, err = CreateFrontProxyCACertificates(store, cluster.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create fpca certificates")
 	}
-	pharmerCerts.FrontProxyCACert = api.CertKeyPair{
+	pharmerCerts.FrontProxyCACert = CertKeyPair{
 		Cert: cert,
 		Key:  key,
 	}
 
-	cert, key, err = CreateSACertificate(store.StoreProvider, cluster.Name)
+	cert, key, err = CreateSACertificate(store, cluster.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create sa certificates")
 	}
-	pharmerCerts.ServiceAccountCert = api.CertKeyPair{
+	pharmerCerts.ServiceAccountCert = CertKeyPair{
 		Cert: cert,
 		Key:  key,
 	}
 
-	cert, key, err = CreateEtcdCACertificate(store.StoreProvider, cluster.Name)
+	cert, key, err = CreateEtcdCACertificate(store, cluster.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etcd-ca certificates")
 	}
-	pharmerCerts.EtcdCACert = api.CertKeyPair{
+	pharmerCerts.EtcdCACert = CertKeyPair{
 		Cert: cert,
 		Key:  key,
 	}
 
-	pubKey, privKey, err := CreateSSHKey(store.StoreProvider, cluster)
+	pubKey, privKey, err := CreateSSHKey(store, cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ssh keys")
 	}
-	pharmerCerts.SSHKey = api.SSHKey{
+	pharmerCerts.SSHKey = SSHKey{
 		PublicKey:  pubKey,
 		PrivateKey: privKey,
 	}

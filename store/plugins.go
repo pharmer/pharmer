@@ -3,12 +3,10 @@ package store
 import (
 	"sync"
 
-	"github.com/pkg/errors"
-
-	"github.com/appscode/go/term"
 	"github.com/golang/glog"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/config"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -72,18 +70,24 @@ func GetProvider(name string, cfg *api.PharmerConfig) (Interface, error) {
 	return f(cfg)
 }
 
-func SetProvider(cmd *cobra.Command, owner string) {
+func SetProvider(cmd *cobra.Command, owner string) error {
 	cfgFile, _ := config.GetConfigFile(cmd.Flags())
 	cfg, err := config.LoadConfig(cfgFile)
 	if err != nil {
-		term.Fatalln(err)
+		return err
 	}
-	StoreProvider = NewStoreProvider(cfg, owner)
+	StoreProvider, err = NewStoreProvider(cfg, owner)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func NewStoreProvider(cfg *api.PharmerConfig, owner string) ResourceInterface {
+func NewStoreProvider(cfg *api.PharmerConfig, owner string) (ResourceInterface, error) {
 	var storeType string
-	if cfg.Store.Local != nil ||
+	if cfg == nil {
+		storeType = fakeUID
+	} else if cfg.Store.Local != nil ||
 		cfg.Store.S3 != nil ||
 		cfg.Store.GCS != nil ||
 		cfg.Store.Azure != nil ||
@@ -94,9 +98,10 @@ func NewStoreProvider(cfg *api.PharmerConfig, owner string) ResourceInterface {
 	} else {
 		storeType = fakeUID
 	}
+
 	store, err := GetProvider(storeType, cfg)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return store.Owner(owner)
+	return store.Owner(owner), nil
 }

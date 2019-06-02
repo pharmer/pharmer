@@ -27,19 +27,12 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			store.SetProvider(cmd, opts.Owner)
-
-			cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
+			err = store.SetProvider(cmd, opts.Owner)
 			if err != nil {
 				term.Fatalln(err)
 			}
 
-			cm, err := cloud.GetCloudManager(cluster)
-			if err != nil {
-				term.Fatalln(err)
-			}
-
-			err = cloud.CreateMachineSets(cm, opts)
+			err = runCreateNodegroup(opts)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -48,4 +41,23 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 	opts.AddFlags(cmd.Flags())
 
 	return cmd
+}
+
+func runCreateNodegroup(opts *options.NodeGroupCreateConfig) error {
+	cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
+	if err != nil {
+		return err
+	}
+
+	cm, err := cloud.GetCloudManager(cluster)
+	if err != nil {
+		return err
+	}
+
+	err = cloud.CreateMachineSets(store.StoreProvider, cm, opts)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -12,6 +12,7 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	opts "github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/notification"
+	"github.com/pharmer/pharmer/store"
 )
 
 func (a *Apiserver) CreateCluster() error {
@@ -53,7 +54,7 @@ func (a *Apiserver) CreateCluster() error {
 			newCtx := WithLogger(a.ctx, noti)
 
 			// todo fix
-			_, err = Create(cluster)
+			_, err = Create(store.StoreProvider, cluster)
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}

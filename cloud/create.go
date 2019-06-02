@@ -1,16 +1,13 @@
 package cloud
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
-	"github.com/pharmer/pharmer/cloud/cmds/options"
-
-	"github.com/google/uuid"
-
 	"github.com/appscode/go/types"
+	"github.com/google/uuid"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,24 +16,23 @@ import (
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func Create(cluster *api.Cluster) (Interface, error) {
-	config := cluster.Spec.Config
+func Create(store store.ResourceInterface, cluster *api.Cluster) (Interface, error) {
 	if cluster == nil {
 		return nil, errors.New("missing Cluster")
 	} else if cluster.Name == "" {
 		return nil, errors.New("missing Cluster name")
-	} else if config.KubernetesVersion == "" {
+	} else if cluster.Spec.Config.KubernetesVersion == "" {
 		return nil, errors.New("missing Cluster version")
 	}
 
 	// create should return error: Cluster already exists if Cluster already exists
-	_, err := store.StoreProvider.Clusters().Get(cluster.Name)
+	_, err := store.Clusters().Get(cluster.Name)
 	if err == nil {
 		return nil, errors.New("Cluster already exists")
 	}
 
 	// prepare cm
-	certs, err := createPharmerCerts(cluster)
+	certs, err := createPharmerCerts(store, cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create certificates")
 	}
@@ -47,19 +43,19 @@ func Create(cluster *api.Cluster) (Interface, error) {
 	}
 
 	// create cluster
-	if err := createPharmerCluster(cm); err != nil {
-		return nil, errors.Wrap(err, "failed to craet cluster")
+	if err := createPharmerCluster(store, cm); err != nil {
+		return nil, errors.Wrap(err, "failed to create certificates")
 	}
 
-	// craete master machines
-	if err := createMasterMachines(cm); err != nil {
+	// create master machines
+	if err := createMasterMachines(store, cm); err != nil {
 		return nil, errors.Wrap(err, "failed to create master machines")
 	}
 
 	return cm, nil
 }
 
-func createPharmerCluster(cm Interface) error {
+func createPharmerCluster(store store.ResourceInterface, cm Interface) error {
 	cluster := cm.GetCluster()
 
 	// set common cluster configs
@@ -73,7 +69,7 @@ func createPharmerCluster(cm Interface) error {
 		return errors.Wrap(err, "failed to set provider defaults")
 	}
 
-	_, err = store.StoreProvider.Clusters().Create(cluster)
+	_, err = store.Clusters().Create(cluster)
 	if err != nil {
 		return errors.Wrap(err, "failed to store cluster")
 	}
@@ -81,15 +77,15 @@ func createPharmerCluster(cm Interface) error {
 	return nil
 }
 
-func createMasterMachines(cm Interface) error {
+func createMasterMachines(store store.ResourceInterface, cm Interface) error {
 	cluster := cm.GetCluster()
 	if !managedProviders.Has(cluster.ClusterConfig().Cloud.CloudProvider) {
 		for i := 0; i < cluster.Spec.Config.MasterCount; i++ {
-			master, err := getMasterMachine(cm, fmt.Sprintf("%v-master-%v", cluster.Name, i))
+			master, err := getMasterMachine(cm, cluster.MasterMachineName(i))
 			if err != nil {
-				return errors.Wrap(err, "failed to craete master machine")
+				return errors.Wrap(err, "failed to create master machine")
 			}
-			if _, err = store.StoreProvider.Machine(cluster.Name).Create(master); err != nil {
+			if _, err = store.Machine(cluster.Name).Create(master); err != nil {
 				return errors.Wrap(err, "failed to store mastet machine")
 			}
 		}
@@ -112,7 +108,7 @@ func setDefaultCluster(cluster *api.Cluster) error {
 	if err := api.AssignTypeKind(cluster); err != nil {
 		return errors.Wrap(err, "failed to assign apiversion and kind to cluster")
 	}
-	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
+	if err := api.AssignTypeKind(&cluster.Spec.ClusterAPI); err != nil {
 		return errors.Wrap(err, "failed to assign apiversion and kind to clusterAPI object")
 	}
 
@@ -169,13 +165,13 @@ func getMasterMachine(cm Interface, name string) (*clusterapi.Machine, error) {
 	return machine, nil
 }
 
-func CreateMachineSets(cm Interface, opts *options.NodeGroupCreateConfig) error {
+func CreateMachineSets(store store.ResourceInterface, cm Interface, opts *options.NodeGroupCreateConfig) error {
 	for sku, count := range opts.Nodes {
 		machineset, err := getMachineSet(cm, sku, int32(count))
 		if err != nil {
 			return errors.Wrap(err, "failed to create machineset")
 		}
-		_, err = store.StoreProvider.MachineSet(cm.GetCluster().Name).Create(machineset)
+		_, err = store.MachineSet(cm.GetCluster().Name).Create(machineset)
 		if err != nil {
 			return errors.Wrap(err, "failed to store machineset")
 		}

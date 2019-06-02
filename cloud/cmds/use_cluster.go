@@ -1,12 +1,11 @@
 package cmds
 
 import (
-	"github.com/pharmer/pharmer/store"
-
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +21,10 @@ func NewCmdUse() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			store.SetProvider(cmd, opts.Owner)
+			err := store.SetProvider(cmd, opts.Owner)
+			if err != nil {
+				term.Fatalln(err)
+			}
 
 			cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
 			if err != nil {

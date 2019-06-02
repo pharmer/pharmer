@@ -61,6 +61,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 		NodeTags:    []string{n.NodePrefix()},
 	}
 
+	config.APIServerExtraArgs = make(map[string]string)
 	config.APIServerExtraArgs["cloud-config"] = "/etc/kubernetes/ccm/cloud-config"
 
 	config.KubeletExtraArgs = make(map[string]string)

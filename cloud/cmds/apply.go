@@ -20,7 +20,10 @@ func NewCmdApply() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			store.SetProvider(cmd, opts.Owner)
+			err := store.SetProvider(cmd, opts.Owner)
+			if err != nil {
+				term.Fatalln(err)
+			}
 
 			acts, err := cloud.Apply(opts)
 			if err != nil {
