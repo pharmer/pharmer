@@ -10,8 +10,8 @@ import (
 
 type CloudManagerInterface interface {
 	GetCluster() *api.Cluster
-	GetCaCertPair() *api.CertKeyPair
-	GetPharmerCertificates() *api.PharmerCertificates
+	GetCaCertPair() *CertKeyPair
+	GetPharmerCertificates() *PharmerCertificates
 	GetCredential() (*cloudapi.Credential, error)
 
 	GetAdminClient() (kubernetes.Interface, error)
@@ -19,7 +19,7 @@ type CloudManagerInterface interface {
 
 type CloudManager struct {
 	Cluster *api.Cluster
-	Certs   *api.PharmerCertificates
+	Certs   *PharmerCertificates
 
 	Namer       namer
 	AdminClient kubernetes.Interface
@@ -33,11 +33,11 @@ func (cm *CloudManager) GetCluster() *api.Cluster {
 	return cm.Cluster
 }
 
-func (cm *CloudManager) GetCaCertPair() *api.CertKeyPair {
+func (cm *CloudManager) GetCaCertPair() *CertKeyPair {
 	return &cm.Certs.CACert
 }
 
-func (cm *CloudManager) GetPharmerCertificates() *api.PharmerCertificates {
+func (cm *CloudManager) GetPharmerCertificates() *PharmerCertificates {
 	return cm.Certs
 }
 

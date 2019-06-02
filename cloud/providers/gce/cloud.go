@@ -8,8 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pharmer/pharmer/store"
-
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/pharmer/cloud/pkg/credential"
@@ -17,6 +15,7 @@ import (
 	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	proconfig "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"

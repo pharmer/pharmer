@@ -248,6 +248,11 @@ dev: gen fmt push
 .PHONY: ci
 ci: lint test build #cover
 
+.PHONY: codegen
+codegen:
+	@echo "running codegen"
+	@./hack/codegen.sh
+
 .PHONY: qa
 qa: docker-manifest
 	@if [ "$$APPSCODE_ENV" = "prod" ]; then                                              \

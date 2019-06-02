@@ -21,7 +21,7 @@ func (conn *cloudConnector) GetControllerManager() (string, error) {
 	}
 	typed := credential.GCE{CommonSpec: credential.CommonSpec(cred.Spec)}
 
-	machineSetupConfig, err := getMachineSetupConfig(config)
+	machineSetupConfig, err := getMachineSetupConfig(&config)
 	if err != nil {
 		return "", err
 	}

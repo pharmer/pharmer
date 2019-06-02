@@ -17,7 +17,7 @@ import (
 
 type ClusterManager struct {
 	cluster *api.Cluster
-	certs   *api.PharmerCertificates
+	certs   *PharmerCertificates
 
 	ctx   context.Context
 	conn  *cloudConnector
@@ -34,12 +34,12 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
+	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *PharmerCertificates) Interface {
 		return New(cluster, certs)
 	})
 }
 
-func New(cluster *api.Cluster, certs *api.PharmerCertificates) Interface {
+func New(cluster *api.Cluster, certs *PharmerCertificates) Interface {
 	return &ClusterManager{
 		cluster: cluster,
 		certs:   certs,

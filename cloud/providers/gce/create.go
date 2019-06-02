@@ -77,7 +77,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 	}
 
 	// set clusterAPI provider-specs
-	return clusterapiGCE.SetGCEclusterProviderConfig(cluster.Spec.ClusterAPI, config.Cloud.Project, cm.Certs)
+	return clusterapiGCE.SetGCEclusterProviderConfig(&cluster.Spec.ClusterAPI, config.Cloud.Project, cm.Certs)
 }
 
 // TODO: why this is needed?

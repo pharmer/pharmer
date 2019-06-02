@@ -29,15 +29,14 @@ type Cluster struct {
 }
 
 type PharmerClusterSpec struct {
-	ClusterAPI *clusterapi.Cluster `json:"clusterApi,omitempty"`
-	Config     *ClusterConfig      `json:"config,omitempty"`
+	ClusterAPI clusterapi.Cluster `json:"clusterApi,omitempty"`
+	Config     ClusterConfig      `json:"config,omitempty"`
 }
 
 type ClusterConfig struct {
 	MasterCount       int       `json:"masterCount"`
 	Cloud             CloudSpec `json:"cloud"`
 	KubernetesVersion string    `json:"kubernetesVersion,omitempty"`
-	Locked            bool      `json:"locked,omitempty"`
 	CredentialName    string    `json:"credentialName,omitempty"`
 
 	KubeletExtraArgs           map[string]string `json:"kubeletExtraArgs,omitempty"`
@@ -241,7 +240,7 @@ type ReservedIP struct {
 	Name string `json:"name,omitempty"`
 }
 
-func (c *Cluster) ClusterConfig() *ClusterConfig {
+func (c *Cluster) ClusterConfig() ClusterConfig {
 	return c.Spec.Config
 }
 
@@ -318,7 +317,7 @@ func (c *Cluster) SetNetworkingDefaults(provider string) {
 }
 
 func (c *Cluster) InitClusterApi() {
-	c.Spec.ClusterAPI = &clusterapi.Cluster{
+	c.Spec.ClusterAPI = clusterapi.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: c.Name,
 		},

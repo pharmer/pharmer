@@ -33,8 +33,8 @@ func NewClusterCreateConfig() *ClusterCreateConfig {
 			Generation:        time.Now().UnixNano(),
 		},
 		Spec: api.PharmerClusterSpec{
-			ClusterAPI: &clusterapi.Cluster{},
-			Config: &api.ClusterConfig{
+			ClusterAPI: clusterapi.Cluster{},
+			Config: api.ClusterConfig{
 				Cloud: api.CloudSpec{
 					NetworkProvider: api.PodNetworkCalico,
 				},

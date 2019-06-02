@@ -1,4 +1,4 @@
-package v1beta1
+package cloud
 
 import (
 	"crypto/rsa"

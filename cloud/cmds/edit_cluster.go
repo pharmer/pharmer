@@ -91,9 +91,6 @@ func RunUpdateCluster(opts *options.ClusterEditConfig, errOut io.Writer) error {
 		}
 
 		//TODO: Check provided flags, and set value
-		if opts.Locked {
-			updated.Spec.Config.Locked = opts.Locked
-		}
 		if opts.KubernetesVersion != "" {
 			updated.Spec.Config.KubernetesVersion = opts.KubernetesVersion
 		}

@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/pharmer/pharmer/store"
-
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/wait"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74,7 +73,7 @@ func NewClusterApi(cm Interface, namespace string, kc kubernetes.Interface, exte
 	}, nil
 }
 
-func GetClusterClient(caCert *api.CertKeyPair, cluster *api.Cluster) (clientset.Interface, error) {
+func GetClusterClient(caCert *CertKeyPair, cluster *api.Cluster) (clientset.Interface, error) {
 	conf, err := NewRestConfig(caCert, cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get rest config")
@@ -89,7 +88,7 @@ func (ca *ClusterAPI) Apply(controllerManager string) error {
 	}
 
 	cluster := ca.GetCluster()
-	if err := phases.ApplyCluster(ca.bootstrapClient, cluster.Spec.ClusterAPI); err != nil && !api.ErrAlreadyExist(err) {
+	if err := phases.ApplyCluster(ca.bootstrapClient, &cluster.Spec.ClusterAPI); err != nil && !api.ErrAlreadyExist(err) {
 		return errors.Wrap(err, "failed to add Cluster")
 	}
 	namespace := cluster.Spec.ClusterAPI.Namespace

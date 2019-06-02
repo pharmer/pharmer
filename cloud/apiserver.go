@@ -4,11 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/pharmer/pharmer/store"
-
 	"github.com/appscode/go/log"
 	stringz "github.com/appscode/go/strings"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	semver "gomodules.xyz/version"
@@ -56,7 +55,7 @@ func IsNodeReady(node *core.Node) bool {
 	return false
 }
 
-func NewRestConfig(caCertPair *api.CertKeyPair, cluster *api.Cluster) (*rest.Config, error) {
+func NewRestConfig(caCertPair *CertKeyPair, cluster *api.Cluster) (*rest.Config, error) {
 	adminCert, adminKey, err := CreateAdminCertificate(caCertPair.Cert, caCertPair.Key)
 	if err != nil {
 		return nil, err
@@ -81,7 +80,7 @@ func NewRestConfig(caCertPair *api.CertKeyPair, cluster *api.Cluster) (*rest.Con
 
 // WARNING:
 // Returned KubeClient uses admin client cert. This should only be used for Cluster provisioning operations.
-func NewAdminClient(caCertPair *api.CertKeyPair, cluster *api.Cluster) (kubernetes.Interface, error) {
+func NewAdminClient(caCertPair *CertKeyPair, cluster *api.Cluster) (kubernetes.Interface, error) {
 	cfg, err := NewRestConfig(caCertPair, cluster)
 	if err != nil {
 		return nil, err
@@ -266,7 +265,7 @@ func ConvertCredentialData(data map[string]string) map[string][]byte {
 	return newData
 }
 
-func NewClusterApiClient(caCert *api.CertKeyPair, cluster *api.Cluster) (client.Client, error) {
+func NewClusterApiClient(caCert *CertKeyPair, cluster *api.Cluster) (client.Client, error) {
 	cfg, err := NewRestConfig(caCert, cluster)
 	if err != nil {
 		return nil, err
@@ -285,7 +284,6 @@ func waitForServiceAccount(ctx context.Context, client kubernetes.Interface) err
 		return err == nil, nil
 	})
 }
-
 
 func CreateNamespace(kc kubernetes.Interface, namespace string) error {
 	ns := &core.Namespace{

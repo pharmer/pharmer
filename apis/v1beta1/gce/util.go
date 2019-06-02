@@ -3,10 +3,10 @@ package gce
 import (
 	"encoding/json"
 
-	"gomodules.xyz/cert"
+	"github.com/pharmer/pharmer/cloud"
 
-	. "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
+	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -110,7 +110,7 @@ func EncodeClusterSpec(spec *GCEClusterProviderSpec) (*runtime.RawExtension, err
 }
 
 // SetGCEClusterProvidreConfig sets default gce cluster providerSpec
-func SetGCEclusterProviderConfig(cluster *clusterv1.Cluster, project string, certs *PharmerCertificates) error {
+func SetGCEclusterProviderConfig(cluster *clusterv1.Cluster, project string, certs *cloud.PharmerCertificates) error {
 	conf := &GCEClusterProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GCEProviderGroupName + "/" + GCEProviderApiVersion,

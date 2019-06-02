@@ -12,7 +12,7 @@ import (
 // The config parameter provides an io.Reader handler to the factory in
 // order to load specific configurations. If no configuration is provided
 // the parameter is nil.
-type Factory func(cluster *api.Cluster, certs *api.PharmerCertificates) Interface
+type Factory func(cluster *api.Cluster, certs *PharmerCertificates) Interface
 
 // All registered cloud providers.
 var (
@@ -66,7 +66,7 @@ func GetCloudManager(cluster *api.Cluster) (Interface, error) {
 // was known but failed to initialize. The config parameter specifies the
 // io.Reader handler of the configuration file for the cloud provider, or nil
 // for no configuation.
-func GetCloudManagerWithCerts(cluster *api.Cluster, certs *api.PharmerCertificates) (Interface, error) {
+func GetCloudManagerWithCerts(cluster *api.Cluster, certs *PharmerCertificates) (Interface, error) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	f, found := providers[cluster.Spec.Config.Cloud.CloudProvider]

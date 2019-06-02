@@ -26,12 +26,12 @@ const (
 )
 
 func init() {
-	cloud.RegisterCloudManager(UID, func(cluster *api.Cluster, certs *api.PharmerCertificates) cloud.Interface {
+	cloud.RegisterCloudManager(UID, func(cluster *api.Cluster, certs *cloud.PharmerCertificates) cloud.Interface {
 		return New(cluster, certs)
 	})
 }
 
-func New(cluster *api.Cluster, certs *api.PharmerCertificates) cloud.Interface {
+func New(cluster *api.Cluster, certs *cloud.PharmerCertificates) cloud.Interface {
 	return &ClusterManager{
 		CloudManager: &cloud.CloudManager{
 			Cluster: cluster,
