@@ -2,6 +2,7 @@ package util
 
 import (
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -153,7 +154,7 @@ var CreateCredential = func() {
 			command = append(command, "--from-env")
 		}
 
-		runCommand(command)
+		RunCommandWithStderr(command)
 	}
 }
 
@@ -163,11 +164,11 @@ var DeleteCredential = func() {
 			"pharmer", "delete", "credential", CredentialName + "_" + provider,
 		}
 
-		runCommand(command)
+		RunCommandWithStderr(command)
 	}
 }
 
-var CreateCluster = func(provider, version string) {
+var CreateCluster = func(provider, version string) error {
 	command := []string{
 		"pharmer", "create", "cluster", ClusterName,
 		"--provider", provider,
@@ -178,22 +179,22 @@ var CreateCluster = func(provider, version string) {
 		"--kubernetes-version", version,
 	}
 
-	runCommand(command)
+	return RunCommandWithStderr(command)
 }
 
 var ApplyCluster = func() {
 	command := []string{"pharmer", "apply", ClusterName}
-	runCommand(command)
+	RunCommandWithStderr(command)
 }
 
 var UseCluster = func() {
 	command := []string{"pharmer", "use", "cluster", ClusterName}
-	runCommand(command)
+	RunCommandWithStderr(command)
 }
 
 var DeleteCluster = func() {
 	command := []string{"pharmer", "delete", "cluster", ClusterName}
-	runCommand(command)
+	RunCommandWithStderr(command)
 }
 
 var ScaleCluster = func(n int32) {
@@ -225,7 +226,7 @@ var ScaleCluster = func(n int32) {
 //		"--kubernetes-version=", updateToVersion,
 //	}
 //
-//	runCommand(command)
+//	RunCommandWithStderr(command)
 //}
 
 //var WaitForUpdates = func() {
@@ -254,25 +255,42 @@ var ScaleCluster = func(n int32) {
 //	Expect(err).NotTo(HaveOccurred())
 //}
 
-func runCommand(command []string) {
+func RunCommand(command []string) (error, string) {
+	cmd := exec.Command(pharmerPath, command[1:]...)
+	var buf bytes.Buffer
+	cmd.Stderr = &buf
+	cmd.Stdout = &buf
+
+	By(fmt.Sprintf("Running Command: %v", command))
+
+	return cmd.Run(), buf.String()
+}
+
+func RunCommandWithStderr(command []string) error {
 	cmd := exec.Command(pharmerPath, command[1:]...)
 
 	stderr, err := cmd.StderrPipe()
-	Expect(err).NotTo(HaveOccurred())
+	if err != nil {
+		return err
+	}
 
 	stdout, err := cmd.StdoutPipe()
-	Expect(err).NotTo(HaveOccurred())
+	if err != nil {
+		return err
+	}
 
 	By(fmt.Sprintf("Running Command: %v", command))
 
 	err = cmd.Start()
-	Expect(err).NotTo(HaveOccurred())
+	if err != nil {
+		return err
+	}
 
 	go streamReader(stderr)
 	go streamReader(stdout)
 
 	err = cmd.Wait()
-	Expect(err).NotTo(HaveOccurred())
+	return err
 }
 
 func streamReader(reader io.Reader) {
@@ -280,6 +298,6 @@ func streamReader(reader io.Reader) {
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
 		m := scanner.Text()
-		fmt.Println(m)
+		fmt.Fprintln(os.Stderr, m)
 	}
 }

@@ -6,19 +6,17 @@ import (
 	"strings"
 	"text/template"
 
-	"sigs.k8s.io/cluster-api/pkg/util"
-
-	"gomodules.xyz/cert"
-	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
-	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
+	"gomodules.xyz/cert"
 	version "gomodules.xyz/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
+	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
 // https://github.com/pharmer/pharmer/issues/347

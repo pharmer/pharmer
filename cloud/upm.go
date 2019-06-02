@@ -8,7 +8,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/appscode/go/log"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"golang.org/x/crypto/ssh"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

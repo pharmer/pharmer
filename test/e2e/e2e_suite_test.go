@@ -20,7 +20,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	DeleteCredential()
+	//DeleteCredential()
 	gexec.CleanupBuildArtifacts()
 })
 

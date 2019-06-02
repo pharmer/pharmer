@@ -3,6 +3,9 @@ package fake
 import (
 	"context"
 
+	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
+	"k8s.io/client-go/kubernetes"
+
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	core "k8s.io/api/core/v1"
@@ -18,21 +21,78 @@ type ClusterManager struct {
 	owner string
 }
 
+func (cm *ClusterManager) GetCluster() *api.Cluster {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) GetCaCertPair() *CertKeyPair {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) GetPharmerCertificates() *PharmerCertificates {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) GetCredential() (*v1.Credential, error) {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) CreateCCMCredential() error {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) GetConnector() ClusterApiProviderComponent {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) GetCloudConnector() error {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMachine *v1alpha1.Machine, machines []*v1alpha1.Machine, err error) {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) ApplyDelete(dryRun bool) ([]api.Action, error) {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) SetDefaultCluster() error {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (v1alpha1.ProviderSpec, error) {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) NewMasterTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
+	panic("implement me")
+}
+
 // AddToManager adds all Controllers to the Manager
 func (cm *ClusterManager) AddToManager(ctx context.Context, m manager.Manager) error {
 	return ErrNotImplemented
 }
 
-func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (v1alpha1.ProviderSpec, error) {
-	return v1alpha1.ProviderSpec{}, ErrNotImplemented
-}
+//func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (v1alpha1.ProviderSpec, error) {
+//	return v1alpha1.ProviderSpec{}, ErrNotImplemented
+//}
 
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 	return ErrNotImplemented
 }
-func (cm *ClusterManager) SetDefaultCluster(in *api.Cluster) error {
-	return ErrNotImplemented
-}
+
+//func (cm *ClusterManager) SetDefaultCluster(in *api.Cluster) error {
+//	return ErrNotImplemented
+//}
 
 var _ Interface = &ClusterManager{}
 

@@ -36,7 +36,10 @@ func NewCmdCreateCredential() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			store.SetProvider(cmd, opts.Owner)
+			err := store.SetProvider(cmd, opts.Owner)
+			if err != nil {
+				term.Fatalln(err)
+			}
 
 			if err := runCreateCredential(opts); err != nil {
 				term.Fatalln(err)

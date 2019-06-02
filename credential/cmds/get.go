@@ -3,11 +3,10 @@ package cmds
 import (
 	"io"
 
-	"github.com/pharmer/pharmer/store"
-
 	"github.com/appscode/go/term"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/pharmer/credential/cmds/options"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils/printer"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,9 +29,12 @@ func NewCmdGetCredential(out io.Writer) *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			store.SetProvider(cmd, opts.Owner)
+			err := store.SetProvider(cmd, opts.Owner)
+			if err != nil {
+				term.Fatalln(err)
+			}
 
-			err := RunGetCredential(opts, out)
+			err = RunGetCredential(opts, out)
 			term.ExitOnError(err)
 		},
 	}

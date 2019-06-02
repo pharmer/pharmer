@@ -3,9 +3,8 @@ package options
 import (
 	"strings"
 
-	"github.com/pharmer/pharmer/utils"
-
 	"github.com/appscode/go/flags"
+	"github.com/pharmer/pharmer/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
