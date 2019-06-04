@@ -64,43 +64,21 @@ func Apply(opts *options.ApplyConfig) ([]api.Action, error) {
 
 	var acts []api.Action
 	if cluster.Status.Phase == api.ClusterPending {
-		a, err := ApplyCreate(dryRun, cm)
+		a, err := ApplyCreate(cm, dryRun)
 		if err != nil {
 			return nil, err
+		}
+		acts = append(acts, a...)
+
+		a, err = ApplyScale(cm)
+		if err != nil {
+			return acts, errors.Wrap(err, "failed to scale cluster")
 		}
 		acts = append(acts, a...)
 	}
 
 	if cluster.DeletionTimestamp != nil && cluster.Status.Phase != api.ClusterDeleted {
-		machines, err := store.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
-		if err != nil {
-			return nil, err
-		}
-		var replicas int32 = 0
-		for _, machine := range machines {
-			machine.Spec.Replicas = &replicas
-			_, err := store.StoreProvider.MachineSet(cluster.Name).Update(machine)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	{
-		a, err := ApplyScale(cm)
-		if err != nil {
-			// ignore error if Cluster is deleted
-			if cluster.DeletionTimestamp != nil && cluster.Status.Phase != api.ClusterDeleted {
-				log.Infoln(err)
-			} else {
-				return nil, err
-			}
-		}
-		acts = append(acts, a...)
-	}
-
-	if cluster.DeletionTimestamp != nil && cluster.Status.Phase != api.ClusterDeleted {
-		a, err := cm.ApplyDelete(dryRun)
+		a, err := ApplyDelete(dryRun, cm)
 		if err != nil {
 			return nil, err
 		}
@@ -110,11 +88,20 @@ func Apply(opts *options.ApplyConfig) ([]api.Action, error) {
 	return acts, nil
 }
 
-func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
-	// TODO: should this return leadermachine?
-	acts, leaderMachine, machines, err := cm.ApplyCreate(dryRun)
+func ApplyCreate(cm Interface, dryRun bool) ([]api.Action, error) {
+	acts, err := cm.PrepareCloud(dryRun)
 	if err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "failed to prepare cloud infra")
+	}
+
+	err = setMasterSKU(cm)
+	if err != nil {
+		return acts, errors.Wrap(err, "failed to set master sku")
+	}
+
+	acts, err = cm.EnsureMaster(acts, dryRun)
+	if err != nil {
+		return acts, errors.Wrap(err, "failed to ensure master machine")
 	}
 
 	cluster := cm.GetCluster()
@@ -125,44 +112,27 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 	}
 
 	if err = WaitForReadyMaster(kubeClient); err != nil {
-		cluster.Status.Reason = err.Error()
-		err = errors.Wrap(err, " error occurred while waiting for master")
-		return acts, err
-	}
-
-	leaderMachine, err = store.StoreProvider.Machine(cluster.Name).UpdateStatus(leaderMachine)
-	if err != nil {
-		return
+		return acts, errors.Wrap(err, " error occurred while waiting for master")
 	}
 
 	// create ccm credential
 	err = cm.CreateCCMCredential()
 	if err != nil {
-		return
+		return acts, errors.Wrap(err, "failed to create ccm-credential")
 	}
 
-	//if err = CreateCredentialSecret(kubeClient, cluster); err != nil {
-	//	return acts, errors.Wrap(err, "Error creating ccm secret credentials")
-	//}
-
-	// TODO: should we move this to providers?
-	// for only do linode and packet we need to pass conn
-	// but now this is getting passed to all providers
-	// if it is not nil, then pharmer credential, certs etc secrts are created
-	conn := cm.GetConnector()
-	var controllerManager string
-	controllerManager, err = conn.GetControllerManager()
-
-	if err != nil {
-		return acts, errors.Wrap(err, "Error creating controller-manager")
-	}
-
-	ca, err := NewClusterApi(cm, "cloud-provider-system", kubeClient, true)
+	// TODO:which controllre? pharmer or sigs?
+	ca, err := NewClusterApi(cm, "cloud-provider-system", kubeClient)
 	if err != nil {
 		return acts, errors.Wrap(err, "Error creating Cluster-api components")
 	}
 
-	if err := ca.Apply(controllerManager); err != nil {
+	clusterAPIcomponents, err := cm.GetClusterAPIComponents()
+	if err != nil {
+		return acts, errors.Wrap(err, "Error getting clusterAPI components")
+	}
+
+	if err := ca.Apply(clusterAPIcomponents); err != nil {
 		return acts, err
 	}
 
@@ -172,22 +142,57 @@ func ApplyCreate(dryRun bool, cm Interface) (acts []api.Action, err error) {
 		return nil, err
 	}
 
+	machines, err := store.StoreProvider.Machine(cluster.Name).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list master machines")
+	}
+
 	for _, m := range machines {
-		if m.Name == leaderMachine.Name {
-			continue
-		}
-		if _, err := capiClient.ClusterV1alpha1().Machines(cluster.Spec.ClusterAPI.Namespace).Create(m); err != nil && !api.ErrObjectModified(err) {
-			log.Infof("Error creating maching %q in namespace %q", m.Name, cluster.Spec.ClusterAPI.Namespace)
-			return acts, err
+		_, err := capiClient.ClusterV1alpha1().Machines(cluster.Spec.ClusterAPI.Namespace).Create(m)
+		if err != nil && !api.ErrObjectModified(err) && !api.ErrAlreadyExist(err) {
+			return acts, errors.Wrapf(err, "failed to crate maching %q in namespace %q",
+				m.Name, cluster.Spec.ClusterAPI.Namespace)
 		}
 	}
 
 	cluster.Status.Phase = api.ClusterReady
 	if _, err = store.StoreProvider.Clusters().UpdateStatus(cluster); err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "failed to update cluster status")
 	}
 
 	return acts, nil
+}
+
+func setMasterSKU(cm Interface) error {
+	clusterName := cm.GetCluster().Name
+
+	machines, err := store.StoreProvider.Machine(clusterName).List(metav1.ListOptions{})
+	if err != nil {
+		return errors.Wrap(err, "failed to list machines")
+	}
+
+	machineSets, err := store.StoreProvider.MachineSet(clusterName).List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	totalNodes := NodeCount(machineSets)
+
+	sku := cm.GetMasterSKU(totalNodes)
+
+	// TODO: should this be in apply? or in create?
+	// update all the master machines
+	for _, m := range machines {
+		providerspec, err := cm.GetDefaultMachineProviderSpec(sku, api.MasterMachineRole)
+		m.Spec.ProviderSpec = providerspec
+
+		_, err = store.StoreProvider.Machine(clusterName).Update(m)
+		if err != nil {
+			return errors.Wrapf(err, "failed to update machine %q to store", m.Name)
+		}
+	}
+
+	return nil
 }
 
 func ApplyScale(cm Interface) (acts []api.Action, err error) {
@@ -320,4 +325,24 @@ func ApplyUpgrade(dryRun bool, cm Interface) (acts []api.Action, err error) {
 	}
 
 	return
+}
+
+func ApplyDelete(dryRun bool, cm Interface) ([]api.Action, error) {
+	log.Infoln("Deleting cluster...")
+	cluster := cm.GetCluster()
+
+	err := DeleteAllWorkerMachines(cm)
+	if err != nil {
+		log.Infof("failed to delete nodes: %v", err)
+	}
+
+	if cluster.Status.Phase == api.ClusterReady {
+		cluster.Status.Phase = api.ClusterDeleting
+	}
+	_, err = store.StoreProvider.Clusters().UpdateStatus(cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	return cm.ApplyDelete(dryRun)
 }

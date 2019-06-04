@@ -6,7 +6,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	proconfig "github.com/pharmer/pharmer/apis/v1beta1/gce"
-	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,11 +78,6 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 
 	// set clusterAPI provider-specs
 	return clusterapiGCE.SetGCEclusterProviderConfig(&cluster.Spec.ClusterAPI, config.Cloud.Project, cm.Certs)
-}
-
-// TODO: why this is needed?
-func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
-	return false, ErrNotImplemented
 }
 
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {

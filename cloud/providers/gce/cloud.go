@@ -158,7 +158,10 @@ func (conn *cloudConnector) getLoadBalancer() (string, error) {
 	return address.Address, nil
 }
 
-func (conn *cloudConnector) createLoadBalancer(leaderMachine string) (string, error) {
+func (conn *cloudConnector) createLoadBalancer(dryRun bool, leaderMachine string) (string, error) {
+	if dryRun {
+		return "", nil
+	}
 	log.Infof("Creating load balancer cluster %s", conn.Cluster.Name)
 
 	project := conn.Cluster.Spec.Config.Cloud.Project
@@ -357,7 +360,10 @@ func errDeleted(err error) bool {
 	return strings.Contains(err.Error(), "notFound")
 }
 
-func (conn *cloudConnector) importPublicKey() error {
+func (conn *cloudConnector) importPublicKey(dryRun bool) error {
+	if dryRun {
+		return nil
+	}
 	pubKey := string(conn.Certs.SSHKey.PublicKey)
 	r1, err := conn.computeService.Projects.SetCommonInstanceMetadata(conn.Cluster.Spec.Config.Cloud.Project, &compute.Metadata{
 		Items: []*compute.MetadataItems{
@@ -390,7 +396,10 @@ func (conn *cloudConnector) getNetworks() (bool, error) {
 	return true, nil
 }
 
-func (conn *cloudConnector) ensureNetworks() error {
+func (conn *cloudConnector) ensureNetworks(dryrun bool) error {
+	if dryrun {
+		return nil
+	}
 	log.Infof("Retrieving network %v for project %v", defaultNetwork, conn.Cluster.Spec.Config.Cloud.Project)
 	r2, err := conn.computeService.Networks.Insert(conn.Cluster.Spec.Config.Cloud.Project, &compute.Network{
 		IPv4Range: "10.240.0.0/16",
@@ -428,7 +437,11 @@ func (conn *cloudConnector) getFirewallRules() (bool, error) {
 	return true, nil
 }
 
-func (conn *cloudConnector) ensureFirewallRules() error {
+func (conn *cloudConnector) ensureFirewallRules(dryRun bool) error {
+	if dryRun {
+		return nil
+	}
+
 	network := fmt.Sprintf("projects/%v/global/networks/%v", conn.Cluster.Spec.Config.Cloud.Project, defaultNetwork)
 	var err error
 	cluster := conn.Cluster

@@ -45,7 +45,7 @@ type ApiServerTemplate struct {
 	ControllerImage     string
 }
 
-func NewClusterApi(cm Interface, namespace string, kc kubernetes.Interface, externalController bool) (*ClusterAPI, error) {
+func NewClusterApi(cm Interface, namespace string, kc kubernetes.Interface) (*ClusterAPI, error) {
 	token, err := GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration)
 	if err != nil {
 		return nil, err
@@ -62,9 +62,8 @@ func NewClusterApi(cm Interface, namespace string, kc kubernetes.Interface, exte
 	}
 
 	return &ClusterAPI{
-		Interface:          cm,
-		namespace:          namespace,
-		externalController: externalController,
+		Interface: cm,
+		namespace: namespace,
 
 		kubeClient:       kc,
 		clusterapiClient: clusterClient,

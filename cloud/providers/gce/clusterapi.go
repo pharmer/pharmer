@@ -13,8 +13,8 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func (conn *cloudConnector) GetControllerManager() (string, error) {
-	config := conn.Cluster.ClusterConfig()
+func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
+	config := cm.Cluster.ClusterConfig()
 	cred, err := store.StoreProvider.Credentials().Get(config.CredentialName)
 	if err != nil {
 		return "", err
@@ -34,8 +34,8 @@ func (conn *cloudConnector) GetControllerManager() (string, error) {
 	err = tmpl.Execute(&tmplBuf, controllerManagerConfig{
 		MachineConfig:   machineSetupConfig,
 		ServiceAccount:  base64.StdEncoding.EncodeToString([]byte(typed.ServiceAccount())),
-		SSHPrivateKey:   base64.StdEncoding.EncodeToString(conn.Certs.SSHKey.PrivateKey),
-		SSHPublicKey:    base64.StdEncoding.EncodeToString(conn.Certs.SSHKey.PublicKey),
+		SSHPrivateKey:   base64.StdEncoding.EncodeToString(cm.Certs.SSHKey.PrivateKey),
+		SSHPublicKey:    base64.StdEncoding.EncodeToString(cm.Certs.SSHKey.PublicKey),
 		SSHUser:         base64.StdEncoding.EncodeToString([]byte("clusterapi")),
 		ControllerImage: MachineControllerImage,
 	})

@@ -2,7 +2,7 @@ package providers
 
 import (
 	//_ "github.com/pharmer/pharmer/cloud/providers/aks"
-	_ "github.com/pharmer/pharmer/cloud/providers/aws"
+	//_ "github.com/pharmer/pharmer/cloud/providers/aws"
 	//_ "github.com/pharmer/pharmer/cloud/providers/azure"
 	//_ "github.com/pharmer/pharmer/cloud/providers/digitalocean"
 	//_ "github.com/pharmer/pharmer/cloud/providers/dokube"

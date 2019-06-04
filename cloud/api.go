@@ -31,14 +31,23 @@ type Interface interface {
 	ProviderKubeConfig
 
 	GetCloudConnector() error
-	ApplyCreate(dryRun bool) (acts []api.Action, leaderMachine *clusterapi.Machine, machines []*clusterapi.Machine, err error)
+
 	ApplyDelete(dryRun bool) ([]api.Action, error)
-	IsValid(cluster *api.Cluster) (bool, error)
 	SetDefaultCluster() error
 	GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error)
 
 	NewMasterTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData
 	NewNodeTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData
+
+	// only conn
+	PrepareCloud(dryRun bool) ([]api.Action, error)
+	// only conn
+	EnsureMaster(acts []api.Action, dryRun bool) ([]api.Action, error)
+
+	// requires nothing
+	GetMasterSKU(totalNodes int32) string
+
+	GetClusterAPIComponents() (string, error)
 }
 
 type SSHGetter interface {

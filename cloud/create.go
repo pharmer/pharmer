@@ -31,7 +31,7 @@ func Create(store store.ResourceInterface, cluster *api.Cluster) (Interface, err
 		return nil, errors.New("Cluster already exists")
 	}
 
-	// prepare cm
+	// create certificates
 	certs, err := createPharmerCerts(store, cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create certificates")
@@ -189,7 +189,7 @@ func getMachineSet(cm Interface, sku string, count int32) (*clusterapi.MachineSe
 
 	machineSet := &clusterapi.MachineSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:              strings.Replace(strings.ToLower(sku), "_", "-", -1) + "-pool",
+			Name:              GenerateMachineSetName(sku),
 			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
 		Spec: clusterapi.MachineSetSpec{
@@ -222,4 +222,9 @@ func getMachineSet(cm Interface, sku string, count int32) (*clusterapi.MachineSe
 	}
 
 	return machineSet, nil
+
+}
+
+func GenerateMachineSetName(sku string) string {
+	return strings.Replace(strings.ToLower(sku), "_", "-", -1) + "-pool"
 }

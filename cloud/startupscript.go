@@ -114,14 +114,6 @@ func (td TemplateData) JoinConfigurationYAML() (string, error) {
 	return string(cb), err
 }
 
-func (td TemplateData) ForceKubeadmResetFlag() (string, error) {
-	lv11 := td.IsVersionLessThan("1.11.0")
-	if !lv11 {
-		return "-f", nil
-	}
-	return "", nil
-}
-
 func (td TemplateData) IsVersionLessThan(currentVersion string) bool {
 	cv, _ := version.NewVersion(td.KubernetesVersion)
 	v11, _ := version.NewVersion(currentVersion)
@@ -232,7 +224,7 @@ rm -rf /usr/sbin/policy-rc.d
 systemctl enable docker kubelet nfs-utils
 systemctl start docker kubelet nfs-utils
 
-kubeadm reset {{ .ForceKubeadmResetFlag }}
+kubeadm reset -f
 
 {{ template "setup-certs" . }}
 
@@ -329,7 +321,7 @@ cat > /etc/kubernetes/kubeadm/join.yaml <<EOF
 EOF
 
 
-kubeadm reset {{ .ForceKubeadmResetFlag }}
+kubeadm reset -f
 kubeadm join --config=/etc/kubernetes/kubeadm/join.yaml
 `))
 

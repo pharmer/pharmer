@@ -28,10 +28,10 @@ const (
 	ServiceAccountName = "default"
 )
 
-func NodeCount(machineSets []*clusterv1.MachineSet) int64 {
-	count := int64(0)
+func NodeCount(machineSets []*clusterv1.MachineSet) int32 {
+	var count int32
 	for _, machineSet := range machineSets {
-		count += int64(*machineSet.Spec.Replicas)
+		count += *machineSet.Spec.Replicas
 	}
 	return count
 }

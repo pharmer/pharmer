@@ -5,7 +5,6 @@ import (
 
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
@@ -15,254 +14,149 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
-func (cm *ClusterManager) ApplyCreate(dryRun bool) ([]api.Action, *clusterv1.Machine, []*clusterv1.Machine, error) {
+func (cm *ClusterManager) PrepareCloud(dryRun bool) ([]api.Action, error) {
+	// TODO
+	if err := cm.conn.importPublicKey(dryRun); err != nil {
+		return nil, err
+	}
+
 	var acts []api.Action
 
-	var found bool
-
-	if !dryRun {
-		if err := cm.conn.importPublicKey(); err != nil {
-			return nil, nil, nil, err
-		}
+	acts, err := ensureNetwork(cm.conn, acts, dryRun)
+	if err != nil {
+		return acts, errors.Wrap(err, "failed to ensure network")
 	}
 
-	// TODO: Should we add *IfMissing suffix to all these functions
-	found, _ = cm.conn.getNetworks()
+	acts, err = ensureFirewallRules(cm.conn, acts, dryRun)
+	if err != nil {
+		return acts, errors.Wrap(err, "failed to ensure firewall rules")
+	}
+
+	acts, err = ensureLoadBalancer(cm.conn, acts, dryRun)
+	if err != nil {
+		return acts, errors.Wrap(err, "failed to ensure load balancer")
+	}
+
+	return acts, nil
+}
+
+func ensureNetwork(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
+	found, _ := conn.getNetworks()
 
 	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Default Network",
-			Message:  "Not found, will add default network with ipv4 range 10.240.0.0/16",
-		})
-		if !dryRun {
-			if err := cm.conn.ensureNetworks(); err != nil {
-				return nil, nil, nil, err
-			}
+		addActs(acts, api.ActionNOP, network, networkNotFoundMessage)
+		if err := conn.ensureNetworks(dryRun); err != nil {
+			return acts, err
 		}
 	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Default Network",
-			Message:  "Found default network with ipv4 range 10.240.0.0/16",
-		})
+		addActs(acts, api.ActionNOP, network, networkFoundMessage)
 	}
+	return acts, nil
+}
 
-	found, _ = cm.conn.getFirewallRules()
+func ensureFirewallRules(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
+	found, _ := conn.getFirewallRules()
 	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Default Firewall rule",
-			Message:  "default-allow-internal, default-allow-ssh, https rules will be created",
-		})
-		if !dryRun {
-			if err := cm.conn.ensureFirewallRules(); err != nil {
-				return nil, nil, nil, err
-			}
-			cm.Cluster = cm.conn.Cluster
+		addActs(acts, api.ActionAdd, firewall, firewallNotFoundMessage)
+		if err := conn.ensureFirewallRules(dryRun); err != nil {
+			return acts, err
 		}
 	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Default Firewall rule",
-			Message:  "default-allow-internal, default-allow-ssh, https rules found",
-		})
+		addActs(acts, api.ActionNOP, firewall, firewallFoundMessage)
 	}
+	return acts, nil
+}
 
-	machines, err := store.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
+func ensureLoadBalancer(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
+	loadBalancerIP, err := conn.getLoadBalancer()
 	if err != nil {
-		err = errors.Wrap(err, "")
-		return nil, nil, nil, err
-	}
-
-	leaderMachine, err := GetLeaderMachine(cm.Cluster)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	loadBalancerIP, err := cm.conn.getLoadBalancer()
-	if err != nil {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Load Balancer",
-			Message:  "Load Balancer not found",
-		})
-		if !dryRun {
-			if loadBalancerIP, err = cm.conn.createLoadBalancer(leaderMachine.Name); err != nil {
-				return acts, nil, nil, errors.Wrap(err, "Error creating load balancer")
-			}
+		addActs(acts, api.ActionAdd, loadBalancer, loadBalancerNotFoundMessage)
+		loadBalancerIP, err = conn.createLoadBalancer(dryRun, conn.Cluster.MasterMachineName(0))
+		if err != nil {
+			return acts, errors.Wrap(err, "Error creating load balancer")
 		}
 	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Load Balancer",
-			Message:  "Load Balancer found",
-		})
+		addActs(acts, api.ActionNOP, loadBalancer, loadBalancerFoundMessage)
 	}
-	cm.Cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
+	conn.Cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
 		IP:   loadBalancerIP,
 		Port: api.DefaultKubernetesBindPort,
 	}
 
 	if loadBalancerIP == "" {
-		return nil, nil, nil, errors.Wrap(err, "load balancer can't be empty")
+		return acts, errors.Wrap(err, "load balancer can't be empty")
 	}
 
-	cm.Cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
+	conn.Cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
 		IP:   loadBalancerIP,
 		Port: api.DefaultKubernetesBindPort,
 	}
 
-	machineSets, err := store.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, nil, nil, err
+	nodeAddresses := []corev1.NodeAddress{
+		{
+			Type:    corev1.NodeExternalIP,
+			Address: conn.Cluster.Status.Cloud.LoadBalancer.IP,
+		},
 	}
 
-	providerSpec, err := clusterapiGCE.MachineConfigFromProviderSpec(leaderMachine.Spec.ProviderSpec)
-	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "failed to decode machine provider spec")
+	if err = conn.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
+		return acts, errors.Wrap(err, "Error setting controlplane endpoints")
 	}
 
-	if providerSpec.MachineType == "" {
-		totalNodes := NodeCount(machineSets)
-		sku := "n1-standard-2"
-
-		if totalNodes > 10 {
-			sku = "n1-standard-4"
-		}
-		if totalNodes > 100 {
-			sku = "n1-standard-8"
-		}
-		if totalNodes > 250 {
-			sku = "n1-standard-16"
-		}
-		if totalNodes > 500 {
-			sku = "n1-standard-32"
-		}
-
-		// update all the master machines
-		for _, m := range machines {
-			conf, err := clusterapiGCE.MachineConfigFromProviderSpec(m.Spec.ProviderSpec)
-			if err != nil {
-				return nil, nil, nil, errors.Wrapf(err, "failed to decode provider spec for macine %s", m.Name)
-			}
-			conf.MachineType = sku
-
-			rawcfg, err := clusterapiGCE.EncodeMachineSpec(conf)
-			if err != nil {
-				return nil, nil, nil, errors.Wrapf(err, "failed to encode provider spec for machine %s", m.Name)
-			}
-			m.Spec.ProviderSpec.Value = rawcfg
-
-			_, err = store.StoreProvider.Machine(cm.Cluster.Name).Update(m)
-			if err != nil {
-				return nil, nil, nil, errors.Wrapf(err, "failed to update machine %q to store", m.Name)
-			}
-		}
-	}
-
-	// needed for master start-up config
-	if _, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster); err != nil {
-		cm.Cluster.Status.Reason = err.Error()
-		err = errors.Wrap(err, "")
-		return nil, nil, nil, err
-	}
-
-	log.Info("Preparing Master Instance")
-
-	found, _ = cm.conn.getMasterInstance(leaderMachine)
-
-	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Master Instance",
-			Message:  fmt.Sprintf("Master instance with name %v will be created", leaderMachine.Name),
-		})
-		if !dryRun {
-			var op1 string
-			log.Infoln("Creating Master Instance")
-
-			script, err := RenderStartupScript(cm, leaderMachine, "", customTemplate)
-			if err != nil {
-				return nil, nil, nil, err
-			}
-
-			if op1, err = cm.conn.createMasterIntance(cm.Cluster, script); err != nil {
-				return nil, nil, nil, err
-			}
-
-			if err = cm.conn.waitForZoneOperation(op1); err != nil {
-				return nil, nil, nil, err
-			}
-
-			nodeAddresses := []corev1.NodeAddress{
-				{
-					Type:    corev1.NodeExternalIP,
-					Address: loadBalancerIP,
-				},
-			}
-
-			log.Info("Waiting for cluster initialization")
-
-			if err = cm.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
-				return acts, nil, nil, errors.Wrap(err, "Error setting controlplane endpoints")
-			}
-
-			// TODO: update cluster object
-			// machine is created, but user pharmer somehow exited due to an error
-			// then user will see machine is found, but cluster api endpoint is nil
-			_, err = store.StoreProvider.Clusters().Update(cm.Cluster)
-			if err != nil {
-				return nil, nil, nil, errors.Wrapf(err, "failed to update cluster object")
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Master Instance",
-			Message:  "master instance(s) already exist",
-		})
-	}
-
-	return acts, leaderMachine, machines, nil
+	return acts, err
 }
 
-//func ensureNetwork() {
-//	found, _ = cm.conn.getNetworks()
-//
-//	if !found {
-//		addActs(acts, api.ActionNOP, network, foundNetworkMessage)
-//		if !dryRun {
-//			if err = cm.conn.ensureNetworks(); err != nil {
-//				return
-//			}
-//		}
-//	} else {
-//		addActs(acts, api.ActionNOP, network, notFoundNetworkMessage)
-//	}
-//}
+func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
+	sku := "n1-standard-2"
 
-// TODO: Apparently Not needed
+	if totalNodes > 10 {
+		sku = "n1-standard-4"
+	}
+	if totalNodes > 100 {
+		sku = "n1-standard-8"
+	}
+	if totalNodes > 250 {
+		sku = "n1-standard-16"
+	}
+	if totalNodes > 500 {
+		sku = "n1-standard-32"
+	}
+
+	return sku
+}
+
+func (cm *ClusterManager) EnsureMaster(acts []api.Action, dryRun bool) ([]api.Action, error) {
+	leaderMachine, err := GetLeaderMachine(cm.Cluster)
+	if err != nil {
+		return acts, errors.Wrap(err, "failed to get leader machine")
+	}
+
+	found, _ := cm.conn.getMasterInstance(leaderMachine)
+	if found {
+		return addActs(acts, api.ActionNOP, masterInstance, masterInstanceFoundMessage), nil
+	}
+	if !dryRun {
+		var op1 string
+		log.Infoln("Creating Master Instance")
+
+		script, err := RenderStartupScript(cm, leaderMachine, "", customTemplate)
+		if err != nil {
+			return acts, err
+		}
+
+		if op1, err = cm.conn.createMasterIntance(cm.Cluster, script); err != nil {
+			return acts, err
+		}
+
+		if err = cm.conn.waitForZoneOperation(op1); err != nil {
+			return acts, err
+		}
+
+	}
+	return addActs(acts, api.ActionAdd, masterInstanceMessage, masterInstanceNotFoundMessage), nil
+}
 
 func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error) {
-	log.Infoln("Deleting cluster...")
-
-	// These are common
-	// -------common begins-----
-	err = DeleteAllWorkerMachines(cm)
-	if err != nil {
-		log.Infof("failed to delete nodes: %v", err)
-	}
-
-	if cm.Cluster.Status.Phase == api.ClusterReady {
-		cm.Cluster.Status.Phase = api.ClusterDeleting
-	}
-	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
-	if err != nil {
-		return
-	}
-	// --------common ends---------
-
 	var machines []*clusterv1.Machine
 	machines, err = store.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {

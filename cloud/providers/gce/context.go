@@ -44,7 +44,8 @@ func New(cluster *api.Cluster, certs *cloud.PharmerCertificates) cloud.Interface
 }
 
 func (cm *ClusterManager) GetConnector() cloud.ClusterApiProviderComponent {
-	return cm.conn
+	panic(1)
+	return nil
 }
 
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
