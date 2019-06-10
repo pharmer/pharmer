@@ -86,7 +86,7 @@ package aws
 // 			}
 // 		}
 // 		if !dryRun {
-// 			Store(igm.ctx).NodeGroups(igm.ng.ClusterName).Delete(igm.ng.Name)
+// 			store.StoreProvider.NodeGroups(igm.ng.ClusterName).Delete(igm.ng.Name)
 // 		}
 // 	} else if igm.ng.Spec.Nodes == igm.ng.Status.Nodes {
 // 		acts = append(acts, api.Action{
@@ -111,7 +111,7 @@ package aws
 // 			if err = igm.createNodeGroup(igm.ng); err != nil {
 // 				return
 // 			}
-// 			Store(igm.ctx).NodeGroups(igm.ng.ClusterName).Update(igm.ng)
+// 			store.StoreProvider.NodeGroups(igm.ng.ClusterName).Update(igm.ng)
 // 		}
 // 	} else {
 // 		if adjust < 0 {
@@ -137,10 +137,10 @@ package aws
 // 				}
 // 			}
 // 		}
-// 		Store(igm.ctx).NodeGroups(igm.ng.ClusterName).Update(igm.ng)
+// 		store.StoreProvider.NodeGroups(igm.ng.ClusterName).Update(igm.ng)
 
 // 	}
-// 	// Store(igm.ctx).Clusters().UpdateStatus(igm.cm.Cluster)
+// 	// store.StoreProvider.Clusters().UpdateStatus(igm.cm.Cluster)
 // 	return
 // }
 

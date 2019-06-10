@@ -3,6 +3,8 @@ package apiserver
 import (
 	"context"
 
+	"github.com/pharmer/pharmer/store"
+
 	"github.com/golang/glog"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
@@ -16,7 +18,7 @@ func ApplyCluster(ctx context.Context, opt *opts.ApplyConfig, obj *api.Operation
 		return
 	}
 	obj.State = api.OperationDone
-	obj, err = Store(ctx).Operations().Update(obj)
+	obj, err = store.StoreProvider.Operations().Update(obj)
 	if err != nil {
 		glog.Errorf("[err = %v]\n", err)
 	}

@@ -68,7 +68,7 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 }
 
 func (conn *cloudConnector) createCluster(cluster *api.Cluster, owner string) (*godo.KubernetesCluster, error) {
-	nodeGroups, err := Store(conn.ctx).MachineSet(cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err := store.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

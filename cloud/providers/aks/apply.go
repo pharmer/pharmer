@@ -9,6 +9,7 @@ import (
 	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -47,7 +48,7 @@ func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, err
 			return nil, err
 		} else if upgrade {
 			cm.cluster.Status.Phase = api.ClusterUpgrading
-			Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+			store.StoreProvider.Clusters().UpdateStatus(cm.cluster)
 			return cm.applyUpgrade(dryRun)
 		}
 	}
@@ -109,7 +110,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 	}
 	if !dryRun {
 		var nodeGroups []*clusterapi.MachineSet
-		nodeGroups, err = Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+		nodeGroups, err = store.StoreProvider.MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 		if err != nil {
 			err = errors.Wrap(err, ID(cm.ctx))
 			return
@@ -145,7 +146,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		}
 
 		cm.cluster.Status.Phase = api.ClusterReady
-		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+		if _, err = store.StoreProvider.Clusters().UpdateStatus(cm.cluster); err != nil {
 			return
 		}
 	}
@@ -154,7 +155,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 }
 
 func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
-	nodeGroups, err := Store(cm.ctx).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err := store.StoreProvider.MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		err = errors.Wrap(err, ID(cm.ctx))
 		return
@@ -221,7 +222,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		}
 		// Failed
 		cm.cluster.Status.Phase = api.ClusterDeleted
-		_, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster)
+		_, err = store.StoreProvider.Clusters().UpdateStatus(cm.cluster)
 		if err != nil {
 			return
 		}
@@ -235,7 +236,7 @@ func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err erro
 			return
 		}
 		cm.cluster.Status.Phase = api.ClusterReady
-		if _, err = Store(cm.ctx).Clusters().UpdateStatus(cm.cluster); err != nil {
+		if _, err = store.StoreProvider.Clusters().UpdateStatus(cm.cluster); err != nil {
 			return
 		}
 	}

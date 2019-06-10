@@ -9,6 +9,7 @@ import (
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -82,7 +83,7 @@ func (igm *EKSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 				if err = igm.deleteNodeAuthConfigMap(igm.conn.getOutput(ngInfo, "NodeInstanceRole")); err != nil {
 					return
 				}
-				err = Store(igm.ctx).MachineSet(igm.conn.cluster.Name).Delete(fileName)
+				err = store.StoreProvider.MachineSet(igm.conn.cluster.Name).Delete(fileName)
 				if err != nil {
 					return acts, err
 				}
@@ -107,7 +108,7 @@ func (igm *EKSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 		}
 	}
 	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas
-	Store(igm.ctx).MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
+	store.StoreProvider.MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
 
 	return acts, err
 }

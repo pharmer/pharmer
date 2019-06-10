@@ -14,6 +14,7 @@ import (
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential/cmds/options"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils"
 	"github.com/pharmer/pharmer/utils/editor"
 	"github.com/pharmer/pharmer/utils/printer"
@@ -67,14 +68,14 @@ func RunUpdateCredential(ctx context.Context, opts *options.CredentialEditConfig
 			return err
 		}
 
-		updated, err := cloud.Store(ctx).Credentials().Get(local.Name)
+		updated, err := store.StoreProvider.Credentials().Get(local.Name)
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = local.ObjectMeta
 		updated.Spec = local.Spec
 
-		original, err := cloud.Store(ctx).Credentials().Get(updated.Name)
+		original, err := store.StoreProvider.Credentials().Get(updated.Name)
 		if err != nil {
 			return err
 		}
@@ -87,14 +88,14 @@ func RunUpdateCredential(ctx context.Context, opts *options.CredentialEditConfig
 
 	credential := opts.Name
 
-	original, err := cloud.Store(ctx).Credentials().Get(credential)
+	original, err := store.StoreProvider.Credentials().Get(credential)
 	if err != nil {
 		return err
 	}
 
 	// Check if flags are provided to update
 	if opts.DoNotDelete {
-		updated, err := cloud.Store(ctx).Credentials().Get(credential)
+		updated, err := store.StoreProvider.Credentials().Get(credential)
 		if err != nil {
 			return err
 		}
@@ -238,7 +239,7 @@ func updateCredential(ctx context.Context, original, updated *cloudapi.Credentia
 		return err
 	}
 
-	_, err = cloud.Store(ctx).Credentials().Update(updated)
+	_, err = store.StoreProvider.Credentials().Update(updated)
 	if err != nil {
 		return err
 	}

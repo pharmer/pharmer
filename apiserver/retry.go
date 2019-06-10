@@ -12,6 +12,7 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	opts "github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/notification"
+	"github.com/pharmer/pharmer/store"
 )
 
 func (a *Apiserver) RetryCluster() error {
@@ -30,19 +31,19 @@ func (a *Apiserver) RetryCluster() error {
 			return
 		}
 
-		obj, err := Store(a.ctx).Operations().Get(operation.OperationId)
+		obj, err := store.StoreProvider.Operations().Get(operation.OperationId)
 		if err != nil {
 			glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 		}
 
 		if obj.State != api.OperationDone {
 			obj.State = api.OperationRunning
-			obj, err = Store(a.ctx).Operations().Update(obj)
+			obj, err = store.StoreProvider.Operations().Update(obj)
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}
 
-			cluster, err := Store(a.ctx).Clusters().Get(strconv.Itoa(int(obj.ClusterID)))
+			cluster, err := store.StoreProvider.Clusters().Get(strconv.Itoa(int(obj.ClusterID)))
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}

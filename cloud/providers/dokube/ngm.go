@@ -6,6 +6,7 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -44,7 +45,7 @@ func (igm *DokubeNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err er
 			if err = igm.conn.deleteNodePool(igm.ng); err != nil {
 				return acts, err
 			}
-			err = Store(igm.ctx).MachineSet(igm.conn.cluster.Name).Delete(igm.ng.Name)
+			err = store.StoreProvider.MachineSet(igm.conn.cluster.Name).Delete(igm.ng.Name)
 			if err != nil {
 				return acts, err
 			}
@@ -63,7 +64,7 @@ func (igm *DokubeNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err er
 		}
 	}
 	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas
-	_, err = Store(igm.ctx).MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
+	_, err = store.StoreProvider.MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
 	if err != nil {
 		return nil, err
 	}

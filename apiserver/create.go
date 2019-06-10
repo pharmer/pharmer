@@ -31,19 +31,19 @@ func (a *Apiserver) CreateCluster() error {
 			return
 		}
 
-		obj, err := Store(a.ctx).Operations().Get(operation.OperationId)
+		obj, err := store.StoreProvider.Operations().Get(operation.OperationId)
 		if err != nil {
 			glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 		}
 
 		if obj.State == api.OperationPending {
 			obj.State = api.OperationRunning
-			obj, err = Store(a.ctx).Operations().Update(obj)
+			obj, err = store.StoreProvider.Operations().Update(obj)
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}
 
-			cluster, err := Store(a.ctx).Clusters().Get(strconv.Itoa(int(obj.ClusterID)))
+			cluster, err := store.StoreProvider.Clusters().Get(strconv.Itoa(int(obj.ClusterID)))
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}
@@ -59,7 +59,7 @@ func (a *Apiserver) CreateCluster() error {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}
 
-			ApplyCluster(newCtx, &opts.ApplyConfig{
+			ApplyCluster(&opts.ApplyConfig{
 				ClusterName: cluster.Name, //strconv.Itoa(int(obj.ClusterID)),
 				Owner:       strconv.Itoa(int(obj.UserID)),
 				DryRun:      false,

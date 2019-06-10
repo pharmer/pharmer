@@ -11,6 +11,7 @@ import (
 	"github.com/pharmer/pharmer/cloud"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/machinesetup"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -273,7 +274,7 @@ func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Clus
 		return nil
 	}
 
-	pharmerCluster, err := Store(packet.ctx).Clusters().Get(cluster.Name)
+	pharmerCluster, err := store.StoreProvider.Clusters().Get(cluster.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to get pharmercluster")
 	}

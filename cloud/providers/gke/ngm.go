@@ -6,6 +6,7 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	container "google.golang.org/api/container/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
@@ -53,7 +54,7 @@ func (igm *GKENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 			if err = igm.conn.waitForZoneOperation(op); err != nil {
 				return acts, err
 			}
-			err = Store(igm.ctx).NodeGroups(igm.conn.cluster.Name).Delete(igm.ng.Name)
+			err = store.StoreProvider.NodeGroups(igm.conn.cluster.Name).Delete(igm.ng.Name)
 			if err != nil {
 				return acts, err
 			}
@@ -75,7 +76,7 @@ func (igm *GKENodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error
 		}
 	}
 	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas
-	_, err = Store(igm.ctx).MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
+	_, err = store.StoreProvider.MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
 
 	return acts, err
 }

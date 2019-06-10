@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pharmer/pharmer/store"
+
 	"github.com/appscode/go/log"
 	linodeconfig "github.com/pharmer/pharmer/apis/v1beta1/linode"
 	"github.com/pharmer/pharmer/cloud"
@@ -247,7 +249,7 @@ func (li *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		return nil
 	}
 
-	pharmerCluster, err := cloud.Store(li.ctx).Owner(li.owner).Clusters().Get(cluster.Name)
+	pharmerCluster, err := store.StoreProvider.Clusters().Get(cluster.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to get pharmercluster")
 	}

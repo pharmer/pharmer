@@ -8,6 +8,7 @@ import (
 	"github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/store"
 )
 
 var _ = Describe("Certificate", func() {
@@ -19,7 +20,7 @@ var _ = Describe("Certificate", func() {
 		var err error
 
 		By("Create cluster")
-		c, err := cloud.Store(ctx).Clusters().Create(cluster)
+		c, err := store.StoreProvider.Clusters().Create(cluster)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(c).Should(Equal(cluster))
 

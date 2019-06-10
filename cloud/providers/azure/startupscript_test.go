@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 )
 
 func Test_cloudConnector_renderStartupScript(t *testing.T) {
@@ -20,7 +21,7 @@ func Test_cloudConnector_renderStartupScript(t *testing.T) {
 	cluster := getCluster()
 	credential := getCredential()
 
-	_, err := cloud.Store(ctx).Credentials().Create(credential)
+	_, err := store.StoreProvider.Credentials().Create(credential)
 	Expect(err).NotTo(HaveOccurred())
 
 	_, err = cloud.Create(ctx, cluster, "")

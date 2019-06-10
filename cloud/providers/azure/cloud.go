@@ -22,6 +22,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -57,7 +58,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
-	cred, err := Store(cm.ctx).Credentials().Get(cm.cluster.Spec.Config.CredentialName)
+	cred, err := store.StoreProvider.Credentials().Get(cm.cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}

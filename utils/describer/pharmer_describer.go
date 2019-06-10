@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/pharmer/pharmer/store"
+
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/kubectl/describe"
 	"k8s.io/kubernetes/pkg/printers"
@@ -16,7 +17,7 @@ const statusUnknown = "Unknown"
 
 func (d *humanReadableDescriber) describeCluster(item *api.Cluster, describerSettings describe.DescriberSettings) (string, error) {
 
-	nodeGroups, err := cloud.Store(d.ctx).MachineSet(item.Name).List(metav1.ListOptions{})
+	nodeGroups, err := store.StoreProvider.MachineSet(item.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}

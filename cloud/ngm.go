@@ -60,7 +60,7 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 	igm.ng.Status.Nodes = int64(len(nodes.Items))
 	igm.ng.Status.ObservedGeneration = igm.ng.Generation
 
-	igm.ng, err = Store(igm.ctx).NodeGroups(igm.ng.ClusterName).UpdateStatus(igm.ng)
+	igm.ng, err = store.StoreProvider.NodeGroups(igm.ng.ClusterName).UpdateStatus(igm.ng)
 	if err != nil {
 		return
 	}
@@ -76,7 +76,7 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 			if err != nil {
 				return
 			}
-			err = Store(igm.ctx).NodeGroups(igm.ng.ClusterName).Delete(igm.ng.Name)
+			err = store.StoreProvider.NodeGroups(igm.ng.ClusterName).Delete(igm.ng.Name)
 			if err != nil {
 				return
 			}
@@ -100,7 +100,7 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 				return
 			}
 			igm.ng.Status.Nodes = igm.ng.Spec.Nodes
-			igm.ng, err = Store(igm.ctx).NodeGroups(igm.ng.ClusterName).UpdateStatus(igm.ng)
+			igm.ng, err = store.StoreProvider.NodeGroups(igm.ng.ClusterName).UpdateStatus(igm.ng)
 			if err != nil {
 				return
 			}
@@ -131,7 +131,7 @@ func (igm *GenericNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err e
 			}
 
 			igm.ng.Status.Nodes = igm.ng.Spec.Nodes
-			igm.ng, err = Store(igm.ctx).NodeGroups(igm.ng.ClusterName).UpdateStatus(igm.ng)
+			igm.ng, err = store.StoreProvider.NodeGroups(igm.ng.ClusterName).UpdateStatus(igm.ng)
 			if err != nil {
 				return
 			}

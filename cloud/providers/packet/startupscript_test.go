@@ -9,6 +9,7 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	"github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
@@ -75,7 +76,7 @@ func Test_cloudConnector_renderStartupScript(t *testing.T) {
 	cluster := getCluster()
 	credential := getCredential()
 
-	_, err := cloud.Store(ctx).Credentials().Create(credential)
+	_, err := store.StoreProvider.Credentials().Create(credential)
 	if err != nil {
 		t.Fatalf("failed to create credential: %v", err)
 	}

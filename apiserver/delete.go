@@ -12,6 +12,7 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	opts "github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/notification"
+	"github.com/pharmer/pharmer/store"
 )
 
 func (a *Apiserver) DeleteCluster() error {
@@ -29,7 +30,7 @@ func (a *Apiserver) DeleteCluster() error {
 			glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			return
 		}
-		obj, err := Store(a.ctx).Operations().Get(operation.OperationId)
+		obj, err := store.StoreProvider.Operations().Get(operation.OperationId)
 		if err != nil {
 			glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 		}
@@ -38,12 +39,12 @@ func (a *Apiserver) DeleteCluster() error {
 
 		if obj.State == api.OperationPending {
 			obj.State = api.OperationRunning
-			obj, err = Store(a.ctx).Operations().Update(obj)
+			obj, err = store.StoreProvider.Operations().Update(obj)
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}
 
-			cluster, err := Store(a.ctx).Clusters().Get(clusterID)
+			cluster, err := store.StoreProvider.Clusters().Get(clusterID)
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}
