@@ -1,8 +1,6 @@
 package apiserver
 
 import (
-	"context"
-
 	"github.com/pharmer/pharmer/store"
 
 	"github.com/golang/glog"
@@ -11,7 +9,7 @@ import (
 	opts "github.com/pharmer/pharmer/cloud/cmds/options"
 )
 
-func ApplyCluster(ctx context.Context, opt *opts.ApplyConfig, obj *api.Operation) {
+func ApplyCluster(opt *opts.ApplyConfig, obj *api.Operation) {
 	_, err := Apply(opt)
 	if err != nil {
 		glog.Errorf("err = %v]\n", err)

@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/appscode/go/log"
+
 	"github.com/appscode/go/term"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
@@ -160,7 +162,7 @@ func (i *Inspector) InstallNginx() ([]core.Pod, error) {
 				"app": Server,
 			}).String(),
 		})
-		Logger(i.ctx).Infof("Attempt %v: Getting nginx pod ...", attempt)
+		log.Infof("Attempt %v: Getting nginx pod ...", attempt)
 		if err != nil {
 			return false, err
 		}
@@ -211,7 +213,7 @@ func (i *Inspector) CheckDNSPod() error {
 				"k8s-app": "kube-dns",
 			}).String(),
 		})
-		Logger(i.ctx).Infof("Attempt %v: Getting DNS pod ...", attempt)
+		log.Infof("Attempt %v: Getting DNS pod ...", attempt)
 		if err != nil {
 			return false, err
 		}

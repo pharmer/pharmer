@@ -6,12 +6,10 @@ import (
 	"strconv"
 
 	"github.com/golang/glog"
-	stan "github.com/nats-io/stan.go"
+	"github.com/nats-io/stan.go"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/apiserver/options"
-	. "github.com/pharmer/pharmer/cloud"
 	opts "github.com/pharmer/pharmer/cloud/cmds/options"
-	"github.com/pharmer/pharmer/notification"
 	"github.com/pharmer/pharmer/store"
 )
 
@@ -48,10 +46,7 @@ func (a *Apiserver) RetryCluster() error {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}
 
-			noti := notification.NewNotifier(a.ctx, a.natsConn, strconv.Itoa(int(obj.ClusterID)))
-			newCtx := WithLogger(a.ctx, noti)
-
-			ApplyCluster(newCtx, &opts.ApplyConfig{
+			ApplyCluster(&opts.ApplyConfig{
 				ClusterName: cluster.Name, //strconv.Itoa(int(obj.ClusterID)),
 				Owner:       strconv.Itoa(int(obj.UserID)),
 				DryRun:      false,
