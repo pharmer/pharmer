@@ -1,6 +1,6 @@
 package aws
 
-func (conn *cloudConnector) GetControllerManager() (string, error) {
+func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 	return ControllerManager, nil
 }
 

@@ -3,12 +3,9 @@ package cmds
 import (
 	"github.com/appscode/go/term"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential/cmds/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
-	"golang.org/x/net/context"
 )
 
 func NewCmdDeleteCredential() *cobra.Command {
@@ -28,11 +25,8 @@ func NewCmdDeleteCredential() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
+			err := store.SetProvider(cmd, opts.Owner)
 			term.ExitOnError(err)
-
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
 			for _, cred := range opts.Credentials {
 				err := store.StoreProvider.Credentials().Delete(cred)

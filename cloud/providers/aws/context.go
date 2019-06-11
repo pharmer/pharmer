@@ -14,7 +14,8 @@ type ClusterManager struct {
 }
 
 func (cm *ClusterManager) GetConnector() ClusterApiProviderComponent {
-	return cm.conn
+	panic(1)
+	return nil
 }
 
 func (cm *ClusterManager) CreateCCMCredential() error {

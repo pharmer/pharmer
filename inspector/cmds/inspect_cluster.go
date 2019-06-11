@@ -7,7 +7,6 @@ import (
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/inspector"
 	"github.com/pharmer/pharmer/utils"
 	"github.com/spf13/cobra"
@@ -31,12 +30,7 @@ func NewCmdInspectCluster() *cobra.Command {
 			}
 
 			clusterName, _ := cmd.Flags().GetString("cluster")
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				term.Fatalln(err)
-			}
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
+			ctx := context.Background()
 
 			owner := utils.GetLocalOwner()
 			cluster, err := cloud.GetCluster(clusterName)

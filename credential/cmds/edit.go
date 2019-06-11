@@ -2,7 +2,6 @@ package cmds
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -12,7 +11,6 @@ import (
 	"github.com/ghodss/yaml"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/credential/cmds/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils"
@@ -40,14 +38,11 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
-			cfgFile, _ := config.GetConfigFile(cmd.Flags())
-			cfg, err := config.LoadConfig(cfgFile)
-			if err != nil {
-				term.Fatalln(err)
-			}
-			ctx := cloud.NewContext(context.Background(), cfg, config.GetEnv(cmd.Flags()))
 
-			if err := RunUpdateCredential(ctx, opts, out, outErr); err != nil {
+			err := store.SetProvider(cmd, opts.Owner)
+			term.ExitOnError(err)
+
+			if err := RunUpdateCredential(opts, outErr); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -57,7 +52,7 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunUpdateCredential(ctx context.Context, opts *options.CredentialEditConfig, out, errOut io.Writer) error {
+func RunUpdateCredential(opts *options.CredentialEditConfig, errOut io.Writer) error {
 
 	// If file is provided
 	if opts.File != "" {
@@ -79,7 +74,7 @@ func RunUpdateCredential(ctx context.Context, opts *options.CredentialEditConfig
 		if err != nil {
 			return err
 		}
-		if err := updateCredential(ctx, original, updated, opts.Owner); err != nil {
+		if err := updateCredential(original, updated); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`credential "%s" replaced`, original.Name))
@@ -102,17 +97,17 @@ func RunUpdateCredential(ctx context.Context, opts *options.CredentialEditConfig
 
 		// Set flag values in updated object
 
-		if err := updateCredential(ctx, original, updated, opts.Owner); err != nil {
+		if err := updateCredential(original, updated); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`credential "%s" updated`, original.Name))
 		return nil
 	}
 
-	return editCredential(ctx, opts, original, errOut)
+	return editCredential(opts, original, errOut)
 }
 
-func editCredential(ctx context.Context, opts *options.CredentialEditConfig, original *cloudapi.Credential, errOut io.Writer) error {
+func editCredential(opts *options.CredentialEditConfig, original *cloudapi.Credential, errOut io.Writer) error {
 
 	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
@@ -184,7 +179,7 @@ func editCredential(ctx context.Context, opts *options.CredentialEditConfig, ori
 
 			containsError = false
 
-			if err := updateCredential(ctx, original, updated, opts.Owner); err != nil {
+			if err := updateCredential(original, updated); err != nil {
 				return err
 			}
 
@@ -197,7 +192,7 @@ func editCredential(ctx context.Context, opts *options.CredentialEditConfig, ori
 	return editFn()
 }
 
-func updateCredential(ctx context.Context, original, updated *cloudapi.Credential, owner string) error {
+func updateCredential(original, updated *cloudapi.Credential) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
