@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/appscode/go/flags"
-	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -26,7 +25,6 @@ func NewNodeGroupEditConfig() *NodeGroupEditConfig {
 		File:        "",
 		DoNotDelete: false,
 		Output:      "yaml",
-		Owner:       utils.GetLocalOwner(),
 	}
 }
 

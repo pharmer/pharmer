@@ -3,7 +3,6 @@ package options
 import (
 	"strings"
 
-	"github.com/pharmer/pharmer/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -17,7 +16,6 @@ type ClusterGetConfig struct {
 func NewClusterGetConfig() *ClusterGetConfig {
 	return &ClusterGetConfig{
 		Output: "",
-		Owner:  utils.GetLocalOwner(),
 	}
 }
 

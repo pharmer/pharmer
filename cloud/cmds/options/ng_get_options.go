@@ -3,7 +3,6 @@ package options
 import (
 	"strings"
 
-	"github.com/pharmer/pharmer/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -19,7 +18,6 @@ func NewNodeGroupGetConfig() *NodeGroupGetConfig {
 	return &NodeGroupGetConfig{
 		ClusterName: "",
 		Output:      "",
-		Owner:       utils.GetLocalOwner(),
 	}
 }
 

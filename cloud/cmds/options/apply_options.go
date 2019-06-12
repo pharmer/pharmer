@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -20,7 +19,6 @@ func NewApplyConfig() *ApplyConfig {
 	return &ApplyConfig{
 		ClusterName: "",
 		DryRun:      false,
-		Owner:       utils.GetLocalOwner(),
 	}
 }
 

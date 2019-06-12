@@ -3,7 +3,6 @@ package options
 import (
 	"strings"
 
-	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -19,7 +18,6 @@ func NewClusterUseConfig() *ClusterUseConfig {
 	return &ClusterUseConfig{
 		ClusterName: "",
 		Overwrite:   true,
-		Owner:       utils.GetLocalOwner(),
 	}
 }
 
