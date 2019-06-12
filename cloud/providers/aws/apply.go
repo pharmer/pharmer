@@ -264,8 +264,6 @@ func ensureIAMProfile(conn *cloudConnector, acts []api.Action, dryRun bool) ([]a
 				return acts, err
 			}
 		}
-
-		return acts, err
 	}
 
 	acts = append(acts, api.Action{
@@ -297,7 +295,6 @@ func importPublicKey(conn *cloudConnector, acts []api.Action, dryRun bool) ([]ap
 				return acts, err
 			}
 		}
-		return acts, nil
 	}
 	acts = append(acts, api.Action{
 		Action:   api.ActionNOP,
@@ -587,7 +584,6 @@ func ensureLoadBalancer(conn *cloudConnector, acts []api.Action, publicSubnetID 
 				err = errors.Wrap(err, "")
 				return acts, err
 			}
-			return acts, nil
 		}
 	}
 	acts = append(acts, api.Action{

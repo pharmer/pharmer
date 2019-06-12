@@ -67,7 +67,6 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 			AWS: &api.AWSStatus{},
 		},
 	}
-	cm.Cluster = cluster
 
 	return cm.SetClusterProviderConfig()
 }
