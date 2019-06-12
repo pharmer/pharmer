@@ -112,6 +112,12 @@ func (s *machineFileStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing node group name")
 	}
+
+	_, exist := s.container[s.resourceID(name)]
+	if !exist {
+		return errors.Errorf("machine %q not found", name)
+	}
+
 	delete(s.container, s.resourceID(name))
 	return nil
 }

@@ -112,6 +112,12 @@ func (s *machineSetFileStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing node group name")
 	}
+
+	_, exist := s.container[s.resourceID(name)]
+	if !exist {
+		return errors.New("machineset item not found")
+	}
+
 	delete(s.container, s.resourceID(name))
 	return nil
 }

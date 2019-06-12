@@ -6,7 +6,6 @@ import (
 
 	"github.com/appscode/go/flags"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -46,7 +45,7 @@ func NewClusterCreateConfig() *ClusterCreateConfig {
 		Namespace:   core.NamespaceDefault,
 		Cluster:     cluster,
 		Nodes:       map[string]int{},
-		Owner:       utils.GetLocalOwner(),
+		Owner:       "",
 		MasterCount: 1,
 	}
 }

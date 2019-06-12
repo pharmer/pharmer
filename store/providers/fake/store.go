@@ -95,7 +95,7 @@ func (s *FakeStore) MachineSet(cluster string) store.MachineSetStore {
 func (s *FakeStore) Machine(cluster string) store.MachineStore {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	if _, found := s.machineSet[cluster]; !found {
+	if _, found := s.machine[cluster]; !found {
 		s.machine[cluster] = &machineFileStore{container: map[string]*clusterv1.Machine{}, cluster: cluster}
 	}
 	return s.machine[cluster]

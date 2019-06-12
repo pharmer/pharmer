@@ -87,6 +87,11 @@ func (s *sshKeyFileStore) Delete(name string) error {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
+	_, exist := s.container[s.pubKeyID(name)]
+	if !exist {
+		return errors.New("sshkey not found")
+	}
+
 	delete(s.container, s.pubKeyID(name))
 	delete(s.container, s.privKeyID(name))
 	return nil
