@@ -1,7 +1,6 @@
 package linode
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/appscode/go/log"
@@ -10,99 +9,13 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
-	semver "gomodules.xyz/version"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
-
-func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
-	var err error
-	var acts []api.Action
-
-	if in.Status.Phase == "" {
-		return nil, errors.Errorf("cluster `%s` is in unknown phase", in.Name)
-	}
-	if in.Status.Phase == api.ClusterDeleted {
-		return nil, nil
-	}
-	cm.cluster = in
-	cm.namer = namer{cluster: cm.cluster}
-	if cm.conn, err = PrepareCloud(cm.ctx, in.Name, cm.owner); err != nil {
-		return nil, err
-	}
-	cm.ctx = cm.conn.ctx
-	if cm.cluster.Spec.Config.Cloud.InstanceImage, err = cm.conn.DetectInstanceImage(); err != nil {
-		return nil, err
-	}
-	log.Debugln("Linode instance image", cm.cluster.Spec.Config.Cloud.InstanceImage)
-	if cm.cluster.Spec.Config.Cloud.Linode.KernelId, err = cm.conn.DetectKernel(); err != nil {
-		return nil, err
-	}
-	log.Infof("Linode kernel %v found", cm.cluster.Spec.Config.Cloud.Linode.KernelId)
-
-	if cm.cluster.Status.Phase == api.ClusterUpgrading {
-		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
-	}
-	if cm.cluster.Status.Phase == api.ClusterReady {
-		var kc kubernetes.Interface
-		kc, err = cm.GetAdminClient()
-		if err != nil {
-			return nil, err
-		}
-		if upgrade, err := NewKubeVersionGetter(kc, cm.cluster).IsUpgradeRequested(); err != nil {
-			return nil, err
-		} else if upgrade {
-			cm.cluster.Status.Phase = api.ClusterUpgrading
-			store.StoreProvider.Clusters().UpdateStatus(cm.cluster)
-			return cm.applyUpgrade(dryRun)
-		}
-	}
-
-	if cm.cluster.Status.Phase == api.ClusterPending {
-		a, err := cm.applyCreate(dryRun)
-		if err != nil {
-			return nil, err
-		}
-		acts = append(acts, a...)
-	}
-
-	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		nodeGroups, err := store.StoreProvider.MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-		log.Infoln(err)
-		for _, ng := range nodeGroups {
-			ng.Spec.Replicas = Int32P(int32(0))
-			_, err := store.StoreProvider.MachineSet(cm.cluster.Name).Update(ng)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	{
-		a, err := cm.applyScale(dryRun)
-		if err != nil && cm.cluster.DeletionTimestamp == nil {
-			if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-				log.Infoln(err)
-			} else {
-				return nil, err
-			}
-		}
-		acts = append(acts, a...)
-	}
-
-	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		a, err := cm.applyDelete(dryRun)
-		if err != nil {
-			return nil, err
-		}
-		acts = append(acts, a...)
-	}
-	return acts, nil
-}
 
 // Creates network, and creates ready master(s)
 func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
@@ -137,7 +50,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		return
 	}
 
-	leaderMachine, err := GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
+	leaderMachine, err := GetLeaderMachine(cm.cluster)
 	if err != nil {
 		return
 	}
@@ -258,7 +171,7 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 // it creates credential for ccm, pharmer-flex, pharmer-provisioner
 func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
 	// create secret for pharmer-flex and provisioner
-	err := CreateCredentialSecret(cm.ctx, kc, cm.cluster, cm.owner)
+	err := CreateCredentialSecret(kc, cm.cluster, cm.cluster.Namespace)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create credential for pharmer-flex")
 	}
@@ -279,81 +192,8 @@ func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
 	return nil
 }
 
-// Scales up/down regular node groups
-func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
-	log.Infoln("scaling machine set")
-
-	var machineSets []*clusterv1.MachineSet
-	var existingMachineSet []*clusterv1.MachineSet
-	machineSets, err = store.StoreProvider.MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return
-	}
-	var bc clusterclient.Client
-	bc, err = GetBooststrapClient(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		return nil, err
-	}
-	var data []byte
-	for _, machineSet := range machineSets {
-		if machineSet.DeletionTimestamp != nil {
-			machineSet.DeletionTimestamp = nil
-			if data, err = json.Marshal(machineSet); err != nil {
-				return
-			}
-
-			if err = bc.Delete(string(data)); err != nil {
-				return
-			}
-			if cm.cluster, err = store.StoreProvider.Clusters().Update(cm.cluster); err != nil {
-				return
-			}
-		}
-
-		if existingMachineSet, err = bc.GetMachineSets(bc.GetContextNamespace()); err != nil {
-			return
-		}
-		if data, err = json.Marshal(machineSet); err != nil {
-			return
-		}
-		found := false
-		for _, ems := range existingMachineSet {
-			if ems.Name == machineSet.Name {
-				found = true
-				if err = bc.Apply(string(data)); err != nil {
-					return
-				}
-				break
-			}
-		}
-
-		if !found {
-			if err = bc.CreateMachineSets([]*clusterv1.MachineSet{machineSet}, bc.GetContextNamespace()); err != nil {
-				return
-			}
-		}
-	}
-
-	return
-}
-
 //Deletes master(s) and releases other cloud resources
-func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error) {
-	log.Infoln("deleting cluster")
-
-	if cm.cluster.Status.Phase == api.ClusterReady {
-		cm.cluster.Status.Phase = api.ClusterDeleting
-	}
-	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.cluster)
-	if err != nil {
-		return
-	}
-
-	err = DeleteAllWorkerMachines(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		log.Infof("failed to delete nodes: %v", err)
-	}
-
+func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error) {
 	var kc kubernetes.Interface
 	kc, err = cm.GetAdminClient()
 	if err != nil {
@@ -437,70 +277,5 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	}
 
 	log.Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
-	return
-}
-
-func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err error) {
-	var kc kubernetes.Interface
-	if kc, err = cm.GetAdminClient(); err != nil {
-		return
-	}
-
-	var leaderMachine *clusterv1.Machine
-	masterName := fmt.Sprintf("%v-master", cm.cluster.Name)
-	leaderMachine, err = store.StoreProvider.Machine(cm.cluster.Name).Get(masterName)
-	if err != nil {
-		return nil, err
-	}
-
-	leaderMachine.Spec.Versions.ControlPlane = cm.cluster.Spec.Config.KubernetesVersion
-	leaderMachine.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
-
-	var bc clusterclient.Client
-	bc, err = GetBooststrapClient(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		return nil, err
-	}
-
-	var data []byte
-	if data, err = json.Marshal(leaderMachine); err != nil {
-		return
-	}
-	if err = bc.Apply(string(data)); err != nil {
-		return
-	}
-
-	// Wait until master updated
-	desiredVersion, _ := semver.NewVersion(cm.cluster.ClusterConfig().KubernetesVersion)
-	if err = WaitForReadyMasterVersion(cm.ctx, kc, desiredVersion); err != nil {
-		return
-	}
-	// wait for nodes to start
-	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
-		return
-	}
-
-	var machineSets []*clusterv1.MachineSet
-	machineSets, err = store.StoreProvider.MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return
-	}
-
-	for _, machineSet := range machineSets {
-		machineSet.Spec.Template.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
-		if data, err = json.Marshal(machineSet); err != nil {
-			return
-		}
-		if err = bc.Apply(string(data)); err != nil {
-			return
-		}
-	}
-
-	if !dryRun {
-		cm.cluster.Status.Phase = api.ClusterReady
-		if _, err = store.StoreProvider.Clusters().UpdateStatus(cm.cluster); err != nil {
-			return
-		}
-	}
 	return
 }
