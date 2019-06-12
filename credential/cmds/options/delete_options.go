@@ -1,7 +1,6 @@
 package options
 
 import (
-	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -13,7 +12,7 @@ type CredentialDeleteConfig struct {
 }
 
 func NewCredentialDeleteConfig() *CredentialDeleteConfig {
-	return &CredentialDeleteConfig{Owner: utils.GetLocalOwner()}
+	return &CredentialDeleteConfig{}
 }
 
 func (c *CredentialDeleteConfig) AddFlags(fs *pflag.FlagSet) {

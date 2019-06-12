@@ -8,7 +8,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/inspector"
-	"github.com/pharmer/pharmer/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -32,12 +31,11 @@ func NewCmdInspectCluster() *cobra.Command {
 			clusterName, _ := cmd.Flags().GetString("cluster")
 			ctx := context.Background()
 
-			owner := utils.GetLocalOwner()
 			cluster, err := cloud.GetCluster(clusterName)
 			if err != nil {
 				term.Fatalln(err)
 			}
-			inspect, err := inspector.New(ctx, cluster, owner)
+			inspect, err := inspector.New(ctx, cluster, "")
 			if err != nil {
 				term.Fatalln(err)
 			}

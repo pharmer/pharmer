@@ -1,7 +1,6 @@
 package options
 
 import (
-	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -20,7 +19,6 @@ func NewCredentialEditConfig() *CredentialEditConfig {
 		File:        "",
 		DoNotDelete: false,
 		Output:      "yaml",
-		Owner:       utils.GetLocalOwner(),
 	}
 }
 

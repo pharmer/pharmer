@@ -1,7 +1,6 @@
 package options
 
 import (
-	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -22,7 +21,6 @@ func NewCredentialCreateConfig() *CredentialCreateConfig {
 		FromEnv:  false,
 		FromFile: "",
 		Issue:    false,
-		Owner:    utils.GetLocalOwner(),
 	}
 }
 

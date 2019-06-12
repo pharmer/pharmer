@@ -1,7 +1,6 @@
 package options
 
 import (
-	"github.com/pharmer/pharmer/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -15,7 +14,6 @@ type CredentialGetConfig struct {
 func NewCredentialGetConfig() *CredentialGetConfig {
 	return &CredentialGetConfig{
 		Output: "",
-		Owner:  utils.GetLocalOwner(),
 	}
 }
 
