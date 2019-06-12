@@ -11,6 +11,7 @@ require (
 	github.com/armon/go-metrics v0.0.0-20190430140413-ec5e00d3c878 // indirect
 	github.com/aws/aws-sdk-go v1.19.31
 	github.com/creack/goselect v0.1.0 // indirect
+	github.com/davecgh/go-spew v1.1.1
 	github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3 // indirect
 	github.com/digitalocean/godo v1.14.0
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect

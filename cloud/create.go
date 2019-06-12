@@ -94,7 +94,7 @@ func createMasterMachines(store store.ResourceInterface, cm Interface) error {
 }
 
 func setDefaultCluster(cluster *api.Cluster) error {
-	config := cluster.Spec.Config
+	config := &cluster.Spec.Config
 
 	uid, err := uuid.NewUUID()
 	if err != nil {

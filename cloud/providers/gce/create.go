@@ -50,7 +50,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 	cluster := cm.Cluster
 
 	n := namer{cluster: cluster}
-	config := cluster.Spec.Config
+	config := &cluster.Spec.Config
 
 	config.Cloud.InstanceImageProject = "ubuntu-os-cloud"
 	config.Cloud.InstanceImage = "ubuntu-1604-xenial-v20170721"
