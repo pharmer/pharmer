@@ -46,7 +46,6 @@ github.com/appscode/go/version
 github.com/appscode/go/log
 github.com/appscode/go/encoding/yaml
 github.com/appscode/go/crypto/ssh
-github.com/appscode/go/env
 github.com/appscode/go/ioutil
 github.com/appscode/go/strings
 github.com/appscode/go/term
@@ -56,6 +55,7 @@ github.com/appscode/go/flags
 github.com/appscode/go/context
 github.com/appscode/go/crypto/rand
 github.com/appscode/go/analytics
+github.com/appscode/go/env
 github.com/appscode/go/runtime
 github.com/appscode/go/sets
 github.com/appscode/go/homedir
@@ -562,7 +562,7 @@ gopkg.in/resty.v1
 gopkg.in/tomb.v1
 # gopkg.in/yaml.v2 v2.2.2
 gopkg.in/yaml.v2
-# k8s.io/api v0.0.0-20190515023547-db5a9d1c40eb => k8s.io/api v0.0.0-20190313235455-40a48860b5ab
+# k8s.io/api v0.0.0-20190531132109-d3f5f50bdd94 => k8s.io/api v0.0.0-20190313235455-40a48860b5ab
 k8s.io/api/core/v1
 k8s.io/api/extensions/v1beta1
 k8s.io/api/autoscaling/v1
@@ -603,7 +603,7 @@ k8s.io/api/admission/v1beta1
 # k8s.io/apiextensions-apiserver v0.0.0-20190515024537-2fd0e9006049 => k8s.io/apiextensions-apiserver v0.0.0-20190315093550-53c4693659ed
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
-# k8s.io/apimachinery v0.0.0-20190515023456-b74e4c97951f => github.com/kmodules/apimachinery v0.0.0-20190508045248-a52a97a7a2bf
+# k8s.io/apimachinery v0.0.0-20190531131812-859a0ba5e71a => github.com/kmodules/apimachinery v0.0.0-20190508045248-a52a97a7a2bf
 k8s.io/apimachinery/pkg/apis/meta/v1
 k8s.io/apimachinery/pkg/runtime
 k8s.io/apimachinery/pkg/runtime/schema
@@ -656,8 +656,6 @@ k8s.io/apimachinery/pkg/apis/meta/v1/unstructured/unstructuredscheme
 k8s.io/apimachinery/third_party/forked/golang/netutil
 k8s.io/apimachinery/pkg/api/validation
 k8s.io/apimachinery/pkg/api/equality
-# k8s.io/apiserver v0.0.0-20190515064100-fc28ef5782df => github.com/kmodules/apiserver v0.0.0-20190508082252-8397d761d4b5
-k8s.io/apiserver/pkg/util/feature
 # k8s.io/cli-runtime v0.0.0-20190515024640-178667528169 => k8s.io/cli-runtime v0.0.0-20190314001948-2899ed30580f
 k8s.io/cli-runtime/pkg/printers
 k8s.io/cli-runtime/pkg/genericclioptions
@@ -731,7 +729,6 @@ k8s.io/client-go/dynamic
 k8s.io/client-go/kubernetes/scheme
 k8s.io/client-go/tools/leaderelection
 k8s.io/client-go/tools/leaderelection/resourcelock
-k8s.io/client-go/kubernetes/fake
 k8s.io/client-go/tools/record/util
 k8s.io/client-go/tools/reference
 k8s.io/client-go/transport/spdy
@@ -749,44 +746,6 @@ k8s.io/client-go/plugin/pkg/client/auth/openstack
 k8s.io/client-go/restmapper
 k8s.io/client-go/tools/cache
 k8s.io/client-go/util/workqueue
-k8s.io/client-go/discovery/fake
-k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/apps/v1/fake
-k8s.io/client-go/kubernetes/typed/apps/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/apps/v1beta2/fake
-k8s.io/client-go/kubernetes/typed/auditregistration/v1alpha1/fake
-k8s.io/client-go/kubernetes/typed/authentication/v1/fake
-k8s.io/client-go/kubernetes/typed/authentication/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/authorization/v1/fake
-k8s.io/client-go/kubernetes/typed/authorization/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/autoscaling/v1/fake
-k8s.io/client-go/kubernetes/typed/autoscaling/v2beta1/fake
-k8s.io/client-go/kubernetes/typed/autoscaling/v2beta2/fake
-k8s.io/client-go/kubernetes/typed/batch/v1/fake
-k8s.io/client-go/kubernetes/typed/batch/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/batch/v2alpha1/fake
-k8s.io/client-go/kubernetes/typed/certificates/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/coordination/v1/fake
-k8s.io/client-go/kubernetes/typed/coordination/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/core/v1/fake
-k8s.io/client-go/kubernetes/typed/events/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/extensions/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/networking/v1/fake
-k8s.io/client-go/kubernetes/typed/networking/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/node/v1alpha1/fake
-k8s.io/client-go/kubernetes/typed/node/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/policy/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/rbac/v1/fake
-k8s.io/client-go/kubernetes/typed/rbac/v1alpha1/fake
-k8s.io/client-go/kubernetes/typed/rbac/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/scheduling/v1/fake
-k8s.io/client-go/kubernetes/typed/scheduling/v1alpha1/fake
-k8s.io/client-go/kubernetes/typed/scheduling/v1beta1/fake
-k8s.io/client-go/kubernetes/typed/settings/v1alpha1/fake
-k8s.io/client-go/kubernetes/typed/storage/v1/fake
-k8s.io/client-go/kubernetes/typed/storage/v1alpha1/fake
-k8s.io/client-go/kubernetes/typed/storage/v1beta1/fake
-k8s.io/client-go/testing
 k8s.io/client-go/discovery/cached/disk
 k8s.io/client-go/third_party/forked/golang/template
 k8s.io/client-go/tools/pager
@@ -796,7 +755,7 @@ k8s.io/cluster-bootstrap/token/api
 k8s.io/cluster-bootstrap/token/util
 # k8s.io/component-base v0.0.0-20190515024022-2354f2393ad4 => k8s.io/component-base v0.0.0-20190314000054-4a91899592f4
 k8s.io/component-base/config
-# k8s.io/klog v0.3.1 => k8s.io/klog v0.3.0
+# k8s.io/klog v0.3.2 => k8s.io/klog v0.3.0
 k8s.io/klog
 # k8s.io/kube-openapi v0.0.0-20190510232812-a01b7d5d6c22 => k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30
 k8s.io/kube-openapi/pkg/util/proto
@@ -804,7 +763,6 @@ k8s.io/kube-openapi/pkg/common
 # k8s.io/kubernetes v1.14.2
 k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1
 k8s.io/kubernetes/cmd/kubeadm/app/constants
-k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha3
 k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin
 k8s.io/kubernetes/pkg/apis/core
 k8s.io/kubernetes/pkg/kubectl/describe
@@ -812,17 +770,14 @@ k8s.io/kubernetes/pkg/printers
 k8s.io/kubernetes/pkg/kubectl/util/term
 k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm
 k8s.io/kubernetes/pkg/registry/core/service/ipallocator
-k8s.io/kubernetes/cmd/kubeadm/app/features
-k8s.io/kubernetes/cmd/kubeadm/app/images
-k8s.io/kubernetes/cmd/kubeadm/app/util
 k8s.io/kubernetes/pkg/util/interrupt
 k8s.io/kubernetes/pkg/kubelet/apis/config
 k8s.io/kubernetes/pkg/proxy/apis/config
 k8s.io/kubernetes/pkg/registry/core/service/allocator
-k8s.io/kubernetes/pkg/version
+# k8s.io/sample-controller v0.0.0-20190531134801-325dc0a18ed9
+k8s.io/sample-controller/pkg/signals
 # k8s.io/utils v0.0.0-20190506122338-8fab8cb257d5 => k8s.io/utils v0.0.0-20190221042446-c2654d5206da
 k8s.io/utils/integer
-k8s.io/utils/exec
 k8s.io/utils/buffer
 k8s.io/utils/trace
 # kmodules.xyz/client-go v0.0.0-20190524133821-9c8a87771aea
@@ -840,6 +795,7 @@ sigs.k8s.io/cluster-api/pkg/apis/cluster/common
 sigs.k8s.io/cluster-api/pkg/controller/cluster
 sigs.k8s.io/cluster-api/pkg/controller/machine
 sigs.k8s.io/cluster-api/pkg/kubeadm
+sigs.k8s.io/cluster-api/pkg/apis
 sigs.k8s.io/cluster-api/cmd/clusterctl/clientcmd
 sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/bootstrap
 sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/provider

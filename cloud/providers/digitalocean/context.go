@@ -57,6 +57,7 @@ func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 		Scheme:        mgr.GetScheme(),
 		Owner:         cm.owner,
 	})
+	// TODO: is this required?
 	common.RegisterClusterProvisioner(UID, ma)
 	return nil
 }

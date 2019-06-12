@@ -25,6 +25,8 @@ type Interface interface {
 	GetConnector() ClusterApiProviderComponent
 
 	InitializeMachineActuator(mgr manager.Manager) error
+
+	// TODO: review: its common across all providers
 	AddToManager(ctx context.Context, m manager.Manager) error
 
 	SSHGetter
