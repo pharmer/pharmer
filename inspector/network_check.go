@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/appscode/go/log"
-
 	"github.com/appscode/go/term"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"

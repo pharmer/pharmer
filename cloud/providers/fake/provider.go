@@ -4,11 +4,10 @@ import (
 	"context"
 
 	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	"k8s.io/client-go/kubernetes"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	core "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )

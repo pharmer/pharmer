@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pharmer/pharmer/store"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/store"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/kubectl/describe"
 	"k8s.io/kubernetes/pkg/printers"

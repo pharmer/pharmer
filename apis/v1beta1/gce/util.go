@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/pharmer/pharmer/cloud"
-
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

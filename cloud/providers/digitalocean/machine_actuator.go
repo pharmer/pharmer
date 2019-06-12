@@ -6,12 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pharmer/pharmer/store"
-
 	"github.com/appscode/go/log"
 	"github.com/pharmer/pharmer/cloud"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/machinesetup"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
