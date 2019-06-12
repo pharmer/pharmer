@@ -33,48 +33,48 @@ func (cm *ClusterManager) PrepareCloud(dryRun bool) ([]api.Action, error) {
 	)
 
 	if acts, err = ensureIAMProfile(cm.conn, acts, dryRun); err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "failed to ensure iam profile")
 	}
 
 	if acts, err = importPublicKey(cm.conn, acts, dryRun); err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "failed to import public key")
 	}
 
 	if acts, vpcID, err = ensureVPC(cm.conn, acts, dryRun); err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "failed to ensure vpc")
 	}
 
 	if acts, publicSubnetID, privateSubnetID, err = ensureSubnet(cm.conn, acts, dryRun); err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "failed to ensure subnets")
 	}
 
 	if acts, gatewayID, err = ensureInternetGateway(cm.conn, acts, vpcID, dryRun); err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "failed to ensure igw")
 	}
 
 	if acts, natID, err = ensureNatGateway(cm.conn, acts, vpcID, publicSubnetID, dryRun); err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "failed to ensure nat")
 	}
 
 	if acts, publicRouteTableID, privateRouteTableID, err = ensureRouteTable(cm.conn, acts, vpcID, gatewayID, natID, publicSubnetID, privateSubnetID, dryRun); err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "failed to ensure route table")
 	}
 
 	if acts, err = ensureSecurityGroup(cm.conn, acts, vpcID, dryRun); err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "failed to ensure security group")
 	}
 
 	if acts, err = ensureBastion(cm.conn, acts, publicSubnetID, dryRun); err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "failed to ensure bastion")
 	}
 
 	if acts, err = ensureLoadBalancer(cm.conn, acts, publicSubnetID, dryRun); err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "failed to ensure load balancer")
 	}
 
 	clusterSpec, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
-		return acts, err
+		return acts, errors.Wrap(err, "failed to decode provider spec")
 	}
 
 	clusterSpec.NetworkSpec = clusterapi_aws.NetworkSpec{
