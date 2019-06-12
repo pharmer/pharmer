@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 
+	"gomodules.xyz/cert"
+
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
 	. "github.com/pharmer/pharmer/cloud"
@@ -72,6 +74,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 }
 
 func (cm *ClusterManager) SetClusterProviderConfig() error {
+
 	conf := &clusterapi_aws.AWSClusterProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: api.AWSProviderGroupName + "/" + api.AWSProviderApiVersion,
@@ -82,6 +85,23 @@ func (cm *ClusterManager) SetClusterProviderConfig() error {
 		},
 		Region:     cm.Cluster.Spec.Config.Cloud.Region,
 		SSHKeyName: cm.Cluster.Spec.Config.Cloud.SSHKeyName,
+
+		CAKeyPair: KeyPair{
+			Cert: cert.EncodeCertPEM(certs.CACert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(certs.CACert.Key),
+		},
+		EtcdCAKeyPair: KeyPair{
+			Cert: cert.EncodeCertPEM(certs.EtcdCACert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(certs.EtcdCACert.Key),
+		},
+		FrontProxyCAKeyPair: KeyPair{
+			Cert: cert.EncodeCertPEM(certs.FrontProxyCACert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(certs.FrontProxyCACert.Key),
+		},
+		SAKeyPair: KeyPair{
+			Cert: cert.EncodeCertPEM(certs.ServiceAccountCert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(certs.ServiceAccountCert.Key),
+		},
 	}
 
 	rawSpec, err := clusterapi_aws.EncodeClusterSpec(conf)
