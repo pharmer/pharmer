@@ -116,7 +116,7 @@ func ApplyCreate(cm Interface, dryRun bool) ([]api.Action, error) {
 	}
 
 	// create ccm credential
-	err = cm.CreateCCMCredential()
+	err = cm.CreateCredentials(kubeClient)
 	if err != nil {
 		return acts, errors.Wrap(err, "failed to create ccm-credential")
 	}

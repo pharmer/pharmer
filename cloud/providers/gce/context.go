@@ -53,7 +53,7 @@ func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 }
 
 // TODO: Verify
-func (cm *ClusterManager) CreateCCMCredential() error {
+func (cm *ClusterManager) CreateCredentials() error {
 	//cloud.CreateCredentialSecret(cm.AdminClient, cm.Cluster)
 	return nil
 }

@@ -13,8 +13,6 @@ import (
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
@@ -23,8 +21,15 @@ const (
 
 func (cm *ClusterManager) PrepareCloud(dryRun bool) ([]api.Action, error) {
 	var (
-		acts []api.Action
-		err  error
+		acts                []api.Action
+		err                 error
+		vpcID               string
+		publicSubnetID      string
+		privateSubnetID     string
+		gatewayID           string
+		natID               string
+		publicRouteTableID  string
+		privateRouteTableID string
 	)
 
 	if acts, err = ensureIAMProfile(cm.conn, acts, dryRun); err != nil {
@@ -35,35 +40,78 @@ func (cm *ClusterManager) PrepareCloud(dryRun bool) ([]api.Action, error) {
 		return acts, err
 	}
 
-	if acts, err = ensureVPC(cm.conn, acts, dryRun); err != nil {
+	if acts, vpcID, err = ensureVPC(cm.conn, acts, dryRun); err != nil {
 		return acts, err
 	}
 
-	if acts, err = ensureSubnet(cm.conn, acts, dryRun); err != nil {
+	if acts, publicSubnetID, privateSubnetID, err = ensureSubnet(cm.conn, acts, dryRun); err != nil {
 		return acts, err
 	}
 
-	if acts, err = ensureInternetGateway(cm.conn, acts, dryRun); err != nil {
+	if acts, gatewayID, err = ensureInternetGateway(cm.conn, acts, vpcID, dryRun); err != nil {
 		return acts, err
 	}
 
-	if acts, err = ensureNatGateway(cm.conn, acts, dryRun); err != nil {
+	if acts, natID, err = ensureNatGateway(cm.conn, acts, vpcID, publicSubnetID, dryRun); err != nil {
 		return acts, err
 	}
 
-	if acts, err = ensureRouteTable(cm.conn, acts, dryRun); err != nil {
+	if acts, publicRouteTableID, privateRouteTableID, err = ensureRouteTable(cm.conn, acts, vpcID, gatewayID, natID, publicSubnetID, privateSubnetID, dryRun); err != nil {
 		return acts, err
 	}
 
-	if acts, err = ensureSecurityGroup(cm.conn, acts, dryRun); err != nil {
+	if acts, err = ensureSecurityGroup(cm.conn, acts, vpcID, dryRun); err != nil {
 		return acts, err
 	}
 
-	if acts, err = ensureBastion(cm.conn, acts, dryRun); err != nil {
+	if acts, err = ensureBastion(cm.conn, acts, publicSubnetID, dryRun); err != nil {
 		return acts, err
 	}
 
-	if acts, err = ensureLoadBalancer(cm.conn, acts, dryRun); err != nil {
+	if acts, err = ensureLoadBalancer(cm.conn, acts, publicSubnetID, dryRun); err != nil {
+		return acts, err
+	}
+
+	clusterSpec, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	if err != nil {
+		return acts, err
+	}
+
+	clusterSpec.NetworkSpec = clusterapi_aws.NetworkSpec{
+		VPC: clusterapi_aws.VPCSpec{
+			ID:                vpcID,
+			CidrBlock:         cm.Cluster.Spec.Config.Cloud.AWS.VpcCIDR,
+			InternetGatewayID: StringP(gatewayID),
+			Tags: clusterapi_aws.Map{
+				"sigs.k8s.io/cluster-api-provider-aws/managed": "true",
+			},
+		},
+		Subnets: clusterapi_aws.Subnets{
+			{
+				ID:               publicSubnetID,
+				CidrBlock:        cm.Cluster.Spec.Config.Cloud.AWS.PublicSubnetCIDR,
+				AvailabilityZone: cm.Cluster.Spec.Config.Cloud.Zone,
+				IsPublic:         true,
+				RouteTableID:     StringP(publicRouteTableID),
+				NatGatewayID:     StringP(natID),
+			},
+			{
+				ID:               privateSubnetID,
+				CidrBlock:        cm.Cluster.Spec.Config.Cloud.AWS.PrivateSubnetCIDR,
+				AvailabilityZone: cm.Cluster.Spec.Config.Cloud.Zone,
+				IsPublic:         false,
+				RouteTableID:     StringP(privateRouteTableID),
+			},
+		},
+	}
+
+	rawClusterSpec, err := clusterapi_aws.EncodeClusterSpec(clusterSpec)
+	if err != nil {
+		return acts, err
+	}
+
+	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawClusterSpec
+	if _, err = store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
 		return acts, err
 	}
 
@@ -113,12 +161,16 @@ func (cm *ClusterManager) EnsureMaster(acts []api.Action, dryRun bool) ([]api.Ac
 				return nil, err
 			}
 
-			var privateSubnetID string
+			var privateSubnetID, vpcID string
+			if vpcID, _, err = cm.conn.getVpc(); err != nil {
+				log.Infoln(err)
+			}
+
 			if privateSubnetID, found, err = cm.conn.getSubnet(vpcID, "private"); err != nil {
 				log.Infoln(err)
 			}
 
-			masterInstance, err := cm.conn.startMaster(leaderMachine, sku, privateSubnetID, script)
+			masterInstance, err := cm.conn.startMaster(leaderMachine, privateSubnetID, script)
 			if err != nil {
 				cm.Cluster.Status.Reason = err.Error()
 				err = errors.Wrap(err, "")
@@ -150,7 +202,6 @@ func (cm *ClusterManager) EnsureMaster(acts []api.Action, dryRun bool) ([]api.Ac
 			spec.AMI = clusterapi_aws.AWSResourceReference{
 				ID: StringP(cm.Cluster.Spec.Config.Cloud.InstanceImage),
 			}
-			spec.InstanceType = sku
 
 			rootDeviceSize, err := cm.conn.getInstanceRootDeviceSize(masterInstance)
 			if err != nil {
@@ -182,13 +233,14 @@ func (cm *ClusterManager) EnsureMaster(acts []api.Action, dryRun bool) ([]api.Ac
 				return nil, errors.Wrap(err, "error updating master machine in pharmer storage")
 			}
 		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Master Instance",
-			Message:  "master instance(s) already exist",
-		})
 	}
+
+	return append(acts, api.Action{
+		Action:   api.ActionNOP,
+		Resource: "Master Instance",
+		Message:  "master instance(s) already exist",
+	}), nil
+
 }
 
 func ensureIAMProfile(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
@@ -256,7 +308,7 @@ func importPublicKey(conn *cloudConnector, acts []api.Action, dryRun bool) ([]ap
 	return acts, nil
 }
 
-func ensureVPC(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
+func ensureVPC(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, string, error) {
 	var (
 		vpcID string
 		found bool
@@ -274,10 +326,9 @@ func ensureVPC(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Acti
 		})
 		if !dryRun {
 			if vpcID, err = conn.setupVpc(); err != nil {
-				return acts, err
+				return acts, "", err
 			}
 		}
-		return acts, nil
 	}
 	acts = append(acts, api.Action{
 		Action:   api.ActionNOP,
@@ -285,10 +336,10 @@ func ensureVPC(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Acti
 		Message:  fmt.Sprintf("Found vpc with id %v", vpcID),
 	})
 
-	return acts, nil
+	return acts, vpcID, nil
 }
 
-func ensureSubnet(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
+func ensureSubnet(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, string, string, error) {
 	var (
 		publicSubnetID  string
 		privateSubnetID string
@@ -312,11 +363,9 @@ func ensureSubnet(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.A
 		})
 		if !dryRun {
 			if publicSubnetID, err = conn.setupPublicSubnet(vpcID); err != nil {
-				return acts, err
+				return acts, "", "", err
 			}
 		}
-
-		return acts, nil
 	} else {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
@@ -336,26 +385,25 @@ func ensureSubnet(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.A
 		})
 		if !dryRun {
 			if privateSubnetID, err = conn.setupPrivateSubnet(vpcID); err != nil {
-				return acts, err
+				return acts, "", "", err
 			}
 		}
-
-		return acts, nil
 	}
 	return append(acts, api.Action{
 		Action:   api.ActionNOP,
 		Resource: "Subnet",
 		Message:  fmt.Sprintf("Private Subnet found with id %v", privateSubnetID),
-	}), nil
+	}), publicSubnetID, privateSubnetID, nil
 }
 
-func ensureInternetGateway(conn *cloudConnector, vpcID string, acts []api.Action, dryRun bool) ([]api.Action, error) {
+func ensureInternetGateway(conn *cloudConnector, acts []api.Action, vpcID string, dryRun bool) ([]api.Action, string, error) {
 	var (
-		found bool
-		err   error
+		found     bool
+		err       error
+		gatewayID string
 	)
 
-	if _, found, err = conn.getInternetGateway(vpcID); err != nil {
+	if gatewayID, found, err = conn.getInternetGateway(vpcID); err != nil {
 		log.Infoln(err)
 	}
 	if !found {
@@ -366,25 +414,24 @@ func ensureInternetGateway(conn *cloudConnector, vpcID string, acts []api.Action
 		})
 		if !dryRun {
 			if _, err = conn.setupInternetGateway(vpcID); err != nil {
-				return acts, err
+				return acts, "", err
 			}
 		}
-
-		return acts, nil
 	}
 	return append(acts, api.Action{
 		Action:   api.ActionNOP,
 		Resource: "Internet Gateway",
 		Message:  "Internet gateway found",
-	}), nil
+	}), gatewayID, nil
 }
 
-func ensureNatGateway(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
+func ensureNatGateway(conn *cloudConnector, acts []api.Action, vpcID, publicSubnetID string, dryRun bool) ([]api.Action, string, error) {
 	var (
 		found bool
 		err   error
+		natID string
 	)
-	if _, found, err = conn.getNatGateway(vpcID); err != nil {
+	if natID, found, err = conn.getNatGateway(vpcID); err != nil {
 		log.Infoln(err)
 	}
 	if !found {
@@ -395,19 +442,18 @@ func ensureNatGateway(conn *cloudConnector, acts []api.Action, dryRun bool) ([]a
 		})
 		if !dryRun {
 			if _, err = conn.setupNatGateway(publicSubnetID); err != nil {
-				return acts, err
+				return acts, "", err
 			}
 		}
-		return acts, nil
 	}
 	return append(acts, api.Action{
 		Action:   api.ActionNOP,
 		Resource: "NAT Gateway",
 		Message:  "NAT gateway found",
-	}), nil
+	}), natID, nil
 }
 
-func ensureRouteTable(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, string, string, error) {
+func ensureRouteTable(conn *cloudConnector, acts []api.Action, vpcID, gatewayID, natID, publicSubnetID, privateSubnetID string, dryRun bool) ([]api.Action, string, string, error) {
 	var (
 		found bool
 		err   error
@@ -424,10 +470,9 @@ func ensureRouteTable(conn *cloudConnector, acts []api.Action, dryRun bool) ([]a
 		})
 		if !dryRun {
 			if publicRouteTableID, err = conn.setupRouteTable("public", vpcID, gatewayID, natID, publicSubnetID, privateSubnetID); err != nil {
-				return acts, err
+				return acts, "", "", err
 			}
 		}
-		return acts, nil
 	} else {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
@@ -447,7 +492,7 @@ func ensureRouteTable(conn *cloudConnector, acts []api.Action, dryRun bool) ([]a
 		})
 		if !dryRun {
 			if privateRouteTableID, err = conn.setupRouteTable("private", vpcID, gatewayID, natID, publicSubnetID, privateSubnetID); err != nil {
-				return
+				return acts, "", "", err
 			}
 		}
 	}
@@ -455,10 +500,10 @@ func ensureRouteTable(conn *cloudConnector, acts []api.Action, dryRun bool) ([]a
 		Action:   api.ActionNOP,
 		Resource: "Route table",
 		Message:  "Route table found",
-	}), nil
+	}), publicRouteTableID, privateRouteTableID, nil
 }
 
-func ensureSecurityGroup(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
+func ensureSecurityGroup(conn *cloudConnector, acts []api.Action, vpcID string, dryRun bool) ([]api.Action, error) {
 	var (
 		found bool
 		err   error
@@ -470,7 +515,7 @@ func ensureSecurityGroup(conn *cloudConnector, acts []api.Action, dryRun bool) (
 		acts = append(acts, api.Action{
 			Action:   api.ActionAdd,
 			Resource: "Security group",
-			Message:  fmt.Sprintf("Master security group %v and node security group %v will be created", cm.Cluster.Spec.Config.Cloud.AWS.MasterSGName, cm.Cluster.Spec.Config.Cloud.AWS.NodeSGName),
+			Message:  fmt.Sprintf("Master security group %v and node security group %v will be created", conn.Cluster.Spec.Config.Cloud.AWS.MasterSGName, conn.Cluster.Spec.Config.Cloud.AWS.NodeSGName),
 		})
 		if !dryRun {
 			if err = conn.setupSecurityGroups(vpcID); err != nil {
@@ -479,8 +524,6 @@ func ensureSecurityGroup(conn *cloudConnector, acts []api.Action, dryRun bool) (
 				return acts, err
 			}
 		}
-
-		return acts, nil
 	} else {
 		if err = conn.detectSecurityGroups(vpcID); err != nil {
 			return acts, err
@@ -488,13 +531,13 @@ func ensureSecurityGroup(conn *cloudConnector, acts []api.Action, dryRun bool) (
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
 			Resource: "Security group",
-			Message:  fmt.Sprintf("Found master security group %v and node security group %v", conn.Cluster.Spec.Config.Cloud.AWS.MasterSGName, cm.Cluster.Spec.Config.Cloud.AWS.NodeSGName),
+			Message:  fmt.Sprintf("Found master security group %v and node security group %v", conn.Cluster.Spec.Config.Cloud.AWS.MasterSGName, conn.Cluster.Spec.Config.Cloud.AWS.NodeSGName),
 		})
 	}
 	return acts, nil
 }
 
-func ensureBastion(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
+func ensureBastion(conn *cloudConnector, acts []api.Action, publicSubnetID string, dryRun bool) ([]api.Action, error) {
 	var (
 		found bool
 		err   error
@@ -515,7 +558,6 @@ func ensureBastion(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.
 				return acts, err
 			}
 		}
-		return acts, nil
 	}
 	return append(acts, api.Action{
 		Action:   api.ActionNOP,
@@ -524,7 +566,7 @@ func ensureBastion(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.
 	}), nil
 }
 
-func ensureLoadBalancer(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
+func ensureLoadBalancer(conn *cloudConnector, acts []api.Action, publicSubnetID string, dryRun bool) ([]api.Action, error) {
 	var (
 		found bool
 		err   error
@@ -577,115 +619,64 @@ func ensureLoadBalancer(conn *cloudConnector, acts []api.Action, dryRun bool) ([
 	return acts, nil
 }
 
-func ensureVPC(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
-	var (
-		found bool
-		err   error
-	)
-
-	return acts, nil
-}
-
-func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMachine *clusterv1.Machine, machines []*clusterv1.Machine, err error) {
-	clusterSpec, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
-	if err != nil {
-		return
-	}
-
-	clusterSpec.NetworkSpec = clusterapi_aws.NetworkSpec{
-		VPC: clusterapi_aws.VPCSpec{
-			ID:                vpcID,
-			CidrBlock:         cm.Cluster.Spec.Config.Cloud.AWS.VpcCIDR,
-			InternetGatewayID: StringP(gatewayID),
-			Tags: clusterapi_aws.Map{
-				"sigs.k8s.io/cluster-api-provider-aws/managed": "true",
-			},
-		},
-		Subnets: clusterapi_aws.Subnets{
-			{
-				ID:               publicSubnetID,
-				CidrBlock:        cm.Cluster.Spec.Config.Cloud.AWS.PublicSubnetCIDR,
-				AvailabilityZone: cm.Cluster.Spec.Config.Cloud.Zone,
-				IsPublic:         true,
-				RouteTableID:     StringP(publicRouteTableID),
-				NatGatewayID:     StringP(natID),
-			},
-			{
-				ID:               privateSubnetID,
-				CidrBlock:        cm.Cluster.Spec.Config.Cloud.AWS.PrivateSubnetCIDR,
-				AvailabilityZone: cm.Cluster.Spec.Config.Cloud.Zone,
-				IsPublic:         false,
-				RouteTableID:     StringP(privateRouteTableID),
-			},
-		},
-	}
-
-	rawClusterSpec, err := clusterapi_aws.EncodeClusterSpec(clusterSpec)
-	if err != nil {
-		return
-	}
-
-	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawClusterSpec
-	if _, err = store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
-		return
-	}
-
-	machines, err = store.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		err = errors.Wrap(err, "")
-		return
-	}
-
-	leaderMachine, err = GetLeaderMachine(cm.Cluster)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	machineSets, err := store.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	totalNodes := NodeCount(machineSets)
-
-	// https://github.com/kubernetes/kubernetes/blob/8eb75a5810cba92ccad845ca360cf924f2385881/cluster/aws/config-default.sh#L33
-	sku := "t2.large"
-	if totalNodes > 10 {
-		sku = "t2.xlarge"
-	}
-	if totalNodes > 100 {
-		sku = "t2.2xlarge"
-	}
-	if totalNodes > 250 {
-		sku = "c4.4xlarge"
-	}
-	if totalNodes > 500 {
-		sku = "c4.8xlarge"
-	}
-
-	// update master machine spec
-	for _, m := range machines {
-		spec, err := clusterapi_aws.MachineConfigFromProviderSpec(m.Spec.ProviderSpec)
-		if err != nil {
-			log.Infof("Error decoding provider spec for machine %q", m.Name)
-			return nil, nil, nil, err
-		}
-
-		spec.InstanceType = sku
-
-		rawSpec, err := clusterapi_aws.EncodeMachineSpec(spec)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		m.Spec.ProviderSpec.Value = rawSpec
-
-		_, err = store.StoreProvider.Machine(cm.Cluster.Name).Update(m)
-		if err != nil {
-			return nil, nil, nil, errors.Wrapf(err, "failed to update machine %q to store", m.Name)
-		}
-	}
-
-	return
-}
+//func (cm *ClusterManager) ApplyCreate(dryRun bool) (acts []api.Action, leaderMachine *clusterv1.Machine, machines []*clusterv1.Machine, err error) {
+//
+//	machines, err = store.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
+//	if err != nil {
+//		err = errors.Wrap(err, "")
+//		return
+//	}
+//
+//	leaderMachine, err = GetLeaderMachine(cm.Cluster)
+//	if err != nil {
+//		return nil, nil, nil, err
+//	}
+//
+//	machineSets, err := store.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
+//	if err != nil {
+//		return nil, nil, nil, err
+//	}
+//	totalNodes := NodeCount(machineSets)
+//
+//	// https://github.com/kubernetes/kubernetes/blob/8eb75a5810cba92ccad845ca360cf924f2385881/cluster/aws/config-default.sh#L33
+//	sku := "t2.large"
+//	if totalNodes > 10 {
+//		sku = "t2.xlarge"
+//	}
+//	if totalNodes > 100 {
+//		sku = "t2.2xlarge"
+//	}
+//	if totalNodes > 250 {
+//		sku = "c4.4xlarge"
+//	}
+//	if totalNodes > 500 {
+//		sku = "c4.8xlarge"
+//	}
+//
+//	// update master machine spec
+//	for _, m := range machines {
+//		spec, err := clusterapi_aws.MachineConfigFromProviderSpec(m.Spec.ProviderSpec)
+//		if err != nil {
+//			log.Infof("Error decoding provider spec for machine %q", m.Name)
+//			return nil, nil, nil, err
+//		}
+//
+//		spec.InstanceType = sku
+//
+//		rawSpec, err := clusterapi_aws.EncodeMachineSpec(spec)
+//		if err != nil {
+//			return nil, nil, nil, err
+//		}
+//		m.Spec.ProviderSpec.Value = rawSpec
+//
+//		_, err = store.StoreProvider.Machine(cm.Cluster.Name).Update(m)
+//		if err != nil {
+//			return nil, nil, nil, errors.Wrapf(err, "failed to update machine %q to store", m.Name)
+//		}
+//	}
+//
+//	return
+//}
 
 func (cm *ClusterManager) ApplyDelete(dryRun bool) ([]api.Action, error) {
 	var acts []api.Action

@@ -1,10 +1,8 @@
 package aws
 
 import (
-	"bytes"
 	"encoding/base64"
 	"fmt"
-	"html/template"
 	"strings"
 	"time"
 
@@ -44,8 +42,6 @@ type cloudConnector struct {
 	autoscale *autoscaling.AutoScaling
 	s3        *_s3.S3
 }
-
-var _ ClusterApiProviderComponent = &cloudConnector{}
 
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.Spec.Config.CredentialName)
@@ -174,39 +170,6 @@ func (conn *cloudConnector) detectUbuntuImage() error {
 }
 
 func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data map[string]string) error {
-	err := CreateNamespace(kc, "aws-provider-system")
-	if err != nil {
-		return err
-	}
-
-	credTemplate := template.Must(template.New("aws-cred").Parse(
-		`[default]
-aws_access_key_id = {{ .AccessKeyID }}
-aws_secret_access_key = {{ .SecretAccessKey }}
-region = {{ .Region }}
-`))
-
-	var buf bytes.Buffer
-	err = credTemplate.Execute(&buf, struct {
-		AccessKeyID     string
-		SecretAccessKey string
-		Region          string
-	}{
-		AccessKeyID:     data["accessKeyID"],
-		SecretAccessKey: data["secretAccessKey"],
-		Region:          conn.Cluster.Spec.Config.Cloud.Region,
-	})
-	if err != nil {
-		return err
-	}
-
-	credData := buf.Bytes()
-
-	if err = CreateSecret(kc, "aws-provider-manager-bootstrap-credentials-kt5bhb6h9c", "aws-provider-system", map[string][]byte{
-		"credentials": credData,
-	}); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -1412,15 +1375,20 @@ func (conn *cloudConnector) getMaster(name string) (bool, error) {
 	return true, err
 }
 
-func (conn *cloudConnector) startMaster(machine *clusterv1.Machine, sku, privateSubnetID, script string) (*ec2.Instance, error) {
+func (conn *cloudConnector) startMaster(machine *clusterv1.Machine, privateSubnetID, script string) (*ec2.Instance, error) {
 	sshKeyName := conn.Cluster.Spec.Config.Cloud.SSHKeyName
 
 	if err := conn.detectUbuntuImage(); err != nil {
 		return nil, err
 	}
 
+	providerSpec, err := clusterapi_aws.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
+	if err != nil {
+		return nil, err
+	}
+
 	input := &ec2.RunInstancesInput{
-		InstanceType: StringP(sku),
+		InstanceType: StringP(providerSpec.InstanceType),
 		SubnetId:     StringP(privateSubnetID),
 		ImageId:      StringP(conn.Cluster.Spec.Config.Cloud.InstanceImage),
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{

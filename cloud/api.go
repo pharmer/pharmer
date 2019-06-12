@@ -20,7 +20,7 @@ var (
 type Interface interface {
 	CloudManagerInterface
 
-	CreateCCMCredential() error
+	CreateCredentials(kc kubernetes.Interface) error
 
 	GetConnector() ClusterApiProviderComponent
 
