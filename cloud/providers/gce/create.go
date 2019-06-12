@@ -63,7 +63,6 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 	config.APIServerExtraArgs = make(map[string]string)
 	config.APIServerExtraArgs["cloud-config"] = "/etc/kubernetes/ccm/cloud-config"
 
-	config.KubeletExtraArgs = make(map[string]string)
 	config.KubeletExtraArgs["cloud-provider"] = cluster.ClusterConfig().Cloud.CloudProvider // requires --cloud-config
 
 	cluster.Spec.Config.Cloud.Region = cluster.Spec.Config.Cloud.Zone[0 : len(cluster.Spec.Config.Cloud.Zone)-2]
