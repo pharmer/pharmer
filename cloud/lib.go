@@ -126,7 +126,7 @@ func createPharmerCerts(store store.ResourceInterface, cluster *api.Cluster) (*P
 		Key:  key,
 	}
 
-	pubKey, privKey, err := CreateSSHKey(store, cluster)
+	pubKey, privKey, err := CreateSSHKey(store.SSHKeys(cluster.Name), cluster.GenSSHKeyExternalID())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ssh keys")
 	}

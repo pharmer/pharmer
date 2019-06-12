@@ -87,12 +87,13 @@ func GetAdminCertificate(ctx context.Context, cluster *api.Cluster, owner string
 	return admCert, admKey, nil
 }
 
-func CreateSSHKey(storeProvider store.ResourceInterface, cluster *api.Cluster) ([]byte, []byte, error) {
+func CreateSSHKey(storeProvider store.SSHKeyStore, name string) ([]byte, []byte, error) {
 	sshKey, err := ssh.NewSSHKeyPair()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create new ssh key pair")
 	}
-	err = storeProvider.SSHKeys(cluster.Name).Create(cluster.Spec.Config.Cloud.SSHKeyName, sshKey.PublicKey, sshKey.PrivateKey)
+
+	err = storeProvider.Create(name, sshKey.PublicKey, sshKey.PrivateKey)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to store ssh keys")
 	}

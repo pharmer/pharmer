@@ -3,6 +3,8 @@ package gce
 import (
 	"errors"
 
+	"k8s.io/client-go/kubernetes"
+
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -53,7 +55,7 @@ func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 }
 
 // TODO: Verify
-func (cm *ClusterManager) CreateCredentials() error {
+func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 	//cloud.CreateCredentialSecret(cm.AdminClient, cm.Cluster)
 	return nil
 }
