@@ -485,6 +485,11 @@ func NewNodeTemplateData(cm Interface, machine *clusterv1.Machine, token string)
 	}
 
 	td.KubeletExtraArgs = cluster.ClusterConfig().KubeletExtraArgs
+
+	if td.KubeletExtraArgs == nil {
+		td.KubeletExtraArgs = make(map[string]string)
+	}
+
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,
 		api.RoleNodeKey: "",
