@@ -8,7 +8,7 @@ import (
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/cloud/providers/gce"
 
-	//_ "github.com/pharmer/pharmer/cloud/providers/aws"
+	_ "github.com/pharmer/pharmer/cloud/providers/aws"
 	_ "github.com/pharmer/pharmer/cloud/providers/gce"
 	"github.com/pharmer/pharmer/store"
 	_ "github.com/pharmer/pharmer/store/providers/fake"
@@ -159,56 +159,56 @@ func TestCreate(t *testing.T) {
 			want:    nil,
 			wantErr: false,
 		},
-		//{
-		//	name: "aws cluster",
-		//	args: args{
-		//		store: storage,
-		//		cluster: &api.Cluster{
-		//			ObjectMeta: v1.ObjectMeta{
-		//				Name: "aws-cluster",
-		//			},
-		//			Spec: api.PharmerClusterSpec{
-		//				ClusterAPI: clusterapi.Cluster{},
-		//				Config: api.ClusterConfig{
-		//					MasterCount: 3,
-		//					Cloud: api.CloudSpec{
-		//						CloudProvider: "aws",
-		//						Zone:          "us-east-1b",
-		//					},
-		//					KubernetesVersion: "v1.14.0",
-		//					CredentialName:    "aws-cred",
-		//				},
-		//			},
-		//		},
-		//	},
-		//	want:    nil,
-		//	wantErr: false,
-		//},
-		//{
-		//	name: "azure cluster",
-		//	args: args{
-		//		store: storage,
-		//		cluster: &api.Cluster{
-		//			ObjectMeta: v1.ObjectMeta{
-		//				Name: "azure-cluster",
-		//			},
-		//			Spec: api.PharmerClusterSpec{
-		//				ClusterAPI: clusterapi.Cluster{},
-		//				Config: api.ClusterConfig{
-		//					MasterCount: 3,
-		//					Cloud: api.CloudSpec{
-		//						CloudProvider: "azure",
-		//						Zone:          "us-east-1b",
-		//					},
-		//					KubernetesVersion: "v1.14.0",
-		//					CredentialName:    "azure-cred",
-		//				},
-		//			},
-		//		},
-		//	},
-		//	want:    nil,
-		//	wantErr: false,
-		//},
+		{
+			name: "aws cluster",
+			args: args{
+				store: storage,
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "aws-cluster",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: clusterapi.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "aws",
+								Zone:          "us-east-1b",
+							},
+							KubernetesVersion: "v1.14.0",
+							CredentialName:    "aws-cred",
+						},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "azure cluster",
+			args: args{
+				store: storage,
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "azure-cluster",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: clusterapi.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "azure",
+								Zone:          "us-east-1b",
+							},
+							KubernetesVersion: "v1.14.0",
+							CredentialName:    "azure-cred",
+						},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

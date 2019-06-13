@@ -720,7 +720,6 @@ k8s.io/sample-controller v0.0.0-20190531134801-325dc0a18ed9 h1:bMitXnoUDuODdwVV1
 k8s.io/sample-controller v0.0.0-20190531134801-325dc0a18ed9/go.mod h1:ttvHZYQZMM6wv4bktsiqL7KQPEAcu46DTL0j8Ho7HHQ=
 k8s.io/utils v0.0.0-20190221042446-c2654d5206da h1:ElyM7RPonbKnQqOcw7dG2IK5uvQQn3b/WPHqD5mBvP4=
 k8s.io/utils v0.0.0-20190221042446-c2654d5206da/go.mod h1:8k8uAuAQ0rXslZKaEWd0c3oVhZz7sSzSiPnVZayjIX0=
-kmodules.xyz/client-go v0.0.0-20190515205239-a16030cc2e50 h1:KDyD+h3yiCxRGuY670mF10Ai9QHKXqcJkGolF9AvAJE=
 kmodules.xyz/client-go v0.0.0-20190515205239-a16030cc2e50/go.mod h1:R1t4K2wWb6PTkhQPEjqQIWz+gRS0/Z0mMfIy/TsdB/w=
 kmodules.xyz/client-go v0.0.0-20190524133821-9c8a87771aea h1:jt5p9kuSqG0RLsXGB/Rj+szXDrmKB/9ZjCZdKjPJz1c=
 kmodules.xyz/client-go v0.0.0-20190524133821-9c8a87771aea/go.mod h1:R1t4K2wWb6PTkhQPEjqQIWz+gRS0/Z0mMfIy/TsdB/w=

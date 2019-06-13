@@ -74,7 +74,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 }
 
 func (cm *ClusterManager) SetClusterProviderConfig() error {
-
+	certs := cm.Certs
 	conf := &clusterapi_aws.AWSClusterProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: api.AWSProviderGroupName + "/" + api.AWSProviderApiVersion,
@@ -86,19 +86,19 @@ func (cm *ClusterManager) SetClusterProviderConfig() error {
 		Region:     cm.Cluster.Spec.Config.Cloud.Region,
 		SSHKeyName: cm.Cluster.Spec.Config.Cloud.SSHKeyName,
 
-		CAKeyPair: KeyPair{
+		CAKeyPair: clusterapi_aws.KeyPair{
 			Cert: cert.EncodeCertPEM(certs.CACert.Cert),
 			Key:  cert.EncodePrivateKeyPEM(certs.CACert.Key),
 		},
-		EtcdCAKeyPair: KeyPair{
+		EtcdCAKeyPair: clusterapi_aws.KeyPair{
 			Cert: cert.EncodeCertPEM(certs.EtcdCACert.Cert),
 			Key:  cert.EncodePrivateKeyPEM(certs.EtcdCACert.Key),
 		},
-		FrontProxyCAKeyPair: KeyPair{
+		FrontProxyCAKeyPair: clusterapi_aws.KeyPair{
 			Cert: cert.EncodeCertPEM(certs.FrontProxyCACert.Cert),
 			Key:  cert.EncodePrivateKeyPEM(certs.FrontProxyCACert.Key),
 		},
-		SAKeyPair: KeyPair{
+		SAKeyPair: clusterapi_aws.KeyPair{
 			Cert: cert.EncodeCertPEM(certs.ServiceAccountCert.Cert),
 			Key:  cert.EncodePrivateKeyPEM(certs.ServiceAccountCert.Key),
 		},

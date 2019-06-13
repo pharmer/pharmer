@@ -2,7 +2,7 @@ package aws
 
 import (
 	"bytes"
-	"html/template"
+	"text/template"
 
 	"github.com/pharmer/pharmer/store"
 	"k8s.io/client-go/kubernetes"
@@ -52,7 +52,7 @@ region = {{ .Region }}
 	}{
 		AccessKeyID:     data["accessKeyID"],
 		SecretAccessKey: data["secretAccessKey"],
-		Region:          cm.conn.Cluster.Spec.Config.Cloud.Region,
+		Region:          cm.Cluster.Spec.Config.Cloud.Region,
 	})
 	if err != nil {
 		return err
@@ -60,7 +60,7 @@ region = {{ .Region }}
 
 	credData := buf.Bytes()
 
-	if err = CreateSecret(kc, "aws-provider-manager-bootstrap-credentials-kt5bhb6h9c", "aws-provider-system", map[string][]byte{
+	if err = CreateSecret(kc, "aws-provider-manager-bootstrap-credentials", "aws-provider-system", map[string][]byte{
 		"credentials": credData,
 	}); err != nil {
 		return err

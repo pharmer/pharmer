@@ -833,7 +833,7 @@ func (conn *cloudConnector) getRouteTable(privacy, vpcID string) (string, bool, 
 			},
 		},
 	})
-	log.Debug("found %v route table", privacy, err)
+	log.Infof("found %v route table", privacy)
 	if err != nil {
 		return "", false, err
 	}
@@ -850,7 +850,7 @@ func (conn *cloudConnector) setupRouteTable(privacy, vpcID, igwID, natID, public
 	out, err := conn.ec2.CreateRouteTable(&_ec2.CreateRouteTableInput{
 		VpcId: StringP(vpcID),
 	})
-	log.Debug("Created %v route table", privacy, out, err)
+	log.Infof("Created %v route table", privacy)
 	if err != nil {
 		return "", err
 	}

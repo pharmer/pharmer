@@ -11,7 +11,6 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
-	core "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -177,17 +176,6 @@ func (cm *ClusterManager) EnsureMaster(acts []api.Action, dryRun bool) ([]api.Ac
 				return acts, err
 			}
 
-			nodeAddresses := []core.NodeAddress{
-				{
-					Type:    core.NodeExternalDNS,
-					Address: cm.Cluster.Status.Cloud.LoadBalancer.DNS,
-				},
-			}
-
-			if err = cm.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
-				return nil, err
-			}
-
 			if _, err = store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
 				return nil, err
 			}
@@ -346,7 +334,7 @@ func ensureSubnet(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.A
 
 	vpcID, _, err := conn.getVpc()
 	if err != nil {
-		log.Infoln(err)
+		return acts, "", "", errors.Wrapf(err, "vpc not found")
 	}
 
 	if publicSubnetID, found, err = conn.getSubnet(vpcID, "public"); err != nil {

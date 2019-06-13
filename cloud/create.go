@@ -124,8 +124,6 @@ func setDefaultCluster(cluster *api.Cluster) error {
 		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
 	}
 
-	config.KubeletExtraArgs = make(map[string]string)
-
 	config.Cloud.Region = cluster.Spec.Config.Cloud.Zone[0 : len(cluster.Spec.Config.Cloud.Zone)-1]
 	config.Cloud.SSHKeyName = cluster.GenSSHKeyExternalID()
 	cluster.Status = api.PharmerClusterStatus{
