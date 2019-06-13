@@ -136,6 +136,10 @@ func (cm *ClusterManager) PrepareCloud(dryRun bool) ([]api.Action, error) {
 	return acts, err
 }
 
+func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
+	return "g6-standard-2"
+}
+
 //Deletes master(s) and releases other cloud resources
 func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error) {
 	var kc kubernetes.Interface

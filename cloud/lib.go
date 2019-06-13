@@ -310,7 +310,7 @@ func GetBooststrapClient(cm Interface, cluster *api.Cluster) (clusterclient.Clie
 	return bootstrapClient, nil
 }
 
-func GetKubernetesClient(cm Interface, cluster *api.Cluster, owner string) (kubernetes.Interface, error) {
+func GetKubernetesClient(cm Interface, cluster *api.Cluster) (kubernetes.Interface, error) {
 	kubeConifg, err := GetAdminConfig(cm, cluster)
 	if err != nil {
 		return nil, err

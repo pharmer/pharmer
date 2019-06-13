@@ -26,13 +26,11 @@ import (
 
 func init() {
 	// AddToManagerFuncs is a list of functions to create controllers and add them to a manager.
-	AddToManagerFuncs = append(AddToManagerFuncs, func(ctx context.Context, m manager.Manager, owner string) error {
+	AddToManagerFuncs = append(AddToManagerFuncs, func(cm *ClusterManager, m manager.Manager) error {
 		actuator := NewMachineActuator(MachineActuatorParams{
-			Ctx:           ctx,
 			EventRecorder: m.GetEventRecorderFor(Recorder),
 			Client:        m.GetClient(),
 			Scheme:        m.GetScheme(),
-			Owner:         owner,
 		})
 		return machine.AddWithActuator(m, actuator)
 	})
@@ -47,36 +45,30 @@ type LinodeClientMachineSetupConfigGetter interface {
 }
 
 type MachineActuator struct {
-	ctx                      context.Context
-	conn                     *cloudConnector
-	client                   client.Client
-	kubeadm                  LinodeClientKubeadm
-	machineSetupConfigGetter LinodeClientMachineSetupConfigGetter
-	eventRecorder            record.EventRecorder
-	scheme                   *runtime.Scheme
-
-	owner string
+	cm      *ClusterManager
+	client  client.Client
+	kubeadm LinodeClientKubeadm
+	//machineSetupConfigGetter LinodeClientMachineSetupConfigGetter
+	eventRecorder record.EventRecorder
+	scheme        *runtime.Scheme
 }
 
 type MachineActuatorParams struct {
-	Ctx            context.Context
-	Kubeadm        LinodeClientKubeadm
-	Client         client.Client
-	CloudConnector *cloudConnector
-	EventRecorder  record.EventRecorder
-	Scheme         *runtime.Scheme
-	Owner          string
+	Kubeadm       LinodeClientKubeadm
+	Client        client.Client
+	cm            *ClusterManager
+	EventRecorder record.EventRecorder
+	Scheme        *runtime.Scheme
 }
 
 func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
 	return &MachineActuator{
-		ctx:           params.Ctx,
-		conn:          params.CloudConnector,
+		cm:            params.cm,
 		client:        params.Client,
 		kubeadm:       getKubeadm(params),
 		eventRecorder: params.EventRecorder,
 		scheme:        params.Scheme,
-		owner:         params.Owner,
+		//owner:         params.Owner,
 		//machineSetupConfigGetter: MachineSetup(params.Ctx),
 	}
 }
@@ -93,10 +85,7 @@ func (li *MachineActuator) Create(ctx context.Context, cluster *clusterv1.Cluste
 		return errors.Wrapf(err, "failed to valide machine config for machien %s", machine.Name)
 	}
 
-	if li.conn, err = PrepareCloud(li.ctx, cluster.Name, li.owner); err != nil {
-		return errors.Wrapf(err, "failed to prepare cloud")
-	}
-	exists, err := li.Exists(li.ctx, cluster, machine)
+	exists, err := li.Exists(context.Background(), cluster, machine)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check existance of machine %s", machine.Name)
 	}
@@ -111,18 +100,18 @@ func (li *MachineActuator) Create(ctx context.Context, cluster *clusterv1.Cluste
 			return errors.Wrap(err, "failed to generate kubeadm token")
 		}
 
-		script, err := cloud.RenderStartupScript(cm, machine, token, customTemplate)
+		script, err := cloud.RenderStartupScript(li.cm, machine, token, customTemplate)
 		if err != nil {
 			return err
 		}
 
-		server, err := li.conn.CreateInstance(machine, script)
+		server, err := li.cm.conn.CreateInstance(machine, script)
 		if err != nil {
 			return errors.Wrap(err, "failed to create instance")
 		}
 
 		if util.IsControlPlaneMachine(machine) {
-			if err = li.conn.addNodeToBalancer(li.conn.namer.LoadBalancerName(), machine.Name, server.PrivateIP); err != nil {
+			if err = li.cm.conn.addNodeToBalancer(li.cm.conn.namer.LoadBalancerName(), machine.Name, server.PrivateIP); err != nil {
 				return errors.Wrap(err, "failed to add machine to load balancer")
 			}
 		}
@@ -175,15 +164,9 @@ func (li *MachineActuator) getKubeadmToken() (string, error) {
 func (li *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	log.Infof("deleting machine %s", machine.Name)
 
-	clusterName := cluster.Name
-	if _, found := machine.Labels[clusterv1.MachineClusterLabelName]; found {
-		clusterName = machine.Labels[clusterv1.MachineClusterLabelName]
-	}
 	var err error
-	if li.conn, err = PrepareCloud(li.ctx, clusterName, li.owner); err != nil {
-		return errors.Wrapf(err, "failed to prepare cloud")
-	}
-	instance, err := li.conn.instanceIfExists(machine)
+
+	instance, err := li.cm.conn.instanceIfExists(machine)
 	if err != nil {
 		log.Infof("skipping error: %v", err)
 	}
@@ -193,7 +176,7 @@ func (li *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster,
 	}
 	instanceID := fmt.Sprintf("linode://%v", instance.ID)
 
-	if err = li.conn.DeleteInstanceByProviderID(instanceID); err != nil {
+	if err = li.cm.conn.DeleteInstanceByProviderID(instanceID); err != nil {
 		log.Infof("errror on deleting %v", err)
 	}
 
@@ -205,12 +188,7 @@ func (li *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster,
 
 func (li *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
 	log.Infof("updating machine %s", goalMachine.Name)
-
 	var err error
-	li.conn, err = PrepareCloud(li.ctx, cluster.Name, li.owner)
-	if err != nil {
-		return errors.Wrap(err, "failed to prepare cloud")
-	}
 
 	goalConfig, err := linodeconfig.MachineConfigFromProviderSpec(goalMachine.Spec.ProviderSpec)
 	if err != nil {
@@ -221,14 +199,14 @@ func (li *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		return errors.Wrap(err, "failed to validate machine")
 	}
 
-	exists, err := li.Exists(li.ctx, cluster, goalMachine)
+	exists, err := li.Exists(context.Background(), cluster, goalMachine)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check existance of machine %s", goalMachine.Name)
 	}
 
 	if !exists {
 		log.Infof("vm not found, creating vm for machine %q", goalMachine.Name)
-		return li.Create(li.ctx, cluster, goalMachine)
+		return li.Create(context.Background(), cluster, goalMachine)
 	}
 
 	sm := cloud.NewStatusManager(li.client, li.scheme)
@@ -253,11 +231,11 @@ func (li *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		return errors.Wrap(err, "failed to get pharmercluster")
 	}
 
-	kc, err := cloud.GetKubernetesClient(li.ctx, pharmerCluster, li.owner)
+	kc, err := cloud.GetKubernetesClient(li.cm, pharmerCluster)
 	if err != nil {
 		return errors.Wrap(err, "failed to get kubeclient")
 	}
-	upm := cloud.NewUpgradeManager(li.ctx, kc, li.conn.cluster, li.owner)
+	upm := cloud.NewUpgradeManager(kc, li.cm.Cluster)
 	if util.IsControlPlaneMachine(currentMachine) {
 		if currentMachine.Spec.Versions.ControlPlane != goalMachine.Spec.Versions.ControlPlane {
 			log.Infof("Doing an in-place upgrade for master.\n")
@@ -283,16 +261,9 @@ func (li *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 
 func (li *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
 	log.Infof("checking existance of machine %s", machine.Name)
-
-	clusterName := cluster.Name
-	if _, found := machine.Labels[clusterv1.MachineClusterLabelName]; found {
-		clusterName = machine.Labels[clusterv1.MachineClusterLabelName]
-	}
 	var err error
-	if li.conn, err = PrepareCloud(li.ctx, clusterName, li.owner); err != nil {
-		return false, errors.Wrapf(err, "failed to prepare pharmer cloud")
-	}
-	i, err := li.conn.instanceIfExists(machine)
+
+	i, err := li.cm.conn.instanceIfExists(machine)
 	if err != nil {
 		log.Infof("error checking machine existance: %v", err)
 		return false, nil
@@ -309,7 +280,7 @@ func getKubeadm(params MachineActuatorParams) LinodeClientKubeadm {
 }
 
 func (li *MachineActuator) updateMachineStatus(machine *clusterv1.Machine) error {
-	vm, err := li.conn.instanceIfExists(machine)
+	vm, err := li.cm.conn.instanceIfExists(machine)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check existance of machine %s", machine.Name)
 	}
@@ -328,7 +299,7 @@ func (li *MachineActuator) updateMachineStatus(machine *clusterv1.Machine) error
 	}
 	machine.Status.ProviderStatus = raw
 
-	if err := li.client.Status().Update(li.ctx, machine); err != nil {
+	if err := li.client.Status().Update(context.Background(), machine); err != nil {
 		return errors.Wrapf(err, "failed to update provider status for machine %s", machine.Name)
 	}
 

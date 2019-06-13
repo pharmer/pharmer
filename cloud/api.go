@@ -1,8 +1,6 @@
 package cloud
 
 import (
-	"context"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
@@ -27,7 +25,7 @@ type Interface interface {
 	InitializeMachineActuator(mgr manager.Manager) error
 
 	// TODO: review: its common across all providers
-	AddToManager(ctx context.Context, m manager.Manager) error
+	AddToManager(m manager.Manager) error
 
 	SSHGetter
 	ProviderKubeConfig

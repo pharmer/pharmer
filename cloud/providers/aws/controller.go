@@ -10,6 +10,6 @@ import (
 var AddToManagerFuncs []func(context.Context, manager.Manager) error
 
 // AddToManager adds all Controllers to the Manager
-func (cm *ClusterManager) AddToManager(ctx context.Context, m manager.Manager) error {
+func (cm *ClusterManager) AddToManager(m manager.Manager) error {
 	return nil
 }
