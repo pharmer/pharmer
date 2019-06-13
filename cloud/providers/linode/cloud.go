@@ -24,13 +24,14 @@ import (
 var errLBNotFound = errors.New("loadbalancer not found")
 
 type cloudConnector struct {
-	ctx     context.Context
-	cluster *api.Cluster
-	client  *linodego.Client
-	namer   namer
+	*CloudManager
+	namer  namer
+	client *linodego.Client
 }
 
-func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
+func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
+	cluster := cm.Cluster
+
 	cred, err := store.StoreProvider.Credentials().Get(cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
@@ -53,42 +54,41 @@ func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*clo
 	c := linodego.NewClient(oauth2Client)
 
 	return &cloudConnector{
-		ctx:     ctx,
-		cluster: cluster,
-		namer:   namer,
-		client:  &c,
+		CloudManager: cm.CloudManager,
+		namer:        namer,
+		client:       &c,
 	}, nil
 }
 
-func PrepareCloud(ctx context.Context, clusterName string, owner string) (*cloudConnector, error) {
-	var err error
-	var conn *cloudConnector
-	cluster, err := store.StoreProvider.Clusters().Get(clusterName)
-	if err != nil {
-		return conn, fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
-	}
-
-	//if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
-	//	return conn, err
-	//}
-	//
-	//if ctx, err = LoadEtcdCertificate(ctx, cluster, owner); err != nil {
-	//	return nil, err
-	//}
-	//
-	//if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
-	//	return conn, err
-	//}
-	//
-	//if ctx, err = LoadSaKey(ctx, cluster, owner); err != nil {
-	//	return conn, err
-	//}
-
-	if conn, err = NewConnector(ctx, cluster, owner); err != nil {
-		return nil, err
-	}
-	return conn, nil
-}
+//func PrepareCloud(ctx context.Context, clusterName string, owner string) (*cloudConnector, error) {
+//	var err error
+//	var conn *cloudConnector
+//	cluster, err := store.StoreProvider.Clusters().Get(clusterName)
+//	if err != nil {
+//		return conn, fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
+//	}
+//
+//	if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
+//		return conn, err
+//	}
+//
+//	if ctx, err = LoadEtcdCertificate(ctx, cluster, owner); err != nil {
+//		return nil, err
+//	}
+//
+//	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
+//		return conn, err
+//	}
+//
+//	if ctx, err = LoadSaKey(ctx, cluster, owner); err != nil {
+//		return conn, err
+//	}
+//
+//	if conn, err = NewConnector(cm); err != nil {
+//		return nil, err
+//	}
+//	return conn, nil
+//}
 
 func (conn *cloudConnector) DetectInstanceImage() (string, error) {
 	filter := `{"label":"Ubuntu 16.04 LTS"}`
@@ -109,7 +109,7 @@ func (conn *cloudConnector) DetectInstanceImage() (string, error) {
 }
 
 func (conn *cloudConnector) DetectKernel() (string, error) {
-	kernels, err := conn.client.ListKernels(conn.ctx, nil)
+	kernels, err := conn.client.ListKernels(context.Background(), nil)
 	if err != nil {
 		return "", err
 	}
@@ -220,8 +220,8 @@ func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine
 	} else if len(scripts) == 0 {
 		createOpts := linodego.StackscriptCreateOptions{
 			Label:       scriptName,
-			Description: fmt.Sprintf("Startup script for NodeGroup %s of Cluster %s", machine.Name, conn.cluster.Name),
-			Images:      []string{conn.cluster.ClusterConfig().Cloud.InstanceImage},
+			Description: fmt.Sprintf("Startup script for NodeGroup %s of Cluster %s", machine.Name, conn.Cluster.Name),
+			Images:      []string{conn.Cluster.ClusterConfig().Cloud.InstanceImage},
 			Script:      script,
 		}
 		stackScript, err := conn.client.CreateStackscript(context.Background(), createOpts)
@@ -275,17 +275,17 @@ func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, script st
 	}
 	createOpts := linodego.InstanceCreateOptions{
 		Label:    machine.Name,
-		Region:   conn.cluster.ClusterConfig().Cloud.Zone,
+		Region:   conn.Cluster.ClusterConfig().Cloud.Zone,
 		Type:     machineConfig.Type,
-		RootPass: conn.cluster.ClusterConfig().Cloud.Linode.RootPassword,
+		RootPass: conn.Cluster.ClusterConfig().Cloud.Linode.RootPassword,
 		AuthorizedKeys: []string{
-			string(SSHKey(conn.ctx).PublicKey),
+			string(conn.Certs.SSHKey.PublicKey),
 		},
 		StackScriptData: map[string]string{
 			"hostname": machine.Name,
 		},
 		StackScriptID:  scriptId,
-		Image:          conn.cluster.ClusterConfig().Cloud.InstanceImage,
+		Image:          conn.Cluster.ClusterConfig().Cloud.InstanceImage,
 		BackupsEnabled: false,
 		PrivateIP:      true,
 		SwapSize:       types.IntP(0),
@@ -342,7 +342,7 @@ func instanceIDFromProviderID(providerID string) (int, error) {
 }
 
 func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*linodego.Instance, error) {
-	lds, err := conn.client.ListInstances(conn.ctx, nil)
+	lds, err := conn.client.ListInstances(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +356,7 @@ func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*linod
 }
 
 func (conn *cloudConnector) createLoadBalancer(name string) (*linodego.NodeBalancer, error) {
-	lb, err := conn.lbByName(conn.ctx, name)
+	lb, err := conn.lbByName(name)
 	if err != nil {
 		if err == errLBNotFound {
 			ip, err := conn.buildLoadBalancerRequest(name)
@@ -371,8 +371,8 @@ func (conn *cloudConnector) createLoadBalancer(name string) (*linodego.NodeBalan
 
 }
 
-func (conn *cloudConnector) lbByName(ctx context.Context, name string) (*linodego.NodeBalancer, error) {
-	lbs, err := conn.client.ListNodeBalancers(ctx, nil)
+func (conn *cloudConnector) lbByName(name string) (*linodego.NodeBalancer, error) {
+	lbs, err := conn.client.ListNodeBalancers(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -392,7 +392,7 @@ func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*linodego.N
 		return nil, err
 	}
 
-	nb, err := conn.client.GetNodeBalancer(conn.ctx, lb)
+	nb, err := conn.client.GetNodeBalancer(context.Background(), lb)
 	if err != nil {
 		return nil, err
 	}
@@ -410,7 +410,7 @@ func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*linodego.N
 
 func (conn *cloudConnector) createNodeBalancerConfig(nbId int) (int, error) {
 	tr := true
-	resp, err := conn.client.CreateNodeBalancerConfig(conn.ctx, nbId, linodego.NodeBalancerConfigCreateOptions{
+	resp, err := conn.client.CreateNodeBalancerConfig(context.Background(), nbId, linodego.NodeBalancerConfigCreateOptions{
 		Port:          api.DefaultKubernetesBindPort,
 		Protocol:      linodego.ProtocolTCP,
 		Algorithm:     linodego.AlgorithmLeastConn,
@@ -427,17 +427,17 @@ func (conn *cloudConnector) createNodeBalancerConfig(nbId int) (int, error) {
 	return resp.ID, nil
 }
 func (conn *cloudConnector) addNodeToBalancer(lbName string, nodeName, ip string) error {
-	lb, err := conn.lbByName(conn.ctx, lbName)
+	lb, err := conn.lbByName(lbName)
 	if err != nil {
 		return err
 	}
 
-	lbcs, err := conn.client.ListNodeBalancerConfigs(conn.ctx, lb.ID, nil)
+	lbcs, err := conn.client.ListNodeBalancerConfigs(context.Background(), lb.ID, nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = conn.client.CreateNodeBalancerNode(conn.ctx, lb.ID, lbcs[0].ID, linodego.NodeBalancerNodeCreateOptions{
+	_, err = conn.client.CreateNodeBalancerNode(context.Background(), lb.ID, lbcs[0].ID, linodego.NodeBalancerNodeCreateOptions{
 		Address: fmt.Sprintf("%v:%v", ip, api.DefaultKubernetesBindPort),
 		Label:   nodeName,
 		Weight:  100,
@@ -454,9 +454,9 @@ func (conn *cloudConnector) addNodeToBalancer(lbName string, nodeName, ip string
 
 func (conn *cloudConnector) createNodeBalancer(name string) (int, error) {
 	connThrottle := 20
-	resp, err := conn.client.CreateNodeBalancer(conn.ctx, linodego.NodeBalancerCreateOptions{
+	resp, err := conn.client.CreateNodeBalancer(context.Background(), linodego.NodeBalancerCreateOptions{
 		Label:              &name,
-		Region:             conn.cluster.ClusterConfig().Cloud.Zone,
+		Region:             conn.Cluster.ClusterConfig().Cloud.Zone,
 		ClientConnThrottle: &connThrottle,
 	})
 	if err != nil {
@@ -466,12 +466,12 @@ func (conn *cloudConnector) createNodeBalancer(name string) (int, error) {
 }
 
 func (conn *cloudConnector) deleteLoadBalancer(lbName string) error {
-	lb, err := conn.lbByName(conn.ctx, lbName)
+	lb, err := conn.lbByName(lbName)
 	if err != nil {
 		return err
 	}
 
-	return conn.client.DeleteNodeBalancer(conn.ctx, lb.ID)
+	return conn.client.DeleteNodeBalancer(context.Background(), lb.ID)
 }
 
 /*func (conn *cloudConnector) loadBalancerUpdated(lb *godo.LoadBalancer) (bool, error) {

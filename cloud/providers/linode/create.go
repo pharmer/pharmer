@@ -13,6 +13,7 @@ import (
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -20,7 +21,7 @@ func (cm *ClusterManager) SetOwner(owner string) {
 	cm.owner = owner
 }
 
-func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (v1alpha1.ProviderSpec, error) {
 	roles := []api.MachineRole{api.NodeMachineRole}
 	if sku == "" {
 		sku = "g6-standard-2"
@@ -57,7 +58,8 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
+func (cm *ClusterManager) SetDefaultCluster() error {
+	cluster := cm.Cluster
 	config := cluster.Spec.Config
 
 	config.Cloud.InstanceImage = "linode/ubuntu16.04lts"
@@ -70,7 +72,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 		Phase: api.ClusterPending,
 	}
 
-	return linodeconfig.SetLinodeClusterProviderConfig(cluster.Spec.ClusterAPI)
+	return linodeconfig.SetLinodeClusterProviderConfig(cluster)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
