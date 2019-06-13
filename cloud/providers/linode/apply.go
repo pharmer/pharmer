@@ -3,62 +3,31 @@ package linode
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/appscode/go/log"
-	. "github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
-	"github.com/pkg/errors"
-	core "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-// Creates network, and creates ready master(s)
-func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
-	lb, err := cm.conn.lbByName(cm.ctx, cm.namer.LoadBalancerName())
-	if err == errLBNotFound {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Load Balancer",
-			Message:  fmt.Sprintf("Load Balancer will be created"),
-		})
-		lb, err = cm.conn.createLoadBalancer(cm.namer.LoadBalancerName())
-		if err != nil {
-			return
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Load Balancer",
-			Message:  fmt.Sprintf("Load Balancer %q found", *lb.Label),
-		})
-	}
-
-	cm.cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
-		IP:   *lb.IPv4,
-		Port: api.DefaultKubernetesBindPort,
-	}
-	cm.conn.cluster = cm.cluster
-
-	var machines []*clusterv1.Machine
-	machines, err = store.StoreProvider.Machine(cm.cluster.Name).List(metav1.ListOptions{})
+func (cm *ClusterManager) EnsureMaster(acts []api.Action, dryRun bool) ([]api.Action, error) {
+	leaderMachine, err := GetLeaderMachine(cm.Cluster)
 	if err != nil {
-		return
+		return acts, err
 	}
 
-	leaderMachine, err := GetLeaderMachine(cm.cluster)
-	if err != nil {
-		return
-	}
 	acts = append(acts, api.Action{
 		Action:   api.ActionAdd,
 		Resource: "Master startup script",
 		Message:  "Startup script will be created/updated for master instance",
 	})
+
 	if !dryRun {
 		script, err := RenderStartupScript(cm, leaderMachine, "", customTemplate)
 		if err != nil {
@@ -66,9 +35,10 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		}
 
 		if _, err = cm.conn.createOrUpdateStackScript(leaderMachine, script); err != nil {
-			return
+			return acts, err
 		}
 	}
+
 	if d, _ := cm.conn.instanceIfExists(leaderMachine); d == nil {
 		log.Info("Creating master instance")
 		acts = append(acts, api.Action{
@@ -78,16 +48,16 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		})
 		if !dryRun {
 			var masterServer *api.NodeInfo
-			nodeAddresses := make([]core.NodeAddress, 0)
-			if cm.cluster.Status.Cloud.LoadBalancer.DNS != "" {
-				nodeAddresses = append(nodeAddresses, core.NodeAddress{
-					Type:    core.NodeExternalDNS,
-					Address: cm.cluster.Status.Cloud.LoadBalancer.DNS,
+			nodeAddresses := make([]corev1.NodeAddress, 0)
+			if cm.Cluster.Status.Cloud.LoadBalancer.DNS != "" {
+				nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
+					Type:    corev1.NodeExternalDNS,
+					Address: cm.Cluster.Status.Cloud.LoadBalancer.DNS,
 				})
-			} else if cm.cluster.Status.Cloud.LoadBalancer.IP != "" {
-				nodeAddresses = append(nodeAddresses, core.NodeAddress{
-					Type:    core.NodeExternalIP,
-					Address: cm.cluster.Status.Cloud.LoadBalancer.IP,
+			} else if cm.Cluster.Status.Cloud.LoadBalancer.IP != "" {
+				nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
+					Type:    corev1.NodeExternalIP,
+					Address: cm.Cluster.Status.Cloud.LoadBalancer.IP,
 				})
 			}
 
@@ -98,15 +68,15 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 
 			masterServer, err = cm.conn.CreateInstance(leaderMachine, script)
 			if err != nil {
-				return
+				return acts, err
 			}
 
-			if err = cm.conn.addNodeToBalancer(*lb.Label, leaderMachine.Name, masterServer.PrivateIP); err != nil {
-				return
+			if err = cm.conn.addNodeToBalancer(cm.namer.LoadBalancerName(), leaderMachine.Name, masterServer.PrivateIP); err != nil {
+				return acts, err
 			}
 
-			if err = cm.cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
-				return
+			if err = cm.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
+				return acts, err
 			}
 		} else {
 			acts = append(acts, api.Action{
@@ -115,81 +85,55 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 				Message:  "master instance(s) already exist",
 			})
 		}
-		if _, err = store.StoreProvider.Clusters().Update(cm.cluster); err != nil {
-			return
-		}
-	}
-	var kc kubernetes.Interface
-	kc, err = cm.GetAdminClient()
-	if err != nil {
-		return
-	}
-	// wait for nodes to start
-	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
-		return
-	}
-
-	// create necessary credentials
-	err = cm.createSecrets(kc)
-	if err != nil {
-		return acts, errors.Wrapf(err, "failed to create secrets")
-	}
-
-	ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, nil)
-	if err != nil {
-		return acts, err
-	}
-	if err := ca.Apply(ControllerManager); err != nil {
-		return acts, err
-	}
-
-	log.Infof("Adding other master machines")
-	client, err := GetClusterClient(cm.ctx, cm.cluster)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, m := range machines {
-		if m.Name == leaderMachine.Name {
-			continue
-		}
-		if _, err := client.ClusterV1alpha1().Machines(cm.cluster.Spec.ClusterAPI.Namespace).Create(m); err != nil && !api.ErrAlreadyExist(err) && !api.ErrObjectModified(err) {
-			log.Infof("Error creating maching %q in namespace %q", m.Name, cm.cluster.Spec.ClusterAPI.Namespace)
+		if _, err = store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
 			return acts, err
 		}
 	}
 
-	cm.cluster.Status.Phase = api.ClusterReady
-	if _, err = store.StoreProvider.Clusters().UpdateStatus(cm.cluster); err != nil {
-		return
+	return acts, nil
+}
+
+func (cm *ClusterManager) PrepareCloud(dryRun bool) ([]api.Action, error) {
+	var acts []api.Action
+
+	lb, err := cm.conn.lbByName(cm.namer.LoadBalancerName())
+
+	if err != nil {
+		acts = append(acts, api.Action{
+			Action:   api.ActionAdd,
+			Resource: "Load Balancer",
+			Message:  fmt.Sprintf("Load Balancer will be created"),
+		})
+
+		lb, err = cm.conn.createLoadBalancer(cm.namer.LoadBalancerName())
+		if err != nil {
+			return acts, err
+		}
+	}
+
+	acts = append(acts, api.Action{
+		Action:   api.ActionAdd,
+		Resource: "Load Balancer",
+		Message:  fmt.Sprintf("Load Balancer %q found", *lb.Label),
+	})
+
+	cm.Cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
+		IP:   *lb.IPv4,
+		Port: api.DefaultKubernetesBindPort,
+	}
+
+	nodeAddresses := []corev1.NodeAddress{
+		{
+			Type:    corev1.NodeExternalIP,
+			Address: cm.Cluster.Status.Cloud.LoadBalancer.IP,
+		},
+	}
+
+	if err = cm.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
+		return acts, errors.Wrap(err, "Error setting controlplane endpoints")
 	}
 
 	return acts, err
-}
-
-// createSecrets creates all the secrets necessary for creating a cluster
-// it creates credential for ccm, pharmer-flex, pharmer-provisioner
-func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
-	// create secret for pharmer-flex and provisioner
-	err := CreateCredentialSecret(kc, cm.cluster, cm.cluster.Namespace)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create credential for pharmer-flex")
-	}
-
-	// create ccm secret
-	cred, err := store.StoreProvider.Credentials().Get(cm.cluster.Spec.Config.CredentialName)
-	if err != nil {
-		return err
-	}
-
-	err = CreateSecret(kc, "ccm-linode", metav1.NamespaceSystem, map[string][]byte{
-		"apiToken": []byte(cred.Spec.Data["token"]),
-		"region":   []byte(cm.cluster.ClusterConfig().Cloud.Region),
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create ccm-secret")
-	}
-	return nil
 }
 
 //Deletes master(s) and releases other cloud resources
@@ -199,7 +143,7 @@ func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error
 	if err != nil {
 		return
 	}
-	var nodeInstances *core.NodeList
+	var nodeInstances *corev1.NodeList
 	nodeInstances, err = kc.CoreV1().Nodes().List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			api.RoleNodeKey: "",
@@ -220,7 +164,7 @@ func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error
 		}
 	}
 
-	var masterInstances *core.NodeList
+	var masterInstances *corev1.NodeList
 	masterInstances, err = kc.CoreV1().Nodes().List(metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			api.RoleMasterKey: "",
@@ -232,7 +176,7 @@ func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error
 		acts = append(acts, api.Action{
 			Action:   api.ActionDelete,
 			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("Will delete master instance with name %v-master", cm.cluster.Name),
+			Message:  fmt.Sprintf("Will delete master instance with name %v-master", cm.Cluster.Name),
 		})
 		if !dryRun {
 			for _, mi := range masterInstances.Items {
@@ -249,7 +193,7 @@ func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error
 		}
 	}
 
-	_, err = cm.conn.lbByName(cm.ctx, cm.namer.LoadBalancerName())
+	_, err = cm.conn.lbByName(cm.namer.LoadBalancerName())
 	if err == errLBNotFound {
 		acts = append(acts, api.Action{
 			Action:   api.ActionNOP,
@@ -270,12 +214,12 @@ func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error
 		})
 	}
 
-	cm.cluster.Status.Phase = api.ClusterDeleted
-	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.cluster)
+	cm.Cluster.Status.Phase = api.ClusterDeleted
+	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
 		return
 	}
 
-	log.Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
+	log.Infof("Cluster %v deletion is deleted successfully", cm.Cluster.Name)
 	return
 }
