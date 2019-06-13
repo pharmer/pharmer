@@ -17,11 +17,9 @@ import (
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) SetOwner(owner string) {
-	cm.owner = owner
-}
-
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (v1alpha1.ProviderSpec, error) {
+	cluster := cm.Cluster
+
 	roles := []api.MachineRole{api.NodeMachineRole}
 	if sku == "" {
 		sku = "g6-standard-2"
@@ -67,12 +65,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 		RootPassword: rand.GeneratePassword(),
 	}
 
-	// Init status
-	cluster.Status = api.PharmerClusterStatus{
-		Phase: api.ClusterPending,
-	}
-
-	return linodeconfig.SetLinodeClusterProviderConfig(cluster)
+	return linodeconfig.SetLinodeClusterProviderConfig(&cluster.Spec.ClusterAPI)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
@@ -81,7 +74,7 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
 	cfg := &api.SSHConfig{
-		PrivateKey: SSHKey(cm.ctx).PrivateKey,
+		PrivateKey: cm.Certs.SSHKey.PrivateKey,
 		User:       "root",
 		HostPort:   int32(22),
 	}
