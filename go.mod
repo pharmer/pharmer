@@ -6,10 +6,15 @@ require (
 	github.com/Azure/azure-sdk-for-go v29.0.0+incompatible
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Azure/go-autorest v12.0.0+incompatible
+	github.com/Masterminds/glide v0.13.2 // indirect
+	github.com/Masterminds/semver v1.4.2 // indirect
+	github.com/Masterminds/vcs v1.13.0 // indirect
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b // indirect
 	github.com/appscode/go v0.0.0-20190523031839-1468ee3a76e8
 	github.com/armon/go-metrics v0.0.0-20190430140413-ec5e00d3c878 // indirect
 	github.com/aws/aws-sdk-go v1.19.31
+	github.com/bmatcuk/doublestar v1.1.1 // indirect
+	github.com/codegangsta/cli v1.20.0 // indirect
 	github.com/creack/goselect v0.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3 // indirect
@@ -57,14 +62,16 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.3 // indirect
 	github.com/prometheus/common v0.4.1 // indirect
+	github.com/sgotti/glide-vc v0.1.0 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/spf13/cobra v0.0.4
 	github.com/spf13/pflag v1.0.3
 	github.com/ziutek/mymysql v1.5.4 // indirect
-	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f
-	golang.org/x/net v0.0.0-20190514140710-3ec191127204
+	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
+	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
-	golang.org/x/sys v0.0.0-20190516110030-61b9204099cb // indirect
+	golang.org/x/sys v0.0.0-20190613124609-5ed2794edfdc // indirect
+	golang.org/x/tools v0.0.0-20190613204242-ed0dc450797f // indirect
 	gomodules.xyz/cert v1.0.0
 	gomodules.xyz/version v0.0.0-20190507203204-7cec7ee542d3
 	google.golang.org/api v0.5.0

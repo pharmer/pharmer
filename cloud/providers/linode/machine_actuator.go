@@ -31,6 +31,7 @@ func init() {
 			EventRecorder: m.GetEventRecorderFor(Recorder),
 			Client:        m.GetClient(),
 			Scheme:        m.GetScheme(),
+			cm:            cm,
 		})
 		return machine.AddWithActuator(m, actuator)
 	})
@@ -97,16 +98,19 @@ func (li *MachineActuator) Create(ctx context.Context, cluster *clusterv1.Cluste
 
 		token, err := li.getKubeadmToken()
 		if err != nil {
+			log.Infof("failed to generate kubeadm token: %v", err)
 			return errors.Wrap(err, "failed to generate kubeadm token")
 		}
 
 		script, err := cloud.RenderStartupScript(li.cm, machine, token, customTemplate)
 		if err != nil {
+			log.Infof("failed to render st script: %v", err)
 			return err
 		}
 
 		server, err := li.cm.conn.CreateInstance(machine, script)
 		if err != nil {
+			log.Infof("failed to create instance: %v", err)
 			return errors.Wrap(err, "failed to create instance")
 		}
 

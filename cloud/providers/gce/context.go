@@ -3,10 +3,9 @@ package gce
 import (
 	"errors"
 
-	"k8s.io/client-go/kubernetes"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 

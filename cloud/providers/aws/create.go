@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"net"
 
-	"gomodules.xyz/cert"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
+	"gomodules.xyz/cert"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -61,6 +60,9 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 	cluster.Spec.Config.Cloud.AWS.VpcCIDR = "10.0.0.0/16"
 	cluster.Spec.Config.Cloud.AWS.PublicSubnetCIDR = "10.0.1.0/24"
 	cluster.Spec.Config.Cloud.AWS.PrivateSubnetCIDR = "10.0.0.0/24"
+	cluster.Spec.Config.APIServerExtraArgs = map[string]string{
+		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
+	}
 
 	// Init status
 	cluster.Status = api.PharmerClusterStatus{

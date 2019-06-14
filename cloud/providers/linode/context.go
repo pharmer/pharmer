@@ -1,11 +1,10 @@
 package linode
 
 import (
-	"github.com/pharmer/pharmer/store"
-	"github.com/pkg/errors"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
@@ -20,7 +19,7 @@ type ClusterManager struct {
 }
 
 func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
-	err := CreateCredentialSecret(kc, cm.Cluster, cm.Cluster.Namespace)
+	err := CreateCredentialSecret(kc, cm.Cluster, metav1.NamespaceSystem)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create credential for pharmer-flex")
 	}

@@ -50,8 +50,7 @@ func (cm *ClusterManager) NewMasterTemplateData(machine *clusterapi.Machine, tok
 		MountPath: "/etc/kubernetes/ccm",
 	}
 
-	cfg := GetDefaultKubeadmClusterConfig(cm.Cluster, hostPath)
-	td.ControlPlaneEndpointsFromLB(cfg, cm.Cluster)
+	cfg := GetDefaultKubeadmClusterConfig(cm.Cluster, &hostPath)
 	td.ClusterConfiguration = cfg
 
 	return td

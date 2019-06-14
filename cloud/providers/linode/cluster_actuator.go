@@ -45,6 +45,7 @@ func NewClusterActuator(m manager.Manager, params ClusterActuatorParams) *Cluste
 		client:        m.GetClient(),
 		eventRecorder: params.EventRecorder,
 		scheme:        params.Scheme,
+		cm:            params.cm,
 	}
 }
 

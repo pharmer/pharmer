@@ -121,7 +121,7 @@ func setDefaultCluster(cluster *api.Cluster) error {
 			string(core.NodeExternalDNS),
 			string(core.NodeExternalIP),
 		}, ","),
-		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
+		//"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
 	}
 
 	config.Cloud.Region = cluster.Spec.Config.Cloud.Zone[0 : len(cluster.Spec.Config.Cloud.Zone)-1]

@@ -2,7 +2,6 @@ package linode
 
 import (
 	. "github.com/pharmer/pharmer/cloud"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -20,9 +19,7 @@ func (cm *ClusterManager) NewNodeTemplateData(machine *clusterapi.Machine, token
 }
 
 func (cm *ClusterManager) NewMasterTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData {
-	hostPath := kubeadmapi.HostPathMount{}
-
-	td.ClusterConfiguration = GetDefaultKubeadmClusterConfig(cm.Cluster, hostPath)
+	td.ClusterConfiguration = GetDefaultKubeadmClusterConfig(cm.Cluster, nil)
 
 	return td
 }

@@ -70,6 +70,9 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 		"cloud-config":   "/etc/kubernetes/ccm/cloud-config",
 		"cloud-provider": config.Cloud.CloudProvider,
 	}
+	cluster.Spec.Config.APIServerExtraArgs = map[string]string{
+		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
+	}
 
 	if cluster.Spec.ClusterAPI.ObjectMeta.Annotations == nil {
 		cluster.Spec.ClusterAPI.ObjectMeta.Annotations = make(map[string]string)

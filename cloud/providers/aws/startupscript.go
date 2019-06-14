@@ -22,13 +22,12 @@ func (cm *ClusterManager) NewMasterTemplateData(machine *clusterapi.Machine, tok
 		MountPath: "/etc/kubernetes/ccm",
 	}
 
-	cfg := GetDefaultKubeadmClusterConfig(cm.Cluster, hostPath)
+	cfg := GetDefaultKubeadmClusterConfig(cm.Cluster, &hostPath)
 
 	cfg.ControllerManager.ExtraArgs = map[string]string{
 		"cloud-provider": cm.Cluster.Spec.Config.Cloud.CloudProvider,
 	}
 
-	td.ControlPlaneEndpointsFromLB(cfg, cm.Cluster)
 	td.ClusterConfiguration = cfg
 
 	return td

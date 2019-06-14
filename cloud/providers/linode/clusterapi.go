@@ -49,6 +49,7 @@ spec:
       - args:
         - controller
         - --provider={{ .Provider }}
+        - --cluster-name={{ .ClusterName }}
         - --kubeconfig=/etc/kubernetes/admin.conf
         env:
         image: {{ .ControllerImage }}
@@ -68,13 +69,13 @@ spec:
         - name: sshkeys
           mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/ssh
         - name: certificates
-          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters/{{ .ClusterName }}/pki
+          mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/pki
         - name: cluster
-          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters
+          mountPath: /root/.pharmer/store.d/clusters
         - name: credential
-          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/credentials
+          mountPath: /root/.pharmer/store.d/credentials
         - name: etcd-certs
-          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters/{{ .ClusterName }}/pki/etcd
+          mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/pki/etcd
       terminationGracePeriodSeconds: 10
       tolerations:
       - effect: NoSchedule

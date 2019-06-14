@@ -20,7 +20,7 @@ type Interface interface {
 
 	CreateCredentials(kc kubernetes.Interface) error
 
-	GetConnector() ClusterApiProviderComponent
+	//GetConnector() ClusterApiProviderComponent
 
 	InitializeMachineActuator(mgr manager.Manager) error
 

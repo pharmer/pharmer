@@ -85,7 +85,7 @@ func (cm *ClusterManager) NewMasterTemplateData(machine *clusterapi.Machine, tok
 		MountPath: "/etc/kubernetes/azure.json",
 	}
 
-	td.ClusterConfiguration = GetDefaultKubeadmClusterConfig(cm.Cluster, hostPath)
+	td.ClusterConfiguration = GetDefaultKubeadmClusterConfig(cm.Cluster, &hostPath)
 
 	return td
 }

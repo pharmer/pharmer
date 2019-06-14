@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"text/template"
 
-	"github.com/pharmer/pharmer/store"
-	"k8s.io/client-go/kubernetes"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
+	"k8s.io/client-go/kubernetes"
 )
 
 type ClusterManager struct {

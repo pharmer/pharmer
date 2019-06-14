@@ -58,7 +58,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 
 func (cm *ClusterManager) SetDefaultCluster() error {
 	cluster := cm.Cluster
-	config := cluster.Spec.Config
+	config := &cluster.Spec.Config
 
 	config.Cloud.InstanceImage = "linode/ubuntu16.04lts"
 	config.Cloud.Linode = &api.LinodeSpec{
