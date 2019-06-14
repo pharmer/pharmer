@@ -198,7 +198,8 @@ func GetSSHConfig(nodeName string, cluster *api.Cluster) (*api.SSHConfig, error)
 	return nil, nil
 }
 
-func GetAdminConfig(cm Interface, cluster *api.Cluster) (*api.KubeConfig, error) {
+func GetAdminConfig(cm Interface) (*api.KubeConfig, error) {
+	cluster := cm.GetCluster()
 	if managedProviders.Has(cluster.ClusterConfig().Cloud.CloudProvider) {
 		return cm.GetKubeConfig(cluster)
 	}
@@ -296,7 +297,7 @@ func UpdateSpec(cluster *api.Cluster) (*api.Cluster, error) {
 
 func GetBooststrapClient(cm Interface, cluster *api.Cluster) (clusterclient.Client, error) {
 	clientFactory := clusterclient.NewFactory()
-	kubeConifg, err := GetAdminConfig(cm, cluster)
+	kubeConifg, err := GetAdminConfig(cm)
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +312,7 @@ func GetBooststrapClient(cm Interface, cluster *api.Cluster) (clusterclient.Clie
 }
 
 func GetKubernetesClient(cm Interface, cluster *api.Cluster) (kubernetes.Interface, error) {
-	kubeConifg, err := GetAdminConfig(cm, cluster)
+	kubeConifg, err := GetAdminConfig(cm)
 	if err != nil {
 		return nil, err
 	}

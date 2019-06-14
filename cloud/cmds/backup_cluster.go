@@ -40,7 +40,7 @@ func NewCmdBackup() *cobra.Command {
 					term.Fatalln(err)
 				}
 
-				c2, err := cloud.GetAdminConfig(cm, cluster)
+				c2, err := cloud.GetAdminConfig(cm)
 				if err != nil {
 					term.Fatalln(err)
 				}

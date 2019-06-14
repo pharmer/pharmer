@@ -25,12 +25,9 @@ func NewCmdApply() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			acts, err := cloud.Apply(opts)
+			err = cloud.Apply(opts)
 			if err != nil {
 				log.Fatalln(err)
-			}
-			for _, a := range acts {
-				log.Infoln(a.Action, a.Resource, a.Message)
 			}
 		},
 	}

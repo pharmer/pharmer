@@ -36,7 +36,7 @@ func NewCmdUse() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			kubeconfig, err := cloud.GetAdminConfig(cm, cluster)
+			kubeconfig, err := cloud.GetAdminConfig(cm)
 			if err != nil {
 				log.Fatalln(err)
 			}

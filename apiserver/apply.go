@@ -9,7 +9,7 @@ import (
 )
 
 func ApplyCluster(opt *opts.ApplyConfig, obj *api.Operation) {
-	_, err := Apply(opt)
+	err := Apply(opt)
 	if err != nil {
 		glog.Errorf("err = %v]\n", err)
 		return
