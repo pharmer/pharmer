@@ -57,7 +57,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 	return nil
 }
 
-func (cm *ClusterManager) PrepareCloud(dryRun bool) error {
+func (cm *ClusterManager) PrepareCloud() error {
 	var found bool
 	var err error
 

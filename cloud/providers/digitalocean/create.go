@@ -15,11 +15,8 @@ import (
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) SetOwner(owner string) {
-	cm.owner = owner
-}
-
-func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+	cluster := cm.Cluster
 	if sku == "" {
 		sku = "2gb"
 	}
@@ -60,12 +57,14 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
+func (cm *ClusterManager) SetDefaultCluster() error {
+	cluster := cm.Cluster
+
 	config := cluster.Spec.Config
 
 	config.Cloud.InstanceImage = "ubuntu-18-04-x64"
-	cm.cluster = cluster
-	return doCapi.SetDigitalOceanClusterProviderConfig(cluster.Spec.ClusterAPI)
+
+	return doCapi.SetDigitalOceanClusterProviderConfig(&cluster.Spec.ClusterAPI)
 }
 
 // IsValid TODO: Add Description
