@@ -8,7 +8,9 @@ import (
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/cloud/providers/gce"
 
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	_ "github.com/pharmer/pharmer/cloud/providers/aws"
+	_ "github.com/pharmer/pharmer/cloud/providers/azure"
 	_ "github.com/pharmer/pharmer/cloud/providers/gce"
 	"github.com/pharmer/pharmer/store"
 	_ "github.com/pharmer/pharmer/store/providers/fake"
@@ -36,7 +38,29 @@ func getGCECluster() *api.Cluster {
 	}
 }
 
+func getAzureCluster() *api.Cluster {
+	return &api.Cluster{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "azure-cluster",
+		},
+		Spec: api.PharmerClusterSpec{
+			ClusterAPI: clusterapi.Cluster{},
+			Config: api.ClusterConfig{
+				MasterCount: 3,
+				Cloud: api.CloudSpec{
+					CloudProvider: "azure",
+					Zone:          "us-central-1f",
+				},
+				KubernetesVersion: "v1.14.0",
+				CredentialName:    "azure-cred",
+			},
+		},
+	}
+}
+
 func beforeTestCreate(t *testing.T) store.ResourceInterface {
+	t.Helper()
+
 	// create cluster
 	storage, err := store.NewStoreProvider(nil, "")
 	if err != nil {
@@ -52,10 +76,30 @@ func beforeTestCreate(t *testing.T) store.ResourceInterface {
 		t.Fatalf(err.Error())
 	}
 
+	_, err = storage.Credentials().Create(&cloudapi.Credential{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "azure-cred",
+		},
+		Spec: cloudapi.CredentialSpec{
+			Provider: "azure",
+			Data: map[string]string{
+				"clientID":       "a",
+				"clientSecret":   "b",
+				"subscriptionID": "c",
+				"tenantID":       "d",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
 	return storage
 }
 
 func afterTestCreate(t *testing.T, store store.ResourceInterface) {
+	t.Helper()
+
 	// remove saved object
 	err := store.Clusters().Delete("already-exists")
 	if err != nil {
@@ -64,6 +108,8 @@ func afterTestCreate(t *testing.T, store store.ResourceInterface) {
 }
 
 func checkFilesCreated(t *testing.T, store store.ResourceInterface, cluster *api.Cluster) {
+	t.Helper()
+
 	if store == nil {
 		return
 	}
@@ -212,6 +258,7 @@ func TestCreate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			store.StoreProvider = tt.args.store
 			_, err := cloud.Create(tt.args.store, tt.args.cluster)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)

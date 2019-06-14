@@ -1,70 +1,88 @@
 package azure
 
 import (
-	"context"
-	"sync"
+	"github.com/pharmer/pharmer/store"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type ClusterManager struct {
-	cluster *api.Cluster
-	certs   *PharmerCertificates
+	*cloud.CloudManager
 
-	ctx   context.Context
 	conn  *cloudConnector
 	namer namer
-	m     sync.Mutex
-
-	owner string
 }
 
-var _ Interface = &ClusterManager{}
+var _ cloud.Interface = &ClusterManager{}
 
 const (
 	UID = "azure"
 )
 
 func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+	cloud.RegisterCloudManager(UID, func(cluster *api.Cluster, certs *cloud.PharmerCertificates) cloud.Interface {
 		return New(cluster, certs)
 	})
 }
 
-func New(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+func New(cluster *api.Cluster, certs *cloud.PharmerCertificates) cloud.Interface {
 	return &ClusterManager{
-		cluster: cluster,
-		certs:   certs,
+		CloudManager: &cloud.CloudManager{
+			Cluster: cluster,
+			Certs:   certs,
+		},
+		namer: namer{
+			cluster: cluster,
+		},
 	}
 }
-
-// AddToManager adds all Controllers to the Manager
-func (cm *ClusterManager) AddToManager(ctx context.Context, m manager.Manager) error {
-	return nil
-}
-
-type paramK8sClient struct{}
 
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
+	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.Spec.Config.CredentialName)
+	if err != nil {
+		return err
+	}
+
+	if err := cloud.CreateNamespace(kc, "azure-provider-system"); err != nil {
+		return err
+	}
+
+	data := cred.Spec.Data
+	if err := cloud.CreateSecret(kc, "azure-provider-azure-controller-secrets", "azure-provider-system", map[string][]byte{
+		"client-id":       []byte(data["clientID"]),
+		"client-secret":   []byte(data["clientSecret"]),
+		"subscription-id": []byte(data["subscriptionID"]),
+		"tenant-id":       []byte(data["tenantID"]),
+	}); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
-	cm.m.Lock()
-	defer cm.m.Unlock()
+func (cm *ClusterManager) GetCloudConnector() error {
+	panic("implement me")
+}
 
-	v := cm.ctx.Value(paramK8sClient{})
-	if kc, ok := v.(kubernetes.Interface); ok && kc != nil {
-		return kc, nil
-	}
+func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
+	panic("implement me")
+}
 
-	kc, err := NewAdminClient(cm.ctx, cm.cluster)
-	if err != nil {
-		return nil, err
-	}
-	cm.ctx = context.WithValue(cm.ctx, paramK8sClient{}, kc)
-	return kc, nil
+func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
+	return ClusterAPIComponents, nil
+}
+
+func (cm *ClusterManager) AddToManager(m manager.Manager) error {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
+	panic("implement me")
 }

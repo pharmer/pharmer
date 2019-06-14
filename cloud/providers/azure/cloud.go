@@ -15,16 +15,13 @@ import (
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
-	. "github.com/appscode/go/context"
 	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
 	"github.com/pharmer/cloud/pkg/credential"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -36,11 +33,8 @@ const (
 var providerIDRE = regexp.MustCompile(`^` + CloudProviderName + `://(?:.*)/Microsoft.Compute/virtualMachines/(.+)$`)
 
 type cloudConnector struct {
-	ctx     context.Context
-	cluster *api.Cluster
-	namer   namer
-
-	owner string
+	*CloudManager
+	namer namer
 
 	availabilitySetsClient  compute.AvailabilitySetsClient
 	vmClient                compute.VirtualMachinesClient
@@ -58,24 +52,24 @@ type cloudConnector struct {
 }
 
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
-	cred, err := store.StoreProvider.Credentials().Get(cm.cluster.Spec.Config.CredentialName)
+	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
 	typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.Wrapf(err, "credential %s is invalid", cm.cluster.Spec.Config.CredentialName)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cm.Cluster.Spec.Config.CredentialName)
 	}
 
 	baseURI := azure.PublicCloud.ResourceManagerEndpoint
 	config, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, typed.TenantID())
 	if err != nil {
-		return nil, errors.Wrap(err, ID(cm.ctx))
+		return nil, err
 	}
 
 	spt, err := adal.NewServicePrincipalToken(*config, typed.ClientID(), typed.ClientSecret(), baseURI)
 	if err != nil {
-		return nil, errors.Wrap(err, ID(cm.ctx))
+		return nil, err
 	}
 
 	client := autorest.NewClientWithUserAgent(fmt.Sprintf("Azure-SDK-for-Go/%s", compute.Version()))
@@ -121,8 +115,9 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	lbClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
 	return &cloudConnector{
-		cluster:                 cm.cluster,
-		ctx:                     cm.ctx,
+		CloudManager: cm.CloudManager,
+		namer:        cm.namer,
+
 		availabilitySetsClient:  availabilitySetsClient,
 		vmClient:                vmClient,
 		vmExtensionsClient:      vmExtensionsClient,
@@ -136,61 +131,19 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 		interfacesClient:        interfacesClient,
 		storageClient:           storageClient,
 		lbClient:                lbClient,
-
-		owner: cm.owner,
-		namer: cm.namer,
 	}, nil
 }
 
-func PrepareCloud(cm *ClusterManager) error {
-	//var err error
-	//
-	////if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
-	//	return err
-	//}
-	//if cm.ctx, err = LoadEtcdCertificate(cm.ctx, cm.cluster, cm.owner); err != nil {
-	//	return err
-	//}
-	//if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster, cm.owner); err != nil {
-	//	return err
-	//}
-	//if cm.ctx, err = LoadSaKey(cm.ctx, cm.cluster, cm.owner); err != nil {
-	//	return err
-	//}
-	//
-	//if cm.conn, err = NewConnector(cm); err != nil {
-	//	return err
-	//}
-
-	return nil
-}
-
-func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data map[string]string) error {
-	if err := CreateNamespace(kc, "azure-provider-system"); err != nil {
-		return err
-	}
-
-	if err := CreateSecret(kc, "azure-provider-azure-controller-secrets", "azure-provider-system", map[string][]byte{
-		"client-id":       []byte(data["clientID"]),
-		"client-secret":   []byte(data["clientSecret"]),
-		"subscription-id": []byte(data["subscriptionID"]),
-		"tenant-id":       []byte(data["tenantID"]),
-	}); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (conn *cloudConnector) detectUbuntuImage() error {
-	conn.cluster.Spec.Config.Cloud.OS = "UbuntuServer"
-	conn.cluster.Spec.Config.Cloud.InstanceImageProject = "Canonical"
-	conn.cluster.Spec.Config.Cloud.InstanceImage = "16.04-LTS"
-	conn.cluster.Spec.Config.Cloud.Azure.InstanceImageVersion = "latest"
+	conn.Cluster.Spec.Config.Cloud.OS = "UbuntuServer"
+	conn.Cluster.Spec.Config.Cloud.InstanceImageProject = "Canonical"
+	conn.Cluster.Spec.Config.Cloud.InstanceImage = "16.04-LTS"
+	conn.Cluster.Spec.Config.Cloud.Azure.InstanceImageVersion = "latest"
 	return nil
 }
 
 func (conn *cloudConnector) getResourceGroup() (bool, error) {
-	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return false, err
 	}
@@ -199,7 +152,7 @@ func (conn *cloudConnector) getResourceGroup() (bool, error) {
 }
 
 func (conn *cloudConnector) ensureResourceGroup() (resources.Group, error) {
-	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return resources.Group{}, err
 	}
@@ -207,7 +160,7 @@ func (conn *cloudConnector) ensureResourceGroup() (resources.Group, error) {
 		Name:     StringP(providerConfig.ResourceGroup),
 		Location: StringP(providerConfig.Location),
 		Tags: map[string]*string{
-			"KubernetesCluster": StringP(conn.cluster.Name),
+			"KubernetesCluster": StringP(conn.Cluster.Name),
 		},
 	}
 	return conn.groupsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), req)
@@ -219,7 +172,7 @@ func (conn *cloudConnector) getVirtualNetwork() (network.VirtualNetwork, error) 
 
 // ref: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/b55f066db9cb0f96e81257150a2468942d3996ba/pkg/cloud/azure/services/virtualnetworks/virtualnetworks.go#L51
 func (conn *cloudConnector) ensureVirtualNetwork() (network.VirtualNetwork, error) {
-	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return network.VirtualNetwork{}, err
 	}
@@ -229,11 +182,11 @@ func (conn *cloudConnector) ensureVirtualNetwork() (network.VirtualNetwork, erro
 		Location: StringP(providerConfig.Location),
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
-				AddressPrefixes: &[]string{conn.cluster.Spec.Config.Cloud.Azure.VPCCIDR},
+				AddressPrefixes: &[]string{conn.Cluster.Spec.Config.Cloud.Azure.VPCCIDR},
 			},
 		},
 		Tags: map[string]*string{
-			"KubernetesCluster": StringP(conn.cluster.Name),
+			"KubernetesCluster": StringP(conn.Cluster.Name),
 		},
 	}
 
@@ -261,7 +214,7 @@ func (conn *cloudConnector) getNetworkSecurityGroup(name string) (network.Securi
 
 // ref: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/b55f066db9cb0f96e81257150a2468942d3996ba/pkg/cloud/azure/services/securitygroups/securitygroups.go#L51
 func (conn *cloudConnector) createNetworkSecurityGroup(isControlPlane bool) (network.SecurityGroup, error) {
-	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return network.SecurityGroup{}, err
 	}
@@ -303,7 +256,7 @@ func (conn *cloudConnector) createNetworkSecurityGroup(isControlPlane bool) (net
 				SecurityRules: securityRules,
 			},
 			Tags: map[string]*string{
-				"KubernetesCluster": StringP(conn.cluster.Name),
+				"KubernetesCluster": StringP(conn.Cluster.Name),
 			},
 		},
 	)
@@ -338,9 +291,9 @@ func (conn *cloudConnector) createSubnetID(name string, sg *network.SecurityGrou
 	// route table is nil for control plane subnet
 	// using this logic for setting up name and cidrs
 	if rt == nil {
-		subnetProperties.AddressPrefix = &conn.cluster.Spec.Config.Cloud.Azure.ControlPlaneSubnetCIDR
+		subnetProperties.AddressPrefix = &conn.Cluster.Spec.Config.Cloud.Azure.ControlPlaneSubnetCIDR
 	} else {
-		subnetProperties.AddressPrefix = &conn.cluster.Spec.Config.Cloud.Azure.NodeSubnetCIDR
+		subnetProperties.AddressPrefix = &conn.Cluster.Spec.Config.Cloud.Azure.NodeSubnetCIDR
 	}
 
 	log.Infof("creating subnet %s in vnet %s", name, conn.namer.GenerateVnetName())
@@ -376,7 +329,7 @@ func (conn *cloudConnector) findLoadBalancer(name string) (network.LoadBalancer,
 }
 
 func (conn *cloudConnector) createInternalLoadBalancer(lbName string, subnet *network.Subnet) (network.LoadBalancer, error) {
-	clusterConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	clusterConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return network.LoadBalancer{}, err
 	}
@@ -384,7 +337,7 @@ func (conn *cloudConnector) createInternalLoadBalancer(lbName string, subnet *ne
 	probeName := "tcpHTTPSProbe"
 	frontEndIPConfigName := "controlplane-internal-lbFrontEnd"
 	backEndAddressPoolName := "controlplane-internal-backEndPool"
-	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", conn.cluster.Spec.Config.Cloud.Azure.SubscriptionID, conn.namer.ResourceGroupName())
+	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", conn.Cluster.Spec.Config.Cloud.Azure.SubscriptionID, conn.namer.ResourceGroupName())
 
 	future, err := conn.lbClient.CreateOrUpdate(context.Background(),
 		clusterConfig.ResourceGroup,
@@ -399,7 +352,7 @@ func (conn *cloudConnector) createInternalLoadBalancer(lbName string, subnet *ne
 						FrontendIPConfigurationPropertiesFormat: &network.FrontendIPConfigurationPropertiesFormat{
 							PrivateIPAllocationMethod: network.Static,
 							Subnet:                    subnet,
-							PrivateIPAddress:          &conn.cluster.Spec.Config.Cloud.Azure.InternalLBIPAddress,
+							PrivateIPAddress:          &conn.Cluster.Spec.Config.Cloud.Azure.InternalLBIPAddress,
 						},
 					},
 				},
@@ -462,7 +415,7 @@ func (conn *cloudConnector) createInternalLoadBalancer(lbName string, subnet *ne
 }
 
 func (conn *cloudConnector) createPublicLoadBalancer(pip *network.PublicIPAddress) (network.LoadBalancer, error) {
-	clusterConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	clusterConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return network.LoadBalancer{}, err
 	}
@@ -470,7 +423,7 @@ func (conn *cloudConnector) createPublicLoadBalancer(pip *network.PublicIPAddres
 	probeName := "tcpHTTPSProbe"
 	frontEndIPConfigName := "controlplane-lbFrontEnd"
 	backEndAddressPoolName := "controlplane-backEndPool"
-	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", conn.cluster.Spec.Config.Cloud.Azure.SubscriptionID, clusterConfig.ResourceGroup)
+	idPrefix := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers", conn.Cluster.Spec.Config.Cloud.Azure.SubscriptionID, clusterConfig.ResourceGroup)
 	lbName := conn.namer.GeneratePublicLBName()
 	log.Infof("creating public load balancer %s", lbName)
 
@@ -591,7 +544,7 @@ func (conn *cloudConnector) getRouteTable() (network.RouteTable, error) {
 
 // ref: https://github.com/kubernetes-sigs/cluster-api-provider-azure/blob/b55f066db9cb0f96e81257150a2468942d3996ba/pkg/cloud/azure/services/routetables/routetables.go#L51
 func (conn *cloudConnector) createRouteTable() (network.RouteTable, error) {
-	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	providerConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return network.RouteTable{}, err
 	}
@@ -606,7 +559,7 @@ func (conn *cloudConnector) createRouteTable() (network.RouteTable, error) {
 			Location:                   to.StringPtr(providerConfig.Location),
 			RouteTablePropertiesFormat: &network.RouteTablePropertiesFormat{},
 			Tags: map[string]*string{
-				"KubernetesCluster": StringP(conn.cluster.Name),
+				"KubernetesCluster": StringP(conn.Cluster.Name),
 			},
 		},
 	)
@@ -629,7 +582,7 @@ func (conn *cloudConnector) createRouteTable() (network.RouteTable, error) {
 
 func (conn *cloudConnector) createPublicIP(ipName string) (network.PublicIPAddress, error) {
 	log.Infof("Creating public ip %q", ipName)
-	clusterConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	clusterConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return network.PublicIPAddress{}, err
 	}
@@ -680,7 +633,7 @@ func (conn *cloudConnector) getNetworkInterface(name string) (network.Interface,
 }
 
 func (conn *cloudConnector) createNetworkInterface(name string, subnet *network.Subnet, publicLB, internalLB *network.LoadBalancer) (network.Interface, error) {
-	clusterConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	clusterConfig, err := capiAzure.ClusterConfigFromProviderSpec(conn.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return network.Interface{}, err
 	}
@@ -753,15 +706,14 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, vmName, 
 			},
 			OsProfile: &compute.OSProfile{
 				ComputerName:  StringP(vmName),
-				AdminPassword: StringP(conn.cluster.Spec.Config.Cloud.Azure.RootPassword),
+				AdminPassword: StringP(conn.Cluster.Spec.Config.Cloud.Azure.RootPassword),
 				AdminUsername: StringP(conn.namer.AdminUsername()),
 				CustomData:    StringP(base64.StdEncoding.EncodeToString([]byte(data))),
 				LinuxConfiguration: &compute.LinuxConfiguration{
-					DisablePasswordAuthentication: BoolP(!Env(conn.ctx).DebugEnabled()),
 					SSH: &compute.SSHConfiguration{
 						PublicKeys: &[]compute.SSHPublicKey{
 							{
-								KeyData: StringP(string(SSHKey(conn.ctx).PublicKey)),
+								KeyData: StringP(string(conn.Certs.SSHKey.PublicKey)),
 								Path:    StringP(fmt.Sprintf("/home/%v/.ssh/authorized_keys", conn.namer.AdminUsername())),
 							},
 						},
@@ -790,7 +742,7 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, vmName, 
 			},
 		},
 		Tags: map[string]*string{
-			"KubernetesCluster": StringP(conn.cluster.Name),
+			"KubernetesCluster": StringP(conn.Cluster.Name),
 		},
 	}
 
@@ -819,7 +771,7 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, vmName, 
 				ProtectedSettings:       map[string]string{"script": base64.StdEncoding.EncodeToString([]byte(data))},
 			},
 			Tags: map[string]*string{
-				"KubernetesCluster": StringP(conn.cluster.Name),
+				"KubernetesCluster": StringP(conn.Cluster.Name),
 			},
 		})
 	if err != nil {

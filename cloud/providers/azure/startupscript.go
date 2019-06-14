@@ -11,8 +11,8 @@ import (
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func newNodeTemplateData(cm *CloudManager, cluster *api.Cluster, machine *clusterapi.Machine, token string) TemplateData {
-	td := NewNodeTemplateData(cm, cluster, machine, token)
+func newNodeTemplateData(cm *ClusterManager, cluster *api.Cluster, machine *clusterapi.Machine, token string) TemplateData {
+	td := NewNodeTemplateData(cm, machine, token)
 	td.ExternalProvider = false // Azure does not use out-of-tree CCM
 	{
 		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
