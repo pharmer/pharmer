@@ -18,6 +18,31 @@ type ClusterManager struct {
 	namer namer
 }
 
+var _ Interface = &ClusterManager{}
+
+const (
+	UID      = "linode"
+	Recorder = "linode-controller"
+)
+
+func init() {
+	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+		return New(cluster, certs)
+	})
+}
+
+func New(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+	return &ClusterManager{
+		CloudManager: &CloudManager{
+			Cluster: cluster,
+			Certs:   certs,
+		},
+		namer: namer{
+			cluster: cluster,
+		},
+	}
+}
+
 func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 	err := CreateCredentialSecret(kc, cm.Cluster, metav1.NamespaceSystem)
 	if err != nil {
@@ -59,31 +84,6 @@ func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 	return ControllerManager, nil
 }
 
-var _ Interface = &ClusterManager{}
-
-const (
-	UID      = "linode"
-	Recorder = "linode-controller"
-)
-
-func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *PharmerCertificates) Interface {
-		return New(cluster, certs)
-	})
-}
-
-func New(cluster *api.Cluster, certs *PharmerCertificates) Interface {
-	return &ClusterManager{
-		CloudManager: &CloudManager{
-			Cluster: cluster,
-			Certs:   certs,
-		},
-		namer: namer{
-			cluster: cluster,
-		},
-	}
-}
-
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 	ma := NewMachineActuator(MachineActuatorParams{
 		EventRecorder: mgr.GetEventRecorderFor(Recorder),
@@ -93,22 +93,3 @@ func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 	common.RegisterClusterProvisioner(UID, ma)
 	return nil
 }
-
-/*func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
-	v := cm.ctx.Value(paramK8sClient{})
-	if kc, ok := v.(kubernetes.Interface); ok && kc != nil {
-		return kc, nil
-	}
-	var err error
-
-	//cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner)
-	//if err != nil {
-	//	return nil, err
-	//}
-	kc, err := NewAdminClient(cm.ctx, cm.cluster)
-	if err != nil {
-		return nil, err
-	}
-	cm.ctx = context.WithValue(cm.ctx, paramK8sClient{}, kc)
-	return kc, nil
-}*/
