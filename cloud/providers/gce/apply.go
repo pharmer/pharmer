@@ -1,8 +1,6 @@
 package gce
 
 import (
-	"fmt"
-
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
@@ -14,69 +12,58 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
-func (cm *ClusterManager) PrepareCloud(dryRun bool) ([]api.Action, error) {
+func (cm *ClusterManager) PrepareCloud() error {
 	// TODO
-	if err := cm.conn.importPublicKey(dryRun); err != nil {
-		return nil, err
+	if err := cm.conn.importPublicKey(); err != nil {
+		return err
 	}
 
-	var acts []api.Action
-
-	acts, err := ensureNetwork(cm.conn, acts, dryRun)
+	err := ensureNetwork(cm.conn)
 	if err != nil {
-		return acts, errors.Wrap(err, "failed to ensure network")
+		return errors.Wrap(err, "failed to ensure network")
 	}
 
-	acts, err = ensureFirewallRules(cm.conn, acts, dryRun)
+	err = ensureFirewallRules(cm.conn)
 	if err != nil {
-		return acts, errors.Wrap(err, "failed to ensure firewall rules")
+		return errors.Wrap(err, "failed to ensure firewall rules")
 	}
 
-	acts, err = ensureLoadBalancer(cm.conn, acts, dryRun)
+	err = ensureLoadBalancer(cm.conn)
 	if err != nil {
-		return acts, errors.Wrap(err, "failed to ensure load balancer")
+		return errors.Wrap(err, "failed to ensure load balancer")
 	}
 
-	return acts, nil
+	return nil
 }
 
-func ensureNetwork(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
+func ensureNetwork(conn *cloudConnector) error {
 	found, _ := conn.getNetworks()
 
 	if !found {
-		addActs(acts, api.ActionNOP, network, networkNotFoundMessage)
-		if err := conn.ensureNetworks(dryRun); err != nil {
-			return acts, err
+		if err := conn.ensureNetworks(); err != nil {
+			return err
 		}
-	} else {
-		addActs(acts, api.ActionNOP, network, networkFoundMessage)
 	}
-	return acts, nil
+	return nil
 }
 
-func ensureFirewallRules(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
+func ensureFirewallRules(conn *cloudConnector) error {
 	found, _ := conn.getFirewallRules()
 	if !found {
-		addActs(acts, api.ActionAdd, firewall, firewallNotFoundMessage)
-		if err := conn.ensureFirewallRules(dryRun); err != nil {
-			return acts, err
+		if err := conn.ensureFirewallRules(); err != nil {
+			return err
 		}
-	} else {
-		addActs(acts, api.ActionNOP, firewall, firewallFoundMessage)
 	}
-	return acts, nil
+	return nil
 }
 
-func ensureLoadBalancer(conn *cloudConnector, acts []api.Action, dryRun bool) ([]api.Action, error) {
+func ensureLoadBalancer(conn *cloudConnector) error {
 	loadBalancerIP, err := conn.getLoadBalancer()
 	if err != nil {
-		addActs(acts, api.ActionAdd, loadBalancer, loadBalancerNotFoundMessage)
-		loadBalancerIP, err = conn.createLoadBalancer(dryRun, conn.Cluster.MasterMachineName(0))
+		loadBalancerIP, err = conn.createLoadBalancer(conn.Cluster.MasterMachineName(0))
 		if err != nil {
-			return acts, errors.Wrap(err, "Error creating load balancer")
+			return errors.Wrap(err, "Error creating load balancer")
 		}
-	} else {
-		addActs(acts, api.ActionNOP, loadBalancer, loadBalancerFoundMessage)
 	}
 	conn.Cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
 		IP:   loadBalancerIP,
@@ -84,7 +71,7 @@ func ensureLoadBalancer(conn *cloudConnector, acts []api.Action, dryRun bool) ([
 	}
 
 	if loadBalancerIP == "" {
-		return acts, errors.Wrap(err, "load balancer can't be empty")
+		return errors.Wrap(err, "load balancer can't be empty")
 	}
 
 	conn.Cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
@@ -100,10 +87,10 @@ func ensureLoadBalancer(conn *cloudConnector, acts []api.Action, dryRun bool) ([
 	}
 
 	if err = conn.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
-		return acts, errors.Wrap(err, "Error setting controlplane endpoints")
+		return errors.Wrap(err, "Error setting controlplane endpoints")
 	}
 
-	return acts, err
+	return err
 }
 
 func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
@@ -125,42 +112,39 @@ func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
 	return sku
 }
 
-func (cm *ClusterManager) EnsureMaster(acts []api.Action, dryRun bool) ([]api.Action, error) {
+func (cm *ClusterManager) EnsureMaster() error {
 	leaderMachine, err := GetLeaderMachine(cm.Cluster)
 	if err != nil {
-		return acts, errors.Wrap(err, "failed to get leader machine")
+		return errors.Wrap(err, "failed to get leader machine")
 	}
 
 	found, _ := cm.conn.getMasterInstance(leaderMachine)
 	if found {
-		return addActs(acts, api.ActionNOP, masterInstance, masterInstanceFoundMessage), nil
+		return nil
 	}
-	if !dryRun {
-		var op1 string
-		log.Infoln("Creating Master Instance")
+	var op1 string
+	log.Infoln("Creating Master Instance")
 
-		script, err := RenderStartupScript(cm, leaderMachine, "", customTemplate)
-		if err != nil {
-			return acts, err
-		}
-
-		if op1, err = cm.conn.createMasterIntance(cm.Cluster, script); err != nil {
-			return acts, err
-		}
-
-		if err = cm.conn.waitForZoneOperation(op1); err != nil {
-			return acts, err
-		}
-
+	script, err := RenderStartupScript(cm, leaderMachine, "", customTemplate)
+	if err != nil {
+		return err
 	}
-	return addActs(acts, api.ActionAdd, masterInstanceMessage, masterInstanceNotFoundMessage), nil
+
+	if op1, err = cm.conn.createMasterIntance(cm.Cluster, script); err != nil {
+		return err
+	}
+
+	if err = cm.conn.waitForZoneOperation(op1); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error) {
-	var machines []*clusterv1.Machine
-	machines, err = store.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
+func (cm *ClusterManager) ApplyDelete() error {
+	machines, err := store.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
-		return
+		return err
 	}
 
 	var nodeDiskNames = make([]string, 0)
@@ -168,24 +152,17 @@ func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error
 
 	for _, machine := range machines {
 		if !util.IsControlPlaneMachine(machine) {
-			acts = append(acts, api.Action{
-				Action:   api.ActionDelete,
-				Resource: "Machine",
-				Message:  fmt.Sprintf("Machine `%v` will be deleted", machine.Spec.Name),
-			})
-			if !dryRun {
-				if err = cm.conn.deleteInstance(machine.Spec.Name); err != nil {
-					log.Infof("Error deleting instance `%v`. Reason: %v", machine.Spec.Name, err)
-				}
+			if err = cm.conn.deleteInstance(machine.Spec.Name); err != nil {
+				log.Infof("Error deleting instance `%v`. Reason: %v", machine.Spec.Name, err)
+			}
 
-				err = store.StoreProvider.Machine(cm.Cluster.Name).Delete(machine.Spec.Name)
-				if err != nil {
-					return nil, err
-				}
-				err = store.StoreProvider.MachineSet(cm.Cluster.Name).Delete(machine.Name)
-				if err != nil {
-					return nil, err
-				}
+			err = store.StoreProvider.Machine(cm.Cluster.Name).Delete(machine.Spec.Name)
+			if err != nil {
+				return err
+			}
+			err = store.StoreProvider.MachineSet(cm.Cluster.Name).Delete(machine.Name)
+			if err != nil {
+				return err
 			}
 		} else {
 			masterMachines = append(masterMachines, machine)
@@ -193,57 +170,27 @@ func (cm *ClusterManager) ApplyDelete(dryRun bool) (acts []api.Action, err error
 		nodeDiskNames = append(nodeDiskNames, cm.namer.MachineDiskName(machine))
 	}
 
-	acts = append(acts, api.Action{
-		Action:   api.ActionNOP,
-		Resource: "Master Instance",
-		Message:  "Deleting master instances",
-	})
-	if !dryRun {
-		log.Infoln("Deleting Master machine")
-		if err = cm.conn.deleteMaster(masterMachines); err != nil {
-			log.Infof("Error on deleting master. Reason: %v", err)
-		}
+	log.Infoln("Deleting Master machine")
+	if err = cm.conn.deleteMaster(masterMachines); err != nil {
+		log.Infof("Error on deleting master. Reason: %v", err)
 	}
-
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "Cluster Firewall Rule",
-		Message:  fmt.Sprintf("%v cluster firewall rule will be deleted", cm.Cluster.Name),
-	})
-	if !dryRun {
-		log.Infoln("Deleting Firewall rules")
-		if err = cm.conn.deleteFirewalls(); err != nil {
-			cm.Cluster.Status.Reason = err.Error()
-		}
+	log.Infoln("Deleting Firewall rules")
+	if err = cm.conn.deleteFirewalls(); err != nil {
+		cm.Cluster.Status.Reason = err.Error()
 	}
-
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "Master persistent disk",
-		Message:  fmt.Sprintf("Will delete master persistent disks"),
-	})
-
-	if !dryRun {
-		log.Infoln("Deleting disks...")
-		if err = cm.conn.deleteDisk(nodeDiskNames); err != nil {
-			log.Infof("Error on deleting disk. Reason: %v", err)
-		}
+	log.Infoln("Deleting disks...")
+	if err = cm.conn.deleteDisk(nodeDiskNames); err != nil {
+		log.Infof("Error on deleting disk. Reason: %v", err)
 	}
-
-	if !dryRun {
-		if err := cm.conn.deleteLoadBalancer(); err != nil {
-			log.Infof("Error deleting load balancer: %v", err)
-		}
+	if err := cm.conn.deleteLoadBalancer(); err != nil {
+		log.Infof("Error deleting load balancer: %v", err)
 	}
-
-	if !dryRun {
-		cm.Cluster.Status.Phase = api.ClusterDeleted
-		_, err := store.StoreProvider.Clusters().Update(cm.Cluster)
-		if err != nil {
-			return acts, err
-		}
+	cm.Cluster.Status.Phase = api.ClusterDeleted
+	_, err = store.StoreProvider.Clusters().Update(cm.Cluster)
+	if err != nil {
+		return err
 	}
 	log.Infoln("Cluster deleted successfully...")
 
-	return
+	return nil
 }
