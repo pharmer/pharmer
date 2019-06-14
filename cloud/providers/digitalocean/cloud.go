@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/appscode/go/context"
 	"github.com/appscode/go/log"
 	"github.com/digitalocean/godo"
 	"github.com/pharmer/cloud/pkg/credential"
@@ -29,15 +28,16 @@ import (
 var errLBNotFound = errors.New("loadbalancer not found")
 
 type cloudConnector struct {
-	ctx     context.Context
-	cluster *api.Cluster
-	client  *godo.Client
-	namer   namer
+	*CloudManager
+	client *godo.Client
+	namer  namer
 }
 
 var _ InstanceManager = &cloudConnector{}
 
-func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
+func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
+	cluster := cm.Cluster
+
 	cred, err := store.StoreProvider.Credentials().Get(cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
@@ -49,10 +49,13 @@ func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*clo
 	oauthClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: typed.Token(),
 	}))
+
+	namer := namer{cluster: cluster}
+
 	conn := cloudConnector{
-		ctx:     ctx,
-		cluster: cluster,
-		client:  godo.NewClient(oauthClient),
+		CloudManager: cm.CloudManager,
+		namer:        namer,
+		client:       godo.NewClient(oauthClient),
 	}
 	if ok, msg := conn.IsUnauthorized(); !ok {
 		return nil, errors.Errorf("credential `%s` does not have necessary autheorization. Reason: %s", cluster.ClusterConfig().CredentialName, msg)
@@ -141,8 +144,8 @@ func (conn *cloudConnector) getPublicKey() (bool, int, error) {
 func (conn *cloudConnector) importPublicKey() (string, error) {
 	log.Infof("Adding SSH public key")
 	id, _, err := conn.client.Keys.Create(context.TODO(), &godo.KeyCreateRequest{
-		//	Name:      conn.cluster.Spec.Cloud.SSHKeyName,
-		PublicKey: string(SSHKey(conn.ctx).PublicKey),
+		//	Name:      conn.Cluster.Spec.Cloud.SSHKeyName,
+		PublicKey: string(conn.Certs.SSHKey.PublicKey),
 	})
 	if err != nil {
 		return "", err
@@ -159,14 +162,14 @@ func (conn *cloudConnector) deleteSSHKey() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("SSH key for cluster %v deleted", conn.cluster.Name)
+	log.Infof("SSH key for cluster %v deleted", conn.Cluster.Name)
 	return nil
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) getTags() (bool, error) {
-	tag := "KubernetesCluster:" + conn.cluster.Name
+	tag := "KubernetesCluster:" + conn.Cluster.Name
 	_, resp, err := conn.client.Tags.Get(context.TODO(), tag)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return false, nil
@@ -179,7 +182,7 @@ func (conn *cloudConnector) getTags() (bool, error) {
 }
 
 func (conn *cloudConnector) createTags() error {
-	tag := "KubernetesCluster:" + conn.cluster.Name
+	tag := "KubernetesCluster:" + conn.Cluster.Name
 	_, _, err := conn.client.Tags.Create(context.TODO(), &godo.TagCreateRequest{
 		Name: tag,
 	})
@@ -191,7 +194,7 @@ func (conn *cloudConnector) createTags() error {
 }
 
 func (conn *cloudConnector) applyTag(dropletID int) error {
-	_, err := conn.client.Tags.TagResources(context.TODO(), "KubernetesCluster:"+conn.cluster.Name, &godo.TagResourcesRequest{
+	_, err := conn.client.Tags.TagResources(context.TODO(), "KubernetesCluster:"+conn.Cluster.Name, &godo.TagResourcesRequest{
 		Resources: []godo.Resource{
 			{
 				ID:   strconv.Itoa(dropletID),
@@ -199,7 +202,7 @@ func (conn *cloudConnector) applyTag(dropletID int) error {
 			},
 		},
 	})
-	log.Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+conn.cluster.Name, dropletID)
+	log.Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+conn.Cluster.Name, dropletID)
 	return err
 }
 
@@ -218,7 +221,7 @@ func (conn *cloudConnector) getReserveIP(ip string) (bool, error) {
 
 func (conn *cloudConnector) createReserveIP() (string, error) {
 	fip, _, err := conn.client.FloatingIPs.Create(context.TODO(), &godo.FloatingIPCreateRequest{
-		Region: conn.cluster.ClusterConfig().Cloud.Region,
+		Region: conn.Cluster.ClusterConfig().Cloud.Region,
 	})
 	if err != nil {
 		return "", err
@@ -230,7 +233,7 @@ func (conn *cloudConnector) createReserveIP() (string, error) {
 func (conn *cloudConnector) assignReservedIP(ip string, dropletID int) error {
 	_, _, err := conn.client.FloatingIPActions.Assign(context.TODO(), ip, dropletID)
 	if err != nil {
-		return errors.Wrap(err, ID(conn.ctx))
+		return errors.Wrap(err, "unable to assign reserved IP")
 	}
 	log.Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
 	return nil
@@ -476,7 +479,7 @@ func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*godo.LoadB
 	//algorithm := "round_robin"
 
 	//	redirectHttpToHttps := getRedirectHttpToHttps(service)
-	clusterConfig := conn.cluster.ClusterConfig()
+	clusterConfig := conn.Cluster.ClusterConfig()
 
 	return &godo.LoadBalancerRequest{
 		Name:                lbName,
@@ -487,8 +490,8 @@ func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*godo.LoadB
 		StickySessions:      stickySessions,
 		Algorithm:           algorithm,
 		RedirectHttpToHttps: false, //redirectHttpToHttps,
-		Tag:                 conn.cluster.Name + "-master",
-		Tags:                []string{conn.cluster.Name + "-master"},
+		Tag:                 conn.Cluster.Name + "-master",
+		Tags:                []string{conn.Cluster.Name + "-master"},
 	}, nil
 }
 
