@@ -24,27 +24,23 @@ type Interface interface {
 
 	InitializeMachineActuator(mgr manager.Manager) error
 
-	// TODO: review: its common across all providers
 	AddToManager(m manager.Manager) error
 
-	SSHGetter
+	//SSHGetter
 	ProviderKubeConfig
 
 	GetCloudConnector() error
 
-	ApplyDelete(dryRun bool) ([]api.Action, error)
+	ApplyDelete() error
 	SetDefaultCluster() error
 	GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error)
 
 	NewMasterTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData
 	NewNodeTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData
 
-	// only conn
-	PrepareCloud(dryRun bool) ([]api.Action, error)
-	// only conn
-	EnsureMaster(acts []api.Action, dryRun bool) ([]api.Action, error)
+	PrepareCloud() error
+	EnsureMaster() error
 
-	// requires nothing
 	GetMasterSKU(totalNodes int32) string
 
 	GetClusterAPIComponents() (string, error)
