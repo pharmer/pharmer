@@ -6,7 +6,6 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
-	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	core "k8s.io/api/core/v1"
@@ -114,48 +113,6 @@ func (cm *ClusterManager) SetClusterProviderConfig() error {
 	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
 
 	return nil
-}
-
-/*func (cm *ClusterManager) SetupCerts() error {
-	conf, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
-	if err != nil {
-		return err
-	}
-
-	conf.CAKeyPair = clusterapi_aws.KeyPair{
-		Cert: cert.EncodeCertPEM(CACert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(CAKey(cm.ctx)),
-	}
-	conf.FrontProxyCAKeyPair = clusterapi_aws.KeyPair{
-		Cert: cert.EncodeCertPEM(FrontProxyCACert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(FrontProxyCAKey(cm.ctx)),
-	}
-	conf.EtcdCAKeyPair = clusterapi_aws.KeyPair{
-		Cert: cert.EncodeCertPEM(EtcdCaCert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(EtcdCaKey(cm.ctx)),
-	}
-	conf.SAKeyPair = clusterapi_aws.KeyPair{
-		Cert: cert.EncodeCertPEM(SaCert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(SaKey(cm.ctx)),
-	}
-
-	rawSpec, err := clusterapi_aws.EncodeClusterSpec(conf)
-	if err != nil {
-		return err
-	}
-
-	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
-
-	if _, err := store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
-		return err
-	}
-
-	return nil
-}*/
-
-// IsValid TODO:add description
-func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
-	return false, ErrNotImplemented
 }
 
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {

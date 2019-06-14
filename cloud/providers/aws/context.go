@@ -6,7 +6,6 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"k8s.io/client-go/kubernetes"
 )
@@ -18,14 +17,33 @@ type ClusterManager struct {
 	namer namer
 }
 
-func (cm *ClusterManager) GetConnector() ClusterApiProviderComponent {
-	panic(1)
-	return nil
+var _ cloud.Interface = &ClusterManager{}
+
+const (
+	UID = "aws"
+)
+
+func init() {
+	cloud.RegisterCloudManager(UID, func(cluster *api.Cluster, certs *cloud.PharmerCertificates) cloud.Interface {
+		return New(cluster, certs)
+	})
+}
+
+func New(cluster *api.Cluster, certs *cloud.PharmerCertificates) cloud.Interface {
+	return &ClusterManager{
+		CloudManager: &cloud.CloudManager{
+			Cluster: cluster,
+			Certs:   certs,
+		},
+		namer: namer{
+			cluster: cluster,
+		},
+	}
 }
 
 // Required for cluster-api controller
 func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
-	err := CreateNamespace(kc, "aws-provider-system")
+	err := cloud.CreateNamespace(kc, "aws-provider-system")
 	if err != nil {
 		return err
 	}
@@ -59,34 +77,10 @@ region = {{ .Region }}
 
 	credData := buf.Bytes()
 
-	if err = CreateSecret(kc, "aws-provider-manager-bootstrap-credentials", "aws-provider-system", map[string][]byte{
+	if err = cloud.CreateSecret(kc, "aws-provider-manager-bootstrap-credentials", "aws-provider-system", map[string][]byte{
 		"credentials": credData,
 	}); err != nil {
 		return err
 	}
 	return nil
-}
-
-var _ Interface = &ClusterManager{}
-
-const (
-	UID = "aws"
-)
-
-func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *PharmerCertificates) Interface {
-		return New(cluster, certs)
-	})
-}
-
-func New(cluster *api.Cluster, certs *PharmerCertificates) cloud.Interface {
-	return &ClusterManager{
-		CloudManager: &cloud.CloudManager{
-			Cluster: cluster,
-			Certs:   certs,
-		},
-		namer: namer{
-			cluster: cluster,
-		},
-	}
 }
