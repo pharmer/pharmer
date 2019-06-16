@@ -2,7 +2,6 @@ package packet
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/appscode/go/log"
 	"github.com/pharmer/cloud/pkg/credential"
@@ -18,7 +17,7 @@ import (
 )
 
 func (cm *ClusterManager) EnsureMaster() error {
-	masterMachine, err := GetLeaderMachine(cm.cluster)
+	masterMachine, err := GetLeaderMachine(cm.Cluster)
 	if err != nil {
 		return err
 	}
@@ -49,10 +48,10 @@ func (cm *ClusterManager) EnsureMaster() error {
 			})
 		}
 
-		if err = cm.cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
+		if err = cm.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
 			return err
 		}
-		if _, err = store.StoreProvider.Clusters().Update(cm.cluster); err != nil {
+		if _, err = store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
 			return err
 		}
 	}
@@ -67,7 +66,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 	}
 
 	if !found {
-		cm.cluster.Status.Cloud.SShKeyExternalID, err = cm.conn.importPublicKey()
+		cm.Cluster.Status.Cloud.SShKeyExternalID, err = cm.conn.importPublicKey()
 		if err != nil {
 			return err
 		}
@@ -90,12 +89,12 @@ func (cm *ClusterManager) applyCreate() error {
 // it creates credential for ccm, pharmer-flex, pharmer-provisioner
 func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
 	// pharmer-flex secret
-	if err := CreateCredentialSecret(kc, cm.cluster, ""); err != nil {
+	if err := CreateCredentialSecret(kc, cm.Cluster, ""); err != nil {
 		return errors.Wrapf(err, "failed to create flex-secret")
 	}
 
 	// ccm-secret
-	cred, err := store.StoreProvider.Credentials().Get(cm.cluster.ClusterConfig().CredentialName)
+	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get cluster cred")
 	}
@@ -107,7 +106,7 @@ func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
 	cloudConfig := &api.PacketCloudConfig{
 		Project: typed.ProjectID(),
 		ApiKey:  typed.APIKey(),
-		Zone:    cm.cluster.ClusterConfig().Cloud.Zone,
+		Zone:    cm.Cluster.ClusterConfig().Cloud.Zone,
 	}
 	data, err := json.Marshal(cloudConfig)
 	if err != nil {
@@ -123,15 +122,15 @@ func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
 }
 
 // Deletes master(s) and releases other cloud resources
-func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error) {
+func (cm *ClusterManager) ApplyDelete() error {
 	log.Infoln("deleting cluster")
 
-	if cm.cluster.Status.Phase == api.ClusterReady {
-		cm.cluster.Status.Phase = api.ClusterDeleting
+	if cm.Cluster.Status.Phase == api.ClusterReady {
+		cm.Cluster.Status.Phase = api.ClusterDeleting
 	}
-	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.cluster)
+	_, err := store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
-		return
+		return err
 	}
 
 	err = DeleteAllWorkerMachines(cm)
@@ -142,7 +141,7 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	var kc kubernetes.Interface
 	kc, err = cm.GetAdminClient()
 	if err != nil {
-		return
+		return err
 	}
 
 	var masterInstances *core.NodeList
@@ -154,28 +153,20 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 	if err != nil && !kerr.IsNotFound(err) {
 		log.Infof("master instance not found. Reason: %v", err)
 	} else if err == nil {
-		acts = append(acts, api.Action{
-			Action:   api.ActionDelete,
-			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("Will delete master instance with name %v-master", cm.cluster.Name),
-		})
-		if !dryRun {
-			for _, mi := range masterInstances.Items {
-				err = cm.conn.DeleteInstanceByProviderID(mi.Spec.ProviderID)
-				if err != nil {
-					log.Infof("Failed to delete instance %s. Reason: %s", mi.Spec.ProviderID, err)
-				}
+		for _, mi := range masterInstances.Items {
+			err = cm.conn.DeleteInstanceByProviderID(mi.Spec.ProviderID)
+			if err != nil {
+				log.Infof("Failed to delete instance %s. Reason: %s", mi.Spec.ProviderID, err)
 			}
-
 		}
 	}
 
-	cm.cluster.Status.Phase = api.ClusterDeleted
-	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.cluster)
+	cm.Cluster.Status.Phase = api.ClusterDeleted
+	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
-		return
+		return err
 	}
 
-	log.Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
-	return
+	log.Infof("Cluster %v deletion is deleted successfully", cm.Cluster.Name)
+	return nil
 }

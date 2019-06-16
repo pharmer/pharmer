@@ -49,8 +49,8 @@ spec:
       - args:
         - controller
         - --provider={{ .Provider }}
+        - --cluster-name={{ .ClusterName }}
         - --kubeconfig=/etc/kubernetes/admin.conf 
-        - --owner={{ .ClusterOwner }}
         env:
         image: {{ .ControllerImage }}
         name: manager

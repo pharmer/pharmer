@@ -33,13 +33,12 @@ import (
 
 func init() {
 	// AddToManagerFuncs is a list of functions to create controllers and add them to a manager.
-	AddToManagerFuncs = append(AddToManagerFuncs, func(ctx context.Context, m manager.Manager, owner string) error {
+	AddToManagerFuncs = append(AddToManagerFuncs, func(cm *ClusterManager, m manager.Manager) error {
 		actuator := NewMachineActuator(MachineActuatorParams{
-			Ctx:           ctx,
 			EventRecorder: m.GetEventRecorderFor(Recorder),
 			Client:        m.GetClient(),
 			Scheme:        m.GetScheme(),
-			Owner:         owner,
+			cm:            cm,
 		})
 		return machine.AddWithActuator(m, actuator)
 	})
@@ -54,38 +53,29 @@ type DOClientMachineSetupConfigGetter interface {
 }
 
 type MachineActuator struct {
-	ctx                      context.Context
-	conn                     *cloudConnector
-	client                   client.Client
-	kubeadm                  DOClientKubeadm
-	machineSetupConfigGetter DOClientMachineSetupConfigGetter
-	eventRecorder            record.EventRecorder
-	scheme                   *runtime.Scheme
-
-	owner string
+	cm            *ClusterManager
+	client        client.Client
+	kubeadm       DOClientKubeadm
+	eventRecorder record.EventRecorder
+	scheme        *runtime.Scheme
 }
 
 type MachineActuatorParams struct {
-	Ctx            context.Context
+	cm             *ClusterManager
 	Kubeadm        DOClientKubeadm
 	Client         client.Client
 	CloudConnector *cloudConnector
 	EventRecorder  record.EventRecorder
 	Scheme         *runtime.Scheme
-
-	Owner string
 }
 
 func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
 	return &MachineActuator{
-		ctx:           params.Ctx,
-		conn:          params.CloudConnector,
+		cm:            params.cm,
 		client:        params.Client,
 		kubeadm:       getKubeadm(params),
 		eventRecorder: params.EventRecorder,
 		scheme:        params.Scheme,
-
-		owner: params.Owner,
 	}
 }
 
@@ -101,10 +91,7 @@ func (packet *MachineActuator) Create(_ context.Context, cluster *clusterv1.Clus
 		return errors.Wrapf(err, "failed to valide machine config for machien %s", machine.Name)
 	}
 
-	if packet.conn, err = PrepareCloud(packet.ctx, cluster.Name, packet.owner); err != nil {
-		return errors.Wrapf(err, "failed to prepare cloud")
-	}
-	exists, err := packet.Exists(packet.ctx, cluster, machine)
+	exists, err := packet.Exists(context.Background(), cluster, machine)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check existance of machine %s", machine.Name)
 	}
@@ -119,12 +106,12 @@ func (packet *MachineActuator) Create(_ context.Context, cluster *clusterv1.Clus
 			return errors.Wrap(err, "failed to generate kubeadm token")
 		}
 
-		script, err := RenderStartupScript(cm, machine, token, customTemplate) // ClusterManager is needed here
+		script, err := RenderStartupScript(packet.cm, machine, token, customTemplate) // ClusterManager is needed here
 		if err != nil {
 			return err
 		}
 
-		_, err = packet.conn.CreateInstance(machine, script)
+		_, err = packet.cm.conn.CreateInstance(machine, script)
 		if err != nil {
 			return errors.Wrap(err, "failed to create instance")
 		}
@@ -148,7 +135,7 @@ func (packet *MachineActuator) Create(_ context.Context, cluster *clusterv1.Clus
 }
 
 func (packet *MachineActuator) updateMachineStatus(machine *clusterv1.Machine) error {
-	vm, err := packet.conn.instanceIfExists(machine)
+	vm, err := packet.cm.conn.instanceIfExists(machine)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check existance of machine %s", machine.Name)
 	}
@@ -166,7 +153,7 @@ func (packet *MachineActuator) updateMachineStatus(machine *clusterv1.Machine) e
 	}
 	machine.Status.ProviderStatus = raw
 
-	if err := packet.client.Status().Update(packet.ctx, machine); err != nil {
+	if err := packet.client.Status().Update(context.Background(), machine); err != nil {
 		return errors.Wrapf(err, "failed to update provider status for machine %s", machine.Name)
 	}
 
@@ -203,15 +190,9 @@ func machineProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*pack
 
 func (packet *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	fmt.Println("call for deleting machine")
-	clusterName := cluster.Name
-	if _, found := machine.Labels[clusterv1.MachineClusterLabelName]; found {
-		clusterName = machine.Labels[clusterv1.MachineClusterLabelName]
-	}
 	var err error
-	if packet.conn, err = PrepareCloud(packet.ctx, clusterName, packet.owner); err != nil {
-		return err
-	}
-	instance, err := packet.conn.instanceIfExists(machine)
+
+	instance, err := packet.cm.conn.instanceIfExists(machine)
 	if err != nil {
 		// SKIp error
 	}
@@ -221,7 +202,7 @@ func (packet *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Clus
 	}
 	serverId := fmt.Sprintf("packet://%v", instance.ID)
 
-	if err = packet.conn.DeleteInstanceByProviderID(serverId); err != nil {
+	if err = packet.cm.conn.DeleteInstanceByProviderID(serverId); err != nil {
 		log.Infof("errror on deleting %v", err)
 	}
 
@@ -234,10 +215,6 @@ func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Clus
 	log.Infof("updating machine %s", machine.Name)
 
 	var err error
-	if packet.conn, err = PrepareCloud(packet.ctx, cluster.Name, packet.owner); err != nil {
-		return errors.Wrapf(err, "failed to prepare clou")
-	}
-
 	goalConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return errors.Wrapf(err, "failed to decode machine provider spec")
@@ -247,14 +224,14 @@ func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Clus
 		return errors.Wrap(err, "failed to validate machine")
 	}
 
-	exists, err := packet.Exists(packet.ctx, cluster, machine)
+	exists, err := packet.Exists(context.Background(), cluster, machine)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check existance of machine %s", machine.Name)
 	}
 
 	if !exists {
 		log.Infof("vm not found, creating vm for machine %q", machine.Name)
-		return packet.Create(packet.ctx, cluster, machine)
+		return packet.Create(context.Background(), cluster, machine)
 	}
 
 	sm := NewStatusManager(packet.client, packet.scheme)
@@ -279,11 +256,11 @@ func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Clus
 		return errors.Wrap(err, "failed to get pharmercluster")
 	}
 
-	kc, err := GetKubernetesClient(packet.ctx, pharmerCluster, packet.owner)
+	kc, err := GetKubernetesClient(packet.cm, pharmerCluster)
 	if err != nil {
 		return errors.Wrap(err, "failed to get kubeclient")
 	}
-	upm := NewUpgradeManager(packet.ctx, kc, packet.conn.cluster, packet.owner)
+	upm := NewUpgradeManager(kc, packet.cm.conn.Cluster)
 	if util.IsControlPlaneMachine(currentMachine) {
 		if currentMachine.Spec.Versions.ControlPlane != machine.Spec.Versions.ControlPlane {
 			log.Infof("Doing an in-place upgrade for master.\n")
@@ -309,15 +286,9 @@ func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Clus
 
 func (packet *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
 	fmt.Println("call for checking machine existence", machine.Name)
-	clusterName := cluster.Name
-	if _, found := machine.Labels[clusterv1.MachineClusterLabelName]; found {
-		clusterName = machine.Labels[clusterv1.MachineClusterLabelName]
-	}
 	var err error
-	if packet.conn, err = PrepareCloud(packet.ctx, clusterName, packet.owner); err != nil {
-		return false, err
-	}
-	i, err := packet.conn.instanceIfExists(machine)
+
+	i, err := packet.cm.conn.instanceIfExists(machine)
 	if err != nil {
 		return false, nil
 	}
@@ -327,7 +298,7 @@ func (packet *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cl
 
 func (packet *MachineActuator) updateAnnotations(machine *clusterv1.Machine) error {
 	name := machine.ObjectMeta.Name
-	zone := packet.conn.cluster.Spec.Config.Cloud.Zone
+	zone := packet.cm.conn.Cluster.Spec.Config.Cloud.Zone
 
 	if machine.ObjectMeta.Annotations == nil {
 		machine.ObjectMeta.Annotations = make(map[string]string)

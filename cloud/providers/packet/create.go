@@ -14,11 +14,7 @@ import (
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) SetOwner(owner string) {
-	cm.owner = owner
-}
-
-func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
 	if sku == "" {
 		/*mts, err := cm.conn.i.ListMachineTypes()
 		if err != nil {
@@ -63,15 +59,13 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
-	cluster.ClusterConfig().Cloud.InstanceImage = "ubuntu_16_04" // 1b9b78e3-de68-466e-ba00-f2123e89c112
+func (cm *ClusterManager) SetDefaultCluster() error {
+	cluster := cm.Cluster
+	config := &cluster.Spec.Config
 
-	// Init status
-	cluster.Status = api.PharmerClusterStatus{
-		Phase: api.ClusterPending,
-	}
+	config.Cloud.InstanceImage = "ubuntu_16_04" // 1b9b78e3-de68-466e-ba00-f2123e89c112
 
-	return packetconfig.SetPacketClusterProviderConfig(cluster.Spec.ClusterAPI)
+	return packetconfig.SetPacketClusterProviderConfig(&cluster.Spec.ClusterAPI)
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
@@ -80,7 +74,7 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
 	cfg := &api.SSHConfig{
-		PrivateKey: SSHKey(cm.ctx).PrivateKey,
+		PrivateKey: cm.Certs.SSHKey.PrivateKey,
 		User:       "root",
 		HostPort:   int32(22),
 	}
