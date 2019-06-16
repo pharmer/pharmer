@@ -202,9 +202,10 @@ const (
 )
 
 type CloudStatus struct {
-	AWS          *AWSStatus   `json:"aws,omitempty"`
-	EKS          *EKSStatus   `json:"eks,omitempty"`
-	LoadBalancer LoadBalancer `json:"loadBalancer,omitempty"`
+	SShKeyExternalID string       `json:"sshKeyExternalID,omitempty"`
+	AWS              *AWSStatus   `json:"aws,omitempty"`
+	EKS              *EKSStatus   `json:"eks,omitempty"`
+	LoadBalancer     LoadBalancer `json:"loadBalancer,omitempty"`
 }
 
 type LoadBalancer struct {
