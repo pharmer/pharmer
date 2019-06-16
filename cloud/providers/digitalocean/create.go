@@ -92,6 +92,6 @@ func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*
 	return cfg, nil
 }
 
-func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
+func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 	return nil, nil
 }

@@ -95,7 +95,7 @@ func NewDokubeAdminClient(ctx context.Context, cluster *api.Cluster, owner strin
 	return kubernetes.NewForConfig(cfg)
 }
 
-func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
+func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 	//cm.ctx, err = LoadCACertificates(cm.ctx, cluster, cm.owner)
 	//if err != nil {
 	//	return nil, err

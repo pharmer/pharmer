@@ -115,7 +115,7 @@ func (cm *ClusterManager) GetEKSAdminClient() (kubernetes.Interface, error) {
 
 }
 
-func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
+func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 	var err error
 	cm.conn, err = NewConnector(cm.ctx, cluster, cm.owner)
 	if err != nil {

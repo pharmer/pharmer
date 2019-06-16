@@ -23,6 +23,10 @@ type ClusterManager struct {
 	namer    namer
 }
 
+func (cm *ClusterManager) ApplyScale() error {
+	panic("implement me")
+}
+
 func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 	// pharmer-flex secret
 	if err := CreateCredentialSecret(kc, cm.Cluster, metav1.NamespaceSystem); err != nil {
