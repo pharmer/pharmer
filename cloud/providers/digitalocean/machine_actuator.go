@@ -106,7 +106,12 @@ func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster,
 			return errors.Wrap(err, "failed to generate kubeadm token")
 		}
 
-		if _, err := do.cm.conn.CreateInstance(do.cm.conn.Cluster, machine, token); err != nil {
+		script, err := RenderStartupScript(do.cm, machine, token, customTemplate)
+		if err != nil {
+			return err
+		}
+
+		if _, err := do.cm.conn.CreateInstance(do.cm.conn.Cluster, machine, script); err != nil {
 			return errors.Wrap(err, "failed to create instance")
 		}
 	}
