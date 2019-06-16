@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
+
 	"github.com/appscode/go/crypto/ssh"
 
 	"github.com/appscode/go/log"
@@ -342,24 +344,25 @@ func GetLeaderMachine(cluster *v1beta1.Cluster) (*clusterapi.Machine, error) {
 func DeleteAllWorkerMachines(cm Interface) error {
 	log.Infof("Deleting non-controlplane machines")
 
-	cluster := cm.GetCluster()
-
-	client, err := GetBooststrapClient(cm, cluster)
+	clusterClient, err := GetClusterClient(cm.GetCaCertPair(), cm.GetCluster())
 	if err != nil {
-		return errors.Wrap(err, "failed to get clusterapi client")
+		return err
 	}
 
-	err = deleteMachineDeployments(client)
+	log.Infof("Deleting machine deployments")
+	err = deleteMachineDeployments(clusterClient)
 	if err != nil {
 		log.Infof("failed to delete machine deployments: %v", err)
 	}
 
-	err = deleteMachineSets(client)
+	log.Infof("Deleting machine sets")
+	err = deleteMachineSets(clusterClient)
 	if err != nil {
 		log.Infof("failed to delete machinesetes: %v", err)
 	}
 
-	err = deleteMachines(client)
+	log.Infof("Deleting machines")
+	err = deleteMachines(clusterClient)
 	if err != nil {
 		log.Infof("failed to delete machines: %v", err)
 	}
@@ -369,19 +372,26 @@ func DeleteAllWorkerMachines(cm Interface) error {
 }
 
 // deletes machinedeployments in all namespaces
-func deleteMachineDeployments(client clusterclient.Client) error {
-	err := client.DeleteMachineDeployments(corev1.NamespaceAll)
+func deleteMachineDeployments(client clientset.Interface) error {
+	list, err := client.ClusterV1alpha1().MachineDeployments(corev1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
+	for _, ms := range list.Items {
+		err = client.ClusterV1alpha1().MachineDeployments(ms.Namespace).Delete(ms.Name, nil)
+		if err != nil {
+			return err
+		}
+	}
+
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (done bool, err error) {
-		deployList, err := client.GetMachineDeployments(corev1.NamespaceAll)
+		deployList, err := client.ClusterV1alpha1().MachineDeployments(corev1.NamespaceAll).List(metav1.ListOptions{})
 		if err != nil {
 			log.Infof("failed to list machine deployments: %v", err)
 			return false, nil
 		}
-		if len(deployList) == 0 {
+		if len(deployList.Items) == 0 {
 			log.Infof("successfully deleted machine deployments")
 			return true, nil
 		}
@@ -391,19 +401,26 @@ func deleteMachineDeployments(client clusterclient.Client) error {
 }
 
 // deletes machinesets in all namespaces
-func deleteMachineSets(client clusterclient.Client) error {
-	err := client.DeleteMachineSets(corev1.NamespaceAll)
+func deleteMachineSets(client clientset.Interface) error {
+	list, err := client.ClusterV1alpha1().MachineSets(corev1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
+	for _, ms := range list.Items {
+		err = client.ClusterV1alpha1().MachineSets(ms.Namespace).Delete(ms.Name, nil)
+		if err != nil {
+			return err
+		}
+	}
+
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (done bool, err error) {
-		machineSetList, err := client.GetMachineSets(corev1.NamespaceAll)
+		machineSetList, err := client.ClusterV1alpha1().MachineSets(corev1.NamespaceAll).List(metav1.ListOptions{})
 		if err != nil {
 			log.Infof("failed to list machine sets: %v", err)
 			return false, nil
 		}
-		if len(machineSetList) == 0 {
+		if len(machineSetList.Items) == 0 {
 			log.Infof("successfully deleted machinesets")
 			return true, nil
 		}
@@ -413,23 +430,28 @@ func deleteMachineSets(client clusterclient.Client) error {
 }
 
 // deletes machines in all namespaces
-func deleteMachines(client clusterclient.Client) error {
-	// delete non-controlplane machines
-	machineList, err := client.GetMachines(corev1.NamespaceAll)
-	for _, machine := range machineList {
-		if !util.IsControlPlaneMachine(machine) && machine.DeletionTimestamp == nil {
-			err = client.ForceDeleteMachine(machine.Namespace, machine.Name)
-			if err != nil {
-				log.Infof("failed to delete machine %s in namespace %s", machine.Namespace, machine.Name)
-			}
+func deleteMachines(client clientset.Interface) error {
+	list, err := client.ClusterV1alpha1().Machines(corev1.NamespaceAll).List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, ms := range list.Items {
+		err = client.ClusterV1alpha1().Machines(ms.Namespace).Delete(ms.Name, nil)
+		if err != nil {
+			return err
 		}
 	}
 
 	// wait for machines to be deleted
 	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (done bool, err error) {
-		machineList, err := client.GetMachines(corev1.NamespaceAll)
-		for _, machine := range machineList {
-			if !util.IsControlPlaneMachine(machine) {
+		machineList, err := client.ClusterV1alpha1().Machines(corev1.NamespaceAll).List(metav1.ListOptions{})
+		if err != nil {
+			return false, nil
+		}
+
+		for _, machine := range machineList.Items {
+			if !util.IsControlPlaneMachine(&machine) {
 				log.Infof("machine %s in namespace %s is not deleted yet", machine.Name, machine.Namespace)
 			}
 		}
