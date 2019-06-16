@@ -7,7 +7,6 @@ import (
 
 	"github.com/digitalocean/godo"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"gomodules.xyz/cert"
 	"k8s.io/client-go/tools/clientcmd"
@@ -19,15 +18,15 @@ func (cm *ClusterManager) retrieveClusterStatus(cluster *godo.KubernetesCluster)
 	if err != nil {
 		return err
 	}
-	cm.cluster.Spec.ClusterAPI.Status.APIEndpoints = append(cm.cluster.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
+	cm.Cluster.Spec.ClusterAPI.Status.APIEndpoints = append(cm.Cluster.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
 		Host: u.Host,
 		Port: 0,
 	})
 	return nil
 }
 
-func (cm *ClusterManager) StoreCertificate(ctx context.Context, c *godo.Client, owner string) error {
-	kcc, _, err := c.Kubernetes.GetKubeConfig(ctx, cm.cluster.Spec.Config.Cloud.Dokube.ClusterID)
+func (cm *ClusterManager) StoreCertificate(c *godo.Client) error {
+	kcc, _, err := c.Kubernetes.GetKubeConfig(context.Background(), cm.Cluster.Spec.Config.Cloud.Dokube.ClusterID)
 	if err != nil {
 		return err
 	}
@@ -39,7 +38,7 @@ func (cm *ClusterManager) StoreCertificate(ctx context.Context, c *godo.Client, 
 
 	currentContext := kc.CurrentContext
 
-	certStore := store.StoreProvider.Certificates(cm.cluster.Name)
+	certStore := store.StoreProvider.Certificates(cm.Cluster.Name)
 	_, caKey, err := certStore.Get(api.CACertName)
 	if err == nil {
 		if err = certStore.Delete(api.CACertName); err != nil {

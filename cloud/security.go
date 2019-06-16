@@ -1,7 +1,6 @@
 package cloud
 
 import (
-	"context"
 	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
@@ -78,7 +77,7 @@ func CreateAdminCertificate(caCert *x509.Certificate, caKey crypto.Signer) (*x50
 	return adminCert, adminKey, nil
 }
 
-func GetAdminCertificate(ctx context.Context, cluster *api.Cluster, owner string) (*x509.Certificate, *rsa.PrivateKey, error) {
+func GetAdminCertificate(cluster *api.Cluster) (*x509.Certificate, *rsa.PrivateKey, error) {
 	certStore := store.StoreProvider.Certificates(cluster.Name)
 	admCert, admKey, err := certStore.Get("admin")
 	if err != nil {

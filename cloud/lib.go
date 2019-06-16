@@ -36,7 +36,7 @@ func GetCluster(name string) (*api.Cluster, error) {
 	return store.StoreProvider.Clusters().Get(name)
 }
 
-func getPharmerCerts(clusterName string) (*PharmerCertificates, error) {
+func GetPharmerCerts(clusterName string) (*PharmerCertificates, error) {
 	pharmerCerts := &PharmerCertificates{}
 
 	cert, key, err := LoadCACertificates(clusterName, kubeadmconst.CACertAndKeyBaseName)

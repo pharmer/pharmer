@@ -54,7 +54,7 @@ func CloudManagers() []string {
 }
 
 func GetCloudManager(cluster *api.Cluster) (Interface, error) {
-	certs, err := getPharmerCerts(cluster.Name)
+	certs, err := GetPharmerCerts(cluster.Name)
 	if err != nil {
 		return nil, err
 	}

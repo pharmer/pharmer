@@ -1,72 +1,44 @@
 package dokube
 
 import (
-	"context"
-	"fmt"
-
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type DokubeNodeGroupManager struct {
-	ctx   context.Context
-	conn  *cloudConnector
-	ng    *clusterapi.MachineSet
-	owner string
+	conn *cloudConnector
+	ng   *clusterapi.MachineSet
 }
 
-func NewDokubeNodeGroupManager(ctx context.Context, conn *cloudConnector, ng *clusterapi.MachineSet, owner string) *DokubeNodeGroupManager {
-	return &DokubeNodeGroupManager{ctx: ctx, conn: conn, ng: ng, owner: owner}
+func NewDokubeNodeGroupManager(conn *cloudConnector, ng *clusterapi.MachineSet) *DokubeNodeGroupManager {
+	return &DokubeNodeGroupManager{conn: conn, ng: ng}
 }
 
-func (igm *DokubeNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
+func (igm *DokubeNodeGroupManager) Apply() error {
 	np, err := igm.conn.getNodePool(igm.ng)
 	if np == nil {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Node pool",
-			Message:  fmt.Sprintf("Node pool %v will be created", igm.ng.Name),
-		})
-		if !dryRun {
-			if err = igm.conn.addNodePool(igm.ng); err != nil {
-				return acts, err
-			}
+		if err = igm.conn.addNodePool(igm.ng); err != nil {
+			return err
 		}
-
 	} else if *igm.ng.Spec.Replicas == 0 || igm.ng.DeletionTimestamp != nil {
-		acts = append(acts, api.Action{
-			Action:   api.ActionDelete,
-			Resource: "Node pool",
-			Message:  fmt.Sprintf("Node pool %v will be deleted", igm.ng.Name),
-		})
-		if !dryRun {
-			if err = igm.conn.deleteNodePool(igm.ng); err != nil {
-				return acts, err
-			}
-			err = store.StoreProvider.MachineSet(igm.conn.cluster.Name).Delete(igm.ng.Name)
-			if err != nil {
-				return acts, err
-			}
-			return
+		if err = igm.conn.deleteNodePool(igm.ng); err != nil {
+			return err
+		}
+		err = store.StoreProvider.MachineSet(igm.conn.Cluster.Name).Delete(igm.ng.Name)
+		if err != nil {
+			return err
 		}
 	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionUpdate,
-			Resource: "Node pool",
-			Message:  fmt.Sprintf("Node pool %v will be updated", igm.ng.Name),
-		})
-		if !dryRun {
-			if err = igm.conn.adjustNodePool(igm.ng); err != nil {
-				return acts, err
-			}
+		if err = igm.conn.adjustNodePool(igm.ng); err != nil {
+			return err
 		}
 	}
+
 	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas
-	_, err = store.StoreProvider.MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
+	_, err = store.StoreProvider.MachineSet(igm.conn.Cluster.Name).UpdateStatus(igm.ng)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return acts, err
+
+	return nil
 }
