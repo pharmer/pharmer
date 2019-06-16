@@ -6,7 +6,6 @@ import (
 
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/utils/describer"
 	"github.com/spf13/cobra"
@@ -59,11 +58,12 @@ func RunDescribeCluster(opts *options.ClusterDescribeConfig, out io.Writer) erro
 			fmt.Fprintf(out, "\n\n%s", s)
 		}
 
-		if resp, err := cloud.CheckForUpdates(cluster.Name); err == nil {
-			term.Println(resp)
-		} else {
-			term.ExitOnError(err)
-		}
+		/// TODO
+		//if resp, err := cloud.CheckForUpdates(cluster.Name); err == nil {
+		//	term.Println(resp)
+		//} else {
+		//	term.ExitOnError(err)
+		//}
 	}
 
 	return nil

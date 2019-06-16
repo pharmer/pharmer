@@ -15,6 +15,10 @@ import (
 )
 
 func (cm *ClusterManager) PrepareCloud() error {
+	err := cm.GetCloudConnector()
+	if err != nil {
+		return err
+	}
 	found, _ := cm.conn.getResourceGroup()
 	if !found {
 		if _, err := cm.conn.ensureResourceGroup(); err != nil {

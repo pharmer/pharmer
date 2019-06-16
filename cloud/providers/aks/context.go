@@ -34,7 +34,9 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 }
 
 func (cm *ClusterManager) GetCloudConnector() error {
-	panic("implement me")
+	conn, err := NewConnector(cm)
+	cm.conn = conn
+	return err
 }
 
 func (cm *ClusterManager) NewMasterTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
@@ -76,6 +78,7 @@ func New(cluster *api.Cluster, certs *PharmerCertificates) Interface {
 			Cluster: cluster,
 			Certs:   certs,
 		},
+		namer: namer{cluster: cluster},
 	}
 }
 
@@ -125,7 +128,7 @@ func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 	var err error
 	cluster := cm.Cluster
 	cm.namer = namer{cluster: cluster}
-	if cm.conn, err = NewConnector(); err != nil {
+	if cm.conn, err = NewConnector(cm); err != nil {
 		return nil, err
 	}
 

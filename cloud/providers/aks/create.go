@@ -12,14 +12,14 @@ import (
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role azure.MachineRole) (clusterapi.ProviderSpec, error) {
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
 	cluster := cm.Cluster
 	certs := cm.Certs
 	if sku == "" {
 		sku = "Standard_D2_v2"
 	}
 	spec := &azure.AzureMachineProviderSpec{
-		Roles:    []azure.MachineRole{role},
+		Roles:    []azure.MachineRole{azure.MachineRole(role)},
 		Location: cluster.Spec.Config.Cloud.Zone,
 		OSDisk: azure.OSDisk{
 

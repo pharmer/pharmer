@@ -89,14 +89,16 @@ func ApplyCreate(cm Interface) error {
 		return errors.Wrap(err, "failed to prepare cloud infra")
 	}
 
-	err = setMasterSKU(cm)
-	if err != nil {
-		return errors.Wrap(err, "failed to set master sku")
-	}
+	if !managedProviders.Has(cm.GetCluster().Spec.Config.Cloud.CloudProvider) {
+		err = setMasterSKU(cm)
+		if err != nil {
+			return errors.Wrap(err, "failed to set master sku")
+		}
 
-	err = cm.EnsureMaster()
-	if err != nil {
-		return errors.Wrap(err, "failed to ensure master machine")
+		err = cm.EnsureMaster()
+		if err != nil {
+			return errors.Wrap(err, "failed to ensure master machine")
+		}
 	}
 
 	cluster := cm.GetCluster()
