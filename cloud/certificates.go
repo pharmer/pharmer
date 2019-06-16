@@ -3,6 +3,8 @@ package cloud
 import (
 	"crypto/rsa"
 	"crypto/x509"
+
+	"github.com/appscode/go/crypto/ssh"
 )
 
 type PharmerCertificates struct {
@@ -10,15 +12,10 @@ type PharmerCertificates struct {
 	FrontProxyCACert   CertKeyPair
 	ServiceAccountCert CertKeyPair
 	EtcdCACert         CertKeyPair
-	SSHKey             SSHKey
+	SSHKey             *ssh.SSHKey
 }
 
 type CertKeyPair struct {
 	Cert *x509.Certificate
 	Key  *rsa.PrivateKey
-}
-
-type SSHKey struct {
-	PublicKey  []byte
-	PrivateKey []byte
 }

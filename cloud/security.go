@@ -101,16 +101,16 @@ func CreateSSHKey(storeProvider store.SSHKeyStore, name string) ([]byte, []byte,
 	return sshKey.PublicKey, sshKey.PrivateKey, nil
 }
 
-func LoadSSHKey(clusterName, keyName string) ([]byte, []byte, error) {
+func LoadSSHKey(clusterName, keyName string) (*ssh.SSHKey, error) {
 	publicKey, privateKey, err := store.StoreProvider.SSHKeys(clusterName).Get(keyName)
 	if err != nil {
-		return nil, nil, errors.Errorf("failed to get SSH key. Reason: %v", err)
+		return nil, errors.Errorf("failed to get SSH key. Reason: %v", err)
 	}
 
 	sshkeys, err := ssh.ParseSSHKeyPair(string(publicKey), string(privateKey))
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse SSH key")
+		return nil, errors.Wrap(err, "failed to parse SSH key")
 	}
 
-	return sshkeys.PublicKey, sshkeys.PrivateKey, nil
+	return sshkeys, err
 }

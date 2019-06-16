@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/appscode/go/crypto/ssh"
+
 	"github.com/appscode/go/log"
 	"github.com/pharmer/pharmer/apis/v1beta1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -71,13 +73,10 @@ func getPharmerCerts(clusterName string) (*PharmerCertificates, error) {
 		Key:  key,
 	}
 
-	pubKey, privKey, err := LoadSSHKey(clusterName, GenSSHKeyName(clusterName))
+	pharmerCerts.SSHKey, err = LoadSSHKey(clusterName, GenSSHKeyName(clusterName))
+
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load ssh keys")
-	}
-	pharmerCerts.SSHKey = SSHKey{
-		PublicKey:  pubKey,
-		PrivateKey: privKey,
 	}
 
 	return pharmerCerts, nil
@@ -130,7 +129,7 @@ func createPharmerCerts(store store.ResourceInterface, cluster *api.Cluster) (*P
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ssh keys")
 	}
-	pharmerCerts.SSHKey = SSHKey{
+	pharmerCerts.SSHKey = &ssh.SSHKey{
 		PublicKey:  pubKey,
 		PrivateKey: privKey,
 	}
