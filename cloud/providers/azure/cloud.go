@@ -688,7 +688,7 @@ func (conn *cloudConnector) getVirtualMachine(name string) (compute.VirtualMachi
 	return conn.vmClient.Get(context.TODO(), conn.namer.ResourceGroupName(), name, "")
 }
 
-func (conn *cloudConnector) createVirtualMachine(nic network.Interface, vmName, data string, machine *clusterapi.Machine) (compute.VirtualMachine, error) {
+func (conn *cloudConnector) createVirtualMachine(nicID *string, vmName, data string, machine *clusterapi.Machine) (compute.VirtualMachine, error) {
 	providerConf, err := capiAzure.MachineSpecFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return compute.VirtualMachine{}, err
@@ -700,7 +700,7 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, vmName, 
 			NetworkProfile: &compute.NetworkProfile{
 				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
 					{
-						ID: nic.ID,
+						ID: nicID,
 					},
 				},
 			},
@@ -710,6 +710,7 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, vmName, 
 				AdminUsername: StringP(conn.namer.AdminUsername()),
 				CustomData:    StringP(base64.StdEncoding.EncodeToString([]byte(data))),
 				LinuxConfiguration: &compute.LinuxConfiguration{
+					DisablePasswordAuthentication: BoolP(true),
 					SSH: &compute.SSHConfiguration{
 						PublicKeys: &[]compute.SSHPublicKey{
 							{
@@ -748,7 +749,7 @@ func (conn *cloudConnector) createVirtualMachine(nic network.Interface, vmName, 
 
 	_, err = conn.vmClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), vmName, req)
 	if err != nil {
-		return compute.VirtualMachine{}, err
+		return compute.VirtualMachine{}, errors.Wrapf(err, "failed to create vm")
 	}
 	log.Infof("Running startup script in virtual machine %v", vmName)
 

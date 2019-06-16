@@ -90,7 +90,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 		ResourceGroup:          n.ResourceGroupName(),
 	}
 
-	return nil
+	return cm.SetClusterProviderConfig()
 }
 
 func (cm *ClusterManager) SetClusterProviderConfig() error {
@@ -107,7 +107,7 @@ func (cm *ClusterManager) SetClusterProviderConfig() error {
 		},
 		NetworkSpec:   capiAzure.NetworkSpec{},
 		ResourceGroup: n.ResourceGroupName(),
-		Location:      cluster.Spec.Config.Cloud.Region,
+		Location:      cluster.Spec.Config.Cloud.Zone,
 
 		SSHPublicKey:  base64.StdEncoding.EncodeToString(cm.Certs.SSHKey.PublicKey),
 		SSHPrivateKey: base64.StdEncoding.EncodeToString(cm.Certs.SSHKey.PrivateKey),
@@ -138,24 +138,3 @@ func (cm *ClusterManager) SetClusterProviderConfig() error {
 
 	return nil
 }
-
-//func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
-//	cfg := &api.SSHConfig{
-//		PrivateKey: SSHKey(cm.ctx).PrivateKey,
-//		User:       "ubuntu",
-//		HostPort:   int32(22),
-//	}
-//	for _, addr := range node.Status.Addresses {
-//		if addr.Type == core.NodeExternalIP {
-//			cfg.HostIP = addr.Address
-//		}
-//	}
-//	if net.ParseIP(cfg.HostIP) == nil {
-//		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
-//	}
-//	return cfg, nil
-//}
-//
-//func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
-//	return nil, nil
-//}

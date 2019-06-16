@@ -201,7 +201,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 			return err
 		}
 
-		vm, err := cm.conn.createVirtualMachine(masterNIC, leaderMachine.Name, script, leaderMachine)
+		vm, err := cm.conn.createVirtualMachine(masterNIC.ID, leaderMachine.Name, script, leaderMachine)
 		if err != nil {
 			return err
 		}

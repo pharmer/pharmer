@@ -1,11 +1,9 @@
 package azure
 
 import (
-	"github.com/pharmer/pharmer/store"
-	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -68,11 +66,9 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 }
 
 func (cm *ClusterManager) GetCloudConnector() error {
-	panic("implement me")
-}
-
-func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
-	panic("implement me")
+	var err error
+	cm.conn, err = NewConnector(cm)
+	return err
 }
 
 func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {

@@ -5,76 +5,72 @@ import (
 
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/cloud"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func newNodeTemplateData(cm *ClusterManager, cluster *api.Cluster, machine *clusterapi.Machine, token string) TemplateData {
-	td := NewNodeTemplateData(cm, machine, token)
+func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
+	cluster := cm.Cluster
 	td.ExternalProvider = false // Azure does not use out-of-tree CCM
-	{
-		// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
-		td.KubeletExtraArgs["cloud-provider"] = "azure" // requires --cloud-config
+	// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
+	td.KubeletExtraArgs["cloud-provider"] = "azure" // requires --cloud-config
 
-		cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
-		if err != nil {
-			panic(err)
-		}
-		typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
-		if ok, err := typed.IsValid(); !ok {
-			panic(err)
-		}
-
-		namer := namer{cluster: cluster}
-		cloudConfig := &api.AzureCloudConfig{
-			Cloud:                        "AzurePublicCloud",
-			TenantID:                     typed.TenantID(),
-			SubscriptionID:               typed.SubscriptionID(),
-			AadClientID:                  typed.ClientID(),
-			AadClientSecret:              typed.ClientSecret(),
-			ResourceGroup:                cluster.ClusterConfig().Cloud.Azure.ResourceGroup,
-			Location:                     cluster.ClusterConfig().Cloud.Zone,
-			VMType:                       "standard",
-			SubnetName:                   namer.GenerateNodeSubnetName(),
-			SecurityGroupName:            namer.GenerateNodeSecurityGroupName(),
-			VnetName:                     namer.VirtualNetworkName(),
-			RouteTableName:               namer.RouteTableName(),
-			PrimaryAvailabilitySetName:   "",
-			PrimaryScaleSetName:          "",
-			CloudProviderBackoff:         true,
-			CloudProviderBackoffRetries:  6,
-			CloudProviderBackoffExponent: 1.5,
-			CloudProviderBackoffDuration: 5,
-			CloudProviderBackoffJitter:   1.0,
-			CloudProviderRatelimit:       true,
-			CloudProviderRateLimitQPS:    3.0,
-			CloudProviderRateLimitBucket: 10,
-			UseManagedIdentityExtension:  false,
-			UserAssignedIdentityID:       "",
-			UseInstanceMetadata:          true,
-			LoadBalancerSku:              "Standard",
-			ExcludeMasterFromStandardLB:  true,
-			ProviderVaultName:            "",
-			MaximumLoadBalancerRuleCount: 250,
-			ProviderKeyName:              "k8s",
-			ProviderKeyVersion:           "",
-		}
-		data, err := json.MarshalIndent(cloudConfig, "", "  ")
-		if err != nil {
-			panic(err)
-		}
-		td.CloudConfig = string(data)
-
-		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L41
-		td.KubeletExtraArgs["cloud-config"] = "/etc/kubernetes/azure.json"
-
-		// Kubeadm will send cloud-config to kube-apiserver and kube-controller-manager
-		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L193
-		// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L230
-
+	cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
+	if err != nil {
+		panic(err)
 	}
+	typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
+	if ok, err := typed.IsValid(); !ok {
+		panic(err)
+	}
+
+	namer := namer{cluster: cluster}
+	cloudConfig := &api.AzureCloudConfig{
+		Cloud:                        "AzurePublicCloud",
+		TenantID:                     typed.TenantID(),
+		SubscriptionID:               typed.SubscriptionID(),
+		AadClientID:                  typed.ClientID(),
+		AadClientSecret:              typed.ClientSecret(),
+		ResourceGroup:                cluster.ClusterConfig().Cloud.Azure.ResourceGroup,
+		Location:                     cluster.ClusterConfig().Cloud.Zone,
+		VMType:                       "standard",
+		SubnetName:                   namer.GenerateNodeSubnetName(),
+		SecurityGroupName:            namer.GenerateNodeSecurityGroupName(),
+		VnetName:                     namer.VirtualNetworkName(),
+		RouteTableName:               namer.RouteTableName(),
+		PrimaryAvailabilitySetName:   "",
+		PrimaryScaleSetName:          "",
+		CloudProviderBackoff:         true,
+		CloudProviderBackoffRetries:  6,
+		CloudProviderBackoffExponent: 1.5,
+		CloudProviderBackoffDuration: 5,
+		CloudProviderBackoffJitter:   1.0,
+		CloudProviderRatelimit:       true,
+		CloudProviderRateLimitQPS:    3.0,
+		CloudProviderRateLimitBucket: 10,
+		UseManagedIdentityExtension:  false,
+		UserAssignedIdentityID:       "",
+		UseInstanceMetadata:          true,
+		LoadBalancerSku:              "Standard",
+		ExcludeMasterFromStandardLB:  true,
+		ProviderVaultName:            "",
+		MaximumLoadBalancerRuleCount: 250,
+		ProviderKeyName:              "k8s",
+		ProviderKeyVersion:           "",
+	}
+	data, err := json.MarshalIndent(cloudConfig, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	td.CloudConfig = string(data)
+
+	// ref: https://github.com/kubernetes/kubernetes/blob/1910086bbce4f08c2b3ab0a4c0a65c913d4ec921/cmd/kubeadm/app/phases/controlplane/manifests.go#L41
+	td.KubeletExtraArgs["cloud-config"] = "/etc/kubernetes/azure.json"
+
 	return td
 }
 
