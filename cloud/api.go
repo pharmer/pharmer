@@ -32,6 +32,8 @@ type Interface interface {
 	GetCloudConnector() error
 
 	ApplyDelete() error
+	// only managed providers
+	ApplyScale() error
 	SetDefaultCluster() error
 	GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error)
 
@@ -71,7 +73,7 @@ type UpgradeManager interface {
 }
 
 type ProviderKubeConfig interface {
-	GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error)
+	GetKubeConfig() (*api.KubeConfig, error)
 }
 
 type HookFunc func() error

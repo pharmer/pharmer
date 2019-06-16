@@ -15,6 +15,10 @@ type ClusterManager struct {
 	namer namer
 }
 
+func (cm *ClusterManager) ApplyScale() error {
+	panic("implement me")
+}
+
 var _ cloud.Interface = &ClusterManager{}
 
 const (
@@ -79,6 +83,6 @@ func (cm *ClusterManager) AddToManager(m manager.Manager) error {
 	panic("implement me")
 }
 
-func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
+func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 	panic("implement me")
 }

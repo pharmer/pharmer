@@ -116,7 +116,27 @@ func ApplyCreate(cm Interface) error {
 		return errors.Wrap(err, "failed to create ccm-credential")
 	}
 
-	// TODO:which controllre? pharmer or sigs?
+	if !managedProviders.Has(cluster.Spec.Config.Cloud.CloudProvider) {
+		err = applyClusterAPI(cm)
+		if err != nil {
+			return err
+		}
+	}
+
+	cluster.Status.Phase = api.ClusterReady
+	if _, err = store.StoreProvider.Clusters().UpdateStatus(cluster); err != nil {
+		return errors.Wrap(err, "failed to update cluster status")
+	}
+
+	return nil
+}
+
+func applyClusterAPI(cm Interface) error {
+	cluster := cm.GetCluster()
+	kubeClient, err := cm.GetAdminClient()
+	if err != nil {
+		return err
+	}
 	ca, err := NewClusterApi(cm, "cloud-provider-system", kubeClient)
 	if err != nil {
 		return errors.Wrap(err, "Error creating Cluster-api components")
@@ -148,11 +168,6 @@ func ApplyCreate(cm Interface) error {
 			return errors.Wrapf(err, "failed to crate maching %q in namespace %q",
 				m.Name, cluster.Spec.ClusterAPI.Namespace)
 		}
-	}
-
-	cluster.Status.Phase = api.ClusterReady
-	if _, err = store.StoreProvider.Clusters().UpdateStatus(cluster); err != nil {
-		return errors.Wrap(err, "failed to update cluster status")
 	}
 
 	return nil
@@ -190,7 +205,12 @@ func setMasterSKU(cm Interface) error {
 	return nil
 }
 
+// TODO: simplify
 func ApplyScale(cm Interface) error {
+	if managedProviders.Has(cm.GetCluster().Spec.Config.Cloud.CloudProvider) {
+		return cm.ApplyScale()
+	}
+
 	log.Infoln("Scaling Machine Sets")
 	cluster := cm.GetCluster()
 	var machineSets []*clusterv1.MachineSet

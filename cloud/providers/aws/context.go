@@ -17,6 +17,10 @@ type ClusterManager struct {
 	namer namer
 }
 
+func (cam *ClusterManager) ApplyScale() error {
+	panic("implement me")
+}
+
 var _ cloud.Interface = &ClusterManager{}
 
 const (

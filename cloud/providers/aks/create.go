@@ -2,42 +2,42 @@ package aks
 
 import (
 	"encoding/json"
-	"net"
+
+	"github.com/pharmer/pharmer/apis/v1beta1/azure"
 
 	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2017-09-30/containerservice"
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pkg/errors"
-	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role azure.MachineRole) (clusterapi.ProviderSpec, error) {
+	cluster := cm.Cluster
+	certs := cm.Certs
 	if sku == "" {
 		sku = "Standard_D2_v2"
 	}
-	spec := &api.AKSMachineProviderSpec{
-		Roles:    []api.MachineRole{role},
+	spec := &azure.AzureMachineProviderSpec{
+		Roles:    []azure.MachineRole{role},
 		Location: cluster.Spec.Config.Cloud.Zone,
-		OSDisk: api.OSDisk{
+		OSDisk: azure.OSDisk{
 
 			OSType:     string(containersvc.Linux),
 			DiskSizeGB: 30,
-			ManagedDisk: api.ManagedDisk{
+			ManagedDisk: azure.ManagedDisk{
 				StorageAccountType: "Premium_LRS",
 			},
 		},
 		VMSize: sku,
-		Image: api.Image{
+		Image: azure.Image{
 			Publisher: "Canonical",
 			Offer:     "UbuntuServer",
 			SKU:       "16.04-LTS",
 			Version:   "latest",
 		},
-		SSHPublicKey:  string(SSHKey(cm.ctx).PublicKey),
-		SSHPrivateKey: string(SSHKey(cm.ctx).PrivateKey),
+		SSHPublicKey:  string(certs.SSHKey.PublicKey),
+		SSHPrivateKey: string(certs.SSHKey.PrivateKey),
 	}
 	providerSpecValue, err := json.Marshal(spec)
 	if err != nil {
@@ -51,11 +51,8 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-func (cm *ClusterManager) SetOwner(owner string) {
-	cm.owner = owner
-}
-
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
+func (cm *ClusterManager) SetDefaultCluster() error {
+	cluster := cm.Cluster
 	n := namer{cluster: cluster}
 
 	cluster.Spec.Config.Cloud.Azure = &api.AzureSpec{
@@ -69,31 +66,5 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 		RootPassword:       rand.GeneratePassword(),
 	}
 
-	// Init status
-	cluster.Status = api.PharmerClusterStatus{
-		Phase: api.ClusterPending,
-	}
-
-	return cluster.SetAKSProviderConfig(cluster.Spec.ClusterAPI, cluster.Spec.Config)
-}
-
-func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
-	return false, ErrNotImplemented
-}
-
-func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
-	cfg := &api.SSHConfig{
-		PrivateKey: SSHKey(cm.ctx).PrivateKey,
-		User:       "ubuntu",
-		HostPort:   int32(22),
-	}
-	for _, addr := range node.Status.Addresses {
-		if addr.Type == core.NodeExternalIP {
-			cfg.HostIP = addr.Address
-		}
-	}
-	if net.ParseIP(cfg.HostIP) == nil {
-		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
-	}
-	return cfg, nil
+	return nil
 }

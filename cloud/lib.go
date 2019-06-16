@@ -202,7 +202,7 @@ func GetSSHConfig(nodeName string, cluster *api.Cluster) (*api.SSHConfig, error)
 func GetAdminConfig(cm Interface) (*api.KubeConfig, error) {
 	cluster := cm.GetCluster()
 	if managedProviders.Has(cluster.ClusterConfig().Cloud.CloudProvider) {
-		return cm.GetKubeConfig(cluster)
+		return cm.GetKubeConfig()
 	}
 	var err error
 
@@ -242,39 +242,6 @@ func GetAdminConfig(cm Interface) (*api.KubeConfig, error) {
 		},
 	}
 	return &cfg, nil
-}
-
-func CheckForUpdates(name string) (string, error) {
-	//if name == "" {
-	//	return "", errors.New("missing Cluster name")
-	//}
-	//
-	//Cluster, err := store.StoreProvider.Clusters().Get(name)
-	//if err != nil {
-	//	return "", errors.Errorf("Cluster `%s` does not exist. Reason: %v", name, err)
-	//}
-	//if Cluster.Status.Phase == "" {
-	//	return "", errors.Errorf("Cluster `%s` is in unknown phase", Cluster.Name)
-	//}
-	//if Cluster.Status.Phase != api.ClusterReady {
-	//	return "", errors.Errorf("Cluster `%s` is not ready", Cluster.Name)
-	//}
-	//if Cluster.Status.Phase == api.ClusterDeleted {
-	//	return "", nil
-	//}
-	//
-	//kubeClient, err := NewAdminClient(cm, Cluster)
-	//if err != nil {
-	//	return "", err
-	//}
-	//
-	//upm := NewUpgradeManager(kubeClient, Cluster)
-	//upgrades, err := upm.GetAvailableUpgrades()
-	//if err != nil {
-	//	return "", err
-	//}
-	//upm.PrintAvailableUpgrades(upgrades)
-	return "", nil
 }
 
 func UpdateSpec(cluster *api.Cluster) (*api.Cluster, error) {

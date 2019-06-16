@@ -41,7 +41,7 @@ type cloudConnector struct {
 	managedClient          ms.ManagedClustersClient
 }
 
-func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
+func NewConnector() (*cloudConnector, error) {
 	cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
