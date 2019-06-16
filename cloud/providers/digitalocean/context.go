@@ -1,11 +1,15 @@
 package digitalocean
 
 import (
+	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
-	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -14,10 +18,6 @@ type ClusterManager struct {
 
 	conn  *cloudConnector
 	namer namer
-}
-
-func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
-	panic("implement me")
 }
 
 var _ Interface = &ClusterManager{}
@@ -71,6 +71,19 @@ func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 }
 
 func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
+	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.Spec.Config.CredentialName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get credential for digitalocean")
+	}
+
+	err = CreateSecret(kc, "digitalocean", metav1.NamespaceSystem, map[string][]byte{
+		"access-token": []byte(cred.Spec.Data[credential.DigitalOceanToken]), //for ccm
+		"token":        []byte(cred.Spec.Data[credential.DigitalOceanToken]), //for pharmer-flex and provisioner
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to create ccm-secret for digitalocean")
+	}
+
 	return nil
 }
 

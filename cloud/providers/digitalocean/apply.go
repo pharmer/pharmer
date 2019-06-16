@@ -39,7 +39,12 @@ func (cm *ClusterManager) EnsureMaster() error {
 			})
 		}
 
-		_, err = cm.conn.CreateInstance(cm.Cluster, leaderMachine, "")
+		script, err := RenderStartupScript(cm, leaderMachine, "", customTemplate)
+		if err != nil {
+			return err
+		}
+
+		_, err = cm.conn.CreateInstance(cm.Cluster, leaderMachine, script)
 		if err != nil {
 			return err
 		}
@@ -66,7 +71,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 		return err
 	}
 	if !found {
-		cm.Cluster.Status.Cloud.SShKeyExternalID, err = cm.conn.importPublicKey()
+		_, err = cm.conn.importPublicKey()
 		if err != nil {
 			return err
 		}
@@ -189,5 +194,5 @@ func (cm *ClusterManager) ApplyDelete() error {
 }
 
 func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
-	panic("implement me")
+	return "2gb"
 }

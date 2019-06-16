@@ -33,8 +33,6 @@ type cloudConnector struct {
 	namer  namer
 }
 
-var _ InstanceManager = &cloudConnector{}
-
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
 
@@ -131,7 +129,7 @@ func (conn *cloudConnector) WaitForInstance(id int, status string) error {
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) getPublicKey() (bool, int, error) {
-	key, resp, err := conn.client.Keys.GetByFingerprint(context.TODO(), SSHKey(conn.ctx).OpensshFingerprint)
+	key, resp, err := conn.client.Keys.GetByFingerprint(context.TODO(), conn.Certs.SSHKey.OpensshFingerprint)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return false, 0, nil
 	}
@@ -156,7 +154,7 @@ func (conn *cloudConnector) importPublicKey() (string, error) {
 
 func (conn *cloudConnector) deleteSSHKey() error {
 	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := conn.client.Keys.DeleteByFingerprint(context.TODO(), SSHKey(conn.ctx).OpensshFingerprint)
+		_, err := conn.client.Keys.DeleteByFingerprint(context.TODO(), conn.Certs.SSHKey.OpensshFingerprint)
 		return err == nil, nil
 	})
 	if err != nil {
@@ -251,11 +249,7 @@ func (conn *cloudConnector) releaseReservedIP(ip string) error {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error) {
-	script, err := RenderStartupScript(cm, machine, token, customTemplate)
-	if err != nil {
-		return nil, err
-	}
+func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, script string) (*api.NodeInfo, error) {
 
 	machineConfig, err := doCapi.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
@@ -267,7 +261,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 		Size:   machineConfig.Size,
 		Image:  godo.DropletCreateImage{Slug: machineConfig.Image},
 		SSHKeys: []godo.DropletCreateSSHKey{
-			{Fingerprint: SSHKey(conn.ctx).OpensshFingerprint},
+			{Fingerprint: conn.Certs.SSHKey.OpensshFingerprint},
 		},
 		PrivateNetworking: true,
 		IPv6:              false,
@@ -281,11 +275,6 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 		req.Tags = append(req.Tags, cluster.Name+"-master")
 	}
 
-	if Env(conn.ctx).IsPublic() {
-		req.SSHKeys = []godo.DropletCreateSSHKey{
-			{Fingerprint: SSHKey(conn.ctx).OpensshFingerprint},
-		}
-	}
 	host, _, err := conn.client.Droplets.Create(context.TODO(), req)
 	if err != nil {
 		return nil, err

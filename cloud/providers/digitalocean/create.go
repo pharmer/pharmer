@@ -60,9 +60,10 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 func (cm *ClusterManager) SetDefaultCluster() error {
 	cluster := cm.Cluster
 
-	config := cluster.Spec.Config
+	config := &cluster.Spec.Config
 
 	config.Cloud.InstanceImage = "ubuntu-18-04-x64"
+	config.Cloud.Region = config.Cloud.Zone
 
 	return doCapi.SetDigitalOceanClusterProviderConfig(&cluster.Spec.ClusterAPI)
 }
@@ -74,7 +75,7 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
 	cfg := &api.SSHConfig{
-		PrivateKey: SSHKey(cm.ctx).PrivateKey,
+		PrivateKey: cm.Certs.SSHKey.PrivateKey,
 		User:       "root",
 		HostPort:   int32(22),
 	}

@@ -56,11 +56,6 @@ type NodeGroupManager interface {
 	//	DeleteNodes(nodes []core.Node) error
 }
 
-type InstanceManager interface {
-	CreateInstance(cluster *api.Cluster, machine *clusterapi.Machine, token string) (*api.NodeInfo, error)
-	DeleteInstanceByProviderID(providerID string) error
-}
-
 // TODO: change name
 type ClusterApiProviderComponent interface {
 	CreateCredentialSecret(kc kubernetes.Interface, data map[string]string) error
