@@ -1,10 +1,8 @@
 package eks
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
-	"sync"
 
 	. "github.com/appscode/go/types"
 	_eks "github.com/aws/aws-sdk-go/service/eks"
@@ -13,30 +11,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes" //"fmt"
 	"k8s.io/client-go/rest"       //"gomodules.xyz/cert"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type ClusterManager struct {
-	cluster *api.Cluster
-	certs   *PharmerCertificates
-
-	ctx  context.Context
+	*CloudManager
 	conn *cloudConnector
-	// Deprecated
-	namer namer
-	m     sync.Mutex
 
-	owner string
+	namer namer
 }
 
 var _ Interface = &ClusterManager{}
 
 const (
 	UID               = "eks"
-	RoleClusterUser   = "clusterUser"
-	RoleClusterAdmin  = "clusterAdmin"
 	v1Prefix          = "k8s-aws-v1."
-	maxTokenLenBytes  = 1024 * 4
 	clusterIDHeader   = "x-k8s-aws-id"
 	EKSNodeConfigMap  = "aws-auth"
 	EKSConfigMapRoles = "mapRoles"
@@ -53,42 +43,36 @@ func init() {
 
 func New(cluster *api.Cluster, certs *PharmerCertificates) Interface {
 	return &ClusterManager{
-		cluster: cluster,
-		certs:   certs,
+		CloudManager: &CloudManager{
+			Cluster: cluster,
+			Certs:   certs,
+		},
+		namer: namer{
+			cluster: cluster,
+		},
 	}
 }
 
 // AddToManager adds all Controllers to the Manager
-func (cm *ClusterManager) AddToManager(ctx context.Context, m manager.Manager) error {
+func (cm *ClusterManager) AddToManager(m manager.Manager) error {
 	return nil
 }
-
-type paramK8sClient struct{}
 
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 	return nil
 }
 
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
-	cm.m.Lock()
-	defer cm.m.Unlock()
-
-	v := cm.ctx.Value(paramK8sClient{})
-	if kc, ok := v.(kubernetes.Interface); ok && kc != nil {
-		return kc, nil
-	}
-
 	kc, err := cm.GetEKSAdminClient()
 	if err != nil {
 		return nil, err
 	}
-	cm.ctx = context.WithValue(cm.ctx, paramK8sClient{}, kc)
 	return kc, nil
 }
 
 func (cm *ClusterManager) GetEKSAdminClient() (kubernetes.Interface, error) {
 	resp, err := cm.conn.eks.DescribeCluster(&_eks.DescribeClusterInput{
-		Name: StringP(cm.cluster.Name),
+		Name: StringP(cm.Cluster.Name),
 	})
 	if err != nil {
 		return nil, err
@@ -116,8 +100,9 @@ func (cm *ClusterManager) GetEKSAdminClient() (kubernetes.Interface, error) {
 }
 
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
+	cluster := cm.Cluster
 	var err error
-	cm.conn, err = NewConnector(cm.ctx, cluster, cm.owner)
+	cm.conn, err = NewConnector(cm)
 	if err != nil {
 		return nil, err
 	}
@@ -167,4 +152,34 @@ func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 		},
 	}
 	return &cfg, nil
+}
+
+func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
+	return nil
+}
+
+func (cm *ClusterManager) GetCloudConnector() error {
+	conn, err := NewConnector(cm)
+	cm.conn = conn
+	return err
+}
+
+func (cm *ClusterManager) NewMasterTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
+	return TemplateData{}
+}
+
+func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
+	return TemplateData{}
+}
+
+func (cm *ClusterManager) EnsureMaster() error {
+	return nil
+}
+
+func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
+	return ""
+}
+
+func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
+	return "", nil
 }

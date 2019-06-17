@@ -1,7 +1,6 @@
 package eks
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -9,7 +8,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/ghodss/yaml"
-	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,16 +17,13 @@ import (
 )
 
 type EKSNodeGroupManager struct {
-	ctx  context.Context
 	conn *cloudConnector
 	ng   *clusterapi.MachineSet
 	kc   kubernetes.Interface
-
-	owner string
 }
 
-func NewEKSNodeGroupManager(ctx context.Context, conn *cloudConnector, ng *clusterapi.MachineSet, kc kubernetes.Interface, owner string) *EKSNodeGroupManager {
-	return &EKSNodeGroupManager{ctx: ctx, conn: conn, ng: ng, kc: kc, owner: owner}
+func NewEKSNodeGroupManager(conn *cloudConnector, ng *clusterapi.MachineSet, kc kubernetes.Interface) *EKSNodeGroupManager {
+	return &EKSNodeGroupManager{conn: conn, ng: ng, kc: kc}
 }
 
 func (igm *EKSNodeGroupManager) Apply() error {
@@ -69,12 +64,10 @@ func (igm *EKSNodeGroupManager) Apply() error {
 			if err = igm.deleteNodeAuthConfigMap(igm.conn.getOutput(ngInfo, "NodeInstanceRole")); err != nil {
 				return err
 			}
-			err = store.StoreProvider.MachineSet(igm.conn.cluster.Name).Delete(fileName)
+			err = store.StoreProvider.MachineSet(igm.conn.Cluster.Name).Delete(fileName)
 			if err != nil {
 				return err
 			}
-			return
-
 		} else {
 
 			existingStack, err := igm.conn.getStack(igm.ng.Name)
@@ -89,25 +82,25 @@ func (igm *EKSNodeGroupManager) Apply() error {
 		}
 	}
 	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas
-	_, err = store.StoreProvider.MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
+	_, err = store.StoreProvider.MachineSet(igm.conn.Cluster.Name).UpdateStatus(igm.ng)
 
 	return err
 }
 
 func (igm *EKSNodeGroupManager) buildstackParams() map[string]string {
-	providerSpec := igm.conn.cluster.EKSProviderConfig(igm.ng.Spec.Template.Spec.ProviderSpec.Value.Raw)
+	providerSpec := igm.conn.Cluster.EKSProviderConfig(igm.ng.Spec.Template.Spec.ProviderSpec.Value.Raw)
 	return map[string]string{
-		"ClusterName":                         igm.conn.cluster.Name,
+		"ClusterName":                         igm.conn.Cluster.Name,
 		"NodeGroupName":                       igm.ng.Name,
-		"KeyName":                             igm.conn.cluster.Spec.Config.Cloud.SSHKeyName,
-		"NodeImageId":                         igm.conn.cluster.Spec.Config.Cloud.InstanceImage,
+		"KeyName":                             igm.conn.Cluster.Spec.Config.Cloud.SSHKeyName,
+		"NodeImageId":                         igm.conn.Cluster.Spec.Config.Cloud.InstanceImage,
 		"NodeInstanceType":                    providerSpec.InstanceType,
 		"NodeAutoScalingGroupDesiredCapacity": fmt.Sprintf("%d", *igm.ng.Spec.Replicas),
 		"NodeAutoScalingGroupMinSize":         fmt.Sprintf("%d", *igm.ng.Spec.Replicas),
 		"NodeAutoScalingGroupMaxSize":         fmt.Sprintf("%d", *igm.ng.Spec.Replicas),
-		"ClusterControlPlaneSecurityGroup":    igm.conn.cluster.Status.Cloud.EKS.SecurityGroup,
-		"Subnets":                             igm.conn.cluster.Status.Cloud.EKS.SubnetId,
-		"VpcId":                               igm.conn.cluster.Status.Cloud.EKS.VpcId,
+		"ClusterControlPlaneSecurityGroup":    igm.conn.Cluster.Status.Cloud.EKS.SecurityGroup,
+		"Subnets":                             igm.conn.Cluster.Status.Cloud.EKS.SubnetId,
+		"VpcId":                               igm.conn.Cluster.Status.Cloud.EKS.VpcId,
 	}
 }
 

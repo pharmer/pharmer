@@ -22,6 +22,11 @@ func (cm *ClusterManager) PrepareCloud() error {
 		}
 	}
 
+	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
+	if err != nil {
+		return nil
+	}
+
 	if found, err = cm.conn.getPublicKey(); err != nil {
 		//return
 	}
@@ -41,7 +46,12 @@ func (cm *ClusterManager) PrepareCloud() error {
 		}
 	}
 
-	if found, err = cm.conn.isControlPlaneExists(cm.cluster.Name); err != nil {
+	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
+	if err != nil {
+		return nil
+	}
+
+	if found, err = cm.conn.isControlPlaneExists(cm.Cluster.Name); err != nil {
 		return err
 	}
 	if !found {
@@ -50,15 +60,20 @@ func (cm *ClusterManager) PrepareCloud() error {
 		}
 	}
 
-	_, err = store.StoreProvider.Clusters().Update(cm.cluster)
+	_, err = store.StoreProvider.Clusters().Update(cm.Cluster)
+	if err != nil {
+		return nil
+	}
+
+	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 
 	return err
 }
 
-func (cm *ClusterManager) ApplyScale(dryRun bool) error {
+func (cm *ClusterManager) ApplyScale() error {
 	log.Infoln("scaling node group...")
 	var nodeGroups []*clusterapi.MachineSet
-	nodeGroups, err := store.StoreProvider.MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err := store.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -68,34 +83,34 @@ func (cm *ClusterManager) ApplyScale(dryRun bool) error {
 		return err
 	}
 	for _, ng := range nodeGroups {
-		igm := NewEKSNodeGroupManager(cm.ctx, cm.conn, ng, kc, cm.owner)
+		igm := NewEKSNodeGroupManager(cm.conn, ng, kc)
 
 		err = igm.Apply()
 		if err != nil {
 			return err
 		}
 	}
-	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.cluster)
+	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
 		return nil
 	}
 
-	_, err = store.StoreProvider.Clusters().Update(cm.cluster)
+	_, err = store.StoreProvider.Clusters().Update(cm.Cluster)
 
 	return err
 }
 
 func (cm *ClusterManager) ApplyDelete() error {
 	log.Infoln("deleting cluster...")
-	if cm.cluster.Status.Phase == api.ClusterReady {
-		cm.cluster.Status.Phase = api.ClusterDeleting
+	if cm.Cluster.Status.Phase == api.ClusterReady {
+		cm.Cluster.Status.Phase = api.ClusterDeleting
 	}
 	var found bool
-	_, err := store.StoreProvider.Clusters().UpdateStatus(cm.cluster)
+	_, err := store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
 		return err
 	}
-	found, err = cm.conn.isControlPlaneExists(cm.cluster.Name)
+	found, err = cm.conn.isControlPlaneExists(cm.Cluster.Name)
 	if err != nil {
 		log.Infoln(err)
 	}
@@ -135,8 +150,8 @@ func (cm *ClusterManager) ApplyDelete() error {
 		}
 	}
 
-	cm.cluster.Status.Phase = api.ClusterDeleted
-	_, err = store.StoreProvider.Clusters().Update(cm.cluster)
+	cm.Cluster.Status.Phase = api.ClusterDeleted
+	_, err = store.StoreProvider.Clusters().Update(cm.Cluster)
 
 	return err
 }
