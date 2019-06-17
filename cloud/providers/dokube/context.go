@@ -3,6 +3,8 @@ package dokube
 import (
 	"fmt"
 
+	"github.com/pharmer/pharmer/store"
+
 	"github.com/pkg/errors"
 	"k8s.io/client-go/rest"
 
@@ -82,6 +84,11 @@ func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 }
 
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
+	adminCert, adminKey, err := store.StoreProvider.Certificates(cm.Cluster.Name).Get("admin")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get admin cert and key")
+	}
+
 	cluster := cm.Cluster
 	var (
 		clusterName = fmt.Sprintf("%s.pharmer", cluster.Name)
@@ -102,7 +109,9 @@ func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 			CertificateAuthorityData: cert.EncodeCertPEM(cm.Certs.CACert.Cert),
 		},
 		AuthInfo: api.NamedAuthInfo{
-			Name: userName,
+			Name:                  userName,
+			ClientCertificateData: cert.EncodeCertPEM(adminCert),
+			ClientKeyData:         cert.EncodePrivateKeyPEM(adminKey),
 		},
 		Context: api.NamedContext{
 			Name:     ctxName,
