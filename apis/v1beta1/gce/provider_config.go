@@ -76,3 +76,12 @@ type GCEClusterProviderStatus struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 }
+
+type Disk struct {
+	InitializeParams DiskInitializeParams `json:"initializeParams"`
+}
+
+type DiskInitializeParams struct {
+	DiskSizeGb int64  `json:"diskSizeGb"`
+	DiskType   string `json:"diskType"`
+}

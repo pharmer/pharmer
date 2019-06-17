@@ -131,7 +131,7 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 }
 
 func NewDokubeAdminClient(cm *ClusterManager) (kubernetes.Interface, error) {
-	adminCert, adminKey, err := GetAdminCertificate(cm.Cluster)
+	adminCert, adminKey, err := GetAdminCertificate(cm.Cluster.Name)
 	if err != nil {
 		return nil, err
 	}

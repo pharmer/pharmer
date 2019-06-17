@@ -77,8 +77,8 @@ func CreateAdminCertificate(caCert *x509.Certificate, caKey crypto.Signer) (*x50
 	return adminCert, adminKey, nil
 }
 
-func GetAdminCertificate(cluster *api.Cluster) (*x509.Certificate, *rsa.PrivateKey, error) {
-	certStore := store.StoreProvider.Certificates(cluster.Name)
+func GetAdminCertificate(clusterName string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	certStore := store.StoreProvider.Certificates(clusterName)
 	admCert, admKey, err := certStore.Get("admin")
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to get admin certificates. Reason: %v", err)

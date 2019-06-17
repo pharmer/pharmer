@@ -24,9 +24,9 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 		Zone:  config.Cloud.Zone,
 		OS:    config.Cloud.InstanceImage,
 		Roles: []api.MachineRole{role},
-		Disks: []api.Disk{
+		Disks: []clusterapiGCE.Disk{
 			{
-				InitializeParams: api.DiskInitializeParams{
+				InitializeParams: clusterapiGCE.DiskInitializeParams{
 					DiskType:   "pd-standard",
 					DiskSizeGb: 30,
 				},

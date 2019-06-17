@@ -1,9 +1,7 @@
 package gke
 
 import (
-	"context"
 	"fmt"
-	"sync"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
@@ -12,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -21,18 +20,11 @@ const (
 )
 
 type ClusterManager struct {
-	cluster *api.Cluster
-	certs   *PharmerCertificates
+	*CloudManager
 
-	ctx   context.Context
 	conn  *cloudConnector
 	namer namer
-	m     sync.Mutex
-
-	owner string
 }
-
-var _ Interface = &ClusterManager{}
 
 const (
 	UID = "gke"
@@ -46,41 +38,67 @@ func init() {
 
 func New(cluster *api.Cluster, certs *PharmerCertificates) Interface {
 	return &ClusterManager{
-		cluster: cluster,
-		certs:   certs,
+		CloudManager: &CloudManager{
+			Cluster: cluster,
+			Certs:   certs,
+		},
 	}
 }
 
-// AddToManager adds all Controllers to the Manager
-func (cm *ClusterManager) AddToManager(ctx context.Context, m manager.Manager) error {
+func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 	return nil
 }
 
-type paramK8sClient struct{}
+func (cm *ClusterManager) AddToManager(m manager.Manager) error {
+	return nil
+}
+
+func (cm *ClusterManager) GetCloudConnector() error {
+	if cm.conn != nil {
+		return nil
+	}
+	conn, err := NewConnector(cm)
+	cm.conn = conn
+	return err
+}
+
+func (cm *ClusterManager) NewMasterTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
+	return TemplateData{}
+}
+
+func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
+	return TemplateData{}
+}
+
+func (cm *ClusterManager) EnsureMaster() error {
+	return nil
+}
+
+func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
+	return ""
+}
+
+func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
+	return "", nil
+}
+
+var _ Interface = &ClusterManager{}
 
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 	return nil
 }
 
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
-	cm.m.Lock()
-	defer cm.m.Unlock()
-
-	v := cm.ctx.Value(paramK8sClient{})
-	if kc, ok := v.(kubernetes.Interface); ok && kc != nil {
-		return kc, nil
-	}
-
-	kc, err := NewGKEAdminClient(cm.ctx, cm.cluster, cm.owner)
+	kc, err := cm.NewGKEAdminClient()
 	if err != nil {
 		return nil, err
 	}
-	cm.ctx = context.WithValue(cm.ctx, paramK8sClient{}, kc)
 	return kc, nil
 }
 
-func NewGKEAdminClient(ctx context.Context, cluster *api.Cluster, owner string) (kubernetes.Interface, error) {
-	adminCert, adminKey, err := GetAdminCertificate(ctx, cluster, owner)
+func (cm *ClusterManager) NewGKEAdminClient() (kubernetes.Interface, error) {
+	cluster := cm.Cluster
+	adminCert, adminKey, err := GetAdminCertificate(cm.Cluster.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +111,7 @@ func NewGKEAdminClient(ctx context.Context, cluster *api.Cluster, owner string) 
 		Username: cluster.Spec.Config.Cloud.GKE.UserName,
 		Password: cluster.Spec.Config.Cloud.GKE.Password,
 		TLSClientConfig: rest.TLSClientConfig{
-			CAData:   cert.EncodeCertPEM(CACert(ctx)),
+			CAData:   cert.EncodeCertPEM(cm.GetCaCertPair().Cert),
 			CertData: cert.EncodeCertPEM(adminCert),
 			KeyData:  cert.EncodePrivateKeyPEM(adminKey),
 		},
@@ -103,10 +121,7 @@ func NewGKEAdminClient(ctx context.Context, cluster *api.Cluster, owner string) 
 }
 
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
-	//cm.ctx, err = LoadCACertificates(cm.ctx, cluster, cm.owner)
-	//if err != nil {
-	//	return nil, err
-	//}
+	cluster := cm.Cluster
 
 	var (
 		clusterName = fmt.Sprintf("%s.pharmer", cluster.Name)
@@ -124,7 +139,7 @@ func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 		Cluster: api.NamedCluster{
 			Name:                     clusterName,
 			Server:                   cluster.APIServerURL(),
-			CertificateAuthorityData: cert.EncodeCertPEM(CACert(cm.ctx)),
+			CertificateAuthorityData: cert.EncodeCertPEM(cm.GetCaCertPair().Cert),
 		},
 		AuthInfo: api.NamedAuthInfo{
 			Name:     userName,

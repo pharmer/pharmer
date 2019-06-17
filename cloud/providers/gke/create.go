@@ -4,23 +4,27 @@ import (
 	"encoding/json"
 	"net"
 
+	"github.com/pharmer/pharmer/apis/v1beta1/gce"
+
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
-	spec := &api.GKEMachineProviderSpec{
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (v1alpha1.ProviderSpec, error) {
+	cluster := cm.Cluster
+	spec := &gce.GCEMachineProviderSpec{
 		Zone:        cluster.Spec.Config.Cloud.Zone,
 		MachineType: sku,
 		Roles:       []api.MachineRole{role},
-		Disks: []api.Disk{
+		Disks: []gce.Disk{
 			{
-				InitializeParams: api.DiskInitializeParams{
+				InitializeParams: gce.DiskInitializeParams{
 					DiskSizeGb: 100,
 					DiskType:   "pd-standard",
 				},
@@ -39,13 +43,10 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-func (cm *ClusterManager) SetOwner(owner string) {
-	cm.owner = owner
-}
-
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
+func (cm *ClusterManager) SetDefaultCluster() error {
+	cluster := cm.Cluster
 	n := namer{cluster: cluster}
-	config := cluster.Spec.Config
+	config := &cluster.Spec.Config
 
 	config.Cloud.InstanceImage = "Ubuntu"
 	config.Cloud.GKE = &api.GKESpec{
@@ -54,7 +55,7 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster) error {
 		NetworkName: "default",
 	}
 
-	return cluster.SetGKEProviderConfig(cluster.Spec.ClusterAPI, config)
+	return nil
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
@@ -64,7 +65,7 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
 	n := namer{cluster: cluster}
 	cfg := &api.SSHConfig{
-		PrivateKey: SSHKey(cm.ctx).PrivateKey,
+		PrivateKey: cm.Certs.SSHKey.PrivateKey,
 		User:       n.AdminUsername(),
 		HostPort:   int32(22),
 	}

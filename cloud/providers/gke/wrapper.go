@@ -1,25 +1,22 @@
 package gke
 
 import (
-	"context"
 	"crypto/rsa"
 	"encoding/base64"
 
-	. "github.com/appscode/go/context"
+	"github.com/pharmer/pharmer/apis/v1beta1/gce"
+
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
-	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	"google.golang.org/api/container/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func encodeCluster(ctx context.Context, cluster *api.Cluster, owner string) (*container.Cluster, error) {
+func encodeCluster(cluster *api.Cluster) (*container.Cluster, error) {
 	nodeGroups, err := store.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
-		err = errors.Wrap(err, ID(ctx))
 		return nil, err
 	}
 
@@ -28,7 +25,10 @@ func encodeCluster(ctx context.Context, cluster *api.Cluster, owner string) (*co
 
 	nodePools := make([]*container.NodePool, 0)
 	for _, node := range nodeGroups {
-		providerSpec := cluster.GKEProviderConfig(node.Spec.Template.Spec.ProviderSpec.Value.Raw)
+		providerSpec, err := gce.MachineConfigFromProviderSpec(node.Spec.Template.Spec.ProviderSpec)
+		if err != nil {
+			return nil, err
+		}
 		np := &container.NodePool{
 			Config: &container.NodeConfig{
 				MachineType: providerSpec.MachineType,
@@ -55,6 +55,9 @@ func encodeCluster(ctx context.Context, cluster *api.Cluster, owner string) (*co
 		MasterAuth: &container.MasterAuth{
 			Username: config.Cloud.GKE.UserName,
 			Password: config.Cloud.GKE.Password,
+			ClientCertificateConfig: &container.ClientCertificateConfig{
+				IssueClientCertificate: true,
+			},
 		},
 		Network: config.Cloud.GKE.NetworkName,
 		NetworkPolicy: &container.NetworkPolicy{
@@ -68,16 +71,15 @@ func encodeCluster(ctx context.Context, cluster *api.Cluster, owner string) (*co
 }
 
 func (cm *ClusterManager) retrieveClusterStatus(cluster *container.Cluster) error {
-	cm.cluster.Spec.ClusterAPI.Status.APIEndpoints = append(cm.cluster.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
+	cm.Cluster.Spec.ClusterAPI.Status.APIEndpoints = append(cm.Cluster.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
 		Host: cluster.Endpoint,
 		Port: 0,
 	})
 	return nil
 }
 
-func (cm *ClusterManager) StoreCertificate(cluster *container.Cluster, owner string) error {
-	certStore := store.StoreProvider.Certificates(cluster.Name)
-	_, caKey, err := certStore.Get(api.CACertCommonName)
+func (cm *ClusterManager) StoreCertificate(certStore store.CertificateStore, cluster *container.Cluster) error {
+	_, caKey, err := certStore.Get(api.CACertName)
 	if err == nil {
 		if err = certStore.Delete(api.CACertName); err != nil {
 			return err
