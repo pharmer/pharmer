@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/appscode/go/log"
+
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/ghodss/yaml"
 	"github.com/pharmer/pharmer/apis/v1beta1/aws"
@@ -54,7 +55,6 @@ func (igm *EKSNodeGroupManager) Apply() error {
 		}
 	} else {
 		if *igm.ng.Spec.Replicas == 0 || igm.ng.DeletionTimestamp != nil {
-
 			var ngInfo *cloudformation.Stack
 			ngInfo, err = igm.conn.getStack(igm.ng.Name)
 			if err != nil {
@@ -78,9 +78,10 @@ func (igm *EKSNodeGroupManager) Apply() error {
 			if err = igm.conn.updateStack(igm.ng.Name, params, true); err != nil {
 				log.Infoln(err)
 			}
-
 		}
 	}
+
+	igm.ng.Name = fileName
 	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas
 	_, err = igm.StoreProvider.MachineSet(igm.conn.Cluster.Name).UpdateStatus(igm.ng)
 

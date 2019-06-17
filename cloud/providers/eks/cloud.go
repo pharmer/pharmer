@@ -20,7 +20,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
-	version "gomodules.xyz/version"
+	"gomodules.xyz/version"
 	"k8s.io/apimachinery/pkg/util/wait" //"github.com/pharmer/pharmer/cloud/providers/eks/assets"
 )
 
@@ -316,9 +316,31 @@ func (conn *cloudConnector) updateStack(name string, params map[string]string, w
 
 	_, err := conn.cfn.UpdateStack(cfn)
 	if err != nil {
+		return nil
+	}
+
+	return conn.WaitForStackOperation(name, cloudformation.StackStatusUpdateComplete)
+}
+
+func (conn *cloudConnector) detectUbuntuImage() error {
+	conn.Cluster.Spec.Config.Cloud.OS = "ubuntu"
+	r1, err := conn.ec2.DescribeImages(&_ec2.DescribeImagesInput{
+		Owners: []*string{StringP("099720109477")},
+		Filters: []*_ec2.Filter{
+			{
+				Name: StringP("name"),
+				Values: []*string{
+					StringP("ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20170619.1"),
+				},
+			},
+		},
+	})
+	if err != nil {
 		return err
 	}
-	return conn.WaitForStackOperation(name, cloudformation.StackStatusUpdateComplete)
+	conn.Cluster.Spec.Config.Cloud.InstanceImage = *r1.Images[0].ImageId
+	log.Infof("Ubuntu image with %v detected", conn.Cluster.Spec.Config.Cloud.InstanceImage)
+	return nil
 }
 
 func (conn *cloudConnector) getPublicKey() (bool, error) {
