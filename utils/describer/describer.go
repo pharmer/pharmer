@@ -34,7 +34,7 @@ func newHumanReadableDescriber() *humanReadableDescriber {
 }
 
 func (h *humanReadableDescriber) addDefaultHandlers() {
-	h.Handler(h.describeCluster)
+	_ = h.Handler(h.describeCluster)
 }
 
 func (h *humanReadableDescriber) Handler(describeFunc interface{}) error {

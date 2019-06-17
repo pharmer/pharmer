@@ -75,7 +75,10 @@ func RunGetNodeGroup(opts *options.NodeGroupGetConfig, out io.Writer) error {
 			if err := rPrinter.PrintObj(ng, w); err != nil {
 				return err
 			}
-			printer.PrintNewline(w)
+			err = printer.PrintNewline(w)
+			if err != nil {
+				return err
+			}
 		}
 
 	}

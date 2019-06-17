@@ -4,9 +4,8 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/log"
-	stan "github.com/nats-io/stan.go"
+	"github.com/nats-io/stan.go"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"golang.org/x/net/context"
 )
 
 type NotificationMessage struct {
@@ -15,27 +14,22 @@ type NotificationMessage struct {
 }
 
 type Notifier struct {
-	ctx     context.Context
 	client  stan.Conn
 	subject string
 }
 
 var _ api.Logger = &Notifier{}
 
-func NewNotifier(ctx context.Context, conn stan.Conn, subject string) api.Logger {
-	return Notifier{ctx: ctx, client: conn, subject: subject}
-}
-
 func (a Notifier) Info(args ...interface{}) {
-	a.notify(fmt.Sprint(args...))
+	_, _ = a.notify(fmt.Sprint(args...))
 }
 
 func (a Notifier) Infoln(args ...interface{}) {
-	a.notify(fmt.Sprintln(args...))
+	_, _ = a.notify(fmt.Sprintln(args...))
 }
 
 func (a Notifier) Infof(format string, args ...interface{}) {
-	a.notify(fmt.Sprintf(format, args...))
+	_, _ = a.notify(fmt.Sprintf(format, args...))
 }
 
 func (a Notifier) Debug(args ...interface{}) {

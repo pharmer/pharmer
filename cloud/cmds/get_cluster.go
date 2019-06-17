@@ -56,7 +56,10 @@ func RunGetCluster(opts *options.ClusterGetConfig, out io.Writer) error {
 		if err := rPrinter.PrintObj(cluster, w); err != nil {
 			return err
 		}
-		printer.PrintNewline(w)
+		err = printer.PrintNewline(w)
+		if err != nil {
+			return err
+		}
 	}
 
 	w.Flush()

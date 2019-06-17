@@ -83,8 +83,8 @@ func (i *Inspector) NetworkCheck() error {
 	}
 
 	defer func() {
-		i.DeleteNginxService()
-		i.DeleteNginx()
+		_ = i.DeleteNginxService()
+		_ = i.DeleteNginx()
 	}()
 
 	var pods []core.Pod

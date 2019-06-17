@@ -23,7 +23,6 @@ type CloudManager struct {
 	Cluster *api.Cluster
 	Certs   *certificates.PharmerCertificates
 
-	Namer       namer
 	AdminClient kubernetes.Interface
 
 	Credential *cloudapi.Credential
