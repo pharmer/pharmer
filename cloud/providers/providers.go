@@ -1,5 +1,6 @@
 package providers
 
+// Imported, so init functions are called and cloud provider gets registered
 import (
 	_ "github.com/pharmer/pharmer/cloud/providers/aks"
 	_ "github.com/pharmer/pharmer/cloud/providers/aws"

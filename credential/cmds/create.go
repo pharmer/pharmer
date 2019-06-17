@@ -65,10 +65,8 @@ func runCreateCredential(opts *options.CredentialCreateConfig) error {
 		if err != nil {
 			return err
 		}
-	} else {
-		if !sets.NewString(providers.List()...).Has(provider) {
-			return errors.New("Unknown Cloud provider")
-		}
+	} else if !sets.NewString(providers.List()...).Has(provider) {
+		return errors.New("Unknown Cloud provider")
 	}
 
 	issue := opts.Issue

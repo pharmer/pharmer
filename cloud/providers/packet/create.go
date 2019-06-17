@@ -6,7 +6,7 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	packetconfig "github.com/pharmer/pharmer/apis/v1beta1/packet"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,7 +40,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 	//config := cluster.Spec.Config
 	spec := &packetconfig.PacketMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: packetconfig.PacketProviderGroupName + "/" + packetconfig.PacketProviderApiVersion,
+			APIVersion: packetconfig.PacketProviderGroupName + "/" + packetconfig.PacketProviderAPIVersion,
 			Kind:       packetconfig.PacketProviderKind,
 		},
 		Plan:         sku,
@@ -69,7 +69,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
-	return false, ErrNotImplemented
+	return false, cloud.ErrNotImplemented
 }
 
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {

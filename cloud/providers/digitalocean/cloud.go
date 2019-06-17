@@ -14,7 +14,7 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	doCapi "github.com/pharmer/pharmer/apis/v1beta1/digitalocean"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
@@ -28,12 +28,12 @@ import (
 var errLBNotFound = errors.New("loadbalancer not found")
 
 type cloudConnector struct {
-	*CloudManager
+	*cloud.CloudManager
 	client *godo.Client
 	namer  namer
 }
 
-func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
+func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
 
 	cred, err := store.StoreProvider.Credentials().Get(cluster.ClusterConfig().CredentialName)
@@ -78,35 +78,6 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 
 func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data map[string]string) error {
 	return nil
-}
-
-func PrepareCloud(ctx context.Context, clusterName, owner string) (*cloudConnector, error) {
-	var conn *cloudConnector
-	//cluster, err := store.StoreProvider.Clusters().Get(clusterName)
-	//if err != nil {
-	//	return conn, fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
-	//}
-	////cm.cluster = cluster
-	//
-	//if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
-	//	return conn, err
-	//}
-	//if ctx, err = LoadEtcdCertificate(ctx, cluster, owner); err != nil {
-	//	return nil, err
-	//}
-	//if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
-	//	return conn, err
-	//}
-	//if ctx, err = LoadSaKey(ctx, cluster, owner); err != nil {
-	//	return conn, err
-	//}
-	//
-	//if conn, err = NewConnector(ctx, cluster, owner); err != nil {
-	//	return nil, err
-	//}
-	//conn.namer = namer{cluster}
-	////cm.namer = namer{cluster: cm.cluster}
-	return conn, nil
 }
 
 func (conn *cloudConnector) WaitForInstance(id int, status string) error {

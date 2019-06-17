@@ -40,14 +40,14 @@ type ClusterAPI struct {
 	externalController bool
 }
 
-type ApiServerTemplate struct {
+type apiServerTemplate struct {
 	ClusterName         string
 	Provider            string
 	ControllerNamespace string
 	ControllerImage     string
 }
 
-func NewClusterApi(cm Interface, namespace string, kc kubernetes.Interface) (*ClusterAPI, error) {
+func NewClusterAPI(cm Interface, namespace string, kc kubernetes.Interface) (*ClusterAPI, error) {
 	token, err := kube.GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration)
 	if err != nil {
 		return nil, err
@@ -175,7 +175,7 @@ func (ca *ClusterAPI) CreateMachineController(controllerManager string) error {
 	}
 
 	log.Infoln("creating apiserver and controller")
-	if err := ca.CreateApiServerAndController(controllerManager); err != nil && !api.ErrObjectModified(err) {
+	if err := ca.CreateAPIServerAndController(controllerManager); err != nil && !api.ErrObjectModified(err) {
 		return err
 	}
 	return nil
@@ -254,14 +254,14 @@ func (ca *ClusterAPI) CreatePharmerSecret() error {
 	return nil
 }
 
-func (ca *ClusterAPI) CreateApiServerAndController(controllerManager string) error {
+func (ca *ClusterAPI) CreateAPIServerAndController(controllerManager string) error {
 	tmpl, err := template.New("config").Parse(controllerManager)
 	if err != nil {
 		return err
 	}
 	cluster := ca.GetCluster()
 	var tmplBuf bytes.Buffer
-	err = tmpl.Execute(&tmplBuf, ApiServerTemplate{
+	err = tmpl.Execute(&tmplBuf, apiServerTemplate{
 		ClusterName:         cluster.Name,
 		Provider:            cluster.ClusterConfig().Cloud.CloudProvider,
 		ControllerNamespace: ca.namespace,

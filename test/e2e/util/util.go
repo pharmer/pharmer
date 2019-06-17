@@ -263,7 +263,7 @@ var ScaleCluster = func(n int32) {
 //	Expect(err).NotTo(HaveOccurred())
 //}
 
-func RunCommand(command []string) (error, string) {
+func RunCommand(command []string) (string, error) {
 	cmd := exec.Command(pharmerPath, command[1:]...)
 	var buf bytes.Buffer
 	cmd.Stderr = &buf
@@ -271,7 +271,8 @@ func RunCommand(command []string) (error, string) {
 
 	By(fmt.Sprintf("Running Command: %v", command))
 
-	return cmd.Run(), buf.String()
+	err := cmd.Run()
+	return buf.String(), err
 }
 
 func RunCommandWithStderr(command []string) error {

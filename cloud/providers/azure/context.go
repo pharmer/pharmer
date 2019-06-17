@@ -28,9 +28,7 @@ const (
 )
 
 func init() {
-	cloud.RegisterCloudManager(UID, func(cluster *api.Cluster, certs *certificates.PharmerCertificates) cloud.Interface {
-		return New(cluster, certs)
-	})
+	cloud.RegisterCloudManager(UID, New)
 }
 
 func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) cloud.Interface {
@@ -73,7 +71,7 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 
 func (cm *ClusterManager) GetCloudConnector() error {
 	var err error
-	cm.conn, err = NewConnector(cm)
+	cm.conn, err = newConnector(cm)
 	return err
 }
 

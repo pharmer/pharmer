@@ -12,17 +12,17 @@ import (
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/appscode/go/log"
-	. "github.com/appscode/go/types"
+	"github.com/appscode/go/types"
 	"github.com/appscode/go/wait"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 )
 
 type cloudConnector struct {
-	*CloudManager
+	*cloud.CloudManager
 
 	namer namer
 
@@ -31,7 +31,7 @@ type cloudConnector struct {
 	managedClient          ms.ManagedClustersClient
 }
 
-func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
+func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
 	cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
@@ -81,10 +81,10 @@ func (conn *cloudConnector) getResourceGroup() (bool, error) {
 
 func (conn *cloudConnector) ensureResourceGroup() (resources.Group, error) {
 	req := resources.Group{
-		Name:     StringP(conn.namer.ResourceGroupName()),
-		Location: StringP(conn.Cluster.Spec.Config.Cloud.Zone),
+		Name:     types.StringP(conn.namer.ResourceGroupName()),
+		Location: types.StringP(conn.Cluster.Spec.Config.Cloud.Zone),
 		Tags: map[string]*string{
-			"KubernetesCluster": StringP(conn.Cluster.Name),
+			"KubernetesCluster": types.StringP(conn.Cluster.Name),
 		},
 	}
 	return conn.groupsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), req)
@@ -108,23 +108,23 @@ func (conn *cloudConnector) upsertAKS(agentPools []cs.ManagedClusterAgentPoolPro
 
 	container := cs.ManagedCluster{
 		Name:     &conn.Cluster.Name,
-		Location: StringP(conn.Cluster.Spec.Config.Cloud.Zone),
+		Location: types.StringP(conn.Cluster.Spec.Config.Cloud.Zone),
 		ManagedClusterProperties: &cs.ManagedClusterProperties{
-			DNSPrefix: StringP(conn.Cluster.Name),
-			//Fqdn:              StringP(conn.Cluster.Name),
-			KubernetesVersion: StringP(conn.Cluster.Spec.Config.KubernetesVersion),
+			DNSPrefix: types.StringP(conn.Cluster.Name),
+			//Fqdn:              types.StringP(conn.Cluster.Name),
+			KubernetesVersion: types.StringP(conn.Cluster.Spec.Config.KubernetesVersion),
 			ServicePrincipalProfile: &cs.ManagedClusterServicePrincipalProfile{
-				ClientID: StringP(typed.ClientID()),
-				Secret:   StringP(typed.ClientSecret()),
+				ClientID: types.StringP(typed.ClientID()),
+				Secret:   types.StringP(typed.ClientSecret()),
 			},
 
 			AgentPoolProfiles: &agentPools,
 			LinuxProfile: &cs.LinuxProfile{
-				AdminUsername: StringP(conn.namer.AdminUsername()),
+				AdminUsername: types.StringP(conn.namer.AdminUsername()),
 				SSH: &cs.SSHConfiguration{
 					PublicKeys: &[]cs.SSHPublicKey{
 						{
-							KeyData: StringP(string(conn.Certs.SSHKey.PublicKey)),
+							KeyData: types.StringP(string(conn.Certs.SSHKey.PublicKey)),
 						},
 					},
 				},

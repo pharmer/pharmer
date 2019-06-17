@@ -87,16 +87,10 @@ func NewStoreProvider(cfg *api.PharmerConfig, owner string) (ResourceInterface, 
 	var storeType string
 	if cfg == nil {
 		storeType = fakeUID
-	} else if cfg.Store.Local != nil ||
-		cfg.Store.S3 != nil ||
-		cfg.Store.GCS != nil ||
-		cfg.Store.Azure != nil ||
-		cfg.Store.Swift != nil {
-		storeType = vfsUID
 	} else if cfg.Store.Postgres != nil {
 		storeType = xormUID
 	} else {
-		storeType = fakeUID
+		storeType = vfsUID
 	}
 
 	store, err := GetProvider(storeType, cfg)

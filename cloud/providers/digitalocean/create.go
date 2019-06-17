@@ -6,7 +6,7 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	doCapi "github.com/pharmer/pharmer/apis/v1beta1/digitalocean"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
@@ -29,7 +29,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 
 	spec := &doCapi.DigitalOceanMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: doCapi.DigitalOceanProviderGroupName + "/" + doCapi.DigitalOceanProviderApiVersion,
+			APIVersion: doCapi.DigitalOceanProviderGroupName + "/" + doCapi.DigitalOceanProviderAPIVersion,
 			Kind:       doCapi.DigitalOceanProviderKind,
 		},
 		Region: config.Cloud.Region,
@@ -70,7 +70,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 
 // IsValid TODO: Add Description
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
-	return false, ErrNotImplemented
+	return false, cloud.ErrNotImplemented
 }
 
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {

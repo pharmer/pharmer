@@ -6,7 +6,6 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -74,14 +73,14 @@ func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token s
 	return td
 }
 
-func (cm *ClusterManager) NewMasterTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData {
+func (cm *ClusterManager) NewMasterTemplateData(machine *clusterapi.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
 	hostPath := kubeadmapi.HostPathMount{
 		Name:      "cloud-config",
 		HostPath:  "/etc/kubernetes/azure.json",
 		MountPath: "/etc/kubernetes/azure.json",
 	}
 
-	td.ClusterConfiguration = GetDefaultKubeadmClusterConfig(cm.Cluster, &hostPath)
+	td.ClusterConfiguration = cloud.GetDefaultKubeadmClusterConfig(cm.Cluster, &hostPath)
 
 	return td
 }

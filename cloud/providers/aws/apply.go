@@ -4,10 +4,10 @@ import (
 	"time"
 
 	"github.com/appscode/go/log"
-	. "github.com/appscode/go/types"
+	"github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -78,7 +78,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 		VPC: clusterapi_aws.VPCSpec{
 			ID:                vpcID,
 			CidrBlock:         cm.Cluster.Spec.Config.Cloud.AWS.VpcCIDR,
-			InternetGatewayID: StringP(gatewayID),
+			InternetGatewayID: types.StringP(gatewayID),
 			Tags: clusterapi_aws.Map{
 				"sigs.k8s.io/cluster-api-provider-aws/managed": "true",
 			},
@@ -89,15 +89,15 @@ func (cm *ClusterManager) PrepareCloud() error {
 				CidrBlock:        cm.Cluster.Spec.Config.Cloud.AWS.PublicSubnetCIDR,
 				AvailabilityZone: cm.Cluster.Spec.Config.Cloud.Zone,
 				IsPublic:         true,
-				RouteTableID:     StringP(publicRouteTableID),
-				NatGatewayID:     StringP(natID),
+				RouteTableID:     types.StringP(publicRouteTableID),
+				NatGatewayID:     types.StringP(natID),
 			},
 			{
 				ID:               privateSubnetID,
 				CidrBlock:        cm.Cluster.Spec.Config.Cloud.AWS.PrivateSubnetCIDR,
 				AvailabilityZone: cm.Cluster.Spec.Config.Cloud.Zone,
 				IsPublic:         false,
-				RouteTableID:     StringP(privateRouteTableID),
+				RouteTableID:     types.StringP(privateRouteTableID),
 			},
 		},
 	}
@@ -137,7 +137,7 @@ func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
 func (cm *ClusterManager) EnsureMaster() error {
 	var found bool
 
-	leaderMachine, err := GetLeaderMachine(cm.Cluster)
+	leaderMachine, err := cloud.GetLeaderMachine(cm.Cluster)
 	if err != nil {
 		return errors.Wrap(err, "failed to get leader machine")
 	}
@@ -147,7 +147,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 	}
 	if !found {
 		log.Info("Creating master instance")
-		script, err := RenderStartupScript(cm, leaderMachine, "", customTemplate)
+		script, err := cloud.RenderStartupScript(cm, leaderMachine, "", customTemplate)
 		if err != nil {
 			return err
 		}
@@ -180,7 +180,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 		}
 
 		spec.AMI = clusterapi_aws.AWSResourceReference{
-			ID: StringP(cm.Cluster.Spec.Config.Cloud.InstanceImage),
+			ID: types.StringP(cm.Cluster.Spec.Config.Cloud.InstanceImage),
 		}
 
 		rootDeviceSize, err := cm.conn.getInstanceRootDeviceSize(masterInstance)
@@ -456,7 +456,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 		return err
 	}
 
-	err := DeleteAllWorkerMachines(cm)
+	err := cloud.DeleteAllWorkerMachines(cm)
 	if err != nil {
 		log.Infof("failed to delete nodes: %v", err)
 	}
@@ -475,7 +475,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 		return errors.Wrap(err, "error deleting load balancer")
 	}
 
-	if err := cm.conn.deleteInstance("bastion"); err != nil {
+	if err := cm.conn.deleteInstance(bastion); err != nil {
 		return errors.Wrap(err, "error deleting bastion instance")
 	}
 

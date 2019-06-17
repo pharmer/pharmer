@@ -5,13 +5,13 @@ import (
 
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"gopkg.in/ini.v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) NewNodeTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData {
+func (cm *ClusterManager) NewNodeTemplateData(machine *clusterapi.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
 	td.ExternalProvider = false // GCE does not use out-of-tree CCM
 
 	n := namer{cm.Cluster}
@@ -43,14 +43,14 @@ func (cm *ClusterManager) NewNodeTemplateData(machine *clusterapi.Machine, token
 	return td
 }
 
-func (cm *ClusterManager) NewMasterTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData {
+func (cm *ClusterManager) NewMasterTemplateData(machine *clusterapi.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
 	hostPath := kubeadmapi.HostPathMount{
 		Name:      "cloud-config",
 		HostPath:  "/etc/kubernetes/ccm",
 		MountPath: "/etc/kubernetes/ccm",
 	}
 
-	cfg := GetDefaultKubeadmClusterConfig(cm.Cluster, &hostPath)
+	cfg := cloud.GetDefaultKubeadmClusterConfig(cm.Cluster, &hostPath)
 	td.ClusterConfiguration = cfg
 
 	return td

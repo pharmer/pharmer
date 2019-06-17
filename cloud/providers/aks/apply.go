@@ -5,7 +5,7 @@ import (
 
 	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-04-30/containerservice"
 	"github.com/appscode/go/log"
-	. "github.com/appscode/go/types"
+	"github.com/appscode/go/types"
 	"github.com/pharmer/pharmer/apis/v1beta1/azure"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
@@ -41,7 +41,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 		}
 		name := cm.namer.GetNodeGroupName(ng.Name)
 		ap := containersvc.ManagedClusterAgentPoolProfile{
-			Name:   StringP(name),
+			Name:   types.StringP(name),
 			Count:  ng.Spec.Replicas,
 			VMSize: containersvc.VMSizeTypes(providerspec.VMSize),
 			OsType: containersvc.OSType(providerspec.OSDisk.OSType),
@@ -86,7 +86,7 @@ func (cm *ClusterManager) ApplyScale() error {
 			continue
 		}
 		ap := containersvc.ManagedClusterAgentPoolProfile{
-			Name:   StringP(name),
+			Name:   types.StringP(name),
 			Count:  ng.Spec.Replicas,
 			VMSize: containersvc.VMSizeTypes(providerspec.VMSize),
 			OsType: containersvc.Linux,

@@ -36,7 +36,7 @@ func (igm *EKSNodeGroupManager) Apply() error {
 
 	if !found {
 		params := igm.buildstackParams()
-		if err = igm.conn.createStack(igm.ng.Name, NodeGroupUrl, params, true); err != nil {
+		if err = igm.conn.createStack(igm.ng.Name, NodeGroupURL, params, true); err != nil {
 			return err
 		}
 		var ngInfo *cloudformation.Stack

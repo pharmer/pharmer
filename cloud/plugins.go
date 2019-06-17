@@ -33,27 +33,6 @@ func RegisterCloudManager(name string, cloud Factory) {
 	providers[name] = cloud
 }
 
-// IsCloudManager returns true if name corresponds to an already registered
-// cloud provider.
-func IsCloudManager(name string) bool {
-	providersMutex.Lock()
-	defer providersMutex.Unlock()
-	_, found := providers[name]
-	return found
-}
-
-// CloudManagers returns the name of all registered cloud providers in a
-// string slice
-func CloudManagers() []string {
-	names := []string{}
-	providersMutex.Lock()
-	defer providersMutex.Unlock()
-	for name := range providers {
-		names = append(names, name)
-	}
-	return names
-}
-
 func GetCloudManager(cluster *api.Cluster) (Interface, error) {
 	certs, err := certificates.GetPharmerCerts(cluster.Name)
 	if err != nil {

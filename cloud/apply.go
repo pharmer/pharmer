@@ -140,7 +140,7 @@ func applyClusterAPI(cm Interface) error {
 	if err != nil {
 		return err
 	}
-	ca, err := NewClusterApi(cm, "cloud-provider-system", kubeClient)
+	ca, err := NewClusterAPI(cm, "cloud-provider-system", kubeClient)
 	if err != nil {
 		return errors.Wrap(err, "Error creating Cluster-api components")
 	}

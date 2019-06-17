@@ -2,7 +2,7 @@ package linode
 
 import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pharmer/pharmer/store"
@@ -14,7 +14,7 @@ import (
 )
 
 type ClusterManager struct {
-	*CloudManager
+	*cloud.CloudManager
 
 	conn  *cloudConnector
 	namer namer
@@ -24,7 +24,7 @@ func (cm *ClusterManager) ApplyScale() error {
 	panic("implement me")
 }
 
-var _ Interface = &ClusterManager{}
+var _ cloud.Interface = &ClusterManager{}
 
 const (
 	UID      = "linode"
@@ -32,14 +32,12 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
-		return New(cluster, certs)
-	})
+	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
+func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) cloud.Interface {
 	return &ClusterManager{
-		CloudManager: &CloudManager{
+		CloudManager: &cloud.CloudManager{
 			Cluster: cluster,
 			Certs:   certs,
 		},

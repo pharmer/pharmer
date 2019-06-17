@@ -22,7 +22,7 @@ var _ = FDescribe("test create cluster command", func() {
 	table := func() interface{} {
 		return DescribeTable("create cluster scenerios",
 			func(c cases) {
-				_, err := util.RunCommand(strings.Split(c.args, " "))
+				err, _ := util.RunCommand(strings.Split(c.args, " "))
 				Expect(err).NotTo(HaveOccurred())
 			},
 			Entry("gce", cases{

@@ -9,7 +9,7 @@ import (
 	"github.com/packethost/packngo"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -18,11 +18,11 @@ import (
 )
 
 type cloudConnector struct {
-	*CloudManager
+	*cloud.CloudManager
 	client *packngo.Client
 }
 
-func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
+func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
 
 	cred, err := store.StoreProvider.Credentials().Get(cluster.ClusterConfig().CredentialName)

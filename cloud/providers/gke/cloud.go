@@ -8,7 +8,7 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/apis/v1beta1/gce"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"google.golang.org/api/compute/v1"
@@ -22,7 +22,7 @@ const (
 )
 
 type cloudConnector struct {
-	*CloudManager
+	*cloud.CloudManager
 	containerService *container.Service
 	computeService   *compute.Service
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	linode_config "github.com/pharmer/pharmer/apis/v1beta1/linode"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
@@ -24,7 +24,7 @@ import (
 var errLBNotFound = errors.New("loadbalancer not found")
 
 type cloudConnector struct {
-	*CloudManager
+	*cloud.CloudManager
 	namer  namer
 	client *linodego.Client
 }
@@ -469,7 +469,7 @@ func (conn *cloudConnector) deleteLoadBalancer(lbName string) error {
 	if !reflect.DeepEqual(lb.StickySessions, defaultSpecs.StickySessions) {
 		return true, nil
 	}
-	if lb.RedirectHttpToHttps != defaultSpecs.RedirectHttpToHttps {
+	if lb.RedirectHTTPToHTTPS != defaultSpecs.RedirectHTTPToHTTPS {
 		return true, nil
 	}
 

@@ -1,26 +1,26 @@
-package linode_config
+package linode
 
 import (
 	"github.com/linode/linodego"
-	. "github.com/pharmer/pharmer/apis/v1beta1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	LinodeProviderGroupName  = "linodeproviderconfig"
 	LinodeProviderKind       = "LinodeClusterProviderConfig"
-	LinodeProviderApiVersion = "v1alpha1"
+	LinodeProviderAPIVersion = "v1alpha1"
 )
 
 type LinodeMachineProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Roles  []MachineRole `json:"roles,omitempty"`
-	Region string        `json:"region,omitempty"`
-	Type   string        `json:"type,omitempty"`
-	Image  string        `json:"image,omitempty"`
-	Pubkey string        `json:"pubkey,omitempty"`
+	Roles  []api.MachineRole `json:"roles,omitempty"`
+	Region string            `json:"region,omitempty"`
+	Type   string            `json:"type,omitempty"`
+	Image  string            `json:"image,omitempty"`
+	Pubkey string            `json:"pubkey,omitempty"`
 }
 
 type LinodeMachineProviderStatus struct {

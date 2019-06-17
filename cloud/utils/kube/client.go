@@ -73,12 +73,14 @@ func WaitForReadyMasterVersion(client kubernetes.Interface, desiredVersion *semv
 		if err != nil {
 			return false, nil
 		}
-		if len(masterInstances.Items) == 1 {
+
+		switch len(masterInstances.Items) {
+		case 1:
 			masterInstance = &masterInstances.Items[0]
-		} else if len(masterInstances.Items) > 1 {
-			return false, errors.Errorf("multiple master found")
-		} else {
+		case 0:
 			return false, nil
+		default:
+			return false, errors.Errorf("multiple master found")
 		}
 
 		currentVersion, _ := semver.NewVersion(masterInstance.Status.NodeInfo.KubeletVersion)

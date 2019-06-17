@@ -7,7 +7,7 @@ import (
 const (
 	PacketProviderGroupName  = "Packetproviderconfig"
 	PacketProviderKind       = "PacketClusterProviderConfig"
-	PacketProviderApiVersion = "v1alpha1"
+	PacketProviderAPIVersion = "v1alpha1"
 )
 
 type PacketClusterProviderSpec struct {

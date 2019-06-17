@@ -112,7 +112,7 @@ func EncodeClusterSpec(spec *GCEClusterProviderSpec) (*runtime.RawExtension, err
 func SetGCEclusterProviderConfig(cluster *clusterv1.Cluster, project string, certs *certificates.PharmerCertificates) error {
 	conf := &GCEClusterProviderSpec{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: GCEProviderGroupName + "/" + GCEProviderApiVersion,
+			APIVersion: GCEProviderGroupName + "/" + GCEProviderAPIVersion,
 			Kind:       GCEClusterProviderKind,
 		},
 		Project: project,

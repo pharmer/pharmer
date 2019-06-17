@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
@@ -17,7 +17,7 @@ import (
 )
 
 type ClusterManager struct {
-	*CloudManager
+	*cloud.CloudManager
 
 	conn *cloudConnector
 }
@@ -36,12 +36,12 @@ func (cm *ClusterManager) GetCloudConnector() error {
 	return err
 }
 
-func (cm *ClusterManager) NewMasterTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
-	return TemplateData{}
+func (cm *ClusterManager) NewMasterTemplateData(machine *v1alpha1.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
+	return cloud.TemplateData{}
 }
 
-func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
-	return TemplateData{}
+func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
+	return cloud.TemplateData{}
 }
 
 func (cm *ClusterManager) EnsureMaster() error {
@@ -56,21 +56,19 @@ func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 	return "", nil
 }
 
-var _ Interface = &ClusterManager{}
+var _ cloud.Interface = &ClusterManager{}
 
 const (
 	UID = "dokube"
 )
 
 func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
-		return New(cluster, certs)
-	})
+	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
+func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) cloud.Interface {
 	return &ClusterManager{
-		CloudManager: &CloudManager{
+		CloudManager: &cloud.CloudManager{
 			Cluster: cluster,
 			Certs:   certs,
 		},

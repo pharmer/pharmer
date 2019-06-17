@@ -8,7 +8,7 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
@@ -60,7 +60,7 @@ func (i *Inspector) runNodeExecutor(podName, podIp, containerName string) error 
 }
 
 func (i *Inspector) runMasterExecutor(masterNode core.Node, podIp string) error {
-	sshCfg, err := GetSSHConfig(masterNode.Name, i.cluster)
+	sshCfg, err := cloud.GetSSHConfig(masterNode.Name, i.cluster)
 	if err != nil {
 		return err
 	}
@@ -75,8 +75,8 @@ func (i *Inspector) runMasterExecutor(masterNode core.Node, podIp string) error 
 	}
 
 	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
-		DefaultWriter.Flush()
-		resp, err := ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", sshCfg.HostIP, sshCfg.HostPort), config)
+		cloud.DefaultWriter.Flush()
+		resp, err := cloud.ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", sshCfg.HostIP, sshCfg.HostPort), config)
 		if err == nil && strings.Contains(resp, "200") {
 			term.Successln("Network is ok from master to ", podIp)
 			return true, nil

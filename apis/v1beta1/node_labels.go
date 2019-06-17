@@ -41,7 +41,7 @@ func ParseNodeLabels(data string) (*NodeLabels, error) {
 	}
 
 	n := NodeLabels{}
-	for i := 0; i < len(parts)/2; i = i + 2 {
+	for i := 0; i < len(parts)/2; i += 2 {
 		k, v := parts[i], parts[i+1]
 		n[k] = v
 	}

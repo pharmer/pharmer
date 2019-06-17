@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/appscode/go/log"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,18 +28,18 @@ func (e *RemoteBashExecutor) Execute(config *rest.Config, method string, url *ur
 		return "", errors.Wrap(err, "failed to create executor")
 	}
 	stdIn := newStringReader(cmds)
-	DefaultWriter.Flush()
+	cloud.DefaultWriter.Flush()
 	err = exec.Stream(remotecommand.StreamOptions{
 		Stdin:  stdIn,
-		Stdout: DefaultWriter,
-		Stderr: DefaultWriter,
+		Stdout: cloud.DefaultWriter,
+		Stderr: cloud.DefaultWriter,
 		Tty:    false,
 	})
 	if err != nil {
 		log.Errorln("Error in exec", err)
 		return "", errors.Wrap(err, "failed to exec")
 	}
-	return DefaultWriter.Output(), nil
+	return cloud.DefaultWriter.Output(), nil
 }
 
 type ExecOptions struct {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -37,7 +37,7 @@ func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 		SSHPrivateKey:   base64.StdEncoding.EncodeToString(cm.Certs.SSHKey.PrivateKey),
 		SSHPublicKey:    base64.StdEncoding.EncodeToString(cm.Certs.SSHKey.PublicKey),
 		SSHUser:         base64.StdEncoding.EncodeToString([]byte("clusterapi")),
-		ControllerImage: MachineControllerImage,
+		ControllerImage: cloud.MachineControllerImage,
 	})
 	if err != nil {
 		return "", err

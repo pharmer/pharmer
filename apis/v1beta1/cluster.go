@@ -282,7 +282,7 @@ func (c *Cluster) SetClusterApiEndpoints(addresses []core.NodeAddress) error {
 		})
 		return nil
 	}
-	return fmt.Errorf("No cluster api endpoint found")
+	return fmt.Errorf("no cluster api endpoint found")
 }
 
 func (c *Cluster) APIServerAddress() string {

@@ -50,7 +50,7 @@ func (sm *StatusManager) InstanceStatus(machine *clusterv1.Machine) (instanceSta
 
 	if currentMachine == nil {
 		// The current status no longer exists because the matching CRD has been deleted (or does not exist yet ie. bootstrapping)
-		return nil, fmt.Errorf("Machine %v not found", machine.Name)
+		return nil, fmt.Errorf("machine %v not found", machine.Name)
 	}
 	return sm.machineInstanceStatus(currentMachine)
 }
@@ -73,7 +73,7 @@ func (sm *StatusManager) UpdateInstanceStatus(machine *clusterv1.Machine) error 
 
 	if currentMachine == nil {
 		// The current status no longer exists because the matching CRD has been deleted.
-		return fmt.Errorf("Machine has already been deleted. Cannot update current instance status for machine %v", machine.ObjectMeta.Name)
+		return fmt.Errorf("machine has already been deleted. Cannot update current instance status for machine %v", machine.ObjectMeta.Name)
 	}
 
 	m, err := sm.SetMachineInstanceStatus(currentMachine, status)

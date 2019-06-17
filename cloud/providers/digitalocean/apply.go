@@ -5,7 +5,7 @@ import (
 
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
@@ -17,7 +17,7 @@ import (
 )
 
 func (cm *ClusterManager) EnsureMaster() error {
-	leaderMachine, err := GetLeaderMachine(cm.Cluster)
+	leaderMachine, err := cloud.GetLeaderMachine(cm.Cluster)
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 			})
 		}
 
-		script, err := RenderStartupScript(cm, leaderMachine, "", customTemplate)
+		script, err := cloud.RenderStartupScript(cm, leaderMachine, "", customTemplate)
 		if err != nil {
 			return err
 		}
@@ -127,7 +127,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 		return err
 	}
 
-	err = DeleteAllWorkerMachines(cm)
+	err = cloud.DeleteAllWorkerMachines(cm)
 	if err != nil {
 		log.Infof("failed to delete nodes: %v", err)
 	}

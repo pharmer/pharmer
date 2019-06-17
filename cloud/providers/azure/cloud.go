@@ -15,17 +15,17 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/appscode/go/log"
-	. "github.com/appscode/go/types"
+	"github.com/appscode/go/types"
 	"github.com/pharmer/cloud/pkg/credential"
 	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type cloudConnector struct {
-	*CloudManager
+	*cloud.CloudManager
 	namer namer
 
 	availabilitySetsClient  compute.AvailabilitySetsClient
@@ -43,7 +43,7 @@ type cloudConnector struct {
 	storageClient           storage.AccountsClient
 }
 
-func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
+func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
@@ -141,10 +141,10 @@ func (conn *cloudConnector) ensureResourceGroup() (resources.Group, error) {
 		return resources.Group{}, err
 	}
 	req := resources.Group{
-		Name:     StringP(providerConfig.ResourceGroup),
-		Location: StringP(providerConfig.Location),
+		Name:     types.StringP(providerConfig.ResourceGroup),
+		Location: types.StringP(providerConfig.Location),
 		Tags: map[string]*string{
-			"KubernetesCluster": StringP(conn.Cluster.Name),
+			"KubernetesCluster": types.StringP(conn.Cluster.Name),
 		},
 	}
 	return conn.groupsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), req)
@@ -162,15 +162,15 @@ func (conn *cloudConnector) ensureVirtualNetwork() (network.VirtualNetwork, erro
 	}
 	name := conn.namer.GenerateVnetName()
 	req := network.VirtualNetwork{
-		Name:     StringP(name),
-		Location: StringP(providerConfig.Location),
+		Name:     types.StringP(name),
+		Location: types.StringP(providerConfig.Location),
 		VirtualNetworkPropertiesFormat: &network.VirtualNetworkPropertiesFormat{
 			AddressSpace: &network.AddressSpace{
 				AddressPrefixes: &[]string{conn.Cluster.Spec.Config.Cloud.Azure.VPCCIDR},
 			},
 		},
 		Tags: map[string]*string{
-			"KubernetesCluster": StringP(conn.Cluster.Name),
+			"KubernetesCluster": types.StringP(conn.Cluster.Name),
 		},
 	}
 
@@ -235,12 +235,12 @@ func (conn *cloudConnector) createNetworkSecurityGroup(isControlPlane bool) (net
 		conn.namer.ResourceGroupName(),
 		name,
 		network.SecurityGroup{
-			Location: StringP(providerConfig.Location),
+			Location: types.StringP(providerConfig.Location),
 			SecurityGroupPropertiesFormat: &network.SecurityGroupPropertiesFormat{
 				SecurityRules: securityRules,
 			},
 			Tags: map[string]*string{
-				"KubernetesCluster": StringP(conn.Cluster.Name),
+				"KubernetesCluster": types.StringP(conn.Cluster.Name),
 			},
 		},
 	)
@@ -543,7 +543,7 @@ func (conn *cloudConnector) createRouteTable() (network.RouteTable, error) {
 			Location:                   to.StringPtr(providerConfig.Location),
 			RouteTablePropertiesFormat: &network.RouteTablePropertiesFormat{},
 			Tags: map[string]*string{
-				"KubernetesCluster": StringP(conn.Cluster.Name),
+				"KubernetesCluster": types.StringP(conn.Cluster.Name),
 			},
 		},
 	)
@@ -678,8 +678,8 @@ func (conn *cloudConnector) createVirtualMachine(nicID *string, vmName, data str
 		return compute.VirtualMachine{}, err
 	}
 	req := compute.VirtualMachine{
-		Name:     StringP(vmName),
-		Location: StringP(providerConf.Location),
+		Name:     types.StringP(vmName),
+		Location: types.StringP(providerConf.Location),
 		VirtualMachineProperties: &compute.VirtualMachineProperties{
 			NetworkProfile: &compute.NetworkProfile{
 				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
@@ -689,17 +689,17 @@ func (conn *cloudConnector) createVirtualMachine(nicID *string, vmName, data str
 				},
 			},
 			OsProfile: &compute.OSProfile{
-				ComputerName:  StringP(vmName),
-				AdminPassword: StringP(conn.Cluster.Spec.Config.Cloud.Azure.RootPassword),
-				AdminUsername: StringP(conn.namer.AdminUsername()),
-				CustomData:    StringP(base64.StdEncoding.EncodeToString([]byte(data))),
+				ComputerName:  types.StringP(vmName),
+				AdminPassword: types.StringP(conn.Cluster.Spec.Config.Cloud.Azure.RootPassword),
+				AdminUsername: types.StringP(conn.namer.AdminUsername()),
+				CustomData:    types.StringP(base64.StdEncoding.EncodeToString([]byte(data))),
 				LinuxConfiguration: &compute.LinuxConfiguration{
-					DisablePasswordAuthentication: BoolP(true),
+					DisablePasswordAuthentication: types.BoolP(true),
 					SSH: &compute.SSHConfiguration{
 						PublicKeys: &[]compute.SSHPublicKey{
 							{
-								KeyData: StringP(string(conn.Certs.SSHKey.PublicKey)),
-								Path:    StringP(fmt.Sprintf("/home/%v/.ssh/authorized_keys", conn.namer.AdminUsername())),
+								KeyData: types.StringP(string(conn.Certs.SSHKey.PublicKey)),
+								Path:    types.StringP(fmt.Sprintf("/home/%v/.ssh/authorized_keys", conn.namer.AdminUsername())),
 							},
 						},
 					},
@@ -707,10 +707,10 @@ func (conn *cloudConnector) createVirtualMachine(nicID *string, vmName, data str
 			},
 			StorageProfile: &compute.StorageProfile{
 				ImageReference: &compute.ImageReference{
-					Publisher: StringP(providerConf.Image.Publisher),
-					Offer:     StringP(providerConf.Image.Offer),
-					Sku:       StringP(providerConf.Image.SKU),
-					Version:   StringP(providerConf.Image.Version),
+					Publisher: types.StringP(providerConf.Image.Publisher),
+					Offer:     types.StringP(providerConf.Image.Offer),
+					Sku:       types.StringP(providerConf.Image.SKU),
+					Version:   types.StringP(providerConf.Image.Version),
 				},
 				OsDisk: &compute.OSDisk{
 					Name:         to.StringPtr(fmt.Sprintf("%s_OSDisk", vmName)),
@@ -727,7 +727,7 @@ func (conn *cloudConnector) createVirtualMachine(nicID *string, vmName, data str
 			},
 		},
 		Tags: map[string]*string{
-			"KubernetesCluster": StringP(conn.Cluster.Name),
+			"KubernetesCluster": types.StringP(conn.Cluster.Name),
 		},
 	}
 
@@ -745,8 +745,8 @@ func (conn *cloudConnector) createVirtualMachine(nicID *string, vmName, data str
 		vmName,
 		vmextName,
 		compute.VirtualMachineExtension{
-			Name:     StringP(vmextName),
-			Location: StringP(providerConf.Location),
+			Name:     types.StringP(vmextName),
+			Location: types.StringP(providerConf.Location),
 			VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
 				Type:                    to.StringPtr("CustomScript"),
 				TypeHandlerVersion:      to.StringPtr("2.0"),
@@ -756,7 +756,7 @@ func (conn *cloudConnector) createVirtualMachine(nicID *string, vmName, data str
 				ProtectedSettings:       map[string]string{"script": base64.StdEncoding.EncodeToString([]byte(data))},
 			},
 			Tags: map[string]*string{
-				"KubernetesCluster": StringP(conn.Cluster.Name),
+				"KubernetesCluster": types.StringP(conn.Cluster.Name),
 			},
 		})
 	if err != nil {

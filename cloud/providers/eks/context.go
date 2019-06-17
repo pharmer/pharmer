@@ -4,10 +4,10 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	. "github.com/appscode/go/types"
+	"github.com/appscode/go/types"
 	_eks "github.com/aws/aws-sdk-go/service/eks"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes" //"fmt"
@@ -17,13 +17,13 @@ import (
 )
 
 type ClusterManager struct {
-	*CloudManager
+	*cloud.CloudManager
 	conn *cloudConnector
 
 	namer namer
 }
 
-var _ Interface = &ClusterManager{}
+var _ cloud.Interface = &ClusterManager{}
 
 const (
 	UID               = "eks"
@@ -32,19 +32,17 @@ const (
 	EKSNodeConfigMap  = "aws-auth"
 	EKSConfigMapRoles = "mapRoles"
 	EKSVPCUrl         = "https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-01-09/amazon-eks-vpc-sample.yaml"
-	ServiceRoleUrl    = "https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-01-09/amazon-eks-service-role.yaml"
-	NodeGroupUrl      = "https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-01-09/amazon-eks-nodegroup.yaml"
+	ServiceRoleURL    = "https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-01-09/amazon-eks-service-role.yaml"
+	NodeGroupURL      = "https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-01-09/amazon-eks-nodegroup.yaml"
 )
 
 func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
-		return New(cluster, certs)
-	})
+	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
+func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) cloud.Interface {
 	return &ClusterManager{
-		CloudManager: &CloudManager{
+		CloudManager: &cloud.CloudManager{
 			Cluster: cluster,
 			Certs:   certs,
 		},
@@ -73,7 +71,7 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 
 func (cm *ClusterManager) GetEKSAdminClient() (kubernetes.Interface, error) {
 	resp, err := cm.conn.eks.DescribeCluster(&_eks.DescribeClusterInput{
-		Name: StringP(cm.Cluster.Name),
+		Name: types.StringP(cm.Cluster.Name),
 	})
 	if err != nil {
 		return nil, err
@@ -90,7 +88,7 @@ func (cm *ClusterManager) GetEKSAdminClient() (kubernetes.Interface, error) {
 	}
 
 	cfg := &rest.Config{
-		Host:        String(resp.Cluster.Endpoint),
+		Host:        types.String(resp.Cluster.Endpoint),
 		BearerToken: token,
 		TLSClientConfig: rest.TLSClientConfig{
 			CAData: caData,
@@ -103,12 +101,12 @@ func (cm *ClusterManager) GetEKSAdminClient() (kubernetes.Interface, error) {
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 	cluster := cm.Cluster
 	var err error
-	cm.conn, err = NewConnector(cm)
+	cm.conn, err = newConnector(cm)
 	if err != nil {
 		return nil, err
 	}
 	resp, err := cm.conn.eks.DescribeCluster(&_eks.DescribeClusterInput{
-		Name: StringP(cluster.Name),
+		Name: types.StringP(cluster.Name),
 	})
 	if err != nil {
 		return nil, err
@@ -134,7 +132,7 @@ func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 		},
 		Cluster: api.NamedCluster{
 			Name:                     clusterName,
-			Server:                   String(resp.Cluster.Endpoint),
+			Server:                   types.String(resp.Cluster.Endpoint),
 			CertificateAuthorityData: caData,
 		},
 		AuthInfo: api.NamedAuthInfo{
@@ -160,17 +158,17 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 }
 
 func (cm *ClusterManager) GetCloudConnector() error {
-	conn, err := NewConnector(cm)
+	conn, err := newConnector(cm)
 	cm.conn = conn
 	return err
 }
 
-func (cm *ClusterManager) NewMasterTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
-	return TemplateData{}
+func (cm *ClusterManager) NewMasterTemplateData(machine *v1alpha1.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
+	return cloud.TemplateData{}
 }
 
-func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
-	return TemplateData{}
+func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
+	return cloud.TemplateData{}
 }
 
 func (cm *ClusterManager) EnsureMaster() error {

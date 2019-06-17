@@ -13,7 +13,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	proconfig "github.com/pharmer/pharmer/apis/v1beta1/gce"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"google.golang.org/api/compute/v1"
@@ -31,10 +31,11 @@ const (
 	firewallRuleAnnotationPrefix = "gce.clusterapi.k8s.io/firewall"
 	firewallRuleInternalSuffix   = "-allow-cluster-internal"
 	firewallRuleApiSuffix        = "-allow-api-public"
+	statusDone                   = "DONE"
 )
 
 type cloudConnector struct {
-	*CloudManager
+	*cloud.CloudManager
 
 	namer          namer
 	computeService *compute.Service
@@ -299,7 +300,7 @@ func (conn *cloudConnector) waitForGlobalOperation(operation string) error {
 			return false, nil
 		}
 		log.Infof("Attempt %v: Operation %v is %v ...", attempt, operation, r1.Status)
-		if r1.Status == "DONE" {
+		if r1.Status == statusDone {
 			return true, nil
 		}
 		return false, nil
@@ -319,7 +320,7 @@ func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 			return true, nil
 		}
 		log.Infof("Attempt %v: Operation %v is in state %v ...", attempt, operation, r1.Status)
-		if r1.Status == "DONE" {
+		if r1.Status == statusDone {
 			return true, nil
 		}
 		return false, nil
@@ -338,7 +339,7 @@ func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 			return true, nil
 		}
 		log.Infof("Attempt %v: Operation %v is %v ...", attempt, operation, r1.Status)
-		if r1.Status == "DONE" {
+		if r1.Status == statusDone {
 			return true, nil
 		}
 		return false, nil
@@ -590,7 +591,7 @@ func (conn *cloudConnector) createMasterIntance(script string) (string, error) {
 	// MachineType:  "projects/tigerworks-kube/zones/us-central1-b/machineTypes/n1-standard-1",
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
-	machine, err := GetLeaderMachine(conn.Cluster)
+	machine, err := cloud.GetLeaderMachine(conn.Cluster)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get leader machine")
 	}

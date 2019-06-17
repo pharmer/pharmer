@@ -11,7 +11,7 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	dokube_config "github.com/pharmer/pharmer/apis/v1beta1/dokube"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
@@ -24,7 +24,7 @@ const (
 )
 
 type cloudConnector struct {
-	*CloudManager
+	*cloud.CloudManager
 	client *godo.Client
 }
 

@@ -24,7 +24,7 @@ func (a *Apiserver) RetryCluster() error {
 			return
 		}
 		if operation.OperationId == "" {
-			err := fmt.Errorf("Operation id not  found")
+			err := fmt.Errorf("operation id not  found")
 			glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			return
 		}

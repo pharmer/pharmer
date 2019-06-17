@@ -18,7 +18,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 
 	spec := clusterapiGCE.GCEMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: proconfig.GCEProviderGroupName + "/" + proconfig.GCEProviderApiVersion,
+			APIVersion: proconfig.GCEProviderGroupName + "/" + proconfig.GCEProviderAPIVersion,
 			Kind:       proconfig.GCEMachineProviderKind,
 		},
 		Zone:  config.Cloud.Zone,

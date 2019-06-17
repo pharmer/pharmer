@@ -1,11 +1,11 @@
 package packet
 
 import (
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) NewNodeTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData {
+func (cm *ClusterManager) NewNodeTemplateData(machine *clusterapi.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
 	td.ExternalProvider = true // Packet uses out-of-tree CCM
 
 	// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
@@ -18,8 +18,8 @@ func (cm *ClusterManager) NewNodeTemplateData(machine *clusterapi.Machine, token
 	return td
 }
 
-func (cm *ClusterManager) NewMasterTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData {
-	td.ClusterConfiguration = GetDefaultKubeadmClusterConfig(cm.Cluster, nil)
+func (cm *ClusterManager) NewMasterTemplateData(machine *clusterapi.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
+	td.ClusterConfiguration = cloud.GetDefaultKubeadmClusterConfig(cm.Cluster, nil)
 
 	return td
 }

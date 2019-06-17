@@ -8,7 +8,6 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/pharmer/pharmer/cloud"
-	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/record"
@@ -100,7 +99,7 @@ func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster,
 			return errors.Wrap(err, "failed to generate kubeadm token")
 		}
 
-		script, err := RenderStartupScript(do.cm, machine, token, customTemplate)
+		script, err := cloud.RenderStartupScript(do.cm, machine, token, customTemplate)
 		if err != nil {
 			return err
 		}
@@ -234,7 +233,7 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		return do.Create(context.Background(), cluster, goalMachine)
 	}
 
-	sm := NewStatusManager(do.client, do.scheme)
+	sm := cloud.NewStatusManager(do.client, do.scheme)
 	status, err := sm.InstanceStatus(goalMachine)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get instance status of machine %s", goalMachine.Name)
@@ -256,11 +255,11 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		return errors.Wrap(err, "failed to get pharmercluster")
 	}
 
-	kc, err := GetKubernetesClient(do.cm, pharmerCluster)
+	kc, err := cloud.GetKubernetesClient(do.cm, pharmerCluster)
 	if err != nil {
 		return errors.Wrap(err, "failed to get kubeclient")
 	}
-	upm := NewUpgradeManager(kc, do.cm.conn.Cluster)
+	upm := cloud.NewUpgradeManager(kc, do.cm.conn.Cluster)
 	if util.IsControlPlaneMachine(currentMachine) {
 		if currentMachine.Spec.Versions.ControlPlane != goalMachine.Spec.Versions.ControlPlane {
 			log.Infof("Doing an in-place upgrade for master.\n")

@@ -9,7 +9,7 @@ import (
 	"github.com/nats-io/stan.go"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/apiserver/options"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	opts "github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/store"
 )
@@ -25,7 +25,7 @@ func (a *Apiserver) DeleteCluster() error {
 			return
 		}
 		if operation.OperationId == "" {
-			err := fmt.Errorf("Operation id not  found")
+			err := fmt.Errorf("operation id not  found")
 			glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			return
 		}
@@ -48,7 +48,7 @@ func (a *Apiserver) DeleteCluster() error {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}
 
-			cluster, err = Delete(cluster.Name)
+			cluster, err = cloud.Delete(cluster.Name)
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}

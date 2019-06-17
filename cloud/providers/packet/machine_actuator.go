@@ -9,7 +9,6 @@ import (
 	"github.com/appscode/go/log"
 	packetconfig "github.com/pharmer/pharmer/apis/v1beta1/packet"
 	"github.com/pharmer/pharmer/cloud"
-	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/record"
@@ -101,7 +100,7 @@ func (packet *MachineActuator) Create(_ context.Context, cluster *clusterv1.Clus
 			return errors.Wrap(err, "failed to generate kubeadm token")
 		}
 
-		script, err := RenderStartupScript(packet.cm, machine, token, customTemplate) // ClusterManager is needed here
+		script, err := cloud.RenderStartupScript(packet.cm, machine, token, customTemplate) // ClusterManager is needed here
 		if err != nil {
 			return err
 		}
@@ -229,7 +228,7 @@ func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Clus
 		return packet.Create(context.Background(), cluster, machine)
 	}
 
-	sm := NewStatusManager(packet.client, packet.scheme)
+	sm := cloud.NewStatusManager(packet.client, packet.scheme)
 	status, err := sm.InstanceStatus(machine)
 	if err != nil {
 		return err
@@ -251,11 +250,11 @@ func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Clus
 		return errors.Wrap(err, "failed to get pharmercluster")
 	}
 
-	kc, err := GetKubernetesClient(packet.cm, pharmerCluster)
+	kc, err := cloud.GetKubernetesClient(packet.cm, pharmerCluster)
 	if err != nil {
 		return errors.Wrap(err, "failed to get kubeclient")
 	}
-	upm := NewUpgradeManager(kc, packet.cm.conn.Cluster)
+	upm := cloud.NewUpgradeManager(kc, packet.cm.conn.Cluster)
 	if util.IsControlPlaneMachine(currentMachine) {
 		if currentMachine.Spec.Versions.ControlPlane != machine.Spec.Versions.ControlPlane {
 			log.Infof("Doing an in-place upgrade for master.\n")

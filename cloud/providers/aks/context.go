@@ -7,7 +7,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -18,7 +18,7 @@ import (
 )
 
 type ClusterManager struct {
-	*CloudManager
+	*cloud.CloudManager
 
 	conn *cloudConnector
 
@@ -34,16 +34,16 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 }
 
 func (cm *ClusterManager) GetCloudConnector() error {
-	conn, err := NewConnector(cm)
+	conn, err := newConnector(cm)
 	cm.conn = conn
 	return err
 }
 
-func (cm *ClusterManager) NewMasterTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
+func (cm *ClusterManager) NewMasterTemplateData(machine *v1alpha1.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
 	panic("implement me")
 }
 
-func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td TemplateData) TemplateData {
+func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
 	panic("implement me")
 }
 
@@ -59,7 +59,7 @@ func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 	panic("implement me")
 }
 
-var _ Interface = &ClusterManager{}
+var _ cloud.Interface = &ClusterManager{}
 
 const (
 	UID             = "aks"
@@ -67,14 +67,12 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
-		return New(cluster, certs)
-	})
+	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
+func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) cloud.Interface {
 	return &ClusterManager{
-		CloudManager: &CloudManager{
+		CloudManager: &cloud.CloudManager{
 			Cluster: cluster,
 			Certs:   certs,
 		},
@@ -128,7 +126,7 @@ func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 	var err error
 	cluster := cm.Cluster
 	cm.namer = namer{cluster: cluster}
-	if cm.conn, err = NewConnector(cm); err != nil {
+	if cm.conn, err = newConnector(cm); err != nil {
 		return nil, err
 	}
 

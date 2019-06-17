@@ -5,7 +5,7 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	dokube_config "github.com/pharmer/pharmer/apis/v1beta1/dokube"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -37,9 +37,9 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
-	return false, ErrNotImplemented
+	return false, cloud.ErrNotImplemented
 }
 
 func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
-	return nil, ErrNotImplemented
+	return nil, cloud.ErrNotImplemented
 }

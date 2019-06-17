@@ -31,10 +31,8 @@ func (igm *DokubeNodeGroupManager) Apply() error {
 		if err != nil {
 			return err
 		}
-	} else {
-		if err = igm.conn.adjustNodePool(igm.ng); err != nil {
-			return err
-		}
+	} else if err = igm.conn.adjustNodePool(igm.ng); err != nil {
+		return err
 	}
 
 	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas

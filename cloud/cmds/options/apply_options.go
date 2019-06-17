@@ -34,7 +34,7 @@ func (c *ApplyConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 		return errors.New("missing cluster name")
 	}
 	if len(args) > 1 {
-		return errors.New("multiple cluster name provided.")
+		return errors.New("multiple cluster name provided")
 	}
 	c.ClusterName = strings.ToLower(args[0])
 	return nil
