@@ -210,7 +210,7 @@ func UpdateNodeGroup(original, updated *clusterv1.MachineSet, clusterName, owner
 
 	// Compare content without comments
 	if bytes.Equal(editor.StripComments(originalByte), editor.StripComments(updatedByte)) {
-		return errors.New("No changes made.")
+		return errors.New("no changes made")
 	}
 
 	preconditions := utils.GetPreconditionFunc()

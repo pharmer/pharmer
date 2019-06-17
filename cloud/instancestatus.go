@@ -30,10 +30,6 @@ func NewStatusManager(client client.Client, scheme *runtime.Scheme) *StatusManag
 	return &StatusManager{client, scheme}
 }
 
-func (sm *StatusManager) Initialize(machine *clusterv1.Machine) instanceStatus {
-	return instanceStatus(machine)
-}
-
 // Get the status of the instance identified by the given machine
 func (sm *StatusManager) InstanceStatus(machine *clusterv1.Machine) (instanceStatus, error) {
 	if sm.client == nil {

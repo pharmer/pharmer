@@ -34,27 +34,6 @@ func RegisterProvider(name string, cloud Factory) {
 	providers[name] = cloud
 }
 
-// IsProvider returns true if name corresponds to an already registered
-// cloud provider.
-func IsProvider(name string) bool {
-	providersMutex.Lock()
-	defer providersMutex.Unlock()
-	_, found := providers[name]
-	return found
-}
-
-// Providers returns the name of all registered cloud providers in a
-// string slice
-func Providers() []string {
-	names := []string{}
-	providersMutex.Lock()
-	defer providersMutex.Unlock()
-	for name := range providers {
-		names = append(names, name)
-	}
-	return names
-}
-
 // GetProvider creates an node of the named cloud provider, or nil if
 // the name is not known.  The error return is only used if the named provider
 // was known but failed to initialize. The config parameter specifies the

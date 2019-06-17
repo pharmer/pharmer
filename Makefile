@@ -31,7 +31,7 @@ endif
 ### These variables should not need tweaking.
 ###
 
-SRC_DIRS := *.go apis apiserver cloud cmds config credential hack/gendocs inspector notification store test utils # directories which hold app source (not vendored)
+SRC_DIRS := *.go apis apiserver cloud cmds config hack/gendocs inspector notification store test utils # directories which hold app source (not vendored)
 
 DOCKER_PLATFORMS := linux/amd64 linux/arm linux/arm64
 BIN_PLATFORMS    := $(DOCKER_PLATFORMS) windows/amd64 darwin/amd64

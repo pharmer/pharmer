@@ -11,7 +11,7 @@ import (
 	"github.com/ghodss/yaml"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/credential/cmds/options"
+	options2 "github.com/pharmer/pharmer/cmds/credential/cmds/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils"
 	"github.com/pharmer/pharmer/utils/editor"
@@ -24,7 +24,7 @@ import (
 )
 
 func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
-	opts := options.NewCredentialEditConfig()
+	opts := options2.NewCredentialEditConfig()
 	cmd := &cobra.Command{
 		Use: cloudapi.ResourceNameCredential,
 		Aliases: []string{
@@ -52,7 +52,7 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunUpdateCredential(opts *options.CredentialEditConfig, errOut io.Writer) error {
+func RunUpdateCredential(opts *options2.CredentialEditConfig, errOut io.Writer) error {
 
 	// If file is provided
 	if opts.File != "" {
@@ -107,7 +107,7 @@ func RunUpdateCredential(opts *options.CredentialEditConfig, errOut io.Writer) e
 	return editCredential(opts, original, errOut)
 }
 
-func editCredential(opts *options.CredentialEditConfig, original *cloudapi.Credential, errOut io.Writer) error {
+func editCredential(opts *options2.CredentialEditConfig, original *cloudapi.Credential, errOut io.Writer) error {
 
 	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
@@ -216,7 +216,7 @@ func updateCredential(original, updated *cloudapi.Credential) error {
 
 	// Compare content without comments
 	if bytes.Equal(editor.StripComments(originalByte), editor.StripComments(updatedByte)) {
-		return errors.New("No changes made.")
+		return errors.New("no changes made")
 	}
 
 	preconditions := utils.GetPreconditionFunc()

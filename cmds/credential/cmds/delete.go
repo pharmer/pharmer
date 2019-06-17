@@ -3,13 +3,13 @@ package cmds
 import (
 	"github.com/appscode/go/term"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	"github.com/pharmer/pharmer/credential/cmds/options"
+	options2 "github.com/pharmer/pharmer/cmds/credential/cmds/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 )
 
 func NewCmdDeleteCredential() *cobra.Command {
-	opts := options.NewCredentialDeleteConfig()
+	opts := options2.NewCredentialDeleteConfig()
 	cmd := &cobra.Command{
 		Use: cloudapi.ResourceNameCredential,
 		Aliases: []string{

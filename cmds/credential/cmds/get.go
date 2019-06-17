@@ -5,7 +5,7 @@ import (
 
 	"github.com/appscode/go/term"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	"github.com/pharmer/pharmer/credential/cmds/options"
+	options2 "github.com/pharmer/pharmer/cmds/credential/cmds/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils/printer"
 	"github.com/spf13/cobra"
@@ -13,7 +13,7 @@ import (
 )
 
 func NewCmdGetCredential(out io.Writer) *cobra.Command {
-	opts := options.NewCredentialGetConfig()
+	opts := options2.NewCredentialGetConfig()
 	cmd := &cobra.Command{
 		Use: cloudapi.ResourceNameCredential,
 		Aliases: []string{
@@ -43,7 +43,7 @@ func NewCmdGetCredential(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunGetCredential(opts *options.CredentialGetConfig, out io.Writer) error {
+func RunGetCredential(opts *options2.CredentialGetConfig, out io.Writer) error {
 	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
 		return err

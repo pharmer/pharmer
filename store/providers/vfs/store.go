@@ -79,7 +79,7 @@ func init() {
 					})
 				} else {
 					config := &aws.Config{
-						Credentials: credentials.NewStaticCredentials(string(keyID), string(key), ""),
+						Credentials: credentials.NewStaticCredentials(keyID, key, ""),
 						Region:      aws.String("us-east-1"),
 					}
 					sess, err = session.NewSessionWithOptions(session.Options{
@@ -243,10 +243,6 @@ func (s *FileStore) Credentials() store.CredentialStore {
 
 func (s *FileStore) Clusters() store.ClusterStore {
 	return &clusterFileStore{container: s.container, prefix: s.prefix, owner: s.owner}
-}
-
-func (s *FileStore) NodeGroups(cluster string) store.NodeGroupStore {
-	return &nodeGroupFileStore{container: s.container, prefix: s.prefix, cluster: cluster, owner: s.owner}
 }
 
 func (s *FileStore) MachineSet(cluster string) store.MachineSetStore {

@@ -27,10 +27,9 @@ func (i *Inspector) CheckHelthStatus() error {
 			for _, cond := range status.Conditions {
 				if cond.Type == core.ComponentHealthy && cond.Status != core.ConditionTrue {
 					return false, nil
-				} else {
-					term.Infoln(fmt.Sprintf("Component %v is in condition %v with status %v", status.Name, cond.Type, cond.Status))
-					return true, nil
 				}
+				term.Infoln(fmt.Sprintf("Component %v is in condition %v with status %v", status.Name, cond.Type, cond.Status))
+				return true, nil
 			}
 		}
 		return false, nil

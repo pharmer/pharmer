@@ -17,6 +17,6 @@ func tabbedString(f func(io.Writer) error) (string, error) {
 	}
 
 	out.Flush()
-	str := string(buf.String())
+	str := buf.String()
 	return str, nil
 }

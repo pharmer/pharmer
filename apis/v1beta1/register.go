@@ -19,7 +19,6 @@ package v1beta1
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 const GroupName = "cluster.pharmer.io"
@@ -39,14 +38,4 @@ func init() {
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion)
 	return nil
-}
-
-func NewSchemeAndCodecs() (*runtime.Scheme, *serializer.CodecFactory, error) {
-	scheme := runtime.NewScheme()
-	if err := AddToScheme(scheme); err != nil {
-		return nil, nil, err
-	}
-
-	codecs := serializer.NewCodecFactory(scheme)
-	return scheme, &codecs, nil
 }

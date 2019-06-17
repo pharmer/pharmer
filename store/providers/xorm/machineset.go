@@ -67,7 +67,7 @@ func (s *machineSetXormStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing node group name")
 	}
-	_, err := s.engine.Delete(&NodeGroup{Name: name, ClusterName: s.cluster})
+	_, err := s.engine.Delete(&machineSetXormStore{})
 	return err
 }
 

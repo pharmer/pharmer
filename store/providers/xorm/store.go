@@ -57,10 +57,6 @@ func (s *XormStore) Clusters() store.ClusterStore {
 	return &clusterXormStore{engine: s.engine, owner: s.owner}
 }
 
-func (s *XormStore) NodeGroups(cluster string) store.NodeGroupStore {
-	return &nodeGroupXormStore{engine: s.engine, cluster: cluster, owner: s.owner}
-}
-
 func (s *XormStore) MachineSet(cluster string) store.MachineSetStore {
 	return &machineSetXormStore{engine: s.engine, cluster: cluster}
 }

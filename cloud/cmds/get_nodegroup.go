@@ -106,22 +106,3 @@ func GetMachineSetList(cluster string, args ...string) ([]*clusterv1.MachineSet,
 	}
 	return machineSetList, nil
 }
-
-func GetNodeGroupList(cluster string, args ...string) (nodeGroupList []*api.NodeGroup, err error) {
-	if len(args) != 0 {
-		for _, arg := range args {
-			nodeGroup, er2 := store.StoreProvider.NodeGroups(cluster).Get(arg)
-			if er2 != nil {
-				return nil, er2
-			}
-			nodeGroupList = append(nodeGroupList, nodeGroup)
-		}
-
-	} else {
-		nodeGroupList, err = store.StoreProvider.NodeGroups(cluster).List(metav1.ListOptions{})
-		if err != nil {
-			return
-		}
-	}
-	return
-}

@@ -2,7 +2,7 @@ package cmds
 
 import (
 	cpCmd "github.com/pharmer/pharmer/cloud/cmds"
-	credCmd "github.com/pharmer/pharmer/credential/cmds"
+	credCmd "github.com/pharmer/pharmer/cmds/credential/cmds"
 	"github.com/spf13/cobra"
 )
 

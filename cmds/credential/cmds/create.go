@@ -10,7 +10,7 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	cc "github.com/pharmer/cloud/pkg/credential/cloud"
 	"github.com/pharmer/cloud/pkg/providers"
-	"github.com/pharmer/pharmer/credential/cmds/options"
+	options2 "github.com/pharmer/pharmer/cmds/credential/cmds/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -20,7 +20,7 @@ import (
 )
 
 func NewCmdCreateCredential() *cobra.Command {
-	opts := options.NewCredentialCreateConfig()
+	opts := options2.NewCredentialCreateConfig()
 	cmd := &cobra.Command{
 		Use: cloudapi.ResourceNameCredential,
 		Aliases: []string{
@@ -51,7 +51,7 @@ func NewCmdCreateCredential() *cobra.Command {
 	return cmd
 }
 
-func runCreateCredential(opts *options.CredentialCreateConfig) error {
+func runCreateCredential(opts *options2.CredentialCreateConfig) error {
 	// Get Cloud provider
 	provider := opts.Provider
 	if provider == "" {

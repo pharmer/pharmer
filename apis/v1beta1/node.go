@@ -28,18 +28,6 @@ type NodeGroupStatus struct {
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
-func (ng NodeGroup) IsMaster() bool {
-	_, found := ng.Labels[RoleMasterKey]
-	return found
-}
-
-func (ng NodeGroup) Role() string {
-	if ng.IsMaster() {
-		return RoleMaster
-	}
-	return RoleNode
-}
-
 // PodTemplateSpec describes the data a pod should have when created from a template
 type NodeTemplateSpec struct {
 	// Standard object's metadata.

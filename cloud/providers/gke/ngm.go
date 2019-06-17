@@ -36,7 +36,7 @@ func (igm *GKENodeGroupManager) Apply() error {
 		if err = igm.conn.waitForZoneOperation(op); err != nil {
 			return err
 		}
-		err = store.StoreProvider.NodeGroups(igm.conn.Cluster.Name).Delete(igm.ng.Name)
+		err = store.StoreProvider.MachineSet(igm.conn.Cluster.Name).Delete(igm.ng.Name)
 		if err != nil {
 			return err
 		}

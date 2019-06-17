@@ -25,7 +25,6 @@ type FakeStore struct {
 	clusters map[string]*api.Cluster
 	//credentials  map[string]store.CredentialStore
 	credentials  store.CredentialStore
-	nodeGroups   map[string]store.NodeGroupStore
 	machineSet   map[string]store.MachineSetStore
 	machine      map[string]store.MachineStore
 	certificates map[string]store.CertificateStore
@@ -43,7 +42,6 @@ var _ store.Interface = &FakeStore{}
 func New() store.Interface {
 	return &FakeStore{
 		clusters:     map[string]*api.Cluster{},
-		nodeGroups:   map[string]store.NodeGroupStore{},
 		machineSet:   map[string]store.MachineSetStore{},
 		machine:      map[string]store.MachineStore{},
 		certificates: map[string]store.CertificateStore{},
@@ -72,16 +70,6 @@ func (s *FakeStore) Credentials() store.CredentialStore {
 
 func (s *FakeStore) Clusters() store.ClusterStore {
 	return &clusterFileStore{container: s.clusters}
-}
-
-func (s *FakeStore) NodeGroups(cluster string) store.NodeGroupStore {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-
-	if _, found := s.nodeGroups[cluster]; !found {
-		s.nodeGroups[cluster] = &nodeGroupFileStore{container: map[string]*api.NodeGroup{}, cluster: cluster}
-	}
-	return s.nodeGroups[cluster]
 }
 
 func (s *FakeStore) MachineSet(cluster string) store.MachineSetStore {
