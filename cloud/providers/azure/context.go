@@ -3,6 +3,8 @@ package azure
 import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pharmer/pharmer/store"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -26,12 +28,12 @@ const (
 )
 
 func init() {
-	cloud.RegisterCloudManager(UID, func(cluster *api.Cluster, certs *cloud.PharmerCertificates) cloud.Interface {
+	cloud.RegisterCloudManager(UID, func(cluster *api.Cluster, certs *certificates.PharmerCertificates) cloud.Interface {
 		return New(cluster, certs)
 	})
 }
 
-func New(cluster *api.Cluster, certs *cloud.PharmerCertificates) cloud.Interface {
+func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) cloud.Interface {
 	return &ClusterManager{
 		CloudManager: &cloud.CloudManager{
 			Cluster: cluster,
@@ -53,12 +55,12 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 		return err
 	}
 
-	if err := cloud.CreateNamespace(kc, "azure-provider-system"); err != nil {
+	if err := kube.CreateNamespace(kc, "azure-provider-system"); err != nil {
 		return err
 	}
 
 	data := cred.Spec.Data
-	if err := cloud.CreateSecret(kc, "azure-provider-azure-controller-secrets", "azure-provider-system", map[string][]byte{
+	if err := kube.CreateSecret(kc, "azure-provider-azure-controller-secrets", "azure-provider-system", map[string][]byte{
 		"client-id":       []byte(data["clientID"]),
 		"client-secret":   []byte(data["clientSecret"]),
 		"subscription-id": []byte(data["subscriptionID"]),

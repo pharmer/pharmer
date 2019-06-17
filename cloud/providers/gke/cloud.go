@@ -3,11 +3,11 @@ package gke
 import (
 	"context"
 
-	"github.com/pharmer/pharmer/apis/v1beta1/gce"
-
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/wait"
 	"github.com/pharmer/cloud/pkg/credential"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/apis/v1beta1/gce"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
@@ -78,7 +78,7 @@ func (conn *cloudConnector) IsUnauthorized(project string) (bool, string) {
 
 func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
 		r1, err := conn.containerService.Projects.Zones.Operations.Get(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, operation).Do()

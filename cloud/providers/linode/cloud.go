@@ -134,7 +134,7 @@ func (conn *cloudConnector) DetectKernel() (string, error) {
 
 func (conn *cloudConnector) waitForStatus(id int, status linodego.InstanceStatus) error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
 		instance, err := conn.client.GetInstance(context.Background(), id)

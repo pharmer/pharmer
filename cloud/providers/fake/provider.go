@@ -6,6 +6,7 @@ import (
 	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	core "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -14,7 +15,7 @@ import (
 
 type ClusterManager struct {
 	cluster *api.Cluster
-	certs   *PharmerCertificates
+	certs   *certificates.PharmerCertificates
 
 	cfg   *api.PharmerConfig
 	owner string
@@ -24,11 +25,11 @@ func (cm *ClusterManager) GetCluster() *api.Cluster {
 	panic("implement me")
 }
 
-func (cm *ClusterManager) GetCaCertPair() *CertKeyPair {
+func (cm *ClusterManager) GetCaCertPair() *certificates.CertKeyPair {
 	panic("implement me")
 }
 
-func (cm *ClusterManager) GetPharmerCertificates() *PharmerCertificates {
+func (cm *ClusterManager) GetPharmerCertificates() *certificates.PharmerCertificates {
 	panic("implement me")
 }
 
@@ -41,10 +42,6 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 }
 
 func (cm *ClusterManager) CreateCCMCredential() error {
-	panic("implement me")
-}
-
-func (cm *ClusterManager) GetConnector() ClusterApiProviderComponent {
 	panic("implement me")
 }
 
@@ -100,12 +97,12 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
 		return New(cluster, certs)
 	})
 }
 
-func New(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
 	return &ClusterManager{
 		cluster: cluster,
 		certs:   certs,

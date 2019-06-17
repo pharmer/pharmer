@@ -501,7 +501,7 @@ func (conn *cloudConnector) deleteLoadBalancer() (bool, error) {
 		return false, err
 	}
 
-	if err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	if err := wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		_, err := conn.getLoadBalancer()
 		if strings.Contains(err.Error(), "LoadBalancerNotFound") {
 			return true, nil
@@ -1549,7 +1549,7 @@ func (conn *cloudConnector) releaseReservedIP() error {
 		return err
 	}
 
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (done bool, err error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (done bool, err error) {
 		log.Infoln("waiting for elastic ip to be released")
 		ips, err := conn.findElasticIP()
 		if err != nil {
@@ -1570,7 +1570,7 @@ func (conn *cloudConnector) deleteSecurityGroup(vpcID string) error {
 		return nil
 	}
 
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (done bool, err error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (done bool, err error) {
 		r, err := conn.ec2.DescribeSecurityGroups(&_ec2.DescribeSecurityGroupsInput{
 			Filters: []*_ec2.Filter{
 				{
@@ -1757,7 +1757,7 @@ func (conn *cloudConnector) deleteNatGateway(natID string) error {
 		return err
 	}
 
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		log.Infoln("waiting for nat to be deleted")
 		out, err := conn.ec2.DescribeNatGateways(&ec2.DescribeNatGatewaysInput{
 			NatGatewayIds: []*string{

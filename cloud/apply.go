@@ -7,6 +7,7 @@ import (
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	semver "gomodules.xyz/version"
@@ -108,7 +109,7 @@ func ApplyCreate(cm Interface) error {
 		return err
 	}
 
-	if err = WaitForReadyMaster(kubeClient); err != nil {
+	if err = kube.WaitForReadyMaster(kubeClient); err != nil {
 		return errors.Wrap(err, " error occurred while waiting for master")
 	}
 
@@ -154,7 +155,7 @@ func applyClusterAPI(cm Interface) error {
 	}
 
 	log.Infof("Adding other master machines")
-	capiClient, err := GetClusterClient(cm.GetCaCertPair(), cluster)
+	capiClient, err := GetClusterAPIClient(cm.GetCaCertPair(), cluster)
 	if err != nil {
 		return err
 	}
@@ -313,7 +314,7 @@ func ApplyUpgrade(cm Interface) error {
 
 	// Wait until masterMachine is updated
 	desiredVersion, _ := semver.NewVersion(cluster.ClusterConfig().KubernetesVersion)
-	if err = WaitForReadyMasterVersion(kc, desiredVersion); err != nil {
+	if err = kube.WaitForReadyMasterVersion(kc, desiredVersion); err != nil {
 		return err
 	}
 
@@ -360,4 +361,12 @@ func ApplyDelete(cm Interface) error {
 	}
 
 	return cm.ApplyDelete()
+}
+
+func NodeCount(machineSets []*clusterv1.MachineSet) int32 {
+	var count int32
+	for _, machineSet := range machineSets {
+		count += *machineSet.Spec.Replicas
+	}
+	return count
 }

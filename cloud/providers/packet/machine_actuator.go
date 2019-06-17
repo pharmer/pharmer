@@ -10,7 +10,6 @@ import (
 	packetconfig "github.com/pharmer/pharmer/apis/v1beta1/packet"
 	"github.com/pharmer/pharmer/cloud"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/machinesetup"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/record"
@@ -46,10 +45,6 @@ func init() {
 
 type DOClientKubeadm interface {
 	TokenCreate(params kubeadm.TokenCreateParams) (string, error)
-}
-
-type DOClientMachineSetupConfigGetter interface {
-	GetMachineSetupConfig() (machinesetup.MachineSetupConfig, error)
 }
 
 type MachineActuator struct {

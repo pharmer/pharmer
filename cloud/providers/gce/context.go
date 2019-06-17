@@ -5,6 +5,7 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -31,12 +32,12 @@ const (
 )
 
 func init() {
-	cloud.RegisterCloudManager(UID, func(cluster *api.Cluster, certs *cloud.PharmerCertificates) cloud.Interface {
+	cloud.RegisterCloudManager(UID, func(cluster *api.Cluster, certs *certificates.PharmerCertificates) cloud.Interface {
 		return New(cluster, certs)
 	})
 }
 
-func New(cluster *api.Cluster, certs *cloud.PharmerCertificates) cloud.Interface {
+func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) cloud.Interface {
 	return &ClusterManager{
 		CloudManager: &cloud.CloudManager{
 			Cluster: cluster,
@@ -46,11 +47,6 @@ func New(cluster *api.Cluster, certs *cloud.PharmerCertificates) cloud.Interface
 			cluster: cluster,
 		},
 	}
-}
-
-func (cm *ClusterManager) GetConnector() cloud.ClusterApiProviderComponent {
-	panic(1)
-	return nil
 }
 
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {

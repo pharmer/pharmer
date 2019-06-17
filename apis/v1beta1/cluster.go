@@ -2,6 +2,7 @@ package v1beta1
 
 import (
 	"fmt"
+	"time"
 
 	version "gomodules.xyz/version"
 	core "k8s.io/api/core/v1"
@@ -17,6 +18,11 @@ const (
 	ResourceTypeCluster = "clusters"
 
 	DefaultKubernetesBindPort = 6443
+
+	RetryInterval      = 5 * time.Second
+	RetryTimeout       = 15 * time.Minute
+	ServiceAccountNs   = "kube-system"
+	ServiceAccountName = "default"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

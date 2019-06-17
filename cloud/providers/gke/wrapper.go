@@ -4,9 +4,8 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 
-	"github.com/pharmer/pharmer/apis/v1beta1/gce"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/apis/v1beta1/gce"
 	"github.com/pharmer/pharmer/store"
 	"gomodules.xyz/cert"
 	"google.golang.org/api/container/v1"

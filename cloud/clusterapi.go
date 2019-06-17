@@ -9,6 +9,8 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/wait"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
@@ -46,7 +48,7 @@ type ApiServerTemplate struct {
 }
 
 func NewClusterApi(cm Interface, namespace string, kc kubernetes.Interface) (*ClusterAPI, error) {
-	token, err := GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration)
+	token, err := kube.GetExistingKubeadmToken(kc, kubeadmconsts.DefaultTokenDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +58,7 @@ func NewClusterApi(cm Interface, namespace string, kc kubernetes.Interface) (*Cl
 	if err != nil {
 		return nil, err
 	}
-	clusterClient, err := GetClusterClient(cm.GetCaCertPair(), cluster)
+	clusterClient, err := GetClusterAPIClient(cm.GetCaCertPair(), cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +74,8 @@ func NewClusterApi(cm Interface, namespace string, kc kubernetes.Interface) (*Cl
 	}, nil
 }
 
-func GetClusterClient(caCert *CertKeyPair, cluster *api.Cluster) (clientset.Interface, error) {
-	conf, err := NewRestConfig(caCert, cluster)
+func GetClusterAPIClient(caCert *certificates.CertKeyPair, cluster *api.Cluster) (clientset.Interface, error) {
+	conf, err := kube.NewRestConfig(caCert, cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get rest config")
 	}
@@ -135,7 +137,7 @@ func (ca *ClusterAPI) Apply(controllerManager string) error {
 
 func (ca *ClusterAPI) updateProviderStatus() error {
 	pharmerCluster := ca.GetCluster()
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		cluster, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(pharmerCluster.Spec.ClusterAPI.Namespace).Get(pharmerCluster.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, nil
@@ -153,7 +155,7 @@ func (ca *ClusterAPI) updateProviderStatus() error {
 }
 
 func (ca *ClusterAPI) updateMachineStatus(namespace string, masterMachine *clusterv1.Machine) error {
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		m, err := ca.clusterapiClient.ClusterV1alpha1().Machines(namespace).Get(masterMachine.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, nil
@@ -192,18 +194,18 @@ func (ca *ClusterAPI) CreatePharmerSecret() error {
 		return err
 	}
 
-	if err = CreateNamespace(ca.kubeClient, ca.namespace); err != nil {
+	if err = kube.CreateNamespace(ca.kubeClient, ca.namespace); err != nil {
 		return err
 	}
 
-	if err = CreateSecret(ca.kubeClient, "pharmer-cred", ca.namespace, map[string][]byte{
+	if err = kube.CreateSecret(ca.kubeClient, "pharmer-cred", ca.namespace, map[string][]byte{
 		fmt.Sprintf("%v.json", cluster.ClusterConfig().CredentialName): credData,
 	}); err != nil {
 		return err
 	}
 
 	if ca.externalController == false {
-		err := CreateCredentialSecret(ca.kubeClient, cluster, ca.namespace)
+		err := kube.CreateCredentialSecret(ca.kubeClient, cluster, ca.namespace)
 		if err != nil {
 			return err
 		}
@@ -213,7 +215,7 @@ func (ca *ClusterAPI) CreatePharmerSecret() error {
 	if err != nil {
 		return err
 	}
-	if err = CreateSecret(ca.kubeClient, "pharmer-cluster", ca.namespace, map[string][]byte{
+	if err = kube.CreateSecret(ca.kubeClient, "pharmer-cluster", ca.namespace, map[string][]byte{
 		fmt.Sprintf("%v.json", cluster.Name): clusterData,
 	}); err != nil {
 		return err
@@ -223,7 +225,7 @@ func (ca *ClusterAPI) CreatePharmerSecret() error {
 	if err != nil {
 		return err
 	}
-	if err = CreateSecret(ca.kubeClient, "pharmer-ssh", ca.namespace, map[string][]byte{
+	if err = kube.CreateSecret(ca.kubeClient, "pharmer-ssh", ca.namespace, map[string][]byte{
 		fmt.Sprintf("id_%v", providerConfig.Cloud.SSHKeyName):     privateKey,
 		fmt.Sprintf("id_%v.pub", providerConfig.Cloud.SSHKeyName): publicKey,
 	}); err != nil {
@@ -231,7 +233,7 @@ func (ca *ClusterAPI) CreatePharmerSecret() error {
 	}
 
 	certs := ca.GetPharmerCertificates()
-	if err = CreateSecret(ca.kubeClient, "pharmer-certificate", ca.namespace, map[string][]byte{
+	if err = kube.CreateSecret(ca.kubeClient, "pharmer-certificate", ca.namespace, map[string][]byte{
 		"ca.crt":             cert.EncodeCertPEM(certs.CACert.Cert),
 		"ca.key":             cert.EncodePrivateKeyPEM(certs.CACert.Key),
 		"front-proxy-ca.crt": cert.EncodeCertPEM(certs.FrontProxyCACert.Cert),
@@ -242,7 +244,7 @@ func (ca *ClusterAPI) CreatePharmerSecret() error {
 		return err
 	}
 
-	if err = CreateSecret(ca.kubeClient, "pharmer-etcd", ca.namespace, map[string][]byte{
+	if err = kube.CreateSecret(ca.kubeClient, "pharmer-etcd", ca.namespace, map[string][]byte{
 		"ca.crt": cert.EncodeCertPEM(certs.EtcdCACert.Cert),
 		"ca.key": cert.EncodePrivateKeyPEM(certs.EtcdCACert.Key),
 	}); err != nil {
@@ -270,19 +272,4 @@ func (ca *ClusterAPI) CreateApiServerAndController(controllerManager string) err
 	}
 
 	return ca.bootstrapClient.Apply(tmplBuf.String())
-}
-
-func (ca *ClusterAPI) GetMachines() (*[]clusterv1.Machine, error) {
-	machineList, err := ca.clusterapiClient.ClusterV1alpha1().Machines("default").List(metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	return &machineList.Items, err
-}
-
-func (ca *ClusterAPI) UpdateMachine(machine *clusterv1.Machine) error {
-	_, err := ca.clusterapiClient.ClusterV1alpha1().Machines("default").Update(machine)
-
-	return err
 }

@@ -4,10 +4,11 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -32,12 +33,12 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
 		return New(cluster, certs)
 	})
 }
 
-func New(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
 	return &ClusterManager{
 		CloudManager: &CloudManager{
 			Cluster: cluster,
@@ -80,7 +81,7 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 		return errors.Wrapf(err, "failed to get credential for digitalocean")
 	}
 
-	err = CreateSecret(kc, "digitalocean", metav1.NamespaceSystem, map[string][]byte{
+	err = kube.CreateSecret(kc, "digitalocean", metav1.NamespaceSystem, map[string][]byte{
 		"access-token": []byte(cred.Spec.Data[credential.DigitalOceanToken]), //for ccm
 		"token":        []byte(cred.Spec.Data[credential.DigitalOceanToken]), //for pharmer-flex and provisioner
 	})

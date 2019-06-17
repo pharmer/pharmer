@@ -4,26 +4,18 @@ import (
 	"fmt"
 	"time"
 
-	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
-
-	"github.com/appscode/go/crypto/ssh"
-
-	"github.com/appscode/go/log"
 	"github.com/pharmer/pharmer/apis/v1beta1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
 var managedProviders = sets.NewString("aks", "gke", "eks", "dokube")
@@ -34,109 +26,6 @@ func List(opts metav1.ListOptions) ([]*api.Cluster, error) {
 
 func GetCluster(name string) (*api.Cluster, error) {
 	return store.StoreProvider.Clusters().Get(name)
-}
-
-func GetPharmerCerts(clusterName string) (*PharmerCertificates, error) {
-	pharmerCerts := &PharmerCertificates{}
-
-	cert, key, err := LoadCACertificates(clusterName, kubeadmconst.CACertAndKeyBaseName)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load ca Certs")
-	}
-	pharmerCerts.CACert = CertKeyPair{
-		Cert: cert,
-		Key:  key,
-	}
-
-	cert, key, err = LoadCACertificates(clusterName, kubeadmconst.FrontProxyCACertAndKeyBaseName)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load fpca Certs")
-	}
-	pharmerCerts.FrontProxyCACert = CertKeyPair{
-		Cert: cert,
-		Key:  key,
-	}
-
-	cert, key, err = LoadCACertificates(clusterName, kubeadmconst.ServiceAccountKeyBaseName)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load sa keys")
-	}
-	pharmerCerts.ServiceAccountCert = CertKeyPair{
-		Cert: cert,
-		Key:  key,
-	}
-
-	cert, key, err = LoadCACertificates(clusterName, kubeadmconst.EtcdCACertAndKeyBaseName)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load etcd-ca keys")
-	}
-	pharmerCerts.EtcdCACert = CertKeyPair{
-		Cert: cert,
-		Key:  key,
-	}
-
-	pharmerCerts.SSHKey, err = LoadSSHKey(clusterName, GenSSHKeyName(clusterName))
-
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load ssh keys")
-	}
-
-	return pharmerCerts, nil
-}
-
-func GenSSHKeyName(clusterName string) string {
-	return clusterName + "-sshkey"
-}
-
-func createPharmerCerts(store store.ResourceInterface, cluster *api.Cluster) (*PharmerCertificates, error) {
-	pharmerCerts := &PharmerCertificates{}
-
-	cert, key, err := CreateCACertificates(store, cluster.Name)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create ca certificates")
-	}
-	pharmerCerts.CACert = CertKeyPair{
-		Cert: cert,
-		Key:  key,
-	}
-
-	cert, key, err = CreateFrontProxyCACertificates(store, cluster.Name)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create fpca certificates")
-	}
-	pharmerCerts.FrontProxyCACert = CertKeyPair{
-		Cert: cert,
-		Key:  key,
-	}
-
-	cert, key, err = CreateSACertificate(store, cluster.Name)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create sa certificates")
-	}
-	pharmerCerts.ServiceAccountCert = CertKeyPair{
-		Cert: cert,
-		Key:  key,
-	}
-
-	cert, key, err = CreateEtcdCACertificate(store, cluster.Name)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create etcd-ca certificates")
-	}
-	pharmerCerts.EtcdCACert = CertKeyPair{
-		Cert: cert,
-		Key:  key,
-	}
-
-	pubKey, privKey, err := CreateSSHKey(store.SSHKeys(cluster.Name), cluster.GenSSHKeyExternalID())
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create ssh keys")
-	}
-	pharmerCerts.SSHKey = &ssh.SSHKey{
-		PublicKey:  pubKey,
-		PrivateKey: privKey,
-	}
-
-	return pharmerCerts, nil
 }
 
 func Delete(name string) (*api.Cluster, error) {
@@ -152,24 +41,6 @@ func Delete(name string) (*api.Cluster, error) {
 	cluster.Status.Phase = api.ClusterDeleting
 
 	return store.StoreProvider.Clusters().Update(cluster)
-}
-
-func DeleteMachineSet(clusterName, setName string) error {
-	if clusterName == "" {
-		return errors.New("missing Cluster name")
-	}
-	if setName == "" {
-		return errors.New("missing machineset name")
-	}
-
-	mSet, err := store.StoreProvider.MachineSet(clusterName).Get(setName)
-	if err != nil {
-		return errors.Errorf(`machinset not found in pharmer db, try using kubectl`)
-	}
-	tm := metav1.Now()
-	mSet.DeletionTimestamp = &tm
-	_, err = store.StoreProvider.MachineSet(clusterName).Update(mSet)
-	return err
 }
 
 func GetSSHConfig(nodeName string, cluster *api.Cluster) (*api.SSHConfig, error) {
@@ -207,7 +78,7 @@ func GetAdminConfig(cm Interface) (*api.KubeConfig, error) {
 	var err error
 
 	caCertPair := cm.GetCaCertPair()
-	adminCert, adminKey, err := CreateAdminCertificate(caCertPair.Cert, caCertPair.Key)
+	adminCert, adminKey, err := certificates.CreateAdminCertificate(caCertPair.Cert, caCertPair.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -296,134 +167,4 @@ func GetLeaderMachine(cluster *v1beta1.Cluster) (*clusterapi.Machine, error) {
 		return nil, err
 	}
 	return machine, nil
-}
-
-/*func GetSSHConfig(ctx context.Context, hostip string) *api.SSHConfig {
-	return &api.SSHConfig{
-		PrivateKey: SSHKey(ctx).PrivateKey,
-		User:       "root",
-		HostPort:   int32(22),
-		HostIP: hostip,
-	}
-}*/
-
-// DeleteAllWorkerMachines waits for all nodes to be deleted
-func DeleteAllWorkerMachines(cm Interface) error {
-	log.Infof("Deleting non-controlplane machines")
-
-	clusterClient, err := GetClusterClient(cm.GetCaCertPair(), cm.GetCluster())
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Deleting machine deployments")
-	err = deleteMachineDeployments(clusterClient)
-	if err != nil {
-		log.Infof("failed to delete machine deployments: %v", err)
-	}
-
-	log.Infof("Deleting machine sets")
-	err = deleteMachineSets(clusterClient)
-	if err != nil {
-		log.Infof("failed to delete machinesetes: %v", err)
-	}
-
-	log.Infof("Deleting machines")
-	err = deleteMachines(clusterClient)
-	if err != nil {
-		log.Infof("failed to delete machines: %v", err)
-	}
-
-	log.Infof("successfully deleted non-controlplane machines")
-	return nil
-}
-
-// deletes machinedeployments in all namespaces
-func deleteMachineDeployments(client clientset.Interface) error {
-	list, err := client.ClusterV1alpha1().MachineDeployments(corev1.NamespaceAll).List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	for _, ms := range list.Items {
-		err = client.ClusterV1alpha1().MachineDeployments(ms.Namespace).Delete(ms.Name, nil)
-		if err != nil {
-			return err
-		}
-	}
-
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (done bool, err error) {
-		deployList, err := client.ClusterV1alpha1().MachineDeployments(corev1.NamespaceAll).List(metav1.ListOptions{})
-		if err != nil {
-			log.Infof("failed to list machine deployments: %v", err)
-			return false, nil
-		}
-		if len(deployList.Items) == 0 {
-			log.Infof("successfully deleted machine deployments")
-			return true, nil
-		}
-		log.Infof("machine deployments are not deleted yet")
-		return false, nil
-	})
-}
-
-// deletes machinesets in all namespaces
-func deleteMachineSets(client clientset.Interface) error {
-	list, err := client.ClusterV1alpha1().MachineSets(corev1.NamespaceAll).List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	for _, ms := range list.Items {
-		err = client.ClusterV1alpha1().MachineSets(ms.Namespace).Delete(ms.Name, nil)
-		if err != nil {
-			return err
-		}
-	}
-
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (done bool, err error) {
-		machineSetList, err := client.ClusterV1alpha1().MachineSets(corev1.NamespaceAll).List(metav1.ListOptions{})
-		if err != nil {
-			log.Infof("failed to list machine sets: %v", err)
-			return false, nil
-		}
-		if len(machineSetList.Items) == 0 {
-			log.Infof("successfully deleted machinesets")
-			return true, nil
-		}
-		log.Infof("machinesets are not deleted yet")
-		return false, nil
-	})
-}
-
-// deletes machines in all namespaces
-func deleteMachines(client clientset.Interface) error {
-	list, err := client.ClusterV1alpha1().Machines(corev1.NamespaceAll).List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	for _, ms := range list.Items {
-		err = client.ClusterV1alpha1().Machines(ms.Namespace).Delete(ms.Name, nil)
-		if err != nil {
-			return err
-		}
-	}
-
-	// wait for machines to be deleted
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (done bool, err error) {
-		machineList, err := client.ClusterV1alpha1().Machines(corev1.NamespaceAll).List(metav1.ListOptions{})
-		if err != nil {
-			return false, nil
-		}
-
-		for _, machine := range machineList.Items {
-			if !util.IsControlPlaneMachine(&machine) {
-				log.Infof("machine %s in namespace %s is not deleted yet", machine.Name, machine.Namespace)
-			}
-		}
-
-		log.Infof("successfully deleted non-controlplane machines")
-		return true, nil
-	})
 }

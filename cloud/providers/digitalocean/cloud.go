@@ -111,7 +111,7 @@ func PrepareCloud(ctx context.Context, clusterName, owner string) (*cloudConnect
 
 func (conn *cloudConnector) WaitForInstance(id int, status string) error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
 		droplet, _, err := conn.client.Droplets.Get(context.TODO(), id)
@@ -153,7 +153,7 @@ func (conn *cloudConnector) importPublicKey() (string, error) {
 }
 
 func (conn *cloudConnector) deleteSSHKey() error {
-	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	err := wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		_, err := conn.client.Keys.DeleteByFingerprint(context.TODO(), conn.Certs.SSHKey.OpensshFingerprint)
 		return err == nil, nil
 	})
@@ -515,7 +515,7 @@ func (conn *cloudConnector) loadBalancerUpdated(lb *godo.LoadBalancer) (bool, er
 
 func (conn *cloudConnector) waitActive(lbID string) (*godo.LoadBalancer, error) {
 	attempt := 0
-	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	err := wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
 		lb, _, err := conn.client.LoadBalancers.Get(context.TODO(), lbID)

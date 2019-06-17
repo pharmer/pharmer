@@ -10,7 +10,6 @@ import (
 	"github.com/appscode/go/log"
 	linodeconfig "github.com/pharmer/pharmer/apis/v1beta1/linode"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/machinesetup"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -41,15 +40,10 @@ type LinodeClientKubeadm interface {
 	TokenCreate(params kubeadm.TokenCreateParams) (string, error)
 }
 
-type LinodeClientMachineSetupConfigGetter interface {
-	GetMachineSetupConfig() (machinesetup.MachineSetupConfig, error)
-}
-
 type MachineActuator struct {
-	cm      *ClusterManager
-	client  client.Client
-	kubeadm LinodeClientKubeadm
-	//machineSetupConfigGetter LinodeClientMachineSetupConfigGetter
+	cm            *ClusterManager
+	client        client.Client
+	kubeadm       LinodeClientKubeadm
 	eventRecorder record.EventRecorder
 	scheme        *runtime.Scheme
 }

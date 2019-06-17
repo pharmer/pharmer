@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +33,7 @@ func Create(store store.ResourceInterface, cluster *api.Cluster) (Interface, err
 	}
 
 	// create certificates
-	certs, err := createPharmerCerts(store, cluster)
+	certs, err := certificates.CreatePharmerCerts(store, cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create certificates")
 	}

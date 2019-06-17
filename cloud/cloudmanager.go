@@ -3,6 +3,8 @@ package cloud
 import (
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
@@ -10,8 +12,8 @@ import (
 
 type CloudManagerInterface interface {
 	GetCluster() *api.Cluster
-	GetCaCertPair() *CertKeyPair
-	GetPharmerCertificates() *PharmerCertificates
+	GetCaCertPair() *certificates.CertKeyPair
+	GetPharmerCertificates() *certificates.PharmerCertificates
 	GetCredential() (*cloudapi.Credential, error)
 
 	GetAdminClient() (kubernetes.Interface, error)
@@ -19,7 +21,7 @@ type CloudManagerInterface interface {
 
 type CloudManager struct {
 	Cluster *api.Cluster
-	Certs   *PharmerCertificates
+	Certs   *certificates.PharmerCertificates
 
 	Namer       namer
 	AdminClient kubernetes.Interface
@@ -33,11 +35,11 @@ func (cm *CloudManager) GetCluster() *api.Cluster {
 	return cm.Cluster
 }
 
-func (cm *CloudManager) GetCaCertPair() *CertKeyPair {
+func (cm *CloudManager) GetCaCertPair() *certificates.CertKeyPair {
 	return &cm.Certs.CACert
 }
 
-func (cm *CloudManager) GetPharmerCertificates() *PharmerCertificates {
+func (cm *CloudManager) GetPharmerCertificates() *certificates.PharmerCertificates {
 	return cm.Certs
 }
 
@@ -46,7 +48,7 @@ func (cm *CloudManager) GetAdminClient() (kubernetes.Interface, error) {
 		return cm.AdminClient, nil
 	}
 
-	client, err := NewAdminClient(&cm.Certs.CACert, cm.Cluster)
+	client, err := kube.NewAdminClient(&cm.Certs.CACert, cm.Cluster)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create new kube-client")
 	}

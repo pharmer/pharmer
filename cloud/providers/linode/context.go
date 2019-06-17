@@ -3,6 +3,8 @@ package linode
 import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,12 +32,12 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
 		return New(cluster, certs)
 	})
 }
 
-func New(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
 	return &ClusterManager{
 		CloudManager: &CloudManager{
 			Cluster: cluster,
@@ -48,7 +50,7 @@ func New(cluster *api.Cluster, certs *PharmerCertificates) Interface {
 }
 
 func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
-	err := CreateCredentialSecret(kc, cm.Cluster, metav1.NamespaceSystem)
+	err := kube.CreateCredentialSecret(kc, cm.Cluster, metav1.NamespaceSystem)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create credential for pharmer-flex")
 	}
@@ -59,18 +61,13 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 		return err
 	}
 
-	err = CreateSecret(kc, "ccm-linode", metav1.NamespaceSystem, map[string][]byte{
+	err = kube.CreateSecret(kc, "ccm-linode", metav1.NamespaceSystem, map[string][]byte{
 		"apiToken": []byte(cred.Spec.Data["token"]),
 		"region":   []byte(cm.Cluster.ClusterConfig().Cloud.Region),
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create ccm-secret")
 	}
-	return nil
-}
-
-func (cm *ClusterManager) GetConnector() ClusterApiProviderComponent {
-	panic(1)
 	return nil
 }
 

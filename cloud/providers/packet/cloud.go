@@ -44,7 +44,7 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 
 func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
 		server, _, err := conn.client.Devices.Get(deviceID, &packngo.GetOptions{})
@@ -101,7 +101,7 @@ func (conn *cloudConnector) importPublicKey() (string, error) {
 
 func (conn *cloudConnector) deleteSSHKey(id string) error {
 	log.Infof("Deleting SSH key for cluster %s", conn.Cluster.Name)
-	return wait.PollImmediate(RetryInterval, RetryInterval, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryInterval, func() (bool, error) {
 		_, err := conn.client.SSHKeys.Delete(id)
 		return err == nil, nil
 	})

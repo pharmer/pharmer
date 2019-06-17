@@ -299,7 +299,7 @@ func (conn *cloudConnector) deleteInstance(name string) error {
 
 func (conn *cloudConnector) waitForGlobalOperation(operation string) error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
 		r1, err := conn.computeService.GlobalOperations.Get(conn.Cluster.Spec.Config.Cloud.Project, operation).Do()
@@ -316,7 +316,7 @@ func (conn *cloudConnector) waitForGlobalOperation(operation string) error {
 
 func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
 		r1, err := conn.computeService.RegionOperations.Get(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Region, operation).Do()
@@ -336,7 +336,7 @@ func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 
 func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
 		r1, err := conn.computeService.ZoneOperations.Get(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, operation).Do()

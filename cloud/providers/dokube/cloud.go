@@ -126,7 +126,7 @@ func (conn *cloudConnector) deleteCluster() error {
 
 func (conn *cloudConnector) waitForClusterCreation(cluster *godo.KubernetesCluster) error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 		cluster, _, _ := conn.client.Kubernetes.Get(context.Background(), cluster.ID)
 		log.Infof("Attempt %v: Creating Cluster %v ...", attempt, cluster.Name)

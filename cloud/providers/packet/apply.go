@@ -7,6 +7,7 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
@@ -89,7 +90,7 @@ func (cm *ClusterManager) applyCreate() error {
 // it creates credential for ccm, pharmer-flex, pharmer-provisioner
 func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
 	// pharmer-flex secret
-	if err := CreateCredentialSecret(kc, cm.Cluster, ""); err != nil {
+	if err := kube.CreateCredentialSecret(kc, cm.Cluster, ""); err != nil {
 		return errors.Wrapf(err, "failed to create flex-secret")
 	}
 
@@ -112,7 +113,7 @@ func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal cloud-config")
 	}
-	err = CreateSecret(kc, "cloud-config", metav1.NamespaceSystem, map[string][]byte{
+	err = kube.CreateSecret(kc, "cloud-config", metav1.NamespaceSystem, map[string][]byte{
 		"cloud-config": data,
 	})
 	if err != nil {

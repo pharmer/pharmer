@@ -1,4 +1,4 @@
-package cloud
+package certificates
 
 import (
 	"crypto/rsa"

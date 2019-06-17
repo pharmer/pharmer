@@ -9,7 +9,6 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/pharmer/pharmer/cloud"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/machinesetup"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/record"
@@ -47,17 +46,12 @@ type DOClientKubeadm interface {
 	TokenCreate(params kubeadm.TokenCreateParams) (string, error)
 }
 
-type DOClientMachineSetupConfigGetter interface {
-	GetMachineSetupConfig() (machinesetup.MachineSetupConfig, error)
-}
-
 type MachineActuator struct {
-	client                   client.Client
-	kubeadm                  DOClientKubeadm
-	machineSetupConfigGetter DOClientMachineSetupConfigGetter
-	eventRecorder            record.EventRecorder
-	scheme                   *runtime.Scheme
-	cm                       *ClusterManager
+	client        client.Client
+	kubeadm       DOClientKubeadm
+	eventRecorder record.EventRecorder
+	scheme        *runtime.Scheme
+	cm            *ClusterManager
 }
 
 type MachineActuatorParams struct {

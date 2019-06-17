@@ -6,13 +6,14 @@ import (
 
 	"github.com/golang/glog"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
 )
 
 // Factory is a function that returns a cloud.ClusterManager.
 // The config parameter provides an io.Reader handler to the factory in
 // order to load specific configurations. If no configuration is provided
 // the parameter is nil.
-type Factory func(cluster *api.Cluster, certs *PharmerCertificates) Interface
+type Factory func(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface
 
 // All registered cloud providers.
 var (
@@ -54,7 +55,7 @@ func CloudManagers() []string {
 }
 
 func GetCloudManager(cluster *api.Cluster) (Interface, error) {
-	certs, err := GetPharmerCerts(cluster.Name)
+	certs, err := certificates.GetPharmerCerts(cluster.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +67,7 @@ func GetCloudManager(cluster *api.Cluster) (Interface, error) {
 // was known but failed to initialize. The config parameter specifies the
 // io.Reader handler of the configuration file for the cloud provider, or nil
 // for no configuation.
-func GetCloudManagerWithCerts(cluster *api.Cluster, certs *PharmerCertificates) (Interface, error) {
+func GetCloudManagerWithCerts(cluster *api.Cluster, certs *certificates.PharmerCertificates) (Interface, error) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	f, found := providers[cluster.Spec.Config.Cloud.CloudProvider]

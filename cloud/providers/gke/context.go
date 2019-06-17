@@ -5,6 +5,7 @@ import (
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,12 +32,12 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
 		return New(cluster, certs)
 	})
 }
 
-func New(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
 	return &ClusterManager{
 		CloudManager: &CloudManager{
 			Cluster: cluster,
@@ -98,7 +99,7 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 
 func (cm *ClusterManager) NewGKEAdminClient() (kubernetes.Interface, error) {
 	cluster := cm.Cluster
-	adminCert, adminKey, err := GetAdminCertificate(cm.Cluster.Name)
+	adminCert, adminKey, err := certificates.GetAdminCertificate(cm.Cluster.Name)
 	if err != nil {
 		return nil, err
 	}

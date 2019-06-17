@@ -5,9 +5,8 @@ import (
 	"testing"
 
 	"github.com/pharmer/pharmer/cloud"
-
 	"github.com/pharmer/pharmer/cloud/providers/aws"
-
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -28,7 +27,7 @@ func TestNewNodeTemplateData(t *testing.T) {
 				cm: &aws.ClusterManager{
 					CloudManager: &cloud.CloudManager{
 						Cluster:     nil,
-						Certs:       &cloud.PharmerCertificates{},
+						Certs:       &certificates.PharmerCertificates{},
 						AdminClient: nil,
 						Credential:  nil,
 					},

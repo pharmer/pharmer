@@ -4,20 +4,15 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/pharmer/apis/v1beta1"
-
-	"github.com/pharmer/pharmer/store"
-
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/store"
+	_ "github.com/pharmer/pharmer/store/providers/fake"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
-
-	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	_ "github.com/pharmer/pharmer/store/providers/fake"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func TestClusterManager_CreateCredentials(t *testing.T) {

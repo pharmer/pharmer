@@ -7,6 +7,7 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -73,7 +74,7 @@ func (i *Inspector) runMasterExecutor(masterNode core.Node, podIp string) error 
 		},
 	}
 
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		DefaultWriter.Flush()
 		resp, err := ExecuteTCPCommand(command, fmt.Sprintf("%v:%v", sshCfg.HostIP, sshCfg.HostPort), config)
 		if err == nil && strings.Contains(resp, "200") {
@@ -114,7 +115,7 @@ func (i *Inspector) InstallNginxService() (string, error) {
 	}
 	var service *core.Service
 	//attempt := 0
-	wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		var err error
 		service, err = i.client.CoreV1().Services(defaultNamespace).Get(Server, metav1.GetOptions{})
 		if err != nil {
@@ -153,7 +154,7 @@ func (i *Inspector) InstallNginx() ([]core.Pod, error) {
 	}
 	var pods *core.PodList
 	attempt := 0
-	err := wait.Poll(RetryInterval, RetryTimeout, func() (bool, error) {
+	err := wait.Poll(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 		var err error
 		pods, err = i.client.CoreV1().Pods(defaultNamespace).List(metav1.ListOptions{
@@ -205,7 +206,7 @@ func (i *Inspector) DeleteNginx() error {
 
 func (i *Inspector) CheckDNSPod() error {
 	attempt := 0
-	return wait.Poll(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.Poll(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 		pods, err := i.client.CoreV1().Pods(metav1.NamespaceSystem).List(metav1.ListOptions{
 			LabelSelector: labels.SelectorFromSet(map[string]string{

@@ -8,6 +8,7 @@ import (
 	"github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/store"
 )
 
@@ -25,7 +26,7 @@ var _ = Describe("Certificate", func() {
 		Expect(c).Should(Equal(cluster))
 
 		By("Create credential")
-		ctx, err = cloud.CreateCACertificates(ctx, cluster, "")
+		ctx, err = certificates.CreateCACertificates(ctx, cluster, "")
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

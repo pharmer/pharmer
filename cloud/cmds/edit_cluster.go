@@ -213,7 +213,7 @@ func UpdateCluster(original, updated *api.Cluster, owner string) error {
 		return errors.New("no changes made")
 	}
 
-	preconditions := utils.GetPreconditionFunc("")
+	preconditions := utils.GetPreconditionFunc()
 	patch, err := strategicpatch.CreateTwoWayMergePatch(originalJS, updatedJS, updated, preconditions...)
 	if err != nil {
 		if mergepatch.IsPreconditionFailed(err) {

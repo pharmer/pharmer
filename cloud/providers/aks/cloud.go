@@ -16,6 +16,7 @@ import (
 	. "github.com/appscode/go/types"
 	"github.com/appscode/go/wait"
 	"github.com/pharmer/cloud/pkg/credential"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
@@ -165,7 +166,7 @@ func (conn *cloudConnector) upsertAKS(agentPools []cs.ManagedClusterAgentPoolPro
 
 func (conn *cloudConnector) WaitForClusterOperation() error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 		r, err := conn.managedClient.Get(context.Background(), conn.namer.ResourceGroupName(), conn.Cluster.Name)
 		if err != nil {

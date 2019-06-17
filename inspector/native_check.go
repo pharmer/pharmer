@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/term"
-	. "github.com/pharmer/pharmer/cloud"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,7 +15,7 @@ import (
 func (i *Inspector) CheckHelthStatus() error {
 	term.Println("Checking for component status...")
 	attempt := 0
-	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	err := wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 		resp, err := i.client.CoreV1().ComponentStatuses().List(metav1.ListOptions{
 			LabelSelector: labels.Everything().String(),

@@ -5,7 +5,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/store"
-	"github.com/pharmer/pharmer/utils"
 )
 
 type Framework struct {
@@ -20,8 +19,7 @@ func New(configFile string) *Framework {
 	Expect(err).NotTo(HaveOccurred())
 
 	return &Framework{
-		Storage: store.NewStoreProvider(conf, utils.GetLocalOwner()),
-		Config:  conf,
+		Config: conf,
 	}
 }
 

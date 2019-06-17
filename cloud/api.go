@@ -20,8 +20,6 @@ type Interface interface {
 
 	CreateCredentials(kc kubernetes.Interface) error
 
-	//GetConnector() ClusterApiProviderComponent
-
 	InitializeMachineActuator(mgr manager.Manager) error
 
 	AddToManager(m manager.Manager) error
@@ -50,18 +48,6 @@ type Interface interface {
 
 type SSHGetter interface {
 	GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error)
-}
-
-type NodeGroupManager interface {
-	//	Apply(dryRun bool) (acts []api.Action, err error)
-	//	AddNodes(count int64) error
-	//	DeleteNodes(nodes []core.Node) error
-}
-
-// TODO: change name
-type ClusterApiProviderComponent interface {
-	CreateCredentialSecret(kc kubernetes.Interface, data map[string]string) error
-	GetControllerManager() (string, error)
 }
 
 type UpgradeManager interface {

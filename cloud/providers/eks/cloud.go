@@ -17,6 +17,7 @@ import (
 	_iam "github.com/aws/aws-sdk-go/service/iam"
 	_sts "github.com/aws/aws-sdk-go/service/sts"
 	"github.com/pharmer/cloud/pkg/credential"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
@@ -100,7 +101,7 @@ func (conn *cloudConnector) WaitForStackOperation(name string, expectedStatus st
 	params := &cloudformation.DescribeStacksInput{
 		StackName: StringP(name),
 	}
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 		resp, err := conn.cfn.DescribeStacks(params)
 		if err != nil {
@@ -118,7 +119,7 @@ func (conn *cloudConnector) WaitForControlPlaneOperation(name string) error {
 	params := &_eks.DescribeClusterInput{
 		Name: StringP(name),
 	}
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 		resp, err := conn.eks.DescribeCluster(params)
 		if err != nil {

@@ -14,10 +14,6 @@ func (n namer) AdminUsername() string {
 	return "pharmer"
 }
 
-func (n namer) GenSSHKeyExternalID() string {
-	return n.cluster.Name + "-sshkey"
-}
-
 func (n namer) GetStackServiceRole() string {
 	return fmt.Sprintf("EKS-%v-ServiceRole", n.cluster.Name)
 }

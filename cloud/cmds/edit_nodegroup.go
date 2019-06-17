@@ -210,7 +210,7 @@ func UpdateNodeGroup(original, updated *clusterv1.MachineSet, clusterName, owner
 		return errors.New("No changes made.")
 	}
 
-	preconditions := utils.GetPreconditionFunc("")
+	preconditions := utils.GetPreconditionFunc()
 	patch, err := strategicpatch.CreateTwoWayMergePatch(originalJS, updatedJS, updated, preconditions...)
 	if err != nil {
 		if mergepatch.IsPreconditionFailed(err) {

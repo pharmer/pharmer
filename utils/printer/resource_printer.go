@@ -285,7 +285,7 @@ func TranslateTimestamp(timestamp metav1.Time) string {
 	if timestamp.IsZero() {
 		return "<unknown>"
 	}
-	return ShortHumanDuration(time.Now().Sub(timestamp.Time))
+	return ShortHumanDuration(time.Since(timestamp.Time))
 }
 
 func GetNewTabWriter(output io.Writer) *tabwriter.Writer {

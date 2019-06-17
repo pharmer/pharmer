@@ -3,10 +3,9 @@ package dokube
 import (
 	"context"
 
-	"github.com/pharmer/pharmer/cloud"
-
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/store"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -32,7 +31,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 			log.Infof(err.Error())
 			return err
 		}
-		certs, err := cloud.GetPharmerCerts(cm.Cluster.Name)
+		certs, err := certificates.GetPharmerCerts(cm.Cluster.Name)
 		if err != nil {
 			return err
 		}

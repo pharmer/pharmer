@@ -3,16 +3,15 @@ package dokube
 import (
 	"fmt"
 
-	"github.com/pharmer/pharmer/store"
-
-	"github.com/pkg/errors"
-	"k8s.io/client-go/rest"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
+	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -65,12 +64,12 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+	RegisterCloudManager(UID, func(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
 		return New(cluster, certs)
 	})
 }
 
-func New(cluster *api.Cluster, certs *PharmerCertificates) Interface {
+func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) Interface {
 	return &ClusterManager{
 		CloudManager: &CloudManager{
 			Cluster: cluster,
@@ -131,7 +130,7 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 }
 
 func NewDokubeAdminClient(cm *ClusterManager) (kubernetes.Interface, error) {
-	adminCert, adminKey, err := GetAdminCertificate(cm.Cluster.Name)
+	adminCert, adminKey, err := certificates.GetAdminCertificate(cm.Cluster.Name)
 	if err != nil {
 		return nil, err
 	}

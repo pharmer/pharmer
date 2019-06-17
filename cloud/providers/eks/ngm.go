@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/appscode/go/log"
-
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/ghodss/yaml"
 	"github.com/pharmer/pharmer/store"

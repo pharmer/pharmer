@@ -1,9 +1,6 @@
 package azure
 
 import (
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
-
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -12,6 +9,8 @@ import (
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 )
 
 func (cm *ClusterManager) PrepareCloud() error {
