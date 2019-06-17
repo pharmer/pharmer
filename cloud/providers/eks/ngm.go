@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/appscode/go/log"
+
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/ghodss/yaml"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	core "k8s.io/api/core/v1"
@@ -30,87 +31,67 @@ func NewEKSNodeGroupManager(ctx context.Context, conn *cloudConnector, ng *clust
 	return &EKSNodeGroupManager{ctx: ctx, conn: conn, ng: ng, kc: kc, owner: owner}
 }
 
-func (igm *EKSNodeGroupManager) Apply(dryRun bool) (acts []api.Action, err error) {
+func (igm *EKSNodeGroupManager) Apply() error {
 	fileName := igm.ng.Name
 	igm.ng.Name = strings.Replace(igm.ng.Name, ".", "-", -1)
 	//var template []byte
 	var found bool
+	var err error
+
 	if found, err = igm.conn.isStackExists(igm.ng.Name); err != nil {
-		return
+		return err
 	}
-	/*template, err = Asset("amazon-eks-nodegroup.yaml")
-	if err != nil {
-		return
-	}*/
 
 	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Node pool",
-			Message:  fmt.Sprintf("Node pool %v will be created", igm.ng.Name),
-		})
-		if !dryRun {
-			params := igm.buildstackParams()
-			if err = igm.conn.createStack(igm.ng.Name, NodeGroupUrl, params, true); err != nil {
-				return
-			}
+		params := igm.buildstackParams()
+		if err = igm.conn.createStack(igm.ng.Name, NodeGroupUrl, params, true); err != nil {
+			return err
+		}
+		var ngInfo *cloudformation.Stack
+		ngInfo, err = igm.conn.getStack(igm.ng.Name)
+		if err != nil {
+			return err
+		}
+		if err = igm.newNodeAuthConfigMap(igm.conn.getOutput(ngInfo, "NodeInstanceRole")); err != nil {
+			return err
+		}
+	} else {
+		if *igm.ng.Spec.Replicas == 0 || igm.ng.DeletionTimestamp != nil {
+
 			var ngInfo *cloudformation.Stack
 			ngInfo, err = igm.conn.getStack(igm.ng.Name)
 			if err != nil {
-				return
+				return err
 			}
-			if err = igm.newNodeAuthConfigMap(igm.conn.getOutput(ngInfo, "NodeInstanceRole")); err != nil {
-				return
+			if err = igm.conn.deleteStack(igm.ng.Name); err != nil {
+				return err
 			}
-		}
+			if err = igm.deleteNodeAuthConfigMap(igm.conn.getOutput(ngInfo, "NodeInstanceRole")); err != nil {
+				return err
+			}
+			err = store.StoreProvider.MachineSet(igm.conn.cluster.Name).Delete(fileName)
+			if err != nil {
+				return err
+			}
+			return
 
-	} else {
-		if *igm.ng.Spec.Replicas == 0 || igm.ng.DeletionTimestamp != nil {
-			acts = append(acts, api.Action{
-				Action:   api.ActionDelete,
-				Resource: "Node pool",
-				Message:  fmt.Sprintf("Node pool %v will be deleted", igm.ng.Name),
-			})
-			if !dryRun {
-				var ngInfo *cloudformation.Stack
-				ngInfo, err = igm.conn.getStack(igm.ng.Name)
-				if err != nil {
-					return
-				}
-				if err = igm.conn.deleteStack(igm.ng.Name); err != nil {
-					return
-				}
-				if err = igm.deleteNodeAuthConfigMap(igm.conn.getOutput(ngInfo, "NodeInstanceRole")); err != nil {
-					return
-				}
-				err = store.StoreProvider.MachineSet(igm.conn.cluster.Name).Delete(fileName)
-				if err != nil {
-					return acts, err
-				}
-				return
-			}
 		} else {
-			acts = append(acts, api.Action{
-				Action:   api.ActionUpdate,
-				Resource: "Node pool",
-				Message:  fmt.Sprintf("Node pool %v will be updated", igm.ng.Name),
-			})
-			if !dryRun {
-				existingStack, err := igm.conn.getStack(igm.ng.Name)
-				if err != nil {
-					return acts, err
-				}
-				params := igm.buildstackParams()
-				if err = igm.conn.updateStack(igm.ng.Name, params, true, igm.conn.getOutput(existingStack, "NodeInstanceRole")); err != nil {
-					Logger(igm.ctx).Infoln(err)
-				}
+
+			existingStack, err := igm.conn.getStack(igm.ng.Name)
+			if err != nil {
+				return err
 			}
+			params := igm.buildstackParams()
+			if err = igm.conn.updateStack(igm.ng.Name, params, true, igm.conn.getOutput(existingStack, "NodeInstanceRole")); err != nil {
+				log.Infoln(err)
+			}
+
 		}
 	}
 	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas
-	store.StoreProvider.MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
+	_, err = store.StoreProvider.MachineSet(igm.conn.cluster.Name).UpdateStatus(igm.ng)
 
-	return acts, err
+	return err
 }
 
 func (igm *EKSNodeGroupManager) buildstackParams() map[string]string {
