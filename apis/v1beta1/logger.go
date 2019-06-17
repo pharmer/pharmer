@@ -1,6 +1,10 @@
 package v1beta1
 
-import "github.com/appscode/go/log"
+import (
+	"context"
+
+	"github.com/appscode/go/log"
+)
 
 type Logger interface {
 	Info(args ...interface{})
@@ -12,4 +16,4 @@ type Logger interface {
 	Debugf(format string, args ...interface{})
 }
 
-var _ Logger = log.New(nil)
+var _ Logger = log.New(context.TODO())

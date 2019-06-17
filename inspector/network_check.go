@@ -33,9 +33,9 @@ func (i *Inspector) getNodes() (*core.NodeList, error) {
 	return nodes, nil
 }
 
-func (i *Inspector) runNodeExecutor(podName, podIp, namespace, containerName string) error {
+func (i *Inspector) runNodeExecutor(podName, podIp, containerName string) error {
 	eo := ExecOptions{
-		Namespace:     namespace,
+		Namespace:     metav1.NamespaceDefault,
 		PodName:       podName,
 		ContainerName: containerName,
 		Command: []string{
@@ -115,7 +115,7 @@ func (i *Inspector) InstallNginxService() (string, error) {
 	}
 	var service *core.Service
 	//attempt := 0
-	wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
+	err := wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		var err error
 		service, err = i.client.CoreV1().Services(defaultNamespace).Get(Server, metav1.GetOptions{})
 		if err != nil {
@@ -123,6 +123,9 @@ func (i *Inspector) InstallNginxService() (string, error) {
 		}
 		return true, nil
 	})
+	if err != nil {
+		return "", err
+	}
 
 	return service.Spec.ClusterIP, nil
 }

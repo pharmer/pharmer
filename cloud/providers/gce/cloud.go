@@ -3,7 +3,6 @@ package gce
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -17,8 +16,8 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
+	"google.golang.org/api/option"
 	rupdate "google.golang.org/api/replicapoolupdater/v1beta1"
 	gcs "google.golang.org/api/storage/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -33,8 +32,6 @@ const (
 	firewallRuleInternalSuffix   = "-allow-cluster-internal"
 	firewallRuleApiSuffix        = "-allow-api-public"
 )
-
-var providerIdRE = regexp.MustCompile(`^` + ProviderName + `://([^/]+)/([^/]+)/([^/]+)$`)
 
 type cloudConnector struct {
 	*CloudManager
@@ -56,23 +53,18 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	}
 
 	cm.Cluster.Spec.Config.Cloud.Project = typed.ProjectID()
-	conf, err := google.JWTConfigFromJSON([]byte(typed.ServiceAccount()),
-		compute.ComputeScope,
-		compute.DevstorageReadWriteScope,
-		rupdate.ReplicapoolScope)
+
+	serviceOpt := option.WithCredentialsJSON([]byte(typed.ServiceAccount()))
+
+	computeService, err := compute.NewService(context.Background(), serviceOpt)
 	if err != nil {
 		return nil, errors.Wrap(err, "")
 	}
-	client := conf.Client(context.Background())
-	computeService, err := compute.New(client)
+	storageService, err := gcs.NewService(context.Background(), serviceOpt)
 	if err != nil {
 		return nil, errors.Wrap(err, "")
 	}
-	storageService, err := gcs.New(client)
-	if err != nil {
-		return nil, errors.Wrap(err, "")
-	}
-	updateService, err := rupdate.New(client)
+	updateService, err := rupdate.NewService(context.Background(), serviceOpt)
 	if err != nil {
 		return nil, errors.Wrap(err, "")
 	}
@@ -594,7 +586,7 @@ func (conn *cloudConnector) getMasterInstance(machine *clusterv1.Machine) (bool,
 	return true, nil
 }
 
-func (conn *cloudConnector) createMasterIntance(cluster *api.Cluster, script string) (string, error) {
+func (conn *cloudConnector) createMasterIntance(script string) (string, error) {
 	// MachineType:  "projects/tigerworks-kube/zones/us-central1-b/machineTypes/n1-standard-1",
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
@@ -797,7 +789,7 @@ func (conn *cloudConnector) deleteDisk(nodeDiskNames []string) error {
 // ruleSSH := cluster.Name + "-allow-ssh"
 // ruleApiPublic := cluster.Name + firewallRuleApiSuffix
 
-func (conn *cloudConnector) deleteFirewalls() error {
+func (conn *cloudConnector) deleteFirewalls() {
 	time.Sleep(3 * time.Second)
 
 	ruleClusterInternal := conn.Cluster.Name + firewallRuleInternalSuffix
@@ -829,5 +821,4 @@ func (conn *cloudConnector) deleteFirewalls() error {
 		log.Infof("Firewalls %v deleted, response %v", ruleApiPublic, r4.Status)
 	}
 	time.Sleep(3 * time.Second)
-	return nil
 }

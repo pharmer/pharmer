@@ -133,7 +133,10 @@ func editCredential(opts *options.CredentialEditConfig, original *cloudapi.Crede
 			var w io.Writer = buf
 
 			if o.AddHeader {
-				results.Header.WriteTo(w)
+				_, err := results.Header.WriteTo(w)
+				if err != nil {
+					return err
+				}
 			}
 
 			if !containsError {

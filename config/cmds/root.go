@@ -1,6 +1,9 @@
 package cmds
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/appscode/go/term"
+	"github.com/spf13/cobra"
+)
 
 func NewCmdConfig() *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -9,7 +12,8 @@ func NewCmdConfig() *cobra.Command {
 		Example:           "pharmer config view",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Help()
+			err := cmd.Help()
+			term.ExitOnError(err)
 		},
 	}
 

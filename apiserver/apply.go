@@ -15,7 +15,7 @@ func ApplyCluster(opt *opts.ApplyConfig, obj *api.Operation) {
 		return
 	}
 	obj.State = api.OperationDone
-	obj, err = store.StoreProvider.Operations().Update(obj)
+	_, err = store.StoreProvider.Operations().Update(obj)
 	if err != nil {
 		glog.Errorf("[err = %v]\n", err)
 	}

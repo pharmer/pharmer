@@ -6,7 +6,6 @@ import (
 	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-04-30/containerservice"
 	"github.com/appscode/go/log"
 	. "github.com/appscode/go/types"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/apis/v1beta1/azure"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
@@ -63,6 +62,9 @@ func (cm *ClusterManager) ApplyScale() error {
 	}
 
 	cluster, err := cm.conn.managedClient.Get(context.Background(), cm.namer.ResourceGroupName(), cm.Cluster.Name)
+	if err != nil {
+		return err
+	}
 
 	agentPools := make([]containersvc.ManagedClusterAgentPoolProfile, 0)
 	for _, ng := range nodeGroups {
@@ -96,17 +98,6 @@ func (cm *ClusterManager) ApplyScale() error {
 		if err = cm.conn.upsertAKS(agentPools); err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-func (cm *ClusterManager) applyUpgrade() error {
-	if err := cm.conn.upgradeCluster(); err != nil {
-		return err
-	}
-	cm.Cluster.Status.Phase = api.ClusterReady
-	if _, err := store.StoreProvider.Clusters().UpdateStatus(cm.Cluster); err != nil {
-		return err
 	}
 	return nil
 }

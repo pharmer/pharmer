@@ -51,7 +51,7 @@ func RunGetCredential(opts *options.CredentialGetConfig, out io.Writer) error {
 
 	w := printer.GetNewTabWriter(out)
 
-	credentials, err := getCredentialList(opts.Credentials, opts.Owner)
+	credentials, err := getCredentialList(opts.Credentials)
 	if err != nil {
 		return err
 	}
@@ -59,14 +59,16 @@ func RunGetCredential(opts *options.CredentialGetConfig, out io.Writer) error {
 		if err := rPrinter.PrintObj(credential, w); err != nil {
 			return err
 		}
-		printer.PrintNewline(w)
+		err = printer.PrintNewline(w)
+		if err != nil {
+			return err
+		}
 	}
 
-	w.Flush()
-	return nil
+	return w.Flush()
 }
 
-func getCredentialList(args []string, owner string) (credentialList []*cloudapi.Credential, err error) {
+func getCredentialList(args []string) (credentialList []*cloudapi.Credential, err error) {
 	if len(args) != 0 {
 		for _, arg := range args {
 			credential, er2 := store.StoreProvider.Credentials().Get(arg)

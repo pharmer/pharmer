@@ -143,6 +143,9 @@ func GetBooststrapClient(cm Interface, cluster *api.Cluster) (clusterclient.Clie
 
 	config := api.Convert_KubeConfig_To_Config(kubeConifg)
 	data, err := clientcmd.Write(*config)
+	if err != nil {
+		return nil, err
+	}
 	bootstrapClient, err := clientFactory.NewClientFromKubeconfig(string(data))
 	if err != nil {
 		return nil, fmt.Errorf("unable to create bootstrap client: %v", err)

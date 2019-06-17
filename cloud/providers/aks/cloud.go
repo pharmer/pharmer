@@ -3,7 +3,6 @@ package aks
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	ms "github.com/Azure/azure-sdk-for-go/profiles/latest/containerservice/mgmt/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
@@ -21,13 +20,6 @@ import (
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 )
-
-const (
-	machineIDTemplate = "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s"
-	CloudProviderName = "azure"
-)
-
-var providerIDRE = regexp.MustCompile(`^` + CloudProviderName + `://(?:.*)/Microsoft.Compute/virtualMachines/(.+)$`)
 
 type cloudConnector struct {
 	*CloudManager
@@ -96,22 +88,6 @@ func (conn *cloudConnector) ensureResourceGroup() (resources.Group, error) {
 		},
 	}
 	return conn.groupsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), req)
-}
-
-func (conn *cloudConnector) getAvailabilitySet() (compute.AvailabilitySet, error) {
-	return conn.availabilitySetsClient.Get(context.TODO(), conn.namer.ResourceGroupName(), conn.namer.AvailabilitySetName())
-}
-
-func (conn *cloudConnector) ensureAvailabilitySet() (compute.AvailabilitySet, error) {
-	name := conn.namer.AvailabilitySetName()
-	req := compute.AvailabilitySet{
-		Name:     StringP(name),
-		Location: StringP(conn.Cluster.Spec.Config.Cloud.Zone),
-		Tags: map[string]*string{
-			"KubernetesCluster": StringP(conn.Cluster.Name),
-		},
-	}
-	return conn.availabilitySetsClient.CreateOrUpdate(context.TODO(), conn.namer.ResourceGroupName(), name, req)
 }
 
 func (conn *cloudConnector) deleteResourceGroup() error {
@@ -183,28 +159,4 @@ func (conn *cloudConnector) WaitForClusterOperation() error {
 func (conn *cloudConnector) deleteAKS() error {
 	_, err := conn.managedClient.Delete(context.Background(), conn.namer.ResourceGroupName(), conn.Cluster.Name)
 	return err
-}
-
-func (conn *cloudConnector) getUpgradeProfile() (bool, error) {
-	resp, err := conn.managedClient.GetUpgradeProfile(context.Background(), conn.namer.ResourceGroupName(), conn.Cluster.Name)
-	if err != nil {
-		return false, err
-	}
-	if *resp.ControlPlaneProfile.KubernetesVersion == conn.Cluster.Spec.Config.KubernetesVersion {
-		return false, nil
-	}
-	return true, nil
-}
-
-func (conn *cloudConnector) upgradeCluster() error {
-	cluster, err := conn.managedClient.Get(context.Background(), conn.namer.ResourceGroupName(), conn.Cluster.Name)
-	if err != nil {
-		return err
-	}
-	cluster.KubernetesVersion = StringP(conn.Cluster.Spec.Config.KubernetesVersion)
-	_, err = conn.managedClient.CreateOrUpdate(context.Background(), conn.namer.ResourceGroupName(), conn.Cluster.Name, cluster)
-	if err != nil {
-		return err
-	}
-	return conn.WaitForClusterOperation()
 }

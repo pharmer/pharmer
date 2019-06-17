@@ -191,66 +191,7 @@ func (conn *cloudConnector) createTags() error {
 	return nil
 }
 
-func (conn *cloudConnector) applyTag(dropletID int) error {
-	_, err := conn.client.Tags.TagResources(context.TODO(), "KubernetesCluster:"+conn.Cluster.Name, &godo.TagResourcesRequest{
-		Resources: []godo.Resource{
-			{
-				ID:   strconv.Itoa(dropletID),
-				Type: godo.DropletResourceType,
-			},
-		},
-	})
-	log.Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+conn.Cluster.Name, dropletID)
-	return err
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-
-func (conn *cloudConnector) getReserveIP(ip string) (bool, error) {
-	fip, resp, err := conn.client.FloatingIPs.Get(context.TODO(), ip)
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		return false, nil
-	}
-	if err != nil {
-		return false, nil
-	}
-	return fip != nil, nil
-}
-
-func (conn *cloudConnector) createReserveIP() (string, error) {
-	fip, _, err := conn.client.FloatingIPs.Create(context.TODO(), &godo.FloatingIPCreateRequest{
-		Region: conn.Cluster.ClusterConfig().Cloud.Region,
-	})
-	if err != nil {
-		return "", err
-	}
-	log.Infof("New floating ip %v reserved", fip.IP)
-	return fip.IP, nil
-}
-
-func (conn *cloudConnector) assignReservedIP(ip string, dropletID int) error {
-	_, _, err := conn.client.FloatingIPActions.Assign(context.TODO(), ip, dropletID)
-	if err != nil {
-		return errors.Wrap(err, "unable to assign reserved IP")
-	}
-	log.Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
-	return nil
-}
-
-func (conn *cloudConnector) releaseReservedIP(ip string) error {
-	resp, err := conn.client.FloatingIPs.Delete(context.TODO(), ip)
-	log.Debugln("DO response", resp, " errors", err)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	log.Infof("Floating ip %v deleted", ip)
-	return nil
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-
 func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, script string) (*api.NodeInfo, error) {
-
 	machineConfig, err := doCapi.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return nil, err
@@ -308,13 +249,13 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*godo.Droplet, error) {
 	//identifyingMachine := machine
 
-	droplets, _, err := conn.client.Droplets.List(oauth2.NoContext, &godo.ListOptions{})
+	droplets, _, err := conn.client.Droplets.List(context.Background(), &godo.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 	for _, droplet := range droplets {
 		if droplet.Name == machine.Name {
-			d, _, err := conn.client.Droplets.Get(oauth2.NoContext, droplet.ID)
+			d, _, err := conn.client.Droplets.Get(context.Background(), droplet.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -361,21 +302,11 @@ func dropletIDFromProviderID(providerID string) (int, error) {
 	return strconv.Atoi(split[2])
 }
 
-func (conn *cloudConnector) deleteInstance(ctx context.Context, id int) error {
-	_, err := conn.client.Droplets.Delete(ctx, id)
-	return err
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-
 func (conn *cloudConnector) createLoadBalancer(ctx context.Context, name string) (*godo.LoadBalancer, error) {
 	lb, err := conn.lbByName(ctx, name)
 	if err != nil {
 		if err == errLBNotFound {
-			lbRequest, err := conn.buildLoadBalancerRequest(name)
-			if err != nil {
-				return nil, err
-			}
+			lbRequest := conn.buildLoadBalancerRequest(name)
 			lb, _, err := conn.client.LoadBalancers.Create(ctx, lbRequest)
 			if err != nil {
 				return nil, err
@@ -404,21 +335,6 @@ func (conn *cloudConnector) deleteLoadBalancer(ctx context.Context, name string)
 	return err
 }
 
-func (conn *cloudConnector) addNodeToBalancer(ctx context.Context, lbName string, id int) error {
-	lb, err := conn.lbByName(ctx, lbName)
-	if err != nil {
-		return err
-	}
-	lb.DropletIDs = append(lb.DropletIDs, id)
-	_, err = conn.client.LoadBalancers.AddDroplets(ctx, lb.ID, id)
-	if err != nil {
-		return err
-	}
-	log.Infof("Added master %v to loadbalancer %v", id, lbName)
-
-	return nil
-}
-
 func (conn *cloudConnector) lbByName(ctx context.Context, name string) (*godo.LoadBalancer, error) {
 	lbs, _, err := conn.client.LoadBalancers.List(ctx, &godo.ListOptions{})
 	if err != nil {
@@ -436,7 +352,7 @@ func (conn *cloudConnector) lbByName(ctx context.Context, name string) (*godo.Lo
 
 // buildLoadBalancerRequest returns a *godo.LoadBalancerRequest to balance
 // requests for service across nodes.
-func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*godo.LoadBalancerRequest, error) {
+func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) *godo.LoadBalancerRequest {
 
 	forwardingRules := []godo.ForwardingRule{
 		{
@@ -481,36 +397,32 @@ func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*godo.LoadB
 		RedirectHttpToHttps: false, //redirectHttpToHttps,
 		Tag:                 conn.Cluster.Name + "-master",
 		Tags:                []string{conn.Cluster.Name + "-master"},
-	}, nil
+	}
 }
 
-func (conn *cloudConnector) loadBalancerUpdated(lb *godo.LoadBalancer) (bool, error) {
-	defaultSpecs, err := conn.buildLoadBalancerRequest(conn.namer.LoadBalancerName())
-	if err != nil {
-		log.Debugln("Error getting default lb specs")
-		return false, err
-	}
+func (conn *cloudConnector) loadBalancerUpdated(lb *godo.LoadBalancer) bool {
+	defaultSpecs := conn.buildLoadBalancerRequest(conn.namer.LoadBalancerName())
 
 	if lb.Algorithm != defaultSpecs.Algorithm {
-		return true, nil
+		return true
 	}
 	if lb.Region.Slug != defaultSpecs.Region {
-		return true, nil
+		return true
 	}
 	if !reflect.DeepEqual(lb.ForwardingRules, defaultSpecs.ForwardingRules) {
-		return true, nil
+		return true
 	}
 	if !reflect.DeepEqual(lb.HealthCheck, defaultSpecs.HealthCheck) {
-		return true, nil
+		return true
 	}
 	if !reflect.DeepEqual(lb.StickySessions, defaultSpecs.StickySessions) {
-		return true, nil
+		return true
 	}
 	if lb.RedirectHttpToHttps != defaultSpecs.RedirectHttpToHttps {
-		return true, nil
+		return true
 	}
 
-	return false, nil
+	return false
 }
 
 func (conn *cloudConnector) waitActive(lbID string) (*godo.LoadBalancer, error) {

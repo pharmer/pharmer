@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/appscode/go/term"
 	"github.com/ghodss/yaml"
 	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
@@ -17,7 +18,8 @@ func newCmdView() *cobra.Command {
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
-				cmd.Help()
+				err := cmd.Help()
+				term.ExitOnError(err)
 				os.Exit(1)
 			}
 

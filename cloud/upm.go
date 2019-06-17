@@ -15,22 +15,14 @@ import (
 
 	//	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
-
 	//client "sigs.k8s.io/Cluster-api/pkg/client/clientset_generated/clientset/typed/Cluster/v1alpha1"
 	"github.com/pkg/errors"
 	semver "gomodules.xyz/version"
 )
 
 type GenericUpgradeManager struct {
-	//ctx context.Context
-	//ssh     SSHGetter
 	kc      kubernetes.Interface
 	cluster *api.Cluster
-
-	//owner string
-	//client    client.ClusterV1alpha1Interface
-	clientSet clientset.Interface
 }
 
 var _ UpgradeManager = &GenericUpgradeManager{}

@@ -11,9 +11,9 @@ import (
 	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/container/v1"
+	"google.golang.org/api/option"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -39,18 +39,14 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	}
 
 	cluster.Spec.Config.Cloud.Project = typed.ProjectID()
-	conf, err := google.JWTConfigFromJSON([]byte(typed.ServiceAccount()),
-		container.CloudPlatformScope)
-	if err != nil {
-		return nil, err
-	}
-	client := conf.Client(context.Background())
-	containerService, err := container.New(client)
+
+	serviceOpt := option.WithCredentialsJSON([]byte(typed.ServiceAccount()))
+	containerService, err := container.NewService(context.Background(), serviceOpt)
 	if err != nil {
 		return nil, err
 	}
 
-	computeService, err := compute.New(client)
+	computeService, err := compute.NewService(context.Background(), serviceOpt)
 	if err != nil {
 		return nil, err
 	}

@@ -16,6 +16,9 @@ func NewDokubeNodeGroupManager(conn *cloudConnector, ng *clusterapi.MachineSet) 
 
 func (igm *DokubeNodeGroupManager) Apply() error {
 	np, err := igm.conn.getNodePool(igm.ng)
+	if err != nil {
+		return err
+	}
 	if np == nil {
 		if err = igm.conn.addNodePool(igm.ng); err != nil {
 			return err

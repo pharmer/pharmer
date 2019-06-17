@@ -19,9 +19,8 @@ import (
 type ClusterManager struct {
 	*CloudManager
 
-	conn     *cloudConnector
-	actuator *ClusterActuator
-	namer    namer
+	conn  *cloudConnector
+	namer namer
 }
 
 func (cm *ClusterManager) ApplyScale() error {
@@ -43,6 +42,9 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 	ok, err := typed.IsValid()
 	if !ok {
 		return errors.New("credential not valid")
+	}
+	if err != nil {
+		return err
 	}
 	cloudConfig := &api.PacketCloudConfig{
 		Project: typed.ProjectID(),

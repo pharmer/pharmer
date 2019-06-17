@@ -12,8 +12,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-const statusUnknown = "Unknown"
-
 func (d *humanReadableDescriber) describeCluster(item *api.Cluster, describerSettings describe.DescriberSettings) (string, error) {
 
 	nodeGroups, err := store.StoreProvider.MachineSet(item.Name).List(metav1.ListOptions{})

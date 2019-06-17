@@ -297,29 +297,6 @@ func (do *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluste
 	return i != nil, nil
 }
 
-func (do *MachineActuator) updateAnnotations(machine *clusterv1.Machine) error {
-	//	config, err := cloud.GetProviderconfig(cm.codecFactory, machine.Spec.ClusterConfig)
-
-	name := machine.ObjectMeta.Name
-	zone := do.cm.conn.Cluster.Spec.Config.Cloud.Zone
-
-	if machine.ObjectMeta.Annotations == nil {
-		machine.ObjectMeta.Annotations = make(map[string]string)
-	}
-	//machine.ObjectMeta.Annotations[ProjectAnnotationKey] = project
-	machine.ObjectMeta.Annotations["zone"] = zone
-	machine.ObjectMeta.Annotations["name"] = name
-	err := do.client.Update(context.Background(), machine)
-	if err != nil {
-		return err
-	}
-	if do.client != nil {
-		sm := NewStatusManager(do.client, do.scheme)
-		return sm.UpdateInstanceStatus(machine)
-	}
-	return nil
-}
-
 // The two machines differ in a way that requires an update
 func (do *MachineActuator) requiresUpdate(a *clusterv1.Machine, b *clusterv1.Machine) bool {
 	// Do not want status changes. Do want changes that impact machine provisioning

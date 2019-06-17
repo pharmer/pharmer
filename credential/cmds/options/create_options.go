@@ -35,10 +35,10 @@ func (c *CredentialCreateConfig) AddFlags(fs *pflag.FlagSet) {
 
 func (c *CredentialCreateConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		errors.New("missing credential name")
+		return errors.New("missing credential name")
 	}
 	if len(args) > 1 {
-		errors.New("multiple credential name provided")
+		return errors.New("multiple credential name provided")
 	}
 	c.Name = args[0]
 	return nil

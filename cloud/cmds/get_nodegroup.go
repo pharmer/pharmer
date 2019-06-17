@@ -84,22 +84,24 @@ func RunGetNodeGroup(opts *options.NodeGroupGetConfig, out io.Writer) error {
 	return nil
 }
 
-func GetMachineSetList(cluster string, args ...string) (machineSetList []*clusterv1.MachineSet, err error) {
+func GetMachineSetList(cluster string, args ...string) ([]*clusterv1.MachineSet, error) {
+	var machineSetList []*clusterv1.MachineSet
 	if len(args) != 0 {
 		for _, arg := range args {
-			ms, er2 := store.StoreProvider.MachineSet(cluster).Get(arg)
+			ms, err := store.StoreProvider.MachineSet(cluster).Get(arg)
 			if err != nil {
-				return nil, er2
+				return nil, err
 			}
 			machineSetList = append(machineSetList, ms)
 		}
 	} else {
+		var err error
 		machineSetList, err = store.StoreProvider.MachineSet(cluster).List(metav1.ListOptions{})
 		if err != nil {
-			return
+			return nil, err
 		}
 	}
-	return
+	return machineSetList, nil
 }
 
 func GetNodeGroupList(cluster string, args ...string) (nodeGroupList []*api.NodeGroup, err error) {

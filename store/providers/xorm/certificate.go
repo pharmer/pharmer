@@ -75,10 +75,7 @@ func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *r
 	if found {
 		return errors.Errorf("certificate `%s` already exists", name)
 	}
-	certificate, err = encodeCertificate(crt, key)
-	if err != nil {
-		return err
-	}
+	certificate = encodeCertificate(crt, key)
 	certificate.ClusterId = cluster.Id
 	certificate.Name = name
 	certificate.ClusterName = s.cluster

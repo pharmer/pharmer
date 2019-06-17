@@ -1,7 +1,6 @@
 package describer
 
 import (
-	"context"
 	"reflect"
 
 	"github.com/golang/glog"
@@ -20,13 +19,10 @@ func NewDescriber() Describer {
 
 type handlerEntry struct {
 	describeFunc reflect.Value
-	args         []reflect.Value
 }
 
 type humanReadableDescriber struct {
 	handlerMap map[reflect.Type]*handlerEntry
-	ctx        context.Context
-	owner      string
 }
 
 func newHumanReadableDescriber() *humanReadableDescriber {

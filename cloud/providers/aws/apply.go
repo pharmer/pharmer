@@ -1,7 +1,6 @@
 package aws
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/appscode/go/log"
@@ -158,7 +157,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 			log.Infoln(err)
 		}
 
-		if privateSubnetID, found, err = cm.conn.getSubnet(vpcID, "private"); err != nil {
+		if privateSubnetID, _, err = cm.conn.getSubnet(vpcID, "private"); err != nil {
 			log.Infoln(err)
 		}
 
@@ -209,7 +208,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 		leaderMachine.Status.ProviderStatus = rawStatus
 
 		// update in pharmer file
-		leaderMachine, err = store.StoreProvider.Machine(cm.Cluster.Name).Update(leaderMachine)
+		_, err = store.StoreProvider.Machine(cm.Cluster.Name).Update(leaderMachine)
 		if err != nil {
 			return errors.Wrap(err, "error updating master machine in pharmer storage")
 		}
@@ -470,9 +469,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 		log.Infoln(err)
 	}
 
-	if err := cm.conn.deleteIAMProfile(); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("error deleting IAM Profiles"))
-	}
+	cm.conn.deleteIAMProfile()
 
 	if _, err := cm.conn.deleteLoadBalancer(); err != nil {
 		return errors.Wrap(err, "error deleting load balancer")
@@ -487,7 +484,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 		return err
 	}
 
-	vpcID, found, err := cm.conn.getVpc()
+	vpcID, found, _ := cm.conn.getVpc()
 	if !found {
 		log.Infof("vpc already deleted")
 		return nil

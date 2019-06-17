@@ -179,9 +179,6 @@ func (conn *cloudConnector) createClusterVPC() error {
 	return nil
 }
 
-func (conn *cloudConnector) createStackNodeGroup() {
-
-}
 func (conn *cloudConnector) createControlPlane() error {
 	params := &_eks.CreateClusterInput{
 		Name:    StringP(conn.Cluster.Name),
@@ -230,34 +227,34 @@ func (conn *cloudConnector) getStack(name string) (*cloudformation.Stack, error)
 	return nil, fmt.Errorf("stack %v not exists", name)
 }
 
-func (conn *cloudConnector) isStackExists(name string) (bool, error) {
+func (conn *cloudConnector) isStackExists(name string) bool {
 	log.Infof("Checking if %v exists...", name)
 	params := &cloudformation.DescribeStacksInput{
 		StackName: StringP(name),
 	}
 	resp, err := conn.cfn.DescribeStacks(params)
 	if err != nil {
-		return false, nil
+		return false
 	}
 	if len(resp.Stacks) > 0 {
-		return true, nil
+		return true
 	}
-	return false, nil
+	return false
 }
 
-func (conn *cloudConnector) isControlPlaneExists(name string) (bool, error) {
+func (conn *cloudConnector) isControlPlaneExists(name string) bool {
 	log.Infof("Checking for control plane %v exists...", name)
 	params := &_eks.DescribeClusterInput{
 		Name: StringP(name),
 	}
 	resp, err := conn.eks.DescribeCluster(params)
 	if err != nil {
-		return false, nil
+		return false
 	}
 	if resp.Cluster != nil {
-		return true, nil
+		return true
 	}
-	return false, nil
+	return false
 }
 
 func (conn *cloudConnector) createStack(name, url string, params map[string]string, withIAM bool) error {
@@ -297,7 +294,7 @@ func (conn *cloudConnector) deleteStack(name string) error {
 	return err
 }
 
-func (conn *cloudConnector) updateStack(name string, params map[string]string, withIAM bool, arn *string) error {
+func (conn *cloudConnector) updateStack(name string, params map[string]string, withIAM bool) error {
 	cfn := &cloudformation.UpdateStackInput{}
 	cfn.SetStackName(name)
 	cfn.SetTags([]*cloudformation.Tag{
@@ -317,7 +314,6 @@ func (conn *cloudConnector) updateStack(name string, params map[string]string, w
 		}
 		cfn.Parameters = append(cfn.Parameters, p)
 	}
-	//cfn.RoleARN = arn
 
 	_, err := conn.cfn.UpdateStack(cfn)
 	if err != nil {

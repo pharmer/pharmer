@@ -20,7 +20,10 @@ func LoadConfig(configPath string) (*api.PharmerConfig, error) {
 	if _, err := os.Stat(configPath); err != nil {
 		return nil, err
 	}
-	os.Chmod(configPath, 0600)
+	err := os.Chmod(configPath, 0600)
+	if err != nil {
+		return nil, err
+	}
 
 	config := &api.PharmerConfig{}
 	bytes, err := ioutil.ReadFile(configPath)
@@ -40,7 +43,10 @@ func Save(pc *api.PharmerConfig, configPath string) error {
 	if err != nil {
 		return err
 	}
-	os.MkdirAll(filepath.Dir(configPath), 0755)
+	err = os.MkdirAll(filepath.Dir(configPath), 0755)
+	if err != nil {
+		return err
+	}
 	return ioutil.WriteFile(configPath, data, 0600)
 }
 

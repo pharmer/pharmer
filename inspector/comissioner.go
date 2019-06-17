@@ -12,12 +12,9 @@ import (
 )
 
 type Inspector struct {
-	ctx     context.Context
 	client  kubernetes.Interface
 	cluster *api.Cluster
 	config  *rest.Config
-
-	owner string
 }
 
 func New(ctx context.Context, cluster *api.Cluster, owner string) (*Inspector, error) {
@@ -96,10 +93,10 @@ func (i *Inspector) NetworkCheck() error {
 	}
 
 	term.Infoln("Checking Pod networks...")
-	if err := i.runNodeExecutor(pods[0].Name, pods[1].Status.PodIP, defaultNamespace, pods[0].Spec.Containers[0].Name); err != nil {
+	if err := i.runNodeExecutor(pods[0].Name, pods[1].Status.PodIP, pods[0].Spec.Containers[0].Name); err != nil {
 		return errors.WithStack(err)
 	}
-	if err := i.runNodeExecutor(pods[1].Name, pods[0].Status.PodIP, defaultNamespace, pods[1].Spec.Containers[0].Name); err != nil {
+	if err := i.runNodeExecutor(pods[1].Name, pods[0].Status.PodIP, pods[1].Spec.Containers[0].Name); err != nil {
 		return errors.WithStack(err)
 	}
 
@@ -118,11 +115,11 @@ func (i *Inspector) NetworkCheck() error {
 	}
 
 	term.Infoln("Checking networks usinng service ip...", svcIP)
-	if err := i.runNodeExecutor(pods[0].Name, svcIP, defaultNamespace, pods[0].Spec.Containers[0].Name); err != nil {
+	if err := i.runNodeExecutor(pods[0].Name, svcIP, pods[0].Spec.Containers[0].Name); err != nil {
 		return errors.WithStack(err)
 	}
 	term.Infoln("Checking networks using service name...")
-	if err := i.runNodeExecutor(pods[1].Name, svcIP, defaultNamespace, pods[1].Spec.Containers[0].Name); err != nil {
+	if err := i.runNodeExecutor(pods[1].Name, svcIP, pods[1].Spec.Containers[0].Name); err != nil {
 		return errors.WithStack(err)
 	}
 

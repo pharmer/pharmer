@@ -32,6 +32,10 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
+const (
+	bastion = "bastion"
+)
+
 type cloudConnector struct {
 	*CloudManager
 
@@ -211,17 +215,12 @@ func (conn *cloudConnector) ensureIAMProfile() error {
 	return nil
 }
 
-func (conn *cloudConnector) deleteIAMProfile() error {
-	if err := conn.deleteRolePolicy(conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileMaster); err != nil {
-		log.Infoln("Failed to delete IAM instance-policy ", conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileMaster, err)
-	}
-	if err := conn.deleteRolePolicy(conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileNode); err != nil {
-		log.Infoln("Failed to delete IAM instance-policy ", conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileNode, err)
-	}
-	return nil
+func (conn *cloudConnector) deleteIAMProfile() {
+	conn.deleteRolePolicy(conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileMaster)
+	conn.deleteRolePolicy(conn.Cluster.Spec.Config.Cloud.AWS.IAMProfileNode)
 }
 
-func (conn *cloudConnector) deleteRolePolicy(role string) error {
+func (conn *cloudConnector) deleteRolePolicy(role string) {
 	if _, err := conn.iam.RemoveRoleFromInstanceProfile(&_iam.RemoveRoleFromInstanceProfileInput{
 		InstanceProfileName: &role,
 		RoleName:            &role,
@@ -262,7 +261,6 @@ func (conn *cloudConnector) deleteRolePolicy(role string) error {
 	}); err != nil {
 		log.Infoln("Failed to delete instance profile", role, err)
 	}
-	return nil
 }
 
 func (conn *cloudConnector) createIAMProfile(role, key string) error {
@@ -376,9 +374,6 @@ func (conn *cloudConnector) importPublicKey() error {
 		PublicKeyMaterial: conn.Certs.SSHKey.PublicKey,
 	})
 	log.Debug("Imported SSH key", resp, err)
-	if err != nil {
-		return err
-	}
 	// TODO ignore "InvalidKeyPair.Duplicate" error
 	if err != nil {
 		log.Info("Error importing public key", resp, err)
@@ -866,7 +861,7 @@ func (conn *cloudConnector) setupRouteTable(privacy, vpcID, igwID, natID, public
 	}
 
 	if privacy == "public" {
-		tags["sigs.k8s.io/cluster-api-provider-aws/role"] = "bastion"
+		tags["sigs.k8s.io/cluster-api-provider-aws/role"] = bastion
 	} else {
 		tags["sigs.k8s.io/cluster-api-provider-aws/role"] = "common"
 	}
@@ -977,9 +972,7 @@ func (conn *cloudConnector) setupSecurityGroups(vpcID string) error {
 			GroupId: StringP(groupID),
 		}
 
-		for _, rule := range rules {
-			input.IpPermissions = append(input.IpPermissions, rule)
-		}
+		input.IpPermissions = append(input.IpPermissions, rules...)
 
 		_, err = conn.ec2.AuthorizeSecurityGroupIngress(input)
 		if err != nil {

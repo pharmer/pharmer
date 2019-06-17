@@ -1,15 +1,12 @@
 package fake
 
 import (
-	"sync"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 )
 
 type operationFileStore struct {
 	container map[string][]byte
-	mux       sync.Mutex
 }
 
 var _ store.OperationStore = &operationFileStore{}

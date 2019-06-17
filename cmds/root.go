@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/appscode/go/analytics"
+	"github.com/appscode/go/term"
 	v "github.com/appscode/go/version"
 	ga "github.com/jpillora/go-ogle-analytics"
 	cpCmd "github.com/pharmer/pharmer/cloud/cmds"
@@ -23,7 +24,7 @@ const (
 	gaTrackingCode = "UA-62096468-20"
 )
 
-func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command {
+func NewRootCmd(in io.Reader, out, errwriter io.Writer, version string) *cobra.Command {
 	var (
 		enableAnalytics = true
 	)
@@ -39,7 +40,10 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 				if client, err := ga.NewClient(gaTrackingCode); err == nil {
 					client.ClientID(analytics.ClientID())
 					parts := strings.Split(c.CommandPath(), " ")
-					client.Send(ga.NewEvent(parts[0], strings.Join(parts[1:], "/")).Label(version))
+					err = client.Send(ga.NewEvent(parts[0], strings.Join(parts[1:], "/")).Label(version))
+					if err != nil {
+						return err
+					}
 				}
 			}
 
@@ -56,13 +60,16 @@ func NewRootCmd(in io.Reader, out, err io.Writer, version string) *cobra.Command
 	rootCmd.PersistentFlags().BoolVar(&enableAnalytics, "analytics", enableAnalytics, "Send analytical events to Google Guard")
 	rootCmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
 	// ref: https://github.com/kubernetes/kubernetes/issues/17162#issuecomment-225596212
-	flag.CommandLine.Parse([]string{})
+	err := flag.CommandLine.Parse([]string{})
+	if err != nil {
+		term.Fatalln(err)
+	}
 
 	rootCmd.AddCommand(newCmdCreate())
 	rootCmd.AddCommand(newCmdGet(out))
 	rootCmd.AddCommand(newCmdDelete())
 	rootCmd.AddCommand(newCmdDescribe(out))
-	rootCmd.AddCommand(newCmdEdit(out, err))
+	rootCmd.AddCommand(newCmdEdit(out, errwriter))
 	rootCmd.AddCommand(newCmdBackup())
 	rootCmd.AddCommand(newCmdUse())
 	rootCmd.AddCommand(newCmdSSH())

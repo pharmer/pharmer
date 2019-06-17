@@ -27,8 +27,6 @@ type CloudManager struct {
 	AdminClient kubernetes.Interface
 
 	Credential *cloudapi.Credential
-
-	owner string
 }
 
 func (cm *CloudManager) GetCluster() *api.Cluster {

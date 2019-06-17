@@ -72,19 +72,12 @@ func (a *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
 		return err
 	}
 
-	updated, err := a.cm.conn.loadBalancerUpdated(lb)
-	if err != nil {
-		return err
-	}
+	updated := a.cm.conn.loadBalancerUpdated(lb)
 
 	if updated {
 		log.Infoln("Load balancer specs changed, updating lb")
 
-		defaultSpecs, err := a.cm.conn.buildLoadBalancerRequest(a.cm.conn.namer.LoadBalancerName())
-		if err != nil {
-			log.Debugln("Error getting default lb specs")
-			return err
-		}
+		defaultSpecs := a.cm.conn.buildLoadBalancerRequest(a.cm.conn.namer.LoadBalancerName())
 
 		lb, _, err = a.cm.conn.client.LoadBalancers.Update(context.Background(), lb.ID, defaultSpecs)
 		if err != nil {

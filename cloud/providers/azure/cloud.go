@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
@@ -24,13 +23,6 @@ import (
 	"github.com/pkg/errors"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
-
-const (
-	machineIDTemplate = "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s"
-	CloudProviderName = "azure"
-)
-
-var providerIDRE = regexp.MustCompile(`^` + CloudProviderName + `://(?:.*)/Microsoft.Compute/virtualMachines/(.+)$`)
 
 type cloudConnector struct {
 	*CloudManager
@@ -132,14 +124,6 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 		storageClient:           storageClient,
 		lbClient:                lbClient,
 	}, nil
-}
-
-func (conn *cloudConnector) detectUbuntuImage() error {
-	conn.Cluster.Spec.Config.Cloud.OS = "UbuntuServer"
-	conn.Cluster.Spec.Config.Cloud.InstanceImageProject = "Canonical"
-	conn.Cluster.Spec.Config.Cloud.InstanceImage = "16.04-LTS"
-	conn.Cluster.Spec.Config.Cloud.Azure.InstanceImageVersion = "latest"
-	return nil
 }
 
 func (conn *cloudConnector) getResourceGroup() (bool, error) {

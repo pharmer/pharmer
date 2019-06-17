@@ -32,9 +32,7 @@ func (igm *EKSNodeGroupManager) Apply() error {
 	var found bool
 	var err error
 
-	if found, err = igm.conn.isStackExists(igm.ng.Name); err != nil {
-		return err
-	}
+	found = igm.conn.isStackExists(igm.ng.Name)
 
 	if !found {
 		params := igm.buildstackParams()
@@ -68,13 +66,8 @@ func (igm *EKSNodeGroupManager) Apply() error {
 				return err
 			}
 		} else {
-
-			existingStack, err := igm.conn.getStack(igm.ng.Name)
-			if err != nil {
-				return err
-			}
 			params := igm.buildstackParams()
-			if err = igm.conn.updateStack(igm.ng.Name, params, true, igm.conn.getOutput(existingStack, "NodeInstanceRole")); err != nil {
+			if err = igm.conn.updateStack(igm.ng.Name, params, true); err != nil {
 				log.Infoln(err)
 			}
 

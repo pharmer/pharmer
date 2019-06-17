@@ -53,9 +53,10 @@ func New() store.Interface {
 }
 
 func (s *FakeStore) Owner(id string) store.ResourceInterface {
-	ret := *s
-	ret.owner = id
-	return &ret
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	s.owner = id
+	return s
 }
 
 func (s *FakeStore) Credentials() store.CredentialStore {

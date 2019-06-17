@@ -197,6 +197,9 @@ func setMasterSKU(cm Interface) error {
 	// update all the master machines
 	for _, m := range machines {
 		providerspec, err := cm.GetDefaultMachineProviderSpec(sku, api.MasterMachineRole)
+		if err != nil {
+			return err
+		}
 		m.Spec.ProviderSpec = providerspec
 
 		_, err = store.StoreProvider.Machine(clusterName).Update(m)

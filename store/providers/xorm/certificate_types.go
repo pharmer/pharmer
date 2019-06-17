@@ -25,13 +25,13 @@ func (Certificate) TableName() string {
 	return "ac_cluster_certificate"
 }
 
-func encodeCertificate(crt *x509.Certificate, key *rsa.PrivateKey) (*Certificate, error) {
+func encodeCertificate(crt *x509.Certificate, key *rsa.PrivateKey) *Certificate {
 	return &Certificate{
 		Cert:              string(cert.EncodeCertPEM(crt)),
 		Key:               string(cert.EncodePrivateKeyPEM(key)),
 		DateModified:      time.Now(),
 		DeletionTimestamp: nil,
-	}, nil
+	}
 }
 
 func decodeCertificate(in *Certificate) (*x509.Certificate, *rsa.PrivateKey, error) {

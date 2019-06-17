@@ -55,13 +55,16 @@ func runCreateCredential(opts *options.CredentialCreateConfig) error {
 	// Get Cloud provider
 	provider := opts.Provider
 	if provider == "" {
-		options := providers.List()
+		opts := providers.List()
 		prompt := &survey.Select{
 			Message:  "Choose a Cloud provider:",
-			Options:  options,
-			PageSize: len(options),
+			Options:  opts,
+			PageSize: len(opts),
 		}
-		survey.AskOne(prompt, &provider, nil)
+		err := survey.AskOne(prompt, &provider, nil)
+		if err != nil {
+			return err
+		}
 	} else {
 		if !sets.NewString(providers.List()...).Has(provider) {
 			return errors.New("Unknown Cloud provider")
@@ -71,7 +74,10 @@ func runCreateCredential(opts *options.CredentialCreateConfig) error {
 	issue := opts.Issue
 	if issue {
 		if provider == apis.GCE {
-			cc.IssueGCECredential(opts.Name)
+			err := cc.IssueGCECredential(opts.Name)
+			if err != nil {
+				return err
+			}
 		} else if strings.ToLower(provider) == apis.Azure {
 			cred, err := cc.IssueAzureCredential(opts.Name)
 			if err != nil {

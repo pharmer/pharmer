@@ -1,15 +1,10 @@
 package packet
 
 import (
-	"encoding/json"
-
 	"github.com/appscode/go/log"
-	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pharmer/pharmer/store"
-	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -78,48 +73,6 @@ func (cm *ClusterManager) PrepareCloud() error {
 
 func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
 	return "baremetal_0"
-}
-
-// Creates network, and creates ready master(s)
-func (cm *ClusterManager) applyCreate() error {
-
-	return nil
-}
-
-// createSecrets creates all the secrets necessary for creating a cluster
-// it creates credential for ccm, pharmer-flex, pharmer-provisioner
-func (cm *ClusterManager) createSecrets(kc kubernetes.Interface) error {
-	// pharmer-flex secret
-	if err := kube.CreateCredentialSecret(kc, cm.Cluster, ""); err != nil {
-		return errors.Wrapf(err, "failed to create flex-secret")
-	}
-
-	// ccm-secret
-	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.ClusterConfig().CredentialName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get cluster cred")
-	}
-	typed := credential.Packet{CommonSpec: credential.CommonSpec(cred.Spec)}
-	ok, err := typed.IsValid()
-	if !ok {
-		return errors.New("credential not valid")
-	}
-	cloudConfig := &api.PacketCloudConfig{
-		Project: typed.ProjectID(),
-		ApiKey:  typed.APIKey(),
-		Zone:    cm.Cluster.ClusterConfig().Cloud.Zone,
-	}
-	data, err := json.Marshal(cloudConfig)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal cloud-config")
-	}
-	err = kube.CreateSecret(kc, "cloud-config", metav1.NamespaceSystem, map[string][]byte{
-		"cloud-config": data,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create cloud-config")
-	}
-	return nil
 }
 
 // Deletes master(s) and releases other cloud resources

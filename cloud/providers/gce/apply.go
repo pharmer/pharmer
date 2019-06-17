@@ -130,7 +130,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 		return err
 	}
 
-	if op1, err = cm.conn.createMasterIntance(cm.Cluster, script); err != nil {
+	if op1, err = cm.conn.createMasterIntance(script); err != nil {
 		return err
 	}
 
@@ -175,9 +175,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 		log.Infof("Error on deleting master. Reason: %v", err)
 	}
 	log.Infoln("Deleting Firewall rules")
-	if err = cm.conn.deleteFirewalls(); err != nil {
-		cm.Cluster.Status.Reason = err.Error()
-	}
+	cm.conn.deleteFirewalls()
 	log.Infoln("Deleting disks...")
 	if err = cm.conn.deleteDisk(nodeDiskNames); err != nil {
 		log.Infof("Error on deleting disk. Reason: %v", err)

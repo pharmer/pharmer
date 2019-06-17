@@ -141,7 +141,7 @@ var BuildPharmer = func() {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-var CreateCredential = func() {
+var CreateCredential = func() error {
 	for _, provider := range strings.Split(Providers, ",") {
 		command := []string{
 			"pharmer", "create", "credential", CredentialName + "_" + provider,
@@ -154,18 +154,26 @@ var CreateCredential = func() {
 			command = append(command, "--from-env")
 		}
 
-		RunCommandWithStderr(command)
+		err := RunCommandWithStderr(command)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-var DeleteCredential = func() {
+var DeleteCredential = func() error {
 	for _, provider := range strings.Split(Providers, ",") {
 		command := []string{
 			"pharmer", "delete", "credential", CredentialName + "_" + provider,
 		}
 
-		RunCommandWithStderr(command)
+		err := RunCommandWithStderr(command)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 var CreateCluster = func(provider, version string) error {
@@ -182,19 +190,19 @@ var CreateCluster = func(provider, version string) error {
 	return RunCommandWithStderr(command)
 }
 
-var ApplyCluster = func() {
+var ApplyCluster = func() error {
 	command := []string{"pharmer", "apply", ClusterName}
-	RunCommandWithStderr(command)
+	return RunCommandWithStderr(command)
 }
 
-var UseCluster = func() {
+var UseCluster = func() error {
 	command := []string{"pharmer", "use", "cluster", ClusterName}
-	RunCommandWithStderr(command)
+	return RunCommandWithStderr(command)
 }
 
-var DeleteCluster = func() {
+var DeleteCluster = func() error {
 	command := []string{"pharmer", "delete", "cluster", ClusterName}
-	RunCommandWithStderr(command)
+	return RunCommandWithStderr(command)
 }
 
 var ScaleCluster = func(n int32) {

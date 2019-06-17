@@ -116,14 +116,6 @@ func (conn *cloudConnector) getCluster(clusterID string) (*godo.KubernetesCluste
 	return cluster, nil
 }
 
-func (conn *cloudConnector) deleteCluster() error {
-	_, err := conn.client.Kubernetes.Delete(context.Background(), conn.Cluster.Spec.Config.Cloud.Dokube.ClusterID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (conn *cloudConnector) waitForClusterCreation(cluster *godo.KubernetesCluster) error {
 	attempt := 0
 	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {

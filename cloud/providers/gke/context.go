@@ -16,15 +16,13 @@ import (
 )
 
 const (
-	maxInstancesPerMIG = 5 // Should be 500
-	defaultNetwork     = "default"
+	defaultNetwork = "default"
 )
 
 type ClusterManager struct {
 	*CloudManager
 
-	conn  *cloudConnector
-	namer namer
+	conn *cloudConnector
 }
 
 const (

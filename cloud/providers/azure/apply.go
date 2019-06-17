@@ -44,9 +44,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 		return errors.Wrapf(err, "failed to ensure load balancer")
 	}
 
-	err = ensureMasterNIC(cm.conn, cm.Cluster.MasterMachineName(0), controlPlaneSubnet, publicLB, internalLB)
-
-	return nil
+	return ensureMasterNIC(cm.conn, cm.Cluster.MasterMachineName(0), controlPlaneSubnet, publicLB, internalLB)
 }
 
 func ensureResourceGroup(conn *cloudConnector) error {
@@ -221,7 +219,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 		leaderMachine.Status.ProviderStatus = rawStatus
 
 		// update in pharmer file
-		leaderMachine, err = store.StoreProvider.Machine(cm.Cluster.Name).Update(leaderMachine)
+		_, err = store.StoreProvider.Machine(cm.Cluster.Name).Update(leaderMachine)
 		if err != nil {
 			return errors.Wrap(err, "error updating master machine in pharmer storage")
 		}

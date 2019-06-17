@@ -92,7 +92,7 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 
 func (conn *cloudConnector) DetectInstanceImage() (string, error) {
 	filter := `{"label":"Ubuntu 16.04 LTS"}`
-	listOpts := &linodego.ListOptions{nil, filter}
+	listOpts := &linodego.ListOptions{PageOptions: nil, Filter: filter}
 
 	images, err := conn.client.ListImages(context.Background(), listOpts)
 	if err != nil {
@@ -152,33 +152,6 @@ func (conn *cloudConnector) waitForStatus(id int, status linodego.InstanceStatus
 	})
 }
 
-/*
-Status values are -1: Being Created, 0: Brand New, 1: Running, and 2: Powered Off.
-*/
-func statusString(status int) string {
-	switch status {
-	case LinodeStatus_BeingCreated:
-		return "Being Created"
-	case LinodeStatus_BrandNew:
-		return "Brand New"
-	case LinodeStatus_Running:
-		return "Running"
-	case LinodeStatus_PoweredOff:
-		return "Powered Off"
-	default:
-		return strconv.Itoa(status)
-	}
-}
-
-const (
-	LinodeStatus_BeingCreated = -1
-	LinodeStatus_BrandNew     = 0
-	LinodeStatus_Running      = 1
-	LinodeStatus_PoweredOff   = 2
-)
-
-// ---------------------------------------------------------------------------------------------------------------------
-
 func (conn *cloudConnector) getStartupScriptID(machine *clusterv1.Machine) (int, error) {
 	machineConfig, err := linode_config.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
@@ -186,7 +159,7 @@ func (conn *cloudConnector) getStartupScriptID(machine *clusterv1.Machine) (int,
 	}
 	scriptName := conn.namer.StartupScriptName(machine.Name, string(machineConfig.Roles[0]))
 	filter := fmt.Sprintf(`{"label" : "%v"}`, scriptName)
-	listOpts := &linodego.ListOptions{nil, filter}
+	listOpts := &linodego.ListOptions{PageOptions: nil, Filter: filter}
 
 	scripts, err := conn.client.ListStackscripts(context.Background(), listOpts)
 	if err != nil {
@@ -208,7 +181,7 @@ func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine
 	}
 	scriptName := conn.namer.StartupScriptName(machine.Name, string(machineConfig.Roles[0]))
 	filter := fmt.Sprintf(`{"label" : "%v"}`, scriptName)
-	listOpts := &linodego.ListOptions{nil, filter}
+	listOpts := &linodego.ListOptions{PageOptions: nil, Filter: filter}
 
 	scripts, err := conn.client.ListStackscripts(context.Background(), listOpts)
 	if err != nil {
@@ -247,7 +220,7 @@ func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine
 func (conn *cloudConnector) DeleteStackScript(machineName string, role string) error {
 	scriptName := conn.namer.StartupScriptName(machineName, role)
 	filter := fmt.Sprintf(`{"label" : "%v"}`, scriptName)
-	listOpts := &linodego.ListOptions{nil, filter}
+	listOpts := &linodego.ListOptions{PageOptions: nil, Filter: filter}
 
 	scripts, err := conn.client.ListStackscripts(context.Background(), listOpts)
 	if err != nil {

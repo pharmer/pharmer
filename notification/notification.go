@@ -27,15 +27,15 @@ func NewNotifier(ctx context.Context, conn stan.Conn, subject string) api.Logger
 }
 
 func (a Notifier) Info(args ...interface{}) {
-	a.notify(api.JobStatus_Running, fmt.Sprint(args...))
+	a.notify(fmt.Sprint(args...))
 }
 
 func (a Notifier) Infoln(args ...interface{}) {
-	a.notify(api.JobStatus_Running, fmt.Sprintln(args...))
+	a.notify(fmt.Sprintln(args...))
 }
 
 func (a Notifier) Infof(format string, args ...interface{}) {
-	a.notify(api.JobStatus_Running, fmt.Sprintf(format, args...))
+	a.notify(fmt.Sprintf(format, args...))
 }
 
 func (a Notifier) Debug(args ...interface{}) {
@@ -50,7 +50,7 @@ func (a Notifier) Debugf(format string, args ...interface{}) {
 	log.Debugf(format, args...)
 }
 
-func (a Notifier) notify(event string, message interface{}) (string, error) {
+func (a Notifier) notify(message interface{}) (string, error) {
 	var resType struct {
 		Fingerprint string `json:"fingerprint"`
 	}
@@ -63,20 +63,5 @@ func (a Notifier) notify(event string, message interface{}) (string, error) {
 }
 
 func (a Notifier) Notify(event string, details string) (string, error) {
-	return a.notify(event, details)
-}
-
-func (a Notifier) getPath() string {
-	return ""
-	//return fmt.Sprintf("http://%v?namespace=%v&instance=%v", a.aphlictAdminServerAddr, a.Auth.Username, a.Phid)
-}
-
-func (a Notifier) makeRequestBody(event string, message interface{}) interface{} {
-	return struct {
-		Subscribers []string    `json:"subscribers"`
-		Message     interface{} `json:"message,omitempty"`
-	}{
-		Subscribers: []string{event},
-		Message:     message,
-	}
+	return a.notify(details)
 }

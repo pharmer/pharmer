@@ -19,8 +19,7 @@ import (
 type ClusterManager struct {
 	*CloudManager
 
-	conn  *cloudConnector
-	namer namer
+	conn *cloudConnector
 }
 
 func (cm *ClusterManager) AddToManager(m manager.Manager) error {

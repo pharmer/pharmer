@@ -204,7 +204,7 @@ func (ca *ClusterAPI) CreatePharmerSecret() error {
 		return err
 	}
 
-	if ca.externalController == false {
+	if !ca.externalController {
 		err := kube.CreateCredentialSecret(ca.kubeClient, cluster, ca.namespace)
 		if err != nil {
 			return err

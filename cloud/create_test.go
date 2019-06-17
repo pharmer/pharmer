@@ -37,26 +37,6 @@ func getGCECluster() *api.Cluster {
 	}
 }
 
-func getAzureCluster() *api.Cluster {
-	return &api.Cluster{
-		ObjectMeta: v1.ObjectMeta{
-			Name: "azure-cluster",
-		},
-		Spec: api.PharmerClusterSpec{
-			ClusterAPI: clusterapi.Cluster{},
-			Config: api.ClusterConfig{
-				MasterCount: 3,
-				Cloud: api.CloudSpec{
-					CloudProvider: "azure",
-					Zone:          "us-central-1f",
-				},
-				KubernetesVersion: "v1.14.0",
-				CredentialName:    "azure-cred",
-			},
-		},
-	}
-}
-
 func beforeTestCreate(t *testing.T) store.ResourceInterface {
 	t.Helper()
 

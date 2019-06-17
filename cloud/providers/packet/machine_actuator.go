@@ -189,7 +189,7 @@ func (packet *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Clus
 
 	instance, err := packet.cm.conn.instanceIfExists(machine)
 	if err != nil {
-		// SKIp error
+		log.Infof(err.Error())
 	}
 	if instance == nil {
 		log.Infof("Skipped deleting a VM that is already deleted")
@@ -289,26 +289,6 @@ func (packet *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cl
 	}
 
 	return i != nil, nil
-}
-
-func (packet *MachineActuator) updateAnnotations(machine *clusterv1.Machine) error {
-	name := machine.ObjectMeta.Name
-	zone := packet.cm.conn.Cluster.Spec.Config.Cloud.Zone
-
-	if machine.ObjectMeta.Annotations == nil {
-		machine.ObjectMeta.Annotations = make(map[string]string)
-	}
-	machine.ObjectMeta.Annotations["zone"] = zone
-	machine.ObjectMeta.Annotations["name"] = name
-	err := packet.client.Update(context.Background(), machine)
-	if err != nil {
-		return err
-	}
-	if packet.client != nil {
-		sm := NewStatusManager(packet.client, packet.scheme)
-		return sm.UpdateInstanceStatus(machine)
-	}
-	return nil
 }
 
 // The two machines differ in a way that requires an update

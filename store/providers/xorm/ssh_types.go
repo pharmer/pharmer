@@ -21,12 +21,12 @@ func (SSHKey) TableName() string {
 	return "ac_cluster_ssh"
 }
 
-func encodeSSHKey(pub, priv []byte) (*SSHKey, error) {
+func encodeSSHKey(pub, priv []byte) *SSHKey {
 	return &SSHKey{
 		PublicKey:         string(pub),
 		PrivateKey:        string(priv),
 		DeletionTimestamp: nil,
-	}, nil
+	}
 }
 
 func decodeSSHKey(in *SSHKey) ([]byte, []byte, error) {

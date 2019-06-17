@@ -26,12 +26,10 @@ const (
 	tabwriterPadding  = 3
 	tabwriterPadChar  = ' '
 	tabwriterFlags    = 0
-	statusUnknown     = "Unknown"
 )
 
 type handlerEntry struct {
 	printFunc reflect.Value
-	args      []reflect.Value
 }
 
 type PrintOptions struct {
@@ -114,7 +112,7 @@ func (h *HumanReadablePrinter) validatePrintHandlerFunc(printFunc reflect.Value)
 	return nil
 }
 
-func getColumns(options PrintOptions, t reflect.Type) []string {
+func getColumns(t reflect.Type) []string {
 	columns := make([]string, 0)
 	columns = append(columns, "NAME")
 	switch t.String() {
@@ -236,7 +234,7 @@ func (h *HumanReadablePrinter) PrintObj(obj runtime.Object, output io.Writer) er
 	if handler := h.handlerMap[t]; handler != nil {
 
 		if t != h.lastType || h.enablePrintHeader {
-			headers := getColumns(h.options, t)
+			headers := getColumns(t)
 			if h.lastType != nil {
 				PrintNewline(w)
 			}

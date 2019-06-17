@@ -130,7 +130,10 @@ func editCluster(opts *options.ClusterEditConfig, original *api.Cluster, errOut 
 			var w io.Writer = buf
 
 			if o.AddHeader {
-				results.Header.WriteTo(w)
+				_, err = results.Header.WriteTo(w)
+				if err != nil {
+					return err
+				}
 			}
 
 			if !containsError {
@@ -157,13 +160,16 @@ func editCluster(opts *options.ClusterEditConfig, original *api.Cluster, errOut 
 
 			// cleanup any file from the previous pass
 			if len(results.File) > 0 {
-				os.Remove(results.File)
+				err = os.Remove(results.File)
+				if err != nil {
+					return err
+				}
 			}
 
 			// Compare content without comments
 			if bytes.Equal(editor.StripComments(originalByte), editor.StripComments(edited)) {
-				fmt.Fprintln(errOut, "Edit cancelled, no changes made.")
-				return nil
+				_, err = fmt.Fprintln(errOut, "Edit cancelled, no changes made.")
+				return err
 			}
 
 			var updated *api.Cluster

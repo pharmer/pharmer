@@ -99,14 +99,6 @@ func (conn *cloudConnector) importPublicKey() (string, error) {
 	return sk.ID, nil
 }
 
-func (conn *cloudConnector) deleteSSHKey(id string) error {
-	log.Infof("Deleting SSH key for cluster %s", conn.Cluster.Name)
-	return wait.PollImmediate(api.RetryInterval, api.RetryInterval, func() (bool, error) {
-		_, err := conn.client.SSHKeys.Delete(id)
-		return err == nil, nil
-	})
-}
-
 func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, script string) (*api.NodeInfo, error) {
 	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
@@ -182,16 +174,6 @@ func serverIDFromProviderID(providerID string) (string, error) {
 	}
 
 	return split[2], nil
-}
-
-// reboot does not seem to run /etc/rc.local
-func (conn *cloudConnector) reboot(id string) error {
-	log.Infof("Rebooting instance %v", id)
-	_, err := conn.client.Devices.Reboot(id)
-	if err != nil {
-		return errors.Wrap(err, "error rebooting instance")
-	}
-	return nil
 }
 
 func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*packngo.Device, error) {

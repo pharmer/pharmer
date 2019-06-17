@@ -80,6 +80,9 @@ func (cm *ClusterManager) ApplyDelete() error {
 	}
 	var op string
 	op, err = cm.conn.deleteCluster()
+	if err != nil {
+		return err
+	}
 	if err = cm.conn.waitForZoneOperation(op); err != nil {
 		cm.Cluster.Status.Reason = err.Error()
 		return err

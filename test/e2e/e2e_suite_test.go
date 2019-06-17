@@ -40,19 +40,23 @@ var _ = Describe("E2E Tests", func() {
 var fullE2ETest = func(provider, version string) {
 	It("should setup cluster-name and create credentials", func() {
 		SetClusterName()
-		CreateCredential()
+		err := CreateCredential()
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should create a cluster", func() {
-		CreateCluster(provider, version)
+		err := CreateCluster(provider, version)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should apply the cluster", func() {
-		ApplyCluster()
+		err := ApplyCluster()
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should get kubeconfig for the cluster", func() {
-		UseCluster()
+		err := UseCluster()
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("wait for nodes to be ready", func() {
@@ -89,8 +93,10 @@ var fullE2ETest = func(provider, version string) {
 
 	if !SkipDeleteCluster {
 		It("should delete cluster", func() {
-			DeleteCluster()
-			ApplyCluster()
+			err := DeleteCluster()
+			Expect(err).NotTo(HaveOccurred())
+			err = ApplyCluster()
+			Expect(err).NotTo(HaveOccurred())
 		})
 	}
 }

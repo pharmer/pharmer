@@ -13,9 +13,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 	var found bool
 	var err error
 
-	if found, err = cm.conn.isStackExists(cm.namer.GetStackServiceRole()); err != nil {
-		return err
-	}
+	found = cm.conn.isStackExists(cm.namer.GetStackServiceRole())
 	if !found {
 		if err = cm.conn.createStackServiceRole(); err != nil {
 			return err
@@ -27,9 +25,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 		return nil
 	}
 
-	if found, err = cm.conn.getPublicKey(); err != nil {
-		//return
-	}
+	found, _ = cm.conn.getPublicKey()
 
 	if !found {
 		if err = cm.conn.importPublicKey(); err != nil {
@@ -37,9 +33,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 		}
 	}
 
-	if found, err = cm.conn.isStackExists(cm.namer.GetClusterVPC()); err != nil {
-		return err
-	}
+	found = cm.conn.isStackExists(cm.namer.GetClusterVPC())
 	if !found {
 		if err = cm.conn.createClusterVPC(); err != nil {
 			return err
@@ -51,9 +45,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 		return nil
 	}
 
-	if found, err = cm.conn.isControlPlaneExists(cm.Cluster.Name); err != nil {
-		return err
-	}
+	found = cm.conn.isControlPlaneExists(cm.Cluster.Name)
 	if !found {
 		if err = cm.conn.createControlPlane(); err != nil {
 			return err
@@ -110,30 +102,21 @@ func (cm *ClusterManager) ApplyDelete() error {
 	if err != nil {
 		return err
 	}
-	found, err = cm.conn.isControlPlaneExists(cm.Cluster.Name)
-	if err != nil {
-		log.Infoln(err)
-	}
+	found = cm.conn.isControlPlaneExists(cm.Cluster.Name)
 	if found {
 		if err = cm.conn.deleteControlPlane(); err != nil {
 			log.Infof("Error on deleting control plane. Reason: %v", err)
 		}
 	}
 
-	found, err = cm.conn.isStackExists(cm.namer.GetStackServiceRole())
-	if err != nil {
-		log.Infoln(err)
-	}
+	found = cm.conn.isStackExists(cm.namer.GetStackServiceRole())
 	if found {
 		if err = cm.conn.deleteStack(cm.namer.GetStackServiceRole()); err != nil {
 			log.Infof("Error on deleting stack service role. Reason: %v", err)
 		}
 	}
 
-	found, err = cm.conn.isStackExists(cm.namer.GetClusterVPC())
-	if err != nil {
-		return err
-	}
+	found = cm.conn.isStackExists(cm.namer.GetClusterVPC())
 	if found {
 		if err = cm.conn.deleteStack(cm.namer.GetClusterVPC()); err != nil {
 			log.Infof("Error on deleting cluster vpc. Reason: %v", err)
