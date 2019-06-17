@@ -232,7 +232,7 @@ func (ca *ClusterAPI) CreatePharmerSecret() error {
 		return err
 	}
 
-	certs := ca.GetPharmerCertificates()
+	certs := ca.GetCertificates()
 	if err = kube.CreateSecret(ca.kubeClient, "pharmer-certificate", ca.namespace, map[string][]byte{
 		"ca.crt":             cert.EncodeCertPEM(certs.CACert.Cert),
 		"ca.key":             cert.EncodePrivateKeyPEM(certs.CACert.Key),

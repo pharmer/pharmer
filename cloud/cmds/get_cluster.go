@@ -28,7 +28,12 @@ func NewCmdGetCluster(out io.Writer) *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err := RunGetCluster(opts, out)
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			if err != nil {
+				term.Fatalln(err)
+			}
+
+			err = runGetCluster(storeProvider, opts, out)
 			if err != nil {
 				term.ExitOnError(err)
 			}
@@ -39,7 +44,7 @@ func NewCmdGetCluster(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunGetCluster(opts *options.ClusterGetConfig, out io.Writer) error {
+func runGetCluster(storeProvider store.ResourceInterface, opts *options.ClusterGetConfig, out io.Writer) error {
 
 	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
@@ -48,7 +53,7 @@ func RunGetCluster(opts *options.ClusterGetConfig, out io.Writer) error {
 
 	w := printer.GetNewTabWriter(out)
 
-	clusters, err := getClusterList(opts.Clusters)
+	clusters, err := getClusterList(storeProvider, opts.Clusters)
 	if err != nil {
 		return err
 	}
@@ -66,10 +71,10 @@ func RunGetCluster(opts *options.ClusterGetConfig, out io.Writer) error {
 	return nil
 }
 
-func getClusterList(clusters []string) (clusterList []*api.Cluster, err error) {
+func getClusterList(storeProvider store.ResourceInterface, clusters []string) (clusterList []*api.Cluster, err error) {
 	if len(clusters) != 0 {
 		for _, arg := range clusters {
-			cluster, er2 := store.StoreProvider.Clusters().Get(arg)
+			cluster, er2 := storeProvider.Clusters().Get(arg)
 			if er2 != nil {
 				return nil, er2
 			}
@@ -77,7 +82,7 @@ func getClusterList(clusters []string) (clusterList []*api.Cluster, err error) {
 		}
 
 	} else {
-		clusterList, err = store.StoreProvider.Clusters().List(metav1.ListOptions{})
+		clusterList, err = storeProvider.Clusters().List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}

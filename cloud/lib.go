@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
+
 	"github.com/pharmer/pharmer/apis/v1beta1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
@@ -12,9 +16,6 @@ import (
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -70,6 +71,7 @@ func GetSSHConfig(nodeName string, cluster *api.Cluster) (*api.SSHConfig, error)
 	return nil, nil
 }
 
+// TODO: move
 func GetAdminConfig(cm Interface) (*api.KubeConfig, error) {
 	cluster := cm.GetCluster()
 	if managedProviders.Has(cluster.ClusterConfig().Cloud.CloudProvider) {

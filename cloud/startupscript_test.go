@@ -27,7 +27,7 @@ func TestNewNodeTemplateData(t *testing.T) {
 				cm: &aws.ClusterManager{
 					CloudManager: &cloud.CloudManager{
 						Cluster:     nil,
-						Certs:       &certificates.PharmerCertificates{},
+						Certs:       &certificates.Certificates{},
 						AdminClient: nil,
 						Credential:  nil,
 					},

@@ -8,8 +8,8 @@ import (
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
-func GetPharmerCerts(clusterName string) (*PharmerCertificates, error) {
-	pharmerCerts := &PharmerCertificates{}
+func GetPharmerCerts(clusterName string) (*Certificates, error) {
+	pharmerCerts := &Certificates{}
 
 	cert, key, err := LoadCACertificates(clusterName, kubeadmconst.CACertAndKeyBaseName)
 	if err != nil {
@@ -55,8 +55,9 @@ func GetPharmerCerts(clusterName string) (*PharmerCertificates, error) {
 	return pharmerCerts, nil
 }
 
-func CreatePharmerCerts(store store.ResourceInterface, cluster *api.Cluster) (*PharmerCertificates, error) {
-	pharmerCerts := &PharmerCertificates{}
+// TODO: it should only require clusterName
+func CreateCertsKeys(store store.ResourceInterface, cluster *api.Cluster) (*Certificates, error) {
+	pharmerCerts := &Certificates{}
 
 	cert, key, err := CreateCACertificates(store, cluster.Name)
 	if err != nil {

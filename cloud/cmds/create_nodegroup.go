@@ -61,3 +61,22 @@ func runCreateNodegroup(opts *options.NodeGroupCreateConfig) error {
 
 	return nil
 }
+
+func runCreateNodegroup(opts *options.NodeGroupCreateConfig) error {
+	cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
+	if err != nil {
+		return err
+	}
+
+	cm, err := cloud.GetCloudManager(cluster)
+	if err != nil {
+		return err
+	}
+
+	err = cloud.CreateMachineSets(store.StoreProvider, cm, opts)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

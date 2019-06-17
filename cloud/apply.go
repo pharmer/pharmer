@@ -12,17 +12,16 @@ import (
 	"github.com/pkg/errors"
 	semver "gomodules.xyz/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func Apply(opts *options.ApplyConfig) error {
+func Apply(opts *options.ApplyConfig, storeProvider store.ResourceInterface) error {
 	if opts.ClusterName == "" {
 		return errors.New("missing Cluster name")
 	}
 
-	cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
+	cluster, err := storeProvider.Clusters().Get(opts.ClusterName)
 	if err != nil {
 		return errors.Wrapf(err, "Cluster `%s` does not exist", opts.ClusterName)
 	}
@@ -38,44 +37,22 @@ func Apply(opts *options.ApplyConfig) error {
 		return errors.Errorf("Cluster `%s` is upgrading. Retry after Cluster returns to Ready state", cluster.Name)
 	}
 
-	cm, err := GetCloudManager(cluster)
-	if err != nil {
-		return errors.Wrap(err, "failed to get cloudmanager")
-	}
-
-	if err = cm.GetCloudConnector(); err != nil {
-		return errors.Wrap(err, "failed to get cloud-connector")
-	}
-
-	if cluster.Status.Phase == api.ClusterReady {
-		var kc kubernetes.Interface
-		kc, err = cm.GetAdminClient()
-		if err != nil {
-			return errors.Wrap(err, "failed to get admin client")
-		}
-		if upgrade, err := NewKubeVersionGetter(kc, cluster).IsUpgradeRequested(); err != nil {
-			return err
-		} else if upgrade {
-			cluster.Status.Phase = api.ClusterUpgrading
-			_, _ = store.StoreProvider.Clusters().UpdateStatus(cluster)
-			return ApplyUpgrade(cm)
-		}
-	}
+	scope := NewScope(NewScopeParams{Cluster: cluster, StoreProvider: storeProvider})
 
 	if cluster.Status.Phase == api.ClusterPending {
-		err := ApplyCreate(cm)
+		err := ApplyCreate(scope)
 		if err != nil {
 			return err
 		}
 
-		err = ApplyScale(cm)
+		err = ApplyScale(scope)
 		if err != nil {
-			return errors.Wrap(err, "failed to scale cluster")
+			return errors.Wrap(err, "failed to scale Cluster")
 		}
 	}
 
 	if cluster.DeletionTimestamp != nil && cluster.Status.Phase != api.ClusterDeleted {
-		err := ApplyDelete(cm)
+		err := ApplyDelete(scope)
 		if err != nil {
 			return err
 		}
@@ -84,14 +61,19 @@ func Apply(opts *options.ApplyConfig) error {
 	return nil
 }
 
-func ApplyCreate(cm Interface) error {
-	err := cm.PrepareCloud()
+func ApplyCreate(scope *Scope) error {
+	cm, err := scope.GetCloudManager()
+	if err != nil {
+		return err
+	}
+
+	err = cm.PrepareCloud()
 	if err != nil {
 		return errors.Wrap(err, "failed to prepare cloud infra")
 	}
 
 	if !managedProviders.Has(cm.GetCluster().Spec.Config.Cloud.CloudProvider) {
-		err = setMasterSKU(cm)
+		err = setMasterSKU(scope.Cluster)
 		if err != nil {
 			return errors.Wrap(err, "failed to set master sku")
 		}
@@ -160,7 +142,7 @@ func applyClusterAPI(cm Interface) error {
 		return err
 	}
 
-	machines, err := store.StoreProvider.Machine(cluster.Name).List(metav1.ListOptions{})
+	machines, err := scope.StoreProvider.Machine(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "failed to list master machines")
 	}
@@ -173,18 +155,29 @@ func applyClusterAPI(cm Interface) error {
 		}
 	}
 
+	cluster.Status.Phase = api.ClusterReady
+	if _, err = scope.StoreProvider.Clusters().UpdateStatus(cluster); err != nil {
+		return errors.Wrap(err, "failed to update Cluster status")
+	}
+
 	return nil
 }
 
-func setMasterSKU(cm Interface) error {
-	clusterName := cm.GetCluster().Name
+func setMasterSKU(cluster *api.Cluster) error {
+	scope := NewScope(NewScopeParams{Cluster: cluster})
 
-	machines, err := store.StoreProvider.Machine(clusterName).List(metav1.ListOptions{})
+	clusterName := cluster.Name
+	cm, err := scope.GetCloudManager()
+	if err != nil {
+		return err
+	}
+
+	machines, err := scope.StoreProvider.Machine(clusterName).List(metav1.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "failed to list machines")
 	}
 
-	machineSets, err := store.StoreProvider.MachineSet(clusterName).List(metav1.ListOptions{})
+	machineSets, err := scope.StoreProvider.MachineSet(clusterName).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -193,7 +186,6 @@ func setMasterSKU(cm Interface) error {
 
 	sku := cm.GetMasterSKU(totalNodes)
 
-	// TODO: should this be in apply? or in create?
 	// update all the master machines
 	for _, m := range machines {
 		providerspec, err := cm.GetDefaultMachineProviderSpec(sku, api.MasterMachineRole)
@@ -202,7 +194,7 @@ func setMasterSKU(cm Interface) error {
 		}
 		m.Spec.ProviderSpec = providerspec
 
-		_, err = store.StoreProvider.Machine(clusterName).Update(m)
+		_, err = scope.StoreProvider.Machine(clusterName).Update(m)
 		if err != nil {
 			return errors.Wrapf(err, "failed to update machine %q to store", m.Name)
 		}
@@ -212,22 +204,22 @@ func setMasterSKU(cm Interface) error {
 }
 
 // TODO: simplify
-func ApplyScale(cm Interface) error {
+func ApplyScale(s *Scope) error {
 	if managedProviders.Has(cm.GetCluster().Spec.Config.Cloud.CloudProvider) {
 		return cm.ApplyScale()
 	}
 
 	log.Infoln("Scaling Machine Sets")
-	cluster := cm.GetCluster()
+	cluster := s.Cluster
 	var machineSets []*clusterv1.MachineSet
 	var existingMachineSet []*clusterv1.MachineSet
-	machineSets, err := store.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
+	machineSets, err := s.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
 	var bc clusterclient.Client
-	bc, err = GetBooststrapClient(cm, cluster)
+	bc, err = getBooststrapClient(s)
 	if err != nil {
 		return err
 	}
@@ -242,7 +234,7 @@ func ApplyScale(cm Interface) error {
 			if err = bc.Delete(string(data)); err != nil {
 				return err
 			}
-			if err = store.StoreProvider.MachineSet(cluster.Name).Delete(machineSet.Name); err != nil {
+			if err = s.StoreProvider.MachineSet(cluster.Name).Delete(machineSet.Name); err != nil {
 				return err
 			}
 		}
@@ -272,11 +264,11 @@ func ApplyScale(cm Interface) error {
 		}
 	}
 
-	_, err = store.StoreProvider.Clusters().UpdateStatus(cluster)
+	_, err = s.StoreProvider.Clusters().UpdateStatus(cluster)
 	if err != nil {
 		return err
 	}
-	_, err = store.StoreProvider.Clusters().Update(cluster)
+	_, err = s.StoreProvider.Clusters().Update(cluster)
 	if err != nil {
 		return err
 	}
@@ -284,25 +276,25 @@ func ApplyScale(cm Interface) error {
 	return nil
 }
 
-func ApplyUpgrade(cm Interface) error {
-	kc, err := cm.GetAdminClient()
+func ApplyUpgrade(s *Scope) error {
+	kc, err := s.GetAdminClient()
 	if err != nil {
 		return err
 	}
 
-	cluster := cm.GetCluster()
+	Cluster := s.Cluster
 	var masterMachine *clusterv1.Machine
-	masterName := fmt.Sprintf("%v-master", cluster.Name)
-	masterMachine, err = store.StoreProvider.Machine(cluster.Name).Get(masterName)
+	masterName := fmt.Sprintf("%v-master", Cluster.Name)
+	masterMachine, err = s.StoreProvider.Machine(Cluster.Name).Get(masterName)
 	if err != nil {
 		return err
 	}
 
-	masterMachine.Spec.Versions.ControlPlane = cluster.Spec.Config.KubernetesVersion
-	masterMachine.Spec.Versions.Kubelet = cluster.Spec.Config.KubernetesVersion
+	masterMachine.Spec.Versions.ControlPlane = Cluster.Spec.Config.KubernetesVersion
+	masterMachine.Spec.Versions.Kubelet = Cluster.Spec.Config.KubernetesVersion
 
 	var bc clusterclient.Client
-	bc, err = GetBooststrapClient(cm, cluster)
+	bc, err = GetBooststrapClient(s)
 	if err != nil {
 		return err
 	}
@@ -316,19 +308,19 @@ func ApplyUpgrade(cm Interface) error {
 	}
 
 	// Wait until masterMachine is updated
-	desiredVersion, _ := semver.NewVersion(cluster.ClusterConfig().KubernetesVersion)
+	desiredVersion, _ := semver.NewVersion(s.Cluster.ClusterConfig().KubernetesVersion)
 	if err = kube.WaitForReadyMasterVersion(kc, desiredVersion); err != nil {
 		return err
 	}
 
 	var machineSets []*clusterv1.MachineSet
-	machineSets, err = store.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
+	machineSets, err = s.StoreProvider.MachineSet(Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
 	for _, machineSet := range machineSets {
-		machineSet.Spec.Template.Spec.Versions.Kubelet = cluster.Spec.Config.KubernetesVersion
+		machineSet.Spec.Template.Spec.Versions.Kubelet = Cluster.Spec.Config.KubernetesVersion
 		if data, err = json.Marshal(machineSet); err != nil {
 			return err
 		}
@@ -338,32 +330,12 @@ func ApplyUpgrade(cm Interface) error {
 		}
 	}
 
-	cluster.Status.Phase = api.ClusterReady
-	if _, err = store.StoreProvider.Clusters().UpdateStatus(cluster); err != nil {
+	Cluster.Status.Phase = api.ClusterReady
+	if _, err = s.StoreProvider.Clusters().UpdateStatus(Cluster); err != nil {
 		return err
 	}
 
 	return err
-}
-
-func ApplyDelete(cm Interface) error {
-	log.Infoln("Deleting cluster...")
-	cluster := cm.GetCluster()
-
-	err := DeleteAllWorkerMachines(cm)
-	if err != nil {
-		log.Infof("failed to delete nodes: %v", err)
-	}
-
-	if cluster.Status.Phase == api.ClusterReady {
-		cluster.Status.Phase = api.ClusterDeleting
-	}
-	_, err = store.StoreProvider.Clusters().UpdateStatus(cluster)
-	if err != nil {
-		return err
-	}
-
-	return cm.ApplyDelete()
 }
 
 func NodeCount(machineSets []*clusterv1.MachineSet) int32 {

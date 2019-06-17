@@ -39,7 +39,7 @@ func RegisterProvider(name string, cloud Factory) {
 // was known but failed to initialize. The config parameter specifies the
 // io.Reader handler of the configuration file for the cloud provider, or nil
 // for no configuation.
-func GetProvider(name string, cfg *api.PharmerConfig) (Interface, error) {
+func getProvider(name string, cfg *api.PharmerConfig) (Interface, error) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	f, found := providers[name]
@@ -49,20 +49,16 @@ func GetProvider(name string, cfg *api.PharmerConfig) (Interface, error) {
 	return f(cfg)
 }
 
-func SetProvider(cmd *cobra.Command, owner string) error {
+func GetStoreProvider(cmd *cobra.Command, owner string) (ResourceInterface, error) {
 	cfgFile, _ := config.GetConfigFile(cmd.Flags())
 	cfg, err := config.LoadConfig(cfgFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	StoreProvider, err = NewStoreProvider(cfg, owner)
-	if err != nil {
-		return err
-	}
-	return nil
+	return NewStoreProvider(cfg, owner)
 }
 
-func NewStoreProvider(cfg *api.PharmerConfig, owner string) (ResourceInterface, error) {
+func NewStoreInterface(cfg *api.PharmerConfig) (Interface, error) {
 	var storeType string
 	if cfg == nil {
 		storeType = fakeUID
@@ -72,7 +68,15 @@ func NewStoreProvider(cfg *api.PharmerConfig, owner string) (ResourceInterface, 
 		storeType = vfsUID
 	}
 
-	store, err := GetProvider(storeType, cfg)
+	store, err := getProvider(storeType, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return store, nil
+}
+
+func NewStoreProvider(cfg *api.PharmerConfig, owner string) (ResourceInterface, error) {
+	store, err := NewStoreInterface(cfg)
 	if err != nil {
 		return nil, err
 	}

@@ -30,7 +30,12 @@ func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err := RunGetNodeGroup(opts, out)
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			if err != nil {
+				term.Fatalln(err)
+			}
+
+			err = runGetNodeGroup(storeProvider, opts, out)
 			term.ExitOnError(err)
 		},
 	}
@@ -39,7 +44,7 @@ func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunGetNodeGroup(opts *options.NodeGroupGetConfig, out io.Writer) error {
+func runGetNodeGroup(storeProvider store.ResourceInterface, opts *options.NodeGroupGetConfig, out io.Writer) error {
 	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
 		return err
@@ -53,7 +58,7 @@ func RunGetNodeGroup(opts *options.NodeGroupGetConfig, out io.Writer) error {
 	if clusterName != "" {
 		clusterList = append(clusterList, clusterName)
 	} else {
-		clusters, err := store.StoreProvider.Clusters().List(metav1.ListOptions{})
+		clusters, err := storeProvider.Clusters().List(metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
@@ -63,7 +68,7 @@ func RunGetNodeGroup(opts *options.NodeGroupGetConfig, out io.Writer) error {
 	}
 
 	for _, cluster := range clusterList {
-		nodegroups, err := GetMachineSetList(cluster, opts.NodeGroups...)
+		nodegroups, err := getMachineSetList(storeProvider, cluster, opts.NodeGroups...)
 		if err != nil {
 			return err
 		}
@@ -87,11 +92,11 @@ func RunGetNodeGroup(opts *options.NodeGroupGetConfig, out io.Writer) error {
 	return nil
 }
 
-func GetMachineSetList(cluster string, args ...string) ([]*clusterv1.MachineSet, error) {
+func getMachineSetList(storeProvider store.ResourceInterface, cluster string, args ...string) ([]*clusterv1.MachineSet, error) {
 	var machineSetList []*clusterv1.MachineSet
 	if len(args) != 0 {
 		for _, arg := range args {
-			ms, err := store.StoreProvider.MachineSet(cluster).Get(arg)
+			ms, err := storeProvider.MachineSet(cluster).Get(arg)
 			if err != nil {
 				return nil, err
 			}
@@ -99,7 +104,7 @@ func GetMachineSetList(cluster string, args ...string) ([]*clusterv1.MachineSet,
 		}
 	} else {
 		var err error
-		machineSetList, err = store.StoreProvider.MachineSet(cluster).List(metav1.ListOptions{})
+		machineSetList, err = storeProvider.MachineSet(cluster).List(metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}

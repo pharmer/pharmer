@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/appscode/go/sets"
 	version "gomodules.xyz/version"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -363,3 +364,9 @@ func (c *Cluster) GenSSHKeyExternalID() string {
 func (c *Cluster) MasterMachineName(n int) string {
 	return fmt.Sprintf("%v-master-%v", c.Name, n)
 }
+
+func (c *Cluster) CloudProvider() string {
+	return c.Spec.Config.Cloud.CloudProvider
+}
+
+var ManagedProviders = sets.NewString("aks", "gke", "eks", "dokube")

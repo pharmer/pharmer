@@ -17,7 +17,7 @@ func NewCmdCreateCluster() *cobra.Command {
 			api.ResourceTypeCluster,
 			api.ResourceKindCluster,
 		},
-		Short:             "Create a Kubernetes cluster for a given cloud provider",
+		Short:             "CreateCluster a Kubernetes cluster for a given cloud provider",
 		Example:           "pharmer create cluster demo-cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -25,15 +25,15 @@ func NewCmdCreateCluster() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err := store.SetProvider(cmd, opts.Owner)
-			if err != nil {
-				term.Fatalln(err)
-			}
-			err = runCreateClusterCmd(store.StoreProvider, opts)
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
 			if err != nil {
 				term.Fatalln(err)
 			}
 
+			err = runCreateClusterCmd(storeProvider, opts)
+			if err != nil {
+				term.Fatalln(err)
+			}
 		},
 	}
 	opts.AddFlags(cmd.Flags())
@@ -42,16 +42,16 @@ func NewCmdCreateCluster() *cobra.Command {
 }
 
 func runCreateClusterCmd(store store.ResourceInterface, opts *options.ClusterCreateConfig) error {
-	cm, err := cloud.Create(store, opts.Cluster)
+	err := cloud.CreateCluster(store, opts.Cluster)
 	if err != nil {
 		return err
 	}
 
 	if len(opts.Nodes) > 0 {
 		nodeOpts := options.NewNodeGroupCreateConfig()
-		nodeOpts.ClusterName = cm.GetCluster().Name
+		nodeOpts.ClusterName = opts.Cluster.Name
 		nodeOpts.Nodes = opts.Nodes
-		err := cloud.CreateMachineSets(store, cm, nodeOpts)
+		err := cloud.CreateMachineSets(store, nodeOpts)
 		if err != nil {
 			return err
 		}

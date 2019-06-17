@@ -7,7 +7,7 @@ import (
 	"github.com/appscode/go/crypto/ssh"
 )
 
-type PharmerCertificates struct {
+type Certificates struct {
 	CACert             CertKeyPair
 	FrontProxyCACert   CertKeyPair
 	ServiceAccountCert CertKeyPair

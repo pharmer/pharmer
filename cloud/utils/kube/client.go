@@ -38,6 +38,17 @@ func NewRestConfig(caCertPair *certificates.CertKeyPair, cluster *api.Cluster) (
 	return cfg, nil
 }
 
+//func GetKubernetesClient(s *cloud.Scope) (kubernetes.Interface, error) {
+//	kubeConifg, err := GetAdminConfig(s)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	config := api.NewRestConfig(kubeConifg)
+//
+//	return kubernetes.NewForConfig(config)
+//}
+
 // WARNING:
 // Returned KubeClient uses admin client cert. This should only be used for Cluster provisioning operations.
 func NewAdminClient(caCertPair *certificates.CertKeyPair, cluster *api.Cluster) (kubernetes.Interface, error) {

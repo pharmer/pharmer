@@ -10,6 +10,26 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
+func ApplyDelete(s *Scope) error {
+	log.Infoln("Deleting cluster...")
+	cluster := s.Cluster
+
+	err := DeleteAllWorkerMachines(s)
+	if err != nil {
+		log.Infof("failed to delete nodes: %v", err)
+	}
+
+	if cluster.Status.Phase == api.ClusterReady {
+		cluster.Status.Phase = api.ClusterDeleting
+	}
+	_, err = s.StoreProvider.Clusters().UpdateStatus(cluster)
+	if err != nil {
+		return err
+	}
+
+	return s.CloudManager.ApplyDelete()
+}
+
 // DeleteAllWorkerMachines waits for all nodes to be deleted
 func DeleteAllWorkerMachines(cm Interface) error {
 	log.Infof("Deleting non-controlplane machines")

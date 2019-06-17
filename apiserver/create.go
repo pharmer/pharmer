@@ -14,7 +14,7 @@ import (
 	"github.com/pharmer/pharmer/store"
 )
 
-func (a *Apiserver) CreateCluster() error {
+func (a *Apiserver) CreateCluster(storeProvider store.Interface) error {
 	_, err := a.natsConn.QueueSubscribe("create-cluster", "cluster-api-create-workers", func(msg *stan.Msg) {
 		fmt.Printf("seq = %d [redelivered = %v, acked = false]\n", msg.Sequence, msg.Redelivered)
 
@@ -30,34 +30,34 @@ func (a *Apiserver) CreateCluster() error {
 			return
 		}
 
-		obj, err := store.StoreProvider.Operations().Get(operation.OperationId)
+		obj, err := storeProvider.Operations().Get(operation.OperationId)
 		if err != nil {
 			glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 		}
 
 		if obj.State == api.OperationPending {
 			obj.State = api.OperationRunning
-			obj, err = store.StoreProvider.Operations().Update(obj)
+			obj, err = storeProvider.Operations().Update(obj)
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}
 
-			cluster, err := store.StoreProvider.Clusters().Get(strconv.Itoa(int(obj.ClusterID)))
+			owner := strconv.Itoa(int(obj.UserID))
+			cluster, err := storeProvider.Owner(owner).Clusters().Get(strconv.Itoa(int(obj.ClusterID)))
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}
 
 			cluster.InitClusterApi()
 
-			// todo fix
-			_, err = cloud.Create(store.StoreProvider, cluster)
+			err = cloud.CreateCluster(storeProvider, cluster)
 			if err != nil {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}
 
-			ApplyCluster(&opts.ApplyConfig{
+			ApplyCluster(storeProvider, &opts.ApplyConfig{
 				ClusterName: cluster.Name, //strconv.Itoa(int(obj.ClusterID)),
-				Owner:       strconv.Itoa(int(obj.UserID)),
+				Owner:       owner,
 				DryRun:      false,
 			}, obj)
 

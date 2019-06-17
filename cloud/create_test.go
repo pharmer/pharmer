@@ -3,155 +3,93 @@ package cloud_test
 import (
 	"testing"
 
-	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
+	"github.com/onsi/gomega"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
-	_ "github.com/pharmer/pharmer/cloud/providers/aws"
-	_ "github.com/pharmer/pharmer/cloud/providers/azure"
-	"github.com/pharmer/pharmer/cloud/providers/gce"
 	_ "github.com/pharmer/pharmer/cloud/providers/gce"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pharmer/pharmer/store/providers/fake"
 	_ "github.com/pharmer/pharmer/store/providers/fake"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func getGCECluster() *api.Cluster {
-	return &api.Cluster{
-		ObjectMeta: v1.ObjectMeta{
-			Name: "gce-cluster",
-		},
-		Spec: api.PharmerClusterSpec{
-			ClusterAPI: clusterapi.Cluster{},
-			Config: api.ClusterConfig{
-				MasterCount: 3,
-				Cloud: api.CloudSpec{
-					CloudProvider: "gce",
-					Zone:          "us-central-1f",
-				},
-				KubernetesVersion: "v1.14.0",
-				CredentialName:    "gce-cred",
-			},
-		},
-	}
-}
+//_, err = storage.Credentials().Create(&cloudapi.Credential{
+//	ObjectMeta: v1.ObjectMeta{
+//		Name: "azure-cred",
+//	},
+//	Spec: cloudapi.CredentialSpec{
+//		Provider: "azure",
+//		Data: map[string]string{
+//			"clientID":       "a",
+//			"clientSecret":   "b",
+//			"subscriptionID": "c",
+//			"tenantID":       "d",
+//		},
+//	},
+//})
 
-func beforeTestCreate(t *testing.T) store.ResourceInterface {
-	t.Helper()
-
-	// create cluster
-	storage, err := store.NewStoreProvider(nil, "")
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	_, err = storage.Clusters().Create(&api.Cluster{
-		ObjectMeta: v1.ObjectMeta{
-			Name: "already-exists",
-		},
-	})
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	_, err = storage.Credentials().Create(&cloudapi.Credential{
-		ObjectMeta: v1.ObjectMeta{
-			Name: "azure-cred",
-		},
-		Spec: cloudapi.CredentialSpec{
-			Provider: "azure",
-			Data: map[string]string{
-				"clientID":       "a",
-				"clientSecret":   "b",
-				"subscriptionID": "c",
-				"tenantID":       "d",
-			},
-		},
-	})
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	return storage
-}
-
-func afterTestCreate(t *testing.T, store store.ResourceInterface) {
-	t.Helper()
-
-	// remove saved object
-	err := store.Clusters().Delete("already-exists")
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-}
-
-func checkFilesCreated(t *testing.T, store store.ResourceInterface, cluster *api.Cluster) {
-	t.Helper()
-
-	if store == nil {
-		return
-	}
-
-	var allErr []error
-	// check if cluster is created
-	err := store.Clusters().Delete(cluster.Name)
-	allErr = append(allErr, err)
-
-	// check certificates are generated correctly
-	err = store.Certificates(cluster.Name).Delete(api.CACertName)
-	allErr = append(allErr, err)
-	err = store.Certificates(cluster.Name).Delete(api.FrontProxyCACertName)
-	allErr = append(allErr, err)
-	err = store.Certificates(cluster.Name).Delete(api.ETCDCACertName)
-	allErr = append(allErr, err)
-	err = store.Certificates(cluster.Name).Delete(api.SAKeyName)
-	allErr = append(allErr, err)
-	err = store.SSHKeys(cluster.Name).Delete(cluster.GenSSHKeyExternalID())
-	allErr = append(allErr, err)
-
-	// check master machines
-	for i := 0; i < cluster.Spec.Config.MasterCount; i++ {
-		err = store.Machine(cluster.Name).Delete(cluster.MasterMachineName(i))
-		allErr = append(allErr, err)
-	}
-
-	for _, err = range allErr {
-		if err != nil {
-			t.Error(err)
-		}
-	}
-}
-
-func TestCreate(t *testing.T) {
-	storage := beforeTestCreate(t)
-	defer afterTestCreate(t, storage)
-
+func TestCreateCluster(t *testing.T) {
 	type args struct {
 		store   store.ResourceInterface
 		cluster *api.Cluster
 	}
-	tests := []struct {
-		name    string
-		args    args
-		want    cloud.Interface
-		wantErr bool
-	}{
 
+	genericBeforeTest := func(t *testing.T, a args) func(*testing.T) {
+		return func(t *testing.T) {
+			var allErr []error
+			// check if Cluster is created
+			err := a.store.Clusters().Delete(a.cluster.Name)
+			allErr = append(allErr, err)
+
+			// check certificates are generated
+			err = a.store.Certificates(a.cluster.Name).Delete(api.CACertName)
+			allErr = append(allErr, err)
+			err = a.store.Certificates(a.cluster.Name).Delete(api.FrontProxyCACertName)
+			allErr = append(allErr, err)
+			err = a.store.Certificates(a.cluster.Name).Delete(api.ETCDCACertName)
+			allErr = append(allErr, err)
+			err = a.store.Certificates(a.cluster.Name).Delete(api.SAKeyName)
+			allErr = append(allErr, err)
+			err = a.store.SSHKeys(a.cluster.Name).Delete(a.cluster.GenSSHKeyExternalID())
+			allErr = append(allErr, err)
+
+			// check master machines are genereated
+			for i := 0; i < a.cluster.Spec.Config.MasterCount; i++ {
+				err = a.store.Machine(a.cluster.Name).Delete(a.cluster.MasterMachineName(i))
+				allErr = append(allErr, err)
+			}
+
+			for _, err = range allErr {
+				if err != nil {
+					t.Error(err)
+				}
+			}
+		}
+	}
+
+	tests := []struct {
+		name       string
+		args       args
+		wantErr    bool
+		errmsg     string
+		beforeTest func(*testing.T, args) func(*testing.T)
+	}{
 		{
-			name: "nil cluster",
+			name: "nil Cluster",
 			args: args{
 				cluster: nil,
 			},
-			want:    nil,
 			wantErr: true,
+			errmsg:  "missing Cluster",
 		}, {
-			name: "empty cluster-name",
+			name: "empty Cluster-name",
 			args: args{
 				cluster: &api.Cluster{},
 			},
-			want:    nil,
 			wantErr: true,
+			errmsg:  "missing Cluster name",
 		}, {
 			name: "empty kubernetes version",
 			args: args{
@@ -161,156 +99,130 @@ func TestCreate(t *testing.T) {
 					},
 				},
 			},
-			want:    nil,
 			wantErr: true,
+			errmsg:  "missing Cluster version",
 		}, {
-			name: "cluster already exists",
+			name: "Cluster already exists",
 			args: args{
-				store: nil,
+				store: fake.New(),
 				cluster: &api.Cluster{
 					ObjectMeta: v1.ObjectMeta{
 						Name: "already-exists",
 					},
+					Spec: api.PharmerClusterSpec{
+						Config: api.ClusterConfig{
+							KubernetesVersion: "1.13.0",
+						},
+					},
 				},
 			},
-			want:    nil,
 			wantErr: true,
+			errmsg:  "Cluster already exists",
+			beforeTest: func(t *testing.T, a args) func(t *testing.T) {
+				_, err := a.store.Clusters().Create(&api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "already-exists",
+					},
+				})
+				if err != nil {
+					t.Errorf("failed to create Cluster: %v", err)
+				}
+
+				return func(t *testing.T) {
+					err = a.store.Clusters().Delete("already-exists")
+					if err != nil {
+						t.Errorf("failed to delete Cluster: %v", err)
+					}
+				}
+			},
 		}, {
-			name: "gce cluster",
+			name: "gce Cluster",
 			args: args{
-				store:   storage,
-				cluster: getGCECluster(),
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "aws cluster",
-			args: args{
-				store: storage,
+				store: fake.New(),
 				cluster: &api.Cluster{
 					ObjectMeta: v1.ObjectMeta{
-						Name: "aws-cluster",
+						Name: "gce",
 					},
 					Spec: api.PharmerClusterSpec{
-						ClusterAPI: clusterapi.Cluster{},
+						ClusterAPI: v1alpha1.Cluster{},
 						Config: api.ClusterConfig{
 							MasterCount: 3,
 							Cloud: api.CloudSpec{
-								CloudProvider: "aws",
-								Zone:          "us-east-1b",
+								CloudProvider: "gce",
+								Zone:          "us-central-1f",
 							},
-							KubernetesVersion: "v1.14.0",
-							CredentialName:    "aws-cred",
+							KubernetesVersion: "1.13.1",
 						},
 					},
 				},
 			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "azure cluster",
-			args: args{
-				store: storage,
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "azure-cluster",
-					},
-					Spec: api.PharmerClusterSpec{
-						ClusterAPI: clusterapi.Cluster{},
-						Config: api.ClusterConfig{
-							MasterCount: 3,
-							Cloud: api.CloudSpec{
-								CloudProvider: "azure",
-								Zone:          "us-east-1b",
-							},
-							KubernetesVersion: "v1.14.0",
-							CredentialName:    "azure-cred",
-						},
-					},
-				},
-			},
-			want:    nil,
-			wantErr: false,
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
 		},
 	}
+	g := gomega.NewGomegaWithT(t)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			store.StoreProvider = tt.args.store
-			_, err := cloud.Create(tt.args.store, tt.args.cluster)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			if tt.beforeTest != nil {
+				afterTest := tt.beforeTest(t, tt.args)
+				defer afterTest(t)
 			}
-			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("Create() = %v, want %v", got, tt.want)
-			//}
 
-			// check all the files are created successfully
-			checkFilesCreated(t, tt.args.store, tt.args.cluster)
+			err := cloud.CreateCluster(tt.args.store, tt.args.cluster)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateCluster() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				g.Expect(err).Should(gomega.MatchError(tt.errmsg))
+			}
 		})
 	}
 }
 
-func beforeTestCreateMachineSets(t *testing.T) store.ResourceInterface {
-	localStore, err := store.NewStoreProvider(nil, "")
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	return localStore
-}
-
-func checkMachinesetCreated(t *testing.T, store store.MachineSetStore, nodes map[string]int) {
-	var allerr []error
-	for node := range nodes {
-		allerr = append(allerr, store.Delete(cloud.GenerateMachineSetName(node)))
-	}
-	for _, err := range allerr {
-		if err != nil {
-			t.Error(err)
-		}
-	}
-}
-
 func TestCreateMachineSets(t *testing.T) {
-	localStore := beforeTestCreateMachineSets(t)
-
 	type args struct {
 		store store.ResourceInterface
-		cm    cloud.Interface
 		opts  *options.NodeGroupCreateConfig
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name       string
+		args       args
+		wantErr    bool
+		beforeTest func(*testing.T, args) func(*testing.T)
 	}{
 		{
 			name: "no nodes",
 			args: args{
-				store: localStore,
-				cm: &gce.ClusterManager{
-					CloudManager: &cloud.CloudManager{
-						Cluster: getGCECluster(),
-					},
-				},
+				store: fake.New(),
 				opts: &options.NodeGroupCreateConfig{
-					Nodes: nil,
+					ClusterName: "gce",
+					Nodes:       nil,
 				},
 			},
 			wantErr: false,
+			beforeTest: func(t *testing.T, a args) func(*testing.T) {
+				cluster, err := a.store.Clusters().Create(&api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: a.opts.ClusterName,
+					},
+				})
+				if err != nil {
+					t.Errorf("failed to create Cluster: %v", err)
+				}
+
+				return func(t *testing.T) {
+					err = a.store.Clusters().Delete(cluster.Name)
+					if err != nil {
+						t.Errorf("failed to delete Cluster: %v", err)
+					}
+				}
+			},
 		}, {
 			name: "test gce",
 			args: args{
-				store: localStore,
-				cm: &gce.ClusterManager{
-					CloudManager: &cloud.CloudManager{
-						Cluster: getGCECluster(),
-					},
-				},
+				store: fake.New(),
 				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "gce",
 					Nodes: map[string]int{
 						"a": 1,
 						"b": 2,
@@ -319,14 +231,53 @@ func TestCreateMachineSets(t *testing.T) {
 				},
 			},
 			wantErr: false,
+			beforeTest: func(t *testing.T, a args) func(*testing.T) {
+				cluster, err := a.store.Clusters().Create(&api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: a.opts.ClusterName,
+					},
+					Spec: api.PharmerClusterSpec{
+						Config: api.ClusterConfig{
+							Cloud: api.CloudSpec{
+								CloudProvider: "gce",
+								Zone:          "us-central-1f",
+							},
+							KubernetesVersion: "1.13.4",
+						},
+					},
+				})
+				if err != nil {
+					t.Errorf("failed to create Cluster: %v", err)
+				}
+
+				return func(t *testing.T) {
+					err = a.store.Clusters().Delete(cluster.Name)
+					if err != nil {
+						t.Errorf("failed to delete Cluster: %v", err)
+					}
+
+					// check if machinesets are created
+					var allerr []error
+					for node := range a.opts.Nodes {
+						allerr = append(allerr, a.store.MachineSet(a.opts.ClusterName).Delete(cloud.GenerateMachineSetName(node)))
+					}
+					for _, err := range allerr {
+						if err != nil {
+							t.Error(err)
+						}
+					}
+				}
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := cloud.CreateMachineSets(tt.args.store, tt.args.cm, tt.args.opts); (err != nil) != tt.wantErr {
+			afterTest := tt.beforeTest(t, tt.args)
+			defer afterTest(t)
+
+			if err := cloud.CreateMachineSets(tt.args.store, tt.args.opts); (err != nil) != tt.wantErr {
 				t.Errorf("CreateMachineSets() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			checkMachinesetCreated(t, tt.args.store.MachineSet(tt.args.cm.GetCluster().Name), tt.args.opts.Nodes)
 		})
 	}
 }

@@ -67,7 +67,7 @@ type TemplateData struct {
 }
 
 func NewNodeTemplateData(cm Interface, machine *clusterv1.Machine, token string) TemplateData {
-	certs := cm.GetPharmerCertificates()
+	certs := cm.GetCertificates()
 	cluster := cm.GetCluster()
 
 	td := TemplateData{

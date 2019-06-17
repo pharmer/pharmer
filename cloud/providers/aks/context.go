@@ -70,7 +70,7 @@ func init() {
 	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(cluster *api.Cluster, certs *certificates.PharmerCertificates) cloud.Interface {
+func New(cluster *api.Cluster, certs *certificates.Certificates) cloud.Interface {
 	return &ClusterManager{
 		CloudManager: &cloud.CloudManager{
 			Cluster: cluster,

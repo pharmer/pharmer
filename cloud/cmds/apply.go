@@ -1,7 +1,6 @@
 package cmds
 
 import (
-	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
@@ -20,14 +19,14 @@ func NewCmdApply() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err := store.SetProvider(cmd, opts.Owner)
+			store, err := store.GetStoreProvider(cmd, opts.Owner)
 			if err != nil {
 				term.Fatalln(err)
 			}
 
-			err = cloud.Apply(opts)
+			err = cloud.Apply(opts, store)
 			if err != nil {
-				log.Fatalln(err)
+				term.Fatalln(err)
 			}
 		},
 	}
