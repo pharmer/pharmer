@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eou pipefail
+set -eoux pipefail
 
 GOPATH=$(go env GOPATH)
 REPO_ROOT="$GOPATH/src/github.com/pharmer/pharmer"

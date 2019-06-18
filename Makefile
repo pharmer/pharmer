@@ -279,7 +279,7 @@ release: docker-manifest
 
 .PHONY: install
 install: build
-	@cp bin/linux_amd64/pharmer $$GOPATH/bin/pharmer
+	cp bin/linux_amd64/pharmer $$GOPATH/bin/pharmer
 
 .PHONY: clean
 clean:

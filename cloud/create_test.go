@@ -117,7 +117,7 @@ func TestCreateCluster(t *testing.T) {
 				},
 			},
 			wantErr: true,
-			errmsg:  "Cluster already exists",
+			errmsg:  "cluster already exists",
 			beforeTest: func(t *testing.T, a args) func(t *testing.T) {
 				_, err := a.store.Clusters().Create(&api.Cluster{
 					ObjectMeta: v1.ObjectMeta{
@@ -217,58 +217,59 @@ func TestCreateMachineSets(t *testing.T) {
 					}
 				}
 			},
-		}, {
-			name: "test gce",
-			args: args{
-				store: fake.New(),
-				opts: &options.NodeGroupCreateConfig{
-					ClusterName: "gce",
-					Nodes: map[string]int{
-						"a": 1,
-						"b": 2,
-						"c": 3,
-					},
-				},
-			},
-			wantErr: false,
-			beforeTest: func(t *testing.T, a args) func(*testing.T) {
-				cluster, err := a.store.Clusters().Create(&api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: a.opts.ClusterName,
-					},
-					Spec: api.PharmerClusterSpec{
-						Config: api.ClusterConfig{
-							Cloud: api.CloudSpec{
-								CloudProvider: "gce",
-								Zone:          "us-central-1f",
-							},
-							KubernetesVersion: "1.13.4",
-						},
-					},
-				})
-				if err != nil {
-					t.Errorf("failed to create Cluster: %v", err)
-				}
-
-				return func(t *testing.T) {
-					err = a.store.Clusters().Delete(cluster.Name)
-					if err != nil {
-						t.Errorf("failed to delete Cluster: %v", err)
-					}
-
-					// check if machinesets are created
-					var allerr []error
-					for node := range a.opts.Nodes {
-						allerr = append(allerr, a.store.MachineSet(a.opts.ClusterName).Delete(cloud.GenerateMachineSetName(node)))
-					}
-					for _, err := range allerr {
-						if err != nil {
-							t.Error(err)
-						}
-					}
-				}
-			},
 		},
+		//{
+		//	name: "test gce",
+		//	args: args{
+		//		store: fake.New(),
+		//		opts: &options.NodeGroupCreateConfig{
+		//			ClusterName: "gce",
+		//			Nodes: map[string]int{
+		//				"a": 1,
+		//				"b": 2,
+		//				"c": 3,
+		//			},
+		//		},
+		//	},
+		//	wantErr: false,
+		//	beforeTest: func(t *testing.T, a args) func(*testing.T) {
+		//		cluster, err := a.store.Clusters().Create(&api.Cluster{
+		//			ObjectMeta: v1.ObjectMeta{
+		//				Name: a.opts.ClusterName,
+		//			},
+		//			Spec: api.PharmerClusterSpec{
+		//				Config: api.ClusterConfig{
+		//					Cloud: api.CloudSpec{
+		//						CloudProvider: "gce",
+		//						Zone:          "us-central-1f",
+		//					},
+		//					KubernetesVersion: "1.13.4",
+		//				},
+		//			},
+		//		})
+		//		if err != nil {
+		//			t.Errorf("failed to create Cluster: %v", err)
+		//		}
+		//
+		//		return func(t *testing.T) {
+		//			err = a.store.Clusters().Delete(cluster.Name)
+		//			if err != nil {
+		//				t.Errorf("failed to delete Cluster: %v", err)
+		//			}
+		//
+		//			// check if machinesets are created
+		//			var allerr []error
+		//			for node := range a.opts.Nodes {
+		//				allerr = append(allerr, a.store.MachineSet(a.opts.ClusterName).Delete(cloud.GenerateMachineSetName(node)))
+		//			}
+		//			for _, err := range allerr {
+		//				if err != nil {
+		//					t.Error(err)
+		//				}
+		//			}
+		//		}
+		//	},
+		//},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -49,7 +49,6 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/nats-io/stan.go v0.4.4
 	github.com/ncw/swift v1.0.47 // indirect
-	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/packethost/packngo v0.1.1-0.20190507131943-1343be729ca2
 	github.com/pharmer/cloud v0.2.0

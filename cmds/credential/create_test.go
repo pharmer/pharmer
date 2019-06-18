@@ -4,10 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/pharmer/pharmer/store/providers/fake"
-
 	options2 "github.com/pharmer/pharmer/cmds/credential/options"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pharmer/pharmer/store/providers/fake"
 )
 
 // TODO:

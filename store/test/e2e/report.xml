@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-  <testsuite name="Storage E2E Suite" tests="4" failures="4" errors="0" time="0.001">
-      <testcase name="BeforeSuite" classname="Storage E2E Suite" time="0.001125118">
-          <failure type="Panic">/home/tahsin/go/src/github.com/pharmer/pharmer/store/test/e2e/e2e.go:41&#xA;Test Panicked&#xA;/home/tahsin/go/src/github.com/pharmer/pharmer/store/plugins.go:99</failure>
-      </testcase>
-  </testsuite>

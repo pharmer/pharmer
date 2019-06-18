@@ -19,7 +19,6 @@ func Test_runDeleteCredentialCmd(t *testing.T) {
 		beforeTest func(*testing.T, args) func(*testing.T)
 	}{
 		// TODO: add tests
-		{},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
