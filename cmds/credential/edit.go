@@ -1,4 +1,4 @@
-package cmds
+package credential
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"github.com/ghodss/yaml"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/pharmer/cloud"
-	options2 "github.com/pharmer/pharmer/cmds/credential/cmds/options"
+	options2 "github.com/pharmer/pharmer/cmds/credential/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils"
 	"github.com/pharmer/pharmer/utils/editor"

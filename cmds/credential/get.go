@@ -1,11 +1,11 @@
-package cmds
+package credential
 
 import (
 	"io"
 
 	"github.com/appscode/go/term"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	options2 "github.com/pharmer/pharmer/cmds/credential/cmds/options"
+	options2 "github.com/pharmer/pharmer/cmds/credential/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils/printer"
 	"github.com/spf13/cobra"

@@ -4,7 +4,7 @@ import (
 	"io"
 
 	cpCmd "github.com/pharmer/pharmer/cloud/cmds"
-	credCmd "github.com/pharmer/pharmer/cmds/credential/cmds"
+	"github.com/pharmer/pharmer/cmds/credential"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ func newCmdEdit(out, outErr io.Writer) *cobra.Command {
 	cmd.AddCommand(cpCmd.NewCmdEditNodeGroup(out, outErr))
 
 	// Credential
-	cmd.AddCommand(credCmd.NewCmdEditCredential(out, outErr))
+	cmd.AddCommand(credential.NewCmdEditCredential(out, outErr))
 
 	return cmd
 }

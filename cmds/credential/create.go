@@ -1,4 +1,4 @@
-package cmds
+package credential
 
 import (
 	"strings"
@@ -10,7 +10,7 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	cc "github.com/pharmer/cloud/pkg/credential/cloud"
 	"github.com/pharmer/cloud/pkg/providers"
-	options2 "github.com/pharmer/pharmer/cmds/credential/cmds/options"
+	options2 "github.com/pharmer/pharmer/cmds/credential/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
