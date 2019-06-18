@@ -29,12 +29,12 @@ func NewCmdGetCredential(out io.Writer) *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err := store.SetProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
 			if err != nil {
 				term.Fatalln(err)
 			}
 
-			err = RunGetCredential(opts, out)
+			err = RunGetCredential(storeProvider.Credentials(), opts, out)
 			term.ExitOnError(err)
 		},
 	}
@@ -43,7 +43,7 @@ func NewCmdGetCredential(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunGetCredential(opts *options2.CredentialGetConfig, out io.Writer) error {
+func RunGetCredential(credStore store.CredentialStore, opts *options2.CredentialGetConfig, out io.Writer) error {
 	rPrinter, err := printer.NewPrinter(opts.Output)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func RunGetCredential(opts *options2.CredentialGetConfig, out io.Writer) error {
 
 	w := printer.GetNewTabWriter(out)
 
-	credentials, err := getCredentialList(opts.Credentials)
+	credentials, err := getCredentialList(credStore, opts.Credentials)
 	if err != nil {
 		return err
 	}
@@ -68,10 +68,10 @@ func RunGetCredential(opts *options2.CredentialGetConfig, out io.Writer) error {
 	return w.Flush()
 }
 
-func getCredentialList(args []string) (credentialList []*cloudapi.Credential, err error) {
+func getCredentialList(credStore store.CredentialStore, args []string) (credentialList []*cloudapi.Credential, err error) {
 	if len(args) != 0 {
 		for _, arg := range args {
-			credential, er2 := store.StoreProvider.Credentials().Get(arg)
+			credential, er2 := credStore.Get(arg)
 			if er2 != nil {
 				return nil, er2
 			}
@@ -79,7 +79,7 @@ func getCredentialList(args []string) (credentialList []*cloudapi.Credential, er
 		}
 
 	} else {
-		credentialList, err = store.StoreProvider.Credentials().List(metav1.ListOptions{})
+		credentialList, err = credStore.List(metav1.ListOptions{})
 		if err != nil {
 			return
 		}
