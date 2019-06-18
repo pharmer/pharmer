@@ -7,6 +7,7 @@ import (
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils/describer"
 	"github.com/spf13/cobra"
 	"k8s.io/kubernetes/pkg/kubectl/describe"
@@ -28,7 +29,10 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err := RunDescribeCluster(opts, out)
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			term.ExitOnError(err)
+
+			err = RunDescribeCluster(storeProvider, opts, out)
 			term.ExitOnError(err)
 		},
 	}
@@ -37,11 +41,11 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunDescribeCluster(opts *options.ClusterDescribeConfig, out io.Writer) error {
+func RunDescribeCluster(storeProvider store.ResourceInterface, opts *options.ClusterDescribeConfig, out io.Writer) error {
 	rDescriber := describer.NewDescriber()
 
 	first := true
-	clusters, err := getClusterList(opts.Clusters)
+	clusters, err := getClusterList(storeProvider.Clusters(), opts.Clusters)
 	if err != nil {
 		return err
 	}
@@ -58,7 +62,6 @@ func RunDescribeCluster(opts *options.ClusterDescribeConfig, out io.Writer) erro
 			fmt.Fprintf(out, "\n\n%s", s)
 		}
 
-		/// TODO
 		//if resp, err := cloud.CheckForUpdates(cluster.Name); err == nil {
 		//	term.Println(resp)
 		//} else {

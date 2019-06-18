@@ -92,42 +92,33 @@ func (cm *ClusterManager) ApplyScale() error {
 }
 
 func (cm *ClusterManager) ApplyDelete() error {
-	log.Infoln("deleting cluster...")
-	if cm.Cluster.Status.Phase == api.ClusterReady {
-		cm.Cluster.Status.Phase = api.ClusterDeleting
-	}
-	var found bool
-	_, err := cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
-	if err != nil {
-		return err
-	}
-	found = cm.conn.isControlPlaneExists(cm.Cluster.Name)
+	found := cm.conn.isControlPlaneExists(cm.Cluster.Name)
 	if found {
-		if err = cm.conn.deleteControlPlane(); err != nil {
+		if err := cm.conn.deleteControlPlane(); err != nil {
 			log.Infof("Error on deleting control plane. Reason: %v", err)
 		}
 	}
 
 	found = cm.conn.isStackExists(cm.namer.GetStackServiceRole())
 	if found {
-		if err = cm.conn.deleteStack(cm.namer.GetStackServiceRole()); err != nil {
+		if err := cm.conn.deleteStack(cm.namer.GetStackServiceRole()); err != nil {
 			log.Infof("Error on deleting stack service role. Reason: %v", err)
 		}
 	}
 
 	found = cm.conn.isStackExists(cm.namer.GetClusterVPC())
 	if found {
-		if err = cm.conn.deleteStack(cm.namer.GetClusterVPC()); err != nil {
+		if err := cm.conn.deleteStack(cm.namer.GetClusterVPC()); err != nil {
 			log.Infof("Error on deleting cluster vpc. Reason: %v", err)
 		}
 	}
 
-	found, err = cm.conn.getPublicKey()
+	found, err := cm.conn.getPublicKey()
 	if err != nil {
 		log.Infoln(err)
 	}
 	if found {
-		if err = cm.conn.deleteSSHKey(); err != nil {
+		if err := cm.conn.deleteSSHKey(); err != nil {
 			log.Infof("Error on deleting SSH Key. Reason: %v", err)
 		}
 	}

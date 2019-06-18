@@ -40,7 +40,10 @@ func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			if err := RunUpdateNodeGroup(opts, outErr); err != nil {
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			term.ExitOnError(err)
+
+			if err := RunUpdateNodeGroup(storeProvider.MachineSet(opts.ClusterName), opts, outErr); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -50,8 +53,7 @@ func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunUpdateNodeGroup(opts *options.NodeGroupEditConfig, errOut io.Writer) error {
-	clusterName := opts.ClusterName
+func RunUpdateNodeGroup(machinesetStore store.MachineSetStore, opts *options.NodeGroupEditConfig, errOut io.Writer) error {
 	// If file is provided
 	if opts.File != "" {
 		fileName := opts.File
@@ -61,47 +63,47 @@ func RunUpdateNodeGroup(opts *options.NodeGroupEditConfig, errOut io.Writer) err
 			return err
 		}
 
-		updated, err := store.StoreProvider.MachineSet(clusterName).Get(local.Name)
+		updated, err := machinesetStore.Get(local.Name)
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = local.ObjectMeta
 		updated.Spec = local.Spec
 
-		original, err := store.StoreProvider.MachineSet(clusterName).Get(updated.Name)
+		original, err := machinesetStore.Get(updated.Name)
 		if err != nil {
 			return err
 		}
-		if err := UpdateNodeGroup(original, updated, clusterName, opts.Owner); err != nil {
+		if err := UpdateNodeGroup(machinesetStore, original, updated); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`nodegroup "%s" replaced`, original.Name))
 		return nil
 	}
 
-	original, err := store.StoreProvider.MachineSet(clusterName).Get(opts.NgName)
+	original, err := machinesetStore.Get(opts.NgName)
 	if err != nil {
 		return err
 	}
 
 	// Check if flags are provided to update
 	if opts.DoNotDelete {
-		updated, err := store.StoreProvider.MachineSet(clusterName).Get(opts.NgName)
+		updated, err := machinesetStore.Get(opts.NgName)
 		if err != nil {
 			return err
 		}
 
-		if err := UpdateNodeGroup(original, updated, clusterName, opts.Owner); err != nil {
+		if err := UpdateNodeGroup(machinesetStore, original, updated); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`nodegroup "%s" updated`, original.Name))
 		return nil
 	}
 
-	return editNodeGroup(opts, original, errOut)
+	return editNodeGroup(machinesetStore, opts, original, errOut)
 }
 
-func editNodeGroup(opts *options.NodeGroupEditConfig, original *clusterv1.MachineSet, errOut io.Writer) error {
+func editNodeGroup(machinesetStore store.MachineSetStore, opts *options.NodeGroupEditConfig, original *clusterv1.MachineSet, errOut io.Writer) error {
 
 	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
@@ -176,7 +178,7 @@ func editNodeGroup(opts *options.NodeGroupEditConfig, original *clusterv1.Machin
 
 			containsError = false
 
-			if err := UpdateNodeGroup(original, updated, opts.ClusterName, opts.Owner); err != nil {
+			if err := UpdateNodeGroup(machinesetStore, original, updated); err != nil {
 				return err
 			}
 
@@ -189,7 +191,7 @@ func editNodeGroup(opts *options.NodeGroupEditConfig, original *clusterv1.Machin
 	return editFn()
 }
 
-func UpdateNodeGroup(original, updated *clusterv1.MachineSet, clusterName, owner string) error {
+func UpdateNodeGroup(machinesetStore store.MachineSetStore, original, updated *clusterv1.MachineSet) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
@@ -231,7 +233,7 @@ func UpdateNodeGroup(original, updated *clusterv1.MachineSet, clusterName, owner
 		return err
 	}
 
-	_, err = store.StoreProvider.MachineSet(clusterName).Update(updated)
+	_, err = machinesetStore.Update(updated)
 	if err != nil {
 		return err
 	}
