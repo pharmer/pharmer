@@ -72,7 +72,7 @@ func ApplyCreate(scope *Scope) error {
 		return errors.Wrap(err, "failed to prepare cloud infra")
 	}
 
-	if !managedProviders.Has(cm.GetCluster().Spec.Config.Cloud.CloudProvider) {
+	if !api.ManagedProviders.Has(cm.GetCluster().Spec.Config.Cloud.CloudProvider) {
 		err = setMasterSKU(scope.Cluster)
 		if err != nil {
 			return errors.Wrap(err, "failed to set master sku")
@@ -106,7 +106,7 @@ func ApplyCreate(scope *Scope) error {
 		return errors.Wrap(err, "failed to create ccm-credential")
 	}
 
-	if !managedProviders.Has(cluster.Spec.Config.Cloud.CloudProvider) {
+	if !api.ManagedProviders.Has(cluster.Spec.Config.Cloud.CloudProvider) {
 		err = applyClusterAPI(scope)
 		if err != nil {
 			return err
@@ -202,7 +202,7 @@ func setMasterSKU(cluster *api.Cluster) error {
 func ApplyScale(s *Scope) error {
 	log.Infoln("Scaling Machine Sets")
 
-	if managedProviders.Has(s.Cluster.CloudProvider()) {
+	if api.ManagedProviders.Has(s.Cluster.CloudProvider()) {
 		return s.CloudManager.ApplyScale()
 	}
 

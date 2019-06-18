@@ -7,6 +7,7 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/ghodss/yaml"
+	"github.com/pharmer/pharmer/apis/v1beta1/aws"
 	"github.com/pharmer/pharmer/cloud"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +37,10 @@ func (igm *EKSNodeGroupManager) Apply() error {
 	found = igm.conn.isStackExists(igm.ng.Name)
 
 	if !found {
-		params := igm.buildstackParams()
+		params, err := igm.buildstackParams()
+		if err != nil {
+			return err
+		}
 		if err = igm.conn.createStack(igm.ng.Name, NodeGroupURL, params, true); err != nil {
 			return err
 		}
@@ -67,7 +71,10 @@ func (igm *EKSNodeGroupManager) Apply() error {
 				return err
 			}
 		} else {
-			params := igm.buildstackParams()
+			params, err := igm.buildstackParams()
+			if err != nil {
+				return err
+			}
 			if err = igm.conn.updateStack(igm.ng.Name, params, true); err != nil {
 				log.Infoln(err)
 			}
@@ -80,8 +87,11 @@ func (igm *EKSNodeGroupManager) Apply() error {
 	return err
 }
 
-func (igm *EKSNodeGroupManager) buildstackParams() map[string]string {
-	providerSpec := igm.conn.Cluster.EKSProviderConfig(igm.ng.Spec.Template.Spec.ProviderSpec.Value.Raw)
+func (igm *EKSNodeGroupManager) buildstackParams() (map[string]string, error) {
+	providerSpec, err := aws.MachineConfigFromProviderSpec(igm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	if err != nil {
+		return nil, err
+	}
 	return map[string]string{
 		"ClusterName":                         igm.conn.Cluster.Name,
 		"NodeGroupName":                       igm.ng.Name,
@@ -94,7 +104,7 @@ func (igm *EKSNodeGroupManager) buildstackParams() map[string]string {
 		"ClusterControlPlaneSecurityGroup":    igm.conn.Cluster.Status.Cloud.EKS.SecurityGroup,
 		"Subnets":                             igm.conn.Cluster.Status.Cloud.EKS.SubnetId,
 		"VpcId":                               igm.conn.Cluster.Status.Cloud.EKS.VpcId,
-	}
+	}, nil
 }
 
 func (igm *EKSNodeGroupManager) deleteNodeAuthConfigMap(arn *string) error {

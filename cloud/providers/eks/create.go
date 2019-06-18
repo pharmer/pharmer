@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/apis/v1beta1/aws"
 	"github.com/pharmer/pharmer/cloud"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
-	spec := &api.EKSMachineProviderSpec{
+	spec := &aws.AWSMachineProviderSpec{
 		InstanceType: sku,
 	}
 
@@ -34,7 +35,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 		EKS: &api.EKSStatus{},
 	}
 
-	return cluster.SetEKSProviderConfig(&cluster.Spec.ClusterAPI, config)
+	return nil
 }
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
