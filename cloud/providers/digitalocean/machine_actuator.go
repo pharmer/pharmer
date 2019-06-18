@@ -2,7 +2,6 @@ package digitalocean
 
 import (
 	"context"
-	"reflect"
 	"strings"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/machine"
-	"sigs.k8s.io/cluster-api/pkg/util"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	//	"k8s.io/client-go/kubernetes"
@@ -106,13 +104,6 @@ func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster,
 		if _, err := do.cm.conn.CreateInstance(do.cm.conn.Cluster, machine, script); err != nil {
 			return errors.Wrap(err, "failed to create instance")
 		}
-	}
-
-	// set machine annotation
-	sm := cloud.NewStatusManager(do.client, do.scheme)
-	err = sm.UpdateInstanceStatus(machine)
-	if err != nil {
-		return errors.Wrap(err, "failed to set machine annotation")
 	}
 
 	// update machine provider status
@@ -232,43 +223,6 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		return do.Create(context.Background(), cluster, goalMachine)
 	}
 
-	sm := cloud.NewStatusManager(do.client, do.scheme)
-	status, err := sm.InstanceStatus(goalMachine)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get instance status of machine %s", goalMachine.Name)
-	}
-
-	currentMachine := (*clusterv1.Machine)(status)
-	if currentMachine == nil {
-		log.Infof("status annotation not set, setting annotation")
-		return sm.UpdateInstanceStatus(goalMachine)
-	}
-
-	if !do.requiresUpdate(currentMachine, goalMachine) {
-		log.Infof("Don't require update")
-		return nil
-	}
-
-	kc, err := do.cm.GetAdminClient()
-	if err != nil {
-		return errors.Wrap(err, "failed to get kubeclient")
-	}
-	upm := cloud.NewUpgradeManager(kc, do.cm.conn.Cluster)
-	if util.IsControlPlaneMachine(currentMachine) {
-		if currentMachine.Spec.Versions.ControlPlane != goalMachine.Spec.Versions.ControlPlane {
-			log.Infof("Doing an in-place upgrade for master.\n")
-			if err := upm.MasterUpgrade(currentMachine, goalMachine); err != nil {
-				return errors.Wrap(err, "failed to upgrade master")
-			}
-		}
-	} else {
-		//TODO(): Do we replace node or inplace upgrade?
-		log.Infof("Doing an in-place upgrade for master.\n")
-		if err := upm.NodeUpgrade(currentMachine, goalMachine); err != nil {
-			return errors.Wrap(err, "failed to upgrade node")
-		}
-	}
-
 	if err := do.updateMachineStatus(goalMachine); err != nil {
 		return errors.Wrap(err, "failed to update machine status")
 	}
@@ -288,15 +242,6 @@ func (do *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluste
 	}
 
 	return i != nil, nil
-}
-
-// The two machines differ in a way that requires an update
-func (do *MachineActuator) requiresUpdate(a *clusterv1.Machine, b *clusterv1.Machine) bool {
-	// Do not want status changes. Do want changes that impact machine provisioning
-	return !reflect.DeepEqual(a.Spec.ObjectMeta, b.Spec.ObjectMeta) ||
-		!reflect.DeepEqual(a.Spec.ProviderSpec, b.Spec.ProviderSpec) ||
-		!reflect.DeepEqual(a.Spec.Versions, b.Spec.Versions) ||
-		a.ObjectMeta.Name != b.ObjectMeta.Name
 }
 
 func getKubeadm(params MachineActuatorParams) DOClientKubeadm {

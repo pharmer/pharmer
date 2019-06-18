@@ -4,13 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -175,21 +172,4 @@ func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 		},
 	}
 	return &cfg, nil
-}
-
-func (cm *ClusterManager) GetSSHConfig(node *corev1.Node) (*api.SSHConfig, error) {
-	cfg := &api.SSHConfig{
-		PrivateKey: cm.Certs.SSHKey.PrivateKey,
-		User:       "ubuntu",
-		HostPort:   int32(22),
-	}
-	for _, addr := range node.Status.Addresses {
-		if addr.Type == corev1.NodeExternalIP {
-			cfg.HostIP = addr.Address
-		}
-	}
-	if net.ParseIP(cfg.HostIP) == nil {
-		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cm.Cluster.Name)
-	}
-	return cfg, nil
 }

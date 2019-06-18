@@ -22,7 +22,8 @@ const (
 type ClusterManager struct {
 	*cloud.Scope
 
-	conn *cloudConnector
+	namer namer
+	conn  *cloudConnector
 }
 
 const (

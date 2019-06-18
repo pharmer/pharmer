@@ -44,11 +44,11 @@ func Apply(opts *options.ApplyConfig, storeProvider store.ResourceInterface) err
 		if err != nil {
 			return err
 		}
+	}
 
-		err = ApplyScale(scope)
-		if err != nil {
-			return errors.Wrap(err, "failed to scale Cluster")
-		}
+	err = ApplyScale(scope)
+	if err != nil {
+		return errors.Wrap(err, "failed to scale Cluster")
 	}
 
 	if cluster.DeletionTimestamp != nil && cluster.Status.Phase != api.ClusterDeleted {
@@ -78,7 +78,7 @@ func ApplyCreate(scope *Scope) error {
 			return errors.Wrap(err, "failed to set master sku")
 		}
 
-		machine, err := GetLeaderMachine(scope.StoreProvider.Machine(scope.Cluster.Name), scope.Cluster.Name)
+		machine, err := getLeaderMachine(scope.StoreProvider.Machine(scope.Cluster.Name), scope.Cluster.Name)
 		if err != nil {
 			return err
 		}
@@ -178,7 +178,7 @@ func setMasterSKU(cluster *api.Cluster) error {
 		return err
 	}
 
-	totalNodes := NodeCount(machineSets)
+	totalNodes := nodeCount(machineSets)
 
 	sku := cm.GetMasterSKU(totalNodes)
 
@@ -199,74 +199,48 @@ func setMasterSKU(cluster *api.Cluster) error {
 	return nil
 }
 
-// TODO: simplify
 func ApplyScale(s *Scope) error {
+	log.Infoln("Scaling Machine Sets")
+
 	if managedProviders.Has(s.Cluster.CloudProvider()) {
 		return s.CloudManager.ApplyScale()
 	}
 
-	log.Infoln("Scaling Machine Sets")
 	cluster := s.Cluster
-	var machineSets []*clusterv1.MachineSet
-	var existingMachineSet []*clusterv1.MachineSet
 	machineSets, err := s.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
-	var bc clusterclient.Client
-	bc, err = kube.GetBooststrapClient(s.Cluster, s.GetCaCertPair())
+	bc, err := kube.GetBooststrapClient(s.Cluster, s.GetCaCertPair())
 	if err != nil {
 		return err
 	}
 
-	var data []byte
+	clusterClient, err := kube.GetClusterAPIClient(s.GetCaCertPair(), s.Cluster)
+	if err != nil {
+		return err
+	}
+
 	for _, machineSet := range machineSets {
 		if machineSet.DeletionTimestamp != nil {
-			machineSet.DeletionTimestamp = nil
-			if data, err = json.Marshal(machineSet); err != nil {
-				return err
-			}
-			if err = bc.Delete(string(data)); err != nil {
+			err = clusterClient.ClusterV1alpha1().MachineSets(machineSet.Namespace).Delete(machineSet.Name, nil)
+			if err != nil {
 				return err
 			}
 			if err = s.StoreProvider.MachineSet(cluster.Name).Delete(machineSet.Name); err != nil {
 				return err
 			}
+			continue
 		}
 
-		if existingMachineSet, err = bc.GetMachineSets(bc.GetContextNamespace()); err != nil {
+		data, err := json.Marshal(machineSet)
+		if err != nil {
 			return err
 		}
-
-		if data, err = json.Marshal(machineSet); err != nil {
+		if err = bc.Apply(string(data)); err != nil {
 			return err
 		}
-		found := false
-		for _, ems := range existingMachineSet {
-			if ems.Name == machineSet.Name {
-				found = true
-				if err = bc.Apply(string(data)); err != nil {
-					return err
-				}
-				break
-			}
-		}
-
-		if !found {
-			if err = bc.CreateMachineSets([]*clusterv1.MachineSet{machineSet}, bc.GetContextNamespace()); err != nil {
-				return err
-			}
-		}
-	}
-
-	_, err = s.StoreProvider.Clusters().UpdateStatus(cluster)
-	if err != nil {
-		return err
-	}
-	_, err = s.StoreProvider.Clusters().Update(cluster)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -334,7 +308,7 @@ func ApplyUpgrade(s *Scope) error {
 	return err
 }
 
-func NodeCount(machineSets []*clusterv1.MachineSet) int32 {
+func nodeCount(machineSets []*clusterv1.MachineSet) int32 {
 	var count int32
 	for _, machineSet := range machineSets {
 		count += *machineSet.Spec.Replicas

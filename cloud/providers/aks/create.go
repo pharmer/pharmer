@@ -64,6 +64,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 		SubnetCIDR:         "10.240.0.0/16",
 		RootPassword:       rand.GeneratePassword(),
 	}
+	cluster.Spec.Config.SSHUserName = "ubuntu"
 
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/appscode/go/term"
 	"github.com/ghodss/yaml"
@@ -242,9 +243,28 @@ func UpdateCluster(clusterStore store.ClusterStore, original, updated *api.Clust
 		return err
 	}
 
-	_, err = cloud.UpdateGeneration(clusterStore, updated)
+	_, err = updateGeneration(clusterStore, updated)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func updateGeneration(clusterStore store.ClusterStore, cluster *api.Cluster) (*api.Cluster, error) {
+	if cluster == nil {
+		return nil, errors.New("missing Cluster")
+	} else if cluster.Name == "" {
+		return nil, errors.New("missing Cluster name")
+	} else if cluster.ClusterConfig().KubernetesVersion == "" {
+		return nil, errors.New("missing Cluster version")
+	}
+
+	existing, err := clusterStore.Get(cluster.Name)
+	if err != nil {
+		return nil, errors.Errorf("Cluster `%s` does not exist. Reason: %v", cluster.Name, err)
+	}
+	cluster.Status = existing.Status
+	cluster.Generation = time.Now().UnixNano()
+
+	return clusterStore.Update(cluster)
 }

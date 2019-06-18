@@ -1,14 +1,11 @@
 package gce
 
 import (
-	"net"
-
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	proconfig "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pkg/errors"
-	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
@@ -16,6 +13,7 @@ import (
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
 	cluster := cm.Cluster
 	config := cluster.Spec.Config
+	config.SSHUserName = cm.namer.AdminUsername()
 
 	spec := clusterapiGCE.GCEMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
@@ -81,24 +79,6 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 
 	// set clusterAPI provider-specs
 	return clusterapiGCE.SetGCEclusterProviderConfig(&cluster.Spec.ClusterAPI, config.Cloud.Project, cm.Certs)
-}
-
-func (cm *ClusterManager) GetSSHConfig(node *core.Node) (*api.SSHConfig, error) {
-	n := namer{cluster: cm.Cluster}
-	cfg := &api.SSHConfig{
-		PrivateKey: cm.Certs.SSHKey.PrivateKey,
-		User:       n.AdminUsername(),
-		HostPort:   int32(22),
-	}
-	for _, addr := range node.Status.Addresses {
-		if addr.Type == core.NodeExternalIP {
-			cfg.HostIP = addr.Address
-		}
-	}
-	if net.ParseIP(cfg.HostIP) == nil {
-		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cm.Cluster.Name)
-	}
-	return cfg, nil
 }
 
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {

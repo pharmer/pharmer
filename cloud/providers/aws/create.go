@@ -2,14 +2,12 @@ package aws
 
 import (
 	"fmt"
-	"net"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
-	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -63,6 +61,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 	cluster.Spec.Config.APIServerExtraArgs = map[string]string{
 		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
 	}
+	cluster.Spec.Config.SSHUserName = "ubuntu"
 
 	// Init status
 	cluster.Status = api.PharmerClusterStatus{
@@ -114,23 +113,6 @@ func (cm *ClusterManager) SetClusterProviderConfig() error {
 	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
 
 	return nil
-}
-
-func (cm *ClusterManager) GetSSHConfig(node *core.Node) (*api.SSHConfig, error) {
-	cfg := &api.SSHConfig{
-		PrivateKey: cm.Certs.SSHKey.PrivateKey,
-		User:       "ubuntu",
-		HostPort:   int32(22),
-	}
-	for _, addr := range node.Status.Addresses {
-		if addr.Type == core.NodeExternalIP {
-			cfg.HostIP = addr.Address
-		}
-	}
-	if net.ParseIP(cfg.HostIP) == nil {
-		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cm.Cluster.Name)
-	}
-	return cfg, nil
 }
 
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {

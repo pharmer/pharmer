@@ -3,7 +3,6 @@ package linode
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -114,13 +113,6 @@ func (li *MachineActuator) Create(ctx context.Context, cluster *clusterv1.Cluste
 		}
 	}
 
-	// set machine annotation
-	sm := cloud.NewStatusManager(li.client, li.scheme)
-	err = sm.UpdateInstanceStatus(machine)
-	if err != nil {
-		return errors.Wrap(err, "failed to set machine annotation")
-	}
-
 	// update machine provider status
 	err = li.updateMachineStatus(machine)
 	if err != nil {
@@ -206,43 +198,6 @@ func (li *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		return li.Create(context.Background(), cluster, goalMachine)
 	}
 
-	sm := cloud.NewStatusManager(li.client, li.scheme)
-	status, err := sm.InstanceStatus(goalMachine)
-	if err != nil {
-		return err
-	}
-
-	currentMachine := (*clusterv1.Machine)(status)
-	if currentMachine == nil {
-		log.Infof("status annotation not set, setting annotation")
-		return sm.UpdateInstanceStatus(goalMachine)
-	}
-
-	if !li.requiresUpdate(currentMachine, goalMachine) {
-		log.Infof("Don't require update")
-		return nil
-	}
-
-	kc, err := li.cm.GetAdminClient()
-	if err != nil {
-		return errors.Wrap(err, "failed to get kubeclient")
-	}
-	upm := cloud.NewUpgradeManager(kc, li.cm.Cluster)
-	if util.IsControlPlaneMachine(currentMachine) {
-		if currentMachine.Spec.Versions.ControlPlane != goalMachine.Spec.Versions.ControlPlane {
-			log.Infof("Doing an in-place upgrade for master.\n")
-			if err := upm.MasterUpgrade(currentMachine, goalMachine); err != nil {
-				return errors.Wrap(err, "failed to upgrade master")
-			}
-		}
-	} else {
-		//TODO(): Do we replace node or inplace upgrade?
-		log.Infof("Doing an in-place upgrade for master.\n")
-		if err := upm.NodeUpgrade(currentMachine, goalMachine); err != nil {
-			return errors.Wrap(err, "failed to upgrade node")
-		}
-	}
-
 	if err := li.updateMachineStatus(goalMachine); err != nil {
 		return errors.Wrap(err, "failed to update machine status")
 	}
@@ -296,13 +251,4 @@ func (li *MachineActuator) updateMachineStatus(machine *clusterv1.Machine) error
 	}
 
 	return nil
-}
-
-// The two machines differ in a way that requires an update
-func (li *MachineActuator) requiresUpdate(a *clusterv1.Machine, b *clusterv1.Machine) bool {
-	// Do not want status changes. Do want changes that impact machine provisioning
-	return !reflect.DeepEqual(a.Spec.ObjectMeta, b.Spec.ObjectMeta) ||
-		!reflect.DeepEqual(a.Spec.ProviderSpec, b.Spec.ProviderSpec) ||
-		!reflect.DeepEqual(a.Spec.Versions, b.Spec.Versions) ||
-		a.ObjectMeta.Name != b.ObjectMeta.Name
 }

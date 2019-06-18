@@ -4,7 +4,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -14,10 +13,6 @@ type ClusterManager struct {
 
 	conn  *cloudConnector
 	namer namer
-}
-
-func (cm *ClusterManager) GetSSHConfig(node *v1.Node) (*api.SSHConfig, error) {
-	panic("implement me")
 }
 
 func (cm *ClusterManager) ApplyScale() error {

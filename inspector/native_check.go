@@ -2,7 +2,6 @@ package inspector
 
 import (
 	"github.com/appscode/go/log"
-
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"

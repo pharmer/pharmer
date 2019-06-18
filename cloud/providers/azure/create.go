@@ -76,6 +76,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 		log.Infof("Invalid credential: %v", err)
 		return err
 	}
+	config.SSHUserName = "capi"
 
 	config.Cloud.Azure = &api.AzureSpec{
 		StorageAccountName:     n.GenStorageAccountName(),

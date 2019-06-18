@@ -45,6 +45,7 @@ type ClusterConfig struct {
 	Cloud             CloudSpec `json:"cloud"`
 	KubernetesVersion string    `json:"kubernetesVersion,omitempty"`
 	CredentialName    string    `json:"credentialName,omitempty"`
+	SSHUserName       string    `json:"sshUserName,omitempty"`
 
 	KubeletExtraArgs           map[string]string `json:"kubeletExtraArgs,omitempty"`
 	APIServerExtraArgs         map[string]string `json:"apiServerExtraArgs,omitempty"`

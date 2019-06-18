@@ -2,14 +2,11 @@ package gke
 
 import (
 	"encoding/json"
-	"net"
 
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/apis/v1beta1/gce"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pkg/errors"
-	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -44,12 +41,13 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 
 func (cm *ClusterManager) SetDefaultCluster() error {
 	cluster := cm.Cluster
-	n := namer{cluster: cluster}
 	config := &cluster.Spec.Config
 
 	config.Cloud.InstanceImage = "Ubuntu"
+	config.SSHUserName = cm.namer.AdminUsername()
+
 	config.Cloud.GKE = &api.GKESpec{
-		UserName:    n.AdminUsername(),
+		UserName:    cm.namer.AdminUsername(),
 		Password:    rand.GeneratePassword(),
 		NetworkName: "default",
 	}
@@ -59,22 +57,4 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 
 func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, cloud.ErrNotImplemented
-}
-
-func (cm *ClusterManager) GetSSHConfig(node *core.Node) (*api.SSHConfig, error) {
-	n := namer{cluster: cm.Cluster}
-	cfg := &api.SSHConfig{
-		PrivateKey: cm.Certs.SSHKey.PrivateKey,
-		User:       n.AdminUsername(),
-		HostPort:   int32(22),
-	}
-	for _, addr := range node.Status.Addresses {
-		if addr.Type == core.NodeExternalIP {
-			cfg.HostIP = addr.Address
-		}
-	}
-	if net.ParseIP(cfg.HostIP) == nil {
-		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cm.Cluster.Name)
-	}
-	return cfg, nil
 }

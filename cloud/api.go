@@ -3,7 +3,6 @@ package cloud
 import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
-	core "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -24,7 +23,6 @@ type Interface interface {
 
 	AddToManager(m manager.Manager) error
 
-	SSHGetter
 	ProviderKubeConfig
 
 	GetCloudConnector() error
@@ -44,10 +42,6 @@ type Interface interface {
 	GetMasterSKU(totalNodes int32) string
 
 	GetClusterAPIComponents() (string, error)
-}
-
-type SSHGetter interface {
-	GetSSHConfig(node *core.Node) (*api.SSHConfig, error)
 }
 
 type UpgradeManager interface {

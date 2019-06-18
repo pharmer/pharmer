@@ -97,13 +97,10 @@ func (ca *ClusterAPI) Apply(controllerManager string) error {
 		return errors.Wrap(err, "failed to update provider status")
 	}
 
-	masterMachine, err := GetLeaderMachine(ca.StoreProvider.Machine(ca.Cluster.Name), ca.Cluster.Name)
+	masterMachine, err := getLeaderMachine(ca.StoreProvider.Machine(ca.Cluster.Name), ca.Cluster.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to get leader machine")
 	}
-
-	masterMachine.Annotations = make(map[string]string)
-	masterMachine.Annotations[InstanceStatusAnnotationKey] = ""
 
 	log.Infof("Adding master machines...")
 	err = phases.ApplyMachines(ca.bootstrapClient, namespace, []*clusterv1.Machine{masterMachine})
@@ -167,6 +164,10 @@ func (ca *ClusterAPI) CreateMachineController(controllerManager string) error {
 }
 
 func (ca *ClusterAPI) CreatePharmerSecret() error {
+	if ca.externalController {
+		return nil
+	}
+
 	cluster := ca.Cluster
 	providerConfig := cluster.ClusterConfig()
 
@@ -189,12 +190,10 @@ func (ca *ClusterAPI) CreatePharmerSecret() error {
 		return err
 	}
 
-	if !ca.externalController {
-		err := kube.CreateCredentialSecret(ca.AdminClient, cluster.CloudProvider(), ca.namespace, ca.CredentialData)
-		if err != nil {
-			return err
-		}
-	}
+	//	err := kube.CreateCredentialSecret(ca.AdminClient, cluster.CloudProvider(), ca.namespace, ca.CredentialData)
+	//	if err != nil {
+	//		return err
+	//	}
 
 	clusterData, err := json.MarshalIndent(cluster, "", "  ")
 	if err != nil {
