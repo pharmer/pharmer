@@ -29,17 +29,20 @@ func newCmdController() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err = store.SetProvider(cmd, ownerID)
+			storeProvider, err := store.GetStoreProvider(cmd, "")
+			term.ExitOnError(err)
+
+			cluster, err := storeProvider.Clusters().Get(clusterName)
 			if err != nil {
 				term.Fatalln(err)
 			}
 
-			cluster, err := store.StoreProvider.Clusters().Get(clusterName)
-			if err != nil {
-				term.Fatalln(err)
-			}
+			scope := cloud.NewScope(cloud.NewScopeParams{
+				Cluster:       cluster,
+				StoreProvider: storeProvider,
+			})
 
-			cm, err := cloud.GetCloudManager(cluster)
+			cm, err := scope.GetCloudManager()
 			if err != nil {
 				term.Fatalln(err)
 			}

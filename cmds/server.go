@@ -7,6 +7,7 @@ import (
 	"github.com/nats-io/stan.go"
 	"github.com/pharmer/pharmer/apiserver"
 	"github.com/pharmer/pharmer/config"
+	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 )
 
@@ -20,9 +21,6 @@ func newCmdServer() *cobra.Command {
 		Example:           "pharmer serve",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			/*if err := opts.ValidateFlags(cmd, args); err != nil {
-				term.Fatalln(err)
-			}*/
 
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
@@ -42,7 +40,10 @@ func newCmdServer() *cobra.Command {
 			defer apiserver.LogCloser(conn)
 			term.ExitOnError(err)
 
-			err = runServer(conn)
+			storeProvider, err := store.NewStoreInterface(cfg)
+			term.ExitOnError(err)
+
+			err = runServer(storeProvider, conn)
 
 			//err = http.ListenAndServe(":4155", route(ctx, conn))
 			term.ExitOnError(err)
@@ -57,19 +58,19 @@ func newCmdServer() *cobra.Command {
 
 //const ClientID = "worker-x"
 
-func runServer(conn stan.Conn) error {
+func runServer(storeProvider store.Interface, conn stan.Conn) error {
 
 	//defer apiserver.LogCloser(conn)
 
 	server := apiserver.New(conn)
-	err := server.CreateCluster()
+	err := server.CreateCluster(storeProvider)
 	if err != nil {
 		return err
 	}
 
-	if err = server.DeleteCluster(); err != nil {
+	if err = server.DeleteCluster(storeProvider); err != nil {
 		return err
 	}
 
-	return server.RetryCluster()
+	return server.RetryCluster(storeProvider)
 }
