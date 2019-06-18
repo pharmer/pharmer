@@ -68,7 +68,7 @@ func runGetNodeGroup(storeProvider store.ResourceInterface, opts *options.NodeGr
 	}
 
 	for _, cluster := range clusterList {
-		nodegroups, err := getMachineSetList(storeProvider, cluster, opts.NodeGroups...)
+		nodegroups, err := getMachineSetList(storeProvider.MachineSet(cluster), opts.NodeGroups...)
 		if err != nil {
 			return err
 		}
@@ -88,15 +88,15 @@ func runGetNodeGroup(storeProvider store.ResourceInterface, opts *options.NodeGr
 
 	}
 
-	w.Flush()
-	return nil
+	return w.Flush()
 }
 
-func getMachineSetList(storeProvider store.ResourceInterface, cluster string, args ...string) ([]*clusterv1.MachineSet, error) {
+// TODO: move?
+func getMachineSetList(machinesetStore store.MachineSetStore, args ...string) ([]*clusterv1.MachineSet, error) {
 	var machineSetList []*clusterv1.MachineSet
 	if len(args) != 0 {
 		for _, arg := range args {
-			ms, err := storeProvider.MachineSet(cluster).Get(arg)
+			ms, err := machinesetStore.Get(arg)
 			if err != nil {
 				return nil, err
 			}
@@ -104,7 +104,7 @@ func getMachineSetList(storeProvider store.ResourceInterface, cluster string, ar
 		}
 	} else {
 		var err error
-		machineSetList, err = storeProvider.MachineSet(cluster).List(metav1.ListOptions{})
+		machineSetList, err = machinesetStore.List(metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}

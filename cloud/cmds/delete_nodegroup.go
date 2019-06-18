@@ -27,11 +27,16 @@ func NewCmdDeleteNodeGroup() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			nodeGroups, err := GetMachineSetList(opts.ClusterName, args...)
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			term.ExitOnError(err)
+
+			machinesetStore := storeProvider.MachineSet(opts.ClusterName)
+
+			nodeGroups, err := getMachineSetList(machinesetStore, args...)
 			term.ExitOnError(err)
 
 			for _, ng := range nodeGroups {
-				err := DeleteMachineSet(opts.ClusterName, ng.Name)
+				err := DeleteMachineSet(machinesetStore, ng.Name)
 				term.ExitOnError(err)
 			}
 		},
@@ -40,20 +45,17 @@ func NewCmdDeleteNodeGroup() *cobra.Command {
 
 	return cmd
 }
-func DeleteMachineSet(clusterName, setName string) error {
-	if clusterName == "" {
-		return errors.New("missing Cluster name")
-	}
+func DeleteMachineSet(machinesetStore store.MachineSetStore, setName string) error {
 	if setName == "" {
 		return errors.New("missing machineset name")
 	}
 
-	mSet, err := store.StoreProvider.MachineSet(clusterName).Get(setName)
+	mSet, err := machinesetStore.Get(setName)
 	if err != nil {
 		return errors.Errorf(`machinset not found in pharmer db, try using kubectl`)
 	}
 	tm := metav1.Now()
 	mSet.DeletionTimestamp = &tm
-	_, err = store.StoreProvider.MachineSet(clusterName).Update(mSet)
+	_, err = machinesetStore.Update(mSet)
 	return err
 }

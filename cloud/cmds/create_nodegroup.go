@@ -27,12 +27,12 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err = store.SetProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
 			if err != nil {
 				term.Fatalln(err)
 			}
 
-			err = runCreateNodegroup(opts)
+			err = runCreateNodegroup(storeProvider, opts)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -43,40 +43,6 @@ func NewCmdCreateNodeGroup() *cobra.Command {
 	return cmd
 }
 
-func runCreateNodegroup(opts *options.NodeGroupCreateConfig) error {
-	cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
-	if err != nil {
-		return err
-	}
-
-	cm, err := cloud.GetCloudManager(cluster)
-	if err != nil {
-		return err
-	}
-
-	err = cloud.CreateMachineSets(store.StoreProvider, cm, opts)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func runCreateNodegroup(opts *options.NodeGroupCreateConfig) error {
-	cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
-	if err != nil {
-		return err
-	}
-
-	cm, err := cloud.GetCloudManager(cluster)
-	if err != nil {
-		return err
-	}
-
-	err = cloud.CreateMachineSets(store.StoreProvider, cm, opts)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func runCreateNodegroup(storeProvider store.ResourceInterface, opts *options.NodeGroupCreateConfig) error {
+	return cloud.CreateMachineSets(storeProvider, opts)
 }

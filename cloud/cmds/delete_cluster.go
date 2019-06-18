@@ -25,13 +25,13 @@ func NewCmdDeleteCluster() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err := store.SetProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
 			if err != nil {
 				term.Fatalln(err)
 			}
 
 			for _, clusterName := range opts.Clusters {
-				_, err := cloud.Delete(clusterName)
+				_, err := cloud.Delete(storeProvider.Clusters(), clusterName)
 				term.ExitOnError(err)
 			}
 		},
