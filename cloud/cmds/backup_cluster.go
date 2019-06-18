@@ -5,8 +5,9 @@ import (
 
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/rest"
@@ -28,19 +29,22 @@ func NewCmdBackup() *cobra.Command {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
 				term.Fatalln(err)
 			}
+
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			term.ExitOnError(err)
+
 			restConfig, err := SearchLocalKubeConfig(opts.ClusterName)
 			if err != nil || restConfig == nil {
-				cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
+				cluster, err := storeProvider.Clusters().Get(opts.ClusterName)
 				if err != nil {
 					term.Fatalln(err)
 				}
 
-				cm, err := cloud.Create(store.StoreProvider, cluster)
-				if err != nil {
-					term.Fatalln(err)
-				}
+				caCert, caKey, err := storeProvider.Certificates(cluster.Name).Get("ca")
+				term.ExitOnError(err)
 
-				c2, err := cloud.GetAdminConfig(cm)
+				c2, err := kube.GetAdminConfig(cluster, &certificates.CertKeyPair{Cert: caCert, Key: caKey})
+
 				if err != nil {
 					term.Fatalln(err)
 				}

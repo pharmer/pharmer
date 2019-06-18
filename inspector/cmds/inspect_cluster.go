@@ -1,13 +1,12 @@
 package cmds
 
 import (
-	"context"
-
 	"github.com/appscode/go/flags"
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/inspector"
+	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 )
 
@@ -29,13 +28,20 @@ func NewCmdInspectCluster() *cobra.Command {
 			}
 
 			clusterName, _ := cmd.Flags().GetString("cluster")
-			ctx := context.Background()
 
-			cluster, err := cloud.GetCluster(clusterName)
-			if err != nil {
-				term.Fatalln(err)
-			}
-			inspect, err := inspector.New(ctx, cluster, "")
+			storeProvider, err := store.GetStoreProvider(cmd, "")
+			term.ExitOnError(err)
+
+			cluster, err := storeProvider.Clusters().Get(clusterName)
+			term.ExitOnError(err)
+
+			caCert, caKey, err := storeProvider.Certificates(clusterName).Get("ca")
+			term.ExitOnError(err)
+
+			inspect, err := inspector.New(cluster, &certificates.CertKeyPair{
+				Cert: caCert,
+				Key:  caKey,
+			})
 			if err != nil {
 				term.Fatalln(err)
 			}
