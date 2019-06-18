@@ -1,7 +1,7 @@
 package inspector
 
 import (
-	"fmt"
+	"github.com/appscode/go/log"
 
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -26,13 +26,12 @@ func (i *Inspector) CheckHelthStatus() error {
 		for _, status := range resp.Items {
 			for _, cond := range status.Conditions {
 				if cond.Type == core.ComponentHealthy && cond.Status != core.ConditionTrue {
+					log.Infof("Component %v is in condition %v with status %v", status.Name, cond.Type, cond.Status)
 					return false, nil
 				}
-				term.Infoln(fmt.Sprintf("Component %v is in condition %v with status %v", status.Name, cond.Type, cond.Status))
-				return true, nil
 			}
 		}
-		return false, nil
+		return true, nil
 	})
 	if err != nil {
 		return err

@@ -44,7 +44,7 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			if err := runUpdateCluster(storeProvider, opts, outErr); err != nil {
+			if err := runUpdateCluster(storeProvider.Clusters(), opts, outErr); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -54,7 +54,7 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func runUpdateCluster(storeProvider store.ResourceInterface, opts *options.ClusterEditConfig, errOut io.Writer) error {
+func runUpdateCluster(clusterStore store.ClusterStore, opts *options.ClusterEditConfig, errOut io.Writer) error {
 	// If file is provided
 	if opts.File != "" {
 		fileName := opts.File
@@ -64,25 +64,25 @@ func runUpdateCluster(storeProvider store.ResourceInterface, opts *options.Clust
 			return err
 		}
 
-		updated, err := storeProvider.Clusters().Get(local.Name)
+		updated, err := clusterStore.Get(local.Name)
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = local.ObjectMeta
 		updated.Spec = local.Spec
 
-		original, err := storeProvider.Clusters().Get(updated.Name)
+		original, err := clusterStore.Get(updated.Name)
 		if err != nil {
 			return err
 		}
-		if err := UpdateCluster(original, updated); err != nil {
+		if err := UpdateCluster(clusterStore, original, updated); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`cluster "%s" replaced`, original.Name))
 		return nil
 	}
 
-	original, err := storeProvider.Clusters().Get(opts.ClusterName)
+	original, err := clusterStore.Get(opts.ClusterName)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func runUpdateCluster(storeProvider store.ResourceInterface, opts *options.Clust
 	// Check if flags are provided to update
 	// TODO: Provide list of flag names. If any of them is provided, update
 	if opts.CheckForUpdateFlags() {
-		updated, err := storeProvider.Clusters().Get(opts.ClusterName)
+		updated, err := clusterStore.Get(opts.ClusterName)
 		if err != nil {
 			return err
 		}
@@ -100,17 +100,17 @@ func runUpdateCluster(storeProvider store.ResourceInterface, opts *options.Clust
 			updated.Spec.Config.KubernetesVersion = opts.KubernetesVersion
 		}
 
-		if err := UpdateCluster(original, updated); err != nil {
+		if err := UpdateCluster(clusterStore, original, updated); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`cluster "%s" updated`, original.Name))
 		return nil
 	}
 
-	return editCluster(opts, original, errOut)
+	return editCluster(clusterStore, opts, original, errOut)
 }
 
-func editCluster(opts *options.ClusterEditConfig, original *api.Cluster, errOut io.Writer) error {
+func editCluster(clusterStore store.ClusterStore, opts *options.ClusterEditConfig, original *api.Cluster, errOut io.Writer) error {
 	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
 		return err
@@ -187,7 +187,7 @@ func editCluster(opts *options.ClusterEditConfig, original *api.Cluster, errOut 
 
 			containsError = false
 
-			if err := UpdateCluster(original, updated); err != nil {
+			if err := UpdateCluster(clusterStore, original, updated); err != nil {
 				return err
 			}
 
@@ -200,7 +200,7 @@ func editCluster(opts *options.ClusterEditConfig, original *api.Cluster, errOut 
 	return editFn()
 }
 
-func UpdateCluster(original, updated *api.Cluster) error {
+func UpdateCluster(clusterStore store.ClusterStore, original, updated *api.Cluster) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
@@ -242,7 +242,7 @@ func UpdateCluster(original, updated *api.Cluster) error {
 		return err
 	}
 
-	//_, err = cloud.UpdateSpec(updated)
+	_, err = cloud.UpdateGeneration(clusterStore, updated)
 	if err != nil {
 		return err
 	}
