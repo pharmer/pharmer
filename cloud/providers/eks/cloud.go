@@ -322,27 +322,6 @@ func (conn *cloudConnector) updateStack(name string, params map[string]string, w
 	return conn.WaitForStackOperation(name, cloudformation.StackStatusUpdateComplete)
 }
 
-func (conn *cloudConnector) detectUbuntuImage() error {
-	conn.Cluster.Spec.Config.Cloud.OS = "ubuntu"
-	r1, err := conn.ec2.DescribeImages(&_ec2.DescribeImagesInput{
-		Owners: []*string{StringP("099720109477")},
-		Filters: []*_ec2.Filter{
-			{
-				Name: StringP("name"),
-				Values: []*string{
-					StringP("ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-20170619.1"),
-				},
-			},
-		},
-	})
-	if err != nil {
-		return err
-	}
-	conn.Cluster.Spec.Config.Cloud.InstanceImage = *r1.Images[0].ImageId
-	log.Infof("Ubuntu image with %v detected", conn.Cluster.Spec.Config.Cloud.InstanceImage)
-	return nil
-}
-
 func (conn *cloudConnector) getPublicKey() (bool, error) {
 	resp, err := conn.ec2.DescribeKeyPairs(&_ec2.DescribeKeyPairsInput{
 		KeyNames: types.StringPSlice([]string{conn.Cluster.Spec.Config.Cloud.SSHKeyName}),

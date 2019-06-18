@@ -12,16 +12,15 @@ func (cm *ClusterManager) PrepareCloud() error {
 	var found bool
 	var err error
 
+	if cm.Cluster.Spec.Config.Cloud.InstanceImage, err = cm.conn.DetectInstanceImage(); err != nil {
+		return err
+	}
+
 	found = cm.conn.isStackExists(cm.namer.GetStackServiceRole())
 	if !found {
 		if err = cm.conn.createStackServiceRole(); err != nil {
 			return err
 		}
-	}
-
-	_, err = cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
-	if err != nil {
-		return nil
 	}
 
 	found, _ = cm.conn.getPublicKey()
@@ -37,11 +36,6 @@ func (cm *ClusterManager) PrepareCloud() error {
 		if err = cm.conn.createClusterVPC(); err != nil {
 			return err
 		}
-	}
-
-	_, err = cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
-	if err != nil {
-		return nil
 	}
 
 	found = cm.conn.isControlPlaneExists(cm.Cluster.Name)
