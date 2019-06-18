@@ -42,7 +42,7 @@ type cloudConnector struct {
 	updateService  *rupdate.Service
 }
 
-func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
+func newconnector(cm *ClusterManager) (*cloudConnector, error) {
 	cred, err := cm.StoreProvider.Credentials().Get(cm.Cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data
 func (cm *ClusterManager) GetCloudConnector() error {
 	var err error
 
-	if cm.conn, err = NewConnector(cm); err != nil {
+	if cm.conn, err = newconnector(cm); err != nil {
 		return err
 	}
 

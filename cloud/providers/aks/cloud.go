@@ -30,7 +30,7 @@ type cloudConnector struct {
 	managedClient          ms.ManagedClustersClient
 }
 
-func newConnector(cm *ClusterManager) (*cloudConnector, error) {
+func newconnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
 	cred, err := cm.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {

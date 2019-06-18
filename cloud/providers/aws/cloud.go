@@ -46,7 +46,7 @@ type cloudConnector struct {
 	s3        *_s3.S3
 }
 
-func newConnector(cm *ClusterManager) (*cloudConnector, error) {
+func newconnector(cm *ClusterManager) (*cloudConnector, error) {
 	cred, err := cm.StoreProvider.Credentials().Get(cm.Cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 
 func (cm *ClusterManager) GetCloudConnector() error {
 	var err error
-	if cm.conn, err = newConnector(cm); err != nil {
+	if cm.conn, err = newconnector(cm); err != nil {
 		return err
 	}
 

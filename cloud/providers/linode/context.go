@@ -66,7 +66,7 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 func (cm *ClusterManager) GetCloudConnector() error {
 	var err error
 
-	if cm.conn, err = NewConnector(cm); err != nil {
+	if cm.conn, err = newconnector(cm); err != nil {
 		return err
 	}
 

@@ -97,7 +97,7 @@ func (cm *ClusterManager) GetEKSAdminClient() (kubernetes.Interface, error) {
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 	cluster := cm.Cluster
 	var err error
-	cm.conn, err = newConnector(cm)
+	cm.conn, err = newconnector(cm)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 }
 
 func (cm *ClusterManager) GetCloudConnector() error {
-	conn, err := newConnector(cm)
+	conn, err := newconnector(cm)
 	cm.conn = conn
 	return err
 }

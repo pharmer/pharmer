@@ -52,7 +52,7 @@ func (cm *ClusterManager) GetCloudConnector() error {
 	if cm.conn != nil {
 		return nil
 	}
-	conn, err := NewConnector(cm)
+	conn, err := newconnector(cm)
 	cm.conn = conn
 	return err
 }

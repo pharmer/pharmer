@@ -26,7 +26,7 @@ type cloudConnector struct {
 	computeService   *compute.Service
 }
 
-func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
+func newconnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
 	cred, err := cm.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {

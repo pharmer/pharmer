@@ -28,7 +28,7 @@ type cloudConnector struct {
 	client *linodego.Client
 }
 
-func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
+func newconnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
 
 	cred, err := cm.GetCredential()
@@ -83,7 +83,7 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 //		return conn, err
 //	}
 //
-//	if conn, err = NewConnector(cm); err != nil {
+//	if conn, err = newconnector(cm); err != nil {
 //		return nil, err
 //	}
 //	return conn, nil

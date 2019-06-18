@@ -42,7 +42,7 @@ type cloudConnector struct {
 	storageClient           storage.AccountsClient
 }
 
-func newConnector(cm *ClusterManager) (*cloudConnector, error) {
+func newconnector(cm *ClusterManager) (*cloudConnector, error) {
 	cred, err := cm.StoreProvider.Credentials().Get(cm.Cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err

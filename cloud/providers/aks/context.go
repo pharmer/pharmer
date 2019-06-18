@@ -51,7 +51,7 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 }
 
 func (cm *ClusterManager) GetCloudConnector() error {
-	conn, err := newConnector(cm)
+	conn, err := newconnector(cm)
 	cm.conn = conn
 	return err
 }
@@ -122,7 +122,7 @@ func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 	var err error
 	cluster := cm.Cluster
 	cm.namer = namer{cluster: cluster}
-	if cm.conn, err = newConnector(cm); err != nil {
+	if cm.conn, err = newconnector(cm); err != nil {
 		return nil, err
 	}
 

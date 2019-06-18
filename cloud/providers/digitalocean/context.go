@@ -56,7 +56,7 @@ func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 func (cm *ClusterManager) GetCloudConnector() error {
 	var err error
 
-	if cm.conn, err = newConnector(cm); err != nil {
+	if cm.conn, err = newconnector(cm); err != nil {
 		return err
 	}
 

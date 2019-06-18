@@ -32,7 +32,7 @@ type cloudConnector struct {
 	namer  namer
 }
 
-func newConnector(cm *ClusterManager) (*cloudConnector, error) {
+func newconnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
 
 	cred, err := cm.StoreProvider.Credentials().Get(cluster.ClusterConfig().CredentialName)
