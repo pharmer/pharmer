@@ -20,12 +20,23 @@ type CloudManagerInterface interface {
 	GetCloudManager() (Interface, error)
 }
 
+var _ CloudManagerInterface = &Scope{}
+
 type Scope struct {
-	Cluster       *api.Cluster
-	Certs         *certificates.Certificates
-	StoreProvider store.ResourceInterface
-	CloudManager  Interface
-	AdminClient   kubernetes.Interface
+	Cluster        *api.Cluster
+	Certs          *certificates.Certificates
+	CredentialData map[string]string
+	StoreProvider  store.ResourceInterface
+	CloudManager   Interface
+	AdminClient    kubernetes.Interface
+}
+
+func (s *Scope) GetCredential() (*cloudapi.Credential, error) {
+	return s.StoreProvider.Credentials().Get(s.Cluster.Spec.Config.CredentialName)
+}
+
+func (s *Scope) GetCluster() *api.Cluster {
+	return s.Cluster
 }
 
 func (s *Scope) GetCloudManager() (Interface, error) {
@@ -33,7 +44,7 @@ func (s *Scope) GetCloudManager() (Interface, error) {
 		return s.CloudManager, nil
 	}
 	var err error
-	s.CloudManager, err = GetCloudManager(s.Cluster)
+	s.CloudManager, err = GetCloudManager(s)
 	return s.CloudManager, err
 }
 

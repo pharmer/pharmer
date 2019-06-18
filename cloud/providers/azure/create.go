@@ -8,7 +8,6 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +16,7 @@ import (
 
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
 	cluster := cm.Cluster
-	pubkey, privkey, err := store.StoreProvider.SSHKeys(cluster.Name).Get(cluster.GenSSHKeyExternalID())
+	pubkey, privkey, err := cm.StoreProvider.SSHKeys(cluster.Name).Get(cluster.GenSSHKeyExternalID())
 	if err != nil {
 		return clusterapi.ProviderSpec{}, errors.Wrap(err, "failed to get ssh keys")
 	}
@@ -68,7 +67,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 	config.APIServerExtraArgs["cloud-config"] = "/etc/kubernetes/azure.json"
 
 	credentialName := cluster.Spec.Config.CredentialName
-	cred, err := store.StoreProvider.Credentials().Get(credentialName)
+	cred, err := cm.StoreProvider.Credentials().Get(credentialName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get credential %q", credentialName)
 	}

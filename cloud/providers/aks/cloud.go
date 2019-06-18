@@ -17,12 +17,11 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 )
 
 type cloudConnector struct {
-	*cloud.CloudManager
+	*cloud.Scope
 
 	namer namer
 
@@ -33,7 +32,7 @@ type cloudConnector struct {
 
 func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
-	cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
+	cred, err := cm.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +65,7 @@ func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 	managedClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
 	return &cloudConnector{
-		CloudManager:           cm.CloudManager,
+		Scope:                  cm.Scope,
 		namer:                  cm.namer,
 		availabilitySetsClient: availabilitySetsClient,
 		groupsClient:           groupsClient,
@@ -97,7 +96,7 @@ func (conn *cloudConnector) deleteResourceGroup() error {
 }
 
 func (conn *cloudConnector) upsertAKS(agentPools []cs.ManagedClusterAgentPoolProfile) error {
-	cred, err := store.StoreProvider.Credentials().Get(conn.Cluster.Spec.Config.CredentialName)
+	cred, err := conn.StoreProvider.Credentials().Get(conn.Cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return err
 	}

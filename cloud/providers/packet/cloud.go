@@ -10,7 +10,6 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -18,14 +17,14 @@ import (
 )
 
 type cloudConnector struct {
-	*cloud.CloudManager
+	*cloud.Scope
 	client *packngo.Client
 }
 
 func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
 
-	cred, err := store.StoreProvider.Credentials().Get(cluster.ClusterConfig().CredentialName)
+	cred, err := cm.GetCredential()
 	if err != nil {
 		return nil, err
 	}
@@ -37,8 +36,8 @@ func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster.Spec.Config.Cloud.Project = typed.ProjectID()
 
 	return &cloudConnector{
-		CloudManager: cm.CloudManager,
-		client:       packngo.NewClientWithAuth("", typed.APIKey(), nil),
+		Scope:  cm.Scope,
+		client: packngo.NewClientWithAuth("", typed.APIKey(), nil),
 	}, nil
 }
 

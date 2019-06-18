@@ -8,7 +8,6 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -250,12 +249,7 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		return nil
 	}
 
-	pharmerCluster, err := store.StoreProvider.Clusters().Get(cluster.Name)
-	if err != nil {
-		return errors.Wrap(err, "failed to get pharmercluster")
-	}
-
-	kc, err := cloud.GetKubernetesClient(do.cm, pharmerCluster)
+	kc, err := do.cm.GetAdminClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to get kubeclient")
 	}

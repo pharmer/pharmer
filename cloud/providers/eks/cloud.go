@@ -19,14 +19,13 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	version "gomodules.xyz/version"
 	"k8s.io/apimachinery/pkg/util/wait" //"github.com/pharmer/pharmer/cloud/providers/eks/assets"
 )
 
 type cloudConnector struct {
-	*cloud.CloudManager
+	*cloud.Scope
 	namer namer
 
 	ec2 *_ec2.EC2
@@ -38,7 +37,7 @@ type cloudConnector struct {
 
 func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
-	cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
+	cred, err := cm.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +55,7 @@ func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 		return nil, err
 	}
 	conn := cloudConnector{
-		CloudManager: cm.CloudManager,
+		Scope: cm.Scope,
 		namer: namer{
 			cluster: cm.Cluster,
 		},

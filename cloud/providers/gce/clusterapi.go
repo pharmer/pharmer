@@ -9,13 +9,12 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 	config := cm.Cluster.ClusterConfig()
-	cred, err := store.StoreProvider.Credentials().Get(config.CredentialName)
+	cred, err := cm.GetCredential()
 	if err != nil {
 		return "", err
 	}

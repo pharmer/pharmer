@@ -6,7 +6,6 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -18,7 +17,7 @@ func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token s
 	// ref: https://kubernetes.io/docs/admin/kubeadm/#cloud-provider-integrations-experimental
 	td.KubeletExtraArgs["cloud-provider"] = "azure" // requires --cloud-config
 
-	cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
+	cred, err := cm.GetCredential()
 	if err != nil {
 		panic(err)
 	}

@@ -33,7 +33,7 @@ func CreateCluster(store store.ResourceInterface, cluster *api.Cluster) error {
 	}
 
 	// create certificates and keys
-	certs, err := certificates.CreateCertsKeys(store, cluster)
+	certs, err := certificates.CreateCertsKeys(store, cluster.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to create certificates")
 	}

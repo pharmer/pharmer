@@ -4,21 +4,16 @@ import (
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) EnsureMaster() error {
-	leaderMachine, err := cloud.GetLeaderMachine(cm.Cluster)
-	if err != nil {
-		return err
-	}
-
+func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
 	script, err := cloud.RenderStartupScript(cm, leaderMachine, "", customTemplate)
 	if err != nil {
 		return err
@@ -61,7 +56,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 		if err = cm.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
 			return err
 		}
-		if _, err = store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
+		if _, err = cm.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
 			return err
 		}
 	}
@@ -160,7 +155,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 	}
 
 	cm.Cluster.Status.Phase = api.ClusterDeleted
-	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
+	_, err = cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
 		return err
 	}

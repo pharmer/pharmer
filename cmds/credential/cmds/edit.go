@@ -39,10 +39,10 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err := store.SetProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
 			term.ExitOnError(err)
 
-			if err := RunUpdateCredential(opts, outErr); err != nil {
+			if err := RunUpdateCredential(storeProvider.Credentials(), opts, outErr); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -52,8 +52,7 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunUpdateCredential(opts *options2.CredentialEditConfig, errOut io.Writer) error {
-
+func RunUpdateCredential(credStore store.CredentialStore, opts *options2.CredentialEditConfig, errOut io.Writer) error {
 	// If file is provided
 	if opts.File != "" {
 		fileName := opts.File
@@ -63,18 +62,18 @@ func RunUpdateCredential(opts *options2.CredentialEditConfig, errOut io.Writer) 
 			return err
 		}
 
-		updated, err := store.StoreProvider.Credentials().Get(local.Name)
+		updated, err := credStore.Get(local.Name)
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = local.ObjectMeta
 		updated.Spec = local.Spec
 
-		original, err := store.StoreProvider.Credentials().Get(updated.Name)
+		original, err := credStore.Get(updated.Name)
 		if err != nil {
 			return err
 		}
-		if err := updateCredential(original, updated); err != nil {
+		if err := updateCredential(credStore, original, updated); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`credential "%s" replaced`, original.Name))
@@ -83,31 +82,31 @@ func RunUpdateCredential(opts *options2.CredentialEditConfig, errOut io.Writer) 
 
 	credential := opts.Name
 
-	original, err := store.StoreProvider.Credentials().Get(credential)
+	original, err := credStore.Get(credential)
 	if err != nil {
 		return err
 	}
 
 	// Check if flags are provided to update
 	if opts.DoNotDelete {
-		updated, err := store.StoreProvider.Credentials().Get(credential)
+		updated, err := credStore.Get(credential)
 		if err != nil {
 			return err
 		}
 
 		// Set flag values in updated object
 
-		if err := updateCredential(original, updated); err != nil {
+		if err := updateCredential(credStore, original, updated); err != nil {
 			return err
 		}
 		term.Println(fmt.Sprintf(`credential "%s" updated`, original.Name))
 		return nil
 	}
 
-	return editCredential(opts, original, errOut)
+	return editCredential(credStore, opts, original, errOut)
 }
 
-func editCredential(opts *options2.CredentialEditConfig, original *cloudapi.Credential, errOut io.Writer) error {
+func editCredential(credStore store.CredentialStore, opts *options2.CredentialEditConfig, original *cloudapi.Credential, errOut io.Writer) error {
 
 	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
@@ -182,7 +181,7 @@ func editCredential(opts *options2.CredentialEditConfig, original *cloudapi.Cred
 
 			containsError = false
 
-			if err := updateCredential(original, updated); err != nil {
+			if err := updateCredential(credStore, original, updated); err != nil {
 				return err
 			}
 
@@ -195,7 +194,7 @@ func editCredential(opts *options2.CredentialEditConfig, original *cloudapi.Cred
 	return editFn()
 }
 
-func updateCredential(original, updated *cloudapi.Credential) error {
+func updateCredential(credStore store.CredentialStore, original, updated *cloudapi.Credential) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
@@ -237,7 +236,7 @@ func updateCredential(original, updated *cloudapi.Credential) error {
 		return err
 	}
 
-	_, err = store.StoreProvider.Credentials().Update(updated)
+	_, err = credStore.Update(updated)
 	if err != nil {
 		return err
 	}

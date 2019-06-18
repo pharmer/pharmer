@@ -7,7 +7,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	doCapi "github.com/pharmer/pharmer/apis/v1beta1/digitalocean"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +21,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 	}
 	config := cluster.Spec.Config
 
-	pubkey, _, err := store.StoreProvider.SSHKeys(cluster.Name).Get(cluster.GenSSHKeyExternalID())
+	pubkey, _, err := cm.StoreProvider.SSHKeys(cluster.Name).Get(cluster.GenSSHKeyExternalID())
 	if err != nil {
 		return clusterapi.ProviderSpec{}, errors.Wrap(err, " failed to get ssh keys")
 	}

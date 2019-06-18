@@ -19,13 +19,12 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type cloudConnector struct {
-	*cloud.CloudManager
+	*cloud.Scope
 	namer namer
 
 	availabilitySetsClient  compute.AvailabilitySetsClient
@@ -44,7 +43,7 @@ type cloudConnector struct {
 }
 
 func newConnector(cm *ClusterManager) (*cloudConnector, error) {
-	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.Spec.Config.CredentialName)
+	cred, err := cm.StoreProvider.Credentials().Get(cm.Cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -107,8 +106,8 @@ func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 	lbClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
 	return &cloudConnector{
-		CloudManager: cm.CloudManager,
-		namer:        cm.namer,
+		Scope: cm.Scope,
+		namer: cm.namer,
 
 		availabilitySetsClient:  availabilitySetsClient,
 		vmClient:                vmClient,

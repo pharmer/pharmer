@@ -4,24 +4,18 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/wait"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/store"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func CreateCredentialSecret(client kubernetes.Interface, cluster *api.Cluster, namespace string) error {
-	cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
-	if err != nil {
-		return err
-	}
-
+func CreateCredentialSecret(client kubernetes.Interface, cloudProvider, namespace string, data map[string]string) error {
 	newData := make(map[string][]byte)
-	for key, value := range cred.Spec.Data {
+	for key, value := range data {
 		newData[key] = []byte(value)
 	}
 
-	return CreateSecret(client, cluster.Spec.Config.Cloud.CloudProvider, namespace, newData)
+	return CreateSecret(client, cloudProvider, namespace, newData)
 }
 
 func CreateSecret(kc kubernetes.Interface, name, namespace string, data map[string][]byte) error {

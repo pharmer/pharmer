@@ -36,12 +36,12 @@ func NewCmdCreateCredential() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err := store.SetProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
 			if err != nil {
 				term.Fatalln(err)
 			}
 
-			if err := runCreateCredential(opts); err != nil {
+			if err := runCreateCredential(storeProvider.Credentials(), opts); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -51,7 +51,7 @@ func NewCmdCreateCredential() *cobra.Command {
 	return cmd
 }
 
-func runCreateCredential(opts *options2.CredentialCreateConfig) error {
+func runCreateCredential(credentialStore store.CredentialStore, opts *options2.CredentialCreateConfig) error {
 	// Get Cloud provider
 	provider := opts.Provider
 	if provider == "" {
@@ -81,7 +81,7 @@ func runCreateCredential(opts *options2.CredentialCreateConfig) error {
 			if err != nil {
 				term.Fatalln(err)
 			}
-			_, err = store.StoreProvider.Credentials().Create(cred)
+			_, err = credentialStore.Create(cred)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -125,6 +125,6 @@ func runCreateCredential(opts *options2.CredentialCreateConfig) error {
 	}
 
 	cred.Spec.Data = commonSpec.Data
-	_, err = store.StoreProvider.Credentials().Create(cred)
+	_, err = credentialStore.Create(cred)
 	return err
 }

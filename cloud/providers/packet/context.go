@@ -6,9 +6,7 @@ import (
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -17,10 +15,30 @@ import (
 )
 
 type ClusterManager struct {
-	*cloud.CloudManager
+	*cloud.Scope
 
 	conn  *cloudConnector
 	namer namer
+}
+
+var _ cloud.Interface = &ClusterManager{}
+
+const (
+	UID      = "packet"
+	Recorder = "packet-controller"
+)
+
+func init() {
+	cloud.RegisterCloudManager(UID, New)
+}
+
+func New(s *cloud.Scope) cloud.Interface {
+	return &ClusterManager{
+		Scope: s,
+		namer: namer{
+			cluster: s.Cluster,
+		},
+	}
 }
 
 func (cm *ClusterManager) ApplyScale() error {
@@ -28,16 +46,16 @@ func (cm *ClusterManager) ApplyScale() error {
 }
 
 func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
+	cred, err := cm.GetCredential()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get cluster cred")
+	}
 	// pharmer-flex secret
-	if err := kube.CreateCredentialSecret(kc, cm.Cluster, metav1.NamespaceSystem); err != nil {
+	if err := kube.CreateCredentialSecret(kc, cm.Cluster.CloudProvider(), metav1.NamespaceSystem, cred.Spec.Data); err != nil {
 		return errors.Wrapf(err, "failed to create flex-secret")
 	}
 
 	// ccm-secret
-	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.ClusterConfig().CredentialName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get cluster cred")
-	}
 	typed := credential.Packet{CommonSpec: credential.CommonSpec(cred.Spec)}
 	ok, err := typed.IsValid()
 	if !ok {
@@ -76,29 +94,6 @@ func (cm *ClusterManager) GetCloudConnector() error {
 
 func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 	return ControllerManager, nil
-}
-
-var _ cloud.Interface = &ClusterManager{}
-
-const (
-	UID      = "packet"
-	Recorder = "packet-controller"
-)
-
-func init() {
-	cloud.RegisterCloudManager(UID, New)
-}
-
-func New(cluster *api.Cluster, certs *certificates.Certificates) cloud.Interface {
-	return &ClusterManager{
-		CloudManager: &cloud.CloudManager{
-			Cluster: cluster,
-			Certs:   certs,
-		},
-		namer: namer{
-			cluster: cluster,
-		},
-	}
 }
 
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {

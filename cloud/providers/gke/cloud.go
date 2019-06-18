@@ -9,7 +9,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/apis/v1beta1/gce"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/container/v1"
@@ -22,14 +21,14 @@ const (
 )
 
 type cloudConnector struct {
-	*cloud.CloudManager
+	*cloud.Scope
 	containerService *container.Service
 	computeService   *compute.Service
 }
 
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
-	cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
+	cred, err := cm.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +51,7 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	}
 
 	conn := cloudConnector{
-		CloudManager:     cm.CloudManager,
+		Scope:            cm.Scope,
 		containerService: containerService,
 		computeService:   computeService,
 	}

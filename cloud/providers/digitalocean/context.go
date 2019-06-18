@@ -2,11 +2,8 @@ package digitalocean
 
 import (
 	"github.com/pharmer/cloud/pkg/credential"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -15,7 +12,7 @@ import (
 )
 
 type ClusterManager struct {
-	*cloud.CloudManager
+	*cloud.Scope
 
 	conn  *cloudConnector
 	namer namer
@@ -36,14 +33,11 @@ func init() {
 	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(cluster *api.Cluster, certs *certificates.Certificates) cloud.Interface {
+func New(s *cloud.Scope) cloud.Interface {
 	return &ClusterManager{
-		CloudManager: &cloud.CloudManager{
-			Cluster: cluster,
-			Certs:   certs,
-		},
+		Scope: s,
 		namer: namer{
-			cluster: cluster,
+			cluster: s.Cluster,
 		},
 	}
 }
@@ -74,7 +68,7 @@ func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 }
 
 func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
-	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.Spec.Config.CredentialName)
+	cred, err := cm.GetCredential()
 	if err != nil {
 		return errors.Wrapf(err, "failed to get credential for digitalocean")
 	}

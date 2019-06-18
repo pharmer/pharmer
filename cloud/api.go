@@ -39,7 +39,7 @@ type Interface interface {
 	NewNodeTemplateData(machine *clusterapi.Machine, token string, td TemplateData) TemplateData
 
 	PrepareCloud() error
-	EnsureMaster() error
+	EnsureMaster(machine *clusterapi.Machine) error
 
 	GetMasterSKU(totalNodes int32) string
 

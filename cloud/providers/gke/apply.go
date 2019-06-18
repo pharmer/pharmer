@@ -1,7 +1,6 @@
 package gke
 
 import (
-	"github.com/pharmer/pharmer/store"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -21,7 +20,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 	config := cm.Cluster.Spec.Config
 	cluster, _ := cm.conn.containerService.Projects.Zones.Clusters.Get(config.Cloud.Project, config.Cloud.Zone, cm.Cluster.Name).Do()
 	if cluster == nil {
-		cluster, err = encodeCluster(cm.Cluster)
+		cluster, err = encodeCluster(cm.StoreProvider.MachineSet(cm.Cluster.Name), cm.Cluster)
 		if err != nil {
 			return err
 		}
@@ -38,7 +37,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 		if err != nil {
 			return err
 		}
-		err = cm.StoreCertificate(store.StoreProvider.Certificates(cm.Cluster.Name), cluster)
+		err = cm.StoreCertificate(cm.StoreProvider.Certificates(cm.Cluster.Name), cluster)
 		if err != nil {
 			return err
 		}
@@ -51,7 +50,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 }
 
 func (cm *ClusterManager) ApplyScale() error {
-	nodeGroups, err := store.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err := cm.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -62,11 +61,11 @@ func (cm *ClusterManager) ApplyScale() error {
 			return err
 		}
 	}
-	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
+	_, err = cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
 		return err
 	}
-	_, err = store.StoreProvider.Clusters().Update(cm.Cluster)
+	_, err = cm.StoreProvider.Clusters().Update(cm.Cluster)
 	if err != nil {
 		return err
 	}
@@ -74,7 +73,7 @@ func (cm *ClusterManager) ApplyScale() error {
 }
 
 func (cm *ClusterManager) ApplyDelete() error {
-	_, err := store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
+	_, err := cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
 		return err
 	}

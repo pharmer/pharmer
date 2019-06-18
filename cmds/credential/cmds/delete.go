@@ -25,11 +25,11 @@ func NewCmdDeleteCredential() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err := store.SetProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
 			term.ExitOnError(err)
 
 			for _, cred := range opts.Credentials {
-				err := store.StoreProvider.Credentials().Delete(cred)
+				err := storeProvider.Credentials().Delete(cred)
 				term.ExitOnError(err)
 			}
 		},

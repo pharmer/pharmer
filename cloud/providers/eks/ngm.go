@@ -7,7 +7,7 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/ghodss/yaml"
-	"github.com/pharmer/pharmer/store"
+	"github.com/pharmer/pharmer/cloud"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -16,6 +16,7 @@ import (
 )
 
 type EKSNodeGroupManager struct {
+	*cloud.Scope
 	conn *cloudConnector
 	ng   *clusterapi.MachineSet
 	kc   kubernetes.Interface
@@ -61,7 +62,7 @@ func (igm *EKSNodeGroupManager) Apply() error {
 			if err = igm.deleteNodeAuthConfigMap(igm.conn.getOutput(ngInfo, "NodeInstanceRole")); err != nil {
 				return err
 			}
-			err = store.StoreProvider.MachineSet(igm.conn.Cluster.Name).Delete(fileName)
+			err = igm.StoreProvider.MachineSet(igm.conn.Cluster.Name).Delete(fileName)
 			if err != nil {
 				return err
 			}
@@ -74,7 +75,7 @@ func (igm *EKSNodeGroupManager) Apply() error {
 		}
 	}
 	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas
-	_, err = store.StoreProvider.MachineSet(igm.conn.Cluster.Name).UpdateStatus(igm.ng)
+	_, err = igm.StoreProvider.MachineSet(igm.conn.Cluster.Name).UpdateStatus(igm.ng)
 
 	return err
 }

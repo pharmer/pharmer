@@ -2,16 +2,18 @@ package certificates
 
 import (
 	"github.com/appscode/go/crypto/ssh"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
-func GetPharmerCerts(clusterName string) (*Certificates, error) {
+func GetPharmerCerts(storeProvider store.ResourceInterface, clusterName string) (*Certificates, error) {
 	pharmerCerts := &Certificates{}
 
-	cert, key, err := LoadCACertificates(clusterName, kubeadmconst.CACertAndKeyBaseName)
+	certStore := storeProvider.Certificates(clusterName)
+	keyStore := storeProvider.SSHKeys(clusterName)
+
+	cert, key, err := LoadCACertificates(certStore, kubeadmconst.CACertAndKeyBaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load ca Certs")
 	}
@@ -20,7 +22,7 @@ func GetPharmerCerts(clusterName string) (*Certificates, error) {
 		Key:  key,
 	}
 
-	cert, key, err = LoadCACertificates(clusterName, kubeadmconst.FrontProxyCACertAndKeyBaseName)
+	cert, key, err = LoadCACertificates(certStore, kubeadmconst.FrontProxyCACertAndKeyBaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load fpca Certs")
 	}
@@ -29,7 +31,7 @@ func GetPharmerCerts(clusterName string) (*Certificates, error) {
 		Key:  key,
 	}
 
-	cert, key, err = LoadCACertificates(clusterName, kubeadmconst.ServiceAccountKeyBaseName)
+	cert, key, err = LoadCACertificates(certStore, kubeadmconst.ServiceAccountKeyBaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load sa keys")
 	}
@@ -38,7 +40,7 @@ func GetPharmerCerts(clusterName string) (*Certificates, error) {
 		Key:  key,
 	}
 
-	cert, key, err = LoadCACertificates(clusterName, kubeadmconst.EtcdCACertAndKeyBaseName)
+	cert, key, err = LoadCACertificates(certStore, kubeadmconst.EtcdCACertAndKeyBaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load etcd-ca keys")
 	}
@@ -47,7 +49,7 @@ func GetPharmerCerts(clusterName string) (*Certificates, error) {
 		Key:  key,
 	}
 
-	pharmerCerts.SSHKey, err = LoadSSHKey(clusterName, GenSSHKeyName(clusterName))
+	pharmerCerts.SSHKey, err = LoadSSHKey(keyStore, GenSSHKeyName(clusterName))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load ssh keys")
 	}
@@ -56,10 +58,13 @@ func GetPharmerCerts(clusterName string) (*Certificates, error) {
 }
 
 // TODO: it should only require clusterName
-func CreateCertsKeys(store store.ResourceInterface, cluster *api.Cluster) (*Certificates, error) {
+func CreateCertsKeys(store store.ResourceInterface, clusterName string) (*Certificates, error) {
 	pharmerCerts := &Certificates{}
 
-	cert, key, err := CreateCACertificates(store, cluster.Name)
+	certStore := store.Certificates(clusterName)
+	keyStore := store.SSHKeys(clusterName)
+
+	cert, key, err := CreateCACertificates(certStore)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ca certificates")
 	}
@@ -68,7 +73,7 @@ func CreateCertsKeys(store store.ResourceInterface, cluster *api.Cluster) (*Cert
 		Key:  key,
 	}
 
-	cert, key, err = CreateFrontProxyCACertificates(store, cluster.Name)
+	cert, key, err = CreateFrontProxyCACertificates(certStore)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create fpca certificates")
 	}
@@ -77,7 +82,7 @@ func CreateCertsKeys(store store.ResourceInterface, cluster *api.Cluster) (*Cert
 		Key:  key,
 	}
 
-	cert, key, err = CreateSACertificate(store, cluster.Name)
+	cert, key, err = CreateSACertificate(certStore)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create sa certificates")
 	}
@@ -86,7 +91,7 @@ func CreateCertsKeys(store store.ResourceInterface, cluster *api.Cluster) (*Cert
 		Key:  key,
 	}
 
-	cert, key, err = CreateEtcdCACertificate(store, cluster.Name)
+	cert, key, err = CreateEtcdCACertificate(certStore)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etcd-ca certificates")
 	}
@@ -95,7 +100,7 @@ func CreateCertsKeys(store store.ResourceInterface, cluster *api.Cluster) (*Cert
 		Key:  key,
 	}
 
-	pubKey, privKey, err := CreateSSHKey(store.SSHKeys(cluster.Name), cluster.GenSSHKeyExternalID())
+	pubKey, privKey, err := CreateSSHKey(keyStore, GenSSHKeyName(clusterName))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ssh keys")
 	}
@@ -107,6 +112,7 @@ func CreateCertsKeys(store store.ResourceInterface, cluster *api.Cluster) (*Cert
 	return pharmerCerts, nil
 }
 
+// TODO: move
 func GenSSHKeyName(clusterName string) string {
 	return clusterName + "-sshkey"
 }

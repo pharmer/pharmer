@@ -8,7 +8,6 @@ import (
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -18,7 +17,7 @@ import (
 )
 
 type ClusterManager struct {
-	*cloud.CloudManager
+	*cloud.Scope
 
 	conn *cloudConnector
 
@@ -47,7 +46,7 @@ func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token s
 	panic("implement me")
 }
 
-func (cm *ClusterManager) EnsureMaster() error {
+func (cm *ClusterManager) EnsureMaster(_ *v1alpha1.Machine) error {
 	return nil
 }
 
@@ -70,13 +69,10 @@ func init() {
 	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(cluster *api.Cluster, certs *certificates.Certificates) cloud.Interface {
+func New(s *cloud.Scope) cloud.Interface {
 	return &ClusterManager{
-		CloudManager: &cloud.CloudManager{
-			Cluster: cluster,
-			Certs:   certs,
-		},
-		namer: namer{cluster: cluster},
+		Scope: s,
+		namer: namer{cluster: s.Cluster},
 	}
 }
 

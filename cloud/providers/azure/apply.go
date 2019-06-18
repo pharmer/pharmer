@@ -6,11 +6,12 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func (cm *ClusterManager) PrepareCloud() error {
@@ -179,12 +180,7 @@ func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
 	return "Standard_B2ms"
 }
 
-func (cm *ClusterManager) EnsureMaster() error {
-	leaderMachine, err := cloud.GetLeaderMachine(cm.Cluster)
-	if err != nil {
-		return err
-	}
-
+func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
 	masterNIC, err := cm.conn.getNetworkInterface(cm.namer.NetworkInterfaceName(leaderMachine.Name))
 	if err != nil {
 		return errors.Wrapf(err, "failed to get master nic")
@@ -203,7 +199,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 			return err
 		}
 
-		if _, err = store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
+		if _, err = cm.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
 			return err
 		}
 
@@ -219,13 +215,13 @@ func (cm *ClusterManager) EnsureMaster() error {
 		leaderMachine.Status.ProviderStatus = rawStatus
 
 		// update in pharmer file
-		_, err = store.StoreProvider.Machine(cm.Cluster.Name).Update(leaderMachine)
+		_, err = cm.StoreProvider.Machine(cm.Cluster.Name).Update(leaderMachine)
 		if err != nil {
 			return errors.Wrap(err, "error updating master machine in pharmer storage")
 		}
 	}
 
-	kubeConfig, err := cloud.GetAdminConfig(cm)
+	kubeConfig, err := kube.GetAdminConfig(cm.Cluster, cm.GetCaCertPair())
 	if err != nil {
 		return err
 	}
@@ -258,7 +254,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 	}
 	// Failed
 	cm.Cluster.Status.Phase = api.ClusterDeleted
-	_, err := store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
+	_, err := cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
 		return err
 	}

@@ -6,22 +6,16 @@ import (
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) EnsureMaster() error {
-	leaderMachine, err := cloud.GetLeaderMachine(cm.Cluster)
-	if err != nil {
-		return err
-	}
-
+func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
 	if d, _ := cm.conn.instanceIfExists(leaderMachine); d == nil {
 		log.Info("Creating master instance")
 		nodeAddresses := make([]core.NodeAddress, 0)
@@ -54,7 +48,9 @@ func (cm *ClusterManager) EnsureMaster() error {
 
 	}
 
-	if cm.Cluster, err = store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
+	var err error
+	cm.Cluster, err = cm.StoreProvider.Clusters().Update(cm.Cluster)
+	if err != nil {
 		return err
 	}
 
@@ -116,24 +112,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 
 // Deletes master(s) and releases other cloud resources
 func (cm *ClusterManager) ApplyDelete() error {
-	log.Infoln("deleting cluster")
-	var found bool
-
-	if cm.Cluster.Status.Phase == api.ClusterReady {
-		cm.Cluster.Status.Phase = api.ClusterDeleting
-	}
-	_, err := store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
-	if err != nil {
-		return err
-	}
-
-	err = cloud.DeleteAllWorkerMachines(cm)
-	if err != nil {
-		log.Infof("failed to delete nodes: %v", err)
-	}
-
-	var kc kubernetes.Interface
-	kc, err = cm.GetAdminClient()
+	kc, err := cm.GetAdminClient()
 	if err != nil {
 		return err
 	}
@@ -163,7 +142,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 	log.Infof("Deleted droplet by tag %s", tag)
 
 	// Delete SSH key
-	found, _, err = cm.conn.getPublicKey()
+	found, _, err := cm.conn.getPublicKey()
 	if err != nil {
 		return err
 	}
@@ -183,7 +162,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 	}
 
 	cm.Cluster.Status.Phase = api.ClusterDeleted
-	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
+	_, err = cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
 		return err
 	}

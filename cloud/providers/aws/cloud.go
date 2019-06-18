@@ -26,7 +26,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -37,7 +36,7 @@ const (
 )
 
 type cloudConnector struct {
-	*cloud.CloudManager
+	*cloud.Scope
 
 	namer     namer
 	ec2       *_ec2.EC2
@@ -48,7 +47,7 @@ type cloudConnector struct {
 }
 
 func newConnector(cm *ClusterManager) (*cloudConnector, error) {
-	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.Spec.Config.CredentialName)
+	cred, err := cm.StoreProvider.Credentials().Get(cm.Cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -67,13 +66,13 @@ func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 	}
 
 	conn := cloudConnector{
-		CloudManager: cm.CloudManager,
-		namer:        namer{cm.Cluster},
-		ec2:          _ec2.New(sess),
-		elb:          _elb.New(sess),
-		iam:          _iam.New(sess),
-		autoscale:    autoscaling.New(sess),
-		s3:           _s3.New(sess),
+		Scope:     cm.Scope,
+		namer:     namer{cm.Cluster},
+		ec2:       _ec2.New(sess),
+		elb:       _elb.New(sess),
+		iam:       _iam.New(sess),
+		autoscale: autoscaling.New(sess),
+		s3:        _s3.New(sess),
 	}
 	if ok, msg := conn.IsUnauthorized(); !ok {
 		return nil, errors.Errorf("credential %s does not have necessary authorization. Reason: %s", cm.Cluster.Spec.Config.CredentialName, msg)

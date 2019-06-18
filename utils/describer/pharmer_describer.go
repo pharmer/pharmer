@@ -12,9 +12,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (d *humanReadableDescriber) describeCluster(item *api.Cluster, describerSettings describe.DescriberSettings) (string, error) {
-
-	nodeGroups, err := store.StoreProvider.MachineSet(item.Name).List(metav1.ListOptions{})
+func (d *humanReadableDescriber) describeCluster(machinesetStore store.MachineSetStore, item *api.Cluster, describerSettings describe.DescriberSettings) (string, error) {
+	nodeGroups, err := machinesetStore.List(metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}

@@ -10,7 +10,6 @@ import (
 	"github.com/appscode/go/log"
 	linodeconfig "github.com/pharmer/pharmer/apis/v1beta1/linode"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -224,12 +223,7 @@ func (li *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		return nil
 	}
 
-	pharmerCluster, err := store.StoreProvider.Clusters().Get(cluster.Name)
-	if err != nil {
-		return errors.Wrap(err, "failed to get pharmercluster")
-	}
-
-	kc, err := cloud.GetKubernetesClient(li.cm, pharmerCluster)
+	kc, err := li.cm.GetAdminClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to get kubeclient")
 	}

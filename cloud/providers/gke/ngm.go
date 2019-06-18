@@ -1,12 +1,13 @@
 package gke
 
 import (
-	"github.com/pharmer/pharmer/store"
+	"github.com/pharmer/pharmer/cloud"
 	"google.golang.org/api/container/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type GKENodeGroupManager struct {
+	*cloud.Scope
 	conn *cloudConnector
 	ng   *clusterapi.MachineSet
 }
@@ -36,7 +37,7 @@ func (igm *GKENodeGroupManager) Apply() error {
 		if err = igm.conn.waitForZoneOperation(op); err != nil {
 			return err
 		}
-		err = store.StoreProvider.MachineSet(igm.conn.Cluster.Name).Delete(igm.ng.Name)
+		err = igm.StoreProvider.MachineSet(igm.conn.Cluster.Name).Delete(igm.ng.Name)
 		if err != nil {
 			return err
 		}
@@ -51,7 +52,7 @@ func (igm *GKENodeGroupManager) Apply() error {
 		}
 	}
 	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas
-	_, err := store.StoreProvider.MachineSet(igm.conn.Cluster.Name).UpdateStatus(igm.ng)
+	_, err := igm.StoreProvider.MachineSet(igm.conn.Cluster.Name).UpdateStatus(igm.ng)
 
 	return err
 }

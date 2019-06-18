@@ -14,7 +14,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	linode_config "github.com/pharmer/pharmer/apis/v1beta1/linode"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -24,7 +23,7 @@ import (
 var errLBNotFound = errors.New("loadbalancer not found")
 
 type cloudConnector struct {
-	*cloud.CloudManager
+	*cloud.Scope
 	namer  namer
 	client *linodego.Client
 }
@@ -32,7 +31,7 @@ type cloudConnector struct {
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
 
-	cred, err := store.StoreProvider.Credentials().Get(cluster.ClusterConfig().CredentialName)
+	cred, err := cm.GetCredential()
 	if err != nil {
 		return nil, err
 	}
@@ -54,9 +53,9 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	c := linodego.NewClient(oauth2Client)
 
 	return &cloudConnector{
-		CloudManager: cm.CloudManager,
-		namer:        namer,
-		client:       &c,
+		Scope:  cm.Scope,
+		namer:  namer,
+		client: &c,
 	}, nil
 }
 

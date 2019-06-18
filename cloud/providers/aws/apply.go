@@ -8,9 +8,9 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
@@ -108,7 +108,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 	}
 
 	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawClusterSpec
-	if _, err = store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
+	if _, err = cm.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
 		return err
 	}
 
@@ -134,15 +134,9 @@ func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
 	return sku
 }
 
-func (cm *ClusterManager) EnsureMaster() error {
-	var found bool
-
-	leaderMachine, err := cloud.GetLeaderMachine(cm.Cluster)
+func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
+	found, err := cm.conn.getMaster(leaderMachine.Name)
 	if err != nil {
-		return errors.Wrap(err, "failed to get leader machine")
-	}
-
-	if found, err = cm.conn.getMaster(leaderMachine.Name); err != nil {
 		log.Infoln(err)
 	}
 	if !found {
@@ -168,7 +162,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 			return err
 		}
 
-		if _, err = store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
+		if _, err = cm.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
 			return err
 		}
 
@@ -208,7 +202,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 		leaderMachine.Status.ProviderStatus = rawStatus
 
 		// update in pharmer file
-		_, err = store.StoreProvider.Machine(cm.Cluster.Name).Update(leaderMachine)
+		_, err = cm.StoreProvider.Machine(cm.Cluster.Name).Update(leaderMachine)
 		if err != nil {
 			return errors.Wrap(err, "error updating master machine in pharmer storage")
 		}
@@ -447,20 +441,6 @@ func ensureLoadBalancer(conn *cloudConnector, publicSubnetID string) error {
 }
 
 func (cm *ClusterManager) ApplyDelete() error {
-	log.Infoln("deleting cluster")
-
-	if cm.Cluster.Status.Phase == api.ClusterReady {
-		cm.Cluster.Status.Phase = api.ClusterDeleting
-	}
-	if _, err := store.StoreProvider.Clusters().UpdateStatus(cm.Cluster); err != nil {
-		return err
-	}
-
-	err := cloud.DeleteAllWorkerMachines(cm)
-	if err != nil {
-		log.Infof("failed to delete nodes: %v", err)
-	}
-
 	if err := cm.conn.deleteInstance("controlplane"); err != nil {
 		log.Infof("Failed to delete master instance. Reason: %s", err)
 	}

@@ -1,14 +1,34 @@
 package cloud
 
 import (
+	"time"
+
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
+	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
+
+func Delete(clusterStore store.ClusterStore, name string) (*api.Cluster, error) {
+	if name == "" {
+		return nil, errors.New("missing Cluster name")
+	}
+
+	cluster, err := clusterStore.Get(name)
+	if err != nil {
+		return nil, errors.Errorf("Cluster `%s` does not exist. Reason: %v", name, err)
+	}
+	cluster.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+	cluster.Status.Phase = api.ClusterDeleting
+
+	return clusterStore.Update(cluster)
+}
 
 func ApplyDelete(s *Scope) error {
 	log.Infoln("Deleting cluster...")
@@ -31,10 +51,10 @@ func ApplyDelete(s *Scope) error {
 }
 
 // DeleteAllWorkerMachines waits for all nodes to be deleted
-func DeleteAllWorkerMachines(cm Interface) error {
+func DeleteAllWorkerMachines(s *Scope) error {
 	log.Infof("Deleting non-controlplane machines")
 
-	clusterClient, err := GetClusterAPIClient(cm.GetCaCertPair(), cm.GetCluster())
+	clusterClient, err := kube.GetClusterAPIClient(s.GetCaCertPair(), s.Cluster)
 	if err != nil {
 		return err
 	}

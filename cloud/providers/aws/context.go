@@ -4,16 +4,13 @@ import (
 	"bytes"
 	"text/template"
 
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
-	"github.com/pharmer/pharmer/store"
 	"k8s.io/client-go/kubernetes"
 )
 
 type ClusterManager struct {
-	*cloud.CloudManager
+	*cloud.Scope
 
 	conn  *cloudConnector
 	namer namer
@@ -33,14 +30,11 @@ func init() {
 	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(cluster *api.Cluster, certs *certificates.Certificates) cloud.Interface {
+func New(s *cloud.Scope) cloud.Interface {
 	return &ClusterManager{
-		CloudManager: &cloud.CloudManager{
-			Cluster: cluster,
-			Certs:   certs,
-		},
+		Scope: s,
 		namer: namer{
-			cluster: cluster,
+			cluster: s.Cluster,
 		},
 	}
 }
@@ -58,7 +52,7 @@ aws_access_key_id = {{ .AccessKeyID }}
 aws_secret_access_key = {{ .SecretAccessKey }}
 region = {{ .Region }}
 `))
-	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.ClusterConfig().CredentialName)
+	cred, err := cm.StoreProvider.Credentials().Get(cm.Cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return err
 	}

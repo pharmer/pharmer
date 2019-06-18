@@ -6,20 +6,18 @@ import (
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
-	"github.com/pharmer/pharmer/store"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func (cm *ClusterManager) PrepareCloud() error {
-
 	if cm.Cluster.Spec.Config.Cloud.Dokube.ClusterID == "" {
 		cluster, err := cm.conn.createCluster(cm.Cluster)
 		if err != nil {
 			return err
 		}
 		cm.Cluster.Spec.Config.Cloud.Dokube.ClusterID = cluster.ID
-		if _, err = store.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
+		if _, err = cm.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
 			return err
 		}
 		if err := cm.retrieveClusterStatus(cluster); err != nil {
@@ -31,7 +29,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 			log.Infof(err.Error())
 			return err
 		}
-		certs, err := certificates.GetPharmerCerts(cm.Cluster.Name)
+		certs, err := certificates.GetPharmerCerts(cm.StoreProvider, cm.Cluster.Name)
 		if err != nil {
 			return err
 		}
@@ -44,7 +42,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 
 func (cm *ClusterManager) ApplyScale() error {
 	var nodeGroups []*clusterapi.MachineSet
-	nodeGroups, err := store.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err := cm.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -56,11 +54,11 @@ func (cm *ClusterManager) ApplyScale() error {
 			return err
 		}
 	}
-	_, err = store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
+	_, err = cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
 		return err
 	}
-	_, err = store.StoreProvider.Clusters().Update(cm.Cluster)
+	_, err = cm.StoreProvider.Clusters().Update(cm.Cluster)
 	if err != nil {
 		return err
 	}
@@ -71,7 +69,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 	if cm.Cluster.Status.Phase == api.ClusterReady {
 		cm.Cluster.Status.Phase = api.ClusterDeleting
 	}
-	_, err := store.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
+	_, err := cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
 		return err
 	}
@@ -80,7 +78,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 		return err
 	}
 	cm.Cluster.Status.Phase = api.ClusterDeleted
-	_, err = store.StoreProvider.Clusters().Update(cm.Cluster)
+	_, err = cm.StoreProvider.Clusters().Update(cm.Cluster)
 	if err != nil {
 		return err
 	}

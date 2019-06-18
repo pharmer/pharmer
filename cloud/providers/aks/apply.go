@@ -7,7 +7,6 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/pharmer/pharmer/apis/v1beta1/azure"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,7 +23,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 		}
 		log.Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.Cluster.Spec.Config.Cloud.Zone)
 	}
-	nodeGroups, err := store.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err := cm.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -56,7 +55,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 }
 
 func (cm *ClusterManager) ApplyScale() error {
-	nodeGroups, err := store.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err := cm.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}

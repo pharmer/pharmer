@@ -4,7 +4,6 @@ import (
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -112,12 +111,7 @@ func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
 	return sku
 }
 
-func (cm *ClusterManager) EnsureMaster() error {
-	leaderMachine, err := cloud.GetLeaderMachine(cm.Cluster)
-	if err != nil {
-		return errors.Wrap(err, "failed to get leader machine")
-	}
-
+func (cm *ClusterManager) EnsureMaster(leaderMachine *clusterv1.Machine) error {
 	found, _ := cm.conn.getMasterInstance(leaderMachine)
 	if found {
 		return nil
@@ -130,7 +124,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 		return err
 	}
 
-	if op1, err = cm.conn.createMasterIntance(script); err != nil {
+	if op1, err = cm.conn.createMasterIntance(leaderMachine, script); err != nil {
 		return err
 	}
 
@@ -142,7 +136,7 @@ func (cm *ClusterManager) EnsureMaster() error {
 }
 
 func (cm *ClusterManager) ApplyDelete() error {
-	machines, err := store.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
+	machines, err := cm.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -156,11 +150,11 @@ func (cm *ClusterManager) ApplyDelete() error {
 				log.Infof("Error deleting instance `%v`. Reason: %v", machine.Spec.Name, err)
 			}
 
-			err = store.StoreProvider.Machine(cm.Cluster.Name).Delete(machine.Spec.Name)
+			err = cm.StoreProvider.Machine(cm.Cluster.Name).Delete(machine.Spec.Name)
 			if err != nil {
 				return err
 			}
-			err = store.StoreProvider.MachineSet(cm.Cluster.Name).Delete(machine.Name)
+			err = cm.StoreProvider.MachineSet(cm.Cluster.Name).Delete(machine.Name)
 			if err != nil {
 				return err
 			}
@@ -184,7 +178,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 		log.Infof("Error deleting load balancer: %v", err)
 	}
 	cm.Cluster.Status.Phase = api.ClusterDeleted
-	_, err = store.StoreProvider.Clusters().Update(cm.Cluster)
+	_, err = cm.StoreProvider.Clusters().Update(cm.Cluster)
 	if err != nil {
 		return err
 	}

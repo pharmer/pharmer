@@ -15,7 +15,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	doCapi "github.com/pharmer/pharmer/apis/v1beta1/digitalocean"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -28,7 +27,7 @@ import (
 var errLBNotFound = errors.New("loadbalancer not found")
 
 type cloudConnector struct {
-	*cloud.CloudManager
+	*cloud.Scope
 	client *godo.Client
 	namer  namer
 }
@@ -36,7 +35,7 @@ type cloudConnector struct {
 func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
 
-	cred, err := store.StoreProvider.Credentials().Get(cluster.ClusterConfig().CredentialName)
+	cred, err := cm.StoreProvider.Credentials().Get(cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -51,9 +50,9 @@ func newConnector(cm *ClusterManager) (*cloudConnector, error) {
 	namer := namer{cluster: cluster}
 
 	conn := cloudConnector{
-		CloudManager: cm.CloudManager,
-		namer:        namer,
-		client:       godo.NewClient(oauthClient),
+		Scope:  cm.Scope,
+		namer:  namer,
+		client: godo.NewClient(oauthClient),
 	}
 	if ok, msg := conn.IsUnauthorized(); !ok {
 		return nil, errors.Errorf("credential `%s` does not have necessary autheorization. Reason: %s", cluster.ClusterConfig().CredentialName, msg)

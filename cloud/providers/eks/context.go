@@ -8,7 +8,6 @@ import (
 	_eks "github.com/aws/aws-sdk-go/service/eks"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes" //"fmt"
 	"k8s.io/client-go/rest"       //"gomodules.xyz/cert"
@@ -17,7 +16,7 @@ import (
 )
 
 type ClusterManager struct {
-	*cloud.CloudManager
+	*cloud.Scope
 	conn *cloudConnector
 
 	namer namer
@@ -40,14 +39,11 @@ func init() {
 	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(cluster *api.Cluster, certs *certificates.Certificates) cloud.Interface {
+func New(s *cloud.Scope) cloud.Interface {
 	return &ClusterManager{
-		CloudManager: &cloud.CloudManager{
-			Cluster: cluster,
-			Certs:   certs,
-		},
+		Scope: s,
 		namer: namer{
-			cluster: cluster,
+			cluster: s.Cluster,
 		},
 	}
 }
@@ -171,7 +167,7 @@ func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token s
 	return cloud.TemplateData{}
 }
 
-func (cm *ClusterManager) EnsureMaster() error {
+func (cm *ClusterManager) EnsureMaster(_ *v1alpha1.Machine) error {
 	return nil
 }
 

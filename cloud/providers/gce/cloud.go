@@ -14,7 +14,6 @@ import (
 	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	proconfig "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
@@ -35,7 +34,7 @@ const (
 )
 
 type cloudConnector struct {
-	*cloud.CloudManager
+	*cloud.Scope
 
 	namer          namer
 	computeService *compute.Service
@@ -44,7 +43,7 @@ type cloudConnector struct {
 }
 
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
-	cred, err := store.StoreProvider.Credentials().Get(cm.Cluster.ClusterConfig().CredentialName)
+	cred, err := cm.StoreProvider.Credentials().Get(cm.Cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +82,7 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
 
 	conn := cloudConnector{
-		CloudManager:   cm.CloudManager,
+		Scope:          cm.Scope,
 		namer:          namer{cm.Cluster},
 		computeService: computeService,
 		storageService: storageService,
@@ -481,7 +480,7 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 		cluster.Spec.ClusterAPI.ObjectMeta.Annotations = make(map[string]string)
 	}
 	cluster.Spec.ClusterAPI.ObjectMeta.Annotations[firewallRuleAnnotationPrefix+ruleClusterInternal] = "true"
-	if conn.Cluster, err = store.StoreProvider.Clusters().Update(cluster); err != nil {
+	if conn.Cluster, err = conn.StoreProvider.Clusters().Update(cluster); err != nil {
 		return err
 	}
 
@@ -537,7 +536,7 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 	}
 
 	cluster.Spec.ClusterAPI.ObjectMeta.Annotations[firewallRuleAnnotationPrefix+ruleApiPublic] = "true"
-	if conn.Cluster, err = store.StoreProvider.Clusters().Update(cluster); err != nil {
+	if conn.Cluster, err = conn.StoreProvider.Clusters().Update(cluster); err != nil {
 		return err
 	}
 	return nil
@@ -587,14 +586,9 @@ func (conn *cloudConnector) getMasterInstance(machine *clusterv1.Machine) (bool,
 	return true, nil
 }
 
-func (conn *cloudConnector) createMasterIntance(script string) (string, error) {
+func (conn *cloudConnector) createMasterIntance(machine *clusterv1.Machine, script string) (string, error) {
 	// MachineType:  "projects/tigerworks-kube/zones/us-central1-b/machineTypes/n1-standard-1",
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
-
-	machine, err := cloud.GetLeaderMachine(conn.Cluster)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get leader machine")
-	}
 
 	if found, _ := conn.getMasterPDDisk(conn.namer.MachineDiskName(machine)); !found {
 		_, err := conn.createDisk(conn.namer.MachineDiskName(machine), "pd-standard", 30)

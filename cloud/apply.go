@@ -78,7 +78,12 @@ func ApplyCreate(scope *Scope) error {
 			return errors.Wrap(err, "failed to set master sku")
 		}
 
-		err = cm.EnsureMaster()
+		machine, err := GetLeaderMachine(scope.StoreProvider.Machine(scope.Cluster.Name), scope.Cluster.Name)
+		if err != nil {
+			return err
+		}
+
+		err = cm.EnsureMaster(machine)
 		if err != nil {
 			return errors.Wrap(err, "failed to ensure master machine")
 		}
@@ -102,32 +107,28 @@ func ApplyCreate(scope *Scope) error {
 	}
 
 	if !managedProviders.Has(cluster.Spec.Config.Cloud.CloudProvider) {
-		err = applyClusterAPI(cm)
+		err = applyClusterAPI(scope)
 		if err != nil {
 			return err
 		}
 	}
 
 	cluster.Status.Phase = api.ClusterReady
-	if _, err = store.StoreProvider.Clusters().UpdateStatus(cluster); err != nil {
+	if _, err = scope.StoreProvider.Clusters().UpdateStatus(cluster); err != nil {
 		return errors.Wrap(err, "failed to update cluster status")
 	}
 
 	return nil
 }
 
-func applyClusterAPI(cm Interface) error {
-	cluster := cm.GetCluster()
-	kubeClient, err := cm.GetAdminClient()
-	if err != nil {
-		return err
-	}
-	ca, err := NewClusterAPI(cm, "cloud-provider-system", kubeClient)
+func applyClusterAPI(s *Scope) error {
+	cluster := s.Cluster
+	ca, err := NewClusterAPI(s, "cloud-provider-system")
 	if err != nil {
 		return errors.Wrap(err, "Error creating Cluster-api components")
 	}
 
-	clusterAPIcomponents, err := cm.GetClusterAPIComponents()
+	clusterAPIcomponents, err := s.CloudManager.GetClusterAPIComponents()
 	if err != nil {
 		return errors.Wrap(err, "Error getting clusterAPI components")
 	}
@@ -137,12 +138,12 @@ func applyClusterAPI(cm Interface) error {
 	}
 
 	log.Infof("Adding other master machines")
-	capiClient, err := GetClusterAPIClient(cm.GetCaCertPair(), cluster)
+	capiClient, err := kube.GetClusterAPIClient(s.GetCaCertPair(), cluster)
 	if err != nil {
 		return err
 	}
 
-	machines, err := scope.StoreProvider.Machine(cluster.Name).List(metav1.ListOptions{})
+	machines, err := s.StoreProvider.Machine(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "failed to list master machines")
 	}
@@ -153,11 +154,6 @@ func applyClusterAPI(cm Interface) error {
 			return errors.Wrapf(err, "failed to crate maching %q in namespace %q",
 				m.Name, cluster.Spec.ClusterAPI.Namespace)
 		}
-	}
-
-	cluster.Status.Phase = api.ClusterReady
-	if _, err = scope.StoreProvider.Clusters().UpdateStatus(cluster); err != nil {
-		return errors.Wrap(err, "failed to update Cluster status")
 	}
 
 	return nil
@@ -205,8 +201,8 @@ func setMasterSKU(cluster *api.Cluster) error {
 
 // TODO: simplify
 func ApplyScale(s *Scope) error {
-	if managedProviders.Has(cm.GetCluster().Spec.Config.Cloud.CloudProvider) {
-		return cm.ApplyScale()
+	if managedProviders.Has(s.Cluster.CloudProvider()) {
+		return s.CloudManager.ApplyScale()
 	}
 
 	log.Infoln("Scaling Machine Sets")
@@ -219,7 +215,7 @@ func ApplyScale(s *Scope) error {
 	}
 
 	var bc clusterclient.Client
-	bc, err = getBooststrapClient(s)
+	bc, err = kube.GetBooststrapClient(s.Cluster, s.GetCaCertPair())
 	if err != nil {
 		return err
 	}
@@ -294,7 +290,7 @@ func ApplyUpgrade(s *Scope) error {
 	masterMachine.Spec.Versions.Kubelet = Cluster.Spec.Config.KubernetesVersion
 
 	var bc clusterclient.Client
-	bc, err = GetBooststrapClient(s)
+	bc, err = kube.GetBooststrapClient(s.Cluster, s.GetCaCertPair())
 	if err != nil {
 		return err
 	}

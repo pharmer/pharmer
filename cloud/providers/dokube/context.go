@@ -6,7 +6,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,9 +16,25 @@ import (
 )
 
 type ClusterManager struct {
-	*cloud.CloudManager
+	*cloud.Scope
 
 	conn *cloudConnector
+}
+
+var _ cloud.Interface = &ClusterManager{}
+
+const (
+	UID = "dokube"
+)
+
+func init() {
+	cloud.RegisterCloudManager(UID, New)
+}
+
+func New(s *cloud.Scope) cloud.Interface {
+	return &ClusterManager{
+		Scope: s,
+	}
 }
 
 func (cm *ClusterManager) AddToManager(m manager.Manager) error {
@@ -44,7 +59,7 @@ func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token s
 	return cloud.TemplateData{}
 }
 
-func (cm *ClusterManager) EnsureMaster() error {
+func (cm *ClusterManager) EnsureMaster(_ *v1alpha1.Machine) error {
 	return nil
 }
 
@@ -56,31 +71,12 @@ func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 	return "", nil
 }
 
-var _ cloud.Interface = &ClusterManager{}
-
-const (
-	UID = "dokube"
-)
-
-func init() {
-	cloud.RegisterCloudManager(UID, New)
-}
-
-func New(cluster *api.Cluster, certs *certificates.Certificates) cloud.Interface {
-	return &ClusterManager{
-		CloudManager: &cloud.CloudManager{
-			Cluster: cluster,
-			Certs:   certs,
-		},
-	}
-}
-
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 	return nil
 }
 
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
-	adminCert, adminKey, err := store.StoreProvider.Certificates(cm.Cluster.Name).Get("admin")
+	adminCert, adminKey, err := cm.StoreProvider.Certificates(cm.Cluster.Name).Get("admin")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get admin cert and key")
 	}
@@ -127,7 +123,7 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 }
 
 func NewDokubeAdminClient(cm *ClusterManager) (kubernetes.Interface, error) {
-	adminCert, adminKey, err := certificates.GetAdminCertificate(cm.Cluster.Name)
+	adminCert, adminKey, err := certificates.GetAdminCertificate(cm.StoreProvider.Certificates(cm.Cluster.Name))
 	if err != nil {
 		return nil, err
 	}

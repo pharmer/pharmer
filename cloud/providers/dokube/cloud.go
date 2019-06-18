@@ -12,7 +12,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	dokube_config "github.com/pharmer/pharmer/apis/v1beta1/dokube"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,13 +23,13 @@ const (
 )
 
 type cloudConnector struct {
-	*cloud.CloudManager
+	*cloud.Scope
 	client *godo.Client
 }
 
 func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 	cluster := cm.Cluster
-	cred, err := store.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
+	cred, err := cm.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -42,8 +41,8 @@ func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
 		AccessToken: typed.Token(),
 	}))
 	conn := cloudConnector{
-		CloudManager: cm.CloudManager,
-		client:       godo.NewClient(oauthClient),
+		Scope:  cm.Scope,
+		client: godo.NewClient(oauthClient),
 	}
 	if ok, msg := conn.IsUnauthorized(); !ok {
 		return nil, errors.Errorf("credential `%s` does not have necessary authorization. Reason: %s", cluster.Spec.Config.CredentialName, msg)
@@ -67,7 +66,7 @@ func (conn *cloudConnector) IsUnauthorized() (bool, string) {
 }
 
 func (conn *cloudConnector) createCluster(cluster *api.Cluster) (*godo.KubernetesCluster, error) {
-	nodeGroups, err := store.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
+	nodeGroups, err := conn.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

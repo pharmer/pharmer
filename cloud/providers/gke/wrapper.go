@@ -13,8 +13,8 @@ import (
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func encodeCluster(cluster *api.Cluster) (*container.Cluster, error) {
-	nodeGroups, err := store.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
+func encodeCluster(machinesetStore store.MachineSetStore, cluster *api.Cluster) (*container.Cluster, error) {
+	nodeGroups, err := machinesetStore.List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -3,9 +3,7 @@ package gce
 import (
 	"errors"
 
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -15,7 +13,7 @@ const (
 )
 
 type ClusterManager struct {
-	*cloud.CloudManager
+	*cloud.Scope
 
 	conn  *cloudConnector
 	namer namer
@@ -35,14 +33,11 @@ func init() {
 	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(cluster *api.Cluster, certs *certificates.Certificates) cloud.Interface {
+func New(s *cloud.Scope) cloud.Interface {
 	return &ClusterManager{
-		CloudManager: &cloud.CloudManager{
-			Cluster: cluster,
-			Certs:   certs,
-		},
+		Scope: s,
 		namer: namer{
-			cluster: cluster,
+			cluster: s.Cluster,
 		},
 	}
 }
