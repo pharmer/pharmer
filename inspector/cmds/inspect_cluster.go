@@ -38,7 +38,7 @@ func NewCmdInspectCluster() *cobra.Command {
 			caCert, caKey, err := storeProvider.Certificates(clusterName).Get("ca")
 			term.ExitOnError(err)
 
-			inspect, err := inspector.New(cluster, &certificates.CertKeyPair{
+			inspect, err := inspector.New(storeProvider, cluster, &certificates.CertKeyPair{
 				Cert: caCert,
 				Key:  caKey,
 			})

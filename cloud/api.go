@@ -24,7 +24,7 @@ type Interface interface {
 
 	AddToManager(m manager.Manager) error
 
-	//SSHGetter
+	SSHGetter
 	ProviderKubeConfig
 
 	GetCloudConnector() error
@@ -47,7 +47,7 @@ type Interface interface {
 }
 
 type SSHGetter interface {
-	GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error)
+	GetSSHConfig(node *core.Node) (*api.SSHConfig, error)
 }
 
 type UpgradeManager interface {

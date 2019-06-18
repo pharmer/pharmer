@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -22,6 +25,24 @@ type ClusterManager struct {
 	conn *cloudConnector
 
 	namer namer
+}
+
+var _ cloud.Interface = &ClusterManager{}
+
+const (
+	UID             = "aks"
+	RoleClusterUser = "clusterUser"
+)
+
+func init() {
+	cloud.RegisterCloudManager(UID, New)
+}
+
+func New(s *cloud.Scope) cloud.Interface {
+	return &ClusterManager{
+		Scope: s,
+		namer: namer{cluster: s.Cluster},
+	}
 }
 
 func (cm *ClusterManager) AddToManager(m manager.Manager) error {
@@ -56,24 +77,6 @@ func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
 
 func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 	panic("implement me")
-}
-
-var _ cloud.Interface = &ClusterManager{}
-
-const (
-	UID             = "aks"
-	RoleClusterUser = "clusterUser"
-)
-
-func init() {
-	cloud.RegisterCloudManager(UID, New)
-}
-
-func New(s *cloud.Scope) cloud.Interface {
-	return &ClusterManager{
-		Scope: s,
-		namer: namer{cluster: s.Cluster},
-	}
 }
 
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
@@ -172,4 +175,21 @@ func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 		},
 	}
 	return &cfg, nil
+}
+
+func (cm *ClusterManager) GetSSHConfig(node *corev1.Node) (*api.SSHConfig, error) {
+	cfg := &api.SSHConfig{
+		PrivateKey: cm.Certs.SSHKey.PrivateKey,
+		User:       "ubuntu",
+		HostPort:   int32(22),
+	}
+	for _, addr := range node.Status.Addresses {
+		if addr.Type == corev1.NodeExternalIP {
+			cfg.HostIP = addr.Address
+		}
+	}
+	if net.ParseIP(cfg.HostIP) == nil {
+		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cm.Cluster.Name)
+	}
+	return cfg, nil
 }

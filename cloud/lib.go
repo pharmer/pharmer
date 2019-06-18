@@ -3,40 +3,41 @@ package cloud
 import (
 	"time"
 
+	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 var managedProviders = sets.NewString("aks", "gke", "eks", "dokube")
 
-func GetSSHConfig(nodeName string, cluster *api.Cluster) (*api.SSHConfig, error) {
-	//var err error
-	//ctx, err = LoadCACertificates(ctx, Cluster, owner)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//client, err := NewAdminClient(ctx, Cluster)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//node, err := client.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{})
-	//if err != nil {
-	//	return nil, err
-	//}
-	//ctx, err = LoadSSHKey(ctx, Cluster, owner)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//cm, err := GetCloudManager(Cluster.ClusterConfig().Cloud.CloudProvider)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//return cm.GetSSHConfig(Cluster, node)
-	return nil, nil
+func GetSSHConfig(storeProvider store.ResourceInterface, clusterName, nodeName string) (*api.SSHConfig, error) {
+	cluster, err := storeProvider.Clusters().Get(clusterName)
+	if err != nil {
+		return nil, err
+	}
+
+	scope := NewScope(NewScopeParams{
+		Cluster:       cluster,
+		StoreProvider: storeProvider,
+	})
+	cm, err := scope.GetCloudManager()
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := cm.GetAdminClient()
+	if err != nil {
+		return nil, err
+	}
+
+	node, err := client.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{})
+	term.ExitOnError(err)
+
+	return cm.GetSSHConfig(node)
 }
 
 // TODO: move

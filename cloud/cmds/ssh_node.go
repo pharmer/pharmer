@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
@@ -27,14 +26,12 @@ func NewCmdSSH() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
-			if err != nil {
-				term.Fatalln(err)
-			}
-			sshConfig, err := cloud.GetSSHConfig(opts.NodeName, cluster)
-			if err != nil {
-				log.Fatalln(err)
-			}
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			term.ExitOnError(err)
+
+			sshConfig, err := cloud.GetSSHConfig(storeProvider, opts.ClusterName, opts.NodeName)
+			term.ExitOnError(err)
+
 			err = OpenShell(sshConfig.PrivateKey, sshConfig.HostIP, sshConfig.HostPort, sshConfig.User)
 			if err != nil {
 				term.Fatalln(err)

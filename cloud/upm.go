@@ -9,8 +9,8 @@ import (
 
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/store"
 	"golang.org/x/crypto/ssh"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 
 	//	"k8s.io/apimachinery/pkg/labels"
@@ -21,8 +21,9 @@ import (
 )
 
 type GenericUpgradeManager struct {
-	kc      kubernetes.Interface
-	cluster *api.Cluster
+	storeProvider store.ResourceInterface
+	kc            kubernetes.Interface
+	cluster       *api.Cluster
 }
 
 var _ UpgradeManager = &GenericUpgradeManager{}
@@ -135,11 +136,7 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 }
 
 func (upm *GenericUpgradeManager) ExecuteSSHCommand(command string, machine *clusterv1.Machine) (string, error) {
-	node, err := upm.kc.CoreV1().Nodes().Get(machine.Name, metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-	cfg, err := GetSSHConfig(node.Name, upm.cluster)
+	cfg, err := GetSSHConfig(upm.storeProvider, upm.cluster.Name, machine.Name)
 	if err != nil {
 		return "", err
 	}

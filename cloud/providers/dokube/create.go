@@ -40,6 +40,6 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 	return false, cloud.ErrNotImplemented
 }
 
-func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
+func (cm *ClusterManager) GetSSHConfig(node *core.Node) (*api.SSHConfig, error) {
 	return nil, cloud.ErrNotImplemented
 }

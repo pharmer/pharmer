@@ -66,7 +66,7 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 	return linodeconfig.SetLinodeClusterProviderConfig(&cluster.Spec.ClusterAPI)
 }
 
-func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
+func (cm *ClusterManager) GetSSHConfig(node *core.Node) (*api.SSHConfig, error) {
 	cfg := &api.SSHConfig{
 		PrivateKey: cm.Certs.SSHKey.PrivateKey,
 		User:       "root",
@@ -78,7 +78,7 @@ func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*
 		}
 	}
 	if net.ParseIP(cfg.HostIP) == nil {
-		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
+		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cm.Cluster.Name)
 	}
 	return cfg, nil
 }

@@ -82,8 +82,8 @@ func (cm *ClusterManager) SetDefaultCluster() error {
 	return clusterapiGCE.SetGCEclusterProviderConfig(&cluster.Spec.ClusterAPI, config.Cloud.Project, cm.Certs)
 }
 
-func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
-	n := namer{cluster: cluster}
+func (cm *ClusterManager) GetSSHConfig(node *core.Node) (*api.SSHConfig, error) {
+	n := namer{cluster: cm.Cluster}
 	cfg := &api.SSHConfig{
 		PrivateKey: cm.Certs.SSHKey.PrivateKey,
 		User:       n.AdminUsername(),
@@ -95,7 +95,7 @@ func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*
 		}
 	}
 	if net.ParseIP(cfg.HostIP) == nil {
-		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
+		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cm.Cluster.Name)
 	}
 	return cfg, nil
 }

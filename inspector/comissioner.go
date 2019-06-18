@@ -5,6 +5,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -12,12 +13,13 @@ import (
 )
 
 type Inspector struct {
-	client  kubernetes.Interface
-	cluster *api.Cluster
-	config  *rest.Config
+	storeProvider store.ResourceInterface
+	client        kubernetes.Interface
+	cluster       *api.Cluster
+	config        *rest.Config
 }
 
-func New(cluster *api.Cluster, caCert *certificates.CertKeyPair) (*Inspector, error) {
+func New(storeProvider store.ResourceInterface, cluster *api.Cluster, caCert *certificates.CertKeyPair) (*Inspector, error) {
 	restConfig, err := kube.NewRestConfig(caCert, cluster)
 	if err != nil {
 		return nil, err
@@ -27,7 +29,12 @@ func New(cluster *api.Cluster, caCert *certificates.CertKeyPair) (*Inspector, er
 		return nil, err
 	}
 
-	return &Inspector{client: kubeclient, cluster: cluster, config: restConfig}, nil
+	return &Inspector{
+		storeProvider: storeProvider,
+		client:        kubeclient,
+		cluster:       cluster,
+		config:        restConfig,
+	}, nil
 }
 
 func (i *Inspector) NativeCheck() error {

@@ -60,7 +60,7 @@ func (i *Inspector) runNodeExecutor(podName, podIp, containerName string) error 
 }
 
 func (i *Inspector) runMasterExecutor(masterNode core.Node, podIp string) error {
-	sshCfg, err := cloud.GetSSHConfig(masterNode.Name, i.cluster)
+	sshCfg, err := cloud.GetSSHConfig(i.storeProvider, i.cluster.Name, masterNode.Name)
 	if err != nil {
 		return err
 	}
