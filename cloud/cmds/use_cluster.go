@@ -1,7 +1,6 @@
 package cmds
 
 import (
-	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
@@ -21,25 +20,26 @@ func NewCmdUse() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err := store.SetProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
 			if err != nil {
 				term.Fatalln(err)
 			}
 
-			cluster, err := store.StoreProvider.Clusters().Get(opts.ClusterName)
+			cluster, err := storeProvider.Clusters().Get(opts.ClusterName)
 			if err != nil {
 				term.Fatalln(err)
 			}
 
-			cm, err := cloud.GetCloudManager(cluster)
-			if err != nil {
-				term.Fatalln(err)
-			}
+			scope := cloud.NewScope(cloud.NewScopeParams{
+				Cluster:       cluster,
+				StoreProvider: storeProvider,
+			})
+			cm, err := scope.GetCloudManager()
+			term.ExitOnError(err)
 
-			kubeconfig, err := cloud.GetAdminConfig(cm)
-			if err != nil {
-				log.Fatalln(err)
-			}
+			kubeconfig, err := cm.GetKubeConfig()
+			term.ExitOnError(err)
+
 			err = cloud.UseCluster(opts, kubeconfig)
 			if err != nil {
 				term.Fatalln(err)

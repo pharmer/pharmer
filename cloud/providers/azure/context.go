@@ -84,5 +84,5 @@ func (cm *ClusterManager) AddToManager(m manager.Manager) error {
 }
 
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
-	panic("implement me")
+	return kube.GetAdminConfig(cm.Cluster, cm.GetCaCertPair())
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	linodeconfig "github.com/pharmer/pharmer/apis/v1beta1/linode"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -84,5 +85,5 @@ func (cm *ClusterManager) GetSSHConfig(node *core.Node) (*api.SSHConfig, error) 
 }
 
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
-	return nil, nil
+	return kube.GetAdminConfig(cm.Cluster, cm.GetCaCertPair())
 }
