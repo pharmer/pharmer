@@ -23,14 +23,14 @@ type EKSNodeGroupManager struct {
 	kc   kubernetes.Interface
 }
 
-func NewEKSNodeGroupManager(conn *cloudConnector, ng *clusterapi.MachineSet, kc kubernetes.Interface) *EKSNodeGroupManager {
-	return &EKSNodeGroupManager{conn: conn, ng: ng, kc: kc}
+func NewEKSNodeGroupManager(scope *cloud.Scope, conn *cloudConnector, ng *clusterapi.MachineSet, kc kubernetes.Interface) *EKSNodeGroupManager {
+	return &EKSNodeGroupManager{Scope: scope, conn: conn, ng: ng, kc: kc}
 }
 
 func (igm *EKSNodeGroupManager) Apply() error {
 	fileName := igm.ng.Name
 	igm.ng.Name = strings.Replace(igm.ng.Name, ".", "-", -1)
-	//var template []byte
+
 	var found bool
 	var err error
 
@@ -54,15 +54,7 @@ func (igm *EKSNodeGroupManager) Apply() error {
 		}
 	} else {
 		if *igm.ng.Spec.Replicas == 0 || igm.ng.DeletionTimestamp != nil {
-			var ngInfo *cloudformation.Stack
-			ngInfo, err = igm.conn.getStack(igm.ng.Name)
-			if err != nil {
-				return err
-			}
 			if err = igm.conn.deleteStack(igm.ng.Name); err != nil {
-				return err
-			}
-			if err = igm.deleteNodeAuthConfigMap(igm.conn.getOutput(ngInfo, "NodeInstanceRole")); err != nil {
 				return err
 			}
 			err = igm.StoreProvider.MachineSet(igm.conn.Cluster.Name).Delete(fileName)
@@ -88,7 +80,7 @@ func (igm *EKSNodeGroupManager) Apply() error {
 }
 
 func (igm *EKSNodeGroupManager) buildstackParams() (map[string]string, error) {
-	providerSpec, err := aws.MachineConfigFromProviderSpec(igm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	providerSpec, err := aws.MachineConfigFromProviderSpec(igm.ng.Spec.Template.Spec.ProviderSpec)
 	if err != nil {
 		return nil, err
 	}
@@ -103,44 +95,8 @@ func (igm *EKSNodeGroupManager) buildstackParams() (map[string]string, error) {
 		"NodeAutoScalingGroupMaxSize":         fmt.Sprintf("%d", *igm.ng.Spec.Replicas),
 		"ClusterControlPlaneSecurityGroup":    igm.conn.Cluster.Status.Cloud.EKS.SecurityGroup,
 		"Subnets":                             igm.conn.Cluster.Status.Cloud.EKS.SubnetID,
-		"VpcID":                               igm.conn.Cluster.Status.Cloud.EKS.VpcID,
+		"VpcId":                               igm.conn.Cluster.Status.Cloud.EKS.VpcID,
 	}, nil
-}
-
-func (igm *EKSNodeGroupManager) deleteNodeAuthConfigMap(arn *string) error {
-	configmaps, err := igm.kc.CoreV1().ConfigMaps(metav1.NamespaceSystem).Get(EKSNodeConfigMap, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	mapRoles := make([]map[string]interface{}, 0)
-	if configmaps != nil {
-		existingRules := configmaps.Data[EKSConfigMapRoles]
-		if err := yaml.Unmarshal([]byte(existingRules), &mapRoles); err != nil {
-			return err
-		}
-	}
-	newRoles := make([]map[string]interface{}, 0)
-	for i, r := range mapRoles {
-		if r["rolearn"] != *arn {
-			newRoles = append(newRoles, mapRoles[i])
-			//delete(mapRoles, r)
-		}
-	}
-	mapRolesBytes, err := yaml.Marshal(newRoles)
-	if err != nil {
-		return err
-	}
-
-	_, _, err = core_util.CreateOrPatchConfigMap(igm.kc,
-		metav1.ObjectMeta{Namespace: metav1.NamespaceSystem, Name: EKSNodeConfigMap},
-		func(in *core.ConfigMap) *core.ConfigMap {
-			if in.Data == nil {
-				in.Data = make(map[string]string)
-			}
-			in.Data[EKSConfigMapRoles] = string(mapRolesBytes)
-			return in
-		})
-	return err
 }
 
 func (igm *EKSNodeGroupManager) newNodeAuthConfigMap(arn *string) error {
