@@ -48,7 +48,7 @@ func (a *Apiserver) CreateCluster(storeProvider store.Interface) error {
 				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
 			}
 
-			cluster.InitClusterApi()
+			cluster.InitClusterAPI()
 
 			err = cloud.CreateCluster(storeProvider, cluster)
 			if err != nil {

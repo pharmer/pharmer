@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/appscode/go/log"
-
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/ghodss/yaml"
 	"github.com/pharmer/pharmer/apis/v1beta1/aws"
@@ -103,8 +102,8 @@ func (igm *EKSNodeGroupManager) buildstackParams() (map[string]string, error) {
 		"NodeAutoScalingGroupMinSize":         fmt.Sprintf("%d", *igm.ng.Spec.Replicas),
 		"NodeAutoScalingGroupMaxSize":         fmt.Sprintf("%d", *igm.ng.Spec.Replicas),
 		"ClusterControlPlaneSecurityGroup":    igm.conn.Cluster.Status.Cloud.EKS.SecurityGroup,
-		"Subnets":                             igm.conn.Cluster.Status.Cloud.EKS.SubnetId,
-		"VpcId":                               igm.conn.Cluster.Status.Cloud.EKS.VpcId,
+		"Subnets":                             igm.conn.Cluster.Status.Cloud.EKS.SubnetID,
+		"VpcID":                               igm.conn.Cluster.Status.Cloud.EKS.VpcID,
 	}, nil
 }
 

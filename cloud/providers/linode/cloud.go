@@ -112,19 +112,19 @@ func (conn *cloudConnector) DetectKernel() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	kernelId := ""
+	kernelID := ""
 	for _, d := range kernels {
 		if d.PVOPS {
 			if strings.HasPrefix(d.Label, "Latest 64 bit") {
 				return d.ID, nil
 			}
-			if strings.Contains(d.Label, "x86_64") && d.ID != kernelId {
-				kernelId = d.ID
+			if strings.Contains(d.Label, "x86_64") && d.ID != kernelID {
+				kernelID = d.ID
 			}
 		}
 	}
-	if kernelId != "" {
-		return kernelId, nil
+	if kernelID != "" {
+		return kernelID, nil
 	}
 	return "", errors.New("can't find Kernel")
 }
@@ -237,7 +237,7 @@ func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, script st
 	if _, err := conn.createOrUpdateStackScript(machine, script); err != nil {
 		return nil, err
 	}
-	scriptId, err := conn.getStartupScriptID(machine)
+	scriptID, err := conn.getStartupScriptID(machine)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, script st
 		StackScriptData: map[string]string{
 			"hostname": machine.Name,
 		},
-		StackScriptID:  scriptId,
+		StackScriptID:  scriptID,
 		Image:          conn.Cluster.ClusterConfig().Cloud.InstanceImage,
 		BackupsEnabled: false,
 		PrivateIP:      true,
@@ -380,9 +380,9 @@ func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*linodego.N
 	return nb, nil
 }
 
-func (conn *cloudConnector) createNodeBalancerConfig(nbId int) (int, error) {
+func (conn *cloudConnector) createNodeBalancerConfig(nbID int) (int, error) {
 	tr := true
-	resp, err := conn.client.CreateNodeBalancerConfig(context.Background(), nbId, linodego.NodeBalancerConfigCreateOptions{
+	resp, err := conn.client.CreateNodeBalancerConfig(context.Background(), nbID, linodego.NodeBalancerConfigCreateOptions{
 		Port:          api.DefaultKubernetesBindPort,
 		Protocol:      linodego.ProtocolTCP,
 		Algorithm:     linodego.AlgorithmLeastConn,

@@ -29,7 +29,7 @@ func NewCmdDeleteCredential() *cobra.Command {
 			term.ExitOnError(err)
 
 			err = runDeleteCredentialCmd(storeProvider.Credentials(), opts)
-
+			term.ExitOnError(err)
 		},
 	}
 	opts.AddFlags(cmd.Flags())

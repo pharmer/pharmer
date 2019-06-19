@@ -26,10 +26,9 @@ import (
 
 const (
 	ProviderName                 = "gce"
-	TemplateURI                  = "https://www.googleapis.com/compute/v1/projects/"
 	firewallRuleAnnotationPrefix = "gce.clusterapi.k8s.io/firewall"
 	firewallRuleInternalSuffix   = "-allow-cluster-internal"
-	firewallRuleApiSuffix        = "-allow-api-public"
+	firewallRuleAPISuffix        = "-allow-api-public"
 	statusDone                   = "DONE"
 )
 
@@ -411,8 +410,8 @@ func (conn *cloudConnector) getFirewallRules() (bool, error) {
 		return false, err
 	}
 
-	ruleApiPublic := conn.Cluster.Name + firewallRuleApiSuffix
-	if r5, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleApiPublic).Do(); err != nil {
+	ruleAPIPublic := conn.Cluster.Name + firewallRuleAPISuffix
+	if r5, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleAPIPublic).Do(); err != nil {
 		log.Debug("Retrieved firewall rule", r5, err)
 		return false, err
 	}
@@ -506,7 +505,7 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 		log.Infof("Firewall rule %v created", ruleSSH)
 	}
 
-	ruleApiPublic := cluster.Name + firewallRuleApiSuffix
+	ruleApiPublic := cluster.Name + firewallRuleAPISuffix
 
 	if r7, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleApiPublic).Do(); err != nil {
 		log.Debug("Retrieved firewall rule", r7, err)
@@ -782,7 +781,7 @@ func (conn *cloudConnector) deleteDisk(nodeDiskNames []string) error {
 //delete firewalls
 // ruleClusterInternal := cluster.Name + firewallRuleInternalSuffix
 // ruleSSH := cluster.Name + "-allow-ssh"
-// ruleApiPublic := cluster.Name + firewallRuleApiSuffix
+// ruleApiPublic := cluster.Name + firewallRuleAPISuffix
 
 func (conn *cloudConnector) deleteFirewalls() {
 	time.Sleep(3 * time.Second)
@@ -807,13 +806,13 @@ func (conn *cloudConnector) deleteFirewalls() {
 	}
 	time.Sleep(3 * time.Second)
 
-	ruleApiPublic := conn.Cluster.Name + firewallRuleApiSuffix
-	r4, err := conn.computeService.Firewalls.Delete(conn.Cluster.Spec.Config.Cloud.Project, ruleApiPublic).Do()
+	ruleAPIPublic := conn.Cluster.Name + firewallRuleAPISuffix
+	r4, err := conn.computeService.Firewalls.Delete(conn.Cluster.Spec.Config.Cloud.Project, ruleAPIPublic).Do()
 	if err != nil {
 		log.Infoln(err)
 		//return errors.Wrap(err, "")
 	} else {
-		log.Infof("Firewalls %v deleted, response %v", ruleApiPublic, r4.Status)
+		log.Infof("Firewalls %v deleted, response %v", ruleAPIPublic, r4.Status)
 	}
 	time.Sleep(3 * time.Second)
 }

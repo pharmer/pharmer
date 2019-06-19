@@ -158,7 +158,7 @@ func ensureLoadBalancer(conn *cloudConnector, controlPlaneSN *network.Subnet) (*
 		},
 	}
 
-	if err = conn.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
+	if err = conn.Cluster.SetClusterAPIEndpoints(nodeAddresses); err != nil {
 		return nil, nil, err
 	}
 

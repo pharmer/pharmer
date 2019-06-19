@@ -39,7 +39,7 @@ func (cm *ClusterManager) EnsureMaster(masterMachine *v1alpha1.Machine) error {
 			})
 		}
 
-		if err = cm.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
+		if err = cm.Cluster.SetClusterAPIEndpoints(nodeAddresses); err != nil {
 			return err
 		}
 		if _, err = cm.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
@@ -57,7 +57,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 	}
 
 	if !found {
-		cm.Cluster.Status.Cloud.SShKeyExternalID, err = cm.conn.importPublicKey()
+		cm.Cluster.Status.Cloud.SSHKeyExternalID, err = cm.conn.importPublicKey()
 		if err != nil {
 			return err
 		}

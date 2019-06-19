@@ -192,9 +192,8 @@ func editCluster(clusterStore store.ClusterStore, opts *options.ClusterEditConfi
 				return err
 			}
 
-			os.Remove(file)
 			term.Println(fmt.Sprintf(`cluster "%s" edited`, original.Name))
-			return nil
+			return os.Remove(file)
 		}
 	}
 

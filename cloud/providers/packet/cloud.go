@@ -59,8 +59,8 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 }
 
 func (conn *cloudConnector) getPublicKey() (bool, string, error) {
-	if conn.Cluster.Status.Cloud.SShKeyExternalID != "" {
-		key, resp, err := conn.client.SSHKeys.Get(conn.Cluster.Status.Cloud.SShKeyExternalID, &packngo.GetOptions{})
+	if conn.Cluster.Status.Cloud.SSHKeyExternalID != "" {
+		key, resp, err := conn.client.SSHKeys.Get(conn.Cluster.Status.Cloud.SSHKeyExternalID, &packngo.GetOptions{})
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return false, "", nil
 		}

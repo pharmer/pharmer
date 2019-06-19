@@ -101,7 +101,7 @@ func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster,
 			return err
 		}
 
-		if _, err := do.cm.conn.CreateInstance(do.cm.conn.Cluster, machine, script); err != nil {
+		if err := do.cm.conn.CreateInstance(do.cm.conn.Cluster, machine, script); err != nil {
 			return errors.Wrap(err, "failed to create instance")
 		}
 	}
@@ -186,9 +186,9 @@ func (do *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster,
 		log.Infof("Skipped deleting a VM that is already deleted")
 		return nil
 	}
-	dropletId := fmt.Sprintf("digitalocean://%v", instance.ID)
+	dropletID := fmt.Sprintf("digitalocean://%v", instance.ID)
 
-	if err = do.cm.conn.DeleteInstanceByProviderID(dropletId); err != nil {
+	if err = do.cm.conn.DeleteInstanceByProviderID(dropletID); err != nil {
 		log.Infof("errror on deleting %v", err)
 	}
 

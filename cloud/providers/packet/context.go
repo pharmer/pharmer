@@ -66,7 +66,7 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 	}
 	cloudConfig := &api.PacketCloudConfig{
 		Project: typed.ProjectID(),
-		ApiKey:  typed.APIKey(),
+		APIKey:  typed.APIKey(),
 		Zone:    cm.Cluster.ClusterConfig().Cloud.Zone,
 	}
 	data, err := json.Marshal(cloudConfig)

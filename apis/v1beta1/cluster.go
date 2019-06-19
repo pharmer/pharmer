@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/appscode/go/sets"
-	version "gomodules.xyz/version"
+	"gomodules.xyz/version"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	ResourceCodeCluster = ""
 	ResourceKindCluster = "Cluster"
 	ResourceNameCluster = "cluster"
 	ResourceTypeCluster = "clusters"
@@ -22,7 +21,6 @@ const (
 
 	RetryInterval      = 5 * time.Second
 	RetryTimeout       = 15 * time.Minute
-	ServiceAccountNs   = "kube-system"
 	ServiceAccountName = "default"
 )
 
@@ -175,7 +173,7 @@ type AzureCloudConfig struct {
 type LinodeSpec struct {
 	// Linode
 	RootPassword string `json:"rootPassword,omitempty"`
-	KernelId     string `json:"kernelId,omitempty"`
+	KernelID     string `json:"kernelId,omitempty"`
 }
 
 type LinodeCloudConfig struct {
@@ -185,7 +183,7 @@ type LinodeCloudConfig struct {
 
 type PacketCloudConfig struct {
 	Project string `json:"project,omitempty"`
-	ApiKey  string `json:"apiKey,omitempty"`
+	APIKey  string `json:"apiKey,omitempty"`
 	Zone    string `json:"zone,omitempty"`
 }
 
@@ -210,7 +208,7 @@ const (
 )
 
 type CloudStatus struct {
-	SShKeyExternalID string       `json:"sshKeyExternalID,omitempty"`
+	SSHKeyExternalID string       `json:"sshKeyExternalID,omitempty"`
 	AWS              *AWSStatus   `json:"aws,omitempty"`
 	EKS              *EKSStatus   `json:"eks,omitempty"`
 	LoadBalancer     LoadBalancer `json:"loadBalancer,omitempty"`
@@ -230,8 +228,8 @@ type AWSStatus struct {
 
 type EKSStatus struct {
 	SecurityGroup string `json:"securityGroup,omitempty"`
-	VpcId         string `json:"vpcID,omitempty"`
-	SubnetId      string `json:"subnetID,omitempty"`
+	VpcID         string `json:"vpcID,omitempty"`
+	SubnetID      string `json:"subnetID,omitempty"`
 	RoleArn       string `json:"roleArn,omitempty"`
 }
 
@@ -248,6 +246,8 @@ type ReservedIP struct {
 	Name string `json:"name,omitempty"`
 }
 
+var ManagedProviders = sets.NewString("aks", "gke", "eks", "dokube")
+
 func (c *Cluster) ClusterConfig() ClusterConfig {
 	return c.Spec.Config
 }
@@ -256,15 +256,13 @@ func (c *Cluster) APIServerURL() string {
 	for _, addr := range c.Spec.ClusterAPI.Status.APIEndpoints {
 		if addr.Port == 0 {
 			return fmt.Sprintf("https://%s", addr.Host)
-		} else {
-			return fmt.Sprintf("https://%s:%d", addr.Host, addr.Port)
 		}
-
+		return fmt.Sprintf("https://%s:%d", addr.Host, addr.Port)
 	}
 	return ""
 }
 
-func (c *Cluster) SetClusterApiEndpoints(addresses []core.NodeAddress) error {
+func (c *Cluster) SetClusterAPIEndpoints(addresses []core.NodeAddress) error {
 	m := map[core.NodeAddressType]string{}
 	for _, addr := range addresses {
 		m[addr.Type] = addr.Address
@@ -295,10 +293,8 @@ func (c *Cluster) APIServerAddress() string {
 	ep := endpoints[0]
 	if ep.Port == 0 {
 		return ep.Host
-	} else {
-		return fmt.Sprintf("%s:%d", ep.Host, ep.Port)
 	}
-
+	return fmt.Sprintf("%s:%d", ep.Host, ep.Port)
 }
 
 func (c *Cluster) SetNetworkingDefaults(provider string) {
@@ -324,26 +320,12 @@ func (c *Cluster) SetNetworkingDefaults(provider string) {
 	}
 }
 
-func (c *Cluster) InitClusterApi() {
+func (c *Cluster) InitClusterAPI() {
 	c.Spec.ClusterAPI = clusterapi.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: c.Name,
 		},
 	}
-}
-
-func (c Cluster) IsMinorVersion(in string) bool {
-	v, err := version.NewVersion(c.Spec.Config.KubernetesVersion)
-	if err != nil {
-		return false
-	}
-	minor := v.ToMutator().ResetMetadata().ResetPrerelease().ResetPatch().String()
-
-	inVer, err := version.NewVersion(in)
-	if err != nil {
-		return false
-	}
-	return inVer.String() == minor
 }
 
 func (c Cluster) IsLessThanVersion(in string) bool {
@@ -369,5 +351,3 @@ func (c *Cluster) MasterMachineName(n int) string {
 func (c *Cluster) CloudProvider() string {
 	return c.Spec.Config.Cloud.CloudProvider
 }
-
-var ManagedProviders = sets.NewString("aks", "gke", "eks", "dokube")

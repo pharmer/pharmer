@@ -161,10 +161,10 @@ func (conn *cloudConnector) createTags() error {
 	return nil
 }
 
-func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, script string) (*api.NodeInfo, error) {
+func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, script string) error {
 	machineConfig, err := doCapi.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req := &godo.DropletCreateRequest{
 		Name:   machine.Name,
@@ -188,32 +188,15 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 
 	host, _, err := conn.client.Droplets.Create(context.TODO(), req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	log.Infof("Droplet %v created", host.Name)
 
 	if err = conn.WaitForInstance(host.ID, "active"); err != nil {
-		return nil, err
+		return err
 	}
 
-	// load again to get IP address assigned
-	host, _, err = conn.client.Droplets.Get(context.TODO(), host.ID)
-	if err != nil {
-		return nil, err
-	}
-	node := api.NodeInfo{
-		Name:       host.Name,
-		ExternalID: strconv.Itoa(host.ID),
-	}
-	node.PublicIP, err = host.PublicIPv4()
-	if err != nil {
-		return nil, err
-	}
-	node.PrivateIP, err = host.PrivateIPv4()
-	if err != nil {
-		return nil, err
-	}
-	return &node, nil
+	return nil
 }
 
 func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*godo.Droplet, error) {

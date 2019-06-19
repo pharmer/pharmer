@@ -168,13 +168,13 @@ func (conn *cloudConnector) createClusterVPC() error {
 	if subnetIds == nil {
 		return fmt.Errorf("SubnetIds is nil")
 	}
-	conn.Cluster.Status.Cloud.EKS.SubnetId = types.String(subnetIds)
+	conn.Cluster.Status.Cloud.EKS.SubnetID = types.String(subnetIds)
 
-	vpcId := conn.getOutput(vpc, "VpcId")
-	if vpcId == nil {
-		return fmt.Errorf("VpcId is nil")
+	vpcID := conn.getOutput(vpc, "VpcID")
+	if vpcID == nil {
+		return fmt.Errorf("VpcID is nil")
 	}
-	conn.Cluster.Status.Cloud.EKS.VpcId = types.String(vpcId)
+	conn.Cluster.Status.Cloud.EKS.VpcID = types.String(vpcID)
 	return nil
 }
 
@@ -183,7 +183,7 @@ func (conn *cloudConnector) createControlPlane() error {
 		Name:    types.StringP(conn.Cluster.Name),
 		RoleArn: types.StringP(conn.Cluster.Status.Cloud.EKS.RoleArn),
 		ResourcesVpcConfig: &_eks.VpcConfigRequest{
-			SubnetIds:        types.StringPSlice(strings.Split(conn.Cluster.Status.Cloud.EKS.SubnetId, ",")),
+			SubnetIds:        types.StringPSlice(strings.Split(conn.Cluster.Status.Cloud.EKS.SubnetID, ",")),
 			SecurityGroupIds: types.StringPSlice([]string{conn.Cluster.Status.Cloud.EKS.SecurityGroup}),
 		},
 		Version: types.StringP(conn.Cluster.Spec.Config.KubernetesVersion),

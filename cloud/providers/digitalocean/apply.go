@@ -37,12 +37,12 @@ func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
 			return err
 		}
 
-		_, err = cm.conn.CreateInstance(cm.Cluster, leaderMachine, script)
+		err = cm.conn.CreateInstance(cm.Cluster, leaderMachine, script)
 		if err != nil {
 			return err
 		}
 
-		if err = cm.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
+		if err = cm.Cluster.SetClusterAPIEndpoints(nodeAddresses); err != nil {
 			return err
 		}
 
@@ -103,7 +103,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 		},
 	}
 
-	if err = cm.Cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
+	if err = cm.Cluster.SetClusterAPIEndpoints(nodeAddresses); err != nil {
 		return errors.Wrap(err, "Error setting controlplane endpoints")
 	}
 

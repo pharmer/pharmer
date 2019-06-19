@@ -44,10 +44,10 @@ func encodeCluster(machinesetStore store.MachineSetStore, cluster *api.Cluster) 
 		nodePools = append(nodePools, np)
 	}
 	config := cluster.Spec.Config
-	clusterApi := cluster.Spec.ClusterAPI
+	clusterAPI := cluster.Spec.ClusterAPI
 
 	kluster := &container.Cluster{
-		ClusterIpv4Cidr:       clusterApi.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
+		ClusterIpv4Cidr:       clusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
 		Name:                  cluster.Name,
 		InitialClusterVersion: cluster.Spec.Config.KubernetesVersion,
 
