@@ -131,28 +131,40 @@ func (conn *cloudConnector) WaitForControlPlaneOperation(name string) error {
 	})
 }
 
-func (conn *cloudConnector) createStackServiceRole() error {
+func (conn *cloudConnector) ensureStackServiceRole() error {
+	found := conn.isStackExists(conn.namer.GetStackServiceRole())
 	serviceRoleName := conn.namer.GetStackServiceRole()
-	if err := conn.createStack(serviceRoleName, ServiceRoleURL, nil, true); err != nil {
-		return err
+
+	if !found {
+		if err := conn.createStack(serviceRoleName, ServiceRoleURL, nil, true); err != nil {
+			return err
+		}
 	}
+
 	serviceRole, err := conn.getStack(serviceRoleName)
 	if err != nil {
 		return err
 	}
+
 	roleArn := conn.getOutput(serviceRole, "RoleArn")
 	if roleArn == nil {
 		return fmt.Errorf("RoleArn is nil")
 	}
+
 	conn.Cluster.Status.Cloud.EKS.RoleArn = types.String(roleArn)
+
 	return nil
 }
 
-func (conn *cloudConnector) createClusterVPC() error {
+func (conn *cloudConnector) ensureClusterVPC() error {
+	found := conn.isStackExists(conn.namer.GetClusterVPC())
 	vpcName := conn.namer.GetClusterVPC()
-	if err := conn.createStack(vpcName, EKSVPCUrl, nil, false); err != nil {
-		return err
+	if !found {
+		if err := conn.createStack(vpcName, EKSVPCUrl, nil, false); err != nil {
+			return err
+		}
 	}
+
 	vpc, err := conn.getStack(vpcName)
 	if err != nil {
 		return err
@@ -170,7 +182,7 @@ func (conn *cloudConnector) createClusterVPC() error {
 	}
 	conn.Cluster.Status.Cloud.EKS.SubnetID = types.String(subnetIds)
 
-	vpcID := conn.getOutput(vpc, "VpcID")
+	vpcID := conn.getOutput(vpc, "VpcId")
 	if vpcID == nil {
 		return fmt.Errorf("VpcID is nil")
 	}

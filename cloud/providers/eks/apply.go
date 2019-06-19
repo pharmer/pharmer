@@ -12,15 +12,16 @@ func (cm *ClusterManager) PrepareCloud() error {
 	var found bool
 	var err error
 
+	if cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec, err = cm.GetDefaultMachineProviderSpec(cm.GetMasterSKU(0), ""); err != nil {
+		return err
+	}
+
 	if cm.Cluster.Spec.Config.Cloud.InstanceImage, err = cm.conn.DetectInstanceImage(); err != nil {
 		return err
 	}
 
-	found = cm.conn.isStackExists(cm.namer.GetStackServiceRole())
-	if !found {
-		if err = cm.conn.createStackServiceRole(); err != nil {
-			return err
-		}
+	if err = cm.conn.ensureStackServiceRole(); err != nil {
+		return err
 	}
 
 	found, _ = cm.conn.getPublicKey()
@@ -31,11 +32,8 @@ func (cm *ClusterManager) PrepareCloud() error {
 		}
 	}
 
-	found = cm.conn.isStackExists(cm.namer.GetClusterVPC())
-	if !found {
-		if err = cm.conn.createClusterVPC(); err != nil {
-			return err
-		}
+	if err = cm.conn.ensureClusterVPC(); err != nil {
+		return err
 	}
 
 	found = cm.conn.isControlPlaneExists(cm.Cluster.Name)
@@ -46,11 +44,6 @@ func (cm *ClusterManager) PrepareCloud() error {
 	}
 
 	_, err = cm.StoreProvider.Clusters().Update(cm.Cluster)
-	if err != nil {
-		return nil
-	}
-
-	_, err = cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 
 	return err
 }
@@ -62,13 +55,18 @@ func (cm *ClusterManager) ApplyScale() error {
 	if err != nil {
 		return err
 	}
+
 	var kc kubernetes.Interface
-	kc, err = cm.GetAdminClient()
-	if err != nil {
-		return err
+
+	if cm.Cluster.Status.Phase != api.ClusterDeleted {
+		kc, err = cm.GetAdminClient()
+		if err != nil {
+			return err
+		}
 	}
+
 	for _, ng := range nodeGroups {
-		igm := NewEKSNodeGroupManager(cm.conn, ng, kc)
+		igm := NewEKSNodeGroupManager(cm.Scope, cm.conn, ng, kc)
 
 		err = igm.Apply()
 		if err != nil {
