@@ -47,7 +47,7 @@ func (cm *ClusterManager) ApplyScale() error {
 		return err
 	}
 	for _, ng := range nodeGroups {
-		igm := NewDokubeNodeGroupManager(cm.conn, ng)
+		igm := NewDokubeNodeGroupManager(cm.Scope, cm.conn, ng)
 
 		err = igm.Apply()
 		if err != nil {

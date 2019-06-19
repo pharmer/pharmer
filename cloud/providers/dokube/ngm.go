@@ -11,8 +11,8 @@ type DokubeNodeGroupManager struct {
 	ng   *clusterapi.MachineSet
 }
 
-func NewDokubeNodeGroupManager(conn *cloudConnector, ng *clusterapi.MachineSet) *DokubeNodeGroupManager {
-	return &DokubeNodeGroupManager{conn: conn, ng: ng}
+func NewDokubeNodeGroupManager(scope *cloud.Scope, conn *cloudConnector, ng *clusterapi.MachineSet) *DokubeNodeGroupManager {
+	return &DokubeNodeGroupManager{Scope: scope, conn: conn, ng: ng}
 }
 
 func (igm *DokubeNodeGroupManager) Apply() error {
