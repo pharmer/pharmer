@@ -16,10 +16,9 @@ func (cm *ClusterManager) PrepareCloud() error {
 		if err != nil {
 			return err
 		}
+
 		cm.Cluster.Spec.Config.Cloud.Dokube.ClusterID = cluster.ID
-		if _, err = cm.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
-			return err
-		}
+
 		if err := cm.retrieveClusterStatus(cluster); err != nil {
 			return err
 		}
@@ -35,6 +34,10 @@ func (cm *ClusterManager) PrepareCloud() error {
 		}
 
 		cm.Certs = certs
+
+		if _, err = cm.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
+			return err
+		}
 	}
 
 	return nil

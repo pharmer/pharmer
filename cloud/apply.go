@@ -74,13 +74,6 @@ func Apply(opts *options.ApplyConfig, storeProvider store.ResourceInterface) err
 			}
 		}
 
-		if api.ManagedProviders.Has(cluster.CloudProvider()) {
-			err = ApplyScale(scope)
-			if err != nil {
-				return errors.Wrap(err, "failed to scale Cluster")
-			}
-		}
-
 		err = ApplyDelete(scope)
 		if err != nil {
 			return err

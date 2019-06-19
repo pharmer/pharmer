@@ -1,12 +1,14 @@
 package dokube
 
 import (
+	"fmt"
+
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
-	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -74,7 +76,42 @@ func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 }
 
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
-	return kube.GetAdminConfig(cm.Cluster, cm.GetCaCertPair())
+	adminCert, adminKey, err := cm.StoreProvider.Certificates(cm.Cluster.Name).Get("admin")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get admin cert and key")
+	}
+
+	cluster := cm.Cluster
+	var (
+		clusterName = fmt.Sprintf("%s.pharmer", cluster.Name)
+		userName    = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
+		ctxName     = fmt.Sprintf("cluster-admin@%s.pharmer", cluster.Name)
+	)
+	cfg := api.KubeConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "KubeConfig",
+		},
+		Preferences: api.Preferences{
+			Colors: true,
+		},
+		Cluster: api.NamedCluster{
+			Name:                     clusterName,
+			Server:                   cluster.APIServerURL(),
+			CertificateAuthorityData: cert.EncodeCertPEM(cm.Certs.CACert.Cert),
+		},
+		AuthInfo: api.NamedAuthInfo{
+			Name:                  userName,
+			ClientCertificateData: cert.EncodeCertPEM(adminCert),
+			ClientKeyData:         cert.EncodePrivateKeyPEM(adminKey),
+		},
+		Context: api.NamedContext{
+			Name:     ctxName,
+			Cluster:  clusterName,
+			AuthInfo: userName,
+		},
+	}
+	return &cfg, nil
 }
 
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
