@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
@@ -48,7 +47,7 @@ func NewCmdBackup() *cobra.Command {
 				if err != nil {
 					term.Fatalln(err)
 				}
-				restConfig = api.NewRestConfig(c2)
+				restConfig = kube.NewRestConfigFromKubeConfig(c2)
 			}
 
 			mgr := backup.NewBackupManager(opts.ClusterName, restConfig, opts.Sanitize)

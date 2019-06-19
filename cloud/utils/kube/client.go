@@ -43,13 +43,29 @@ func NewRestConfig(caCertPair *certificates.CertKeyPair, cluster *api.Cluster) (
 	return cfg, nil
 }
 
+func NewRestConfigFromKubeConfig(in *api.KubeConfig) *rest.Config {
+	out := &rest.Config{
+		Host: in.Cluster.Server,
+		TLSClientConfig: rest.TLSClientConfig{
+			CAData: append([]byte(nil), in.Cluster.CertificateAuthorityData...),
+		},
+	}
+	if in.AuthInfo.Token == "" {
+		out.TLSClientConfig.CertData = append([]byte(nil), in.AuthInfo.ClientCertificateData...)
+		out.TLSClientConfig.KeyData = append([]byte(nil), in.AuthInfo.ClientKeyData...)
+	} else {
+		out.BearerToken = in.AuthInfo.Token
+	}
+	return out
+}
+
 //func GetKubernetesClient(s *cloud.Scope) (kubernetes.Interface, error) {
 //	kubeConifg, err := GetAdminConfig(s)
 //	if err != nil {
 //		return nil, err
 //	}
 //
-//	config := api.NewRestConfig(kubeConifg)
+//	config := api.NewRestConfigFromKubeConfig(kubeConifg)
 //
 //	return kubernetes.NewForConfig(config)
 //}

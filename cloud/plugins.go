@@ -45,7 +45,7 @@ func GetCloudManager(s *Scope) (Interface, error) {
 	defer providersMutex.Unlock()
 	f, found := providers[s.Cluster.Spec.Config.Cloud.CloudProvider]
 	if !found {
-		return nil, errors.New("not registerd")
+		return nil, errors.New("cloud provider not registerd")
 	}
 	return f(s), nil
 }

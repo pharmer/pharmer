@@ -340,7 +340,7 @@ func TestCluster_SetNetworkingDefaults(t *testing.T) {
 				Status:     PharmerClusterStatus{},
 			},
 			args: args{
-				provider: "flannel",
+				provider: "canal",
 			},
 		},
 	}

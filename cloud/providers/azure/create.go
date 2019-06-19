@@ -59,12 +59,14 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 
 }
 
+// TODO: add test to make sure that apiserver certSANs have internal lb adress
 func (cm *ClusterManager) SetDefaultCluster() error {
 	cluster := cm.Cluster
 	n := namer{cluster: cluster}
 	config := &cluster.Spec.Config
 
 	config.APIServerExtraArgs["cloud-config"] = "/etc/kubernetes/azure.json"
+	config.APIServerCertSANs = append(config.APIServerCertSANs, DefaultInternalLBIPAddress)
 
 	credentialName := cluster.Spec.Config.CredentialName
 	cred, err := cm.StoreProvider.Credentials().Get(credentialName)

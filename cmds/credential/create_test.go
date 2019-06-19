@@ -79,6 +79,36 @@ func Test_runCreateCredential(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "azure from env",
+			args: args{
+				credentialStore: fake.New().Credentials(),
+				opts: &options2.CredentialCreateConfig{
+					Name:     "azure-test",
+					Provider: "azure",
+					FromEnv:  true,
+				},
+			},
+			wantErr: false,
+			beforeTest: func(t *testing.T, a args) func(*testing.T) {
+				os.Setenv("AZURE_SUBSCRIPTION_ID", "a")
+				os.Setenv("AZURE_TENANT_ID", "b")
+				os.Setenv("AZURE_CLIENT_ID", "c")
+				os.Setenv("AZURE_CLIENT_SECRET", "d")
+
+				return func(t *testing.T) {
+					os.Unsetenv("AZURE_SUBSCRIPTION_ID")
+					os.Unsetenv("AZURE_TENANT_ID")
+					os.Unsetenv("AZURE_CLIENT_ID")
+					os.Unsetenv("AZURE_CLIENT_SECRET")
+
+					err := a.credentialStore.Delete(a.opts.Name)
+					if err != nil {
+						t.Errorf("failed to delete cred")
+					}
+				}
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

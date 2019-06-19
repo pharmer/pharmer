@@ -4,10 +4,12 @@ import (
 	"testing"
 
 	"github.com/onsi/gomega"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	_ "github.com/pharmer/pharmer/cloud/providers/aws"
+	"github.com/pharmer/pharmer/cloud/providers/azure"
 	_ "github.com/pharmer/pharmer/cloud/providers/gce"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/store"
@@ -16,21 +18,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
-
-//_, err = storage.Credentials().Create(&cloudapi.Credential{
-//	ObjectMeta: v1.ObjectMeta{
-//		Name: "azure-cred",
-//	},
-//	Spec: cloudapi.CredentialSpec{
-//		Provider: "azure",
-//		Data: map[string]string{
-//			"clientID":       "a",
-//			"clientSecret":   "b",
-//			"subscriptionID": "c",
-//			"tenantID":       "d",
-//		},
-//	},
-//})
 
 func deleteCerts(t *testing.T, s store.ResourceInterface, clusterName string) {
 	t.Helper()
@@ -102,6 +89,26 @@ func TestCreateCluster(t *testing.T) {
 			},
 			wantErr: true,
 			errmsg:  "missing Cluster version",
+		}, {
+			name: "unknown provider",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "unknown",
+					},
+					Spec: api.PharmerClusterSpec{
+						Config: api.ClusterConfig{
+							Cloud: api.CloudSpec{
+								CloudProvider: "unknown",
+							},
+							KubernetesVersion: "1.13.4",
+						},
+					},
+				},
+			},
+			wantErr: true,
+			errmsg:  "cloud provider not registerd",
 		}, {
 			name: "Cluster already exists",
 			args: args{
@@ -182,6 +189,65 @@ func TestCreateCluster(t *testing.T) {
 			},
 			wantErr:    false,
 			beforeTest: genericBeforeTest,
+		}, {
+			name: "azure Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "azure",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "azure",
+								Zone:          "us-east",
+							},
+							CredentialName:    "azure-cred",
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr: false,
+			beforeTest: func(t *testing.T, a args) func(t *testing.T) {
+				g := gomega.NewGomegaWithT(t)
+				_, err := a.store.Credentials().Create(&cloudapi.Credential{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "azure-cred",
+					},
+					Spec: cloudapi.CredentialSpec{
+						Provider: "azure",
+						Data: map[string]string{
+							"clientID":       "a",
+							"clientSecret":   "b",
+							"subscriptionID": "c",
+							"tenantID":       "d",
+						},
+					},
+				})
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+
+				return func(t *testing.T) {
+					// check if load balancer ip is set
+					a.cluster.Spec.Config.APIServerCertSANs[0] = azure.DefaultInternalLBIPAddress
+
+					// check if Cluster is created
+					err := a.store.Clusters().Delete(a.cluster.Name)
+					g.Expect(err).NotTo(gomega.HaveOccurred())
+
+					// check certs are generated
+					deleteCerts(t, a.store, a.cluster.Name)
+
+					// check master machines are genereated
+					for i := 0; i < a.cluster.Spec.Config.MasterCount; i++ {
+						err = a.store.Machine(a.cluster.Name).Delete(a.cluster.MasterMachineName(i))
+						g.Expect(err).NotTo(gomega.HaveOccurred())
+					}
+				}
+			},
 		},
 	}
 	g := gomega.NewGomegaWithT(t)
@@ -197,7 +263,7 @@ func TestCreateCluster(t *testing.T) {
 				t.Errorf("CreateCluster() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantErr {
-				g.Expect(err).Should(gomega.MatchError(tt.errmsg))
+				g.Expect(err.Error()).Should(gomega.ContainSubstring(tt.errmsg))
 			}
 		})
 	}
