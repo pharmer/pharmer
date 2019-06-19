@@ -5,7 +5,7 @@ import (
 )
 
 func (cm *ClusterManager) PrepareCloud() error {
-	err := cm.GetCloudConnector()
+	err := cm.SetCloudConnector()
 	if err != nil {
 		return err
 	}

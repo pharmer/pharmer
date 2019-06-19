@@ -38,6 +38,14 @@ func Apply(opts *options.ApplyConfig, storeProvider store.ResourceInterface) err
 	}
 
 	scope := NewScope(NewScopeParams{Cluster: cluster, StoreProvider: storeProvider})
+	_, err = scope.GetCloudManager()
+	if err != nil {
+		return err
+	}
+	err = scope.CloudManager.SetCloudConnector()
+	if err != nil {
+		return err
+	}
 
 	if cluster.Status.Phase == api.ClusterPending {
 		err := ApplyCreate(scope)

@@ -106,7 +106,7 @@ func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data
 	return nil
 }
 
-func (cm *ClusterManager) GetCloudConnector() error {
+func (cm *ClusterManager) SetCloudConnector() error {
 	var err error
 
 	if cm.conn, err = newconnector(cm); err != nil {

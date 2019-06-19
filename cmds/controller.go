@@ -47,7 +47,7 @@ func newCmdController() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err = cm.GetCloudConnector() //Connector()
+			err = cm.SetCloudConnector() //Connector()
 			if err != nil {
 				term.Fatalln(err)
 			}

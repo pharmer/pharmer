@@ -153,7 +153,7 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 	return nil
 }
 
-func (cm *ClusterManager) GetCloudConnector() error {
+func (cm *ClusterManager) SetCloudConnector() error {
 	conn, err := newconnector(cm)
 	cm.conn = conn
 	return err

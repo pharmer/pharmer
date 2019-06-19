@@ -25,7 +25,7 @@ type Interface interface {
 
 	ProviderKubeConfig
 
-	GetCloudConnector() error
+	SetCloudConnector() error
 
 	ApplyDelete() error
 	// only managed providers

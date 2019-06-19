@@ -80,7 +80,7 @@ func newconnector(cm *ClusterManager) (*cloudConnector, error) {
 	return &conn, nil
 }
 
-func (cm *ClusterManager) GetCloudConnector() error {
+func (cm *ClusterManager) SetCloudConnector() error {
 	var err error
 	if cm.conn, err = newconnector(cm); err != nil {
 		return err

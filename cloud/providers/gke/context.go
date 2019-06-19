@@ -48,7 +48,7 @@ func (cm *ClusterManager) AddToManager(m manager.Manager) error {
 	return nil
 }
 
-func (cm *ClusterManager) GetCloudConnector() error {
+func (cm *ClusterManager) SetCloudConnector() error {
 	if cm.conn != nil {
 		return nil
 	}

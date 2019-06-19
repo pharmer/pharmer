@@ -17,6 +17,10 @@ import (
 // edit credential
 // for all providers, with all available flags
 
+// TODO:
+// only checking if cred is created
+// should we test file contents?
+
 func Test_runCreateCredential(t *testing.T) {
 	type args struct {
 		credentialStore store.CredentialStore
@@ -36,9 +40,6 @@ func Test_runCreateCredential(t *testing.T) {
 					Name:     "do-test",
 					Provider: "digitalocean",
 					FromEnv:  true,
-					FromFile: "",
-					Issue:    false,
-					Owner:    "",
 				},
 			},
 			wantErr: false,
@@ -46,10 +47,38 @@ func Test_runCreateCredential(t *testing.T) {
 				os.Setenv("DIGITALOCEAN_TOKEN", "abcd")
 				return func(t *testing.T) {
 					os.Unsetenv("DIGITALOCEAN_TOKEN")
+					err := a.credentialStore.Delete(a.opts.Name)
+					if err != nil {
+						t.Errorf("failed to delete cred")
+					}
 				}
 			},
 		},
-		// TODO: add more
+		{
+			name: "aws from env",
+			args: args{
+				credentialStore: fake.New().Credentials(),
+				opts: &options2.CredentialCreateConfig{
+					Name:     "aws-test",
+					Provider: "aws",
+					FromEnv:  true,
+				},
+			},
+			wantErr: false,
+			beforeTest: func(t *testing.T, a args) func(*testing.T) {
+				os.Setenv("AWS_ACCESS_KEY_ID", "abcd")
+				os.Setenv("AWS_ACCESS_SECRET_ACCESS_KEY", "abcd")
+				return func(t *testing.T) {
+					os.Unsetenv("AWS_ACCESS_KEY_ID")
+					os.Unsetenv("AWS_ACCESS_SECRET_ACCESS_KEY")
+
+					err := a.credentialStore.Delete(a.opts.Name)
+					if err != nil {
+						t.Errorf("failed to delete cred")
+					}
+				}
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

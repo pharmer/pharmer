@@ -7,6 +7,7 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	_ "github.com/pharmer/pharmer/cloud/providers/aws"
 	_ "github.com/pharmer/pharmer/cloud/providers/gce"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/store/providers/fake"
@@ -150,6 +151,29 @@ func TestCreateCluster(t *testing.T) {
 							Cloud: api.CloudSpec{
 								CloudProvider: "gce",
 								Zone:          "us-central-1f",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+		}, {
+			name: "aws Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "aws",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "aws",
+								Zone:          "us-east-1b",
 							},
 							KubernetesVersion: "1.13.1",
 						},
