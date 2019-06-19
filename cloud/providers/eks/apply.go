@@ -84,6 +84,9 @@ func (cm *ClusterManager) ApplyScale() error {
 }
 
 func (cm *ClusterManager) ApplyDelete() error {
+	err := cm.ApplyScale()
+	log.Infoln(err)
+
 	found := cm.conn.isControlPlaneExists(cm.Cluster.Name)
 	if found {
 		if err := cm.conn.deleteControlPlane(); err != nil {
@@ -105,7 +108,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 		}
 	}
 
-	found, err := cm.conn.getPublicKey()
+	found, err = cm.conn.getPublicKey()
 	if err != nil {
 		log.Infoln(err)
 	}
