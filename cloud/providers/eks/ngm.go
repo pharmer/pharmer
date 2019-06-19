@@ -61,6 +61,8 @@ func (igm *EKSNodeGroupManager) Apply() error {
 			if err != nil {
 				return err
 			}
+
+			return nil
 		} else {
 			params, err := igm.buildstackParams()
 			if err != nil {

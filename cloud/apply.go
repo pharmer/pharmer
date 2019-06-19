@@ -53,6 +53,10 @@ func Apply(opts *options.ApplyConfig, storeProvider store.ResourceInterface) err
 		if err != nil {
 			return err
 		}
+		err = ApplyScale(scope)
+		if err != nil {
+			return errors.Wrap(err, "failed to scale Cluster")
+		}
 	}
 
 	if cluster.DeletionTimestamp != nil && cluster.Status.Phase != api.ClusterDeleted {
