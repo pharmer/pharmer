@@ -70,7 +70,6 @@ func ShortHumanDuration(d time.Duration) string {
 
 func (h *HumanReadablePrinter) addDefaultHandlers() {
 	_ = h.Handler(h.printCluster)
-	_ = h.Handler(h.printNodeGroup)
 	_ = h.Handler(h.printCredential)
 	_ = h.Handler(h.printMachineSet)
 }
@@ -157,26 +156,6 @@ func (h *HumanReadablePrinter) printCluster(item *api.Cluster, w io.Writer, opti
 		return
 	}
 	if _, err = fmt.Fprintf(w, "%s\t", item.Status.Phase); err != nil {
-		return
-	}
-	return PrintNewline(w)
-}
-
-func (h *HumanReadablePrinter) printNodeGroup(item *api.NodeGroup, w io.Writer, options PrintOptions) (err error) {
-	name := item.Name
-
-	if _, err = fmt.Fprintf(w, "%s\t", name); err != nil {
-		return
-	}
-
-	if _, err = fmt.Fprintf(w, "%s\t", item.ClusterName); err != nil {
-		return
-	}
-
-	if _, err = fmt.Fprintf(w, "%v\t", item.Spec.Nodes); err != nil {
-		return
-	}
-	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.Template.Spec.SKU); err != nil {
 		return
 	}
 	return PrintNewline(w)

@@ -47,7 +47,7 @@ type Interface interface {
 type UpgradeManager interface {
 	GetAvailableUpgrades() ([]*api.Upgrade, error)
 	PrintAvailableUpgrades([]*api.Upgrade)
-	Apply(dryRun bool) ([]api.Action, error)
+	Apply() error
 	MasterUpgrade(oldMachine *clusterapi.Machine, newMachine *clusterapi.Machine) error
 	NodeUpgrade(oldMachine *clusterapi.Machine, newMachine *clusterapi.Machine) error
 }

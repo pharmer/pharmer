@@ -217,12 +217,7 @@ func (upm *GenericUpgradeManager) PrintAvailableUpgrades(upgrades []*api.Upgrade
 		fmt.Fprintln(w, "")
 	}
 }
-func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err error) {
-	acts = append(acts, api.Action{
-		Action:   api.ActionUpdate,
-		Resource: "Master upgrade",
-		Message:  fmt.Sprintf("Master instance will be upgraded to %v", upm.cluster.ClusterConfig().KubernetesVersion),
-	})
+func (upm *GenericUpgradeManager) Apply() error {
 	/*upm.clientSet, err = NewClusterApiClient(upm.ctx, upm.Cluster)
 	if err != nil {
 		return
@@ -273,7 +268,7 @@ func (upm *GenericUpgradeManager) Apply(dryRun bool) (acts []api.Action, err err
 			}
 		}
 	}*/
-	return acts, nil
+	return nil
 }
 
 func (upm *GenericUpgradeManager) MasterUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error {

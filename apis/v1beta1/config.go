@@ -2,7 +2,6 @@ package v1beta1
 
 import (
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -74,13 +73,4 @@ func (pc PharmerConfig) GetStoreType() string {
 		return "Postgres"
 	}
 	return "<Unknown>"
-}
-
-func (pc PharmerConfig) GetCredential(name string) (*cloudapi.Credential, error) {
-	for _, c := range pc.Credentials {
-		if c.Name == name {
-			return &c, nil
-		}
-	}
-	return nil, errors.Errorf("Missing credential %s", name)
 }

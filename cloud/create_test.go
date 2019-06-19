@@ -3,14 +3,13 @@ package cloud_test
 import (
 	"testing"
 
-	"github.com/pharmer/pharmer/cloud/utils/certificates"
-
 	"github.com/onsi/gomega"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
 	_ "github.com/pharmer/pharmer/cloud/providers/aws"
 	_ "github.com/pharmer/pharmer/cloud/providers/gce"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/store/providers/fake"
 	_ "github.com/pharmer/pharmer/store/providers/fake"

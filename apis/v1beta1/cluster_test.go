@@ -114,6 +114,24 @@ func TestCluster_APIServerURL(t *testing.T) {
 			},
 			want: "https://1.2.3.4:6443",
 		},
+		{
+			name: "empty host",
+			fields: fields{
+				Spec: PharmerClusterSpec{
+					ClusterAPI: v1alpha1.Cluster{
+						Status: v1alpha1.ClusterStatus{
+							APIEndpoints: []v1alpha1.APIEndpoint{
+								{
+									Host: "",
+									Port: 6443,
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -169,6 +187,18 @@ func TestCluster_SetClusterAPIEndpoints(t *testing.T) {
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "node external dns",
+			args: args{
+				addresses: []core.NodeAddress{
+					{
+						Type:    core.NodeExternalDNS,
+						Address: "1.2.3.4",
+					},
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -233,6 +263,19 @@ func TestCluster_APIServerAddress(t *testing.T) {
 			},
 			want: "1.2.3.4",
 		},
+		{
+			name: "nil address",
+			fields: fields{
+				Spec: PharmerClusterSpec{
+					ClusterAPI: v1alpha1.Cluster{
+						Status: v1alpha1.ClusterStatus{
+							APIEndpoints: []v1alpha1.APIEndpoint{},
+						},
+					},
+				},
+			},
+			want: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -265,7 +308,7 @@ func TestCluster_SetNetworkingDefaults(t *testing.T) {
 		args   args
 	}{
 		{
-			name: "",
+			name: "calico",
 			fields: fields{
 				TypeMeta:   metav1.TypeMeta{},
 				ObjectMeta: metav1.ObjectMeta{},
@@ -274,6 +317,30 @@ func TestCluster_SetNetworkingDefaults(t *testing.T) {
 			},
 			args: args{
 				provider: "calico",
+			},
+		},
+		{
+			name: "flannel",
+			fields: fields{
+				TypeMeta:   metav1.TypeMeta{},
+				ObjectMeta: metav1.ObjectMeta{},
+				Spec:       PharmerClusterSpec{},
+				Status:     PharmerClusterStatus{},
+			},
+			args: args{
+				provider: "flannel",
+			},
+		},
+		{
+			name: "canal",
+			fields: fields{
+				TypeMeta:   metav1.TypeMeta{},
+				ObjectMeta: metav1.ObjectMeta{},
+				Spec:       PharmerClusterSpec{},
+				Status:     PharmerClusterStatus{},
+			},
+			args: args{
+				provider: "flannel",
 			},
 		},
 	}
@@ -292,7 +359,17 @@ func TestCluster_SetNetworkingDefaults(t *testing.T) {
 			if c.Spec.ClusterAPI.Spec.ClusterNetwork.ServiceDomain != v1beta1.DefaultServiceDNSDomain {
 				t.Errorf("service domain not set")
 			}
-			if c.Spec.ClusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0] != "192.168.0.0/16" {
+
+			var cidr string
+			switch tt.args.provider {
+			case "calico":
+				cidr = "192.168.0.0/16"
+			case "flannel":
+				cidr = "10.244.0.0/16"
+			case "canal":
+				cidr = "10.244.0.0/16"
+			}
+			if c.Spec.ClusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0] != cidr {
 				t.Errorf("pod cidr not set")
 			}
 		})
