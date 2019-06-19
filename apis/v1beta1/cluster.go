@@ -254,6 +254,9 @@ func (c *Cluster) ClusterConfig() ClusterConfig {
 
 func (c *Cluster) APIServerURL() string {
 	for _, addr := range c.Spec.ClusterAPI.Status.APIEndpoints {
+		if addr.Host == "" {
+			continue
+		}
 		if addr.Port == 0 {
 			return fmt.Sprintf("https://%s", addr.Host)
 		}
@@ -268,14 +271,14 @@ func (c *Cluster) SetClusterAPIEndpoints(addresses []core.NodeAddress) error {
 		m[addr.Type] = addr.Address
 
 	}
-	if u, found := m[core.NodeExternalIP]; found {
+	if u, found := m[core.NodeExternalIP]; found && u != "" {
 		c.Spec.ClusterAPI.Status.APIEndpoints = append(c.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
 			Host: u,
 			Port: int(DefaultKubernetesBindPort),
 		})
 		return nil
 	}
-	if u, found := m[core.NodeExternalDNS]; found {
+	if u, found := m[core.NodeExternalDNS]; found && u != "" {
 		c.Spec.ClusterAPI.Status.APIEndpoints = append(c.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
 			Host: u,
 			Port: int(DefaultKubernetesBindPort),

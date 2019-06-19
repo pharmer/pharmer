@@ -1,8 +1,6 @@
 package cmds
 
 import (
-	"fmt"
-
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
@@ -65,7 +63,6 @@ func newCmdController() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			fmt.Println("============================")
 			if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 				term.Printf("Failed to run manager: %v", err)
 			}

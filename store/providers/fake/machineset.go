@@ -21,7 +21,7 @@ type machineSetFileStore struct {
 var _ store.MachineSetStore = &machineSetFileStore{}
 
 func (s *machineSetFileStore) resourceHome() string {
-	return filepath.Join("clusters", s.cluster, "nodeGroups")
+	return filepath.Join("clusters", s.cluster, "machineset")
 }
 
 func (s *machineSetFileStore) resourceID(name string) string {

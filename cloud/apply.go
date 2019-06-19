@@ -52,14 +52,20 @@ func Apply(opts *options.ApplyConfig, storeProvider store.ResourceInterface) err
 		if err != nil {
 			return err
 		}
-	}
-
-	err = ApplyScale(scope)
-	if err != nil {
-		return errors.Wrap(err, "failed to scale Cluster")
+		err = ApplyScale(scope)
+		if err != nil {
+			return errors.Wrap(err, "failed to scale Cluster")
+		}
 	}
 
 	if cluster.DeletionTimestamp != nil && cluster.Status.Phase != api.ClusterDeleted {
+		if api.ManagedProviders.Has(cluster.CloudProvider()) {
+			err = ApplyScale(scope)
+			if err != nil {
+				return err
+			}
+		}
+
 		err := ApplyDelete(scope)
 		if err != nil {
 			return err
@@ -81,7 +87,7 @@ func ApplyCreate(scope *Scope) error {
 	}
 
 	if !api.ManagedProviders.Has(cm.GetCluster().Spec.Config.Cloud.CloudProvider) {
-		err = setMasterSKU(scope.Cluster)
+		err = setMasterSKU(scope)
 		if err != nil {
 			return errors.Wrap(err, "failed to set master sku")
 		}
@@ -167,14 +173,9 @@ func applyClusterAPI(s *Scope) error {
 	return nil
 }
 
-func setMasterSKU(cluster *api.Cluster) error {
-	scope := NewScope(NewScopeParams{Cluster: cluster})
-
-	clusterName := cluster.Name
-	cm, err := scope.GetCloudManager()
-	if err != nil {
-		return err
-	}
+func setMasterSKU(scope *Scope) error {
+	clusterName := scope.Cluster.Name
+	cm := scope.CloudManager
 
 	machines, err := scope.StoreProvider.Machine(clusterName).List(metav1.ListOptions{})
 	if err != nil {

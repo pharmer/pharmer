@@ -158,6 +158,18 @@ func TestCluster_SetClusterAPIEndpoints(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "nil adress",
+			args: args{
+				addresses: []core.NodeAddress{
+					{
+						Type:    core.NodeExternalIP,
+						Address: "",
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -169,14 +181,6 @@ func TestCluster_SetClusterAPIEndpoints(t *testing.T) {
 			}
 			if err := c.SetClusterAPIEndpoints(tt.args.addresses); (err != nil) != tt.wantErr {
 				t.Errorf("Cluster.SetClusterAPIEndpoints() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			apiEndpoints := c.Spec.ClusterAPI.Status.APIEndpoints
-			newEndPoint := v1alpha1.APIEndpoint{
-				Host: tt.args.addresses[0].Address,
-				Port: 6443,
-			}
-			if apiEndpoints[len(apiEndpoints)-1] != newEndPoint {
-				t.Errorf("apiendpoint not set")
 			}
 		})
 	}

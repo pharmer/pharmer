@@ -231,15 +231,15 @@ func ensureIAMProfile(conn *cloudConnector) error {
 }
 
 func importPublicKey(conn *cloudConnector) error {
-	var (
-		err error
-	)
-	if _, err := conn.getPublicKey(); err != nil {
+	found, err := conn.getPublicKey()
+	if err != nil {
 		log.Infoln(err)
 	}
 
-	if err = conn.importPublicKey(); err != nil {
-		return err
+	if !found {
+		if err = conn.importPublicKey(); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -308,7 +308,7 @@ func ensureInternetGateway(conn *cloudConnector, vpcID string) (string, error) {
 		log.Infoln(err)
 	}
 	if !found {
-		if _, err = conn.setupInternetGateway(vpcID); err != nil {
+		if gatewayID, err = conn.setupInternetGateway(vpcID); err != nil {
 			return "", err
 		}
 	}
@@ -325,7 +325,7 @@ func ensureNatGateway(conn *cloudConnector, vpcID, publicSubnetID string) (strin
 		log.Infoln(err)
 	}
 	if !found {
-		if _, err = conn.setupNatGateway(publicSubnetID); err != nil {
+		if natID, err = conn.setupNatGateway(publicSubnetID); err != nil {
 			return "", err
 		}
 	}
@@ -351,7 +351,6 @@ func ensureRouteTable(conn *cloudConnector, vpcID, gatewayID, natID, publicSubne
 		log.Infoln(err)
 	}
 	if !found {
-
 		if privateRouteTableID, err = conn.setupRouteTable("private", vpcID, gatewayID, natID, publicSubnetID, privateSubnetID); err != nil {
 			return "", "", err
 		}
@@ -430,7 +429,7 @@ func ensureLoadBalancer(conn *cloudConnector, publicSubnetID string) error {
 	nodeAddresses := []corev1.NodeAddress{
 		{
 			Type:    corev1.NodeExternalIP,
-			Address: conn.Cluster.Status.Cloud.LoadBalancer.IP,
+			Address: conn.Cluster.Status.Cloud.LoadBalancer.DNS,
 		},
 	}
 

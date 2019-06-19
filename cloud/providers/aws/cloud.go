@@ -452,7 +452,7 @@ func (conn *cloudConnector) addTags(id string, tags map[string]string) error {
 }
 
 func (conn *cloudConnector) addTag(id string, key string, value string) error {
-	resp, err := conn.ec2.CreateTags(&_ec2.CreateTagsInput{
+	_, err := conn.ec2.CreateTags(&_ec2.CreateTagsInput{
 		Resources: []*string{
 			types.StringP(id),
 		},
@@ -463,9 +463,8 @@ func (conn *cloudConnector) addTag(id string, key string, value string) error {
 			},
 		},
 	})
-	log.Debug("Added tag ", resp, err)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to add tag %v:%v to id   %v", key, value, id)
 	}
 	log.Infof("Added tag %v:%v to id %v", key, value, id)
 	return nil
@@ -876,7 +875,7 @@ func (conn *cloudConnector) setupRouteTable(privacy, vpcID, igwID, natID, public
 			GatewayId:            types.StringP(igwID),
 		})
 		if err != nil {
-			return "", err
+			return "", errors.Wrapf(err, "failed to create public route")
 		}
 
 		_, err = conn.ec2.AssociateRouteTable(&ec2.AssociateRouteTableInput{
@@ -894,7 +893,7 @@ func (conn *cloudConnector) setupRouteTable(privacy, vpcID, igwID, natID, public
 			GatewayId:            types.StringP(natID),
 		})
 		if err != nil {
-			return "", err
+			return "", errors.Wrapf(err, "failed to create private route")
 		}
 
 		_, err := conn.ec2.AssociateRouteTable(&ec2.AssociateRouteTableInput{
