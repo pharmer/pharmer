@@ -3,14 +3,18 @@ package cloud_test
 import (
 	"testing"
 
+	"github.com/pharmer/pharmer/cloud/providers/azure"
+
 	"github.com/onsi/gomega"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/cmds/options"
+	_ "github.com/pharmer/pharmer/cloud/providers/aks"
 	_ "github.com/pharmer/pharmer/cloud/providers/aws"
-	"github.com/pharmer/pharmer/cloud/providers/azure"
+	_ "github.com/pharmer/pharmer/cloud/providers/azure"
 	_ "github.com/pharmer/pharmer/cloud/providers/gce"
+	_ "github.com/pharmer/pharmer/cloud/providers/gke"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/store/providers/fake"
@@ -49,10 +53,12 @@ func TestCreateCluster(t *testing.T) {
 
 			deleteCerts(t, a.store, a.cluster.Name)
 
-			// check master machines are genereated
-			for i := 0; i < a.cluster.Spec.Config.MasterCount; i++ {
-				err = a.store.Machine(a.cluster.Name).Delete(a.cluster.MasterMachineName(i))
-				g.Expect(err).NotTo(gomega.HaveOccurred())
+			if !api.ManagedProviders.Has(a.cluster.CloudProvider()) {
+				// check master machines are genereated
+				for i := 0; i < a.cluster.Spec.Config.MasterCount; i++ {
+					err = a.store.Machine(a.cluster.Name).Delete(a.cluster.MasterMachineName(i))
+					g.Expect(err).NotTo(gomega.HaveOccurred())
+				}
 			}
 		}
 	}
@@ -248,6 +254,62 @@ func TestCreateCluster(t *testing.T) {
 					}
 				}
 			},
+		}, {
+			name: "gke Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "gke",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "gke",
+								Zone:          "us-central-1f",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr: false,
+			beforeTest: func(t *testing.T, a args) func(t *testing.T) {
+				g := gomega.NewGomegaWithT(t)
+				return func(t *testing.T) {
+					// check if Cluster is created
+					err := a.store.Clusters().Delete(a.cluster.Name)
+					g.Expect(err).NotTo(gomega.HaveOccurred())
+
+					// check certs are generated
+					deleteCerts(t, a.store, a.cluster.Name)
+				}
+			},
+		}, {
+			name: "aks Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "aks",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "aks",
+								Zone:          "useast2",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
 		},
 	}
 	g := gomega.NewGomegaWithT(t)
@@ -274,11 +336,34 @@ func TestCreateMachineSets(t *testing.T) {
 		store store.ResourceInterface
 		opts  *options.NodeGroupCreateConfig
 	}
+	genericBeforeTest := func(t *testing.T, a args, cluster *api.Cluster) func(*testing.T) {
+		cluster, err := a.store.Clusters().Create(cluster)
+		g := gomega.NewGomegaWithT(t)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		_, err = certificates.CreateCertsKeys(a.store, a.opts.ClusterName)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		return func(t *testing.T) {
+			err = a.store.Clusters().Delete(cluster.Name)
+			g.Expect(err).NotTo(gomega.HaveOccurred())
+
+			deleteCerts(t, a.store, a.opts.ClusterName)
+
+			// check if machinesets are created
+			for node := range a.opts.Nodes {
+				err = a.store.MachineSet(a.opts.ClusterName).Delete(cloud.GenerateMachineSetName(node))
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+			}
+		}
+	}
+
 	tests := []struct {
 		name       string
 		args       args
 		wantErr    bool
-		beforeTest func(*testing.T, args) func(*testing.T)
+		cluster    *api.Cluster
+		beforeTest func(t *testing.T, a args, cluster *api.Cluster) func(*testing.T)
 	}{
 		{
 			name: "no nodes",
@@ -289,23 +374,12 @@ func TestCreateMachineSets(t *testing.T) {
 					Nodes:       nil,
 				},
 			},
-			wantErr: false,
-			beforeTest: func(t *testing.T, a args) func(*testing.T) {
-				cluster, err := a.store.Clusters().Create(&api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: a.opts.ClusterName,
-					},
-				})
-				if err != nil {
-					t.Errorf("failed to create Cluster: %v", err)
-				}
-
-				return func(t *testing.T) {
-					err = a.store.Clusters().Delete(cluster.Name)
-					if err != nil {
-						t.Errorf("failed to delete Cluster: %v", err)
-					}
-				}
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "gce",
+				},
 			},
 		},
 		{
@@ -321,40 +395,21 @@ func TestCreateMachineSets(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
-			beforeTest: func(t *testing.T, a args) func(*testing.T) {
-				cluster, err := a.store.Clusters().Create(&api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: a.opts.ClusterName,
-					},
-					Spec: api.PharmerClusterSpec{
-						Config: api.ClusterConfig{
-							Cloud: api.CloudSpec{
-								CloudProvider: "gce",
-								Zone:          "us-central-1f",
-							},
-							KubernetesVersion: "1.13.4",
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "gce",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "gce",
+							Zone:          "us-central-1f",
 						},
+						KubernetesVersion: "1.13.4",
 					},
-				})
-				g := gomega.NewGomegaWithT(t)
-				g.Expect(err).NotTo(gomega.HaveOccurred())
-
-				_, err = certificates.CreateCertsKeys(a.store, a.opts.ClusterName)
-				g.Expect(err).NotTo(gomega.HaveOccurred())
-
-				return func(t *testing.T) {
-					err = a.store.Clusters().Delete(cluster.Name)
-					g.Expect(err).NotTo(gomega.HaveOccurred())
-
-					deleteCerts(t, a.store, a.opts.ClusterName)
-
-					// check if machinesets are created
-					for node := range a.opts.Nodes {
-						err = a.store.MachineSet(a.opts.ClusterName).Delete(cloud.GenerateMachineSetName(node))
-						g.Expect(err).NotTo(gomega.HaveOccurred())
-					}
-				}
+				},
 			},
 		},
 		{
@@ -370,50 +425,119 @@ func TestCreateMachineSets(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
-			beforeTest: func(t *testing.T, a args) func(*testing.T) {
-				cluster, err := a.store.Clusters().Create(&api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: a.opts.ClusterName,
-					},
-					Spec: api.PharmerClusterSpec{
-						Config: api.ClusterConfig{
-							Cloud: api.CloudSpec{
-								CloudProvider: "aws",
-								Zone:          "us-east-1b",
-								AWS: &api.AWSSpec{
-									IAMProfileMaster: "master",
-									IAMProfileNode:   "node",
-								},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "aws",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "aws",
+							Zone:          "us-east-1b",
+							AWS: &api.AWSSpec{
+								IAMProfileMaster: "master",
+								IAMProfileNode:   "node",
 							},
-							KubernetesVersion: "1.13.4",
 						},
+						KubernetesVersion: "1.13.4",
 					},
-				})
-				g := gomega.NewGomegaWithT(t)
-				g.Expect(err).NotTo(gomega.HaveOccurred())
+				},
+			},
+		}, {
+			name: "test azure",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "azure",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "azure",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "azure",
+							Zone:          "useast2",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+			name: "test gke",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "gke",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "gke",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "gke",
+							Zone:          "us-central-1f",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
 
-				_, err = certificates.CreateCertsKeys(a.store, a.opts.ClusterName)
-				g.Expect(err).NotTo(gomega.HaveOccurred())
-
-				return func(t *testing.T) {
-					err = a.store.Clusters().Delete(cluster.Name)
-					g.Expect(err).NotTo(gomega.HaveOccurred())
-
-					deleteCerts(t, a.store, a.opts.ClusterName)
-
-					// check if machinesets are created
-					for node := range a.opts.Nodes {
-						err = a.store.MachineSet(a.opts.ClusterName).Delete(cloud.GenerateMachineSetName(node))
-						g.Expect(err).NotTo(gomega.HaveOccurred())
-					}
-				}
+			name: "test aks",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "aks",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "aks",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "aks",
+							Zone:          "us-central-1f",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			afterTest := tt.beforeTest(t, tt.args)
+			afterTest := tt.beforeTest(t, tt.args, tt.cluster)
 			defer afterTest(t)
 
 			if err := cloud.CreateMachineSets(tt.args.store, tt.args.opts); (err != nil) != tt.wantErr {
