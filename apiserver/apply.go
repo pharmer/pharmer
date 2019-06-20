@@ -4,7 +4,7 @@ import (
 	"github.com/golang/glog"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	. "github.com/pharmer/pharmer/cloud"
-	opts "github.com/pharmer/pharmer/cloud/cmds/options"
+	opts "github.com/pharmer/pharmer/cmds/cloud/options"
 	"github.com/pharmer/pharmer/store"
 )
 

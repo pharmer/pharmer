@@ -1,12 +1,12 @@
-package cmds
+package cloud
 
 import (
 	"fmt"
 
 	"github.com/appscode/go/term"
-	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
+	"github.com/pharmer/pharmer/cmds/cloud/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/rest"

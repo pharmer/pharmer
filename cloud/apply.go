@@ -7,8 +7,8 @@ import (
 
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud/cmds/options"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
+	"github.com/pharmer/pharmer/cmds/cloud/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	semver "gomodules.xyz/version"

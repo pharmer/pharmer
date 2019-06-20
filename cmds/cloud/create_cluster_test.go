@@ -1,4 +1,4 @@
-package cmds
+package cloud
 
 // TODO:
 // add e2e test: runs pharmer create cluster.... command with all possible options

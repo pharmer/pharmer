@@ -1,4 +1,4 @@
-package cmds
+package cloud
 
 import (
 	"bytes"
@@ -6,13 +6,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/appscode/go/term"
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/cmds/cloud/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils"
 	"github.com/pharmer/pharmer/utils/editor"
@@ -22,18 +21,19 @@ import (
 	"k8s.io/apimachinery/pkg/util/mergepatch"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	kyaml "k8s.io/apimachinery/pkg/util/yaml"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
-	opts := options.NewClusterEditConfig()
+func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
+	opts := options.NewNodeGroupEditConfig()
 	cmd := &cobra.Command{
-		Use: api.ResourceNameCluster,
+		Use: api.ResourceNameNodeGroup,
 		Aliases: []string{
-			api.ResourceTypeCluster,
-			api.ResourceKindCluster,
+			api.ResourceTypeNodeGroup,
+			api.ResourceKindNodeGroup,
 		},
-		Short:             "Edit cluster object",
-		Example:           `pharmer edit cluster`,
+		Short:             "Edit a Kubernetes cluster NodeGroup",
+		Example:           `pharmer edit nodegroup`,
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := opts.ValidateFlags(cmd, args); err != nil {
@@ -41,11 +41,9 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 			}
 
 			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
-			if err != nil {
-				term.Fatalln(err)
-			}
+			term.ExitOnError(err)
 
-			if err := runUpdateCluster(storeProvider.Clusters(), opts, outErr); err != nil {
+			if err := RunUpdateNodeGroup(storeProvider.MachineSet(opts.ClusterName), opts, outErr); err != nil {
 				term.Fatalln(err)
 			}
 		},
@@ -55,63 +53,58 @@ func NewCmdEditCluster(out, outErr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func runUpdateCluster(clusterStore store.ClusterStore, opts *options.ClusterEditConfig, errOut io.Writer) error {
+func RunUpdateNodeGroup(machinesetStore store.MachineSetStore, opts *options.NodeGroupEditConfig, errOut io.Writer) error {
 	// If file is provided
 	if opts.File != "" {
 		fileName := opts.File
 
-		var local *api.Cluster
+		var local *clusterv1.MachineSet
 		if err := cloud.ReadFileAs(fileName, &local); err != nil {
 			return err
 		}
 
-		updated, err := clusterStore.Get(local.Name)
+		updated, err := machinesetStore.Get(local.Name)
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = local.ObjectMeta
 		updated.Spec = local.Spec
 
-		original, err := clusterStore.Get(updated.Name)
+		original, err := machinesetStore.Get(updated.Name)
 		if err != nil {
 			return err
 		}
-		if err := UpdateCluster(clusterStore, original, updated); err != nil {
+		if err := UpdateNodeGroup(machinesetStore, original, updated); err != nil {
 			return err
 		}
-		term.Println(fmt.Sprintf(`cluster "%s" replaced`, original.Name))
+		term.Println(fmt.Sprintf(`nodegroup "%s" replaced`, original.Name))
 		return nil
 	}
 
-	original, err := clusterStore.Get(opts.ClusterName)
+	original, err := machinesetStore.Get(opts.NgName)
 	if err != nil {
 		return err
 	}
 
 	// Check if flags are provided to update
-	// TODO: Provide list of flag names. If any of them is provided, update
-	if opts.CheckForUpdateFlags() {
-		updated, err := clusterStore.Get(opts.ClusterName)
+	if opts.DoNotDelete {
+		updated, err := machinesetStore.Get(opts.NgName)
 		if err != nil {
 			return err
 		}
 
-		//TODO: Check provided flags, and set value
-		if opts.KubernetesVersion != "" {
-			updated.Spec.Config.KubernetesVersion = opts.KubernetesVersion
-		}
-
-		if err := UpdateCluster(clusterStore, original, updated); err != nil {
+		if err := UpdateNodeGroup(machinesetStore, original, updated); err != nil {
 			return err
 		}
-		term.Println(fmt.Sprintf(`cluster "%s" updated`, original.Name))
+		term.Println(fmt.Sprintf(`nodegroup "%s" updated`, original.Name))
 		return nil
 	}
 
-	return editCluster(clusterStore, opts, original, errOut)
+	return editNodeGroup(machinesetStore, opts, original, errOut)
 }
 
-func editCluster(clusterStore store.ClusterStore, opts *options.ClusterEditConfig, original *api.Cluster, errOut io.Writer) error {
+func editNodeGroup(machinesetStore store.MachineSetStore, opts *options.NodeGroupEditConfig, original *clusterv1.MachineSet, errOut io.Writer) error {
+
 	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
 		return err
@@ -166,19 +159,16 @@ func editCluster(clusterStore store.ClusterStore, opts *options.ClusterEditConfi
 
 			// cleanup any file from the previous pass
 			if len(results.File) > 0 {
-				err = os.Remove(results.File)
-				if err != nil {
-					return err
-				}
+				os.Remove(results.File)
 			}
 
 			// Compare content without comments
 			if bytes.Equal(editor.StripComments(originalByte), editor.StripComments(edited)) {
-				_, err = fmt.Fprintln(errOut, "Edit cancelled, no changes made.")
-				return err
+				fmt.Fprintln(errOut, "Edit cancelled, no changes made.")
+				return nil
 			}
 
-			var updated *api.Cluster
+			var updated *clusterv1.MachineSet
 			err = yaml.Unmarshal(editor.StripComments(edited), &updated)
 			if err != nil {
 				containsError = true
@@ -188,19 +178,20 @@ func editCluster(clusterStore store.ClusterStore, opts *options.ClusterEditConfi
 
 			containsError = false
 
-			if err := UpdateCluster(clusterStore, original, updated); err != nil {
+			if err := UpdateNodeGroup(machinesetStore, original, updated); err != nil {
 				return err
 			}
 
-			term.Println(fmt.Sprintf(`cluster "%s" edited`, original.Name))
-			return os.Remove(file)
+			os.Remove(file)
+			term.Println(fmt.Sprintf(`nodegroup "%s" edited`, original.Name))
+			return nil
 		}
 	}
 
 	return editFn()
 }
 
-func UpdateCluster(clusterStore store.ClusterStore, original, updated *api.Cluster) error {
+func UpdateNodeGroup(machinesetStore store.MachineSetStore, original, updated *clusterv1.MachineSet) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err
@@ -233,37 +224,18 @@ func UpdateCluster(clusterStore store.ClusterStore, original, updated *api.Clust
 		return err
 	}
 
-	conditionalPreconditions := utils.GetConditionalPreconditionFunc(api.ResourceKindCluster)
+	conditionalPreconditions := utils.GetConditionalPreconditionFunc(api.ResourceKindNodeGroup)
 	err = utils.CheckConditionalPrecondition(patch, conditionalPreconditions...)
 	if err != nil {
 		if utils.IsPreconditionFailed(err) {
-			return editor.ConditionalPreconditionFailedError(api.ResourceKindCluster)
+			return editor.ConditionalPreconditionFailedError(api.ResourceKindNodeGroup)
 		}
 		return err
 	}
 
-	_, err = updateGeneration(clusterStore, updated)
+	_, err = machinesetStore.Update(updated)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func updateGeneration(clusterStore store.ClusterStore, cluster *api.Cluster) (*api.Cluster, error) {
-	if cluster == nil {
-		return nil, errors.New("missing Cluster")
-	} else if cluster.Name == "" {
-		return nil, errors.New("missing Cluster name")
-	} else if cluster.ClusterConfig().KubernetesVersion == "" {
-		return nil, errors.New("missing Cluster version")
-	}
-
-	existing, err := clusterStore.Get(cluster.Name)
-	if err != nil {
-		return nil, errors.Errorf("Cluster `%s` does not exist. Reason: %v", cluster.Name, err)
-	}
-	cluster.Status = existing.Status
-	cluster.Generation = time.Now().UnixNano()
-
-	return clusterStore.Update(cluster)
 }

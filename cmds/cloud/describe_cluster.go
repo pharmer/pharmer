@@ -1,4 +1,4 @@
-package cmds
+package cloud
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/cmds/cloud/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils/describer"
 	"github.com/spf13/cobra"

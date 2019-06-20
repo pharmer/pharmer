@@ -9,7 +9,7 @@ import (
 	"github.com/appscode/go/ioutil"
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/cmds/cloud/options"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"

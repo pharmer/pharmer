@@ -3,15 +3,13 @@ package cloud_test
 import (
 	"testing"
 
-	"github.com/pharmer/pharmer/cloud/providers/azure"
-
 	"github.com/onsi/gomega"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/cmds/options"
 	_ "github.com/pharmer/pharmer/cloud/providers/aks"
 	_ "github.com/pharmer/pharmer/cloud/providers/aws"
+	"github.com/pharmer/pharmer/cloud/providers/azure"
 	_ "github.com/pharmer/pharmer/cloud/providers/azure"
 	_ "github.com/pharmer/pharmer/cloud/providers/digitalocean"
 	_ "github.com/pharmer/pharmer/cloud/providers/dokube"
@@ -21,6 +19,7 @@ import (
 	_ "github.com/pharmer/pharmer/cloud/providers/linode"
 	_ "github.com/pharmer/pharmer/cloud/providers/packet"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
+	"github.com/pharmer/pharmer/cmds/cloud/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/store/providers/fake"
 	_ "github.com/pharmer/pharmer/store/providers/fake"
