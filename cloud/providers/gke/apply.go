@@ -55,7 +55,7 @@ func (cm *ClusterManager) ApplyScale() error {
 		return err
 	}
 	for _, ng := range nodeGroups {
-		igm := NewGKENodeGroupManager(cm.conn, ng)
+		igm := NewGKENodeGroupManager(cm.Scope, cm.conn, ng)
 		err = igm.Apply()
 		if err != nil {
 			return err

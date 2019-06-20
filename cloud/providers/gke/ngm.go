@@ -12,8 +12,8 @@ type GKENodeGroupManager struct {
 	ng   *clusterapi.MachineSet
 }
 
-func NewGKENodeGroupManager(conn *cloudConnector, ng *clusterapi.MachineSet) *GKENodeGroupManager {
-	return &GKENodeGroupManager{conn: conn, ng: ng}
+func NewGKENodeGroupManager(scope *cloud.Scope, conn *cloudConnector, ng *clusterapi.MachineSet) *GKENodeGroupManager {
+	return &GKENodeGroupManager{Scope: scope, conn: conn, ng: ng}
 }
 
 func (igm *GKENodeGroupManager) Apply() error {

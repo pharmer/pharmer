@@ -57,7 +57,6 @@ func GetPharmerCerts(storeProvider store.ResourceInterface, clusterName string) 
 	return pharmerCerts, nil
 }
 
-// TODO: it should only require clusterName
 func CreateCertsKeys(store store.ResourceInterface, clusterName string) (*Certificates, error) {
 	pharmerCerts := &Certificates{}
 

@@ -96,6 +96,7 @@ func (cm *ClusterManager) StoreCertificate(certStore store.CertificateStore, clu
 	if err := certStore.Create(api.CACertName, crt[0], caKey); err != nil {
 		return err
 	}
+	cm.Certs.CACert.Cert = crt[0]
 
 	adminCert, err := base64.StdEncoding.DecodeString(cluster.MasterAuth.ClientCertificate)
 	if err != nil {
