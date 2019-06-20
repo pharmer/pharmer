@@ -103,7 +103,7 @@ func (ca *ClusterAPI) Apply(controllerManager string) error {
 	}
 
 	log.Infof("Adding master machines...")
-	err = phases.ApplyMachines(ca.bootstrapClient, namespace, []*clusterv1.Machine{masterMachine})
+	_, err = ca.clusterapiClient.ClusterV1alpha1().Machines(namespace).Create(masterMachine)
 	if err != nil && !api.ErrAlreadyExist(err) && !api.ErrObjectModified(err) {
 		return errors.Wrap(err, "failed to add master machine")
 	}
