@@ -363,11 +363,11 @@ func TestCluster_SetNetworkingDefaults(t *testing.T) {
 			var cidr string
 			switch tt.args.provider {
 			case "calico":
-				cidr = "192.168.0.0/16"
+				cidr = calicoPodSubnet
 			case "flannel":
-				cidr = "10.244.0.0/16"
+				cidr = flannelPodSubnet
 			case "canal":
-				cidr = "10.244.0.0/16"
+				cidr = canalPodSubnet
 			}
 			if c.Spec.ClusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0] != cidr {
 				t.Errorf("pod cidr not set")

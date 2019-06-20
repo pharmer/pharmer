@@ -22,6 +22,9 @@ const (
 	RetryInterval      = 5 * time.Second
 	RetryTimeout       = 15 * time.Minute
 	ServiceAccountName = "default"
+	calicoPodSubnet    = "192.168.0.0/16"
+	flannelPodSubnet   = "10.244.0.0/16"
+	canalPodSubnet     = "10.244.0.0/16"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -313,11 +316,11 @@ func (c *Cluster) SetNetworkingDefaults(provider string) {
 		podSubnet := ""
 		switch provider {
 		case PodNetworkCalico:
-			podSubnet = "192.168.0.0/16"
+			podSubnet = calicoPodSubnet
 		case PodNetworkFlannel:
-			podSubnet = "10.244.0.0/16"
+			podSubnet = flannelPodSubnet
 		case PodNetworkCanal:
-			podSubnet = "10.244.0.0/16"
+			podSubnet = canalPodSubnet
 		}
 		clusterSpec.ClusterNetwork.Pods.CIDRBlocks = []string{podSubnet}
 	}

@@ -13,10 +13,9 @@ func Test_runDeleteCredentialCmd(t *testing.T) {
 		opts      *options.CredentialDeleteConfig
 	}
 	tests := []struct {
-		name       string
-		args       args
-		wantErr    bool
-		beforeTest func(*testing.T, args) func(*testing.T)
+		name    string
+		args    args
+		wantErr bool
 	}{
 		// TODO: add tests
 	}
