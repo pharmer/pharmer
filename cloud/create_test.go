@@ -13,8 +13,13 @@ import (
 	_ "github.com/pharmer/pharmer/cloud/providers/aks"
 	_ "github.com/pharmer/pharmer/cloud/providers/aws"
 	_ "github.com/pharmer/pharmer/cloud/providers/azure"
+	_ "github.com/pharmer/pharmer/cloud/providers/digitalocean"
+	_ "github.com/pharmer/pharmer/cloud/providers/dokube"
+	_ "github.com/pharmer/pharmer/cloud/providers/eks"
 	_ "github.com/pharmer/pharmer/cloud/providers/gce"
 	_ "github.com/pharmer/pharmer/cloud/providers/gke"
+	_ "github.com/pharmer/pharmer/cloud/providers/linode"
+	_ "github.com/pharmer/pharmer/cloud/providers/packet"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/store/providers/fake"
@@ -310,6 +315,121 @@ func TestCreateCluster(t *testing.T) {
 			},
 			wantErr:    false,
 			beforeTest: genericBeforeTest,
+		}, {
+			name: "linode Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "linode",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "linode",
+								Zone:          "us-east",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+		}, {
+			name: "digitalocean Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "digitalocean",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "digitalocean",
+								Zone:          "nyc1",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+		}, {
+			name: "packet Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "packet",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "packet",
+								Zone:          "ewr1",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+		}, {
+			name: "dokube Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "dokube",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "dokube",
+								Zone:          "nyc1",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+		}, {
+			name: "eks Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "eks",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "eks",
+								Zone:          "us-east-1b",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
 		},
 	}
 	g := gomega.NewGomegaWithT(t)
@@ -528,6 +648,156 @@ func TestCreateMachineSets(t *testing.T) {
 						Cloud: api.CloudSpec{
 							CloudProvider: "aks",
 							Zone:          "us-central-1f",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+
+			name: "test dokube",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "dokube",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "dokube",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "dokube",
+							Zone:          "nyc1",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+
+			name: "test eks",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "eks",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "eks",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "eks",
+							Zone:          "us-central-1f",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+
+			name: "test digitalocean",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "digitalocean",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "digitalocean",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "digitalocean",
+							Zone:          "nyc1",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+
+			name: "test linode",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "linode",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "linode",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "linode",
+							Zone:          "us-east",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+
+			name: "test packet",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "packet",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "packet",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "packet",
+							Zone:          "ewr1",
 						},
 						KubernetesVersion: "1.13.4",
 					},
