@@ -18,6 +18,7 @@ import (
 	_ "github.com/pharmer/pharmer/store/providers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	logs "kmodules.xyz/client-go/logs"
 )
 
 const (
@@ -64,6 +65,7 @@ func NewRootCmd(in io.Reader, out, errwriter io.Writer, version string) *cobra.C
 	if err != nil {
 		term.Fatalln(err)
 	}
+	logs.ParseFlags()
 
 	rootCmd.AddCommand(newCmdCreate())
 	rootCmd.AddCommand(newCmdGet(out))

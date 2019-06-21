@@ -50,11 +50,11 @@ github.com/appscode/go/ioutil
 github.com/appscode/go/term
 github.com/appscode/go/types
 github.com/appscode/go/wait
-github.com/appscode/go/flags
 github.com/appscode/go/crypto/rand
 github.com/appscode/go/strings
 github.com/appscode/go/crypto/ssh
 github.com/appscode/go/analytics
+github.com/appscode/go/flags
 github.com/appscode/go/env
 github.com/appscode/go/runtime
 github.com/appscode/go/context
@@ -578,13 +578,13 @@ k8s.io/apimachinery/pkg/runtime/schema
 k8s.io/apimachinery/pkg/types
 k8s.io/apimachinery/pkg/util/version
 k8s.io/apimachinery/pkg/util/wait
+k8s.io/apimachinery/pkg/api/errors
+k8s.io/apimachinery/pkg/labels
+k8s.io/apimachinery/pkg/fields
 k8s.io/apimachinery/pkg/util/mergepatch
 k8s.io/apimachinery/pkg/util/strategicpatch
 k8s.io/apimachinery/pkg/util/yaml
 k8s.io/apimachinery/pkg/util/uuid
-k8s.io/apimachinery/pkg/api/errors
-k8s.io/apimachinery/pkg/labels
-k8s.io/apimachinery/pkg/fields
 k8s.io/apimachinery/pkg/util/sets
 k8s.io/apimachinery/pkg/util/intstr
 k8s.io/apimachinery/pkg/conversion
@@ -602,11 +602,11 @@ k8s.io/apimachinery/pkg/util/validation
 k8s.io/apimachinery/pkg/apis/meta/internalversion
 k8s.io/apimachinery/pkg/apis/meta/v1/unstructured
 k8s.io/apimachinery/pkg/api/meta
-k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/pkg/runtime/serializer/streaming
 k8s.io/apimachinery/pkg/util/net
-k8s.io/apimachinery/pkg/runtime/serializer
 k8s.io/apimachinery/pkg/util/clock
+k8s.io/apimachinery/pkg/runtime/serializer
+k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/util/httpstream
 k8s.io/apimachinery/pkg/util/remotecommand
@@ -725,6 +725,7 @@ k8s.io/cluster-bootstrap/token/util
 k8s.io/component-base/config
 # k8s.io/klog v0.3.2 => k8s.io/klog v0.3.0
 k8s.io/klog
+k8s.io/klog/klogr
 # k8s.io/kube-openapi v0.0.0-20190510232812-a01b7d5d6c22 => k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/common
@@ -749,8 +750,9 @@ k8s.io/utils/integer
 k8s.io/utils/buffer
 k8s.io/utils/trace
 # kmodules.xyz/client-go v0.0.0-20190524133821-9c8a87771aea
-kmodules.xyz/client-go/tools/backup
 kmodules.xyz/client-go/core/v1
+kmodules.xyz/client-go/logs
+kmodules.xyz/client-go/tools/backup
 kmodules.xyz/client-go
 kmodules.xyz/client-go/meta
 # sigs.k8s.io/cluster-api v0.0.0-20190508175234-0f911c1f65a5 => github.com/pharmer/cluster-api v0.0.0-20190516113055-efd9b156f6d2

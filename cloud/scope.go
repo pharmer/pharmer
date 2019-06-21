@@ -1,6 +1,7 @@
 package cloud
 
 import (
+	"github.com/go-logr/logr"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
@@ -29,6 +30,23 @@ type Scope struct {
 	StoreProvider  store.ResourceInterface
 	CloudManager   Interface
 	AdminClient    kubernetes.Interface
+	logr.Logger
+}
+
+type NewScopeParams struct {
+	Cluster       *api.Cluster
+	Certs         *certificates.Certificates
+	StoreProvider store.ResourceInterface
+	Logger        logr.Logger
+}
+
+func NewScope(params NewScopeParams) *Scope {
+	return &Scope{
+		Cluster:       params.Cluster,
+		Certs:         params.Certs,
+		StoreProvider: params.StoreProvider,
+		Logger:        params.Logger,
+	}
 }
 
 func (s *Scope) GetCredential() (*cloudapi.Credential, error) {
@@ -68,18 +86,4 @@ func (s *Scope) GetAdminClient() (kubernetes.Interface, error) {
 	s.AdminClient = client
 
 	return client, nil
-}
-
-type NewScopeParams struct {
-	Cluster       *api.Cluster
-	Certs         *certificates.Certificates
-	StoreProvider store.ResourceInterface
-}
-
-func NewScope(params NewScopeParams) *Scope {
-	return &Scope{
-		Cluster:       params.Cluster,
-		Certs:         params.Certs,
-		StoreProvider: params.StoreProvider,
-	}
 }

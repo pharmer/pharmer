@@ -7,6 +7,7 @@ import (
 	"github.com/pharmer/pharmer/cmds/cloud/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/klogr"
 )
 
 func NewCmdCreateCluster() *cobra.Command {
@@ -42,7 +43,13 @@ func NewCmdCreateCluster() *cobra.Command {
 }
 
 func runCreateClusterCmd(store store.ResourceInterface, opts *options.ClusterCreateConfig) error {
-	err := cloud.CreateCluster(store, opts.Cluster)
+	scope := cloud.NewScope(cloud.NewScopeParams{
+		Cluster:       opts.Cluster,
+		StoreProvider: store,
+		Logger:        klogr.New(),
+	})
+
+	err := cloud.CreateCluster(scope)
 	if err != nil {
 		return err
 	}

@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pharmer/pharmer/utils"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/kubectl/util/term"
 )
 
@@ -99,7 +99,7 @@ func (e Editor) Launch(path string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
-	glog.V(5).Infof("Opening file with editor %v", args)
+	klog.V(5).Infof("Opening file with editor %v", args)
 	if err := (term.TTY{In: os.Stdin, TryDev: true}).Safe(cmd.Run); err != nil {
 		if err, ok := err.(*exec.Error); ok {
 			if err.Err == exec.ErrNotFound {

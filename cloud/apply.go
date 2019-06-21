@@ -8,8 +8,6 @@ import (
 	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
-	"github.com/pharmer/pharmer/cmds/cloud/options"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	semver "gomodules.xyz/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,16 +15,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func Apply(opts *options.ApplyConfig, storeProvider store.ResourceInterface) error {
-	if opts.ClusterName == "" {
-		return errors.New("missing Cluster name")
-	}
-
-	cluster, err := storeProvider.Clusters().Get(opts.ClusterName)
-	if err != nil {
-		return errors.Wrapf(err, "Cluster `%s` does not exist", opts.ClusterName)
-	}
-
+func Apply(scope *Scope) error {
+	cluster := scope.Cluster
 	if cluster.Status.Phase == "" {
 		return errors.Errorf("Cluster `%s` is in unknown phase", cluster.Name)
 	}
@@ -38,8 +28,7 @@ func Apply(opts *options.ApplyConfig, storeProvider store.ResourceInterface) err
 		return errors.Errorf("Cluster `%s` is upgrading. Retry after Cluster returns to Ready state", cluster.Name)
 	}
 
-	scope := NewScope(NewScopeParams{Cluster: cluster, StoreProvider: storeProvider})
-	_, err = scope.GetCloudManager()
+	_, err := scope.GetCloudManager()
 	if err != nil {
 		return err
 	}

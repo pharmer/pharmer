@@ -17,7 +17,8 @@ import (
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func CreateCluster(store store.ResourceInterface, cluster *api.Cluster) error {
+func CreateCluster(s *Scope) error {
+	cluster := s.Cluster
 	if cluster == nil {
 		return errors.New("missing Cluster")
 	} else if cluster.Name == "" {
@@ -26,33 +27,34 @@ func CreateCluster(store store.ResourceInterface, cluster *api.Cluster) error {
 		return errors.New("missing Cluster version")
 	}
 
+	log := s.Logger.WithName("[create cluster]").WithValues("cluster", s.Cluster.Name)
+	log.Info("creating cluster")
+
 	// create should return error: Cluster already exists if Cluster already exists
-	_, err := store.Clusters().Get(cluster.Name)
+	_, err := s.StoreProvider.Clusters().Get(cluster.Name)
 	if err == nil {
 		return errors.New("cluster already exists")
 	}
 
 	// create certificates and keys
-	certs, err := certificates.CreateCertsKeys(store, cluster.Name)
+	certs, err := certificates.CreateCertsKeys(s.StoreProvider, cluster.Name)
 	if err != nil {
 		return errors.Wrap(err, "failed to create certificates")
 	}
 
-	scope := NewScope(NewScopeParams{
-		Cluster:       cluster,
-		Certs:         certs,
-		StoreProvider: store,
-	})
+	s.Certs = certs
 
 	// create Cluster
-	if err := createCluster(scope); err != nil {
+	if err := createCluster(s); err != nil {
 		return errors.Wrap(err, "failed to create certificates")
 	}
 
 	// create master machines
-	if err := createMasterMachines(scope); err != nil {
+	if err := createMasterMachines(s); err != nil {
 		return errors.Wrap(err, "failed to create master machines")
 	}
+
+	log.Info("successfully created cluster")
 
 	return nil
 }

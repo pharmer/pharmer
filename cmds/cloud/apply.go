@@ -3,9 +3,12 @@ package cloud
 import (
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pharmer/pharmer/cmds/cloud/options"
 	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/klogr"
 )
 
 func NewCmdApply() *cobra.Command {
@@ -19,17 +22,40 @@ func NewCmdApply() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			store, err := store.GetStoreProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
 			if err != nil {
 				term.Fatalln(err)
 			}
 
-			err = cloud.Apply(opts, store)
-			if err != nil {
-				term.Fatalln(err)
-			}
+			err = runApplyCmd(storeProvider, opts)
+			term.ExitOnError(err)
+
 		},
 	}
 	opts.AddFlags(cmd.Flags())
 	return cmd
+}
+
+func runApplyCmd(storeProvider store.ResourceInterface, opts *options.ApplyConfig) error {
+	if opts.ClusterName == "" {
+		return errors.New("missing Cluster name")
+	}
+
+	cluster, err := storeProvider.Clusters().Get(opts.ClusterName)
+	if err != nil {
+		return errors.Wrapf(err, "Cluster `%s` does not exist", opts.ClusterName)
+	}
+	certs, err := certificates.GetPharmerCerts(storeProvider, cluster.Name)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get certs")
+	}
+
+	scope := cloud.NewScope(cloud.NewScopeParams{
+		Cluster:       cluster,
+		Certs:         certs,
+		StoreProvider: storeProvider,
+		Logger:        klogr.New().WithName("cli"),
+	})
+
+	return cloud.Apply(scope)
 }
