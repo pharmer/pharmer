@@ -15,7 +15,7 @@ import (
 
 type credentialXormStore struct {
 	engine *xorm.Engine
-	owner  string
+	owner  int64
 }
 
 var _ store.CredentialStore = &credentialXormStore{}
@@ -46,7 +46,7 @@ func (s *credentialXormStore) Get(name string) (*cloudapi.Credential, error) {
 		Name:    name,
 		OwnerId: s.owner,
 	}
-	if s.owner == "" {
+	if s.owner == 0 {
 		id, err := strconv.Atoi(name)
 		if err != nil {
 			return nil, err

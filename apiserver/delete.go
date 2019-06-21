@@ -11,7 +11,9 @@ import (
 func (a *Apiserver) DeleteCluster(storeProvider store.Interface) error {
 	_, err := a.natsConn.QueueSubscribe("delete-cluster", "cluster-api-delete-workers", func(msg *stan.Msg) {
 		log := klogr.New().WithName("apiserver")
-		log.Info("seq", msg.Sequence, "redelivered", msg.Redelivered, "acked", false, "data", msg.Data)
+		log.Info("seq", "sequence", msg.Sequence, "redelivered", msg.Redelivered, "acked", false, "data", string(msg.Data))
+
+		log.Info("delete operation")
 
 		operation, scope, err := a.Init(storeProvider, msg)
 		if err != nil {
@@ -34,6 +36,7 @@ func (a *Apiserver) DeleteCluster(storeProvider store.Interface) error {
 		if err := msg.Ack(); err != nil {
 			klog.Errorf("failed to ACK msg: %d", msg.Sequence)
 		}
+		log.Info("delete operation success")
 
 	}, stan.SetManualAckMode(), stan.DurableName("i-remember"))
 

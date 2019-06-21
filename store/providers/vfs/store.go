@@ -43,7 +43,6 @@ func init() {
 type FileStore struct {
 	container stow.Container
 	prefix    string
-	owner     string
 }
 
 var _ store.Interface = &FileStore{}
@@ -52,34 +51,32 @@ func New(container stow.Container, prefix string) store.Interface {
 	return &FileStore{container: container, prefix: prefix}
 }
 
-func (s *FileStore) Owner(id string) store.ResourceInterface {
-	ret := *s
-	ret.owner = id
-	return &ret
+func (s *FileStore) Owner(id int64) store.ResourceInterface {
+	return s
 }
 
 func (s *FileStore) Credentials() store.CredentialStore {
-	return &credentialFileStore{container: s.container, prefix: s.prefix, owner: s.owner}
+	return &credentialFileStore{container: s.container, prefix: s.prefix}
 }
 
 func (s *FileStore) Clusters() store.ClusterStore {
-	return &clusterFileStore{container: s.container, prefix: s.prefix, owner: s.owner}
+	return &clusterFileStore{container: s.container, prefix: s.prefix}
 }
 
 func (s *FileStore) MachineSet(cluster string) store.MachineSetStore {
-	return &machineSetFileStore{container: s.container, prefix: s.prefix, cluster: cluster, owner: s.owner}
+	return &machineSetFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
 }
 
 func (s *FileStore) Machine(cluster string) store.MachineStore {
-	return &machineFileStore{container: s.container, prefix: s.prefix, cluster: cluster, owner: s.owner}
+	return &machineFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
 }
 
 func (s *FileStore) Certificates(cluster string) store.CertificateStore {
-	return &certificateFileStore{container: s.container, prefix: s.prefix, cluster: cluster, owner: s.owner}
+	return &certificateFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
 }
 
 func (s *FileStore) SSHKeys(cluster string) store.SSHKeyStore {
-	return &sshKeyFileStore{container: s.container, prefix: s.prefix, cluster: cluster, owner: s.owner}
+	return &sshKeyFileStore{container: s.container, prefix: s.prefix, cluster: cluster}
 }
 
 func (s *FileStore) Operations() store.OperationStore {

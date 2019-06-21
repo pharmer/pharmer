@@ -3,7 +3,6 @@ package digitalocean
 import (
 	"context"
 
-	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
@@ -16,6 +15,9 @@ import (
 )
 
 func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
+	log := cm.Logger.WithName("ensure-master").WithValues("machine-name", leaderMachine.Name)
+	log.Info("ensuring master machine")
+
 	if d, _ := cm.conn.instanceIfExists(leaderMachine); d == nil {
 		log.Info("Creating master instance")
 		nodeAddresses := make([]core.NodeAddress, 0)
@@ -45,8 +47,8 @@ func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
 		if err = cm.Cluster.SetClusterAPIEndpoints(nodeAddresses); err != nil {
 			return err
 		}
-
 	}
+	log.Info("success")
 
 	var err error
 	cm.Cluster, err = cm.StoreProvider.Clusters().Update(cm.Cluster)
@@ -58,6 +60,9 @@ func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
 }
 
 func (cm *ClusterManager) PrepareCloud() error {
+	log := cm.Logger.WithName("[prepare-cloud]")
+	log.Info("preparing cloud infra")
+
 	var found bool
 	var err error
 
@@ -107,11 +112,14 @@ func (cm *ClusterManager) PrepareCloud() error {
 		return errors.Wrap(err, "Error setting controlplane endpoints")
 	}
 
+	log.Info("successfully created cloud infra")
 	return nil
 }
 
 // Deletes master(s) and releases other cloud resources
 func (cm *ClusterManager) ApplyDelete() error {
+	log := cm.Logger.WithName("[apply-delete]")
+
 	kc, err := cm.GetAdminClient()
 	if err != nil {
 		return err
@@ -123,12 +131,12 @@ func (cm *ClusterManager) ApplyDelete() error {
 		}).String(),
 	})
 	if err != nil && !kerr.IsNotFound(err) {
-		log.Infof("master instance not found. Reason: %v", err)
+		log.Error(err, "master instance not found")
 	} else if err == nil {
 		for _, mi := range masterInstances.Items {
 			err = cm.conn.DeleteInstanceByProviderID(mi.Spec.ProviderID)
 			if err != nil {
-				log.Infof("Failed to delete instance %s. Reason: %s", mi.Spec.ProviderID, err)
+				log.Error(err, "Failed to delete instance", "instanceID", mi.Spec.ProviderID)
 			}
 		}
 	}
@@ -137,9 +145,9 @@ func (cm *ClusterManager) ApplyDelete() error {
 	tag := "KubernetesCluster:" + cm.Cluster.Name
 	_, err = cm.conn.client.Droplets.DeleteByTag(context.Background(), tag)
 	if err != nil {
-		log.Infof("Failed to delete resources by tag %s. Reason: %s", tag, err)
+		log.Error(err, "Failed to delete resources", "tag", tag)
 	}
-	log.Infof("Deleted droplet by tag %s", tag)
+	log.Info("Deleted droplet", "tag", tag)
 
 	// Delete SSH key
 	found, _, err := cm.conn.getPublicKey()
@@ -167,10 +175,11 @@ func (cm *ClusterManager) ApplyDelete() error {
 		return err
 	}
 
-	log.Infof("Cluster %v deletion is deleted successfully", cm.Cluster.Name)
+	log.Info("successfully deleted cluster")
 	return err
 }
 
 func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
+	cm.Logger.Info("setting master sku", "sku", "2gb")
 	return "2gb"
 }

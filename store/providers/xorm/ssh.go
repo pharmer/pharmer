@@ -10,7 +10,7 @@ import (
 type sshKeyXormStore struct {
 	engine  *xorm.Engine
 	cluster string
-	owner   string
+	owner   int64
 }
 
 var _ store.SSHKeyStore = &sshKeyXormStore{}

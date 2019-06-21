@@ -27,7 +27,7 @@ func NewCmdDeleteNodeGroup() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd)
 			term.ExitOnError(err)
 
 			machinesetStore := storeProvider.MachineSet(opts.ClusterName)

@@ -9,7 +9,7 @@ import (
 func (a *Apiserver) RetryCluster(storeProvider store.Interface) error {
 	_, err := a.natsConn.QueueSubscribe("retry-cluster", "cluster-api-retry-workers", func(msg *stan.Msg) {
 		log := klogr.New().WithName("apiserver")
-		log.Info("seq", msg.Sequence, "redelivered", msg.Redelivered, "acked", false, "data", msg.Data)
+		log.Info("seq", "sequence", msg.Sequence, "redelivered", msg.Redelivered, "acked", false, "data", string(msg.Data))
 
 		operation, scope, err := a.Init(storeProvider, msg)
 		if err != nil {

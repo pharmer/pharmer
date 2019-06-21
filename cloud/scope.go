@@ -9,6 +9,7 @@ import (
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/klogr"
 )
 
 type CloudManagerInterface interface {
@@ -41,6 +42,9 @@ type NewScopeParams struct {
 }
 
 func NewScope(params NewScopeParams) *Scope {
+	if params.Logger == nil {
+		params.Logger = klogr.New().WithValues("cluster-name", params.Cluster.Name)
+	}
 	return &Scope{
 		Cluster:       params.Cluster,
 		Certs:         params.Certs,

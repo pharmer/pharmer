@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appscode/go/log"
 	"github.com/digitalocean/godo"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -80,6 +79,7 @@ func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data
 }
 
 func (conn *cloudConnector) WaitForInstance(id int, status string) error {
+	log := conn.Logger.WithName("wait for instance").WithValues("ID", id).WithValues("status", status)
 	attempt := 0
 	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
@@ -88,7 +88,7 @@ func (conn *cloudConnector) WaitForInstance(id int, status string) error {
 		if err != nil {
 			return false, nil
 		}
-		log.Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, id, droplet.Status)
+		log.Info("waiting for instance", "Attempt", attempt, "status", droplet.Status)
 		if strings.ToLower(droplet.Status) == status {
 			return true, nil
 		}
@@ -110,7 +110,8 @@ func (conn *cloudConnector) getPublicKey() (bool, int, error) {
 }
 
 func (conn *cloudConnector) importPublicKey() (string, error) {
-	log.Infof("Adding SSH public key")
+	log := conn.Logger.WithName("[impoort-public-key]")
+	log.Info("Adding SSH public key")
 	id, _, err := conn.client.Keys.Create(context.TODO(), &godo.KeyCreateRequest{
 		//	Name:      conn.Cluster.Spec.Cloud.SSHKeyName,
 		PublicKey: string(conn.Certs.SSHKey.PublicKey),
@@ -123,6 +124,7 @@ func (conn *cloudConnector) importPublicKey() (string, error) {
 }
 
 func (conn *cloudConnector) deleteSSHKey() error {
+	log := conn.Logger.WithName("[delete-ssh-key]")
 	err := wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		_, err := conn.client.Keys.DeleteByFingerprint(context.TODO(), conn.Certs.SSHKey.OpensshFingerprint)
 		return err == nil, nil
@@ -130,7 +132,7 @@ func (conn *cloudConnector) deleteSSHKey() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("SSH key for cluster %v deleted", conn.Cluster.Name)
+	log.Info("SSH key deleted")
 	return nil
 }
 
@@ -151,17 +153,20 @@ func (conn *cloudConnector) getTags() (bool, error) {
 
 func (conn *cloudConnector) createTags() error {
 	tag := "KubernetesCluster:" + conn.Cluster.Name
+	log := conn.Logger.WithName("[create-tags]").WithValues("tag", tag)
 	_, _, err := conn.client.Tags.Create(context.TODO(), &godo.TagCreateRequest{
 		Name: tag,
 	})
 	if err != nil {
 		return err
 	}
-	log.Infof("Tag %v created", tag)
+	log.Info("Tag created")
 	return nil
 }
 
 func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, script string) error {
+	log := conn.Logger.WithName("[create-instance]")
+
 	machineConfig, err := doCapi.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return err
@@ -190,7 +195,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 	if err != nil {
 		return err
 	}
-	log.Infof("Droplet %v created", host.Name)
+	log.Info("Droplet created", "host", host.Name)
 
 	if err = conn.WaitForInstance(host.ID, "active"); err != nil {
 		return err
@@ -220,6 +225,7 @@ func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*godo.
 }
 
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
+	log := conn.Logger.WithName("[delete-instance]").WithValues("providerID", providerID)
 	dropletID, err := dropletIDFromProviderID(providerID)
 	if err != nil {
 		return err
@@ -228,7 +234,7 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	if err != nil {
 		return err
 	}
-	log.Infof("Droplet %v deleted", dropletID)
+	log.Info("Droplet deleted", "dropletID", dropletID)
 	return nil
 }
 
@@ -379,6 +385,9 @@ func (conn *cloudConnector) loadBalancerUpdated(lb *godo.LoadBalancer) bool {
 }
 
 func (conn *cloudConnector) waitActive(lbID string) (*godo.LoadBalancer, error) {
+	log := conn.Logger.WithName("[wait-lb-active]")
+	log.Info("waiting for load balancer to be active")
+
 	attempt := 0
 	err := wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
@@ -387,7 +396,7 @@ func (conn *cloudConnector) waitActive(lbID string) (*godo.LoadBalancer, error) 
 		if err != nil {
 			return false, nil
 		}
-		log.Infof("Attempt %v: LoadBalancer `%v` is in status `%s`", attempt, lbID, lb.Status)
+		log.Info("", "Attempt", attempt, "LoadBalancer", lbID, "status", lb.Status)
 		if strings.ToLower(lb.Status) == "active" {
 			return true, nil
 		}

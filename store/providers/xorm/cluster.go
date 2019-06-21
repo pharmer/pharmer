@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/go-xorm/xorm"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
@@ -13,7 +15,7 @@ import (
 
 type clusterXormStore struct {
 	engine *xorm.Engine
-	owner  string
+	owner  int64
 }
 
 var _ store.ClusterStore = &clusterXormStore{}
@@ -39,19 +41,23 @@ func (s *clusterXormStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 }
 
 func (s *clusterXormStore) Get(name string) (*api.Cluster, error) {
+	spew.Dump("xxxxxxxxxxxxxxxxxx", s.owner)
 	if name == "" {
 		return nil, errors.New("missing cluster name")
 	}
 
 	cluster := &Cluster{Name: name, OwnerId: s.owner}
-	if s.owner == "" {
+	if s.owner == 0 {
 		id, err := strconv.Atoi(name)
 		if err != nil {
+			spew.Dump("zzzzzzzzzIIIIIIIIIIii")
 			return nil, err
 		}
 		cluster = &Cluster{Id: int64(id)}
 	}
+	spew.Dump(cluster)
 	found, err := s.engine.Get(cluster)
+	spew.Dump(found, err)
 	if err != nil {
 		return nil, errors.Errorf("reason: %v", err)
 	}
@@ -62,6 +68,7 @@ func (s *clusterXormStore) Get(name string) (*api.Cluster, error) {
 }
 
 func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
+	spew.Dump(">>>>>>>>>>>>>>>>>>>>")
 	if obj == nil {
 		return nil, errors.New("missing cluster")
 	} else if obj.Name == "" {
@@ -85,8 +92,8 @@ func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 	if err != nil {
 		return nil, err
 	}
-	cluster.OwnerId = s.owner
 	_, err = s.engine.Insert(cluster)
+	spew.Dump(cluster, "<<<<<<<<<<<<<<<<<<", err)
 	return obj, err
 }
 

@@ -49,13 +49,13 @@ func getProvider(name string, cfg *api.PharmerConfig) (Interface, error) {
 	return f(cfg)
 }
 
-func GetStoreProvider(cmd *cobra.Command, owner string) (ResourceInterface, error) {
+func GetStoreProvider(cmd *cobra.Command) (ResourceInterface, error) {
 	cfgFile, _ := config.GetConfigFile(cmd.Flags())
 	cfg, err := config.LoadConfig(cfgFile)
 	if err != nil {
 		return nil, err
 	}
-	return NewStoreProvider(cfg, owner)
+	return NewStoreProvider(cfg)
 }
 
 func NewStoreInterface(cfg *api.PharmerConfig) (Interface, error) {
@@ -75,10 +75,10 @@ func NewStoreInterface(cfg *api.PharmerConfig) (Interface, error) {
 	return store, nil
 }
 
-func NewStoreProvider(cfg *api.PharmerConfig, owner string) (ResourceInterface, error) {
+func NewStoreProvider(cfg *api.PharmerConfig) (ResourceInterface, error) {
 	store, err := NewStoreInterface(cfg)
 	if err != nil {
 		return nil, err
 	}
-	return store.Owner(owner), nil
+	return store, nil
 }

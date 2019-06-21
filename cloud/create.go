@@ -27,13 +27,26 @@ func CreateCluster(s *Scope) error {
 		return errors.New("missing Cluster version")
 	}
 
-	log := s.Logger.WithName("[create cluster]").WithValues("cluster", s.Cluster.Name)
+	log := s.Logger.WithName("[create-cluster]").WithValues("cluster", s.Cluster.Name)
 	log.Info("creating cluster")
 
 	// create should return error: Cluster already exists if Cluster already exists
 	_, err := s.StoreProvider.Clusters().Get(cluster.Name)
 	if err == nil {
 		return errors.New("cluster already exists")
+	}
+
+	// set common Cluster configs
+	err = setDefaultCluster(cluster)
+	if err != nil {
+		return errors.Wrap(err, "failed to set default Cluster")
+	}
+
+	// cluster needs to be created before certs are created
+	// it sets clusterID which is also used in cert tables
+	cluster, err = s.StoreProvider.Clusters().Create(cluster)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create cluster")
 	}
 
 	// create certificates and keys
@@ -64,12 +77,6 @@ func createCluster(s *Scope) error {
 	cm, err := s.GetCloudManager()
 	if err != nil {
 		return err
-	}
-
-	// set common Cluster configs
-	err = setDefaultCluster(cluster)
-	if err != nil {
-		return errors.Wrap(err, "failed to set default Cluster")
 	}
 
 	// set cloud-specific configs

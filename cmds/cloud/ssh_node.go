@@ -26,7 +26,7 @@ func NewCmdSSH() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd)
 			term.ExitOnError(err)
 
 			sshConfig, err := cloud.GetSSHConfig(storeProvider, opts.ClusterName, opts.NodeName)

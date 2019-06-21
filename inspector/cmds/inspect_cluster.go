@@ -29,7 +29,7 @@ func NewCmdInspectCluster() *cobra.Command {
 
 			clusterName, _ := cmd.Flags().GetString("cluster")
 
-			storeProvider, err := store.GetStoreProvider(cmd, "")
+			storeProvider, err := store.GetStoreProvider(cmd)
 			term.ExitOnError(err)
 
 			cluster, err := storeProvider.Clusters().Get(clusterName)

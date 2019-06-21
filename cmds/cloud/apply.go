@@ -22,7 +22,7 @@ func NewCmdApply() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -54,7 +54,7 @@ func runApplyCmd(storeProvider store.ResourceInterface, opts *options.ApplyConfi
 		Cluster:       cluster,
 		Certs:         certs,
 		StoreProvider: storeProvider,
-		Logger:        klogr.New().WithName("cli"),
+		Logger:        klogr.New().WithValues("cluster-name", cluster.Name),
 	})
 
 	return cloud.Apply(scope)

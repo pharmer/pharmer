@@ -39,7 +39,7 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd)
 			term.ExitOnError(err)
 
 			if err := RunUpdateCredential(storeProvider.Credentials(), opts, outErr); err != nil {

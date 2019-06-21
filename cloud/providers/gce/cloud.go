@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -121,7 +120,7 @@ func errAlreadyExists(err error) bool {
 }
 
 func (conn *cloudConnector) getLoadBalancer() (string, error) {
-	log.Infof("Getting Load Balancer for cluster %s", conn.Cluster.Name)
+	conn.Logger.Info("Getting Load Balancer", conn.Cluster.Name)
 
 	project := conn.Cluster.Spec.Config.Cloud.Project
 	region := conn.Cluster.Spec.Config.Cloud.Region
@@ -145,17 +144,16 @@ func (conn *cloudConnector) getLoadBalancer() (string, error) {
 		return "", errors.Wrap(err, "Error getting forwarding rules for load balancer")
 	}
 
-	log.Infof("Successfully found load balancer for cluster %s", conn.Cluster.Name)
+	conn.Logger.Info("Successfully found load balancer")
 	return address.Address, nil
 }
 
 func (conn *cloudConnector) createLoadBalancer(leaderMachine string) (string, error) {
-	log.Infof("Creating load balancer cluster %s", conn.Cluster.Name)
+	conn.Logger.Info("Creating load balancer")
 
 	project := conn.Cluster.Spec.Config.Cloud.Project
 	region := conn.Cluster.Spec.Config.Cloud.Region
 	zone := conn.Cluster.Spec.Config.Cloud.Zone
-	clusterName := conn.Cluster.Name
 	name := conn.namer.loadBalancerName()
 
 	addressOp, err := conn.computeService.Addresses.Insert(project, region, &compute.Address{
@@ -215,12 +213,12 @@ func (conn *cloudConnector) createLoadBalancer(leaderMachine string) (string, er
 		return "", errors.Wrap(err, "Error creating load balancer forwarding rules")
 	}
 
-	log.Infof("Successfully created load balancer: %s-apiserver with ip %q", clusterName, address.Address)
+	conn.Logger.Info("Successfully created load balancer", "ip", address.Address)
 	return address.Address, nil
 }
 
 func (conn *cloudConnector) deleteLoadBalancer() error {
-	log.Infof("Deleting load balancer")
+	conn.Logger.Info("Deleting load balancer")
 
 	project := conn.Cluster.Spec.Config.Cloud.Project
 	region := conn.Cluster.Spec.Config.Cloud.Region
@@ -234,7 +232,7 @@ func (conn *cloudConnector) deleteLoadBalancer() error {
 	} else if !errDeleted(err) {
 		return errors.Wrap(err, "Error getting load balancer ip address")
 	}
-	log.Info("deleted lb ip address")
+	conn.Logger.Info("deleted lb ip address")
 
 	if _, err := conn.computeService.ForwardingRules.Get(project, region, name).Do(); err == nil {
 		deleteOp, err := conn.computeService.ForwardingRules.Delete(project, region, name).Do()
@@ -247,7 +245,7 @@ func (conn *cloudConnector) deleteLoadBalancer() error {
 	} else if !errDeleted(err) {
 		return errors.Wrap(err, "Error getting forwarding rules for load balancer")
 	}
-	log.Info("deleted lb forwarding rule")
+	conn.Logger.Info("deleted lb forwarding rule")
 
 	if _, err := conn.computeService.TargetPools.Get(project, region, name).Do(); err == nil {
 		deleteOp, err := conn.computeService.TargetPools.Delete(project, region, name).Do()
@@ -260,7 +258,7 @@ func (conn *cloudConnector) deleteLoadBalancer() error {
 	} else if !errDeleted(err) {
 		return errors.Wrap(err, "Error getting target pools for load balancer")
 	}
-	log.Info("deleted lb target rule")
+	conn.Logger.Info("deleted lb target rule")
 
 	if _, err := conn.computeService.HttpHealthChecks.Get(project, name).Do(); err == nil {
 		if _, err := conn.computeService.HttpHealthChecks.Delete(project, name).Do(); err != nil {
@@ -269,14 +267,14 @@ func (conn *cloudConnector) deleteLoadBalancer() error {
 	} else if !errDeleted(err) {
 		return errors.Wrap(err, "Error getting health check probes for load balancer")
 	}
-	log.Info("deleted lb health check probe")
+	conn.Logger.Info("deleted lb health check probe")
 
-	log.Infoln("successfully deleted load balancer")
+	conn.Logger.Info("successfully deleted load balancer")
 	return nil
 }
 
 func (conn *cloudConnector) deleteInstance(name string) error {
-	log.Info("Deleting instance...")
+	conn.Logger.Info("Deleting instance...")
 	r, err := conn.computeService.Instances.Delete(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, name).Do()
 	if err != nil {
 		return errors.Wrap(err, "")
@@ -297,7 +295,7 @@ func (conn *cloudConnector) waitForGlobalOperation(operation string) error {
 		if err != nil && errDeleted(err) {
 			return false, nil
 		}
-		log.Infof("Attempt %v: Operation %v is %v ...", attempt, operation, r1.Status)
+		conn.Logger.Info("wait for global operation", "Attempt", attempt, "Operation", operation, "status", r1.Status)
 		if r1.Status == statusDone {
 			return true, nil
 		}
@@ -312,12 +310,11 @@ func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 
 		r1, err := conn.computeService.RegionOperations.Get(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Region, operation).Do()
 		if err != nil && !errDeleted(err) {
-			log.Info(err)
 			return false, nil
 		} else if err != nil && errDeleted(err) {
 			return true, nil
 		}
-		log.Infof("Attempt %v: Operation %v is in state %v ...", attempt, operation, r1.Status)
+		conn.Logger.Info("wait for regional operation", "Attempt", attempt, "Operation", operation, "status", r1.Status)
 		if r1.Status == statusDone {
 			return true, nil
 		}
@@ -336,7 +333,7 @@ func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 		} else if err != nil && errDeleted(err) {
 			return true, nil
 		}
-		log.Infof("Attempt %v: Operation %v is %v ...", attempt, operation, r1.Status)
+		conn.Logger.Info("wait for zonal operation", "Attempt", attempt, "Operation", operation, "status", r1.Status)
 		if r1.Status == statusDone {
 			return true, nil
 		}
@@ -366,15 +363,16 @@ func (conn *cloudConnector) importPublicKey() error {
 	if err != nil {
 		return errors.Wrap(err, "")
 	}
-	log.Debug("Imported SSH key")
-	log.Info("SSH key imported")
+	conn.Logger.Info("Imported SSH key")
+	conn.Logger.Info("SSH key imported")
 	return nil
 }
 
 func (conn *cloudConnector) getNetworks() (bool, error) {
-	log.Infof("Retrieving network %v for project %v", defaultNetwork, conn.Cluster.Spec.Config.Cloud.Project)
+	log := conn.Logger.WithValues("project", conn.Cluster.ClusterConfig().Cloud.Project)
+	log.Info("Retrieving network", defaultNetwork)
 	r1, err := conn.computeService.Networks.Get(conn.Cluster.Spec.Config.Cloud.Project, defaultNetwork).Do()
-	log.Debug("Retrieve network result", r1, err)
+	log.Info("Retrieve network result", "resp", r1, "error", err)
 	if err != nil {
 		return false, err
 	}
@@ -382,37 +380,38 @@ func (conn *cloudConnector) getNetworks() (bool, error) {
 }
 
 func (conn *cloudConnector) ensureNetworks() error {
-	log.Infof("Retrieving network %v for project %v", defaultNetwork, conn.Cluster.Spec.Config.Cloud.Project)
+	log := conn.Logger.WithValues("project", conn.Cluster.ClusterConfig().Cloud.Project)
+	log.Info("Retrieving network", "name", defaultNetwork)
 	r2, err := conn.computeService.Networks.Insert(conn.Cluster.Spec.Config.Cloud.Project, &compute.Network{
 		IPv4Range: "10.240.0.0/16",
 		Name:      defaultNetwork,
 	}).Do()
-	log.Debug("Created new network", r2, err)
+	log.Info("Created new network", "resp", r2, "error", err)
 	if err != nil {
 		return errors.Wrap(err, "")
 	}
-	log.Infof("New network %v is created", defaultNetwork)
+	log.Info("New network created", "name", defaultNetwork)
 
 	return nil
 }
 
 func (conn *cloudConnector) getFirewallRules() (bool, error) {
 	ruleClusterInternal := conn.Cluster.Name + firewallRuleInternalSuffix
-	log.Infof("Retrieving firewall rule %v", ruleClusterInternal)
+	conn.Logger.Info("Retrieving firewall rule", "rule-name", ruleClusterInternal)
 	if r1, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleClusterInternal).Do(); err != nil {
-		log.Debug("Retrieved firewall rule", r1, err)
+		conn.Logger.Info("Retrieved firewall rule", r1, err)
 		return false, err
 	}
 
 	ruleSSH := conn.Cluster.Name + "-allow-ssh"
 	if r2, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleSSH).Do(); err != nil {
-		log.Debug("Retrieved firewall rule", r2, err)
+		conn.Logger.Info("Retrieved firewall rule", "resp", r2, "error", err)
 		return false, err
 	}
 
 	ruleAPIPublic := conn.Cluster.Name + firewallRuleAPISuffix
 	if r5, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleAPIPublic).Do(); err != nil {
-		log.Debug("Retrieved firewall rule", r5, err)
+		conn.Logger.Info("Retrieved firewall rule", "resp", r5, "error", err)
 		return false, err
 	}
 
@@ -425,7 +424,7 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 	cluster := conn.Cluster
 	ruleInternal := defaultNetwork + "-allow-internal"
 	if r1, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleInternal).Do(); err != nil {
-		log.Debug("Retrieved firewall rule", r1, err)
+		conn.Logger.Info("Retrieved firewall rule", "resp", r1, "error", err)
 
 		r2, err := conn.computeService.Firewalls.Insert(conn.Cluster.Spec.Config.Cloud.Project, &compute.Firewall{
 			Name:         ruleInternal,
@@ -445,17 +444,17 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 				},
 			},
 		}).Do()
-		log.Debug("Created firewall rule", r2, err)
+		conn.Logger.Info("Created firewall rule", "resp", r2, "error", err)
 		if err != nil {
 			return errors.Wrap(err, "")
 		}
-		log.Infof("Firewall rule %v created", ruleInternal)
+		conn.Logger.Info("Firewall rule created", "rule-name", ruleInternal)
 	}
 
 	ruleClusterInternal := cluster.Name + firewallRuleInternalSuffix
 
 	if r1, err := conn.computeService.Firewalls.Get(cluster.Spec.Config.Cloud.Project, ruleClusterInternal).Do(); err != nil {
-		log.Debug("Retrieved firewall rule", r1, err)
+		conn.Logger.Info("Retrieved firewall rule", r1, err)
 
 		r2, err := conn.computeService.Firewalls.Insert(cluster.Spec.Config.Cloud.Project, &compute.Firewall{
 			Name:    ruleClusterInternal,
@@ -469,11 +468,11 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 			SourceTags: []string{conn.namer.cluster.Name + "-worker"},
 		}).Do()
 
-		log.Debug("Created firewall rule", r2, err)
+		conn.Logger.Info("Created firewall rule", r2, err)
 		if err != nil {
 			return errors.Wrap(err, "")
 		}
-		log.Infof("Firewall rule %v created", ruleClusterInternal)
+		conn.Logger.Info("Firewall rule %v created", ruleClusterInternal)
 	}
 	if cluster.Spec.ClusterAPI.ObjectMeta.Annotations == nil {
 		cluster.Spec.ClusterAPI.ObjectMeta.Annotations = make(map[string]string)
@@ -485,7 +484,7 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 
 	ruleSSH := cluster.Name + "-allow-ssh"
 	if r3, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleSSH).Do(); err != nil {
-		log.Debug("Retrieved firewall rule", r3, err)
+		conn.Logger.Info("Retrieved firewall rule", r3, err)
 
 		r4, err := conn.computeService.Firewalls.Insert(conn.Cluster.Spec.Config.Cloud.Project, &compute.Firewall{
 			Name:         ruleSSH,
@@ -498,17 +497,17 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 				},
 			},
 		}).Do()
-		log.Debug("Created firewall rule", r4, err)
+		conn.Logger.Info("Created firewall rule", r4, err)
 		if err != nil {
 			return errors.Wrap(err, "")
 		}
-		log.Infof("Firewall rule %v created", ruleSSH)
+		conn.Logger.Info("Firewall rule %v created", ruleSSH)
 	}
 
 	ruleApiPublic := cluster.Name + firewallRuleAPISuffix
 
 	if r7, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleApiPublic).Do(); err != nil {
-		log.Debug("Retrieved firewall rule", r7, err)
+		conn.Logger.Info("Retrieved firewall rule", r7, err)
 		r8, err := conn.computeService.Firewalls.Insert(conn.Cluster.Spec.Config.Cloud.Project, &compute.Firewall{
 			Name:    ruleApiPublic,
 			Network: "global/networks/default",
@@ -526,12 +525,12 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 			SourceRanges: []string{"0.0.0.0/0"},
 		}).Do()
 
-		log.Debug("Created firewall rule", r8, err)
+		conn.Logger.Info("Created firewall rule", r8, err)
 
 		if err != nil {
 			return errors.Wrap(err, "")
 		}
-		log.Infof("Firewall rule %v created", ruleSSH)
+		conn.Logger.Info("Firewall rule %v created", ruleSSH)
 	}
 
 	cluster.Spec.ClusterAPI.ObjectMeta.Annotations[firewallRuleAnnotationPrefix+ruleApiPublic] = "true"
@@ -544,7 +543,7 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 func (conn *cloudConnector) getMasterPDDisk(name string) (bool, error) {
 
 	if r, err := conn.computeService.Disks.Get(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, name).Do(); err != nil {
-		log.Debug("Retrieved master persistent disk", r, err)
+		conn.Logger.Info("Retrieved master persistent disk", r, err)
 		return false, err
 	}
 
@@ -565,7 +564,7 @@ func (conn *cloudConnector) createDisk(name, diskType string, sizeGb int64) (str
 		SizeGb: sizeGb,
 	}).Do()
 
-	log.Debug("Created master disk", r1, err)
+	conn.Logger.Info("Created master disk", r1, err)
 	if err != nil {
 		return name, errors.Wrap(err, "")
 	}
@@ -573,13 +572,13 @@ func (conn *cloudConnector) createDisk(name, diskType string, sizeGb int64) (str
 	if err != nil {
 		return name, errors.Wrap(err, "")
 	}
-	log.Infof("Blank disk of type %v created before creating the master VM", dType)
+	conn.Logger.Info("Blank disk of type %v created before creating the master VM", dType)
 	return name, nil
 }
 
 func (conn *cloudConnector) getMasterInstance(machine *clusterv1.Machine) (bool, error) {
 	if r1, err := conn.computeService.Instances.Get(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, machine.Name).Do(); err != nil {
-		log.Debug("Retrieved master instance", r1, err)
+		conn.Logger.Info("Retrieved master instance", r1, err)
 		return false, err
 	}
 	return true, nil
@@ -673,13 +672,13 @@ func (conn *cloudConnector) createMasterIntance(machine *clusterv1.Machine, scri
 	}
 
 	r1, err := conn.computeService.Instances.Insert(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, instance).Do()
-	log.Debug("Created master instance", r1, err)
+	conn.Logger.Info("Created master instance", r1, err)
 
 	if err != nil {
 		return instance.Name, errors.Wrap(err, "")
 	}
-	//log.Infof("Master instance of type %v in zone %v using persistent disk %v created", machineType, zone, pdSrc)
-	log.Infof("Master instance of type %v in zone %v is created", machineType, zone)
+	//conn.Logger.Info("Master instance of type %v in zone %v using persistent disk %v created", machineType, zone, pdSrc)
+	conn.Logger.Info("Master instance of type %v in zone %v is created", machineType, zone)
 
 	return r1.Name, nil
 }
@@ -696,7 +695,7 @@ func (conn *cloudConnector) deleteMaster(machines []*clusterv1.Machine) error {
 		go func(machine *clusterv1.Machine) {
 			defer wg.Done()
 
-			log.Infof("Deleting machine %s", machine.Name)
+			conn.Logger.Info("Deleting machine %s", machine.Name)
 
 			instance, err := conn.computeService.Instances.Delete(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, machine.Name).Do()
 			if err != nil {
@@ -711,7 +710,7 @@ func (conn *cloudConnector) deleteMaster(machines []*clusterv1.Machine) error {
 				return
 			}
 
-			log.Infof("successfully deleted machine %s", machine.Name)
+			conn.Logger.Info("successfully deleted machine %s", machine.Name)
 		}(machine)
 	}
 	wg.Wait()
@@ -726,7 +725,7 @@ func (conn *cloudConnector) deleteMaster(machines []*clusterv1.Machine) error {
 	}
 
 	if allerr == nil {
-		log.Info("successfully deleted master machines")
+		conn.Logger.Info("successfully deleted master machines")
 		return nil
 	}
 	return errors.Wrap(allerr, "failed to delete master machines")
@@ -734,7 +733,7 @@ func (conn *cloudConnector) deleteMaster(machines []*clusterv1.Machine) error {
 
 //delete disk
 func (conn *cloudConnector) deleteDisk(nodeDiskNames []string) error {
-	log.Info("Deleting disks")
+	conn.Logger.Info("Deleting disks")
 
 	project := conn.Cluster.Spec.Config.Cloud.Project
 	zone := conn.Cluster.Spec.Config.Cloud.Zone
@@ -746,17 +745,17 @@ func (conn *cloudConnector) deleteDisk(nodeDiskNames []string) error {
 
 	for _, disk := range nodeDiskNames {
 		go func(name string) {
-			log.Infof("deleting disk %s", name)
+			conn.Logger.Info("deleting disk %s", name)
 
 			defer wg.Done()
 
 			if _, err := conn.computeService.Disks.Delete(project, zone, name).Do(); err != nil && !errDeleted(err) {
-				log.Infof("failed to delete disk %s: %v", name, err)
+				conn.Logger.Info("failed to delete disk %s: %v", name, err)
 				errCh <- err
 				return
 			}
 
-			log.Infof("successfully deleted disk %s", name)
+			conn.Logger.Info("successfully deleted disk %s", name)
 		}(disk)
 	}
 	wg.Wait()
@@ -771,7 +770,7 @@ func (conn *cloudConnector) deleteDisk(nodeDiskNames []string) error {
 	}
 
 	if allerr == nil {
-		log.Info("successfully deleted disks")
+		conn.Logger.Info("successfully deleted disks")
 		return nil
 	}
 
@@ -789,30 +788,30 @@ func (conn *cloudConnector) deleteFirewalls() {
 	ruleClusterInternal := conn.Cluster.Name + firewallRuleInternalSuffix
 	r2, err := conn.computeService.Firewalls.Delete(conn.Cluster.Spec.Config.Cloud.Project, ruleClusterInternal).Do()
 	if err != nil {
-		log.Infoln(err)
+		conn.Logger.Error(err, "failed to delete firewall")
 		//return errors.Wrap(err, "")
 	} else {
-		log.Infof("Firewalls %v deleted, response %v", ruleClusterInternal, r2.Status)
+		conn.Logger.Info("Firewalls %v deleted, response %v", ruleClusterInternal, r2.Status)
 	}
 	time.Sleep(3 * time.Second)
 
 	ruleSSH := conn.Cluster.Name + "-allow-ssh"
 	r3, err := conn.computeService.Firewalls.Delete(conn.Cluster.Spec.Config.Cloud.Project, ruleSSH).Do()
 	if err != nil {
-		log.Infoln(err)
+		conn.Logger.Error(err, "failed to delete ssh")
 		//return errors.Wrap(err, "")
 	} else {
-		log.Infof("Firewalls %v deleted, response %v", ruleSSH, r3.Status)
+		conn.Logger.Info("Firewalls %v deleted, response %v", ruleSSH, r3.Status)
 	}
 	time.Sleep(3 * time.Second)
 
 	ruleAPIPublic := conn.Cluster.Name + firewallRuleAPISuffix
 	r4, err := conn.computeService.Firewalls.Delete(conn.Cluster.Spec.Config.Cloud.Project, ruleAPIPublic).Do()
 	if err != nil {
-		log.Infoln(err)
+		conn.Logger.Error(err, "failed to delete firewall")
 		//return errors.Wrap(err, "")
 	} else {
-		log.Infof("Firewalls %v deleted, response %v", ruleAPIPublic, r4.Status)
+		conn.Logger.Info("Firewalls %v deleted, response %v", ruleAPIPublic, r4.Status)
 	}
 	time.Sleep(3 * time.Second)
 }

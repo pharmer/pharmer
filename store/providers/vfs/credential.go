@@ -17,13 +17,12 @@ import (
 type credentialFileStore struct {
 	container stow.Container
 	prefix    string
-	owner     string
 }
 
 var _ store.CredentialStore = &credentialFileStore{}
 
 func (s *credentialFileStore) resourceHome() string {
-	return filepath.Join(s.owner, s.prefix, "credentials")
+	return filepath.Join(s.prefix, "credentials")
 }
 
 func (s *credentialFileStore) resourceID(name string) string {

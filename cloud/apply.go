@@ -16,6 +16,10 @@ import (
 )
 
 func Apply(scope *Scope) error {
+	log := scope.Logger.WithName("[apply-cluster]")
+
+	log.Info("applying cluster")
+
 	cluster := scope.Cluster
 	if cluster.Status.Phase == "" {
 		return errors.Errorf("Cluster `%s` is in unknown phase", cluster.Name)
@@ -69,6 +73,8 @@ func Apply(scope *Scope) error {
 		}
 	}
 
+	log.Info("successfully applied cluster")
+
 	return nil
 }
 
@@ -107,7 +113,7 @@ func ApplyCreate(scope *Scope) error {
 		return err
 	}
 
-	if err = kube.WaitForReadyMaster(kubeClient); err != nil {
+	if err = kube.WaitForReadyMaster(scope.Logger, kubeClient); err != nil {
 		return errors.Wrap(err, " error occurred while waiting for master")
 	}
 
@@ -206,7 +212,7 @@ func setMasterSKU(scope *Scope) error {
 }
 
 func ApplyScale(s *Scope) error {
-	log.Infoln("Scaling Machine Sets")
+	s.Logger.Info("Scaling Machine Sets")
 
 	if api.ManagedProviders.Has(s.Cluster.CloudProvider()) {
 		return s.CloudManager.ApplyScale()
@@ -248,6 +254,8 @@ func ApplyScale(s *Scope) error {
 			return err
 		}
 	}
+
+	s.Logger.Info("successfully scaled machineset")
 
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/klogr"
 	"k8s.io/sample-controller/pkg/signals"
 	clusterapis "sigs.k8s.io/cluster-api/pkg/apis"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -27,7 +28,7 @@ func newCmdController() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			storeProvider, err := store.GetStoreProvider(cmd, "")
+			storeProvider, err := store.GetStoreProvider(cmd)
 			term.ExitOnError(err)
 
 			cluster, err := storeProvider.Clusters().Get(clusterName)
@@ -38,6 +39,7 @@ func newCmdController() *cobra.Command {
 			scope := cloud.NewScope(cloud.NewScopeParams{
 				Cluster:       cluster,
 				StoreProvider: storeProvider,
+				Logger:        klogr.New().WithName("[controller]").WithValues("cluster-name", clusterName),
 			})
 
 			cm, err := scope.GetCloudManager()

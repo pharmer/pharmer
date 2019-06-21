@@ -34,7 +34,7 @@ func init() {
 
 type XormStore struct {
 	engine *xorm.Engine
-	owner  string
+	owner  int64
 }
 
 var _ store.Interface = &XormStore{}
@@ -43,7 +43,7 @@ func New(engine *xorm.Engine) store.Interface {
 	return &XormStore{engine: engine}
 }
 
-func (s *XormStore) Owner(id string) store.ResourceInterface {
+func (s *XormStore) Owner(id int64) store.ResourceInterface {
 	ret := *s
 	ret.owner = id
 	return &ret

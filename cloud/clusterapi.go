@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/appscode/go/log"
 	"github.com/appscode/go/wait"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
@@ -68,7 +67,8 @@ func NewClusterAPI(s *Scope, namespace string) (*ClusterAPI, error) {
 }
 
 func (ca *ClusterAPI) Apply(controllerManager string) error {
-	log.Infof("Deploying the addon apiserver and controller manager...")
+	log := ca.Logger.WithName("[apply cluster api]")
+	log.Info("Deploying the addon apiserver and controller manager")
 	if err := ca.CreateMachineController(controllerManager); err != nil {
 		return errors.Wrap(err, "can't create machine controller")
 	}
@@ -93,7 +93,6 @@ func (ca *ClusterAPI) Apply(controllerManager string) error {
 	}
 
 	if err := ca.updateProviderStatus(); err != nil {
-		log.Infoln(err)
 		return errors.Wrap(err, "failed to update provider status")
 	}
 
@@ -102,7 +101,7 @@ func (ca *ClusterAPI) Apply(controllerManager string) error {
 		return errors.Wrap(err, "failed to get leader machine")
 	}
 
-	log.Infof("Adding master machines...")
+	ca.Logger.Info("Adding master machines...")
 	_, err = ca.clusterapiClient.ClusterV1alpha1().Machines(namespace).Create(masterMachine)
 	if err != nil && !api.ErrAlreadyExist(err) && !api.ErrObjectModified(err) {
 		return errors.Wrap(err, "failed to add master machine")
@@ -118,6 +117,8 @@ func (ca *ClusterAPI) Apply(controllerManager string) error {
 }
 
 func (ca *ClusterAPI) updateProviderStatus() error {
+	log := ca.Logger.WithName("[update provider status]")
+
 	pharmerCluster := ca.Cluster
 	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		cluster, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(pharmerCluster.Spec.ClusterAPI.Namespace).Get(pharmerCluster.Name, metav1.GetOptions{})
@@ -127,7 +128,7 @@ func (ca *ClusterAPI) updateProviderStatus() error {
 		if cluster.Status.ProviderStatus != nil {
 			pharmerCluster.Spec.ClusterAPI.Status.ProviderStatus = cluster.Status.ProviderStatus
 			if _, err := ca.StoreProvider.Clusters().Update(pharmerCluster); err != nil {
-				log.Info(err)
+				log.Error(err, "failed to update cluster status")
 				return false, nil
 			}
 			return true, nil
@@ -151,12 +152,14 @@ func (ca *ClusterAPI) updateMachineStatus(namespace string, masterMachine *clust
 }
 
 func (ca *ClusterAPI) CreateMachineController(controllerManager string) error {
-	log.Infoln("creating pharmer secret")
+	log := ca.Logger.WithName("[create machine controller]")
+
+	log.Info("creating pharmer secret")
 	if err := ca.CreatePharmerSecret(); err != nil {
 		return err
 	}
 
-	log.Infoln("creating apiserver and controller")
+	log.Info("creating apiserver and controller")
 	if err := ca.CreateAPIServerAndController(controllerManager); err != nil && !api.ErrObjectModified(err) {
 		return err
 	}
