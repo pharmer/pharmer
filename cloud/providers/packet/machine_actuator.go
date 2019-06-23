@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appscode/go/log"
 	packetconfig "github.com/pharmer/pharmer/apis/v1beta1/packet"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
@@ -71,7 +70,8 @@ func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
 }
 
 func (packet *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	log.Infof("creating machine %s", machine.Name)
+	log := packet.cm.Logger.WithValues("machine-name", machine.Name)
+	log.Info("call for creating machine")
 
 	machineConfig, err := packetconfig.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
@@ -88,9 +88,9 @@ func (packet *MachineActuator) Create(_ context.Context, cluster *clusterv1.Clus
 	}
 
 	if exists {
-		log.Infof("Skipped creating a machine that already exists.")
+		log.Info("Skipped creating a machine that already exists")
 	} else {
-		log.Infof("vm not found, creating vm for machine %q", machine.Name)
+		log.Info("vm not found, creating vm for machine")
 
 		token, err := packet.getKubeadmToken()
 		if err != nil {
@@ -114,7 +114,7 @@ func (packet *MachineActuator) Create(_ context.Context, cluster *clusterv1.Clus
 		return errors.Wrap(err, "failed to update machine status")
 	}
 
-	log.Infof("successfully created machine %s", machine.Name)
+	log.Info("successfully created machine")
 	return nil
 }
 
@@ -173,21 +173,22 @@ func machineProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*pack
 }
 
 func (packet *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	fmt.Println("call for deleting machine")
+	log := packet.cm.Logger.WithValues("machine-name", machine.Name)
+	log.Info("call for deleting machine")
 	var err error
 
 	instance, err := packet.cm.conn.instanceIfExists(machine)
 	if err != nil {
-		log.Infof(err.Error())
+		log.Error(err, "instance doesn't exist")
 	}
 	if instance == nil {
-		log.Infof("Skipped deleting a VM that is already deleted")
+		log.Info("Skipped deleting a VM that is already deleted")
 		return nil
 	}
 	serverId := fmt.Sprintf("packet://%v", instance.ID)
 
 	if err = packet.cm.conn.DeleteInstanceByProviderID(serverId); err != nil {
-		log.Infof("errror on deleting %v", err)
+		log.Error(err, "error deleting instance")
 	}
 
 	packet.eventRecorder.Eventf(machine, corev1.EventTypeNormal, "Deleted", "Deleted Machine %v", machine.Name)
@@ -196,7 +197,8 @@ func (packet *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Clus
 }
 
 func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	log.Infof("updating machine %s", machine.Name)
+	log := packet.cm.Logger.WithValues("machine-name", machine.Name)
+	log.Info("updating machine")
 
 	var err error
 	goalConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
@@ -214,7 +216,7 @@ func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Clus
 	}
 
 	if !exists {
-		log.Infof("vm not found, creating vm for machine %q", machine.Name)
+		log.Info("vm not found, creating vm for machine")
 		return packet.Create(context.Background(), cluster, machine)
 	}
 
@@ -222,12 +224,13 @@ func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Clus
 		return errors.Wrap(err, "failed to update machine status")
 	}
 
-	log.Infof("Successfully updated machine %q", machine.Name)
+	log.Info("Successfully updated machine")
 	return nil
 }
 
 func (packet *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	fmt.Println("call for checking machine existence", machine.Name)
+	log := packet.cm.Logger.WithValues("machine-name", machine.Name)
+	log.Info("call for checking machine existence")
 	var err error
 
 	i, err := packet.cm.conn.instanceIfExists(machine)

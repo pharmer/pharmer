@@ -3,7 +3,6 @@ package packet
 import (
 	"context"
 
-	"github.com/appscode/go/log"
 	packet_config "github.com/pharmer/pharmer/apis/v1beta1/packet"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -47,17 +46,19 @@ func NewClusterActuator(m manager.Manager, params ClusterActuatorParams) *Cluste
 		cm:            params.cm,
 	}
 }
-func (cm *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
-	log.Infof("Reconciling cluster: %q", cluster.Name)
+func (ca *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
+	log := ca.cm.Logger
+
+	log.Info("Reconciling cluster")
 
 	if err := packet_config.SetPacketClusterProviderStatus(cluster); err != nil {
-		log.Debugf("Error setting providre status for cluster %q: %v", cluster.Name, err)
+		log.Error(err, "Error setting providre status for cluster")
 		return err
 	}
-	return cm.client.Status().Update(context.Background(), cluster)
+	return ca.client.Status().Update(context.Background(), cluster)
 }
 
-func (cm *ClusterActuator) Delete(cluster *clusterapi.Cluster) error {
-	log.Infof("Deleting cluster %v", cluster.Name)
+func (ca *ClusterActuator) Delete(cluster *clusterapi.Cluster) error {
+	ca.cm.Logger.Info("Deleting cluster")
 	return nil
 }
