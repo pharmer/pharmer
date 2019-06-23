@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appscode/go/log"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/record"
@@ -70,7 +69,8 @@ func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
 }
 
 func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	log.Infof("Creating machine %q for cluster %q", machine.Name, cluster.Name)
+	log := do.cm.Logger.WithValues("machine-name", machine.Name)
+	log.Info("call for creating machine")
 
 	machineConfig, err := doCapi.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
@@ -87,9 +87,9 @@ func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster,
 	}
 
 	if exists {
-		log.Infof("Machine %q exists, skipping machine creation", machine.Name)
+		log.Info("Machine exists, skipping machine creation")
 	} else {
-		log.Infof("Droplet not found, creating droplet for machine %q", machine.Name)
+		log.Info("Droplet not found, creating droplet for machine")
 
 		token, err := do.getKubeadmToken()
 		if err != nil {
@@ -112,20 +112,21 @@ func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster,
 		return err
 	}
 
-	log.Infof("Successfully created machine %q", machine.Name)
+	log.Info("Successfully created machine")
 	return nil
 }
 
 func (do *MachineActuator) updateMachineStatus(machine *clusterv1.Machine) error {
+	log := do.cm.Logger
 	droplet, err := do.cm.conn.instanceIfExists(machine)
 	if err != nil {
-		log.Debugf("Error checking existance for machine %q: %v", machine.Name, err)
+		log.Error(err, "Error checking existance for machine")
 		return err
 	}
 
 	status, err := doCapi.MachineStatusFromProviderStatus(machine.Status.ProviderStatus)
 	if err != nil {
-		log.Debugf("Error getting machine status for %q: %v", machine.Name, err)
+		log.Error(err, "Error getting machine status for machine")
 		return err
 	}
 
@@ -134,13 +135,13 @@ func (do *MachineActuator) updateMachineStatus(machine *clusterv1.Machine) error
 
 	raw, err := doCapi.EncodeMachineStatus(status)
 	if err != nil {
-		log.Debugf("Error encoding machine status for machine %q", machine.Name)
+		log.Error(err, "Error encoding machine status for machine")
 	}
 
 	machine.Status.ProviderStatus = raw
 
 	if err := do.client.Status().Update(context.Background(), machine); err != nil {
-		log.Debugf("Error updating status for machine %q", machine.Name)
+		log.Error(err, "Error updating status for machine")
 		return err
 	}
 
@@ -175,31 +176,33 @@ func (do *MachineActuator) getKubeadmToken() (string, error) {
 }
 
 func (do *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	log.Infof("Deleting machine %q in cluster %q", machine.Name, cluster.Name)
+	log := do.cm.Logger.WithValues("machine-name", machine.Name)
+	log.Info("call for deleting machine")
 	var err error
 
 	instance, err := do.cm.conn.instanceIfExists(machine)
 	if err != nil {
-		log.Infof("Error checking machine existance: %v", err)
+		log.Error(err, "error checking machine existance")
 	}
 	if instance == nil {
-		log.Infof("Skipped deleting a VM that is already deleted")
+		log.Info("Skipped deleting a VM that is already deleted")
 		return nil
 	}
 	dropletID := fmt.Sprintf("digitalocean://%v", instance.ID)
 
 	if err = do.cm.conn.DeleteInstanceByProviderID(dropletID); err != nil {
-		log.Infof("errror on deleting %v", err)
+		log.Error(err, "error deleting machine", "instance-id", dropletID)
 	}
 
 	do.eventRecorder.Eventf(machine, corev1.EventTypeNormal, "Deleted", "Deleted Machine %v", machine.Name)
 
-	log.Infof("Successfully deleted machine %q", machine.Name)
+	log.Info("Successfully deleted machine")
 	return nil
 }
 
 func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
-	log.Infof("Updating machine %q in cluster %q", goalMachine.Name, cluster.Name)
+	log := do.cm.Logger.WithValues("machine-name", goalMachine.Name)
+	log.Info("call for updating machine")
 
 	var err error
 
@@ -209,7 +212,7 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 	}
 
 	if err := do.validateMachine(goalConfig); err != nil {
-		log.Debugf("Error validating machineconfig for machine %q: %v", goalMachine.Name, err)
+		log.Error(err, "error validating machineconfig for machine")
 		return err
 	}
 
@@ -219,7 +222,7 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 	}
 
 	if !exists {
-		log.Infof("vm not found, creating vm for machine %q", goalMachine.Name)
+		log.Info("vm not found, creating vm for machine")
 		return do.Create(context.Background(), cluster, goalMachine)
 	}
 
@@ -227,17 +230,18 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 		return errors.Wrap(err, "failed to update machine status")
 	}
 
-	log.Infof("Updated machine %q successfully", goalMachine.Name)
+	log.Info("Updated machine successfully")
 	return nil
 }
 
 func (do *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	log.Infof("Checking existance of machine %q in cluster %q", machine.Name, cluster.Name)
+	log := do.cm.Logger.WithValues("machine-name", machine.Name)
+	log.Info("Checking existence of machine")
 	var err error
 
 	i, err := do.cm.conn.instanceIfExists(machine)
 	if err != nil {
-		log.Infof("Error checking machine existance: %v", err)
+		log.Error(err, "error checking machine existance")
 		return false, nil
 	}
 
