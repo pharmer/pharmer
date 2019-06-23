@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/linode/linodego"
 	"github.com/pharmer/cloud/pkg/credential"
@@ -143,7 +142,7 @@ func (conn *cloudConnector) waitForStatus(id int, status linodego.InstanceStatus
 		if instance == nil {
 			return false, nil
 		}
-		log.Infof("Attempt %v: Instance `%v` is in status `%v`", attempt, instance.Label, instance.Status)
+		conn.Logger.Info("waiting for Instance", "attempt", attempt, "instance", instance.Label, "status", instance.Status)
 		if instance.Status == status {
 			return true, nil
 		}
@@ -200,7 +199,7 @@ func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine
 		if err != nil {
 			return 0, err
 		}
-		log.Infof("Stack script for role %v created", string(machineConfig.Roles[0]))
+		conn.Logger.Info("Stack script created", "role", string(machineConfig.Roles[0]))
 		return stackScript.ID, nil
 	}
 
@@ -212,7 +211,7 @@ func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine
 		return 0, err
 	}
 
-	log.Infof("Stack script for role %v updated", string(machineConfig.Roles[0]))
+	conn.Logger.Info("Stack script updated", "role", string(machineConfig.Roles[0]))
 	return stackScript.ID, nil
 }
 
@@ -291,7 +290,7 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 		return err
 	}
 
-	log.Infof("Instance %v deleted", id)
+	conn.Logger.Info("Instance deleted", "instance-id", id)
 	return nil
 }
 
@@ -419,7 +418,7 @@ func (conn *cloudConnector) addNodeToBalancer(lbName string, nodeName, ip string
 		return err
 	}
 
-	log.Infof("Added master %v to loadbalancer %v", nodeName, lbName)
+	conn.Logger.Info("Added master to the loadbalancer", "master-name", nodeName, "lb-name", lbName)
 
 	return nil
 }
@@ -445,34 +444,3 @@ func (conn *cloudConnector) deleteLoadBalancer(lbName string) error {
 
 	return conn.client.DeleteNodeBalancer(context.Background(), lb.ID)
 }
-
-/*func (conn *cloudConnector) loadBalancerUpdated(lb *godo.LoadBalancer) (bool, error) {
-	defaultSpecs, err := conn.buildLoadBalancerRequest(conn.namer.LoadBalancerName())
-	if err != nil {
-		log.Debugln("Error getting default lb specs")
-		return false, err
-	}
-
-	if lb.Algorithm != defaultSpecs.Algorithm {
-		return true, nil
-	}
-	if lb.Region.Slug != defaultSpecs.Region {
-		return true, nil
-	}
-	if !reflect.DeepEqual(lb.ForwardingRules, defaultSpecs.ForwardingRules) {
-		return true, nil
-	}
-	if !reflect.DeepEqual(lb.HealthCheck, defaultSpecs.HealthCheck) {
-		return true, nil
-	}
-	if !reflect.DeepEqual(lb.StickySessions, defaultSpecs.StickySessions) {
-		return true, nil
-	}
-	if lb.RedirectHTTPToHTTPS != defaultSpecs.RedirectHTTPToHTTPS {
-		return true, nil
-	}
-
-	return false, nil
-}*/
-
-// ---------------------------------------------------------------------------------------------------------------------

@@ -1,7 +1,6 @@
 package linode
 
 import (
-	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
@@ -14,6 +13,9 @@ import (
 )
 
 func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
+	log := cm.Logger.WithName("ensure-master").WithValues("machine-name", leaderMachine.Name)
+	log.Info("ensuring master machine")
+
 	script, err := cloud.RenderStartupScript(cm, leaderMachine, "", customTemplate)
 	if err != nil {
 		return err
@@ -65,6 +67,9 @@ func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
 }
 
 func (cm *ClusterManager) PrepareCloud() error {
+	log := cm.Logger.WithName("[prepare-cloud]")
+	log.Info("preparing cloud infra")
+
 	lb, err := cm.conn.lbByName(cm.namer.LoadBalancerName())
 
 	if err != nil {
@@ -94,12 +99,10 @@ func (cm *ClusterManager) PrepareCloud() error {
 	return err
 }
 
-func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
-	return "g6-standard-2"
-}
-
 //Deletes master(s) and releases other cloud resources
 func (cm *ClusterManager) ApplyDelete() error {
+	log := cm.Logger.WithName("[apply-delete]")
+
 	var kc kubernetes.Interface
 	kc, err := cm.GetAdminClient()
 	if err != nil {
@@ -112,16 +115,16 @@ func (cm *ClusterManager) ApplyDelete() error {
 		}).String(),
 	})
 	if err != nil && !kerr.IsNotFound(err) {
-		log.Infof("node instance not found. Reason: %v", err)
+		log.Error(err, "node instance not found.=")
 	} else if err == nil {
 		for _, mi := range nodeInstances.Items {
 
 			if err = cm.conn.DeleteStackScript(mi.Name, api.RoleNode); err != nil {
-				log.Infof("Reason: %v", err)
+				log.Error(err, "Unable to delete stack script")
 			}
 			err = kc.CoreV1().Nodes().Delete(mi.Name, nil)
 			if err != nil {
-				log.Infof("Failed to delete node %s. Reason: %s", mi.Name, err)
+				log.Error(err, "Failed to delete node.", "node-name", mi.Name)
 			}
 		}
 	}
@@ -133,16 +136,16 @@ func (cm *ClusterManager) ApplyDelete() error {
 		}).String(),
 	})
 	if err != nil && !kerr.IsNotFound(err) {
-		log.Infof("master instance not found. Reason: %v", err)
+		log.Error(err, "master instance not found.")
 	} else if err == nil {
 		for _, mi := range masterInstances.Items {
 			if err = cm.conn.DeleteStackScript(mi.Name, api.RoleMaster); err != nil {
-				log.Infof("Reason: %v", err)
+				log.Error(err, "failed to delete stack script")
 			}
 
 			err = cm.conn.DeleteInstanceByProviderID(mi.Spec.ProviderID)
 			if err != nil {
-				log.Infof("Failed to delete instance %s. Reason: %s", mi.Spec.ProviderID, err)
+				log.Error(err, "Failed to delete instance.", "Instance ID", mi.Spec.ProviderID)
 			}
 		}
 	}
@@ -160,6 +163,11 @@ func (cm *ClusterManager) ApplyDelete() error {
 		return err
 	}
 
-	log.Infof("Cluster %v deletion is deleted successfully", cm.Cluster.Name)
+	log.Info("successfully deleted cluster")
 	return nil
+}
+
+func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
+	cm.Logger.Info("setting master sku", "sku", "g6-standard-2")
+	return "g6-standard-2"
 }

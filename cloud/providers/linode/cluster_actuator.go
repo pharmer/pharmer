@@ -3,7 +3,6 @@ package linode
 import (
 	"context"
 
-	"github.com/appscode/go/log"
 	linodeApi "github.com/pharmer/pharmer/apis/v1beta1/linode"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -50,17 +49,17 @@ func NewClusterActuator(m manager.Manager, params ClusterActuatorParams) *Cluste
 }
 
 func (ca *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
-	log.Infoln("Reconciling cluster", cluster.Name)
+	ca.cm.Logger.Info("Reconciling cluster", cluster.Name)
 
 	lbName := ca.cm.namer.LoadBalancerName()
 	lb, err := ca.cm.conn.lbByName(lbName)
 	if err == errLBNotFound {
 		lb, err = ca.cm.conn.createLoadBalancer(lbName)
 		if err != nil {
-			log.Debugln("error creating load balancer", err)
+			ca.cm.Logger.Error(err, "error creating load balancer")
 			return err
 		}
-		log.Infof("created load balancer %q for cluster %q", lbName, ca.cm.conn.Cluster.Name)
+		ca.cm.Logger.Info("created load balancer %q for cluster %q", lbName, ca.cm.conn.Cluster.Name)
 
 		cluster.Status.APIEndpoints = []clusterapi.APIEndpoint{
 			{
@@ -69,38 +68,38 @@ func (ca *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
 			},
 		}
 	} else if err != nil {
-		log.Debugln("error finding load balancer", err)
+		ca.cm.Logger.Error(err, "error finding load balancer")
 		return err
 	}
 
 	status, err := linodeApi.ClusterStatusFromProviderStatus(cluster.Status.ProviderStatus)
 	if err != nil {
-		log.Debugln("Error getting provider status", err)
+		ca.cm.Logger.Error(err, "Error getting provider status")
 		return err
 	}
 	status.Network.APIServerLB = linodeApi.DescribeLoadBalancer(lb)
 
 	if err := ca.updateClusterStatus(cluster, status); err != nil {
-		log.Debugf("Error updating cluster status for cluster %q", cluster.Name)
+		ca.cm.Logger.Error(err, "Error updating cluster status")
 		return err
 	}
 
-	log.Infoln("Reconciled cluster successfully")
+	ca.cm.Logger.Info("Reconciled cluster successfully")
 	return nil
 }
 
-func (cm *ClusterActuator) Delete(cluster *clusterapi.Cluster) error {
-	log.Infof("Delete cluster %v", cluster.Name)
+func (ca *ClusterActuator) Delete(cluster *clusterapi.Cluster) error {
+	ca.cm.Logger.Info("Delete cluster %v", cluster.Name)
 	return nil
 }
 
-func (cm *ClusterActuator) updateClusterStatus(cluster *clusterapi.Cluster, status *linodeApi.LinodeClusterProviderStatus) error {
+func (ca *ClusterActuator) updateClusterStatus(cluster *clusterapi.Cluster, status *linodeApi.LinodeClusterProviderStatus) error {
 	raw, err := linodeApi.EncodeClusterStatus(status)
 	if err != nil {
-		log.Debugf("Error encoding cluster status for cluster %q", cluster.Name)
+		ca.cm.Logger.Error(err, "Error encoding cluster status")
 		return err
 	}
 
 	cluster.Status.ProviderStatus = raw
-	return cm.client.Status().Update(context.Background(), cluster)
+	return ca.client.Status().Update(context.Background(), cluster)
 }
