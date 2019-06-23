@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"text/template"
 
 	"github.com/appscode/go/wait"
@@ -69,7 +70,8 @@ func NewClusterAPI(s *Scope, namespace string) (*ClusterAPI, error) {
 func (ca *ClusterAPI) Apply(controllerManager string) error {
 	log := ca.Logger.WithName("[apply cluster api]")
 	log.Info("Deploying the addon apiserver and controller manager")
-	if err := ca.CreateMachineController(controllerManager); err != nil {
+	if err := ca.CreateMachineController(controllerManager); err != nil &&
+		!strings.Contains(err.Error(), "Already Exists,  Ignoring") {
 		return errors.Wrap(err, "can't create machine controller")
 	}
 

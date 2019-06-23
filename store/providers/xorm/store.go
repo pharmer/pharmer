@@ -74,7 +74,6 @@ func (s *XormStore) SSHKeys(cluster string) store.SSHKeyStore {
 }
 
 func (s *XormStore) Operations() store.OperationStore {
-	fmt.Println("HERER")
 	return &operationXormStore{engine: s.engine}
 }
 
@@ -91,7 +90,7 @@ func newPGEngine(user, password, host string, port int64, dbName string) (*xorm.
 	engine.SetMaxIdleConns(0)
 	engine.DB().SetConnMaxLifetime(10 * time.Minute)
 	// engine.ShowSQL(system.Env() == system.DevEnvironment)
-	engine.ShowSQL(true)
+	//engine.ShowSQL(true)
 	engine.Logger().SetLevel(core.LOG_DEBUG)
 	return engine, nil
 }

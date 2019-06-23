@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/nats-io/stan.go"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/apiserver/options"
@@ -29,17 +27,9 @@ func (a *Apiserver) Init(storeProvider store.Interface, msg *stan.Msg) (*api.Ope
 		return nil, nil, err
 	}
 
-	spew.Dump(obj)
-
-	if obj.State == api.OperationPending {
-		obj.State = api.OperationRunning
-		obj, err = storeProvider.Operations().Update(obj)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
-	cluster, err := storeProvider.Clusters().Get(strconv.Itoa(int(obj.ClusterID)))
+	// the Cluster().Get() method takes cluster name as parameter
+	// if we need to ge cluster usnig ClusterID, then we've to set ownerID as -1
+	cluster, err := storeProvider.Owner(-1).Clusters().Get(strconv.Itoa(int(obj.ClusterID)))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -56,7 +46,7 @@ func (a *Apiserver) Init(storeProvider store.Interface, msg *stan.Msg) (*api.Ope
 
 func (a *Apiserver) CreateCluster(storeProvider store.Interface) error {
 	_, err := a.natsConn.QueueSubscribe("create-cluster", "cluster-api-create-workers", func(msg *stan.Msg) {
-		log := klogr.New().WithName("apiserver")
+		log := klogr.New().WithName("[apiserver]")
 		log.Info("seq", "sequence", msg.Sequence, "redelivered", msg.Redelivered, "acked", false, "data", string(msg.Data))
 
 		log.Info("create operation")
@@ -68,22 +58,32 @@ func (a *Apiserver) CreateCluster(storeProvider store.Interface) error {
 		}
 
 		if operation.State == api.OperationPending {
+			operation.State = api.OperationRunning
+			operation, err = storeProvider.Operations().Update(operation)
+			if err != nil {
+				log.Error(err, "failed to update operation", "status", api.OperationRunning)
+				return
+			}
 			err = cloud.CreateCluster(scope)
 			if err != nil {
 				log.Error(err, "failed to create cluster")
+				return
 			}
-
-			err = ApplyCluster(scope, operation)
-			if err != nil {
-				log.Error(err, "failed to apply cluster")
-			}
-
-			if err := msg.Ack(); err != nil {
-				log.Error(err, "failed to ACK msg")
-			}
+			log.Info("cluster created successfully")
 		}
 
-		log.Info("create operation")
+		err = ApplyCluster(scope, operation)
+		if err != nil {
+			log.Error(err, "failed to apply cluster")
+			return
+		}
+
+		if err := msg.Ack(); err != nil {
+			log.Error(err, "failed to ACK msg")
+			return
+		}
+
+		log.Info("create operation successfull")
 
 	}, stan.SetManualAckMode(), stan.DurableName("i-remember"))
 

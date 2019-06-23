@@ -30,23 +30,20 @@ func CreateCluster(s *Scope) error {
 	log := s.Logger.WithName("[create-cluster]").WithValues("cluster", s.Cluster.Name)
 	log.Info("creating cluster")
 
-	// create should return error: Cluster already exists if Cluster already exists
-	_, err := s.StoreProvider.Clusters().Get(cluster.Name)
-	if err == nil {
-		return errors.New("cluster already exists")
-	}
-
 	// set common Cluster configs
-	err = setDefaultCluster(cluster)
+	err := setDefaultCluster(cluster)
 	if err != nil {
 		return errors.Wrap(err, "failed to set default Cluster")
 	}
 
-	// cluster needs to be created before certs are created
-	// it sets clusterID which is also used in cert tables
-	cluster, err = s.StoreProvider.Clusters().Create(cluster)
+	// cluster needs to be created before certs are created for xorm provider
+	// it sets clusterID which is also used in other tables
+	_, err = s.StoreProvider.Clusters().Get(cluster.Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create cluster")
+		cluster, err = s.StoreProvider.Clusters().Create(cluster)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create cluster")
+		}
 	}
 
 	// create certificates and keys
@@ -84,9 +81,9 @@ func createCluster(s *Scope) error {
 		return errors.Wrap(err, "failed to set provider defaults")
 	}
 
-	_, err = s.StoreProvider.Clusters().Create(cluster)
+	_, err = s.StoreProvider.Clusters().Update(cluster)
 	if err != nil {
-		return errors.Wrap(err, "failed to store Cluster")
+		return errors.Wrap(err, "failed to store cluster")
 	}
 
 	return nil
@@ -119,6 +116,8 @@ func setDefaultCluster(cluster *api.Cluster) error {
 	cluster.ObjectMeta.UID = api_types.UID(uid.String())
 	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
 	cluster.ObjectMeta.Generation = time.Now().UnixNano()
+
+	cluster.InitClusterAPI()
 
 	if err := api.AssignTypeKind(cluster); err != nil {
 		return errors.Wrap(err, "failed to assign apiversion and kind to Cluster")

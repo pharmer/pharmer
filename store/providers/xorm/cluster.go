@@ -4,8 +4,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/go-xorm/xorm"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/store"
@@ -40,24 +38,24 @@ func (s *clusterXormStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 	return result, nil
 }
 
+// Get() takes clusterName as parameter
+// we need to get cluster from apiServer using clusterID
+// so for that case, we've to set ownerID to -1
+// it should be only used from apiserver
 func (s *clusterXormStore) Get(name string) (*api.Cluster, error) {
-	spew.Dump("xxxxxxxxxxxxxxxxxx", s.owner)
 	if name == "" {
 		return nil, errors.New("missing cluster name")
 	}
 
 	cluster := &Cluster{Name: name, OwnerId: s.owner}
-	if s.owner == 0 {
+	if s.owner == -1 {
 		id, err := strconv.Atoi(name)
 		if err != nil {
-			spew.Dump("zzzzzzzzzIIIIIIIIIIii")
 			return nil, err
 		}
 		cluster = &Cluster{Id: int64(id)}
 	}
-	spew.Dump(cluster)
 	found, err := s.engine.Get(cluster)
-	spew.Dump(found, err)
 	if err != nil {
 		return nil, errors.Errorf("reason: %v", err)
 	}
@@ -68,7 +66,6 @@ func (s *clusterXormStore) Get(name string) (*api.Cluster, error) {
 }
 
 func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
-	spew.Dump(">>>>>>>>>>>>>>>>>>>>")
 	if obj == nil {
 		return nil, errors.New("missing cluster")
 	} else if obj.Name == "" {
@@ -93,7 +90,6 @@ func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 		return nil, err
 	}
 	_, err = s.engine.Insert(cluster)
-	spew.Dump(cluster, "<<<<<<<<<<<<<<<<<<", err)
 	return obj, err
 }
 

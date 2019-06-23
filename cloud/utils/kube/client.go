@@ -4,10 +4,8 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/log"
-
-	"github.com/go-logr/logr"
-
 	"github.com/appscode/go/wait"
+	"github.com/go-logr/logr"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pkg/errors"

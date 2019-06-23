@@ -5,8 +5,6 @@ import (
 	"crypto/x509"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/go-xorm/xorm"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
@@ -50,7 +48,6 @@ func (s *certificateXormStore) Get(name string) (*x509.Certificate, *rsa.Private
 }
 
 func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *rsa.PrivateKey) error {
-	spew.Dump(s.cluster)
 	if s.cluster == "" {
 		return errors.New("missing cluster name")
 	}
@@ -70,8 +67,6 @@ func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *r
 		ClusterName: cluster.Name,
 		ClusterId:   cluster.Id,
 	}
-
-	spew.Dump(">>>>>>>>>>>>>", certificate)
 
 	found, err := s.engine.Get(certificate)
 	if err != nil {
@@ -113,9 +108,7 @@ func (s *certificateXormStore) getCluster() (*Cluster, error) {
 		Name:    s.cluster,
 		OwnerId: s.owner,
 	}
-	spew.Dump("zzzzzzzzzzz", cluster)
 	has, err := s.engine.Get(cluster)
-	spew.Dump("yyyyyyyy", has, err)
 	if err != nil {
 		return nil, err
 	}
