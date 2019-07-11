@@ -8,7 +8,6 @@ require (
 	github.com/Azure/go-autorest v12.0.0+incompatible
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b // indirect
 	github.com/appscode/go v0.0.0-20190523031839-1468ee3a76e8
-	github.com/armon/go-metrics v0.0.0-20190430140413-ec5e00d3c878 // indirect
 	github.com/aws/aws-sdk-go v1.19.31
 	github.com/creack/goselect v0.1.0 // indirect
 	github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3 // indirect
@@ -19,16 +18,16 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.0 // indirect
 	github.com/go-openapi/jsonreference v0.19.0 // indirect
 	github.com/go-openapi/swag v0.19.0 // indirect
-	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/go-xorm/builder v0.0.0-20190422082613-0c156dfdb061 // indirect
 	github.com/go-xorm/core v0.6.0
 	github.com/go-xorm/xorm v0.7.0
 	github.com/gogo/protobuf v1.2.1
+	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gophercloud/gophercloud v0.0.0-20190515011819-1992d5238d78 // indirect
 	github.com/graymeta/stow v0.0.0-00010101000000-000000000000
-	github.com/hashicorp/go-msgpack v0.5.5 // indirect
-	github.com/hashicorp/raft v1.0.1 // indirect
+	github.com/hashicorp/go-hclog v0.9.2 // indirect
+	github.com/hashicorp/go-uuid v1.0.1 // indirect
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
 	github.com/jpillora/go-ogle-analytics v0.0.0-20161213085824-14b04e0594ef
 	github.com/kr/pty v1.1.4 // indirect
@@ -40,32 +39,30 @@ require (
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
-	github.com/nats-io/gnatsd v1.4.1 // indirect
-	github.com/nats-io/go-nats v1.7.2 // indirect
-	github.com/nats-io/go-nats-streaming v0.4.4 // indirect
-	github.com/nats-io/nats-server v1.4.1 // indirect
-	github.com/nats-io/nats-streaming-server v0.14.1 // indirect
-	github.com/nats-io/nkeys v0.0.1 // indirect
-	github.com/nats-io/nuid v1.0.1 // indirect
-	github.com/nats-io/stan.go v0.4.4
+	github.com/nats-io/jwt v0.2.8 // indirect
+	github.com/nats-io/stan.go v0.5.0
 	github.com/ncw/swift v1.0.47 // indirect
 	github.com/onsi/gomega v1.5.0
 	github.com/packethost/packngo v0.1.1-0.20190507131943-1343be729ca2
 	github.com/pharmer/cloud v0.2.0
 	github.com/pkg/errors v0.8.1
-	github.com/prometheus/client_golang v0.9.3 // indirect
-	github.com/prometheus/common v0.4.1 // indirect
+	github.com/prometheus/client_golang v0.9.4 // indirect
+	github.com/prometheus/procfs v0.0.3 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/spf13/cobra v0.0.4
 	github.com/spf13/pflag v1.0.3
 	github.com/ziutek/mymysql v1.5.4 // indirect
+	go.etcd.io/bbolt v1.3.3 // indirect
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980 // indirect
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
 	golang.org/x/sys v0.0.0-20190613124609-5ed2794edfdc // indirect
 	gomodules.xyz/cert v1.0.0
+	gomodules.xyz/nats-logr v0.1.0
+	gomodules.xyz/union-logr v0.1.0
 	gomodules.xyz/version v0.0.0-20190507203204-7cec7ee542d3
 	google.golang.org/api v0.5.0
+	google.golang.org/appengine v1.6.1 // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.6.1
 	gopkg.in/ini.v1 v1.42.0
 	gopkg.in/yaml.v2 v2.2.2

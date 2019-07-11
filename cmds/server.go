@@ -1,14 +1,16 @@
 package cmds
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/appscode/go/term"
-	"github.com/nats-io/stan.go"
+	stan "github.com/nats-io/stan.go"
 	"github.com/pharmer/pharmer/apiserver"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
+	natslogr "gomodules.xyz/nats-logr"
 )
 
 func newCmdServer() *cobra.Command {
@@ -49,6 +51,18 @@ func newCmdServer() *cobra.Command {
 			<-make(chan interface{})
 		},
 	}
+	_ = flag.CommandLine.Parse([]string{})
+
+	natsLogFlags := flag.NewFlagSet("nats-log-flags", flag.ExitOnError)
+	natslogr.InitFlags(natsLogFlags)
+
+	flag.VisitAll(func(f1 *flag.Flag) {
+		f2 := natsLogFlags.Lookup(f1.Name)
+		if f2 != nil {
+			_ = f2.Value.Set(f1.Value.String())
+		}
+	})
+
 	cmd.Flags().StringVar(&natsurl, "nats-url", "nats://localhost:4222", "Nats streaming server url")
 	cmd.Flags().StringVar(&clientid, "nats-client-id", "worker-p", "Nats streaming server client id")
 
