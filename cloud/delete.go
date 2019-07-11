@@ -31,12 +31,13 @@ func Delete(clusterStore store.ClusterStore, name string) (*api.Cluster, error) 
 }
 
 func ApplyDelete(s *Scope) error {
-	log.Infoln("Deleting cluster...")
+	log := s.Logger
+	log.Info("Deleting cluster")
 	cluster := s.Cluster
 
-	err := DeleteAllWorkerMachines(s)
+	err := deleteAllWorkerMachines(s)
 	if err != nil {
-		log.Infof("failed to delete nodes: %v", err)
+		log.Error(err, "failed to delete nodes")
 	}
 
 	if cluster.Status.Phase == api.ClusterReady {
@@ -50,34 +51,36 @@ func ApplyDelete(s *Scope) error {
 	return s.CloudManager.ApplyDelete()
 }
 
-// DeleteAllWorkerMachines waits for all nodes to be deleted
-func DeleteAllWorkerMachines(s *Scope) error {
-	log.Infof("Deleting non-controlplane machines")
+// deleteAllWorkerMachines waits for all nodes to be deleted
+func deleteAllWorkerMachines(s *Scope) error {
+	log := s.Logger
+	log.Info("Deleting non-controlplane machines")
 
 	clusterClient, err := kube.GetClusterAPIClient(s.GetCaCertPair(), s.Cluster)
 	if err != nil {
+		log.Error(err, "failed to get clusterAPI client")
 		return err
 	}
 
-	log.Infof("Deleting machine deployments")
+	log.Info("Deleting machine deployments")
 	err = deleteMachineDeployments(clusterClient)
 	if err != nil {
-		log.Infof("failed to delete machine deployments: %v", err)
+		log.Error(err, "failed to delete machine deployments")
 	}
 
-	log.Infof("Deleting machine sets")
+	log.Info("Deleting machine sets")
 	err = deleteMachineSets(clusterClient)
 	if err != nil {
-		log.Infof("failed to delete machinesetes: %v", err)
+		log.Error(err, "failed to delete machinesetes")
 	}
 
-	log.Infof("Deleting machines")
+	log.Info("Deleting machines")
 	err = deleteMachines(clusterClient)
 	if err != nil {
-		log.Infof("failed to delete machines: %v", err)
+		log.Error(err, "failed to delete machines")
 	}
 
-	log.Infof("successfully deleted non-controlplane machines")
+	log.Info("successfully deleted non-controlplane machines")
 	return nil
 }
 

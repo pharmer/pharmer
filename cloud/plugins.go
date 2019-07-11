@@ -4,8 +4,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/golang/glog"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
+	"k8s.io/klog"
 )
 
 // Factory is a function that returns a cloud.ClusterManager.
@@ -26,9 +26,9 @@ func RegisterCloudManager(name string, cloud Factory) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	if _, found := providers[name]; found {
-		glog.Fatalf("Cloud provider %q was registered twice", name)
+		klog.Fatalf("Cloud provider %q was registered twice", name)
 	}
-	glog.V(1).Infof("Registered cloud provider %q", name)
+	klog.V(1).Infof("Registered cloud provider %q", name)
 	providers[name] = cloud
 }
 

@@ -17,6 +17,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 
 	providerSpecValue, err := json.Marshal(spec)
 	if err != nil {
+		cm.Logger.Error(err, "failed to marshal provider spec")
 		return clusterapi.ProviderSpec{}, err
 	}
 	return clusterapi.ProviderSpec{

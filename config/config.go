@@ -58,6 +58,7 @@ func AddFlags(fs *flag.FlagSet) {
 func GetConfigFile(fs *flag.FlagSet) (string, bool) {
 	cfgFile, err := fs.GetString("config-file")
 	if err != nil {
+		panic(err)
 		log.Fatalf("can't accessing flag `config-file`. Reason: %v", err)
 	}
 	if cfgFile == "" {

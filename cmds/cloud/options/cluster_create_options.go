@@ -18,7 +18,6 @@ import (
 type ClusterCreateConfig struct {
 	Cluster     *api.Cluster
 	Nodes       map[string]int
-	Owner       string
 	Namespace   string
 	MasterCount int
 }
@@ -46,7 +45,6 @@ func NewClusterCreateConfig() *ClusterCreateConfig {
 		Namespace:   core.NamespaceDefault,
 		Cluster:     cluster,
 		Nodes:       map[string]int{},
-		Owner:       "",
 		MasterCount: 1,
 	}
 }
@@ -61,7 +59,6 @@ func (c *ClusterCreateConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.Namespace, "namespace", c.Namespace, "Namespace")
 	fs.IntVar(&c.MasterCount, "masters", c.MasterCount, "Number of masters")
 	fs.StringToIntVar(&c.Nodes, "nodes", c.Nodes, "Node set configuration")
-	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
 	//fs.Int32Var(&c.Masters, "masters", c.Masters, "Node set configuration")
 }
 

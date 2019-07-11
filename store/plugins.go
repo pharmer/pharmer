@@ -3,11 +3,11 @@ package store
 import (
 	"sync"
 
-	"github.com/golang/glog"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 )
 
 // Factory is a function that returns a storage.Interface.
@@ -28,9 +28,9 @@ func RegisterProvider(name string, cloud Factory) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	if _, found := providers[name]; found {
-		glog.Fatalf("Cloud provider %q was registered twice", name)
+		klog.Fatalf("Cloud provider %q was registered twice", name)
 	}
-	glog.V(1).Infof("Registered cloud provider %q", name)
+	klog.V(1).Infof("Registered cloud provider %q", name)
 	providers[name] = cloud
 }
 
@@ -49,13 +49,13 @@ func getProvider(name string, cfg *api.PharmerConfig) (Interface, error) {
 	return f(cfg)
 }
 
-func GetStoreProvider(cmd *cobra.Command, owner string) (ResourceInterface, error) {
+func GetStoreProvider(cmd *cobra.Command) (ResourceInterface, error) {
 	cfgFile, _ := config.GetConfigFile(cmd.Flags())
 	cfg, err := config.LoadConfig(cfgFile)
 	if err != nil {
 		return nil, err
 	}
-	return NewStoreProvider(cfg, owner)
+	return NewStoreProvider(cfg)
 }
 
 func NewStoreInterface(cfg *api.PharmerConfig) (Interface, error) {
@@ -75,10 +75,10 @@ func NewStoreInterface(cfg *api.PharmerConfig) (Interface, error) {
 	return store, nil
 }
 
-func NewStoreProvider(cfg *api.PharmerConfig, owner string) (ResourceInterface, error) {
+func NewStoreProvider(cfg *api.PharmerConfig) (ResourceInterface, error) {
 	store, err := NewStoreInterface(cfg)
 	if err != nil {
 		return nil, err
 	}
-	return store.Owner(owner), nil
+	return store, nil
 }

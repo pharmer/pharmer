@@ -1,11 +1,8 @@
 package gce
 
 import (
-	"errors"
-
 	"github.com/pharmer/pharmer/cloud"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 const (
@@ -40,10 +37,6 @@ func New(s *cloud.Scope) cloud.Interface {
 			cluster: s.Cluster,
 		},
 	}
-}
-
-func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
-	return errors.New("not implemented")
 }
 
 // TODO: Verify

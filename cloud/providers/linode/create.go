@@ -7,7 +7,6 @@ import (
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	linodeconfig "github.com/pharmer/pharmer/apis/v1beta1/linode"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -15,6 +14,7 @@ import (
 )
 
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (v1alpha1.ProviderSpec, error) {
+	log := cm.Logger
 	cluster := cm.Cluster
 
 	roles := []api.MachineRole{api.NodeMachineRole}
@@ -26,7 +26,8 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 
 	pubkey, _, err := cm.StoreProvider.SSHKeys(cluster.Name).Get(cluster.GenSSHKeyExternalID())
 	if err != nil {
-		return clusterapi.ProviderSpec{}, errors.Wrap(err, " failed to get ssh keys")
+		log.Error(err, "failed to get ssh keys from store")
+		return clusterapi.ProviderSpec{}, err
 	}
 
 	spec := &linodeconfig.LinodeMachineProviderSpec{
@@ -43,6 +44,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 
 	providerSpecValue, err := json.Marshal(spec)
 	if err != nil {
+		log.Error(err, "failed to marshal provider spec to json")
 		return clusterapi.ProviderSpec{}, err
 	}
 

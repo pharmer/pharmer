@@ -3,10 +3,10 @@ package digitalocean
 import (
 	"context"
 
-	"github.com/appscode/go/log"
+	"github.com/go-logr/logr"
 	doCapi "github.com/pharmer/pharmer/apis/v1beta1/digitalocean"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/klog/klogr"
 	"k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/cluster"
@@ -19,47 +19,48 @@ func init() {
 	AddToManagerFuncs = append(AddToManagerFuncs, func(cm *ClusterManager, m manager.Manager) error {
 		actuator := NewClusterActuator(m, ClusterActuatorParams{
 			EventRecorder: m.GetEventRecorderFor(Recorder),
-			Scheme:        m.GetScheme(),
 			cm:            cm,
 		})
 		return cluster.AddWithActuator(m, actuator)
 	})
-
 }
 
 type ClusterActuator struct {
 	client        client.Client
 	eventRecorder record.EventRecorder
-	scheme        *runtime.Scheme
 	cm            *ClusterManager
+	logr.Logger
 }
 
 type ClusterActuatorParams struct {
 	EventRecorder record.EventRecorder
-	Scheme        *runtime.Scheme
 	cm            *ClusterManager
 }
 
 func NewClusterActuator(m manager.Manager, params ClusterActuatorParams) *ClusterActuator {
+	params.cm.Logger = params.cm.Logger.WithName("[cluster-actuator]")
 	return &ClusterActuator{
 		client:        m.GetClient(),
 		eventRecorder: params.EventRecorder,
-		scheme:        params.Scheme,
 		cm:            params.cm,
+		Logger: klogr.New().WithName("[cluster-actuator]").
+			WithValues("cluster-name", params.cm.Cluster.Name),
 	}
 }
 
-func (a *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
-	log.Infoln("Reconciling cluster", cluster.Name)
+func (ca *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
+	log := ca.Logger
 
-	lb, err := a.cm.conn.lbByName(context.Background(), a.cm.conn.namer.LoadBalancerName())
+	log.Info("Reconciling cluster")
+
+	lb, err := ca.cm.conn.lbByName(context.Background(), ca.cm.conn.namer.LoadBalancerName())
 	if err == errLBNotFound {
-		lb, err = a.cm.conn.createLoadBalancer(context.Background(), a.cm.conn.namer.LoadBalancerName())
+		lb, err = ca.cm.conn.createLoadBalancer(context.Background(), ca.cm.conn.namer.LoadBalancerName())
 		if err != nil {
-			log.Debugln("error creating load balancer", err)
+			log.Error(err, "error creating load balancer")
 			return err
 		}
-		log.Infof("created load balancer %q for cluster %q", a.cm.conn.namer.LoadBalancerName(), cluster.Name)
+		log.Info("created load balancer", "lb-name", ca.cm.conn.namer.LoadBalancerName())
 
 		cluster.Status.APIEndpoints = []clusterapi.APIEndpoint{
 			{
@@ -68,53 +69,53 @@ func (a *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
 			},
 		}
 	} else if err != nil {
-		log.Debugln("error finding load balancer", err)
+		log.Error(err, "error finding load balancer")
 		return err
 	}
 
-	updated := a.cm.conn.loadBalancerUpdated(lb)
+	updated := ca.cm.conn.loadBalancerUpdated(lb)
 
 	if updated {
-		log.Infoln("Load balancer specs changed, updating lb")
+		log.Info("Load balancer specs changed, updating lb")
 
-		defaultSpecs := a.cm.conn.buildLoadBalancerRequest(a.cm.conn.namer.LoadBalancerName())
+		defaultSpecs := ca.cm.conn.buildLoadBalancerRequest(ca.cm.conn.namer.LoadBalancerName())
 
-		lb, _, err = a.cm.conn.client.LoadBalancers.Update(context.Background(), lb.ID, defaultSpecs)
+		lb, _, err = ca.cm.conn.client.LoadBalancers.Update(context.Background(), lb.ID, defaultSpecs)
 		if err != nil {
-			log.Debugln("Error updating load balancer", err)
+			log.Error(err, "Error updating load balancer")
 			return err
 		}
 	}
 
 	status, err := doCapi.ClusterStatusFromProviderStatus(cluster.Status.ProviderStatus)
 	if err != nil {
-		log.Debugln("Error getting provider status", err)
+		log.Error(err, "Error getting provider status")
 		return err
 	}
 	status.APIServerLB = doCapi.DescribeLoadBalancer(lb)
 
-	if err := a.updateClusterStatus(cluster, status); err != nil {
-		log.Debugf("Error updating cluster status for cluster %q", cluster.Name)
+	if err := ca.updateClusterStatus(cluster, status); err != nil {
+		log.Error(err, "Error updating cluster status for cluster")
 		return err
 	}
 
-	log.Infoln("Reconciled cluster successfully")
+	log.Info("Reconciled cluster successfully")
 	return nil
 }
 
-func (a *ClusterActuator) Delete(cluster *clusterapi.Cluster) error {
-	log.Infoln("Delete cluster not implemented")
+func (ca *ClusterActuator) Delete(cluster *clusterapi.Cluster) error {
+	ca.Logger.Info("Delete cluster not implemented")
 
 	return nil
 }
 
-func (a *ClusterActuator) updateClusterStatus(cluster *clusterapi.Cluster, status *doCapi.DigitalOceanClusterProviderStatus) error {
+func (ca *ClusterActuator) updateClusterStatus(cluster *clusterapi.Cluster, status *doCapi.DigitalOceanClusterProviderStatus) error {
 	raw, err := doCapi.EncodeClusterStatus(status)
 	if err != nil {
-		log.Debugf("Error encoding cluster status for cluster %q", cluster.Name)
+		ca.Logger.Error(err, "Error encoding cluster status")
 		return err
 	}
 
 	cluster.Status.ProviderStatus = raw
-	return a.client.Status().Update(context.Background(), cluster)
+	return ca.client.Status().Update(context.Background(), cluster)
 }

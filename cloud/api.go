@@ -19,8 +19,6 @@ type Interface interface {
 
 	CreateCredentials(kc kubernetes.Interface) error
 
-	InitializeMachineActuator(mgr manager.Manager) error
-
 	AddToManager(m manager.Manager) error
 
 	ProviderKubeConfig

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-04-30/containerservice"
-	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/pharmer/pharmer/apis/v1beta1/azure"
 	"github.com/pkg/errors"
@@ -12,19 +11,25 @@ import (
 )
 
 func (cm *ClusterManager) PrepareCloud() error {
+	log := cm.Logger
+	log.Info("Preparing cloud infra")
+
 	err := cm.SetCloudConnector()
 	if err != nil {
+		log.Error(err, "failed to set aks cloud connector")
 		return err
 	}
 	found, _ := cm.conn.getResourceGroup()
 	if !found {
 		if _, err := cm.conn.ensureResourceGroup(); err != nil {
+			log.Error(err, "failed to ensure resource group")
 			return err
 		}
-		log.Infof("Resource group %v in zone %v created", cm.namer.ResourceGroupName(), cm.Cluster.Spec.Config.Cloud.Zone)
+		log.Info("Resource group created", "resourcegroup-name", cm.namer.ResourceGroupName(), "zone", cm.Cluster.Spec.Config.Cloud.Zone)
 	}
 	nodeGroups, err := cm.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
+		log.Error(err, "failed to list machineset from store")
 		return err
 	}
 	if len(nodeGroups) > 1 {
@@ -36,6 +41,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 	for _, ng := range nodeGroups {
 		providerspec, err := azure.MachineSpecFromProviderSpec(ng.Spec.Template.Spec.ProviderSpec)
 		if err != nil {
+			log.Error(err, "failed to get provider spec")
 			return err
 		}
 		name := cm.namer.GetNodeGroupName(ng.Name)
@@ -48,6 +54,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 		agentPools = append(agentPools, ap)
 	}
 	if err = cm.conn.upsertAKS(agentPools); err != nil {
+		log.Error(err, "failed to upsert nodepools")
 		return err
 	}
 
@@ -55,13 +62,16 @@ func (cm *ClusterManager) PrepareCloud() error {
 }
 
 func (cm *ClusterManager) ApplyScale() error {
+	log := cm.Logger
 	nodeGroups, err := cm.StoreProvider.MachineSet(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
+		log.Error(err, "failed to list machineset from store")
 		return err
 	}
 
 	cluster, err := cm.conn.managedClient.Get(context.Background(), cm.namer.ResourceGroupName(), cm.Cluster.Name)
 	if err != nil {
+		log.Error(err, "failed to get aks cluster")
 		return err
 	}
 
@@ -69,6 +79,7 @@ func (cm *ClusterManager) ApplyScale() error {
 	for _, ng := range nodeGroups {
 		providerspec, err := azure.MachineSpecFromProviderSpec(ng.Spec.Template.Spec.ProviderSpec)
 		if err != nil {
+			log.Error(err, "failed to get provider spec")
 			return err
 		}
 		name := cm.namer.GetNodeGroupName(ng.Name)
@@ -95,6 +106,7 @@ func (cm *ClusterManager) ApplyScale() error {
 
 	if len(agentPools) > 0 {
 		if err = cm.conn.upsertAKS(agentPools); err != nil {
+			log.Error(err, "failed to upsert nodepools")
 			return err
 		}
 	}
@@ -102,11 +114,14 @@ func (cm *ClusterManager) ApplyScale() error {
 }
 
 func (cm *ClusterManager) ApplyDelete() error {
+	log := cm.Logger
 	if err := cm.conn.deleteAKS(); err != nil {
+		log.Error(err, "failed to delete cluster")
 		return err
 	}
 
 	if err := cm.conn.deleteResourceGroup(); err != nil {
+		log.Error(err, "failed to delete resource group")
 		return err
 	}
 	return nil

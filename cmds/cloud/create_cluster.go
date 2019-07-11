@@ -7,6 +7,7 @@ import (
 	"github.com/pharmer/pharmer/cmds/cloud/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/klogr"
 )
 
 func NewCmdCreateCluster() *cobra.Command {
@@ -17,7 +18,7 @@ func NewCmdCreateCluster() *cobra.Command {
 			api.ResourceTypeCluster,
 			api.ResourceKindCluster,
 		},
-		Short:             "CreateCluster a Kubernetes cluster for a given cloud provider",
+		Short:             "Create a Kubernetes cluster for a given cloud provider",
 		Example:           "pharmer create cluster demo-cluster",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -25,7 +26,7 @@ func NewCmdCreateCluster() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd)
 			if err != nil {
 				term.Fatalln(err)
 			}
@@ -42,7 +43,13 @@ func NewCmdCreateCluster() *cobra.Command {
 }
 
 func runCreateClusterCmd(store store.ResourceInterface, opts *options.ClusterCreateConfig) error {
-	err := cloud.CreateCluster(store, opts.Cluster)
+	scope := cloud.NewScope(cloud.NewScopeParams{
+		Cluster:       opts.Cluster,
+		StoreProvider: store,
+		Logger:        klogr.New().WithValues("cluster-name", opts.Cluster.Name),
+	})
+
+	err := cloud.CreateCluster(scope)
 	if err != nil {
 		return err
 	}

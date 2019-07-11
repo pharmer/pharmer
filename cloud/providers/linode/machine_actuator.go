@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appscode/go/log"
+	"github.com/go-logr/logr"
 	linodeconfig "github.com/pharmer/pharmer/apis/v1beta1/linode"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/klog/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/machine"
 	"sigs.k8s.io/cluster-api/pkg/kubeadm"
@@ -27,7 +27,6 @@ func init() {
 		actuator := NewMachineActuator(MachineActuatorParams{
 			EventRecorder: m.GetEventRecorderFor(Recorder),
 			Client:        m.GetClient(),
-			Scheme:        m.GetScheme(),
 			cm:            cm,
 		})
 		return machine.AddWithActuator(m, actuator)
@@ -43,7 +42,7 @@ type MachineActuator struct {
 	client        client.Client
 	kubeadm       LinodeClientKubeadm
 	eventRecorder record.EventRecorder
-	scheme        *runtime.Scheme
+	logr.Logger
 }
 
 type MachineActuatorParams struct {
@@ -51,7 +50,6 @@ type MachineActuatorParams struct {
 	Client        client.Client
 	cm            *ClusterManager
 	EventRecorder record.EventRecorder
-	Scheme        *runtime.Scheme
 }
 
 func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
@@ -60,66 +58,71 @@ func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
 		client:        params.Client,
 		kubeadm:       getKubeadm(params),
 		eventRecorder: params.EventRecorder,
-		scheme:        params.Scheme,
-		//owner:         params.Owner,
-		//machineSetupConfigGetter: MachineSetup(params.Ctx),
+		Logger: klogr.New().WithName("[machine-actuator]").
+			WithValues("cluster-name", params.cm.Cluster.Name),
 	}
 }
 
 func (li *MachineActuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	log.Infof("creating machine %s", machine.Name)
+	log := li.Logger.WithValues("machine-name", machine.Name)
+
+	log.Info("creating machine", "machine-name", machine.Name)
 
 	machineConfig, err := linodeconfig.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
-		return errors.Wrapf(err, "error decoding provider config for macine %s", machine.Name)
+		log.Error(err, "error decoding provider config for macine")
+		return err
 	}
 
 	if err := li.validateMachine(machineConfig); err != nil {
+		log.Error(err, "failed ot validate machine")
 		return errors.Wrapf(err, "failed to valide machine config for machien %s", machine.Name)
 	}
 
 	exists, err := li.Exists(context.Background(), cluster, machine)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check existance of machine %s", machine.Name)
+		log.Error(err, "failed to check existence")
+		return err
 	}
 
 	if exists {
-		log.Infof("Skipped creating a machine that already exists.")
+		log.Info("Skipped creating a machine that already exists.")
 	} else {
-		log.Infof("vm not found, creating vm for machine %q", machine.Name)
+		log.Info("vm not found, creating vm for machine.", "machine-name", machine.Name)
 
 		token, err := li.getKubeadmToken()
 		if err != nil {
-			log.Infof("failed to generate kubeadm token: %v", err)
-			return errors.Wrap(err, "failed to generate kubeadm token")
+			log.Error(err, "failed to generate kubeadm token")
+			return err
 		}
 
 		script, err := cloud.RenderStartupScript(li.cm, machine, token, customTemplate)
 		if err != nil {
-			log.Infof("failed to render st script: %v", err)
+			log.Error(err, "failed to render st script")
 			return err
 		}
 
 		server, err := li.cm.conn.CreateInstance(machine, script)
 		if err != nil {
-			log.Infof("failed to create instance: %v", err)
-			return errors.Wrap(err, "failed to create instance")
+			log.Error(err, "failed to create instance")
+			return err
 		}
 
 		if util.IsControlPlaneMachine(machine) {
 			if err = li.cm.conn.addNodeToBalancer(li.cm.conn.namer.LoadBalancerName(), machine.Name, server.PrivateIP); err != nil {
-				return errors.Wrap(err, "failed to add machine to load balancer")
+				log.Error(err, "failed to add machine to load balancer")
+				return err
 			}
 		}
 	}
 
-	// update machine provider status
 	err = li.updateMachineStatus(machine)
 	if err != nil {
-		return errors.Wrap(err, "failed to update machine status")
+		log.Error(err, "failed to update machine status")
+		return err
 	}
 
-	log.Infof("successfully created machine %s", machine.Name)
+	log.Info("successfully created machine", "machine-name", machine.Name)
 	return nil
 }
 
@@ -151,68 +154,75 @@ func (li *MachineActuator) getKubeadmToken() (string, error) {
 }
 
 func (li *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	log.Infof("deleting machine %s", machine.Name)
+	log := li.Logger.WithValues("machine-name", machine.Name)
+	log.Info("deleting machine", "machinej-name", machine.Name)
 
 	var err error
 
 	instance, err := li.cm.conn.instanceIfExists(machine)
 	if err != nil {
-		log.Infof("skipping error: %v", err)
+		log.Error(err, "skipping error")
 	}
 	if instance == nil {
-		log.Infof("Skipped deleting a VM that is already deleted.\n")
+		log.Info("Skipped deleting a VM that is already deleted")
 		return nil
 	}
 	instanceID := fmt.Sprintf("linode://%v", instance.ID)
 
 	if err = li.cm.conn.DeleteInstanceByProviderID(instanceID); err != nil {
-		log.Infof("errror on deleting %v", err)
+		log.Error(err, "error deleting instance", "instance-id", instanceID)
 	}
 
 	li.eventRecorder.Eventf(machine, corev1.EventTypeNormal, "Deleted", "Deleted Machine %v", machine.Name)
 
-	log.Infof("successfully deleted machine %s", machine.Name)
+	log.Info("successfully deleted machine", "machine-name", machine.Name)
 	return nil
 }
 
 func (li *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
-	log.Infof("updating machine %s", goalMachine.Name)
+	log := li.Logger.WithValues("machine-name", goalMachine.Name)
+	log.Info("updating machine", "machine-name", goalMachine.Name)
 	var err error
 
 	goalConfig, err := linodeconfig.MachineConfigFromProviderSpec(goalMachine.Spec.ProviderSpec)
 	if err != nil {
-		return errors.Wrap(err, "failed to decode provider spec")
+		log.Error(err, "failed to decode provider spec")
+		return err
 	}
 
 	if err := li.validateMachine(goalConfig); err != nil {
-		return errors.Wrap(err, "failed to validate machine")
+		log.Error(err, "failed to validate machine")
+		return err
 	}
 
 	exists, err := li.Exists(context.Background(), cluster, goalMachine)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check existance of machine %s", goalMachine.Name)
+		log.Error(err, "failed to check existence of machine")
+		return err
 	}
 
 	if !exists {
-		log.Infof("vm not found, creating vm for machine %q", goalMachine.Name)
+		log.Info("vm not found, creating vm for machine.", "machine-name", goalMachine.Name)
 		return li.Create(context.Background(), cluster, goalMachine)
 	}
 
 	if err := li.updateMachineStatus(goalMachine); err != nil {
-		return errors.Wrap(err, "failed to update machine status")
+		log.Error(err, "failed to update machine status")
+		return err
 	}
 
-	log.Infof("Successfully updated machine %q", goalMachine.Name)
+	log.Info("Successfully updated machine", "machine-name", goalMachine.Name)
 	return nil
 }
 
 func (li *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	log.Infof("checking existance of machine %s", machine.Name)
+	log := li.Logger.WithValues("machine-name", machine.Name)
+	log.Info("checking existance of machine", "machine-name", machine.Name)
 	var err error
 
 	i, err := li.cm.conn.instanceIfExists(machine)
 	if err != nil {
-		log.Infof("error checking machine existance: %v", err)
+		log.Error(err, "error checking machine existence")
 		return false, nil
 	}
 
@@ -227,14 +237,17 @@ func getKubeadm(params MachineActuatorParams) LinodeClientKubeadm {
 }
 
 func (li *MachineActuator) updateMachineStatus(machine *clusterv1.Machine) error {
+	log := li.Logger.WithValues("machine-name", machine.Name)
 	vm, err := li.cm.conn.instanceIfExists(machine)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check existance of machine %s", machine.Name)
+		log.Error(err, "failed to check existence of machine")
+		return err
 	}
 
 	status, err := linodeconfig.MachineStatusFromProviderStatus(machine.Status.ProviderStatus)
 	if err != nil {
-		return errors.Wrapf(err, "failed to decode provider status of machine %s", machine.Name)
+		log.Error(err, "failed to decode provider status of machine")
+		return err
 	}
 
 	status.InstanceID = vm.ID
@@ -242,12 +255,14 @@ func (li *MachineActuator) updateMachineStatus(machine *clusterv1.Machine) error
 
 	raw, err := linodeconfig.EncodeMachineStatus(status)
 	if err != nil {
-		return errors.Wrapf(err, "failed to encode provider status for machine %q", machine.Name)
+		log.Error(err, "failed to encode provider status")
+		return err
 	}
 	machine.Status.ProviderStatus = raw
 
 	if err := li.client.Status().Update(context.Background(), machine); err != nil {
-		return errors.Wrapf(err, "failed to update provider status for machine %s", machine.Name)
+		log.Error(err, "failed to update provider status")
+		return err
 	}
 
 	return nil

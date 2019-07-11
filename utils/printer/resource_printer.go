@@ -8,13 +8,13 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/golang/glog"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -81,7 +81,7 @@ func (h *HumanReadablePrinter) PrintHeader(enable bool) {
 func (h *HumanReadablePrinter) Handler(printFunc interface{}) error {
 	printFuncValue := reflect.ValueOf(printFunc)
 	if err := h.validatePrintHandlerFunc(printFuncValue); err != nil {
-		glog.Errorf("Unable to add print handler: %v", err)
+		klog.Errorf("Unable to add print handler: %v", err)
 		return err
 	}
 

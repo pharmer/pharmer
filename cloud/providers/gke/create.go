@@ -13,6 +13,8 @@ import (
 )
 
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (v1alpha1.ProviderSpec, error) {
+	log := cm.Logger
+
 	cluster := cm.Cluster
 	spec := &gce.GCEMachineProviderSpec{
 		Zone:        cluster.Spec.Config.Cloud.Zone,
@@ -29,6 +31,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 	}
 	providerSpecValue, err := json.Marshal(spec)
 	if err != nil {
+		log.Error(err, "failed to marshal provider spec")
 		return clusterapi.ProviderSpec{}, err
 	}
 

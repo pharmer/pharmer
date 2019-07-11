@@ -11,7 +11,7 @@ import (
 	"github.com/ghodss/yaml"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pharmer/pharmer/cloud"
-	options2 "github.com/pharmer/pharmer/cmds/credential/options"
+	"github.com/pharmer/pharmer/cmds/credential/options"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pharmer/pharmer/utils"
 	"github.com/pharmer/pharmer/utils/editor"
@@ -24,7 +24,7 @@ import (
 )
 
 func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
-	opts := options2.NewCredentialEditConfig()
+	opts := options.NewCredentialEditConfig()
 	cmd := &cobra.Command{
 		Use: cloudapi.ResourceNameCredential,
 		Aliases: []string{
@@ -39,7 +39,7 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd)
 			term.ExitOnError(err)
 
 			if err := RunUpdateCredential(storeProvider.Credentials(), opts, outErr); err != nil {
@@ -52,7 +52,7 @@ func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func RunUpdateCredential(credStore store.CredentialStore, opts *options2.CredentialEditConfig, errOut io.Writer) error {
+func RunUpdateCredential(credStore store.CredentialStore, opts *options.CredentialEditConfig, errOut io.Writer) error {
 	// If file is provided
 	if opts.File != "" {
 		fileName := opts.File
@@ -106,7 +106,7 @@ func RunUpdateCredential(credStore store.CredentialStore, opts *options2.Credent
 	return editCredential(credStore, opts, original, errOut)
 }
 
-func editCredential(credStore store.CredentialStore, opts *options2.CredentialEditConfig, original *cloudapi.Credential, errOut io.Writer) error {
+func editCredential(credStore store.CredentialStore, opts *options.CredentialEditConfig, original *cloudapi.Credential, errOut io.Writer) error {
 
 	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {

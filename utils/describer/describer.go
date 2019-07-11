@@ -3,9 +3,9 @@ package describer
 import (
 	"reflect"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/kubectl/describe"
 )
 
@@ -40,7 +40,7 @@ func (h *humanReadableDescriber) addDefaultHandlers() {
 func (h *humanReadableDescriber) Handler(describeFunc interface{}) error {
 	describeFuncValue := reflect.ValueOf(describeFunc)
 	if err := h.validateDescribeHandlerFunc(describeFuncValue); err != nil {
-		glog.Errorf("Unable to add describe handler: %v", err)
+		klog.Errorf("Unable to add describe handler: %v", err)
 		return err
 	}
 

@@ -15,6 +15,7 @@ require (
 	github.com/digitalocean/godo v1.14.0
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0
+	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/jsonpointer v0.19.0 // indirect
 	github.com/go-openapi/jsonreference v0.19.0 // indirect
 	github.com/go-openapi/swag v0.19.0 // indirect
@@ -23,7 +24,6 @@ require (
 	github.com/go-xorm/core v0.6.0
 	github.com/go-xorm/xorm v0.7.0
 	github.com/gogo/protobuf v1.2.1
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/uuid v1.1.1
 	github.com/gophercloud/gophercloud v0.0.0-20190515011819-1992d5238d78 // indirect
 	github.com/graymeta/stow v0.0.0-00010101000000-000000000000
@@ -76,6 +76,7 @@ require (
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/cluster-bootstrap v0.0.0-20181204005900-2d1c733eadd0
 	k8s.io/component-base v0.0.0-20190515024022-2354f2393ad4 // indirect
+	k8s.io/klog v0.3.2
 	k8s.io/kubernetes v1.14.2
 	k8s.io/sample-controller v0.0.0-20190531134801-325dc0a18ed9
 	kmodules.xyz/client-go v0.0.0-20190524133821-9c8a87771aea

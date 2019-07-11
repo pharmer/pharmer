@@ -29,14 +29,13 @@ func NewCmdDescribeCluster(out io.Writer) *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd)
 			term.ExitOnError(err)
 
 			err = RunDescribeCluster(storeProvider, opts, out)
 			term.ExitOnError(err)
 		},
 	}
-	opts.AddFlags(cmd.Flags())
 
 	return cmd
 }

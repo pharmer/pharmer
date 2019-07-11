@@ -38,10 +38,6 @@ func New(s *cloud.Scope) cloud.Interface {
 	}
 }
 
-func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
-	panic("implement me")
-}
-
 func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 	cred, err := cm.GetCredential()
 	if err != nil {

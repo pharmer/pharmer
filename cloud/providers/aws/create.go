@@ -10,7 +10,6 @@ import (
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
@@ -121,8 +120,4 @@ func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 
 func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
 	return errors.New("not implemented")
-}
-
-func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
-	return errors.New("Not Implemented")
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/wait"
+	"github.com/go-logr/logr"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pkg/errors"
@@ -145,14 +146,21 @@ func GetClusterAPIClient(caCert *certificates.CertKeyPair, cluster *api.Cluster)
 	return clientset.NewForConfig(conf)
 }
 
-func waitForReadyAPIServer(client kubernetes.Interface) error {
+func waitForReadyAPIServer(log logr.Logger, client kubernetes.Interface) error {
+	log.Info("waiting for kubernetes apiserver to be ready")
 	attempt := 0
 	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
-		log.Infof("Attempt %v: Probing Kubernetes api server ...", attempt)
+		log.V(4).Info("probing kubernetes apiserver", "attempt", attempt)
 
 		_, err := client.CoreV1().Pods(corev1.NamespaceAll).List(metav1.ListOptions{})
-		return err == nil, nil
+		if err != nil {
+			log.V(6).Info("failed to list pods", "error", err.Error())
+			return false, nil
+		}
+
+		log.Info("kubernetes apiserver is ready")
+		return true, nil
 	})
 }
 
@@ -191,34 +199,37 @@ func WaitForReadyMasterVersion(client kubernetes.Interface, desiredVersion *semv
 
 }
 
-func waitForReadyComponents(client kubernetes.Interface) error {
+func waitForReadyComponents(log logr.Logger, client kubernetes.Interface) error {
 	attempt := 0
+	log.Info("waiting for kubernetes components to be healthy")
 	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
-		log.Infof("Attempt %v: Probing components ...", attempt)
+		log.V(4).Info("probing components", "Attempt", attempt)
 
 		resp, err := client.CoreV1().ComponentStatuses().List(metav1.ListOptions{
 			LabelSelector: labels.Everything().String(),
 		})
 		if err != nil {
+			log.V(6).Info("error listing component status", "error", err.Error())
 			return false, nil
 		}
 		for _, status := range resp.Items {
 			for _, cond := range status.Conditions {
 				if cond.Type == corev1.ComponentHealthy && cond.Status != corev1.ConditionTrue {
-					log.Infof("Component %v is in condition %v with status %v", status.Name, cond.Type, cond.Status)
+					log.V(4).Info("", "component", status.Name, "condition", cond.Type, "status", cond.Status)
 					return false, nil
 				}
 			}
 		}
+		log.Info("kubernetes components are healthy")
 		return true, nil
 	})
 }
 
-func WaitForReadyMaster(client kubernetes.Interface) error {
-	err := waitForReadyAPIServer(client)
+func WaitForReadyMaster(log logr.Logger, client kubernetes.Interface) error {
+	err := waitForReadyAPIServer(log, client)
 	if err != nil {
 		return err
 	}
-	return waitForReadyComponents(client)
+	return waitForReadyComponents(log, client)
 }

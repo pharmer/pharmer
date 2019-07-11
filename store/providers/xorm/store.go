@@ -34,7 +34,7 @@ func init() {
 
 type XormStore struct {
 	engine *xorm.Engine
-	owner  string
+	owner  int64
 }
 
 var _ store.Interface = &XormStore{}
@@ -43,7 +43,7 @@ func New(engine *xorm.Engine) store.Interface {
 	return &XormStore{engine: engine}
 }
 
-func (s *XormStore) Owner(id string) store.ResourceInterface {
+func (s *XormStore) Owner(id int64) store.ResourceInterface {
 	ret := *s
 	ret.owner = id
 	return &ret
@@ -74,7 +74,6 @@ func (s *XormStore) SSHKeys(cluster string) store.SSHKeyStore {
 }
 
 func (s *XormStore) Operations() store.OperationStore {
-	fmt.Println("HERER")
 	return &operationXormStore{engine: s.engine}
 }
 
@@ -82,16 +81,14 @@ func (s *XormStore) Operations() store.OperationStore {
 func newPGEngine(user, password, host string, port int64, dbName string) (*xorm.Engine, error) {
 	cnnstr := fmt.Sprintf("user=%v password=%v host=%v port=%v dbname=%v sslmode=disable",
 		user, password, host, port, dbName)
-	fmt.Println(cnnstr)
 	engine, err := xorm.NewEngine("postgres", cnnstr)
-	fmt.Println(err)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 	engine.SetMaxIdleConns(0)
 	engine.DB().SetConnMaxLifetime(10 * time.Minute)
 	// engine.ShowSQL(system.Env() == system.DevEnvironment)
-	engine.ShowSQL(true)
+	//engine.ShowSQL(true)
 	engine.Logger().SetLevel(core.LOG_DEBUG)
 	return engine, nil
 }

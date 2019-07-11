@@ -1,7 +1,6 @@
 package packet
 
 import (
-	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
 	core "k8s.io/api/core/v1"
@@ -12,6 +11,7 @@ import (
 )
 
 func (cm *ClusterManager) EnsureMaster(masterMachine *v1alpha1.Machine) error {
+	log := cm.Logger
 	if d, _ := cm.conn.instanceIfExists(masterMachine); d == nil {
 		log.Info("Creating master instance")
 		var masterServer *api.NodeInfo
@@ -19,11 +19,13 @@ func (cm *ClusterManager) EnsureMaster(masterMachine *v1alpha1.Machine) error {
 
 		script, err := cloud.RenderStartupScript(cm, masterMachine, "", customTemplate)
 		if err != nil {
+			log.Error(err, "failed to render startup script")
 			return err
 		}
 
 		masterServer, err = cm.conn.CreateInstance(masterMachine, script)
 		if err != nil {
+			log.Error(err, "failed to create instance")
 			return err
 		}
 		if masterServer.PrivateIP != "" {
@@ -40,9 +42,11 @@ func (cm *ClusterManager) EnsureMaster(masterMachine *v1alpha1.Machine) error {
 		}
 
 		if err = cm.Cluster.SetClusterAPIEndpoints(nodeAddresses); err != nil {
+			log.Error(err, "failed to set cluster api end points")
 			return err
 		}
 		if _, err = cm.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
+			log.Error(err, "failed to update cluster in store")
 			return err
 		}
 	}
@@ -51,14 +55,19 @@ func (cm *ClusterManager) EnsureMaster(masterMachine *v1alpha1.Machine) error {
 }
 
 func (cm *ClusterManager) PrepareCloud() error {
+	log := cm.Logger
+	log.Info("Preparing Cloud infra")
+
 	found, _, err := cm.conn.getPublicKey()
 	if err != nil {
+		log.Error(err, "failed to get public key")
 		return err
 	}
 
 	if !found {
 		cm.Cluster.Status.Cloud.SSHKeyExternalID, err = cm.conn.importPublicKey()
 		if err != nil {
+			log.Error(err, "failed to import public key")
 			return err
 		}
 	}
@@ -67,13 +76,17 @@ func (cm *ClusterManager) PrepareCloud() error {
 }
 
 func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
+	cm.Logger.Info("setting master sku", "sku", "baremetal_0")
 	return "baremetal_0"
 }
 
 // Deletes master(s) and releases other cloud resources
 func (cm *ClusterManager) ApplyDelete() error {
+	log := cm.Logger
+
 	kc, err := cm.GetAdminClient()
 	if err != nil {
+		log.Error(err, "failed to get admin client")
 		return err
 	}
 
@@ -83,12 +96,12 @@ func (cm *ClusterManager) ApplyDelete() error {
 		}).String(),
 	})
 	if err != nil && !kerr.IsNotFound(err) {
-		log.Infof("master instance not found. Reason: %v", err)
+		log.Error(err, "master instance not found")
 	} else if err == nil {
 		for _, mi := range masterInstances.Items {
 			err = cm.conn.DeleteInstanceByProviderID(mi.Spec.ProviderID)
 			if err != nil {
-				log.Infof("Failed to delete instance %s. Reason: %s", mi.Spec.ProviderID, err)
+				log.Error(err, "failed to delete instance", "instance-id", mi.Spec.ProviderID)
 			}
 		}
 	}
@@ -96,9 +109,10 @@ func (cm *ClusterManager) ApplyDelete() error {
 	cm.Cluster.Status.Phase = api.ClusterDeleted
 	_, err = cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
+		log.Error(err, "failed to update cluster status in store")
 		return err
 	}
 
-	log.Infof("Cluster %v deletion is deleted successfully", cm.Cluster.Name)
+	log.Info("successfully deleted cluster")
 	return nil
 }

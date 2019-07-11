@@ -32,8 +32,6 @@ type FakeStore struct {
 
 	operations store.OperationStore
 
-	owner string
-
 	mux sync.Mutex
 }
 
@@ -50,10 +48,7 @@ func New() store.Interface {
 	}
 }
 
-func (s *FakeStore) Owner(id string) store.ResourceInterface {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-	s.owner = id
+func (s *FakeStore) Owner(id int64) store.ResourceInterface {
 	return s
 }
 

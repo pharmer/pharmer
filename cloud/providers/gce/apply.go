@@ -112,12 +112,13 @@ func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
 }
 
 func (cm *ClusterManager) EnsureMaster(leaderMachine *clusterv1.Machine) error {
+	cm.Logger.Info("creating Master instance")
+
 	found, _ := cm.conn.getMasterInstance(leaderMachine)
 	if found {
 		return nil
 	}
 	var op1 string
-	log.Infoln("Creating Master Instance")
 
 	script, err := cloud.RenderStartupScript(cm, leaderMachine, "", customTemplate)
 	if err != nil {
@@ -132,10 +133,14 @@ func (cm *ClusterManager) EnsureMaster(leaderMachine *clusterv1.Machine) error {
 		return err
 	}
 
+	cm.Logger.Info("successfully create master instance")
+
 	return nil
 }
 
 func (cm *ClusterManager) ApplyDelete() error {
+	cm.Logger.Info("deleting cluster")
+
 	machines, err := cm.StoreProvider.Machine(cm.Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return err
@@ -182,7 +187,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 	if err != nil {
 		return err
 	}
-	log.Infoln("Cluster deleted successfully...")
+	cm.Logger.Info("cluster deleted successfully")
 
 	return nil
 }

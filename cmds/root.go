@@ -3,7 +3,6 @@ package cmds
 import (
 	"flag"
 	"io"
-	"log"
 	"os"
 	"strings"
 
@@ -18,6 +17,8 @@ import (
 	_ "github.com/pharmer/pharmer/store/providers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"k8s.io/klog"
+	"kmodules.xyz/client-go/logs"
 )
 
 const (
@@ -34,7 +35,7 @@ func NewRootCmd(in io.Reader, out, errwriter io.Writer, version string) *cobra.C
 		DisableAutoGenTag: true,
 		PersistentPreRunE: func(c *cobra.Command, args []string) error {
 			c.Flags().VisitAll(func(flag *pflag.Flag) {
-				log.Printf("FLAG: --%s=%q", flag.Name, flag.Value)
+				klog.V(1).Infof("FLAG: --%s=%q", flag.Name, flag.Value)
 			})
 			if enableAnalytics && gaTrackingCode != "" {
 				if client, err := ga.NewClient(gaTrackingCode); err == nil {
@@ -52,6 +53,7 @@ func NewRootCmd(in io.Reader, out, errwriter io.Writer, version string) *cobra.C
 					return config.Save(config.NewDefaultConfig(), cfgFile)
 				}
 			}
+			logs.ParseFlags()
 
 			return nil
 		},

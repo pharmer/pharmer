@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
-	"github.com/pharmer/pharmer/cmds/cloud/options"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	semver "gomodules.xyz/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,51 +14,59 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func Apply(opts *options.ApplyConfig, storeProvider store.ResourceInterface) error {
-	if opts.ClusterName == "" {
-		return errors.New("missing Cluster name")
+func Apply(scope *Scope) error {
+	if scope.Cluster.DeletionTimestamp == nil {
+		scope.Logger = scope.Logger.WithName("[apply-cluster]")
+	} else {
+		scope.Logger = scope.Logger.WithName("[delete-cluster]")
 	}
+	log := scope.Logger
 
-	cluster, err := storeProvider.Clusters().Get(opts.ClusterName)
-	if err != nil {
-		return errors.Wrapf(err, "Cluster `%s` does not exist", opts.ClusterName)
-	}
+	log.Info("applying cluster")
 
+	cluster := scope.Cluster
 	if cluster.Status.Phase == "" {
+		log.Info("cluster is in unknown phase")
 		return errors.Errorf("Cluster `%s` is in unknown phase", cluster.Name)
 	}
 	if cluster.Status.Phase == api.ClusterDeleted {
+		log.Info("cluster is already deleted, ignoring")
 		return nil
 	}
 
 	if cluster.Status.Phase == api.ClusterUpgrading {
+		log.Info("cluster is upgrading")
 		return errors.Errorf("Cluster `%s` is upgrading. Retry after Cluster returns to Ready state", cluster.Name)
 	}
 
-	scope := NewScope(NewScopeParams{Cluster: cluster, StoreProvider: storeProvider})
-	_, err = scope.GetCloudManager()
+	_, err := scope.GetCloudManager()
 	if err != nil {
+		log.Error(err, "failed to get cloud manager")
 		return err
 	}
 	err = scope.CloudManager.SetCloudConnector()
 	if err != nil {
+		log.Error(err, "failed to set cloud-connector")
 		return err
 	}
 
 	if cluster.Status.Phase == api.ClusterPending {
 		err := ApplyCreate(scope)
 		if err != nil {
+			log.Error(err, "failed in applycreate")
 			return err
 		}
 		err = ApplyScale(scope)
 		if err != nil {
-			return errors.Wrap(err, "failed to scale Cluster")
+			log.Error(err, "failed to scale cluster")
+			return err
 		}
 	}
 
 	if cluster.DeletionTimestamp != nil && cluster.Status.Phase != api.ClusterDeleted {
 		machineSets, err := scope.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
 		if err != nil {
+			log.Error(err, "failed to list machinesets from store")
 			return err
 		}
 		var replica int32 = 0
@@ -70,20 +75,25 @@ func Apply(opts *options.ApplyConfig, storeProvider store.ResourceInterface) err
 			ng.DeletionTimestamp = &metav1.Time{Time: time.Now()}
 			_, err := scope.StoreProvider.MachineSet(cluster.Name).Update(ng)
 			if err != nil {
+				log.Error(err, "failed to update machinesets in store")
 				return err
 			}
 		}
 
 		err = ApplyDelete(scope)
 		if err != nil {
+			log.Error(err, "failed in ApplyDelete")
 			return err
 		}
 	}
+
+	log.Info("successfully applied cluster")
 
 	return nil
 }
 
 func ApplyCreate(scope *Scope) error {
+	log := scope.Logger
 	cm, err := scope.GetCloudManager()
 	if err != nil {
 		return err
@@ -91,23 +101,27 @@ func ApplyCreate(scope *Scope) error {
 
 	err = cm.PrepareCloud()
 	if err != nil {
-		return errors.Wrap(err, "failed to prepare cloud infra")
+		log.Error(err, "failed to prepare cloud infrastructure")
+		return err
 	}
 
 	if !api.ManagedProviders.Has(cm.GetCluster().Spec.Config.Cloud.CloudProvider) {
 		err = setMasterSKU(scope)
 		if err != nil {
-			return errors.Wrap(err, "failed to set master sku")
+			log.Error(err, "failed to set default master sku")
+			return err
 		}
 
 		machine, err := getLeaderMachine(scope.StoreProvider.Machine(scope.Cluster.Name), scope.Cluster.Name)
 		if err != nil {
+			log.Error(err, "failed to get leader machine")
 			return err
 		}
 
 		err = cm.EnsureMaster(machine)
 		if err != nil {
-			return errors.Wrap(err, "failed to ensure master machine")
+			log.Error(err, "failed to create master machine")
+			return err
 		}
 	}
 
@@ -115,30 +129,37 @@ func ApplyCreate(scope *Scope) error {
 
 	kubeClient, err := cm.GetAdminClient()
 	if err != nil {
+		log.Error(err, "failed to get admin client")
 		return err
 	}
 
-	if err = kube.WaitForReadyMaster(kubeClient); err != nil {
-		return errors.Wrap(err, " error occurred while waiting for master")
+	if err = kube.WaitForReadyMaster(log, kubeClient); err != nil {
+		log.Error(err, "failed waiting for master to be ready")
+		return err
 	}
 
 	// create ccm credential
 	err = cm.CreateCredentials(kubeClient)
 	if err != nil {
-		return errors.Wrap(err, "failed to create ccm-credential")
+		log.Error(err, "failed to create ccm-credential")
+		return err
 	}
 
 	if !api.ManagedProviders.Has(cluster.Spec.Config.Cloud.CloudProvider) {
 		err = applyClusterAPI(scope)
 		if err != nil {
+			log.Error(err, "failed to create cluster api components")
 			return err
 		}
 	}
 
 	cluster.Status.Phase = api.ClusterReady
 	if _, err = scope.StoreProvider.Clusters().UpdateStatus(cluster); err != nil {
-		return errors.Wrap(err, "failed to update cluster status")
+		log.Error(err, "failed to update cluster status in store")
+		return err
 	}
+
+	log.Info("successful")
 
 	return nil
 }
@@ -147,34 +168,41 @@ func applyClusterAPI(s *Scope) error {
 	cluster := s.Cluster
 	ca, err := NewClusterAPI(s, "cloud-provider-system")
 	if err != nil {
-		return errors.Wrap(err, "Error creating Cluster-api components")
+		s.Logger.Error(err, "failed to create cluster-api clients")
+		return err
 	}
+	ca.Logger = s.Logger.WithName("[cluster-api]")
+	log := ca.Logger
 
 	clusterAPIcomponents, err := s.CloudManager.GetClusterAPIComponents()
 	if err != nil {
-		return errors.Wrap(err, "Error getting clusterAPI components")
-	}
-
-	if err := ca.Apply(clusterAPIcomponents); err != nil {
+		log.Error(err, "failed to get clusterAPI components")
 		return err
 	}
 
-	log.Infof("Adding other master machines")
+	if err := ca.Apply(clusterAPIcomponents); err != nil {
+		log.Error(err, "failed to apply cluster api components")
+		return err
+	}
+
+	log.Info("adding other master machines")
 	capiClient, err := kube.GetClusterAPIClient(s.GetCaCertPair(), cluster)
 	if err != nil {
+		log.Error(err, "failed to get cluster api client")
 		return err
 	}
 
 	machines, err := s.StoreProvider.Machine(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
-		return errors.Wrap(err, "failed to list master machines")
+		log.Error(err, "failed to list master machines")
+		return err
 	}
 
 	for _, m := range machines {
 		_, err := capiClient.ClusterV1alpha1().Machines(cluster.Spec.ClusterAPI.Namespace).Create(m)
 		if err != nil && !api.ErrObjectModified(err) && !api.ErrAlreadyExist(err) {
-			return errors.Wrapf(err, "failed to crate maching %q in namespace %q",
-				m.Name, cluster.Spec.ClusterAPI.Namespace)
+			log.Error(err, "failed ot create machine", "namespace", cluster.Spec.ClusterAPI.Namespace, "machine-name", m.Name)
+			return err
 		}
 	}
 
@@ -182,16 +210,20 @@ func applyClusterAPI(s *Scope) error {
 }
 
 func setMasterSKU(scope *Scope) error {
+	log := scope.Logger
+
 	clusterName := scope.Cluster.Name
 	cm := scope.CloudManager
 
 	machines, err := scope.StoreProvider.Machine(clusterName).List(metav1.ListOptions{})
 	if err != nil {
-		return errors.Wrap(err, "failed to list machines")
+		log.Error(err, "failed to list machines from store")
+		return err
 	}
 
 	machineSets, err := scope.StoreProvider.MachineSet(clusterName).List(metav1.ListOptions{})
 	if err != nil {
+		log.Error(err, "failed to list machinesets from store")
 		return err
 	}
 
@@ -203,13 +235,15 @@ func setMasterSKU(scope *Scope) error {
 	for _, m := range machines {
 		providerspec, err := cm.GetDefaultMachineProviderSpec(sku, api.MasterMachineRole)
 		if err != nil {
+			log.Error(err, "failed to get default provider spec")
 			return err
 		}
 		m.Spec.ProviderSpec = providerspec
 
 		_, err = scope.StoreProvider.Machine(clusterName).Update(m)
 		if err != nil {
-			return errors.Wrapf(err, "failed to update machine %q to store", m.Name)
+			log.Error(err, "failed to update machine to store", "machine-name", m.Name)
+			return err
 		}
 	}
 
@@ -217,7 +251,9 @@ func setMasterSKU(scope *Scope) error {
 }
 
 func ApplyScale(s *Scope) error {
-	log.Infoln("Scaling Machine Sets")
+	log := s.Logger
+
+	log.Info("scaling Machine Sets")
 
 	if api.ManagedProviders.Has(s.Cluster.CloudProvider()) {
 		return s.CloudManager.ApplyScale()
@@ -226,16 +262,19 @@ func ApplyScale(s *Scope) error {
 	cluster := s.Cluster
 	machineSets, err := s.StoreProvider.MachineSet(cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
+		log.Error(err, "failed to list machineset")
 		return err
 	}
 
 	bc, err := kube.GetBooststrapClient(s.Cluster, s.GetCaCertPair())
 	if err != nil {
+		log.Error(err, "failed to get bootstrap clients")
 		return err
 	}
 
 	clusterClient, err := kube.GetClusterAPIClient(s.GetCaCertPair(), s.Cluster)
 	if err != nil {
+		log.Error(err, "failed to get cluster api client")
 		return err
 	}
 
@@ -243,9 +282,11 @@ func ApplyScale(s *Scope) error {
 		if machineSet.DeletionTimestamp != nil {
 			err = clusterClient.ClusterV1alpha1().MachineSets(machineSet.Namespace).Delete(machineSet.Name, nil)
 			if err != nil {
+				log.Error(err, "failed to delete machinesets")
 				return err
 			}
 			if err = s.StoreProvider.MachineSet(cluster.Name).Delete(machineSet.Name); err != nil {
+				log.Error(err, "failed to delete machinesets")
 				return err
 			}
 			continue
@@ -253,17 +294,23 @@ func ApplyScale(s *Scope) error {
 
 		data, err := json.Marshal(machineSet)
 		if err != nil {
+			log.Error(err, "failed to json marshal machineset")
 			return err
 		}
 		if err = bc.Apply(string(data)); err != nil {
+			log.Error(err, "failed to apply machineset")
 			return err
 		}
 	}
+
+	log.Info("successfully scaled machineset")
 
 	return nil
 }
 
 func ApplyUpgrade(s *Scope) error {
+	s.Logger = s.Logger.WithName("[apply-upgrade]")
+
 	kc, err := s.GetAdminClient()
 	if err != nil {
 		return err

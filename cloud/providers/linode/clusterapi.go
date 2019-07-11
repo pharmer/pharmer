@@ -53,6 +53,7 @@ spec:
         - --kubeconfig=/etc/kubernetes/admin.conf
         env:
         image: {{ .ControllerImage }}
+        imagePullPolicy: Always
         name: manager
         resources:
           limits:

@@ -29,7 +29,7 @@ func NewCmdBackup() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd)
 			term.ExitOnError(err)
 
 			restConfig, err := SearchLocalKubeConfig(opts.ClusterName)

@@ -14,7 +14,6 @@ type ClusterEditConfig struct {
 	KubernetesVersion string
 	Locked            bool
 	Output            string
-	Owner             string
 }
 
 func NewClusterEditConfig() *ClusterEditConfig {
@@ -33,7 +32,6 @@ func (c *ClusterEditConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.KubernetesVersion, "kubernetes-version", c.KubernetesVersion, "Kubernetes version")
 	fs.BoolVar(&c.Locked, "locked", c.Locked, "If true, locks cluster from deletion")
 	fs.StringVarP(&c.Output, "output", "o", c.Output, "Output format. One of: yaml|json.")
-	fs.StringVarP(&c.Owner, "owner", "", c.Owner, "Current user id")
 
 }
 

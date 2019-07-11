@@ -12,7 +12,6 @@ import (
 type ApplyConfig struct {
 	ClusterName string
 	DryRun      bool
-	Owner       string
 }
 
 func NewApplyConfig() *ApplyConfig {
@@ -24,8 +23,6 @@ func NewApplyConfig() *ApplyConfig {
 
 func (c *ApplyConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.DryRun, "dry-run", c.DryRun, "Dry run.")
-	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
-
 }
 
 func (c *ApplyConfig) ValidateFlags(cmd *cobra.Command, args []string) error {
