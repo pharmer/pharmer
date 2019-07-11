@@ -39,6 +39,7 @@ type Cluster struct {
 type PharmerClusterSpec struct {
 	ClusterAPI clusterapi.Cluster `json:"clusterApi,omitempty"`
 	Config     ClusterConfig      `json:"config,omitempty"`
+	AuditSink  bool               `json:"auditSink,omitempty"`
 }
 
 type ClusterConfig struct {

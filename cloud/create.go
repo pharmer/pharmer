@@ -129,6 +129,12 @@ func setDefaultCluster(cluster *api.Cluster) error {
 		}, ","),
 	}
 
+	if cluster.Spec.AuditSink {
+		cluster.Spec.Config.APIServerExtraArgs["audit-dynamic-configuration"] = "true"
+		cluster.Spec.Config.APIServerExtraArgs["feature-gates"] = "DynamicAuditing=true"
+		cluster.Spec.Config.APIServerExtraArgs["runtime-config"] = "auditregistration.k8s.io/v1alpha1=true"
+	}
+
 	config.KubeletExtraArgs = make(map[string]string)
 
 	config.Cloud.Region = cluster.Spec.Config.Cloud.Zone[0 : len(cluster.Spec.Config.Cloud.Zone)-1]

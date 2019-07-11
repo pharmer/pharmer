@@ -38,6 +38,7 @@ func NewClusterCreateConfig() *ClusterCreateConfig {
 					NetworkProvider: api.PodNetworkCalico,
 				},
 			},
+			AuditSink: false,
 		},
 	}
 
@@ -56,7 +57,7 @@ func (c *ClusterCreateConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.Cluster.Spec.Config.CredentialName, "credential-uid", c.Cluster.Spec.Config.CredentialName, "Use preconfigured cloud credential uid")
 	fs.StringVar(&c.Cluster.Spec.Config.KubernetesVersion, "kubernetes-version", c.Cluster.Spec.Config.KubernetesVersion, "Kubernetes version")
 	fs.StringVar(&c.Cluster.Spec.Config.Cloud.NetworkProvider, "network-provider", c.Cluster.Spec.Config.Cloud.NetworkProvider, "Name of CNI plugin. Available options: calico, flannel, kubenet, weavenet")
-
+	fs.BoolVar(&c.Cluster.Spec.AuditSink, "audit-sink", c.Cluster.Spec.AuditSink, "enable kubernetes audit sink")
 	fs.StringVar(&c.Namespace, "namespace", c.Namespace, "Namespace")
 	fs.IntVar(&c.MasterCount, "masters", c.MasterCount, "Number of masters")
 	fs.StringToIntVar(&c.Nodes, "nodes", c.Nodes, "Node set configuration")
