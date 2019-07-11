@@ -2,379 +2,119 @@ package digitalocean
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/appscode/go/log"
-	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
-	semver "gomodules.xyz/version"
 	core "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
+func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
+	if d, _ := cm.conn.instanceIfExists(leaderMachine); d == nil {
+		log.Info("Creating master instance")
+		nodeAddresses := make([]core.NodeAddress, 0)
+
+		if cm.Cluster.Status.Cloud.LoadBalancer.DNS != "" {
+			nodeAddresses = append(nodeAddresses, core.NodeAddress{
+				Type:    core.NodeExternalDNS,
+				Address: cm.Cluster.Status.Cloud.LoadBalancer.DNS,
+			})
+		} else if cm.Cluster.Status.Cloud.LoadBalancer.IP != "" {
+			nodeAddresses = append(nodeAddresses, core.NodeAddress{
+				Type:    core.NodeExternalIP,
+				Address: cm.Cluster.Status.Cloud.LoadBalancer.IP,
+			})
+		}
+
+		script, err := cloud.RenderStartupScript(cm, leaderMachine, "", customTemplate)
+		if err != nil {
+			return err
+		}
+
+		err = cm.conn.CreateInstance(cm.Cluster, leaderMachine, script)
+		if err != nil {
+			return err
+		}
+
+		if err = cm.Cluster.SetClusterAPIEndpoints(nodeAddresses); err != nil {
+			return err
+		}
+
+	}
+
 	var err error
-	var acts []api.Action
-
-	if in.Status.Phase == "" {
-		return nil, errors.Errorf("cluster `%s` is in unknown phase", in.Name)
-	}
-	if in.Status.Phase == api.ClusterDeleted {
-		return nil, nil
-	}
-	cm.cluster = in
-	cm.namer = namer{cluster: cm.cluster}
-
-	if cm.conn, err = PrepareCloud(cm.ctx, in.Name, cm.owner); err != nil {
-		return nil, err
-	}
-	cm.ctx = cm.conn.ctx
-
-	/*if err = cm.InitializeActuator(nil); err != nil {
-		return nil, err
-	}*/
-	if cm.cluster.Status.Phase == api.ClusterUpgrading {
-		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
-	}
-	if cm.cluster.Status.Phase == api.ClusterReady {
-		var kc kubernetes.Interface
-		kc, err = cm.GetAdminClient()
-		if err != nil {
-			return nil, err
-		}
-		if upgrade, err := NewKubeVersionGetter(kc, cm.cluster).IsUpgradeRequested(); err != nil {
-			return nil, err
-		} else if upgrade {
-			cm.cluster.Status.Phase = api.ClusterUpgrading
-			if _, err := Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
-				return nil, err
-			}
-			return cm.applyUpgrade(dryRun)
-		}
+	cm.Cluster, err = cm.StoreProvider.Clusters().Update(cm.Cluster)
+	if err != nil {
+		return err
 	}
 
-	if cm.cluster.Status.Phase == api.ClusterPending {
-		a, err := cm.applyCreate(dryRun)
-		if err != nil {
-			return nil, err
-		}
-		acts = append(acts, a...)
-	}
-
-	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		nodeGroups, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-		if err != nil {
-			return nil, err
-		}
-
-		count := int32(0)
-		for _, ng := range nodeGroups {
-			ng.Spec.Replicas = &count
-			_, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).Update(ng)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	{
-		a, err := cm.applyScale(dryRun)
-		if err != nil {
-			if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-				log.Infoln(err)
-			} else {
-				return nil, err
-			}
-		}
-		acts = append(acts, a...)
-	}
-
-	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		a, err := cm.applyDelete(dryRun)
-		if err != nil {
-			return nil, err
-		}
-		acts = append(acts, a...)
-	}
-	return acts, nil
+	return nil
 }
 
-// Creates network, and creates ready master(s)
-func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
+func (cm *ClusterManager) PrepareCloud() error {
 	var found bool
+	var err error
+
 	found, _, err = cm.conn.getPublicKey()
 	if err != nil {
-		return
+		return err
 	}
 	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "PublicKey",
-			Message:  "Public key will be imported",
-		})
-		if !dryRun {
-			cm.cluster.Status.Cloud.SShKeyExternalID, err = cm.conn.importPublicKey()
-			if err != nil {
-				return
-			}
+		_, err = cm.conn.importPublicKey()
+		if err != nil {
+			return err
 		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "PublicKey",
-			Message:  "Public key found",
-		})
 	}
 
 	// ignore errors, since tags are simply informational.
 	found, err = cm.conn.getTags()
 	if err != nil {
-		return
+		return err
 	}
 	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Tag",
-			Message:  fmt.Sprintf("Tag %s will be added", "KubernetesCluster:"+cm.cluster.Name),
-		})
-		if !dryRun {
-			if err = cm.conn.createTags(); err != nil {
-				return
-			}
+		if err = cm.conn.createTags(); err != nil {
+			return err
 		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Tag",
-			Message:  fmt.Sprintf("Tag %s found", "KubernetesCluster:"+cm.cluster.Name),
-		})
 	}
 
 	lb, err := cm.conn.lbByName(context.Background(), cm.namer.LoadBalancerName())
 	if err == errLBNotFound {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Load Balancer",
-			Message:  fmt.Sprintf("Load Balancer will be created"),
-		})
 		lb, err = cm.conn.createLoadBalancer(context.Background(), cm.namer.LoadBalancerName())
 		if err != nil {
-			return
+			return err
 		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Load Balancer",
-			Message:  fmt.Sprintf("Load Balancer %q found", lb.Name),
-		})
 	}
 
-	cm.cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
+	cm.Cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
 		IP:   lb.IP,
 		Port: lb.ForwardingRules[0].EntryPort,
 	}
 
-	// -------------------------------------------------------------------ASSETS
-	var machines []*clusterv1.Machine
-	machines, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return
+	nodeAddresses := []corev1.NodeAddress{
+		{
+			Type:    corev1.NodeExternalIP,
+			Address: cm.Cluster.Status.Cloud.LoadBalancer.IP,
+		},
 	}
 
-	leaderMachine, err := GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		return
+	if err = cm.Cluster.SetClusterAPIEndpoints(nodeAddresses); err != nil {
+		return errors.Wrap(err, "Error setting controlplane endpoints")
 	}
 
-	if d, _ := cm.conn.instanceIfExists(leaderMachine); d == nil {
-		Logger(cm.ctx).Info("Creating master instance")
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("Master instance %s will be created", leaderMachine.Name),
-		})
-		if !dryRun {
-			nodeAddresses := make([]core.NodeAddress, 0)
-
-			if cm.cluster.Status.Cloud.LoadBalancer.DNS != "" {
-				nodeAddresses = append(nodeAddresses, core.NodeAddress{
-					Type:    core.NodeExternalDNS,
-					Address: cm.cluster.Status.Cloud.LoadBalancer.DNS,
-				})
-			} else if cm.cluster.Status.Cloud.LoadBalancer.IP != "" {
-				nodeAddresses = append(nodeAddresses, core.NodeAddress{
-					Type:    core.NodeExternalIP,
-					Address: cm.cluster.Status.Cloud.LoadBalancer.IP,
-				})
-			}
-
-			_, err = cm.conn.CreateInstance(cm.cluster, leaderMachine, "")
-			if err != nil {
-				return
-			}
-
-			if err = cm.cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
-				return
-			}
-
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("master instance %v already exist", leaderMachine.Name),
-		})
-	}
-
-	if cm.cluster, err = Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
-		return
-	}
-
-	var kc kubernetes.Interface
-	kc, err = cm.GetAdminClient()
-	if err != nil {
-		return
-	}
-	// wait for nodes to start
-	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
-		return
-	}
-
-	// create ccm secret
-	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(cm.cluster.Spec.Config.CredentialName)
-
-	if err != nil {
-		return acts, err
-	}
-	err = CreateSecret(kc, "digitalocean", metav1.NamespaceSystem, map[string][]byte{
-		"access-token": []byte(cred.Spec.Data[credential.DigitalOceanToken]), //for ccm
-		"token":        []byte(cred.Spec.Data[credential.DigitalOceanToken]), //for pharmer-flex and provisioner
-	})
-	if err != nil {
-		return acts, errors.Wrapf(err, "failed to create ccm-secret for digitalocean")
-	}
-
-	ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, nil)
-	if err != nil {
-		return acts, err
-	}
-	if err := ca.Apply(ControllerManager); err != nil {
-		return acts, err
-	}
-
-	log.Infof("Adding other master machines")
-	client, err := GetClusterClient(cm.ctx, cm.cluster)
-	if err != nil {
-		return acts, err
-	}
-
-	for _, m := range machines {
-		if m.Name == leaderMachine.Name {
-			continue
-		}
-		if _, err := client.ClusterV1alpha1().Machines(cm.cluster.Spec.ClusterAPI.Namespace).Create(m); err != nil && !api.ErrAlreadyExist(err) && !api.ErrObjectModified(err) {
-			log.Infof("Error creating maching %q in namespace %q", m.Name, cm.cluster.Spec.ClusterAPI.Namespace)
-			return acts, err
-		}
-	}
-
-	cm.cluster.Status.Phase = api.ClusterReady
-	if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
-		return
-	}
-
-	return acts, err
-}
-
-// Scales up/down regular node groups
-func (cm *ClusterManager) applyScale(dryRun bool) (acts []api.Action, err error) {
-	Logger(cm.ctx).Infoln("scaling machine set")
-
-	var machineSets []*clusterv1.MachineSet
-	var existingMachineSet []*clusterv1.MachineSet
-	//var msc *clusterv1.MachineSet
-	machineSets, err = Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return
-	}
-	var bc clusterclient.Client
-	bc, err = GetBooststrapClient(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		return nil, err
-	}
-	var data []byte
-	for _, machineSet := range machineSets {
-		if machineSet.DeletionTimestamp != nil {
-			machineSet.DeletionTimestamp = nil
-			if data, err = json.Marshal(machineSet); err != nil {
-				return
-			}
-
-			if err = bc.Delete(string(data)); err != nil {
-				return
-			}
-			if err = Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).Delete(machineSet.Name); err != nil {
-				return
-			}
-		}
-
-		if existingMachineSet, err = bc.GetMachineSets(bc.GetContextNamespace()); err != nil {
-			return
-		}
-		if data, err = json.Marshal(machineSet); err != nil {
-			return
-		}
-		found := false
-		for _, ems := range existingMachineSet {
-			if ems.Name == machineSet.Name {
-				found = true
-				if err = bc.Apply(string(data)); err != nil {
-					return
-				}
-				break
-			}
-		}
-
-		if !found {
-			if err = bc.CreateMachineSets([]*clusterv1.MachineSet{machineSet}, bc.GetContextNamespace()); err != nil {
-				return
-			}
-		}
-	}
-
-	return
+	return nil
 }
 
 // Deletes master(s) and releases other cloud resources
-func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error) {
-	Logger(cm.ctx).Infoln("deleting cluster")
-	var found bool
-
-	if cm.cluster.Status.Phase == api.ClusterReady {
-		cm.cluster.Status.Phase = api.ClusterDeleting
-	}
-	_, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
+func (cm *ClusterManager) ApplyDelete() error {
+	kc, err := cm.GetAdminClient()
 	if err != nil {
-		return
-	}
-
-	err = DeleteAllWorkerMachines(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		log.Infof("failed to delete nodes: %v", err)
-	}
-
-	var kc kubernetes.Interface
-	kc, err = cm.GetAdminClient()
-	if err != nil {
-		return
+		return err
 	}
 	var masterInstances *core.NodeList
 	masterInstances, err = kc.CoreV1().Nodes().List(metav1.ListOptions{
@@ -383,153 +123,54 @@ func (cm *ClusterManager) applyDelete(dryRun bool) (acts []api.Action, err error
 		}).String(),
 	})
 	if err != nil && !kerr.IsNotFound(err) {
-		Logger(cm.ctx).Infof("master instance not found. Reason: %v", err)
+		log.Infof("master instance not found. Reason: %v", err)
 	} else if err == nil {
-		acts = append(acts, api.Action{
-			Action:   api.ActionDelete,
-			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("Will delete master instance with name %v-master", cm.cluster.Name),
-		})
-		if !dryRun {
-			for _, mi := range masterInstances.Items {
-				err = cm.conn.DeleteInstanceByProviderID(mi.Spec.ProviderID)
-				if err != nil {
-					Logger(cm.ctx).Infof("Failed to delete instance %s. Reason: %s", mi.Spec.ProviderID, err)
-				}
+		for _, mi := range masterInstances.Items {
+			err = cm.conn.DeleteInstanceByProviderID(mi.Spec.ProviderID)
+			if err != nil {
+				log.Infof("Failed to delete instance %s. Reason: %s", mi.Spec.ProviderID, err)
 			}
 		}
 	}
 
 	// delete by tag
-	tag := "KubernetesCluster:" + cm.cluster.Name
-	_, err = cm.conn.client.Droplets.DeleteByTag(cm.ctx, tag)
+	tag := "KubernetesCluster:" + cm.Cluster.Name
+	_, err = cm.conn.client.Droplets.DeleteByTag(context.Background(), tag)
 	if err != nil {
-		Logger(cm.ctx).Infof("Failed to delete resources by tag %s. Reason: %s", tag, err)
+		log.Infof("Failed to delete resources by tag %s. Reason: %s", tag, err)
 	}
-	Logger(cm.ctx).Infof("Deleted droplet by tag %s", tag)
+	log.Infof("Deleted droplet by tag %s", tag)
 
 	// Delete SSH key
-	found, _, err = cm.conn.getPublicKey()
+	found, _, err := cm.conn.getPublicKey()
 	if err != nil {
-		return
+		return err
 	}
 	if found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "PublicKey",
-			Message:  "Public key will be deleted",
-		})
-		if !dryRun {
-			err = cm.conn.deleteSSHKey()
-			if err != nil {
-				return
-			}
+		err = cm.conn.deleteSSHKey()
+		if err != nil {
+			return err
 		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "PublicKey",
-			Message:  "Public key not found",
-		})
 	}
 
 	_, err = cm.conn.lbByName(context.Background(), cm.namer.LoadBalancerName())
-	if err == errLBNotFound {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Load Balancer",
-			Message:  "Load Balancer not found",
-		})
-	} else {
-		if !dryRun {
-			if err = cm.conn.deleteLoadBalancer(context.Background(), cm.namer.LoadBalancerName()); err != nil {
-				return
-			}
+	if err != errLBNotFound {
+		if err = cm.conn.deleteLoadBalancer(context.Background(), cm.namer.LoadBalancerName()); err != nil {
+			return err
 		}
 
-		acts = append(acts, api.Action{
-			Action:   api.ActionDelete,
-			Resource: "Load Balancer",
-			Message:  "Load Balancer deleted",
-		})
 	}
 
-	/*if IsHASetup(cm.cluster) {
-		cm.conn.deleteLoadBalancer(cm.ctx, cm.namer.LoadBalancerName())
-	}
-	*/
-	// Failed
-	cm.cluster.Status.Phase = api.ClusterDeleted
-	_, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster)
+	cm.Cluster.Status.Phase = api.ClusterDeleted
+	_, err = cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
-		return
+		return err
 	}
 
-	Logger(cm.ctx).Infof("Cluster %v deletion is deleted successfully", cm.cluster.Name)
-	return
+	log.Infof("Cluster %v deletion is deleted successfully", cm.Cluster.Name)
+	return err
 }
 
-func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err error) {
-	var kc kubernetes.Interface
-	if kc, err = cm.GetAdminClient(); err != nil {
-		return
-	}
-
-	var leaderMachine *clusterv1.Machine
-	masterName := fmt.Sprintf("%v-master", cm.cluster.Name)
-	leaderMachine, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Get(masterName)
-	if err != nil {
-		return nil, err
-	}
-
-	leaderMachine.Spec.Versions.ControlPlane = cm.cluster.Spec.Config.KubernetesVersion
-	leaderMachine.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
-
-	var bc clusterclient.Client
-	bc, err = GetBooststrapClient(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		return nil, err
-	}
-
-	var data []byte
-	if data, err = json.Marshal(leaderMachine); err != nil {
-		return
-	}
-	if err = bc.Apply(string(data)); err != nil {
-		return
-	}
-
-	// Wait until master updated
-	desiredVersion, _ := semver.NewVersion(cm.cluster.ClusterConfig().KubernetesVersion)
-	if err = WaitForReadyMasterVersion(cm.ctx, kc, desiredVersion); err != nil {
-		return
-	}
-	// wait for nodes to start
-	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
-		return
-	}
-
-	var machineSets []*clusterv1.MachineSet
-	machineSets, err = Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return
-	}
-
-	for _, machineSet := range machineSets {
-		machineSet.Spec.Template.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
-		if data, err = json.Marshal(machineSet); err != nil {
-			return
-		}
-		if err = bc.Apply(string(data)); err != nil {
-			return
-		}
-	}
-
-	if !dryRun {
-		cm.cluster.Status.Phase = api.ClusterReady
-		if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
-			return
-		}
-	}
-	return
+func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
+	return "2gb"
 }

@@ -1,14 +1,13 @@
 package eks
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/appscode/go/log"
-	. "github.com/appscode/go/types"
+	"github.com/appscode/go/types"
 	_aws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -19,27 +18,26 @@ import (
 	_sts "github.com/aws/aws-sdk-go/service/sts"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
-	version "gomodules.xyz/version"
+	"gomodules.xyz/version"
 	"k8s.io/apimachinery/pkg/util/wait" //"github.com/pharmer/pharmer/cloud/providers/eks/assets"
 )
 
 type cloudConnector struct {
-	ctx     context.Context
-	cluster *api.Cluster
-	namer   namer
+	*cloud.Scope
+	namer namer
 
 	ec2 *_ec2.EC2
 	iam *_iam.IAM
 	eks *_eks.EKS
 	sts *_sts.STS
-	//stscreds *_stscreds.AssumeRoler
 	cfn *cloudformation.CloudFormation
 }
 
-func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
-	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.Spec.Config.CredentialName)
+func newconnector(cm *ClusterManager) (*cloudConnector, error) {
+	cluster := cm.Cluster
+	cred, err := cm.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -57,17 +55,17 @@ func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*clo
 		return nil, err
 	}
 	conn := cloudConnector{
-		ctx:     ctx,
-		cluster: cluster,
-		eks:     _eks.New(sess),
-		ec2:     _ec2.New(sess),
-		iam:     _iam.New(sess),
-		sts:     _sts.New(sess),
-		cfn:     cloudformation.New(sess),
+		Scope: cm.Scope,
+		namer: namer{
+			cluster: cm.Cluster,
+		},
+		eks: _eks.New(sess),
+		ec2: _ec2.New(sess),
+		iam: _iam.New(sess),
+		sts: _sts.New(sess),
+		cfn: cloudformation.New(sess),
 	}
-	//if ok, msg := conn.IsUnauthorized(); !ok {
-	//	return nil, errors.Errorf("credential %s does not have necessary authorization. Reason: %s", cluster.Spec.CredentialName, msg)
-	//}
+
 	return &conn, nil
 }
 
@@ -76,7 +74,7 @@ func (conn *cloudConnector) DetectInstanceImage() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cv, err := version.NewVersion(conn.cluster.Spec.Config.KubernetesVersion)
+	cv, err := version.NewVersion(conn.Cluster.Spec.Config.KubernetesVersion)
 	if err != nil {
 		return "", err
 	}
@@ -94,25 +92,23 @@ func (conn *cloudConnector) DetectInstanceImage() (string, error) {
 		}
 	}
 
-	return regionalAMIS[conn.cluster.Spec.Config.Cloud.Region], nil
+	return regionalAMIS[conn.Cluster.Spec.Config.Cloud.Region], nil
 }
 
 func (conn *cloudConnector) WaitForStackOperation(name string, expectedStatus string) error {
 	attempt := 0
 	params := &cloudformation.DescribeStacksInput{
-		StackName: StringP(name),
+		StackName: types.StringP(name),
 	}
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 		resp, err := conn.cfn.DescribeStacks(params)
 		if err != nil {
 			log.Info(err)
-		}
-		if err != nil {
 			return false, nil
 		}
 		status := *resp.Stacks[0].StackStatus
-		Logger(conn.ctx).Infof("Attempt %v: operation `%s` is in status `%s`", attempt, name, status)
+		log.Infof("Attempt %v: operation `%s` is in status `%s`", attempt, name, status)
 		return status == expectedStatus, nil
 	})
 }
@@ -120,9 +116,9 @@ func (conn *cloudConnector) WaitForStackOperation(name string, expectedStatus st
 func (conn *cloudConnector) WaitForControlPlaneOperation(name string) error {
 	attempt := 0
 	params := &_eks.DescribeClusterInput{
-		Name: StringP(name),
+		Name: types.StringP(name),
 	}
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 		resp, err := conn.eks.DescribeCluster(params)
 		if err != nil {
@@ -130,42 +126,45 @@ func (conn *cloudConnector) WaitForControlPlaneOperation(name string) error {
 		}
 		status := *resp.Cluster.Status
 
-		Logger(conn.ctx).Infof("Attempt %v: operation `%s` is in status `%s`", attempt, name, status)
+		log.Infof("Attempt %v: operation `%s` is in status `%s`", attempt, name, status)
 		return status == _eks.ClusterStatusActive, nil
 	})
 }
 
-func (conn *cloudConnector) createStackServiceRole() error {
-	/*data, err := Asset("amazon-eks-service-role.yaml")
-	if err != nil {
-		return err
-	}*/
+func (conn *cloudConnector) ensureStackServiceRole() error {
+	found := conn.isStackExists(conn.namer.GetStackServiceRole())
 	serviceRoleName := conn.namer.GetStackServiceRole()
-	if err := conn.createStack(serviceRoleName, ServiceRoleUrl, nil, true); err != nil {
-		return err
+
+	if !found {
+		if err := conn.createStack(serviceRoleName, ServiceRoleURL, nil, true); err != nil {
+			return err
+		}
 	}
+
 	serviceRole, err := conn.getStack(serviceRoleName)
 	if err != nil {
 		return err
 	}
+
 	roleArn := conn.getOutput(serviceRole, "RoleArn")
 	if roleArn == nil {
 		return fmt.Errorf("RoleArn is nil")
 	}
-	conn.cluster.Status.Cloud.EKS.RoleArn = String(roleArn)
+
+	conn.Cluster.Status.Cloud.EKS.RoleArn = types.String(roleArn)
+
 	return nil
 }
 
-func (conn *cloudConnector) createClusterVPC() error {
-	//https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/amazon-eks-vpc-sample.yaml
-	/*data, err := Asset("amazon-eks-vpc-sample.yaml")
-	if err != nil {
-		return err
-	}*/
+func (conn *cloudConnector) ensureClusterVPC() error {
+	found := conn.isStackExists(conn.namer.GetClusterVPC())
 	vpcName := conn.namer.GetClusterVPC()
-	if err := conn.createStack(vpcName, EKSVPCUrl, nil, false); err != nil {
-		return err
+	if !found {
+		if err := conn.createStack(vpcName, EKSVPCUrl, nil, false); err != nil {
+			return err
+		}
 	}
+
 	vpc, err := conn.getStack(vpcName)
 	if err != nil {
 		return err
@@ -175,45 +174,42 @@ func (conn *cloudConnector) createClusterVPC() error {
 	if securityGroup == nil {
 		return fmt.Errorf("SecurityGroups is nil")
 	}
-	conn.cluster.Status.Cloud.EKS.SecurityGroup = String(securityGroup)
+	conn.Cluster.Status.Cloud.EKS.SecurityGroup = types.String(securityGroup)
 
 	subnetIds := conn.getOutput(vpc, "SubnetIds")
 	if subnetIds == nil {
 		return fmt.Errorf("SubnetIds is nil")
 	}
-	conn.cluster.Status.Cloud.EKS.SubnetId = String(subnetIds)
+	conn.Cluster.Status.Cloud.EKS.SubnetID = types.String(subnetIds)
 
-	vpcId := conn.getOutput(vpc, "VpcId")
-	if vpcId == nil {
-		return fmt.Errorf("VpcId is nil")
+	vpcID := conn.getOutput(vpc, "VpcId")
+	if vpcID == nil {
+		return fmt.Errorf("VpcID is nil")
 	}
-	conn.cluster.Status.Cloud.EKS.VpcId = String(vpcId)
+	conn.Cluster.Status.Cloud.EKS.VpcID = types.String(vpcID)
 	return nil
 }
 
-func (conn *cloudConnector) createStackNodeGroup() {
-
-}
 func (conn *cloudConnector) createControlPlane() error {
 	params := &_eks.CreateClusterInput{
-		Name:    StringP(conn.cluster.Name),
-		RoleArn: StringP(conn.cluster.Status.Cloud.EKS.RoleArn),
+		Name:    types.StringP(conn.Cluster.Name),
+		RoleArn: types.StringP(conn.Cluster.Status.Cloud.EKS.RoleArn),
 		ResourcesVpcConfig: &_eks.VpcConfigRequest{
-			SubnetIds:        StringPSlice(strings.Split(conn.cluster.Status.Cloud.EKS.SubnetId, ",")),
-			SecurityGroupIds: StringPSlice([]string{conn.cluster.Status.Cloud.EKS.SecurityGroup}),
+			SubnetIds:        types.StringPSlice(strings.Split(conn.Cluster.Status.Cloud.EKS.SubnetID, ",")),
+			SecurityGroupIds: types.StringPSlice([]string{conn.Cluster.Status.Cloud.EKS.SecurityGroup}),
 		},
-		Version: StringP(conn.cluster.Spec.Config.KubernetesVersion),
+		Version: types.StringP(conn.Cluster.Spec.Config.KubernetesVersion),
 	}
 	_, err := conn.eks.CreateCluster(params)
 	if err != nil {
 		return err
 	}
-	return conn.WaitForControlPlaneOperation(conn.cluster.Name)
+	return conn.WaitForControlPlaneOperation(conn.Cluster.Name)
 }
 
 func (conn *cloudConnector) deleteControlPlane() error {
 	params := &_eks.DeleteClusterInput{
-		Name: StringP(conn.cluster.Name),
+		Name: types.StringP(conn.Cluster.Name),
 	}
 	_, err := conn.eks.DeleteCluster(params)
 	return err
@@ -230,7 +226,7 @@ func (conn *cloudConnector) getOutput(stack *cloudformation.Stack, key string) *
 
 func (conn *cloudConnector) getStack(name string) (*cloudformation.Stack, error) {
 	params := &cloudformation.DescribeStacksInput{
-		StackName: StringP(name),
+		StackName: types.StringP(name),
 	}
 	resp, err := conn.cfn.DescribeStacks(params)
 	if err != nil {
@@ -242,34 +238,34 @@ func (conn *cloudConnector) getStack(name string) (*cloudformation.Stack, error)
 	return nil, fmt.Errorf("stack %v not exists", name)
 }
 
-func (conn *cloudConnector) isStackExists(name string) (bool, error) {
-	Logger(conn.ctx).Infof("Checking if %v exists...", name)
+func (conn *cloudConnector) isStackExists(name string) bool {
+	log.Infof("Checking if %v exists...", name)
 	params := &cloudformation.DescribeStacksInput{
-		StackName: StringP(name),
+		StackName: types.StringP(name),
 	}
 	resp, err := conn.cfn.DescribeStacks(params)
 	if err != nil {
-		return false, nil
+		return false
 	}
 	if len(resp.Stacks) > 0 {
-		return true, nil
+		return true
 	}
-	return false, nil //fmt.Errorf("stack %v not exists", name)
+	return false
 }
 
-func (conn *cloudConnector) isControlPlaneExists(name string) (bool, error) {
-	Logger(conn.ctx).Infof("Checking for control plane %v exists...", name)
+func (conn *cloudConnector) isControlPlaneExists(name string) bool {
+	log.Infof("Checking for control plane %v exists...", name)
 	params := &_eks.DescribeClusterInput{
-		Name: StringP(name),
+		Name: types.StringP(name),
 	}
 	resp, err := conn.eks.DescribeCluster(params)
 	if err != nil {
-		return false, nil
+		return false
 	}
 	if resp.Cluster != nil {
-		return true, nil
+		return true
 	}
-	return false, nil
+	return false
 }
 
 func (conn *cloudConnector) createStack(name, url string, params map[string]string, withIAM bool) error {
@@ -277,19 +273,19 @@ func (conn *cloudConnector) createStack(name, url string, params map[string]stri
 	cfn.SetStackName(name)
 	cfn.SetTags([]*cloudformation.Tag{
 		{
-			Key:   StringP("KubernetesCluster"),
-			Value: StringP(conn.cluster.Name),
+			Key:   types.StringP("KubernetesCluster"),
+			Value: types.StringP(conn.Cluster.Name),
 		},
 	})
 	cfn.SetTemplateURL(url)
 	if withIAM {
-		cfn.SetCapabilities(StringPSlice([]string{cloudformation.CapabilityCapabilityIam}))
+		cfn.SetCapabilities(types.StringPSlice([]string{cloudformation.CapabilityCapabilityIam}))
 	}
 
 	for k, v := range params {
 		p := &cloudformation.Parameter{
-			ParameterKey:   StringP(k),
-			ParameterValue: StringP(v),
+			ParameterKey:   types.StringP(k),
+			ParameterValue: types.StringP(v),
 		}
 		cfn.Parameters = append(cfn.Parameters, p)
 	}
@@ -301,48 +297,46 @@ func (conn *cloudConnector) createStack(name, url string, params map[string]stri
 }
 
 func (conn *cloudConnector) deleteStack(name string) error {
-	Logger(conn.ctx).Infoln("Deleting stack ", name)
+	log.Infoln("Deleting stack ", name)
 	params := &cloudformation.DeleteStackInput{
-		StackName: StringP(name),
+		StackName: types.StringP(name),
 	}
 	_, err := conn.cfn.DeleteStack(params)
 	return err
 }
 
-func (conn *cloudConnector) updateStack(name string, params map[string]string, withIAM bool, arn *string) error {
+func (conn *cloudConnector) updateStack(name string, params map[string]string, withIAM bool) error {
 	cfn := &cloudformation.UpdateStackInput{}
 	cfn.SetStackName(name)
 	cfn.SetTags([]*cloudformation.Tag{
 		{
-			Key:   StringP("KubernetesCluster"),
-			Value: StringP(conn.cluster.Name),
+			Key:   types.StringP("KubernetesCluster"),
+			Value: types.StringP(conn.Cluster.Name),
 		},
 	})
 	cfn.SetUsePreviousTemplate(true)
 	if withIAM {
-		cfn.SetCapabilities(StringPSlice([]string{cloudformation.CapabilityCapabilityIam}))
+		cfn.SetCapabilities(types.StringPSlice([]string{cloudformation.CapabilityCapabilityIam}))
 	}
 	for k, v := range params {
 		p := &cloudformation.Parameter{
-			ParameterKey:   StringP(k),
-			ParameterValue: StringP(v),
+			ParameterKey:   types.StringP(k),
+			ParameterValue: types.StringP(v),
 		}
 		cfn.Parameters = append(cfn.Parameters, p)
 	}
-	//cfn.RoleARN = arn
 
 	_, err := conn.cfn.UpdateStack(cfn)
 	if err != nil {
-		return err
+		return nil
 	}
+
 	return conn.WaitForStackOperation(name, cloudformation.StackStatusUpdateComplete)
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-
 func (conn *cloudConnector) getPublicKey() (bool, error) {
 	resp, err := conn.ec2.DescribeKeyPairs(&_ec2.DescribeKeyPairsInput{
-		KeyNames: StringPSlice([]string{conn.cluster.Spec.Config.Cloud.SSHKeyName}),
+		KeyNames: types.StringPSlice([]string{conn.Cluster.Spec.Config.Cloud.SSHKeyName}),
 	})
 	if err != nil {
 		return false, err
@@ -355,21 +349,15 @@ func (conn *cloudConnector) getPublicKey() (bool, error) {
 
 func (conn *cloudConnector) importPublicKey() error {
 	resp, err := conn.ec2.ImportKeyPair(&_ec2.ImportKeyPairInput{
-		KeyName:           StringP(conn.cluster.Spec.Config.Cloud.SSHKeyName),
-		PublicKeyMaterial: SSHKey(conn.ctx).PublicKey,
+		KeyName:           types.StringP(conn.Cluster.Spec.Config.Cloud.SSHKeyName),
+		PublicKeyMaterial: conn.Certs.SSHKey.PublicKey,
 	})
-	Logger(conn.ctx).Debug("Imported SSH key", resp, err)
+	log.Debug("Imported SSH key", resp, err)
 	if err != nil {
+		log.Info("Error importing public key", resp, err)
 		return err
 	}
-	// TODO ignore "InvalidKeyPair.Duplicate" error
-	if err != nil {
-		Logger(conn.ctx).Info("Error importing public key", resp, err)
-		//os.Exit(1)
-		return err
-
-	}
-	Logger(conn.ctx).Infof("SSH key with (AWS) fingerprint %v imported", SSHKey(conn.ctx).AwsFingerprint)
+	log.Infof("SSH key with (AWS) fingerprint %v imported", conn.Certs.SSHKey.AwsFingerprint)
 
 	return nil
 }
@@ -377,15 +365,12 @@ func (conn *cloudConnector) importPublicKey() error {
 func (conn *cloudConnector) deleteSSHKey() error {
 	var err error
 	_, err = conn.ec2.DeleteKeyPair(&_ec2.DeleteKeyPairInput{
-		KeyName: StringP(conn.cluster.Spec.Config.Cloud.SSHKeyName),
+		KeyName: types.StringP(conn.Cluster.Spec.Config.Cloud.SSHKeyName),
 	})
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("SSH key for cluster %v is deleted", conn.cluster.Name)
-	//updates := &storage.SSHKey{IsDeleted: 1}
-	//cond := &storage.SSHKey{PHID: cluster.Spec.ctx.SSHKeyPHID}
-	// _, err = cluster.Spec.Store(ctx).Engine.Update(updates, cond)
+	log.Infof("SSH key for cluster %v is deleted", conn.Cluster.Name)
 
 	return err
 }
@@ -394,8 +379,7 @@ func (conn *cloudConnector) deleteSSHKey() error {
 
 func (conn *cloudConnector) getAuthenticationToken() (string, error) {
 	request, _ := conn.sts.GetCallerIdentityRequest(&_sts.GetCallerIdentityInput{})
-	request.HTTPRequest.Header.Add(clusterIDHeader, conn.cluster.Name)
-	// sign the request
+	request.HTTPRequest.Header.Add(clusterIDHeader, conn.Cluster.Name)
 	presignedURLString, err := request.Presign(60 * time.Second)
 	if err != nil {
 		return "", err

@@ -1,35 +1,34 @@
 package cloud
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/appscode/go/ioutil"
-	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud/cmds/options"
+	"github.com/pharmer/pharmer/cmds/cloud/options"
+	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/homedir"
 )
 
-func UseCluster(ctx context.Context, opts *options.ClusterUseConfig, konf *api.KubeConfig) {
+func UseCluster(opts *options.ClusterUseConfig, konf *api.KubeConfig) error {
 	var konfig *clientcmdapi.Config
 	if _, err := os.Stat(KubeConfigPath()); err == nil {
-		// ~/.kube/config exists
+		// $HOME/.kube/config exists
 		konfig, err = clientcmd.LoadFromFile(KubeConfigPath())
 		if err != nil {
-			log.Fatalln(err)
+			return errors.Wrap(err, "failed to load kubeconfig from disk")
 		}
 
 		bakFile := KubeConfigPath() + ".bak." + time.Now().Format("2006-01-02T15-04")
 		err = ioutil.CopyFile(bakFile, KubeConfigPath())
 		if err != nil {
-			log.Fatalln(err)
+			return errors.Wrapf(err, "failed to create backup of current config")
 		}
 		term.Infoln(fmt.Sprintf("Current Kubeconfig is backed up as %s.", bakFile))
 	} else {
@@ -70,13 +69,15 @@ func UseCluster(ctx context.Context, opts *options.ClusterUseConfig, konf *api.K
 
 	err := os.MkdirAll(filepath.Dir(KubeConfigPath()), 0755)
 	if err != nil {
-		log.Fatalln(err)
+		return errors.Wrapf(err, "failed to create kubeconfig file")
 	}
 	err = clientcmd.WriteToFile(*konfig, KubeConfigPath())
 	if err != nil {
-		log.Fatalln(err)
+		return errors.Wrapf(err, "failed to write kubeconfig")
 	}
+
 	term.Successln(fmt.Sprintf("kubectl context set to cluster `%s`.", opts.ClusterName))
+	return nil
 }
 
 func toCluster(desired api.NamedCluster) *clientcmdapi.Cluster {

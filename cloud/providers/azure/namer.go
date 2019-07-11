@@ -73,7 +73,10 @@ func (n namer) GeneratePublicLBName() string {
 // GeneratePublicIPName generates a public IP name, based on the cluster name and a hash.
 func (n namer) GeneratePublicIPName() string {
 	h := fnv.New32a()
-	h.Write([]byte(fmt.Sprintf("%s/%s/%s", n.cluster.Spec.Config.Cloud.Azure.SubscriptionID, n.ResourceGroupName(), n.cluster.Name)))
+	_, err := h.Write([]byte(fmt.Sprintf("%s/%s/%s", n.cluster.Spec.Config.Cloud.Azure.SubscriptionID, n.ResourceGroupName(), n.cluster.Name)))
+	if err != nil {
+		return ""
+	}
 	hash := fmt.Sprintf("%x", h.Sum32())
 
 	return fmt.Sprintf("%s-%s", n.cluster.Name, hash)

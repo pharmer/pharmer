@@ -1,5 +1,9 @@
 package aws
 
+func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
+	return ControllerManager, nil
+}
+
 // ControllerManager defines the clusterapi crds and controllers
 const ControllerManager = `
 ---
@@ -762,7 +766,7 @@ spec:
         name: certs
       - name: credentials
         secret:
-          secretName: aws-provider-manager-bootstrap-credentials-kt5bhb6h9c
+          secretName: aws-provider-manager-bootstrap-credentials
 ---
 apiVersion: v1
 kind: Namespace

@@ -105,6 +105,11 @@ func (s *credentialFileStore) Delete(name string) error {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
+	_, exist := s.container[s.resourceID(name)]
+	if !exist {
+		return errors.New("credential not found")
+	}
+
 	delete(s.container, s.resourceID(name))
 	return nil
 }

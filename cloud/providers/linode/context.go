@@ -1,28 +1,23 @@
 package linode
 
 import (
-	"context"
-	"sync"
-
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type ClusterManager struct {
-	ctx     context.Context
-	cluster *api.Cluster
-	conn    *cloudConnector
-	m       sync.Mutex
+	*cloud.Scope
 
+	conn  *cloudConnector
 	namer namer
-
-	owner string
 }
 
-var _ Interface = &ClusterManager{}
+var _ cloud.Interface = &ClusterManager{}
 
 const (
 	UID      = "linode"
@@ -30,45 +25,64 @@ const (
 )
 
 func init() {
-	RegisterCloudManager(UID, func(ctx context.Context) (Interface, error) { return New(ctx), nil })
+	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(ctx context.Context) Interface {
-	return &ClusterManager{ctx: ctx}
+func New(s *cloud.Scope) cloud.Interface {
+	return &ClusterManager{
+		Scope: s,
+		namer: namer{
+			cluster: s.Cluster,
+		},
+	}
 }
 
-type paramK8sClient struct{}
+func (cm *ClusterManager) ApplyScale() error {
+	panic("implement me")
+}
 
-func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
-	ma := NewMachineActuator(MachineActuatorParams{
-		Ctx:           cm.ctx,
-		EventRecorder: mgr.GetEventRecorderFor(Recorder),
-		Client:        mgr.GetClient(),
-		Scheme:        mgr.GetScheme(),
-		Owner:         cm.owner,
+func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
+	cred, err := cm.GetCredential()
+	if err != nil {
+		return err
+	}
+	err = kube.CreateCredentialSecret(kc, cm.Cluster.CloudProvider(), metav1.NamespaceSystem, cred.Spec.Data)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create credential for pharmer-flex")
+	}
+
+	// create ccm secret
+
+	err = kube.CreateSecret(kc, "ccm-linode", metav1.NamespaceSystem, map[string][]byte{
+		"apiToken": []byte(cred.Spec.Data["token"]),
+		"region":   []byte(cm.Cluster.ClusterConfig().Cloud.Region),
 	})
-	common.RegisterClusterProvisioner(UID, ma)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create ccm-secret")
+	}
 	return nil
 }
 
-func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
-	cm.m.Lock()
-	defer cm.m.Unlock()
-
-	v := cm.ctx.Value(paramK8sClient{})
-	if kc, ok := v.(kubernetes.Interface); ok && kc != nil {
-		return kc, nil
-	}
+func (cm *ClusterManager) SetCloudConnector() error {
 	var err error
 
-	cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		return nil, err
+	if cm.conn, err = newconnector(cm); err != nil {
+		return err
 	}
-	kc, err := NewAdminClient(cm.ctx, cm.cluster)
-	if err != nil {
-		return nil, err
-	}
-	cm.ctx = context.WithValue(cm.ctx, paramK8sClient{}, kc)
-	return kc, nil
+
+	return nil
+}
+
+func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
+	return ControllerManager, nil
+}
+
+func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
+	ma := NewMachineActuator(MachineActuatorParams{
+		EventRecorder: mgr.GetEventRecorderFor(Recorder),
+		Client:        mgr.GetClient(),
+		Scheme:        mgr.GetScheme(),
+	})
+	common.RegisterClusterProvisioner(UID, ma)
+	return nil
 }

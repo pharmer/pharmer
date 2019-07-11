@@ -4,75 +4,93 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
 
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes" //"fmt"
-	"k8s.io/client-go/rest"       //"gomodules.xyz/cert"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	clientcmd "k8s.io/client-go/tools/clientcmd/api/v1"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type ClusterManager struct {
-	ctx     context.Context
-	cluster *api.Cluster
-	conn    *cloudConnector
-	// Deprecated
-	namer namer
-	m     sync.Mutex
+	*cloud.Scope
 
-	owner string
+	conn *cloudConnector
+
+	namer namer
 }
 
-var _ Interface = &ClusterManager{}
+var _ cloud.Interface = &ClusterManager{}
 
 const (
-	UID              = "aks"
-	RoleClusterUser  = "clusterUser"
-	RoleClusterAdmin = "clusterAdmin"
+	UID             = "aks"
+	RoleClusterUser = "clusterUser"
 )
 
 func init() {
-	RegisterCloudManager(UID, func(ctx context.Context) (Interface, error) { return New(ctx), nil })
+	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(ctx context.Context) Interface {
-	return &ClusterManager{ctx: ctx}
+func New(s *cloud.Scope) cloud.Interface {
+	return &ClusterManager{
+		Scope: s,
+		namer: namer{cluster: s.Cluster},
+	}
 }
 
-// AddToManager adds all Controllers to the Manager
-func (cm *ClusterManager) AddToManager(ctx context.Context, m manager.Manager) error {
+func (cm *ClusterManager) AddToManager(m manager.Manager) error {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 	return nil
 }
 
-type paramK8sClient struct{}
+func (cm *ClusterManager) SetCloudConnector() error {
+	conn, err := newconnector(cm)
+	cm.conn = conn
+	return err
+}
+
+func (cm *ClusterManager) NewMasterTemplateData(machine *v1alpha1.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) NewNodeTemplateData(machine *v1alpha1.Machine, token string, td cloud.TemplateData) cloud.TemplateData {
+	panic("implement me")
+}
+
+func (cm *ClusterManager) EnsureMaster(_ *v1alpha1.Machine) error {
+	return nil
+}
+
+func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
+	return ""
+}
+
+func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
+	panic("implement me")
+}
 
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 	return nil
 }
 
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
-	cm.m.Lock()
-	defer cm.m.Unlock()
-
-	v := cm.ctx.Value(paramK8sClient{})
-	if kc, ok := v.(kubernetes.Interface); ok && kc != nil {
-		return kc, nil
+	if cm.AdminClient != nil {
+		return cm.AdminClient, nil
 	}
-
-	kc, err := cm.GetAKSAdminClient()
-	if err != nil {
-		return nil, err
-	}
-	cm.ctx = context.WithValue(cm.ctx, paramK8sClient{}, kc)
-	return kc, nil
+	client, err := cm.GetAKSAdminClient()
+	cm.AdminClient = client
+	return cm.AdminClient, err
 }
 
 func (cm *ClusterManager) GetAKSAdminClient() (kubernetes.Interface, error) {
-	resp, err := cm.conn.managedClient.GetAccessProfile(context.Background(), cm.namer.ResourceGroupName(), cm.cluster.Name, RoleClusterUser)
+	resp, err := cm.conn.managedClient.GetAccessProfile(context.Background(), cm.namer.ResourceGroupName(), cm.Cluster.Name, RoleClusterUser)
 	if err != nil {
 		return nil, err
 	}
@@ -100,15 +118,15 @@ func (cm *ClusterManager) GetAKSAdminClient() (kubernetes.Interface, error) {
 
 }
 
-func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
+func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 	var err error
-	cm.cluster = cluster
-	cm.namer = namer{cluster: cm.cluster}
-	if cm.conn, err = NewConnector(cm.ctx, cm.cluster, cm.owner); err != nil {
+	cluster := cm.Cluster
+	cm.namer = namer{cluster: cluster}
+	if cm.conn, err = newconnector(cm); err != nil {
 		return nil, err
 	}
 
-	resp, err := cm.conn.managedClient.GetAccessProfile(context.Background(), cm.namer.ResourceGroupName(), cm.cluster.Name, RoleClusterUser)
+	resp, err := cm.conn.managedClient.GetAccessProfile(context.Background(), cm.namer.ResourceGroupName(), cm.Cluster.Name, RoleClusterUser)
 	if err != nil {
 		return nil, err
 	}

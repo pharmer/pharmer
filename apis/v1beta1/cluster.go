@@ -2,8 +2,10 @@ package v1beta1
 
 import (
 	"fmt"
+	"time"
 
-	version "gomodules.xyz/version"
+	"github.com/appscode/go/sets"
+	"gomodules.xyz/version"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
@@ -11,12 +13,18 @@ import (
 )
 
 const (
-	ResourceCodeCluster = ""
 	ResourceKindCluster = "Cluster"
 	ResourceNameCluster = "cluster"
 	ResourceTypeCluster = "clusters"
 
 	DefaultKubernetesBindPort = 6443
+
+	RetryInterval      = 5 * time.Second
+	RetryTimeout       = 15 * time.Minute
+	ServiceAccountName = "default"
+	calicoPodSubnet    = "192.168.0.0/16"
+	flannelPodSubnet   = "10.244.0.0/16"
+	canalPodSubnet     = "10.244.0.0/16"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -29,18 +37,16 @@ type Cluster struct {
 }
 
 type PharmerClusterSpec struct {
-	ClusterAPI *clusterapi.Cluster `json:"clusterApi,omitempty"`
-	Config     *ClusterConfig      `json:"config,omitempty"`
+	ClusterAPI clusterapi.Cluster `json:"clusterApi,omitempty"`
+	Config     ClusterConfig      `json:"config,omitempty"`
 }
 
 type ClusterConfig struct {
-	MasterCount          int       `json:"masterCount"`
-	Cloud                CloudSpec `json:"cloud"`
-	KubernetesVersion    string    `json:"kubernetesVersion,omitempty"`
-	Locked               bool      `json:"locked,omitempty"`
-	CACertName           string    `json:"caCertName,omitempty"`
-	FrontProxyCACertName string    `json:"frontProxyCACertName,omitempty"`
-	CredentialName       string    `json:"credentialName,omitempty"`
+	MasterCount       int       `json:"masterCount"`
+	Cloud             CloudSpec `json:"cloud"`
+	KubernetesVersion string    `json:"kubernetesVersion,omitempty"`
+	CredentialName    string    `json:"credentialName,omitempty"`
+	SSHUserName       string    `json:"sshUserName,omitempty"`
 
 	KubeletExtraArgs           map[string]string `json:"kubeletExtraArgs,omitempty"`
 	APIServerExtraArgs         map[string]string `json:"apiServerExtraArgs,omitempty"`
@@ -66,7 +72,6 @@ type CloudSpec struct {
 	OS                   string      `json:"os,omitempty"`
 	InstanceImageProject string      `json:"instanceImageProject,omitempty"`
 	NetworkProvider      string      `json:"networkProvider,omitempty"` // kubenet, flannel, calico, opencontrail
-	CCMCredentialName    string      `json:"ccmCredentialName,omitempty"`
 	SSHKeyName           string      `json:"sshKeyName,omitempty"`
 	AWS                  *AWSSpec    `json:"aws,omitempty"`
 	GCE                  *GoogleSpec `json:"gce,omitempty"`
@@ -171,7 +176,7 @@ type AzureCloudConfig struct {
 type LinodeSpec struct {
 	// Linode
 	RootPassword string `json:"rootPassword,omitempty"`
-	KernelId     string `json:"kernelId,omitempty"`
+	KernelID     string `json:"kernelId,omitempty"`
 }
 
 type LinodeCloudConfig struct {
@@ -181,7 +186,7 @@ type LinodeCloudConfig struct {
 
 type PacketCloudConfig struct {
 	Project string `json:"project,omitempty"`
-	ApiKey  string `json:"apiKey,omitempty"`
+	APIKey  string `json:"apiKey,omitempty"`
 	Zone    string `json:"zone,omitempty"`
 }
 
@@ -206,7 +211,7 @@ const (
 )
 
 type CloudStatus struct {
-	SShKeyExternalID string       `json:"sshKeyExternalID,omitempty"`
+	SSHKeyExternalID string       `json:"sshKeyExternalID,omitempty"`
 	AWS              *AWSStatus   `json:"aws,omitempty"`
 	EKS              *EKSStatus   `json:"eks,omitempty"`
 	LoadBalancer     LoadBalancer `json:"loadBalancer,omitempty"`
@@ -226,8 +231,8 @@ type AWSStatus struct {
 
 type EKSStatus struct {
 	SecurityGroup string `json:"securityGroup,omitempty"`
-	VpcId         string `json:"vpcID,omitempty"`
-	SubnetId      string `json:"subnetID,omitempty"`
+	VpcID         string `json:"vpcID,omitempty"`
+	SubnetID      string `json:"subnetID,omitempty"`
 	RoleArn       string `json:"roleArn,omitempty"`
 }
 
@@ -244,43 +249,46 @@ type ReservedIP struct {
 	Name string `json:"name,omitempty"`
 }
 
-func (c *Cluster) ClusterConfig() *ClusterConfig {
+var ManagedProviders = sets.NewString("aks", "gke", "eks", "dokube")
+
+func (c *Cluster) ClusterConfig() ClusterConfig {
 	return c.Spec.Config
 }
 
 func (c *Cluster) APIServerURL() string {
 	for _, addr := range c.Spec.ClusterAPI.Status.APIEndpoints {
+		if addr.Host == "" {
+			continue
+		}
 		if addr.Port == 0 {
 			return fmt.Sprintf("https://%s", addr.Host)
-		} else {
-			return fmt.Sprintf("https://%s:%d", addr.Host, addr.Port)
 		}
-
+		return fmt.Sprintf("https://%s:%d", addr.Host, addr.Port)
 	}
 	return ""
 }
 
-func (c *Cluster) SetClusterApiEndpoints(addresses []core.NodeAddress) error {
+func (c *Cluster) SetClusterAPIEndpoints(addresses []core.NodeAddress) error {
 	m := map[core.NodeAddressType]string{}
 	for _, addr := range addresses {
 		m[addr.Type] = addr.Address
 
 	}
-	if u, found := m[core.NodeExternalIP]; found {
+	if u, found := m[core.NodeExternalIP]; found && u != "" {
 		c.Spec.ClusterAPI.Status.APIEndpoints = append(c.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
 			Host: u,
 			Port: int(DefaultKubernetesBindPort),
 		})
 		return nil
 	}
-	if u, found := m[core.NodeExternalDNS]; found {
+	if u, found := m[core.NodeExternalDNS]; found && u != "" {
 		c.Spec.ClusterAPI.Status.APIEndpoints = append(c.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
 			Host: u,
 			Port: int(DefaultKubernetesBindPort),
 		})
 		return nil
 	}
-	return fmt.Errorf("No cluster api endpoint found")
+	return fmt.Errorf("no cluster api endpoint found")
 }
 
 func (c *Cluster) APIServerAddress() string {
@@ -291,10 +299,8 @@ func (c *Cluster) APIServerAddress() string {
 	ep := endpoints[0]
 	if ep.Port == 0 {
 		return ep.Host
-	} else {
-		return fmt.Sprintf("%s:%d", ep.Host, ep.Port)
 	}
-
+	return fmt.Sprintf("%s:%d", ep.Host, ep.Port)
 }
 
 func (c *Cluster) SetNetworkingDefaults(provider string) {
@@ -310,36 +316,22 @@ func (c *Cluster) SetNetworkingDefaults(provider string) {
 		podSubnet := ""
 		switch provider {
 		case PodNetworkCalico:
-			podSubnet = "192.168.0.0/16"
+			podSubnet = calicoPodSubnet
 		case PodNetworkFlannel:
-			podSubnet = "10.244.0.0/16"
+			podSubnet = flannelPodSubnet
 		case PodNetworkCanal:
-			podSubnet = "10.244.0.0/16"
+			podSubnet = canalPodSubnet
 		}
 		clusterSpec.ClusterNetwork.Pods.CIDRBlocks = []string{podSubnet}
 	}
 }
 
-func (c *Cluster) InitClusterApi() {
-	c.Spec.ClusterAPI = &clusterapi.Cluster{
+func (c *Cluster) InitClusterAPI() {
+	c.Spec.ClusterAPI = clusterapi.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: c.Name,
 		},
 	}
-}
-
-func (c Cluster) IsMinorVersion(in string) bool {
-	v, err := version.NewVersion(c.Spec.Config.KubernetesVersion)
-	if err != nil {
-		return false
-	}
-	minor := v.ToMutator().ResetMetadata().ResetPrerelease().ResetPatch().String()
-
-	inVer, err := version.NewVersion(in)
-	if err != nil {
-		return false
-	}
-	return inVer.String() == minor
 }
 
 func (c Cluster) IsLessThanVersion(in string) bool {
@@ -352,4 +344,16 @@ func (c Cluster) IsLessThanVersion(in string) bool {
 		return false
 	}
 	return v.LessThan(inVer)
+}
+
+func (c *Cluster) GenSSHKeyExternalID() string {
+	return c.Name + "-sshkey"
+}
+
+func (c *Cluster) MasterMachineName(n int) string {
+	return fmt.Sprintf("%v-master-%v", c.Name, n)
+}
+
+func (c *Cluster) CloudProvider() string {
+	return c.Spec.Config.Cloud.CloudProvider
 }

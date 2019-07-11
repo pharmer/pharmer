@@ -49,7 +49,6 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/nats-io/stan.go v0.4.4
 	github.com/ncw/swift v1.0.47 // indirect
-	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/packethost/packngo v0.1.1-0.20190507131943-1343be729ca2
 	github.com/pharmer/cloud v0.2.0
@@ -60,26 +59,25 @@ require (
 	github.com/spf13/cobra v0.0.4
 	github.com/spf13/pflag v1.0.3
 	github.com/ziutek/mymysql v1.5.4 // indirect
-	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f
-	golang.org/x/net v0.0.0-20190514140710-3ec191127204
+	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
+	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980 // indirect
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
-	golang.org/x/sys v0.0.0-20190516110030-61b9204099cb // indirect
+	golang.org/x/sys v0.0.0-20190613124609-5ed2794edfdc // indirect
 	gomodules.xyz/cert v1.0.0
 	gomodules.xyz/version v0.0.0-20190507203204-7cec7ee542d3
 	google.golang.org/api v0.5.0
 	gopkg.in/AlecAivazis/survey.v1 v1.6.1
 	gopkg.in/ini.v1 v1.42.0
 	gopkg.in/yaml.v2 v2.2.2
-	k8s.io/api v0.0.0-20190515023547-db5a9d1c40eb
+	k8s.io/api v0.0.0-20190531132109-d3f5f50bdd94
 	k8s.io/apiextensions-apiserver v0.0.0-20190515024537-2fd0e9006049
-	k8s.io/apimachinery v0.0.0-20190515023456-b74e4c97951f
-	k8s.io/apiserver v0.0.0-20190515064100-fc28ef5782df // indirect
+	k8s.io/apimachinery v0.0.0-20190531131812-859a0ba5e71a
 	k8s.io/cli-runtime v0.0.0-20190515024640-178667528169
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/cluster-bootstrap v0.0.0-20181204005900-2d1c733eadd0
 	k8s.io/component-base v0.0.0-20190515024022-2354f2393ad4 // indirect
-	k8s.io/klog v0.3.1 // indirect
 	k8s.io/kubernetes v1.14.2
+	k8s.io/sample-controller v0.0.0-20190531134801-325dc0a18ed9
 	kmodules.xyz/client-go v0.0.0-20190524133821-9c8a87771aea
 	sigs.k8s.io/cluster-api v0.0.0-20190508175234-0f911c1f65a5
 	sigs.k8s.io/controller-runtime v0.2.0-alpha.1

@@ -7,15 +7,9 @@ import (
 )
 
 // AddToManagerFuncs is a list of functions to add all Controllers to the Manager
-var AddToManagerFuncs []func(context.Context, manager.Manager, string) error
+var AddToManagerFuncs []func(context.Context, manager.Manager) error
 
 // AddToManager adds all Controllers to the Manager
-func (cm *ClusterManager) AddToManager(ctx context.Context, m manager.Manager) error {
-	for _, f := range AddToManagerFuncs {
-		if err := f(ctx, m, cm.owner); err != nil {
-			return err
-		}
-	}
-
+func (cm *ClusterManager) AddToManager(m manager.Manager) error {
 	return nil
 }

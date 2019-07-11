@@ -3,22 +3,20 @@ package gce
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
 
-	. "github.com/appscode/go/context"
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
 	proconfig "github.com/pharmer/pharmer/apis/v1beta1/gce"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
+	"google.golang.org/api/option"
 	rupdate "google.golang.org/api/replicapoolupdater/v1beta1"
 	gcs "google.golang.org/api/storage/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -28,86 +26,69 @@ import (
 
 const (
 	ProviderName                 = "gce"
-	TemplateURI                  = "https://www.googleapis.com/compute/v1/projects/"
 	firewallRuleAnnotationPrefix = "gce.clusterapi.k8s.io/firewall"
 	firewallRuleInternalSuffix   = "-allow-cluster-internal"
-	firewallRuleApiSuffix        = "-allow-api-public"
-
-	ProjectAnnotationKey = "gcp-project"
-	ZoneAnnotationKey    = "gcp-zone"
-	NameAnnotationKey    = "gcp-name"
+	firewallRuleAPISuffix        = "-allow-api-public"
+	statusDone                   = "DONE"
 )
 
-var providerIdRE = regexp.MustCompile(`^` + ProviderName + `://([^/]+)/([^/]+)/([^/]+)$`)
-var templateNameRE = regexp.MustCompile(`^` + TemplateURI + `([^/]+)/global/instanceTemplates/([^/]+)$`)
-
 type cloudConnector struct {
-	ctx     context.Context
-	cluster *api.Cluster
-	namer   namer
+	*cloud.Scope
 
+	namer          namer
 	computeService *compute.Service
 	storageService *gcs.Service
 	updateService  *rupdate.Service
-
-	owner string
 }
 
-func NewConnector(cm *ClusterManager) (*cloudConnector, error) {
-	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(cm.cluster.ClusterConfig().CredentialName)
+func newconnector(cm *ClusterManager) (*cloudConnector, error) {
+	cred, err := cm.StoreProvider.Credentials().Get(cm.Cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
 	}
 	typed := credential.GCE{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
-		return nil, errors.Wrapf(err, "credential %s is invalid", cm.cluster.Spec.Config.CredentialName)
+		return nil, errors.Wrapf(err, "credential %s is invalid", cm.Cluster.Spec.Config.CredentialName)
 	}
 
-	cm.cluster.Spec.Config.Cloud.Project = typed.ProjectID()
-	conf, err := google.JWTConfigFromJSON([]byte(typed.ServiceAccount()),
-		compute.ComputeScope,
-		compute.DevstorageReadWriteScope,
-		rupdate.ReplicapoolScope)
+	cm.Cluster.Spec.Config.Cloud.Project = typed.ProjectID()
+
+	serviceOpt := option.WithCredentialsJSON([]byte(typed.ServiceAccount()))
+
+	computeService, err := compute.NewService(context.Background(), serviceOpt)
 	if err != nil {
-		return nil, errors.Wrap(err, ID(cm.ctx))
+		return nil, errors.Wrap(err, "")
 	}
-	client := conf.Client(context.Background())
-	computeService, err := compute.New(client)
+	storageService, err := gcs.NewService(context.Background(), serviceOpt)
 	if err != nil {
-		return nil, errors.Wrap(err, ID(cm.ctx))
+		return nil, errors.Wrap(err, "")
 	}
-	storageService, err := gcs.New(client)
+	updateService, err := rupdate.NewService(context.Background(), serviceOpt)
 	if err != nil {
-		return nil, errors.Wrap(err, ID(cm.ctx))
-	}
-	updateService, err := rupdate.New(client)
-	if err != nil {
-		return nil, errors.Wrap(err, ID(cm.ctx))
+		return nil, errors.Wrap(err, "")
 	}
 
-	clusterConfig, err := clusterapiGCE.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	clusterConfig, err := clusterapiGCE.ClusterConfigFromProviderSpec(cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error decoding cluster specs from provider config")
 	}
-	clusterConfig.Project = cm.cluster.Spec.Config.Cloud.Project
+	clusterConfig.Project = cm.Cluster.Spec.Config.Cloud.Project
 
 	rawSpec, err := clusterapiGCE.EncodeClusterSpec(clusterConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to encode cluster spec")
 	}
-	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
+	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
 
 	conn := cloudConnector{
-		ctx:            cm.ctx,
-		cluster:        cm.cluster,
+		Scope:          cm.Scope,
+		namer:          namer{cm.Cluster},
 		computeService: computeService,
 		storageService: storageService,
 		updateService:  updateService,
-		owner:          cm.owner,
-		namer:          cm.namer,
 	}
 	if ok, msg := conn.IsUnauthorized(typed.ProjectID()); !ok {
-		return nil, errors.Errorf("Credential %s does not have necessary authorization. Reason: %s.", cm.cluster.Spec.Config.CredentialName, msg)
+		return nil, errors.Errorf("Credential %s does not have necessary authorization. Reason: %s.", cm.Cluster.Spec.Config.CredentialName, msg)
 	}
 	return &conn, nil
 }
@@ -125,23 +106,10 @@ func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data
 	return nil
 }
 
-func PrepareCloud(cm *ClusterManager) error {
+func (cm *ClusterManager) SetCloudConnector() error {
 	var err error
 
-	if cm.ctx, err = LoadCACertificates(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return err
-	}
-	if cm.ctx, err = LoadEtcdCertificate(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return err
-	}
-	if cm.ctx, err = LoadSSHKey(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return err
-	}
-	if cm.ctx, err = LoadSaKey(cm.ctx, cm.cluster, cm.owner); err != nil {
-		return err
-	}
-
-	if cm.conn, err = NewConnector(cm); err != nil {
+	if cm.conn, err = newconnector(cm); err != nil {
 		return err
 	}
 
@@ -153,11 +121,11 @@ func errAlreadyExists(err error) bool {
 }
 
 func (conn *cloudConnector) getLoadBalancer() (string, error) {
-	log.Infof("Getting Load Balancer for cluster %s", conn.cluster.Name)
+	log.Infof("Getting Load Balancer for cluster %s", conn.Cluster.Name)
 
-	project := conn.cluster.Spec.Config.Cloud.Project
-	region := conn.cluster.Spec.Config.Cloud.Region
-	clusterName := conn.cluster.Name
+	project := conn.Cluster.Spec.Config.Cloud.Project
+	region := conn.Cluster.Spec.Config.Cloud.Region
+	clusterName := conn.Cluster.Name
 	name := fmt.Sprintf("%s-apiserver", clusterName)
 
 	address, err := conn.computeService.Addresses.Get(project, region, name).Do()
@@ -177,17 +145,17 @@ func (conn *cloudConnector) getLoadBalancer() (string, error) {
 		return "", errors.Wrap(err, "Error getting forwarding rules for load balancer")
 	}
 
-	log.Infof("Successfully found load balancer for cluster %s", conn.cluster.Name)
+	log.Infof("Successfully found load balancer for cluster %s", conn.Cluster.Name)
 	return address.Address, nil
 }
 
 func (conn *cloudConnector) createLoadBalancer(leaderMachine string) (string, error) {
-	log.Infof("Creating load balancer cluster %s", conn.cluster.Name)
+	log.Infof("Creating load balancer cluster %s", conn.Cluster.Name)
 
-	project := conn.cluster.Spec.Config.Cloud.Project
-	region := conn.cluster.Spec.Config.Cloud.Region
-	zone := conn.cluster.Spec.Config.Cloud.Zone
-	clusterName := conn.cluster.Name
+	project := conn.Cluster.Spec.Config.Cloud.Project
+	region := conn.Cluster.Spec.Config.Cloud.Region
+	zone := conn.Cluster.Spec.Config.Cloud.Zone
+	clusterName := conn.Cluster.Name
 	name := conn.namer.loadBalancerName()
 
 	addressOp, err := conn.computeService.Addresses.Insert(project, region, &compute.Address{
@@ -254,9 +222,9 @@ func (conn *cloudConnector) createLoadBalancer(leaderMachine string) (string, er
 func (conn *cloudConnector) deleteLoadBalancer() error {
 	log.Infof("Deleting load balancer")
 
-	project := conn.cluster.Spec.Config.Cloud.Project
-	region := conn.cluster.Spec.Config.Cloud.Region
-	clusterName := conn.cluster.Name
+	project := conn.Cluster.Spec.Config.Cloud.Project
+	region := conn.Cluster.Spec.Config.Cloud.Region
+	clusterName := conn.Cluster.Name
 	name := fmt.Sprintf("%s-apiserver", clusterName)
 
 	if _, err := conn.computeService.Addresses.Get(project, region, name).Do(); err == nil {
@@ -308,10 +276,10 @@ func (conn *cloudConnector) deleteLoadBalancer() error {
 }
 
 func (conn *cloudConnector) deleteInstance(name string) error {
-	Logger(conn.ctx).Info("Deleting instance...")
-	r, err := conn.computeService.Instances.Delete(conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Zone, name).Do()
+	log.Info("Deleting instance...")
+	r, err := conn.computeService.Instances.Delete(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, name).Do()
 	if err != nil {
-		return errors.Wrap(err, ID(conn.ctx))
+		return errors.Wrap(err, "")
 	}
 	err = conn.waitForZoneOperation(r.Name)
 	if err != nil {
@@ -322,15 +290,15 @@ func (conn *cloudConnector) deleteInstance(name string) error {
 
 func (conn *cloudConnector) waitForGlobalOperation(operation string) error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
-		r1, err := conn.computeService.GlobalOperations.Get(conn.cluster.Spec.Config.Cloud.Project, operation).Do()
+		r1, err := conn.computeService.GlobalOperations.Get(conn.Cluster.Spec.Config.Cloud.Project, operation).Do()
 		if err != nil && errDeleted(err) {
 			return false, nil
 		}
-		Logger(conn.ctx).Infof("Attempt %v: Operation %v is %v ...", attempt, operation, r1.Status)
-		if r1.Status == "DONE" {
+		log.Infof("Attempt %v: Operation %v is %v ...", attempt, operation, r1.Status)
+		if r1.Status == statusDone {
 			return true, nil
 		}
 		return false, nil
@@ -339,18 +307,18 @@ func (conn *cloudConnector) waitForGlobalOperation(operation string) error {
 
 func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
-		r1, err := conn.computeService.RegionOperations.Get(conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Region, operation).Do()
+		r1, err := conn.computeService.RegionOperations.Get(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Region, operation).Do()
 		if err != nil && !errDeleted(err) {
 			log.Info(err)
 			return false, nil
 		} else if err != nil && errDeleted(err) {
 			return true, nil
 		}
-		Logger(conn.ctx).Infof("Attempt %v: Operation %v is in state %v ...", attempt, operation, r1.Status)
-		if r1.Status == "DONE" {
+		log.Infof("Attempt %v: Operation %v is in state %v ...", attempt, operation, r1.Status)
+		if r1.Status == statusDone {
 			return true, nil
 		}
 		return false, nil
@@ -359,17 +327,17 @@ func (conn *cloudConnector) waitForRegionOperation(operation string) error {
 
 func (conn *cloudConnector) waitForZoneOperation(operation string) error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
-		r1, err := conn.computeService.ZoneOperations.Get(conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Zone, operation).Do()
+		r1, err := conn.computeService.ZoneOperations.Get(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, operation).Do()
 		if err != nil && !errDeleted(err) {
 			return false, nil
 		} else if err != nil && errDeleted(err) {
 			return true, nil
 		}
-		Logger(conn.ctx).Infof("Attempt %v: Operation %v is %v ...", attempt, operation, r1.Status)
-		if r1.Status == "DONE" {
+		log.Infof("Attempt %v: Operation %v is %v ...", attempt, operation, r1.Status)
+		if r1.Status == statusDone {
 			return true, nil
 		}
 		return false, nil
@@ -381,33 +349,32 @@ func errDeleted(err error) bool {
 }
 
 func (conn *cloudConnector) importPublicKey() error {
-	Logger(conn.ctx).Infof("Importing SSH key with fingerprint: %v", SSHKey(conn.ctx).OpensshFingerprint)
-	pubKey := string(SSHKey(conn.ctx).PublicKey)
-	r1, err := conn.computeService.Projects.SetCommonInstanceMetadata(conn.cluster.Spec.Config.Cloud.Project, &compute.Metadata{
+	pubKey := string(conn.Certs.SSHKey.PublicKey)
+	r1, err := conn.computeService.Projects.SetCommonInstanceMetadata(conn.Cluster.Spec.Config.Cloud.Project, &compute.Metadata{
 		Items: []*compute.MetadataItems{
 			{
-				Key:   conn.cluster.Spec.Config.Cloud.SSHKeyName,
+				Key:   conn.Cluster.Spec.Config.Cloud.SSHKeyName,
 				Value: &pubKey,
 			},
 		},
 	}).Do()
 	if err != nil {
-		return errors.Wrap(err, ID(conn.ctx))
+		return errors.Wrap(err, "")
 	}
 
 	err = conn.waitForGlobalOperation(r1.Name)
 	if err != nil {
-		return errors.Wrap(err, ID(conn.ctx))
+		return errors.Wrap(err, "")
 	}
-	Logger(conn.ctx).Debug("Imported SSH key")
-	Logger(conn.ctx).Info("SSH key imported")
+	log.Debug("Imported SSH key")
+	log.Info("SSH key imported")
 	return nil
 }
 
 func (conn *cloudConnector) getNetworks() (bool, error) {
-	Logger(conn.ctx).Infof("Retrieving network %v for project %v", defaultNetwork, conn.cluster.Spec.Config.Cloud.Project)
-	r1, err := conn.computeService.Networks.Get(conn.cluster.Spec.Config.Cloud.Project, defaultNetwork).Do()
-	Logger(conn.ctx).Debug("Retrieve network result", r1, err)
+	log.Infof("Retrieving network %v for project %v", defaultNetwork, conn.Cluster.Spec.Config.Cloud.Project)
+	r1, err := conn.computeService.Networks.Get(conn.Cluster.Spec.Config.Cloud.Project, defaultNetwork).Do()
+	log.Debug("Retrieve network result", r1, err)
 	if err != nil {
 		return false, err
 	}
@@ -415,37 +382,37 @@ func (conn *cloudConnector) getNetworks() (bool, error) {
 }
 
 func (conn *cloudConnector) ensureNetworks() error {
-	Logger(conn.ctx).Infof("Retrieving network %v for project %v", defaultNetwork, conn.cluster.Spec.Config.Cloud.Project)
-	r2, err := conn.computeService.Networks.Insert(conn.cluster.Spec.Config.Cloud.Project, &compute.Network{
+	log.Infof("Retrieving network %v for project %v", defaultNetwork, conn.Cluster.Spec.Config.Cloud.Project)
+	r2, err := conn.computeService.Networks.Insert(conn.Cluster.Spec.Config.Cloud.Project, &compute.Network{
 		IPv4Range: "10.240.0.0/16",
 		Name:      defaultNetwork,
 	}).Do()
-	Logger(conn.ctx).Debug("Created new network", r2, err)
+	log.Debug("Created new network", r2, err)
 	if err != nil {
-		return errors.Wrap(err, ID(conn.ctx))
+		return errors.Wrap(err, "")
 	}
-	Logger(conn.ctx).Infof("New network %v is created", defaultNetwork)
+	log.Infof("New network %v is created", defaultNetwork)
 
 	return nil
 }
 
 func (conn *cloudConnector) getFirewallRules() (bool, error) {
-	ruleClusterInternal := conn.cluster.Name + firewallRuleInternalSuffix
-	Logger(conn.ctx).Infof("Retrieving firewall rule %v", ruleClusterInternal)
-	if r1, err := conn.computeService.Firewalls.Get(conn.cluster.Spec.Config.Cloud.Project, ruleClusterInternal).Do(); err != nil {
-		Logger(conn.ctx).Debug("Retrieved firewall rule", r1, err)
+	ruleClusterInternal := conn.Cluster.Name + firewallRuleInternalSuffix
+	log.Infof("Retrieving firewall rule %v", ruleClusterInternal)
+	if r1, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleClusterInternal).Do(); err != nil {
+		log.Debug("Retrieved firewall rule", r1, err)
 		return false, err
 	}
 
-	ruleSSH := conn.cluster.Name + "-allow-ssh"
-	if r2, err := conn.computeService.Firewalls.Get(conn.cluster.Spec.Config.Cloud.Project, ruleSSH).Do(); err != nil {
-		Logger(conn.ctx).Debug("Retrieved firewall rule", r2, err)
+	ruleSSH := conn.Cluster.Name + "-allow-ssh"
+	if r2, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleSSH).Do(); err != nil {
+		log.Debug("Retrieved firewall rule", r2, err)
 		return false, err
 	}
 
-	ruleApiPublic := conn.cluster.Name + firewallRuleApiSuffix
-	if r5, err := conn.computeService.Firewalls.Get(conn.cluster.Spec.Config.Cloud.Project, ruleApiPublic).Do(); err != nil {
-		Logger(conn.ctx).Debug("Retrieved firewall rule", r5, err)
+	ruleAPIPublic := conn.Cluster.Name + firewallRuleAPISuffix
+	if r5, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleAPIPublic).Do(); err != nil {
+		log.Debug("Retrieved firewall rule", r5, err)
 		return false, err
 	}
 
@@ -453,14 +420,14 @@ func (conn *cloudConnector) getFirewallRules() (bool, error) {
 }
 
 func (conn *cloudConnector) ensureFirewallRules() error {
-	network := fmt.Sprintf("projects/%v/global/networks/%v", conn.cluster.Spec.Config.Cloud.Project, defaultNetwork)
+	network := fmt.Sprintf("projects/%v/global/networks/%v", conn.Cluster.Spec.Config.Cloud.Project, defaultNetwork)
 	var err error
-	cluster := conn.cluster
+	cluster := conn.Cluster
 	ruleInternal := defaultNetwork + "-allow-internal"
-	if r1, err := conn.computeService.Firewalls.Get(conn.cluster.Spec.Config.Cloud.Project, ruleInternal).Do(); err != nil {
-		Logger(conn.ctx).Debug("Retrieved firewall rule", r1, err)
+	if r1, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleInternal).Do(); err != nil {
+		log.Debug("Retrieved firewall rule", r1, err)
 
-		r2, err := conn.computeService.Firewalls.Insert(conn.cluster.Spec.Config.Cloud.Project, &compute.Firewall{
+		r2, err := conn.computeService.Firewalls.Insert(conn.Cluster.Spec.Config.Cloud.Project, &compute.Firewall{
 			Name:         ruleInternal,
 			Network:      network,
 			SourceRanges: []string{"10.128.0.0/9"}, // 10.0.0.0/8
@@ -478,17 +445,17 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 				},
 			},
 		}).Do()
-		Logger(conn.ctx).Debug("Created firewall rule", r2, err)
+		log.Debug("Created firewall rule", r2, err)
 		if err != nil {
-			return errors.Wrap(err, ID(conn.ctx))
+			return errors.Wrap(err, "")
 		}
-		Logger(conn.ctx).Infof("Firewall rule %v created", ruleInternal)
+		log.Infof("Firewall rule %v created", ruleInternal)
 	}
 
 	ruleClusterInternal := cluster.Name + firewallRuleInternalSuffix
 
 	if r1, err := conn.computeService.Firewalls.Get(cluster.Spec.Config.Cloud.Project, ruleClusterInternal).Do(); err != nil {
-		Logger(conn.ctx).Debug("Retrieved firewall rule", r1, err)
+		log.Debug("Retrieved firewall rule", r1, err)
 
 		r2, err := conn.computeService.Firewalls.Insert(cluster.Spec.Config.Cloud.Project, &compute.Firewall{
 			Name:    ruleClusterInternal,
@@ -502,25 +469,25 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 			SourceTags: []string{conn.namer.cluster.Name + "-worker"},
 		}).Do()
 
-		Logger(conn.ctx).Debug("Created firewall rule", r2, err)
+		log.Debug("Created firewall rule", r2, err)
 		if err != nil {
-			return errors.Wrap(err, ID(conn.ctx))
+			return errors.Wrap(err, "")
 		}
-		Logger(conn.ctx).Infof("Firewall rule %v created", ruleClusterInternal)
+		log.Infof("Firewall rule %v created", ruleClusterInternal)
 	}
 	if cluster.Spec.ClusterAPI.ObjectMeta.Annotations == nil {
 		cluster.Spec.ClusterAPI.ObjectMeta.Annotations = make(map[string]string)
 	}
 	cluster.Spec.ClusterAPI.ObjectMeta.Annotations[firewallRuleAnnotationPrefix+ruleClusterInternal] = "true"
-	if conn.cluster, err = Store(conn.ctx).Owner(conn.owner).Clusters().Update(cluster); err != nil {
+	if conn.Cluster, err = conn.StoreProvider.Clusters().Update(cluster); err != nil {
 		return err
 	}
 
 	ruleSSH := cluster.Name + "-allow-ssh"
-	if r3, err := conn.computeService.Firewalls.Get(conn.cluster.Spec.Config.Cloud.Project, ruleSSH).Do(); err != nil {
-		Logger(conn.ctx).Debug("Retrieved firewall rule", r3, err)
+	if r3, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleSSH).Do(); err != nil {
+		log.Debug("Retrieved firewall rule", r3, err)
 
-		r4, err := conn.computeService.Firewalls.Insert(conn.cluster.Spec.Config.Cloud.Project, &compute.Firewall{
+		r4, err := conn.computeService.Firewalls.Insert(conn.Cluster.Spec.Config.Cloud.Project, &compute.Firewall{
 			Name:         ruleSSH,
 			Network:      network,
 			SourceRanges: []string{"0.0.0.0/0"},
@@ -531,18 +498,18 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 				},
 			},
 		}).Do()
-		Logger(conn.ctx).Debug("Created firewall rule", r4, err)
+		log.Debug("Created firewall rule", r4, err)
 		if err != nil {
-			return errors.Wrap(err, ID(conn.ctx))
+			return errors.Wrap(err, "")
 		}
-		Logger(conn.ctx).Infof("Firewall rule %v created", ruleSSH)
+		log.Infof("Firewall rule %v created", ruleSSH)
 	}
 
-	ruleApiPublic := cluster.Name + firewallRuleApiSuffix
+	ruleApiPublic := cluster.Name + firewallRuleAPISuffix
 
-	if r7, err := conn.computeService.Firewalls.Get(conn.cluster.Spec.Config.Cloud.Project, ruleApiPublic).Do(); err != nil {
-		Logger(conn.ctx).Debug("Retrieved firewall rule", r7, err)
-		r8, err := conn.computeService.Firewalls.Insert(conn.cluster.Spec.Config.Cloud.Project, &compute.Firewall{
+	if r7, err := conn.computeService.Firewalls.Get(conn.Cluster.Spec.Config.Cloud.Project, ruleApiPublic).Do(); err != nil {
+		log.Debug("Retrieved firewall rule", r7, err)
+		r8, err := conn.computeService.Firewalls.Insert(conn.Cluster.Spec.Config.Cloud.Project, &compute.Firewall{
 			Name:    ruleApiPublic,
 			Network: "global/networks/default",
 			Allowed: []*compute.FirewallAllowed{
@@ -559,16 +526,16 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 			SourceRanges: []string{"0.0.0.0/0"},
 		}).Do()
 
-		Logger(conn.ctx).Debug("Created firewall rule", r8, err)
+		log.Debug("Created firewall rule", r8, err)
 
 		if err != nil {
-			return errors.Wrap(err, ID(conn.ctx))
+			return errors.Wrap(err, "")
 		}
-		Logger(conn.ctx).Infof("Firewall rule %v created", ruleSSH)
+		log.Infof("Firewall rule %v created", ruleSSH)
 	}
 
 	cluster.Spec.ClusterAPI.ObjectMeta.Annotations[firewallRuleAnnotationPrefix+ruleApiPublic] = "true"
-	if conn.cluster, err = Store(conn.ctx).Owner(conn.owner).Clusters().Update(cluster); err != nil {
+	if conn.Cluster, err = conn.StoreProvider.Clusters().Update(cluster); err != nil {
 		return err
 	}
 	return nil
@@ -576,12 +543,12 @@ func (conn *cloudConnector) ensureFirewallRules() error {
 
 func (conn *cloudConnector) getMasterPDDisk(name string) (bool, error) {
 
-	if r, err := conn.computeService.Disks.Get(conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Zone, name).Do(); err != nil {
-		Logger(conn.ctx).Debug("Retrieved master persistent disk", r, err)
+	if r, err := conn.computeService.Disks.Get(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, name).Do(); err != nil {
+		log.Debug("Retrieved master persistent disk", r, err)
 		return false, err
 	}
 
-	//conn.cluster.Spec.MasterDiskId = name
+	//conn.Cluster.Spec.MasterDiskId = name
 	return true, nil
 }
 
@@ -589,48 +556,38 @@ func (conn *cloudConnector) createDisk(name, diskType string, sizeGb int64) (str
 	// Type:        "https://www.googleapis.com/compute/v1/projects/tigerworks-kube/zones/us-central1-b/diskTypes/pd-ssd",
 	// SourceImage: "https://www.googleapis.com/compute/v1/projects/google-containers/global/images/container-vm-v20150806",
 
-	dType := fmt.Sprintf("projects/%v/zones/%v/diskTypes/%v", conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Zone, diskType)
+	dType := fmt.Sprintf("projects/%v/zones/%v/diskTypes/%v", conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, diskType)
 
-	r1, err := conn.computeService.Disks.Insert(conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Zone, &compute.Disk{
+	r1, err := conn.computeService.Disks.Insert(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, &compute.Disk{
 		Name:   name,
-		Zone:   conn.cluster.Spec.Config.Cloud.Zone,
+		Zone:   conn.Cluster.Spec.Config.Cloud.Zone,
 		Type:   dType,
 		SizeGb: sizeGb,
 	}).Do()
 
-	Logger(conn.ctx).Debug("Created master disk", r1, err)
+	log.Debug("Created master disk", r1, err)
 	if err != nil {
-		return name, errors.Wrap(err, ID(conn.ctx))
+		return name, errors.Wrap(err, "")
 	}
 	err = conn.waitForZoneOperation(r1.Name)
 	if err != nil {
-		return name, errors.Wrap(err, ID(conn.ctx))
+		return name, errors.Wrap(err, "")
 	}
-	Logger(conn.ctx).Infof("Blank disk of type %v created before creating the master VM", dType)
+	log.Infof("Blank disk of type %v created before creating the master VM", dType)
 	return name, nil
 }
 
 func (conn *cloudConnector) getMasterInstance(machine *clusterv1.Machine) (bool, error) {
-	if r1, err := conn.computeService.Instances.Get(conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Zone, machine.Name).Do(); err != nil {
-		Logger(conn.ctx).Debug("Retrieved master instance", r1, err)
+	if r1, err := conn.computeService.Instances.Get(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, machine.Name).Do(); err != nil {
+		log.Debug("Retrieved master instance", r1, err)
 		return false, err
 	}
 	return true, nil
 }
 
-func (conn *cloudConnector) createMasterIntance(cluster *api.Cluster) (string, error) {
+func (conn *cloudConnector) createMasterIntance(machine *clusterv1.Machine, script string) (string, error) {
 	// MachineType:  "projects/tigerworks-kube/zones/us-central1-b/machineTypes/n1-standard-1",
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
-
-	machine, err := GetLeaderMachine(conn.ctx, conn.cluster, conn.owner)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get leader machine")
-	}
-
-	script, err := conn.renderStartupScript(cluster, machine, "")
-	if err != nil {
-		return "", err
-	}
 
 	if found, _ := conn.getMasterPDDisk(conn.namer.MachineDiskName(machine)); !found {
 		_, err := conn.createDisk(conn.namer.MachineDiskName(machine), "pd-standard", 30)
@@ -644,12 +601,12 @@ func (conn *cloudConnector) createMasterIntance(cluster *api.Cluster) (string, e
 		return "", errors.Wrap(err, "Error decoding machine provider spec from machine spec")
 	}
 
-	machineType := fmt.Sprintf("projects/%v/zones/%v/machineTypes/%v", conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Zone, providerSpec.MachineType)
-	zone := fmt.Sprintf("projects/%v/zones/%v", conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Zone)
-	pdSrc := fmt.Sprintf("projects/%v/zones/%v/disks/%v", conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Zone, conn.namer.MachineDiskName(machine))
-	srcImage := fmt.Sprintf("projects/%v/global/images/%v", conn.cluster.Spec.Config.Cloud.InstanceImageProject, conn.cluster.Spec.Config.Cloud.InstanceImage)
+	machineType := fmt.Sprintf("projects/%v/zones/%v/machineTypes/%v", conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, providerSpec.MachineType)
+	zone := fmt.Sprintf("projects/%v/zones/%v", conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone)
+	pdSrc := fmt.Sprintf("projects/%v/zones/%v/disks/%v", conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, conn.namer.MachineDiskName(machine))
+	srcImage := fmt.Sprintf("projects/%v/global/images/%v", conn.Cluster.Spec.Config.Cloud.InstanceImageProject, conn.Cluster.Spec.Config.Cloud.InstanceImage)
 
-	pubKey := string(SSHKey(conn.ctx).PublicKey)
+	pubKey := string(conn.Certs.SSHKey.PublicKey)
 	value := fmt.Sprintf("%v:%v %v", conn.namer.AdminUsername(), pubKey, conn.namer.AdminUsername())
 
 	instance := &compute.Instance{
@@ -659,12 +616,12 @@ func (conn *cloudConnector) createMasterIntance(cluster *api.Cluster) (string, e
 		Tags: &compute.Tags{
 			Items: []string{
 				"https-server",
-				conn.cluster.Name + "-master",
+				conn.Cluster.Name + "-master",
 			},
 		},
 		NetworkInterfaces: []*compute.NetworkInterface{
 			{
-				Network: fmt.Sprintf("projects/%v/global/networks/%v", conn.cluster.Spec.Config.Cloud.Project, defaultNetwork),
+				Network: fmt.Sprintf("projects/%v/global/networks/%v", conn.Cluster.Spec.Config.Cloud.Project, defaultNetwork),
 				AccessConfigs: []*compute.AccessConfig{
 					{
 						Name: "Master External IP",
@@ -715,14 +672,14 @@ func (conn *cloudConnector) createMasterIntance(cluster *api.Cluster) (string, e
 		},
 	}
 
-	r1, err := conn.computeService.Instances.Insert(conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Zone, instance).Do()
-	Logger(conn.ctx).Debug("Created master instance", r1, err)
+	r1, err := conn.computeService.Instances.Insert(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, instance).Do()
+	log.Debug("Created master instance", r1, err)
 
 	if err != nil {
-		return instance.Name, errors.Wrap(err, ID(conn.ctx))
+		return instance.Name, errors.Wrap(err, "")
 	}
-	//Logger(conn.ctx).Infof("Master instance of type %v in zone %v using persistent disk %v created", machineType, zone, pdSrc)
-	Logger(conn.ctx).Infof("Master instance of type %v in zone %v is created", machineType, zone)
+	//log.Infof("Master instance of type %v in zone %v using persistent disk %v created", machineType, zone, pdSrc)
+	log.Infof("Master instance of type %v in zone %v is created", machineType, zone)
 
 	return r1.Name, nil
 }
@@ -741,7 +698,7 @@ func (conn *cloudConnector) deleteMaster(machines []*clusterv1.Machine) error {
 
 			log.Infof("Deleting machine %s", machine.Name)
 
-			instance, err := conn.computeService.Instances.Delete(conn.cluster.Spec.Config.Cloud.Project, conn.cluster.Spec.Config.Cloud.Zone, machine.Name).Do()
+			instance, err := conn.computeService.Instances.Delete(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, machine.Name).Do()
 			if err != nil {
 				errorCh <- errors.Wrapf(err, "failed to delete machine %s", machine.Name)
 				return
@@ -779,8 +736,8 @@ func (conn *cloudConnector) deleteMaster(machines []*clusterv1.Machine) error {
 func (conn *cloudConnector) deleteDisk(nodeDiskNames []string) error {
 	log.Info("Deleting disks")
 
-	project := conn.cluster.Spec.Config.Cloud.Project
-	zone := conn.cluster.Spec.Config.Cloud.Zone
+	project := conn.Cluster.Spec.Config.Cloud.Project
+	zone := conn.Cluster.Spec.Config.Cloud.Zone
 
 	var wg sync.WaitGroup
 	wg.Add(len(nodeDiskNames))
@@ -824,39 +781,38 @@ func (conn *cloudConnector) deleteDisk(nodeDiskNames []string) error {
 //delete firewalls
 // ruleClusterInternal := cluster.Name + firewallRuleInternalSuffix
 // ruleSSH := cluster.Name + "-allow-ssh"
-// ruleApiPublic := cluster.Name + firewallRuleApiSuffix
+// ruleApiPublic := cluster.Name + firewallRuleAPISuffix
 
-func (conn *cloudConnector) deleteFirewalls() error {
+func (conn *cloudConnector) deleteFirewalls() {
 	time.Sleep(3 * time.Second)
 
-	ruleClusterInternal := conn.cluster.Name + firewallRuleInternalSuffix
-	r2, err := conn.computeService.Firewalls.Delete(conn.cluster.Spec.Config.Cloud.Project, ruleClusterInternal).Do()
+	ruleClusterInternal := conn.Cluster.Name + firewallRuleInternalSuffix
+	r2, err := conn.computeService.Firewalls.Delete(conn.Cluster.Spec.Config.Cloud.Project, ruleClusterInternal).Do()
 	if err != nil {
-		Logger(conn.ctx).Infoln(err)
-		//return errors.Wrap(err, ID(conn.ctx))
+		log.Infoln(err)
+		//return errors.Wrap(err, "")
 	} else {
-		Logger(conn.ctx).Infof("Firewalls %v deleted, response %v", ruleClusterInternal, r2.Status)
+		log.Infof("Firewalls %v deleted, response %v", ruleClusterInternal, r2.Status)
 	}
 	time.Sleep(3 * time.Second)
 
-	ruleSSH := conn.cluster.Name + "-allow-ssh"
-	r3, err := conn.computeService.Firewalls.Delete(conn.cluster.Spec.Config.Cloud.Project, ruleSSH).Do()
+	ruleSSH := conn.Cluster.Name + "-allow-ssh"
+	r3, err := conn.computeService.Firewalls.Delete(conn.Cluster.Spec.Config.Cloud.Project, ruleSSH).Do()
 	if err != nil {
-		Logger(conn.ctx).Infoln(err)
-		//return errors.Wrap(err, ID(conn.ctx))
+		log.Infoln(err)
+		//return errors.Wrap(err, "")
 	} else {
-		Logger(conn.ctx).Infof("Firewalls %v deleted, response %v", ruleSSH, r3.Status)
+		log.Infof("Firewalls %v deleted, response %v", ruleSSH, r3.Status)
 	}
 	time.Sleep(3 * time.Second)
 
-	ruleApiPublic := conn.cluster.Name + firewallRuleApiSuffix
-	r4, err := conn.computeService.Firewalls.Delete(conn.cluster.Spec.Config.Cloud.Project, ruleApiPublic).Do()
+	ruleAPIPublic := conn.Cluster.Name + firewallRuleAPISuffix
+	r4, err := conn.computeService.Firewalls.Delete(conn.Cluster.Spec.Config.Cloud.Project, ruleAPIPublic).Do()
 	if err != nil {
-		Logger(conn.ctx).Infoln(err)
-		//return errors.Wrap(err, ID(conn.ctx))
+		log.Infoln(err)
+		//return errors.Wrap(err, "")
 	} else {
-		Logger(conn.ctx).Infof("Firewalls %v deleted, response %v", ruleApiPublic, r4.Status)
+		log.Infof("Firewalls %v deleted, response %v", ruleAPIPublic, r4.Status)
 	}
 	time.Sleep(3 * time.Second)
-	return nil
 }

@@ -2,7 +2,6 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
@@ -31,7 +30,7 @@ type NamedCluster struct {
 	Name string `json:"name"`
 	// Server is the address of the kubernetes cluster (https://hostname:port).
 	Server string `json:"server"`
-	// CertificateAuthorityData contains PEM-encoded certificate authority certificates. Overrides CertificateAuthorityData
+	// CertificateAuthorityData contains PEM-encoded CertKeyPair authority certificates. Overrides CertificateAuthorityData
 	// +optional
 	CertificateAuthorityData []byte `json:"certificateAuthorityData,omitempty"`
 }
@@ -126,20 +125,4 @@ func Convert_KubeConfig_To_Config(in *KubeConfig) *clientcmdapi.Config {
 		},
 		CurrentContext: in.Context.Name,
 	}
-}
-
-func NewRestConfig(in *KubeConfig) *rest.Config {
-	out := &rest.Config{
-		Host: in.Cluster.Server,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: append([]byte(nil), in.Cluster.CertificateAuthorityData...),
-		},
-	}
-	if in.AuthInfo.Token == "" {
-		out.TLSClientConfig.CertData = append([]byte(nil), in.AuthInfo.ClientCertificateData...)
-		out.TLSClientConfig.KeyData = append([]byte(nil), in.AuthInfo.ClientKeyData...)
-	} else {
-		out.BearerToken = in.AuthInfo.Token
-	}
-	return out
 }

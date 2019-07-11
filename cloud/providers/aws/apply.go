@@ -1,418 +1,84 @@
 package aws
 
 import (
-	"encoding/json"
-	"fmt"
 	"time"
 
-	. "github.com/appscode/go/context"
 	"github.com/appscode/go/log"
-	. "github.com/appscode/go/types"
+	"github.com/appscode/go/types"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
-	semver "gomodules.xyz/version"
-	core "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
 	preTagDelay = 5 * time.Second
 )
 
-func (cm *ClusterManager) Apply(in *api.Cluster, dryRun bool) ([]api.Action, error) {
-	var err error
-	var acts []api.Action
+func (cm *ClusterManager) PrepareCloud() error {
+	var (
+		err                 error
+		vpcID               string
+		publicSubnetID      string
+		privateSubnetID     string
+		gatewayID           string
+		natID               string
+		publicRouteTableID  string
+		privateRouteTableID string
+	)
 
-	if in.Status.Phase == "" {
-		return nil, errors.Errorf("cluster `%s` is in unknown phase", in.Name)
-	}
-	if in.Status.Phase == api.ClusterDeleted {
-		return nil, nil
-	}
-	cm.cluster = in
-	cm.namer = namer{cluster: cm.cluster}
-	if err = PrepareCloud(cm); err != nil {
-		return nil, err
-	}
-
-	if cm.cluster.Status.Phase == api.ClusterUpgrading {
-		return nil, errors.Errorf("cluster `%s` is upgrading. Retry after cluster returns to Ready state", cm.cluster.Name)
-	}
-	if cm.cluster.Status.Phase == api.ClusterReady {
-		var kc kubernetes.Interface
-		kc, err = cm.GetAdminClient()
-		if err != nil {
-			return nil, err
-		}
-		if upgrade, err := NewKubeVersionGetter(kc, cm.cluster).IsUpgradeRequested(); err != nil {
-			return nil, err
-		} else if upgrade {
-			cm.cluster.Status.Phase = api.ClusterUpgrading
-
-			if _, err := Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
-				return nil, err
-			}
-			return cm.applyUpgrade(dryRun)
-		}
+	if err = ensureIAMProfile(cm.conn); err != nil {
+		return errors.Wrap(err, "failed to ensure iam profile")
 	}
 
-	if cm.cluster.Status.Phase == api.ClusterPending {
-		a, err := cm.applyCreate(dryRun)
-		if err != nil {
-			return nil, err
-		}
-		acts = append(acts, a...)
+	if err = importPublicKey(cm.conn); err != nil {
+		return errors.Wrap(err, "failed to import public key")
 	}
 
-	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		nodeGroups, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-		if err != nil {
-			return nil, err
-		}
-		for _, ng := range nodeGroups {
-			ng.Spec.Replicas = Int32P(0)
-			_, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).Update(ng)
-			if err != nil {
-				return nil, err
-			}
-		}
+	if vpcID, err = ensureVPC(cm.conn); err != nil {
+		return errors.Wrap(err, "failed to ensure vpc")
 	}
 
-	{
-		err := cm.applyScale(dryRun)
-		if err != nil {
-			if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-				log.Infoln(err)
-			} else {
-				return nil, err
-			}
-		}
+	if publicSubnetID, privateSubnetID, err = ensureSubnet(cm.conn); err != nil {
+		return errors.Wrap(err, "failed to ensure subnets")
 	}
 
-	if cm.cluster.DeletionTimestamp != nil && cm.cluster.Status.Phase != api.ClusterDeleted {
-		a, err := cm.applyDelete(dryRun)
-		if err != nil {
-			return nil, err
-		}
-		acts = append(acts, a...)
+	if gatewayID, err = ensureInternetGateway(cm.conn, vpcID); err != nil {
+		return errors.Wrap(err, "failed to ensure igw")
 	}
 
-	return acts, nil
-}
-
-func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error) {
-	if err := cm.SetupCerts(); err != nil {
-		return nil, err
+	if natID, err = ensureNatGateway(cm.conn, vpcID, publicSubnetID); err != nil {
+		return errors.Wrap(err, "failed to ensure nat")
 	}
 
-	var found bool
-
-	if found, err = cm.conn.getIAMProfile(); err != nil {
-		Logger(cm.ctx).Infoln(err)
-	}
-	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "IAM Profile",
-			Message:  "IAM profile will be created",
-		})
-		if !dryRun {
-			if err = cm.conn.ensureIAMProfile(); err != nil {
-				return
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "IAM Profile",
-			Message:  "IAM profile found",
-		})
+	if publicRouteTableID, privateRouteTableID, err = ensureRouteTable(cm.conn, vpcID, gatewayID, natID, publicSubnetID, privateSubnetID); err != nil {
+		return errors.Wrap(err, "failed to ensure route table")
 	}
 
-	if found, err = cm.conn.getPublicKey(); err != nil {
-		Logger(cm.ctx).Infoln(err)
+	if err = ensureSecurityGroup(cm.conn, vpcID); err != nil {
+		return errors.Wrap(err, "failed to ensure security group")
 	}
 
-	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "PublicKey",
-			Message:  "Public key will be imported",
-		})
-		if !dryRun {
-			if err = cm.conn.importPublicKey(); err != nil {
-				return
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "PublicKey",
-			Message:  "Public key found",
-		})
+	if err = ensureBastion(cm.conn, publicSubnetID); err != nil {
+		return errors.Wrap(err, "failed to ensure bastion")
 	}
 
-	var vpcID string
-	if vpcID, found, err = cm.conn.getVpc(); err != nil {
-		Logger(cm.ctx).Infoln(err)
-	}
-	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "VPC",
-			Message:  "Not found, will be created new vpc",
-		})
-		if !dryRun {
-			if vpcID, err = cm.conn.setupVpc(); err != nil {
-				return
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "VPC",
-			Message:  fmt.Sprintf("Found vpc with id %v", vpcID),
-		})
+	if err = ensureLoadBalancer(cm.conn, publicSubnetID); err != nil {
+		return errors.Wrap(err, "failed to ensure load balancer")
 	}
 
-	var publicSubnetID string
-	if publicSubnetID, found, err = cm.conn.getSubnet(vpcID, "public"); err != nil {
-		Logger(cm.ctx).Infoln(err)
-	}
-	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Subnet",
-			Message:  "Public Subnet will be added",
-		})
-		if !dryRun {
-			if publicSubnetID, err = cm.conn.setupPublicSubnet(vpcID); err != nil {
-				return
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Subnet",
-			Message:  fmt.Sprintf("Public Subnet found with id %v", publicSubnetID),
-		})
-	}
-
-	var privateSubnetID string
-	if privateSubnetID, found, err = cm.conn.getSubnet(vpcID, "private"); err != nil {
-		Logger(cm.ctx).Infoln(err)
-	}
-	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Subnet",
-			Message:  "Private Subnet will be added",
-		})
-		if !dryRun {
-			if privateSubnetID, err = cm.conn.setupPrivateSubnet(vpcID); err != nil {
-				return
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Subnet",
-			Message:  fmt.Sprintf("Private Subnet found with id %v", privateSubnetID),
-		})
-	}
-
-	var gatewayID string
-	if gatewayID, found, err = cm.conn.getInternetGateway(vpcID); err != nil {
-		Logger(cm.ctx).Infoln(err)
-	}
-	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Internet Gateway",
-			Message:  "Internet gateway will be added",
-		})
-		if !dryRun {
-			if gatewayID, err = cm.conn.setupInternetGateway(vpcID); err != nil {
-				return
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Internet Gateway",
-			Message:  "Internet gateway found",
-		})
-	}
-
-	var natID string
-	if natID, found, err = cm.conn.getNatGateway(vpcID); err != nil {
-		Logger(cm.ctx).Infoln(err)
-	}
-	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "NAT Gateway",
-			Message:  "NAT gateway will be added",
-		})
-		if !dryRun {
-			if natID, err = cm.conn.setupNatGateway(publicSubnetID); err != nil {
-				return
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "NAT Gateway",
-			Message:  "NAT gateway found",
-		})
-	}
-
-	var publicRouteTableID, privateRouteTableID string
-	if publicRouteTableID, found, err = cm.conn.getRouteTable("public", vpcID); err != nil {
-		Logger(cm.ctx).Infoln(err)
-	}
-	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Route table",
-			Message:  "Route table will be created",
-		})
-		if !dryRun {
-			if publicRouteTableID, err = cm.conn.setupRouteTable("public", vpcID, gatewayID, natID, publicSubnetID, privateSubnetID); err != nil {
-				return
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Route table",
-			Message:  "Route table found",
-		})
-	}
-
-	if privateRouteTableID, found, err = cm.conn.getRouteTable("private", vpcID); err != nil {
-		Logger(cm.ctx).Infoln(err)
-	}
-	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Route table",
-			Message:  "Route table will be created",
-		})
-		if !dryRun {
-			if privateRouteTableID, err = cm.conn.setupRouteTable("private", vpcID, gatewayID, natID, publicSubnetID, privateSubnetID); err != nil {
-				return
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Route table",
-			Message:  "Route table found",
-		})
-	}
-
-	if _, found, err = cm.conn.getSecurityGroupID(vpcID, cm.cluster.Spec.Config.Cloud.AWS.MasterSGName); err != nil {
-		Logger(cm.ctx).Infoln(err)
-	}
-	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Security group",
-			Message:  fmt.Sprintf("Master security group %v and node security group %v will be created", cm.cluster.Spec.Config.Cloud.AWS.MasterSGName, cm.cluster.Spec.Config.Cloud.AWS.NodeSGName),
-		})
-		if !dryRun {
-			if err = cm.conn.setupSecurityGroups(vpcID); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				err = errors.Wrap(err, ID(cm.ctx))
-				return
-			}
-		}
-	} else {
-		if err = cm.conn.detectSecurityGroups(vpcID); err != nil {
-			return
-		}
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Security group",
-			Message:  fmt.Sprintf("Found master security group %v and node security group %v", cm.cluster.Spec.Config.Cloud.AWS.MasterSGName, cm.cluster.Spec.Config.Cloud.AWS.NodeSGName),
-		})
-	}
-
-	if found, err = cm.conn.getBastion(); err != nil {
-		Logger(cm.ctx).Infoln(err)
-	}
-	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Bastion",
-			Message:  fmt.Sprintf("Bastion will be created"),
-		})
-		if !dryRun {
-			if err = cm.conn.setupBastion(publicSubnetID); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				err = errors.Wrap(err, ID(cm.ctx))
-				return
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Bastion",
-			Message:  fmt.Sprintf("Found Bastion"),
-		})
-	}
-
-	var loadbalancerDNS string
-	if loadbalancerDNS, err = cm.conn.getLoadBalancer(); err != nil {
-		Logger(cm.ctx).Infoln(err)
-	}
-	if !found {
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "Load Banalcer",
-			Message:  fmt.Sprintf("Load Banalcer will be created"),
-		})
-		if !dryRun {
-			if loadbalancerDNS, err = cm.conn.setupLoadBalancer(publicSubnetID); err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				err = errors.Wrap(err, ID(cm.ctx))
-				return
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Load Banalcer",
-			Message:  fmt.Sprintf("Found Load Balancer"),
-		})
-	}
-
-	if loadbalancerDNS == "" {
-		return nil, errors.New("load balancer dns can't be empty")
-	}
-
-	// update load balancer field
-	cm.cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
-		DNS:  loadbalancerDNS,
-		Port: api.DefaultKubernetesBindPort,
-	}
-
-	clusterSpec, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	clusterSpec, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
 	if err != nil {
-		return
+		return errors.Wrap(err, "failed to decode provider spec")
 	}
 
 	clusterSpec.NetworkSpec = clusterapi_aws.NetworkSpec{
 		VPC: clusterapi_aws.VPCSpec{
 			ID:                vpcID,
-			CidrBlock:         cm.cluster.Spec.Config.Cloud.AWS.VpcCIDR,
-			InternetGatewayID: StringP(gatewayID),
+			CidrBlock:         cm.Cluster.Spec.Config.Cloud.AWS.VpcCIDR,
+			InternetGatewayID: types.StringP(gatewayID),
 			Tags: clusterapi_aws.Map{
 				"sigs.k8s.io/cluster-api-provider-aws/managed": "true",
 			},
@@ -420,52 +86,38 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		Subnets: clusterapi_aws.Subnets{
 			{
 				ID:               publicSubnetID,
-				CidrBlock:        cm.cluster.Spec.Config.Cloud.AWS.PublicSubnetCIDR,
-				AvailabilityZone: cm.cluster.Spec.Config.Cloud.Zone,
+				CidrBlock:        cm.Cluster.Spec.Config.Cloud.AWS.PublicSubnetCIDR,
+				AvailabilityZone: cm.Cluster.Spec.Config.Cloud.Zone,
 				IsPublic:         true,
-				RouteTableID:     StringP(publicRouteTableID),
-				NatGatewayID:     StringP(natID),
+				RouteTableID:     types.StringP(publicRouteTableID),
+				NatGatewayID:     types.StringP(natID),
 			},
 			{
 				ID:               privateSubnetID,
-				CidrBlock:        cm.cluster.Spec.Config.Cloud.AWS.PrivateSubnetCIDR,
-				AvailabilityZone: cm.cluster.Spec.Config.Cloud.Zone,
+				CidrBlock:        cm.Cluster.Spec.Config.Cloud.AWS.PrivateSubnetCIDR,
+				AvailabilityZone: cm.Cluster.Spec.Config.Cloud.Zone,
 				IsPublic:         false,
-				RouteTableID:     StringP(privateRouteTableID),
+				RouteTableID:     types.StringP(privateRouteTableID),
 			},
 		},
 	}
 
 	rawClusterSpec, err := clusterapi_aws.EncodeClusterSpec(clusterSpec)
 	if err != nil {
-		return
+		return err
 	}
 
-	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawClusterSpec
-	if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
-		return
+	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawClusterSpec
+	if _, err = cm.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
+		return err
 	}
 
-	var machines []*clusterv1.Machine
-	machines, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		err = errors.Wrap(err, ID(cm.ctx))
-		return
-	}
+	return nil
+}
 
-	leaderMachine, err := GetLeaderMachine(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		return nil, err
-	}
-
-	machineSets, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-	totalNodes := NodeCount(machineSets)
-
-	// https://github.com/kubernetes/kubernetes/blob/8eb75a5810cba92ccad845ca360cf924f2385881/cluster/aws/config-default.sh#L33
+func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
 	sku := "t2.large"
+
 	if totalNodes > 10 {
 		sku = "t2.xlarge"
 	}
@@ -479,299 +131,342 @@ func (cm *ClusterManager) applyCreate(dryRun bool) (acts []api.Action, err error
 		sku = "c4.8xlarge"
 	}
 
-	// update master machine spec
-	for _, m := range machines {
-		spec, err := clusterapi_aws.MachineConfigFromProviderSpec(m.Spec.ProviderSpec)
+	return sku
+}
+
+func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
+	found, err := cm.conn.getMaster(leaderMachine.Name)
+	if err != nil {
+		log.Infoln(err)
+	}
+	if !found {
+		log.Info("Creating master instance")
+		script, err := cloud.RenderStartupScript(cm, leaderMachine, "", customTemplate)
 		if err != nil {
-			log.Infof("Error decoding provider spec for machine %q", m.Name)
-			return nil, err
+			return err
 		}
 
-		spec.InstanceType = sku
+		var privateSubnetID, vpcID string
+		if vpcID, _, err = cm.conn.getVpc(); err != nil {
+			log.Infoln(err)
+		}
+
+		if privateSubnetID, _, err = cm.conn.getSubnet(vpcID, "private"); err != nil {
+			log.Infoln(err)
+		}
+
+		masterInstance, err := cm.conn.startMaster(leaderMachine, privateSubnetID, script)
+		if err != nil {
+			cm.Cluster.Status.Reason = err.Error()
+			err = errors.Wrap(err, "")
+			return err
+		}
+
+		if _, err = cm.StoreProvider.Clusters().Update(cm.Cluster); err != nil {
+			return err
+		}
+
+		// update master machine spec
+		spec, err := clusterapi_aws.MachineConfigFromProviderSpec(leaderMachine.Spec.ProviderSpec)
+		if err != nil {
+			log.Infof("Error decoding provider spec for machine %q", leaderMachine.Name)
+			return err
+		}
+
+		spec.AMI = clusterapi_aws.AWSResourceReference{
+			ID: types.StringP(cm.Cluster.Spec.Config.Cloud.InstanceImage),
+		}
+
+		rootDeviceSize, err := cm.conn.getInstanceRootDeviceSize(masterInstance)
+		if err != nil {
+			return errors.Wrap(err, "failed to get root device size for master instance")
+		}
+
+		spec.RootDeviceSize = *rootDeviceSize
 
 		rawSpec, err := clusterapi_aws.EncodeMachineSpec(spec)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		m.Spec.ProviderSpec.Value = rawSpec
+		leaderMachine.Spec.ProviderSpec.Value = rawSpec
 
-		_, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Update(m)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to update machine %q to store", m.Name)
-		}
-	}
-
-	if found, err = cm.conn.getMaster(leaderMachine.Name); err != nil {
-		Logger(cm.ctx).Infoln(err)
-	}
-	if !found {
-		Logger(cm.ctx).Info("Creating master instance")
-		acts = append(acts, api.Action{
-			Action:   api.ActionAdd,
-			Resource: "MasterInstance",
-			Message:  fmt.Sprintf("Master instance %s will be created", leaderMachine.Name),
-		})
-		if !dryRun {
-
-			masterInstance, err := cm.conn.startMaster(leaderMachine, sku, privateSubnetID)
-			if err != nil {
-				cm.cluster.Status.Reason = err.Error()
-				err = errors.Wrap(err, ID(cm.ctx))
-				return acts, err
-			}
-
-			nodeAddresses := []core.NodeAddress{
-				{
-					Type:    core.NodeExternalDNS,
-					Address: cm.cluster.Status.Cloud.LoadBalancer.DNS,
-				},
-			}
-
-			if err = cm.cluster.SetClusterApiEndpoints(nodeAddresses); err != nil {
-				return nil, err
-			}
-
-			if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
-				return nil, err
-			}
-
-			// update master machine spec
-			spec, err := clusterapi_aws.MachineConfigFromProviderSpec(leaderMachine.Spec.ProviderSpec)
-			if err != nil {
-				log.Infof("Error decoding provider spec for machine %q", leaderMachine.Name)
-				return nil, err
-			}
-
-			spec.AMI = clusterapi_aws.AWSResourceReference{
-				ID: StringP(cm.cluster.Spec.Config.Cloud.InstanceImage),
-			}
-			spec.InstanceType = sku
-
-			rootDeviceSize, err := cm.conn.getInstanceRootDeviceSize(masterInstance)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to get root device size for master instance")
-			}
-
-			spec.RootDeviceSize = *rootDeviceSize
-
-			rawSpec, err := clusterapi_aws.EncodeMachineSpec(spec)
-			if err != nil {
-				return nil, err
-			}
-			leaderMachine.Spec.ProviderSpec.Value = rawSpec
-
-			// update master machine status
-			statusConfig := clusterapi_aws.AWSMachineProviderStatus{
-				InstanceID: masterInstance.InstanceId,
-			}
-
-			rawStatus, err := clusterapi_aws.EncodeMachineStatus(&statusConfig)
-			if err != nil {
-				return nil, err
-			}
-			leaderMachine.Status.ProviderStatus = rawStatus
-
-			// update in pharmer file
-			leaderMachine, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Update(leaderMachine)
-			if err != nil {
-				return nil, errors.Wrap(err, "error updating master machine in pharmer storage")
-			}
-		}
-	} else {
-		acts = append(acts, api.Action{
-			Action:   api.ActionNOP,
-			Resource: "Master Instance",
-			Message:  "master instance(s) already exist",
-		})
-	}
-
-	var kc kubernetes.Interface
-	kc, err = cm.GetAdminClient()
-	if err != nil {
-		return
-	}
-	// wait for nodes to start
-	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
-		return
-	}
-
-	ca, err := NewClusterApi(cm.ctx, cm.cluster, cm.owner, "cloud-provider-system", kc, cm.conn)
-	if err != nil {
-		return acts, err
-	}
-
-	if err := ca.Apply(ControllerManager); err != nil {
-		return acts, err
-	}
-
-	log.Infof("Adding other master machines")
-	client, err := GetClusterClient(cm.ctx, cm.cluster)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, m := range machines {
-		if m.Name == leaderMachine.Name {
-			continue
-		}
-		if _, err := client.ClusterV1alpha1().Machines(cm.cluster.Spec.ClusterAPI.Namespace).Create(m); err != nil && !api.ErrAlreadyExist(err) && !api.ErrObjectModified(err) {
-			log.Infof("Error creating maching %q in namespace %q", m.Name, cm.cluster.Spec.ClusterAPI.Namespace)
-			return acts, err
-		}
-	}
-
-	cm.cluster.Status.Phase = api.ClusterReady
-	if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
-		return
-	}
-
-	return
-}
-
-func (cm *ClusterManager) applyScale(dryRun bool) error {
-	Logger(cm.ctx).Infoln("scaling machine set")
-
-	//var msc *clusterv1.MachineSet
-	machineSets, err := Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	bc, err := GetBooststrapClient(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		return err
-	}
-	var data []byte
-	for _, machineSet := range machineSets {
-		if machineSet.DeletionTimestamp != nil {
-			machineSet.DeletionTimestamp = nil
-			if data, err = json.Marshal(machineSet); err != nil {
-				return err
-			}
-
-			if err = bc.Delete(string(data)); err != nil {
-				return nil
-			}
-			if err = Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).Delete(machineSet.Name); err != nil {
-				return nil
-			}
+		// update master machine status
+		statusConfig := clusterapi_aws.AWSMachineProviderStatus{
+			InstanceID: masterInstance.InstanceId,
 		}
 
-		existingMachineSet, err := bc.GetMachineSets(bc.GetContextNamespace())
+		rawStatus, err := clusterapi_aws.EncodeMachineStatus(&statusConfig)
 		if err != nil {
 			return err
 		}
+		leaderMachine.Status.ProviderStatus = rawStatus
 
-		if data, err = json.Marshal(machineSet); err != nil {
-			return err
-		}
-		found := false
-		for _, ems := range existingMachineSet {
-			if ems.Name == machineSet.Name {
-				found = true
-				if err = bc.Apply(string(data)); err != nil {
-					return err
-				}
-				break
-			}
-		}
-
-		if !found {
-			if err = bc.CreateMachineSets([]*clusterv1.MachineSet{machineSet}, bc.GetContextNamespace()); err != nil {
-				return err
-			}
+		// update in pharmer file
+		_, err = cm.StoreProvider.Machine(cm.Cluster.Name).Update(leaderMachine)
+		if err != nil {
+			return errors.Wrap(err, "error updating master machine in pharmer storage")
 		}
 	}
 
 	return nil
 }
 
-func (cm *ClusterManager) applyDelete(dryRun bool) ([]api.Action, error) {
-	var acts []api.Action
+func ensureIAMProfile(conn *cloudConnector) error {
+	var (
+		found bool
+		err   error
+	)
 
-	Logger(cm.ctx).Infoln("deleting cluster")
-
-	if cm.cluster.Status.Phase == api.ClusterReady {
-		cm.cluster.Status.Phase = api.ClusterDeleting
-	}
-	if _, err := Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
-		return nil, err
+	if found, err = conn.getIAMProfile(); err != nil {
+		log.Infoln(err)
 	}
 
-	err := DeleteAllWorkerMachines(cm.ctx, cm.cluster, cm.owner)
+	if !found {
+		if err := conn.ensureIAMProfile(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func importPublicKey(conn *cloudConnector) error {
+	found, err := conn.getPublicKey()
 	if err != nil {
-		log.Infof("failed to delete nodes: %v", err)
+		log.Infoln(err)
 	}
 
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "MasterInstance",
-		Message:  fmt.Sprintf("Will delete master instance with name %v-master", cm.cluster.Name),
-	})
-	if !dryRun {
-		if err := cm.conn.deleteInstance("controlplane"); err != nil {
-			Logger(cm.ctx).Infof("Failed to delete master instance. Reason: %s", err)
+	if !found {
+		if err = conn.importPublicKey(); err != nil {
+			return err
 		}
 	}
 
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "SSH Key",
-		Message:  "SSH key will be deleted",
-	})
-	if !dryRun {
-		if err := cm.conn.deleteSSHKey(); err != nil {
-			Logger(cm.ctx).Infoln(err)
+	return nil
+}
+
+func ensureVPC(conn *cloudConnector) (string, error) {
+	var (
+		vpcID string
+		found bool
+		err   error
+	)
+
+	if vpcID, found, err = conn.getVpc(); err != nil {
+		log.Infoln(err)
+	}
+	if !found {
+		if vpcID, err = conn.setupVpc(); err != nil {
+			return "", err
 		}
 	}
 
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "IAM role",
-		Message:  "IAM role will be deleted",
-	})
-	if !dryRun {
-		if err := cm.conn.deleteIAMProfile(); err != nil {
-			return acts, errors.Wrap(err, fmt.Sprintf("error deleting IAM Profiles"))
-		}
-	}
+	return vpcID, nil
+}
 
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "Load Balancers",
-		Message:  "Load Balancers will be deleted",
-	})
-	if !dryRun {
-		if _, err := cm.conn.deleteLoadBalancer(); err != nil {
-			return acts, errors.Wrap(err, "error deleting load balancer")
-		}
-	}
+func ensureSubnet(conn *cloudConnector) (string, string, error) {
+	var (
+		publicSubnetID  string
+		privateSubnetID string
+		found           bool
+		err             error
+	)
 
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "Bastion Instance",
-		Message:  "Bastion Instance will be deleted",
-	})
-	if !dryRun {
-		if err := cm.conn.deleteInstance("bastion"); err != nil {
-			return acts, errors.Wrap(err, "error deleting bastion instance")
-		}
-	}
-
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "Security Group",
-		Message:  "Security Group will be deleted",
-	})
-
-	clusterSpec, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	vpcID, _, err := conn.getVpc()
 	if err != nil {
-		return acts, err
+		return "", "", errors.Wrapf(err, "vpc not found")
 	}
 
-	vpcID, found, err := cm.conn.getVpc()
+	if publicSubnetID, found, err = conn.getSubnet(vpcID, "public"); err != nil {
+		log.Infoln(err)
+	}
+	if !found {
+		if publicSubnetID, err = conn.setupPublicSubnet(vpcID); err != nil {
+			return "", "", err
+		}
+	}
+
+	if privateSubnetID, found, err = conn.getSubnet(vpcID, "private"); err != nil {
+		log.Infoln(err)
+	}
+	if !found {
+		if privateSubnetID, err = conn.setupPrivateSubnet(vpcID); err != nil {
+			return "", "", err
+		}
+	}
+	return publicSubnetID, privateSubnetID, nil
+}
+
+func ensureInternetGateway(conn *cloudConnector, vpcID string) (string, error) {
+	var (
+		found     bool
+		err       error
+		gatewayID string
+	)
+
+	if gatewayID, found, err = conn.getInternetGateway(vpcID); err != nil {
+		log.Infoln(err)
+	}
+	if !found {
+		if gatewayID, err = conn.setupInternetGateway(vpcID); err != nil {
+			return "", err
+		}
+	}
+	return gatewayID, nil
+}
+
+func ensureNatGateway(conn *cloudConnector, vpcID, publicSubnetID string) (string, error) {
+	var (
+		found bool
+		err   error
+		natID string
+	)
+	if natID, found, err = conn.getNatGateway(vpcID); err != nil {
+		log.Infoln(err)
+	}
+	if !found {
+		if natID, err = conn.setupNatGateway(publicSubnetID); err != nil {
+			return "", err
+		}
+	}
+	return natID, nil
+}
+
+func ensureRouteTable(conn *cloudConnector, vpcID, gatewayID, natID, publicSubnetID, privateSubnetID string) (string, string, error) {
+	var (
+		found bool
+		err   error
+	)
+	var publicRouteTableID, privateRouteTableID string
+	if publicRouteTableID, found, err = conn.getRouteTable("public", vpcID); err != nil {
+		log.Infoln(err)
+	}
+	if !found {
+		if publicRouteTableID, err = conn.setupRouteTable("public", vpcID, gatewayID, natID, publicSubnetID, privateSubnetID); err != nil {
+			return "", "", err
+		}
+	}
+
+	if privateRouteTableID, found, err = conn.getRouteTable("private", vpcID); err != nil {
+		log.Infoln(err)
+	}
+	if !found {
+		if privateRouteTableID, err = conn.setupRouteTable("private", vpcID, gatewayID, natID, publicSubnetID, privateSubnetID); err != nil {
+			return "", "", err
+		}
+	}
+	return publicRouteTableID, privateRouteTableID, nil
+}
+
+func ensureSecurityGroup(conn *cloudConnector, vpcID string) error {
+	var (
+		found bool
+		err   error
+	)
+	if _, found, err = conn.getSecurityGroupID(vpcID, conn.Cluster.Spec.Config.Cloud.AWS.MasterSGName); err != nil {
+		log.Infoln(err)
+	}
+	if !found {
+
+		if err = conn.setupSecurityGroups(vpcID); err != nil {
+			conn.Cluster.Status.Reason = err.Error()
+			err = errors.Wrap(err, "")
+			return err
+		}
+	} else {
+		if err = conn.detectSecurityGroups(vpcID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ensureBastion(conn *cloudConnector, publicSubnetID string) error {
+	var (
+		found bool
+		err   error
+	)
+	if found, err = conn.getBastion(); err != nil {
+		log.Infoln(err)
+	}
+	if !found {
+		if err = conn.setupBastion(publicSubnetID); err != nil {
+			conn.Cluster.Status.Reason = err.Error()
+			err = errors.Wrap(err, "")
+			return err
+		}
+	}
+	return nil
+}
+
+func ensureLoadBalancer(conn *cloudConnector, publicSubnetID string) error {
+	var (
+		found bool
+		err   error
+	)
+	var loadbalancerDNS string
+	if loadbalancerDNS, err = conn.getLoadBalancer(); err != nil {
+		log.Infoln(err)
+	}
+	if !found {
+		if loadbalancerDNS, err = conn.setupLoadBalancer(publicSubnetID); err != nil {
+			conn.Cluster.Status.Reason = err.Error()
+			err = errors.Wrap(err, "")
+			return err
+		}
+	}
+
+	if loadbalancerDNS == "" {
+		return errors.New("load balancer dns can't be empty")
+	}
+
+	// update load balancer field
+	conn.Cluster.Status.Cloud.LoadBalancer = api.LoadBalancer{
+		DNS:  loadbalancerDNS,
+		Port: api.DefaultKubernetesBindPort,
+	}
+
+	nodeAddresses := []corev1.NodeAddress{
+		{
+			Type:    corev1.NodeExternalIP,
+			Address: conn.Cluster.Status.Cloud.LoadBalancer.DNS,
+		},
+	}
+
+	if err = conn.Cluster.SetClusterAPIEndpoints(nodeAddresses); err != nil {
+		return errors.Wrap(err, "Error setting controlplane endpoints")
+	}
+	return nil
+}
+
+func (cm *ClusterManager) ApplyDelete() error {
+	if err := cm.conn.deleteInstance("controlplane"); err != nil {
+		log.Infof("Failed to delete master instance. Reason: %s", err)
+	}
+
+	if err := cm.conn.deleteSSHKey(); err != nil {
+		log.Infoln(err)
+	}
+
+	cm.conn.deleteIAMProfile()
+
+	if _, err := cm.conn.deleteLoadBalancer(); err != nil {
+		return errors.Wrap(err, "error deleting load balancer")
+	}
+
+	if err := cm.conn.deleteInstance(bastion); err != nil {
+		return errors.Wrap(err, "error deleting bastion instance")
+	}
+
+	clusterSpec, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec)
+	if err != nil {
+		return err
+	}
+
+	vpcID, found, _ := cm.conn.getVpc()
 	if !found {
 		log.Infof("vpc already deleted")
-		return acts, nil
+		return nil
 	}
 
 	var natID string
@@ -783,145 +478,33 @@ func (cm *ClusterManager) applyDelete(dryRun bool) ([]api.Action, error) {
 		}
 	}
 
-	if !dryRun {
-		if err := cm.conn.deleteSecurityGroup(vpcID); err != nil {
-			return acts, errors.Wrap(err, "error deleting security group")
-		}
+	if err := cm.conn.deleteSecurityGroup(vpcID); err != nil {
+		return errors.Wrap(err, "error deleting security group")
 	}
 
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "Route Table",
-		Message:  "Route Table will be deleted",
-	})
-	if !dryRun {
-		if err := cm.conn.deleteRouteTable(vpcID); err != nil {
-			return acts, errors.Wrap(err, "error deleting route table")
-		}
+	if err := cm.conn.deleteRouteTable(vpcID); err != nil {
+		return errors.Wrap(err, "error deleting route table")
 	}
 
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "NAT",
-		Message:  "NAT will be deleted",
-	})
-	if !dryRun {
-		if err := cm.conn.deleteNatGateway(natID); err != nil {
-			return acts, errors.Wrap(err, "error deleting NAT")
-		}
+	if err := cm.conn.deleteNatGateway(natID); err != nil {
+		return errors.Wrap(err, "error deleting NAT")
 	}
 
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "Elastic IP",
-		Message:  "Elastic IP will be deleted",
-	})
-	if !dryRun {
-		if err := cm.conn.releaseReservedIP(); err != nil {
-			return acts, errors.Wrap(err, "error deleting Elastic IP")
-		}
+	if err := cm.conn.releaseReservedIP(); err != nil {
+		return errors.Wrap(err, "error deleting Elastic IP")
 	}
 
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "IngernetGateway",
-		Message:  "IngernetGateway will be deleted",
-	})
-	if !dryRun {
-		if err := cm.conn.deleteInternetGateway(vpcID); err != nil {
-			return acts, errors.Wrap(err, "error deleting Interget Gateway")
-		}
+	if err := cm.conn.deleteInternetGateway(vpcID); err != nil {
+		return errors.Wrap(err, "error deleting Interget Gateway")
 	}
 
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "Subnet",
-		Message:  "Subnets will be deleted",
-	})
-	if !dryRun {
-		if err := cm.conn.deleteSubnetID(vpcID); err != nil {
-			return acts, errors.Wrap(err, "error deleting Subnets")
-		}
+	if err := cm.conn.deleteSubnetID(vpcID); err != nil {
+		return errors.Wrap(err, "error deleting Subnets")
 	}
 
-	acts = append(acts, api.Action{
-		Action:   api.ActionDelete,
-		Resource: "VPC",
-		Message:  "VPC will be deleted",
-	})
-	if !dryRun {
-		if err := cm.conn.deleteVpc(vpcID); err != nil {
-			return acts, errors.Wrap(err, "error deleting VPC")
-		}
+	if err := cm.conn.deleteVpc(vpcID); err != nil {
+		return errors.Wrap(err, "error deleting VPC")
 	}
 
-	return acts, nil
-}
-
-func (cm *ClusterManager) applyUpgrade(dryRun bool) (acts []api.Action, err error) {
-	var kc kubernetes.Interface
-	if kc, err = cm.GetAdminClient(); err != nil {
-		return
-	}
-
-	var masterMachine *clusterv1.Machine
-	masterName := fmt.Sprintf("%v-master", cm.cluster.Name)
-	masterMachine, err = Store(cm.ctx).Owner(cm.owner).Machine(cm.cluster.Name).Get(masterName)
-	if err != nil {
-		return nil, err
-	}
-
-	masterMachine.Spec.Versions.ControlPlane = cm.cluster.Spec.Config.KubernetesVersion
-	masterMachine.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
-
-	var bc clusterclient.Client
-	bc, err = GetBooststrapClient(cm.ctx, cm.cluster, cm.owner)
-	if err != nil {
-		return nil, err
-	}
-
-	var data []byte
-	if data, err = json.Marshal(masterMachine); err != nil {
-		return
-	}
-	if err = bc.Apply(string(data)); err != nil {
-		return
-	}
-
-	// Wait until master updated
-	desiredVersion, err := semver.NewVersion(cm.cluster.ClusterConfig().KubernetesVersion)
-	if err != nil {
-		return
-	}
-	if err = WaitForReadyMasterVersion(cm.ctx, kc, desiredVersion); err != nil {
-		return
-	}
-	// wait for nodes to start
-	if err = WaitForReadyMaster(cm.ctx, kc); err != nil {
-		return
-	}
-
-	var machineSets []*clusterv1.MachineSet
-	machineSets, err = Store(cm.ctx).Owner(cm.owner).MachineSet(cm.cluster.Name).List(metav1.ListOptions{})
-	if err != nil {
-		return
-	}
-
-	for _, machineSet := range machineSets {
-		machineSet.Spec.Template.Spec.Versions.Kubelet = cm.cluster.Spec.Config.KubernetesVersion
-		if data, err = json.Marshal(machineSet); err != nil {
-			return
-		}
-		if err = bc.Apply(string(data)); err != nil {
-			return
-		}
-	}
-
-	if !dryRun {
-		cm.cluster.Status.Phase = api.ClusterReady
-		if _, err = Store(cm.ctx).Owner(cm.owner).Clusters().UpdateStatus(cm.cluster); err != nil {
-			return
-		}
-	}
-	return
+	return nil
 }

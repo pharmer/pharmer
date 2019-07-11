@@ -1,0 +1,817 @@
+package cloud_test
+
+import (
+	"testing"
+
+	"github.com/onsi/gomega"
+	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/cloud"
+	_ "github.com/pharmer/pharmer/cloud/providers/aks"
+	_ "github.com/pharmer/pharmer/cloud/providers/aws"
+	"github.com/pharmer/pharmer/cloud/providers/azure"
+	_ "github.com/pharmer/pharmer/cloud/providers/azure"
+	_ "github.com/pharmer/pharmer/cloud/providers/digitalocean"
+	_ "github.com/pharmer/pharmer/cloud/providers/dokube"
+	_ "github.com/pharmer/pharmer/cloud/providers/eks"
+	_ "github.com/pharmer/pharmer/cloud/providers/gce"
+	_ "github.com/pharmer/pharmer/cloud/providers/gke"
+	_ "github.com/pharmer/pharmer/cloud/providers/linode"
+	_ "github.com/pharmer/pharmer/cloud/providers/packet"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
+	"github.com/pharmer/pharmer/cmds/cloud/options"
+	"github.com/pharmer/pharmer/store"
+	"github.com/pharmer/pharmer/store/providers/fake"
+	_ "github.com/pharmer/pharmer/store/providers/fake"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+)
+
+func deleteCerts(t *testing.T, s store.ResourceInterface, clusterName string) {
+	t.Helper()
+	g := gomega.NewGomegaWithT(t)
+	err := s.Certificates(clusterName).Delete(api.CACertName)
+	g.Expect(err).NotTo(gomega.HaveOccurred())
+	err = s.Certificates(clusterName).Delete(api.FrontProxyCACertName)
+	g.Expect(err).NotTo(gomega.HaveOccurred())
+	err = s.Certificates(clusterName).Delete(api.ETCDCACertName)
+	g.Expect(err).NotTo(gomega.HaveOccurred())
+	err = s.Certificates(clusterName).Delete(api.SAKeyName)
+	g.Expect(err).NotTo(gomega.HaveOccurred())
+	err = s.SSHKeys(clusterName).Delete(clusterName + "-sshkey")
+	g.Expect(err).NotTo(gomega.HaveOccurred())
+}
+
+func TestCreateCluster(t *testing.T) {
+	type args struct {
+		store   store.ResourceInterface
+		cluster *api.Cluster
+	}
+
+	genericBeforeTest := func(t *testing.T, a args) func(*testing.T) {
+		g := gomega.NewGomegaWithT(t)
+		return func(t *testing.T) {
+			// check if Cluster is created
+			err := a.store.Clusters().Delete(a.cluster.Name)
+			g.Expect(err).NotTo(gomega.HaveOccurred())
+
+			deleteCerts(t, a.store, a.cluster.Name)
+
+			if !api.ManagedProviders.Has(a.cluster.CloudProvider()) {
+				// check master machines are genereated
+				for i := 0; i < a.cluster.Spec.Config.MasterCount; i++ {
+					err = a.store.Machine(a.cluster.Name).Delete(a.cluster.MasterMachineName(i))
+					g.Expect(err).NotTo(gomega.HaveOccurred())
+				}
+			}
+		}
+	}
+
+	tests := []struct {
+		name       string
+		args       args
+		wantErr    bool
+		errmsg     string
+		beforeTest func(*testing.T, args) func(*testing.T)
+	}{
+		{
+			name: "nil Cluster",
+			args: args{
+				cluster: nil,
+			},
+			wantErr: true,
+			errmsg:  "missing Cluster",
+		}, {
+			name: "empty Cluster-name",
+			args: args{
+				cluster: &api.Cluster{},
+			},
+			wantErr: true,
+			errmsg:  "missing Cluster name",
+		}, {
+			name: "empty kubernetes version",
+			args: args{
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "test",
+					},
+				},
+			},
+			wantErr: true,
+			errmsg:  "missing Cluster version",
+		}, {
+			name: "unknown provider",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "unknown",
+					},
+					Spec: api.PharmerClusterSpec{
+						Config: api.ClusterConfig{
+							Cloud: api.CloudSpec{
+								CloudProvider: "unknown",
+							},
+							KubernetesVersion: "1.13.4",
+						},
+					},
+				},
+			},
+			wantErr: true,
+			errmsg:  "cloud provider not registerd",
+		}, {
+			name: "Cluster already exists",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "already-exists",
+					},
+					Spec: api.PharmerClusterSpec{
+						Config: api.ClusterConfig{
+							KubernetesVersion: "1.13.0",
+						},
+					},
+				},
+			},
+			wantErr: true,
+			errmsg:  "cluster already exists",
+			beforeTest: func(t *testing.T, a args) func(t *testing.T) {
+				_, err := a.store.Clusters().Create(&api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "already-exists",
+					},
+				})
+				if err != nil {
+					t.Errorf("failed to create Cluster: %v", err)
+				}
+
+				return func(t *testing.T) {
+					err = a.store.Clusters().Delete("already-exists")
+					if err != nil {
+						t.Errorf("failed to delete Cluster: %v", err)
+					}
+				}
+			},
+		}, {
+			name: "gce Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "gce",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "gce",
+								Zone:          "us-central-1f",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+		}, {
+			name: "aws Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "aws",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "aws",
+								Zone:          "us-east-1b",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+		}, {
+			name: "azure Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "azure",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "azure",
+								Zone:          "us-east",
+							},
+							CredentialName:    "azure-cred",
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr: false,
+			beforeTest: func(t *testing.T, a args) func(t *testing.T) {
+				g := gomega.NewGomegaWithT(t)
+				_, err := a.store.Credentials().Create(&cloudapi.Credential{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "azure-cred",
+					},
+					Spec: cloudapi.CredentialSpec{
+						Provider: "azure",
+						Data: map[string]string{
+							"clientID":       "a",
+							"clientSecret":   "b",
+							"subscriptionID": "c",
+							"tenantID":       "d",
+						},
+					},
+				})
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+
+				return func(t *testing.T) {
+					// check if load balancer ip is set
+					a.cluster.Spec.Config.APIServerCertSANs[0] = azure.DefaultInternalLBIPAddress
+
+					// check if Cluster is created
+					err := a.store.Clusters().Delete(a.cluster.Name)
+					g.Expect(err).NotTo(gomega.HaveOccurred())
+
+					// check certs are generated
+					deleteCerts(t, a.store, a.cluster.Name)
+
+					// check master machines are genereated
+					for i := 0; i < a.cluster.Spec.Config.MasterCount; i++ {
+						err = a.store.Machine(a.cluster.Name).Delete(a.cluster.MasterMachineName(i))
+						g.Expect(err).NotTo(gomega.HaveOccurred())
+					}
+				}
+			},
+		}, {
+			name: "gke Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "gke",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "gke",
+								Zone:          "us-central-1f",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr: false,
+			beforeTest: func(t *testing.T, a args) func(t *testing.T) {
+				g := gomega.NewGomegaWithT(t)
+				return func(t *testing.T) {
+					// check if Cluster is created
+					err := a.store.Clusters().Delete(a.cluster.Name)
+					g.Expect(err).NotTo(gomega.HaveOccurred())
+
+					// check certs are generated
+					deleteCerts(t, a.store, a.cluster.Name)
+				}
+			},
+		}, {
+			name: "aks Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "aks",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "aks",
+								Zone:          "useast2",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+		}, {
+			name: "linode Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "linode",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "linode",
+								Zone:          "us-east",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+		}, {
+			name: "digitalocean Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "digitalocean",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "digitalocean",
+								Zone:          "nyc1",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+		}, {
+			name: "packet Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "packet",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "packet",
+								Zone:          "ewr1",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+		}, {
+			name: "dokube Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "dokube",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "dokube",
+								Zone:          "nyc1",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+		}, {
+			name: "eks Cluster",
+			args: args{
+				store: fake.New(),
+				cluster: &api.Cluster{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "eks",
+					},
+					Spec: api.PharmerClusterSpec{
+						ClusterAPI: v1alpha1.Cluster{},
+						Config: api.ClusterConfig{
+							MasterCount: 3,
+							Cloud: api.CloudSpec{
+								CloudProvider: "eks",
+								Zone:          "us-east-1b",
+							},
+							KubernetesVersion: "1.13.1",
+						},
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+		},
+	}
+	g := gomega.NewGomegaWithT(t)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.beforeTest != nil {
+				afterTest := tt.beforeTest(t, tt.args)
+				defer afterTest(t)
+			}
+
+			err := cloud.CreateCluster(tt.args.store, tt.args.cluster)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateCluster() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				g.Expect(err.Error()).Should(gomega.ContainSubstring(tt.errmsg))
+			}
+		})
+	}
+}
+
+func TestCreateMachineSets(t *testing.T) {
+	type args struct {
+		store store.ResourceInterface
+		opts  *options.NodeGroupCreateConfig
+	}
+	genericBeforeTest := func(t *testing.T, a args, cluster *api.Cluster) func(*testing.T) {
+		cluster, err := a.store.Clusters().Create(cluster)
+		g := gomega.NewGomegaWithT(t)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		_, err = certificates.CreateCertsKeys(a.store, a.opts.ClusterName)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		return func(t *testing.T) {
+			err = a.store.Clusters().Delete(cluster.Name)
+			g.Expect(err).NotTo(gomega.HaveOccurred())
+
+			deleteCerts(t, a.store, a.opts.ClusterName)
+
+			// check if machinesets are created
+			for node := range a.opts.Nodes {
+				err = a.store.MachineSet(a.opts.ClusterName).Delete(cloud.GenerateMachineSetName(node))
+				g.Expect(err).NotTo(gomega.HaveOccurred())
+			}
+		}
+	}
+
+	tests := []struct {
+		name       string
+		args       args
+		wantErr    bool
+		cluster    *api.Cluster
+		beforeTest func(t *testing.T, a args, cluster *api.Cluster) func(*testing.T)
+	}{
+		{
+			name: "no nodes",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "gce",
+					Nodes:       nil,
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "gce",
+				},
+			},
+		},
+		{
+			name: "test gce",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "gce",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "gce",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "gce",
+							Zone:          "us-central-1f",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		},
+		{
+			name: "test aws",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "aws",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "aws",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "aws",
+							Zone:          "us-east-1b",
+							AWS: &api.AWSSpec{
+								IAMProfileMaster: "master",
+								IAMProfileNode:   "node",
+							},
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+			name: "test azure",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "azure",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "azure",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "azure",
+							Zone:          "useast2",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+			name: "test gke",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "gke",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "gke",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "gke",
+							Zone:          "us-central-1f",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+
+			name: "test aks",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "aks",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "aks",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "aks",
+							Zone:          "us-central-1f",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+
+			name: "test dokube",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "dokube",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "dokube",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "dokube",
+							Zone:          "nyc1",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+
+			name: "test eks",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "eks",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "eks",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "eks",
+							Zone:          "us-central-1f",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+
+			name: "test digitalocean",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "digitalocean",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "digitalocean",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "digitalocean",
+							Zone:          "nyc1",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+
+			name: "test linode",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "linode",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "linode",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "linode",
+							Zone:          "us-east",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		}, {
+
+			name: "test packet",
+			args: args{
+				store: fake.New(),
+				opts: &options.NodeGroupCreateConfig{
+					ClusterName: "packet",
+					Nodes: map[string]int{
+						"a": 1,
+						"b": 2,
+						"c": 3,
+					},
+				},
+			},
+			wantErr:    false,
+			beforeTest: genericBeforeTest,
+			cluster: &api.Cluster{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "packet",
+				},
+				Spec: api.PharmerClusterSpec{
+					Config: api.ClusterConfig{
+						Cloud: api.CloudSpec{
+							CloudProvider: "packet",
+							Zone:          "ewr1",
+						},
+						KubernetesVersion: "1.13.4",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			afterTest := tt.beforeTest(t, tt.args, tt.cluster)
+			defer afterTest(t)
+
+			if err := cloud.CreateMachineSets(tt.args.store, tt.args.opts); (err != nil) != tt.wantErr {
+				t.Errorf("CreateMachineSets() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

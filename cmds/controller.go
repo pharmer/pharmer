@@ -1,23 +1,21 @@
 package cmds
 
 import (
-	"context"
-
 	"github.com/appscode/go/term"
 	"github.com/pharmer/pharmer/cloud"
-	pharmerConf "github.com/pharmer/pharmer/config"
+	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
+	"k8s.io/sample-controller/pkg/signals"
 	clusterapis "sigs.k8s.io/cluster-api/pkg/apis"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 )
 
+// TODO: make sure it works
 func newCmdController() *cobra.Command {
-	//s := config.
-	ownerID := ""
+	var ownerID, provider, clusterName string
+
 	machineSetupConfig := "/etc/machinesetup/machine_setup_configs.yaml"
-	provider := "digitalocean"
 	cmd := &cobra.Command{
 		Use:               "controller",
 		Short:             "Bootstrap as a Kubernetes master or node",
@@ -29,26 +27,39 @@ func newCmdController() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			// Initialize cluster actuator.
-
-			cfgFile, _ := pharmerConf.GetConfigFile(cmd.Flags())
-			cfg, err := pharmerConf.LoadConfig(cfgFile)
+			storeProvider, err := store.GetStoreProvider(cmd, "")
 			term.ExitOnError(err)
 
-			ctx := cloud.NewContext(context.Background(), cfg, pharmerConf.GetEnv(cmd.Flags()))
+			cluster, err := storeProvider.Clusters().Get(clusterName)
+			if err != nil {
+				term.Fatalln(err)
+			}
 
-			cm, err := cloud.GetCloudManager(provider, ctx)
-			term.ExitOnError(err)
+			scope := cloud.NewScope(cloud.NewScopeParams{
+				Cluster:       cluster,
+				StoreProvider: storeProvider,
+			})
+
+			cm, err := scope.GetCloudManager()
+			if err != nil {
+				term.Fatalln(err)
+			}
+
+			err = cm.SetCloudConnector() //Connector()
+			if err != nil {
+				term.Fatalln(err)
+			}
 
 			err = cm.InitializeMachineActuator(mgr)
-			term.ExitOnError(err)
+			if err != nil {
+				term.Fatalln(err)
+			}
 
 			if err := clusterapis.AddToScheme(mgr.GetScheme()); err != nil {
 				term.Fatalln(err)
 			}
-			cm.SetOwner(ownerID)
 
-			if err := cm.AddToManager(ctx, mgr); err != nil {
+			if err := cm.AddToManager(mgr); err != nil {
 				term.Fatalln(err)
 			}
 
@@ -60,6 +71,7 @@ func newCmdController() *cobra.Command {
 	//s.AddFlags(cmd.Flags())
 	cmd.Flags().StringVar(&machineSetupConfig, "machine-setup-config", machineSetupConfig, "path to the machine setup config")
 	cmd.Flags().StringVar(&provider, "provider", provider, "Cloud provider name")
+	cmd.Flags().StringVar(&clusterName, "cluster-name", clusterName, "Cluster name")
 	cmd.Flags().StringVarP(&ownerID, "owner", "o", ownerID, "Current user id")
 
 	return cmd

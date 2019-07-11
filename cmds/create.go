@@ -1,8 +1,8 @@
 package cmds
 
 import (
-	cpCmd "github.com/pharmer/pharmer/cloud/cmds"
-	credCmd "github.com/pharmer/pharmer/credential/cmds"
+	cpCmd "github.com/pharmer/pharmer/cmds/cloud"
+	"github.com/pharmer/pharmer/cmds/credential"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +18,7 @@ func newCmdCreate() *cobra.Command {
 	cmd.AddCommand(cpCmd.NewCmdCreateNodeGroup())
 
 	// Credential
-	cmd.AddCommand(credCmd.NewCmdCreateCredential())
+	cmd.AddCommand(credential.NewCmdCreateCredential())
 
 	return cmd
 }

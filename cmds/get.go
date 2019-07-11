@@ -3,8 +3,8 @@ package cmds
 import (
 	"io"
 
-	cpCmd "github.com/pharmer/pharmer/cloud/cmds"
-	credCmd "github.com/pharmer/pharmer/credential/cmds"
+	cpCmd "github.com/pharmer/pharmer/cmds/cloud"
+	"github.com/pharmer/pharmer/cmds/credential"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ func newCmdGet(out io.Writer) *cobra.Command {
 	cmd.AddCommand(cpCmd.NewCmdGetNodeGroup(out))
 
 	// Credential
-	cmd.AddCommand(credCmd.NewCmdGetCredential(out))
+	cmd.AddCommand(credential.NewCmdGetCredential(out))
 
 	return cmd
 }

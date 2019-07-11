@@ -1,10 +1,10 @@
-package dokube_config
+package dokube
 
 import (
 	"encoding/json"
 
 	"github.com/appscode/go/encoding/yaml"
-	. "github.com/pharmer/pharmer/apis/v1beta1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -13,7 +13,7 @@ import (
 const (
 	DokubeProviderGroupName  = "dokubeproviderconfig"
 	DokubeProviderKind       = "DokubeClusterProviderConfig"
-	DokubeProviderApiVersion = "v1alpha1"
+	DokubeProviderAPIVersion = "v1alpha1"
 )
 
 type DokubeMachineProviderConfig struct {
@@ -23,10 +23,10 @@ type DokubeMachineProviderConfig struct {
 	Size string `json:"size,omitempty"`
 }
 
-func SetLDokubeClusterProviderConfig(cluster *clusterapi.Cluster, config *ClusterConfig) error {
+func SetLDokubeClusterProviderConfig(cluster *clusterapi.Cluster, config *api.ClusterConfig) error {
 	conf := &DokubeMachineProviderConfig{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: DokubeProviderGroupName + "/" + DokubeProviderApiVersion,
+			APIVersion: DokubeProviderGroupName + "/" + DokubeProviderAPIVersion,
 			Kind:       DokubeProviderKind,
 		},
 	}

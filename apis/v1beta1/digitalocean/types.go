@@ -8,7 +8,7 @@ import (
 const (
 	DigitalOceanProviderGroupName  = "digitaloceanproviderconfig"
 	DigitalOceanProviderKind       = "DigitalOceanProviderConfig"
-	DigitalOceanProviderApiVersion = "v1alpha1"
+	DigitalOceanProviderAPIVersion = "v1alpha1"
 )
 
 type DigitalOceanMachineProviderSpec struct {
@@ -58,7 +58,7 @@ type DigitalOceanLoadBalancer struct {
 	HealthCheck         *godo.HealthCheck     `json:"health_check,omitempty"`
 	StickySessions      *godo.StickySessions  `json:"sticky_sessions,omitempty"`
 	Region              string                `json:"region,omitempty"`
-	RedirectHttpToHttps bool                  `json:"redirect_http_to_https,omitempty"`
+	RedirectHTTPToHTTPS bool                  `json:"redirect_http_to_https,omitempty"`
 }
 
 func DescribeLoadBalancer(lb *godo.LoadBalancer) *DigitalOceanLoadBalancer {
@@ -73,6 +73,6 @@ func DescribeLoadBalancer(lb *godo.LoadBalancer) *DigitalOceanLoadBalancer {
 		HealthCheck:         lb.HealthCheck,
 		StickySessions:      lb.StickySessions,
 		Region:              lb.Region.Slug,
-		RedirectHttpToHttps: lb.RedirectHttpToHttps,
+		RedirectHTTPToHTTPS: lb.RedirectHttpToHttps,
 	}
 }

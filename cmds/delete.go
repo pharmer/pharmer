@@ -1,8 +1,8 @@
 package cmds
 
 import (
-	cpCmd "github.com/pharmer/pharmer/cloud/cmds"
-	credCmd "github.com/pharmer/pharmer/credential/cmds"
+	cpCmd "github.com/pharmer/pharmer/cmds/cloud"
+	"github.com/pharmer/pharmer/cmds/credential"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +18,7 @@ func newCmdDelete() *cobra.Command {
 	cmd.AddCommand(cpCmd.NewCmdDeleteNodeGroup())
 
 	// Credential
-	cmd.AddCommand(credCmd.NewCmdDeleteCredential())
+	cmd.AddCommand(credential.NewCmdDeleteCredential())
 
 	return cmd
 }

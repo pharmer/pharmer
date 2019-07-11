@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -12,9 +11,6 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/ghodss/yaml"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/store"
-	"github.com/pharmer/pharmer/store/providers/fake"
-	"github.com/pharmer/pharmer/store/providers/vfs"
 	flag "github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/homedir"
@@ -24,7 +20,10 @@ func LoadConfig(configPath string) (*api.PharmerConfig, error) {
 	if _, err := os.Stat(configPath); err != nil {
 		return nil, err
 	}
-	os.Chmod(configPath, 0600)
+	err := os.Chmod(configPath, 0600)
+	if err != nil {
+		return nil, err
+	}
 
 	config := &api.PharmerConfig{}
 	bytes, err := ioutil.ReadFile(configPath)
@@ -44,7 +43,10 @@ func Save(pc *api.PharmerConfig, configPath string) error {
 	if err != nil {
 		return err
 	}
-	os.MkdirAll(filepath.Dir(configPath), 0755)
+	err = os.MkdirAll(filepath.Dir(configPath), 0755)
+	if err != nil {
+		return err
+	}
 	return ioutil.WriteFile(configPath, data, 0600)
 }
 
@@ -89,11 +91,4 @@ func NewDefaultConfig() *api.PharmerConfig {
 			},
 		},
 	}
-}
-
-func NewStoreProvider(ctx context.Context, cfg *api.PharmerConfig) store.Interface {
-	if store, err := store.GetProvider(vfs.UID, ctx, cfg); err == nil {
-		return store
-	}
-	return &fake.FakeStore{}
 }

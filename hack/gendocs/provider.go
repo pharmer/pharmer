@@ -188,12 +188,12 @@ func genCloudProviderDocs() error {
 			return errors.Wrapf(err, "failed to execute template for %s", provider)
 		}
 
-		dir := fmt.Sprintf("%s/src/github.com/pharmer/docs/docs/cloud/%s", runtime.GOPath(), provider)
+		dir := fmt.Sprintf("%s/src/github.com/pharmer/docs/cloud/%s", runtime.GOPath(), provider)
 		err = os.MkdirAll(dir, 0755)
 		if err != nil {
 			return err
 		}
-		err = ioutil.WriteFile(filepath.Join(dir, "README.md"), buf.Bytes(), 0)
+		err = ioutil.WriteFile(filepath.Join(dir, "README.md"), buf.Bytes(), 0755)
 		if err != nil {
 			return errors.Wrapf(err, "failed to update doc for %s", provider)
 		}

@@ -90,6 +90,11 @@ func (s *certificateFileStore) Delete(name string) error {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
+	_, exist := s.certs[s.certID(name)]
+	if !exist {
+		return errors.New("certificate not found")
+	}
+
 	delete(s.certs, s.certID(name))
 	delete(s.keys, s.keyID(name))
 	return nil

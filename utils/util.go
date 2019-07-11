@@ -3,17 +3,15 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/appscode/go/log"
 	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/mergepatch"
 )
 
-func GetPreconditionFunc(kind string) []mergepatch.PreconditionFunc {
+func GetPreconditionFunc() []mergepatch.PreconditionFunc {
 	preconditions := []mergepatch.PreconditionFunc{
 		mergepatch.RequireKeyUnchanged("apiVersion"),
 		mergepatch.RequireKeyUnchanged("kind"),
@@ -108,27 +106,4 @@ func (err errPreconditionFailed) Error() string {
 func IsPreconditionFailed(err error) bool {
 	_, ok := err.(errPreconditionFailed)
 	return ok
-}
-
-func CheckAlterableFlags(cmd *cobra.Command, name ...string) bool {
-	for _, n := range name {
-		flag := cmd.Flag(n)
-		if flag.Changed == true {
-			return true
-		}
-	}
-	return false
-}
-
-// TODO: os.Getenv("USER") ??
-func GetLocalOwner() string {
-	home := os.Getenv("HOME")
-	if len(home) > 0 {
-		u := strings.Split(home, "/")
-		if len(u) > 0 {
-			return u[len(u)-1]
-		}
-	}
-	return ""
-
 }

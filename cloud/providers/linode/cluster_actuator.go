@@ -16,12 +16,11 @@ import (
 
 func init() {
 	// AddToManagerFuncs is a list of functions to create controllers and add them to a manager.
-	AddToManagerFuncs = append(AddToManagerFuncs, func(ctx context.Context, m manager.Manager, owner string) error {
+	AddToManagerFuncs = append(AddToManagerFuncs, func(cm *ClusterManager, m manager.Manager) error {
 		actuator := NewClusterActuator(m, ClusterActuatorParams{
-			Ctx:           ctx,
 			EventRecorder: m.GetEventRecorderFor(Recorder),
 			Scheme:        m.GetScheme(),
-			Owner:         owner,
+			cm:            cm,
 		})
 		return cluster.AddWithActuator(m, actuator)
 	})
@@ -29,52 +28,39 @@ func init() {
 }
 
 type ClusterActuator struct {
-	ctx           context.Context
 	client        client.Client
 	eventRecorder record.EventRecorder
 	scheme        *runtime.Scheme
-	owner         string
-	conn          *cloudConnector
+	cm            *ClusterManager
 }
 
 type ClusterActuatorParams struct {
-	Ctx            context.Context
-	EventRecorder  record.EventRecorder
-	Scheme         *runtime.Scheme
-	Owner          string
-	CloudConnector *cloudConnector
+	EventRecorder record.EventRecorder
+	Scheme        *runtime.Scheme
+	cm            *ClusterManager
 }
 
 func NewClusterActuator(m manager.Manager, params ClusterActuatorParams) *ClusterActuator {
 	return &ClusterActuator{
-		ctx:           params.Ctx,
 		client:        m.GetClient(),
 		eventRecorder: params.EventRecorder,
 		scheme:        params.Scheme,
-		owner:         params.Owner,
-		conn:          params.CloudConnector,
+		cm:            params.cm,
 	}
 }
 
-func (cm *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
+func (ca *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
 	log.Infoln("Reconciling cluster", cluster.Name)
 
-	conn, err := PrepareCloud(cm.ctx, cluster.Name, cm.owner)
-	if err != nil {
-		log.Debugln("Error creating cloud connector", err)
-		return err
-	}
-	cm.conn = conn
-
-	lbName := conn.namer.LoadBalancerName()
-	lb, err := conn.lbByName(context.Background(), lbName)
+	lbName := ca.cm.namer.LoadBalancerName()
+	lb, err := ca.cm.conn.lbByName(lbName)
 	if err == errLBNotFound {
-		lb, err = conn.createLoadBalancer(lbName)
+		lb, err = ca.cm.conn.createLoadBalancer(lbName)
 		if err != nil {
 			log.Debugln("error creating load balancer", err)
 			return err
 		}
-		log.Infof("created load balancer %q for cluster %q", lbName, conn.cluster.Name)
+		log.Infof("created load balancer %q for cluster %q", lbName, ca.cm.conn.Cluster.Name)
 
 		cluster.Status.APIEndpoints = []clusterapi.APIEndpoint{
 			{
@@ -94,7 +80,7 @@ func (cm *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
 	}
 	status.Network.APIServerLB = linodeApi.DescribeLoadBalancer(lb)
 
-	if err := cm.updateClusterStatus(cluster, status); err != nil {
+	if err := ca.updateClusterStatus(cluster, status); err != nil {
 		log.Debugf("Error updating cluster status for cluster %q", cluster.Name)
 		return err
 	}
@@ -116,5 +102,5 @@ func (cm *ClusterActuator) updateClusterStatus(cluster *clusterapi.Cluster, stat
 	}
 
 	cluster.Status.ProviderStatus = raw
-	return cm.client.Status().Update(cm.ctx, cluster)
+	return cm.client.Status().Update(context.Background(), cluster)
 }

@@ -1,55 +1,40 @@
 package inspector
 
 import (
-	"context"
-
 	"github.com/appscode/go/term"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
+	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type Inspector struct {
-	ctx     context.Context
-	client  kubernetes.Interface
-	cluster *api.Cluster
-	config  *rest.Config
-
-	owner string
+	storeProvider store.ResourceInterface
+	client        kubernetes.Interface
+	cluster       *api.Cluster
+	config        *rest.Config
 }
 
-func New(ctx context.Context, cluster *api.Cluster, owner string) (*Inspector, error) {
-	if cluster.ClusterConfig().Cloud.CloudProvider == "" {
-		return nil, errors.Errorf("cluster %v has no provider", cluster.Name)
-	}
-	var err error
-	if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
+func New(storeProvider store.ResourceInterface, cluster *api.Cluster, caCert *certificates.CertKeyPair) (*Inspector, error) {
+	restConfig, err := kube.NewRestConfig(caCert, cluster)
+	if err != nil {
 		return nil, err
 	}
-	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
-		return nil, err
-	}
-	kc, err := NewAdminClient(ctx, cluster)
+	kubeclient, err := kube.NewAdminClient(caCert, cluster)
 	if err != nil {
 		return nil, err
 	}
 
-	adminConfig, err := GetAdminConfig(ctx, cluster, owner)
-	if err != nil {
-		return nil, err
-	}
-	out := api.Convert_KubeConfig_To_Config(adminConfig)
-	clientConfig := clientcmd.NewDefaultClientConfig(*out, &clientcmd.ConfigOverrides{})
-	restConfig, err := clientConfig.ClientConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	return &Inspector{ctx: ctx, client: kc, cluster: cluster, config: restConfig, owner: owner}, nil
+	return &Inspector{
+		storeProvider: storeProvider,
+		client:        kubeclient,
+		cluster:       cluster,
+		config:        restConfig,
+	}, nil
 }
 
 func (i *Inspector) NativeCheck() error {
@@ -87,8 +72,8 @@ func (i *Inspector) NetworkCheck() error {
 	}
 
 	defer func() {
-		i.DeleteNginxService()
-		i.DeleteNginx()
+		_ = i.DeleteNginxService()
+		_ = i.DeleteNginx()
 	}()
 
 	var pods []core.Pod
@@ -97,10 +82,10 @@ func (i *Inspector) NetworkCheck() error {
 	}
 
 	term.Infoln("Checking Pod networks...")
-	if err := i.runNodeExecutor(pods[0].Name, pods[1].Status.PodIP, defaultNamespace, pods[0].Spec.Containers[0].Name); err != nil {
+	if err := i.runNodeExecutor(pods[0].Name, pods[1].Status.PodIP, pods[0].Spec.Containers[0].Name); err != nil {
 		return errors.WithStack(err)
 	}
-	if err := i.runNodeExecutor(pods[1].Name, pods[0].Status.PodIP, defaultNamespace, pods[1].Spec.Containers[0].Name); err != nil {
+	if err := i.runNodeExecutor(pods[1].Name, pods[0].Status.PodIP, pods[1].Spec.Containers[0].Name); err != nil {
 		return errors.WithStack(err)
 	}
 
@@ -119,11 +104,11 @@ func (i *Inspector) NetworkCheck() error {
 	}
 
 	term.Infoln("Checking networks usinng service ip...", svcIP)
-	if err := i.runNodeExecutor(pods[0].Name, svcIP, defaultNamespace, pods[0].Spec.Containers[0].Name); err != nil {
+	if err := i.runNodeExecutor(pods[0].Name, svcIP, pods[0].Spec.Containers[0].Name); err != nil {
 		return errors.WithStack(err)
 	}
 	term.Infoln("Checking networks using service name...")
-	if err := i.runNodeExecutor(pods[1].Name, svcIP, defaultNamespace, pods[1].Spec.Containers[0].Name); err != nil {
+	if err := i.runNodeExecutor(pods[1].Name, svcIP, pods[1].Spec.Containers[0].Name); err != nil {
 		return errors.WithStack(err)
 	}
 

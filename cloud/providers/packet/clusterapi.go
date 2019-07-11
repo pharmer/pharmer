@@ -49,8 +49,8 @@ spec:
       - args:
         - controller
         - --provider={{ .Provider }}
+        - --cluster-name={{ .ClusterName }}
         - --kubeconfig=/etc/kubernetes/admin.conf 
-        - --owner={{ .ClusterOwner }}
         env:
         image: {{ .ControllerImage }}
         name: manager
@@ -67,13 +67,13 @@ spec:
         - mountPath: /etc/ssl/certs
           name: certs
         - name: sshkeys
-          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters/{{ .ClusterName }}/ssh
+          mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/ssh
         - name: certificates
-          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters/{{ .ClusterName }}/pki
+          mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/pki
         - name: cluster
-          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/clusters
+          mountPath: /root/.pharmer/store.d/clusters
         - name: credential
-          mountPath: /root/.pharmer/store.d/{{ .ClusterOwner }}/credentials
+          mountPath: /root/.pharmer/store.d/credentials
       terminationGracePeriodSeconds: 10
       tolerations:
       - effect: NoSchedule

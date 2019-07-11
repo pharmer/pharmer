@@ -26,12 +26,10 @@ const (
 	tabwriterPadding  = 3
 	tabwriterPadChar  = ' '
 	tabwriterFlags    = 0
-	statusUnknown     = "Unknown"
 )
 
 type handlerEntry struct {
 	printFunc reflect.Value
-	args      []reflect.Value
 }
 
 type PrintOptions struct {
@@ -71,10 +69,9 @@ func ShortHumanDuration(d time.Duration) string {
 }
 
 func (h *HumanReadablePrinter) addDefaultHandlers() {
-	h.Handler(h.printCluster)
-	h.Handler(h.printNodeGroup)
-	h.Handler(h.printCredential)
-	h.Handler(h.printMachineSet)
+	_ = h.Handler(h.printCluster)
+	_ = h.Handler(h.printCredential)
+	_ = h.Handler(h.printMachineSet)
 }
 
 func (h *HumanReadablePrinter) PrintHeader(enable bool) {
@@ -114,7 +111,7 @@ func (h *HumanReadablePrinter) validatePrintHandlerFunc(printFunc reflect.Value)
 	return nil
 }
 
-func getColumns(options PrintOptions, t reflect.Type) []string {
+func getColumns(t reflect.Type) []string {
 	columns := make([]string, 0)
 	columns = append(columns, "NAME")
 	switch t.String() {
@@ -161,68 +158,43 @@ func (h *HumanReadablePrinter) printCluster(item *api.Cluster, w io.Writer, opti
 	if _, err = fmt.Fprintf(w, "%s\t", item.Status.Phase); err != nil {
 		return
 	}
-	PrintNewline(w)
-
-	return
+	return PrintNewline(w)
 }
 
-func (h *HumanReadablePrinter) printNodeGroup(item *api.NodeGroup, w io.Writer, options PrintOptions) (err error) {
+func (h *HumanReadablePrinter) printMachineSet(item *clusterv1.MachineSet, w io.Writer, options PrintOptions) error {
 	name := item.Name
 
-	if _, err = fmt.Fprintf(w, "%s\t", name); err != nil {
-		return
+	if _, err := fmt.Fprintf(w, "%s\t", name); err != nil {
+		return err
 	}
 
-	if _, err = fmt.Fprintf(w, "%s\t", item.ClusterName); err != nil {
-		return
+	if _, err := fmt.Fprintf(w, "%s\t", item.ClusterName); err != nil {
+		return err
 	}
 
-	if _, err = fmt.Fprintf(w, "%v\t", item.Spec.Nodes); err != nil {
-		return
+	if _, err := fmt.Fprintf(w, "%v\t", item.Spec.Template.Name); err != nil {
+		return err
 	}
-	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.Template.Spec.SKU); err != nil {
-		return
+	if _, err := fmt.Fprintf(w, "%s\t", item.Spec.Template.Spec.Namespace); err != nil {
+		return err
 	}
-	PrintNewline(w)
-	return
+	return PrintNewline(w)
 }
 
-func (h *HumanReadablePrinter) printMachineSet(item *clusterv1.MachineSet, w io.Writer, options PrintOptions) (err error) {
+func (h *HumanReadablePrinter) printCredential(item *cloudapi.Credential, w io.Writer, options PrintOptions) error {
 	name := item.Name
 
-	if _, err = fmt.Fprintf(w, "%s\t", name); err != nil {
-		return
+	if _, err := fmt.Fprintf(w, "%s\t", name); err != nil {
+		return err
 	}
 
-	if _, err = fmt.Fprintf(w, "%s\t", item.ClusterName); err != nil {
-		return
+	if _, err := fmt.Fprintf(w, "%s\t", item.Spec.Provider); err != nil {
+		return err
 	}
-
-	if _, err = fmt.Fprintf(w, "%v\t", item.Spec.Template.Name); err != nil {
-		return
+	if _, err := fmt.Fprintf(w, "%s\t", credential.CommonSpec(item.Spec).String()); err != nil {
+		return err
 	}
-	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.Template.Spec.Namespace); err != nil {
-		return
-	}
-	PrintNewline(w)
-	return
-}
-
-func (h *HumanReadablePrinter) printCredential(item *cloudapi.Credential, w io.Writer, options PrintOptions) (err error) {
-	name := item.Name
-
-	if _, err = fmt.Fprintf(w, "%s\t", name); err != nil {
-		return
-	}
-
-	if _, err = fmt.Fprintf(w, "%s\t", item.Spec.Provider); err != nil {
-		return
-	}
-	if _, err = fmt.Fprintf(w, "%s\t", credential.CommonSpec(item.Spec).String()); err != nil {
-		return
-	}
-	PrintNewline(w)
-	return
+	return PrintNewline(w)
 }
 
 func (h *HumanReadablePrinter) PrintObj(obj runtime.Object, output io.Writer) error {
@@ -236,11 +208,15 @@ func (h *HumanReadablePrinter) PrintObj(obj runtime.Object, output io.Writer) er
 	if handler := h.handlerMap[t]; handler != nil {
 
 		if t != h.lastType || h.enablePrintHeader {
-			headers := getColumns(h.options, t)
+			headers := getColumns(t)
 			if h.lastType != nil {
-				PrintNewline(w)
+				if err := PrintNewline(w); err != nil {
+					return err
+				}
 			}
-			h.printHeader(headers, w)
+			if err := h.printHeader(headers, w); err != nil {
+				return err
+			}
 			h.lastType = t
 			h.enablePrintHeader = false
 		}
@@ -285,7 +261,7 @@ func TranslateTimestamp(timestamp metav1.Time) string {
 	if timestamp.IsZero() {
 		return "<unknown>"
 	}
-	return ShortHumanDuration(time.Now().Sub(timestamp.Time))
+	return ShortHumanDuration(time.Since(timestamp.Time))
 }
 
 func GetNewTabWriter(output io.Writer) *tabwriter.Writer {

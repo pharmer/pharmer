@@ -1,17 +1,18 @@
 package cloud
 
 import (
-	"context"
+	"errors"
 	"sync"
 
 	"github.com/golang/glog"
+	"github.com/pharmer/pharmer/cloud/utils/certificates"
 )
 
 // Factory is a function that returns a cloud.ClusterManager.
 // The config parameter provides an io.Reader handler to the factory in
 // order to load specific configurations. If no configuration is provided
 // the parameter is nil.
-type Factory func(ctx context.Context) (Interface, error)
+type Factory func(scope *Scope) Interface
 
 // All registered cloud providers.
 var (
@@ -31,38 +32,20 @@ func RegisterCloudManager(name string, cloud Factory) {
 	providers[name] = cloud
 }
 
-// IsCloudManager returns true if name corresponds to an already registered
-// cloud provider.
-func IsCloudManager(name string) bool {
-	providersMutex.Lock()
-	defer providersMutex.Unlock()
-	_, found := providers[name]
-	return found
-}
-
-// CloudManagers returns the name of all registered cloud providers in a
-// string slice
-func CloudManagers() []string {
-	names := []string{}
-	providersMutex.Lock()
-	defer providersMutex.Unlock()
-	for name := range providers {
-		names = append(names, name)
+func GetCloudManager(s *Scope) (Interface, error) {
+	if s.Certs == nil {
+		certs, err := certificates.GetPharmerCerts(s.StoreProvider, s.Cluster.Name)
+		if err != nil {
+			return nil, err
+		}
+		s.Certs = certs
 	}
-	return names
-}
 
-// GetCloudManager creates an instance of the named cloud provider, or nil if
-// the name is not known.  The error return is only used if the named provider
-// was known but failed to initialize. The config parameter specifies the
-// io.Reader handler of the configuration file for the cloud provider, or nil
-// for no configuation.
-func GetCloudManager(name string, ctx context.Context) (Interface, error) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
-	f, found := providers[name]
+	f, found := providers[s.Cluster.Spec.Config.Cloud.CloudProvider]
 	if !found {
-		return nil, nil
+		return nil, errors.New("cloud provider not registerd")
 	}
-	return f(ctx)
+	return f(s), nil
 }

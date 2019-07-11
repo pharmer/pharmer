@@ -1,7 +1,7 @@
 package gce
 
 import (
-	. "github.com/pharmer/pharmer/apis/v1beta1"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmv1beta1 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 )
@@ -10,7 +10,7 @@ const (
 	GCEProviderGroupName   = "gceproviderconfig"
 	GCEClusterProviderKind = "GCEClusterProviderSpec"
 	GCEMachineProviderKind = "GCEMachineProviderSpec"
-	GCEProviderApiVersion  = "v1alpha1"
+	GCEProviderAPIVersion  = "v1alpha1"
 )
 
 // GCEMachineProviderSpec is the Schema for the gcemachineproviderconfigs API
@@ -18,7 +18,7 @@ const (
 type GCEMachineProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Roles             []MachineRole `json:"roles,omitempty"`
+	Roles             []api.MachineRole `json:"roles,omitempty"`
 
 	Zone        string `json:"zone"`
 	MachineType string `json:"machineType"`
@@ -75,4 +75,13 @@ type KeyPair struct {
 type GCEClusterProviderStatus struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+}
+
+type Disk struct {
+	InitializeParams DiskInitializeParams `json:"initializeParams"`
+}
+
+type DiskInitializeParams struct {
+	DiskSizeGb int64  `json:"diskSizeGb"`
+	DiskType   string `json:"diskType"`
 }

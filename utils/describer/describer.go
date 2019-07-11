@@ -1,7 +1,6 @@
 package describer
 
 import (
-	"context"
 	"reflect"
 
 	"github.com/golang/glog"
@@ -14,33 +13,28 @@ type Describer interface {
 	Describe(object runtime.Object, describerSettings describe.DescriberSettings) (output string, err error)
 }
 
-func NewDescriber(ctx context.Context, owner string) Describer {
-	return newHumanReadableDescriber(ctx, owner)
+func NewDescriber() Describer {
+	return newHumanReadableDescriber()
 }
 
 type handlerEntry struct {
 	describeFunc reflect.Value
-	args         []reflect.Value
 }
 
 type humanReadableDescriber struct {
 	handlerMap map[reflect.Type]*handlerEntry
-	ctx        context.Context
-	owner      string
 }
 
-func newHumanReadableDescriber(ctx context.Context, owner string) *humanReadableDescriber {
+func newHumanReadableDescriber() *humanReadableDescriber {
 	describer := &humanReadableDescriber{
 		handlerMap: make(map[reflect.Type]*handlerEntry),
-		ctx:        ctx,
-		owner:      owner,
 	}
 	describer.addDefaultHandlers()
 	return describer
 }
 
 func (h *humanReadableDescriber) addDefaultHandlers() {
-	h.Handler(h.describeCluster)
+	_ = h.Handler(h.describeCluster)
 }
 
 func (h *humanReadableDescriber) Handler(describeFunc interface{}) error {

@@ -1,10 +1,9 @@
 package inspector
 
 import (
-	"fmt"
-
+	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
-	. "github.com/pharmer/pharmer/cloud"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,7 +14,7 @@ import (
 func (i *Inspector) CheckHelthStatus() error {
 	term.Println("Checking for component status...")
 	attempt := 0
-	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	err := wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 		resp, err := i.client.CoreV1().ComponentStatuses().List(metav1.ListOptions{
 			LabelSelector: labels.Everything().String(),
@@ -26,14 +25,12 @@ func (i *Inspector) CheckHelthStatus() error {
 		for _, status := range resp.Items {
 			for _, cond := range status.Conditions {
 				if cond.Type == core.ComponentHealthy && cond.Status != core.ConditionTrue {
+					log.Infof("Component %v is in condition %v with status %v", status.Name, cond.Type, cond.Status)
 					return false, nil
-				} else {
-					term.Infoln(fmt.Sprintf("Component %v is in condition %v with status %v", status.Name, cond.Type, cond.Status))
-					return true, nil
 				}
 			}
 		}
-		return false, nil
+		return true, nil
 	})
 	if err != nil {
 		return err

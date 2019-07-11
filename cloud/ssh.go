@@ -2,13 +2,17 @@ package cloud
 
 import (
 	"fmt"
-	"io"
+	"net"
 	"os"
-	"os/exec"
-	"strings"
 
 	"github.com/appscode/go/log"
+	"github.com/appscode/go/term"
+	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/store"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func ExecuteTCPCommand(command, addr string, config *ssh.ClientConfig) (string, error) {
@@ -27,20 +31,10 @@ func ExecuteTCPCommand(command, addr string, config *ssh.ClientConfig) (string, 
 	if config.User != "root" {
 		command = fmt.Sprintf("sudo %s", command)
 	}
-	session.Run(command)
+	_ = session.Run(command)
 	output := DefaultWriter.Output()
-	session.Close()
+	_ = session.Close()
 	return output, nil
-}
-
-func ExecuteSSHCommand(name string, arg []string, stdIn io.Reader) (string, error) {
-	cmd := exec.Command(name, arg...)
-	cmd.Stdin = stdIn
-	cmd.Stdout = DefaultWriter
-	cmd.Stderr = DefaultWriter
-	err := cmd.Run()
-	output := DefaultWriter.Output()
-	return output, err
 }
 
 var DefaultWriter = &StringWriter{
@@ -65,8 +59,42 @@ func (s *StringWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-func NewStringReader(ss []string) io.Reader {
-	formattedString := strings.Join(ss, "\n")
-	reader := strings.NewReader(formattedString)
-	return reader
+func GetSSHConfig(storeProvider store.ResourceInterface, clusterName, nodeName string) (*api.SSHConfig, error) {
+	cluster, err := storeProvider.Clusters().Get(clusterName)
+	if err != nil {
+		return nil, err
+	}
+
+	scope := NewScope(NewScopeParams{
+		Cluster:       cluster,
+		StoreProvider: storeProvider,
+	})
+	cm, err := scope.GetCloudManager()
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := cm.GetAdminClient()
+	if err != nil {
+		return nil, err
+	}
+
+	node, err := client.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{})
+	term.ExitOnError(err)
+
+	cfg := &api.SSHConfig{
+		PrivateKey: scope.Certs.SSHKey.PrivateKey,
+		User:       cluster.Spec.Config.SSHUserName,
+		HostPort:   int32(22),
+	}
+	for _, addr := range node.Status.Addresses {
+		if addr.Type == corev1.NodeExternalIP {
+			cfg.HostIP = addr.Address
+		}
+	}
+	if net.ParseIP(cfg.HostIP) == nil {
+		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
+	}
+
+	return cfg, nil
 }

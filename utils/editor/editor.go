@@ -26,8 +26,7 @@ type Editor struct {
 }
 
 func NewDefaultEditor() Editor {
-	var editorName string
-	editorName = os.Getenv("EDITOR")
+	editorName := os.Getenv("EDITOR")
 	if len(editorName) != 0 {
 		editorName = os.ExpandEnv(editorName)
 		return Editor{

@@ -1,17 +1,15 @@
 package packet
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
 
-	. "github.com/appscode/go/context"
+	"github.com/appscode/go/log"
 	"github.com/packethost/packngo"
 	"github.com/pharmer/cloud/pkg/credential"
-	"github.com/pharmer/cloud/pkg/providers"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -19,14 +17,14 @@ import (
 )
 
 type cloudConnector struct {
-	ctx     context.Context
-	i       providers.Interface
-	cluster *api.Cluster
-	client  *packngo.Client
+	*cloud.Scope
+	client *packngo.Client
 }
 
-func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
-	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.ClusterConfig().CredentialName)
+func newconnector(cm *ClusterManager) (*cloudConnector, error) {
+	cluster := cm.Cluster
+
+	cred, err := cm.GetCredential()
 	if err != nil {
 		return nil, err
 	}
@@ -35,64 +33,24 @@ func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*clo
 		return nil, errors.Wrapf(err, "credential %s is invalid", cluster.ClusterConfig().CredentialName)
 	}
 	// TODO: FixIt Project ID
-	cluster.ClusterConfig().Cloud.Project = typed.ProjectID()
-
-	i, err := providers.NewCloudProvider(providers.Options{
-		Provider: cluster.Spec.Config.Cloud.CloudProvider,
-		// set credentials
-	})
-	if err != nil {
-		return nil, err
-	}
+	cluster.Spec.Config.Cloud.Project = typed.ProjectID()
 
 	return &cloudConnector{
-		ctx:     ctx,
-		i:       i,
-		cluster: cluster,
-		client:  packngo.NewClientWithAuth("", typed.APIKey(), nil),
+		Scope:  cm.Scope,
+		client: packngo.NewClientWithAuth("", typed.APIKey(), nil),
 	}, nil
-}
-
-func PrepareCloud(ctx context.Context, clusterName string, owner string) (*cloudConnector, error) {
-	var err error
-	var conn *cloudConnector
-	cluster, err := Store(ctx).Owner(owner).Clusters().Get(clusterName)
-	if err != nil {
-		return conn, fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
-	}
-
-	if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
-		return conn, err
-	}
-
-	if ctx, err = LoadEtcdCertificate(ctx, cluster, owner); err != nil {
-		return nil, err
-	}
-
-	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
-		return conn, err
-	}
-
-	if ctx, err = LoadSaKey(ctx, cluster, owner); err != nil {
-		return conn, err
-	}
-
-	if conn, err = NewConnector(ctx, cluster, owner); err != nil {
-		return nil, err
-	}
-	return conn, nil
 }
 
 func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
 		server, _, err := conn.client.Devices.Get(deviceID, &packngo.GetOptions{})
 		if err != nil {
 			return false, nil
 		}
-		Logger(conn.ctx).Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, server.ID, server.State)
+		log.Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, server.ID, server.State)
 		if strings.ToLower(server.State) == status {
 			return true, nil
 		}
@@ -100,11 +58,9 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 	})
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-
 func (conn *cloudConnector) getPublicKey() (bool, string, error) {
-	if conn.cluster.Status.Cloud.SShKeyExternalID != "" {
-		key, resp, err := conn.client.SSHKeys.Get(conn.cluster.Status.Cloud.SShKeyExternalID, &packngo.GetOptions{})
+	if conn.Cluster.Status.Cloud.SSHKeyExternalID != "" {
+		key, resp, err := conn.client.SSHKeys.Get(conn.Cluster.Status.Cloud.SSHKeyExternalID, &packngo.GetOptions{})
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return false, "", nil
 		}
@@ -114,9 +70,9 @@ func (conn *cloudConnector) getPublicKey() (bool, string, error) {
 		return true, key.ID, nil
 	}
 
-	keys, _, err := conn.client.SSHKeys.ProjectList(conn.cluster.ClusterConfig().Cloud.Project)
+	keys, _, err := conn.client.SSHKeys.ProjectList(conn.Cluster.ClusterConfig().Cloud.Project)
 	for _, key := range keys {
-		if key.Label == conn.cluster.ClusterConfig().Cloud.SSHKeyName {
+		if key.Label == conn.Cluster.ClusterConfig().Cloud.SSHKeyName {
 			return true, key.ID, nil
 		}
 	}
@@ -124,11 +80,11 @@ func (conn *cloudConnector) getPublicKey() (bool, string, error) {
 }
 
 func (conn *cloudConnector) importPublicKey() (string, error) {
-	Logger(conn.ctx).Debugln("Adding SSH public key")
+	log.Debugln("Adding SSH public key")
 	sk, _, err := conn.client.SSHKeys.Create(&packngo.SSHKeyCreateRequest{
-		Key:       string(SSHKey(conn.ctx).PublicKey),
-		Label:     conn.cluster.ClusterConfig().Cloud.SSHKeyName,
-		ProjectID: conn.cluster.ClusterConfig().Cloud.Project,
+		Key:       string(conn.Certs.SSHKey.PublicKey),
+		Label:     conn.Cluster.ClusterConfig().Cloud.SSHKeyName,
+		ProjectID: conn.Cluster.ClusterConfig().Cloud.Project,
 	})
 
 	if err != nil {
@@ -138,25 +94,11 @@ func (conn *cloudConnector) importPublicKey() (string, error) {
 		}
 		return keyID, err
 	}
-	Logger(conn.ctx).Debugf("Created new ssh key with fingerprint=%v", SSHKey(conn.ctx).OpensshFingerprint)
+	log.Debugf("Created new ssh key with fingerprint=%v", conn.Certs.SSHKey.OpensshFingerprint)
 	return sk.ID, nil
 }
 
-func (conn *cloudConnector) deleteSSHKey(id string) error {
-	Logger(conn.ctx).Infof("Deleting SSH key for cluster %s", conn.cluster.Name)
-	return wait.PollImmediate(RetryInterval, RetryInterval, func() (bool, error) {
-		_, err := conn.client.SSHKeys.Delete(id)
-		return err == nil, nil
-	})
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-
-func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, token, owner string) (*api.NodeInfo, error) {
-	script, err := conn.renderStartupScript(conn.cluster, machine, token)
-	if err != nil {
-		return nil, err
-	}
+func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, script string) (*api.NodeInfo, error) {
 	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return nil, err
@@ -164,18 +106,18 @@ func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, token, ow
 	server, _, err := conn.client.Devices.Create(&packngo.DeviceCreateRequest{
 		Hostname:     machine.Name,
 		Plan:         machineConfig.Plan,
-		Facility:     []string{conn.cluster.ClusterConfig().Cloud.Zone},
-		OS:           conn.cluster.ClusterConfig().Cloud.InstanceImage,
+		Facility:     []string{conn.Cluster.ClusterConfig().Cloud.Zone},
+		OS:           conn.Cluster.ClusterConfig().Cloud.InstanceImage,
 		BillingCycle: "hourly",
-		ProjectID:    conn.cluster.ClusterConfig().Cloud.Project,
+		ProjectID:    conn.Cluster.ClusterConfig().Cloud.Project,
 		UserData:     script,
-		Tags:         []string{conn.cluster.Name},
+		Tags:         []string{conn.Cluster.Name},
 		SpotInstance: api.NodeType(machineConfig.SpotInstance) == api.NodeTypeSpot,
 	})
 	if err != nil {
 		return nil, err
 	}
-	Logger(conn.ctx).Infof("Instance %v created", machine.Name)
+	log.Infof("Instance %v created", machine.Name)
 
 	err = conn.waitForInstance(server.ID, "active")
 	if err != nil {
@@ -211,7 +153,7 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("Server %v deleted", serverID)
+	log.Infof("Server %v deleted", serverID)
 	return nil
 }
 
@@ -233,20 +175,8 @@ func serverIDFromProviderID(providerID string) (string, error) {
 	return split[2], nil
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-
-// reboot does not seem to run /etc/rc.local
-func (conn *cloudConnector) reboot(id string) error {
-	Logger(conn.ctx).Infof("Rebooting instance %v", id)
-	_, err := conn.client.Devices.Reboot(id)
-	if err != nil {
-		return errors.Wrap(err, ID(conn.ctx))
-	}
-	return nil
-}
-
 func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*packngo.Device, error) {
-	devices, _, err := conn.client.Devices.List(conn.cluster.ClusterConfig().Cloud.Project, nil)
+	devices, _, err := conn.client.Devices.List(conn.Cluster.ClusterConfig().Cloud.Project, nil)
 	if err != nil {
 		return nil, err
 	}

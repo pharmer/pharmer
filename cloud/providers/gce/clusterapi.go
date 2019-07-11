@@ -8,19 +8,19 @@ import (
 
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
-	yaml "gopkg.in/yaml.v2"
+	"github.com/pharmer/pharmer/cloud"
+	"gopkg.in/yaml.v2"
 )
 
-func (conn *cloudConnector) getControllerManager() (string, error) {
-	config := conn.cluster.ClusterConfig()
-	cred, err := Store(conn.ctx).Owner(conn.owner).Credentials().Get(config.CredentialName)
+func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
+	config := cm.Cluster.ClusterConfig()
+	cred, err := cm.GetCredential()
 	if err != nil {
 		return "", err
 	}
 	typed := credential.GCE{CommonSpec: credential.CommonSpec(cred.Spec)}
 
-	machineSetupConfig, err := getMachineSetupConfig(config)
+	machineSetupConfig, err := getMachineSetupConfig(&config)
 	if err != nil {
 		return "", err
 	}
@@ -33,10 +33,10 @@ func (conn *cloudConnector) getControllerManager() (string, error) {
 	err = tmpl.Execute(&tmplBuf, controllerManagerConfig{
 		MachineConfig:   machineSetupConfig,
 		ServiceAccount:  base64.StdEncoding.EncodeToString([]byte(typed.ServiceAccount())),
-		SSHPrivateKey:   base64.StdEncoding.EncodeToString((SSHKey(conn.ctx).PrivateKey)),
-		SSHPublicKey:    base64.StdEncoding.EncodeToString((SSHKey(conn.ctx).PublicKey)),
+		SSHPrivateKey:   base64.StdEncoding.EncodeToString(cm.Certs.SSHKey.PrivateKey),
+		SSHPublicKey:    base64.StdEncoding.EncodeToString(cm.Certs.SSHKey.PublicKey),
 		SSHUser:         base64.StdEncoding.EncodeToString([]byte("clusterapi")),
-		ControllerImage: MachineControllerImage,
+		ControllerImage: cloud.MachineControllerImage,
 	})
 	if err != nil {
 		return "", err
@@ -80,6 +80,7 @@ type controllerManagerConfig struct {
 	ControllerImage string
 }
 
+// TODO: we're using our own forks now, so we should generate this yamls and use from them instead of hard-coding
 const ControllerManager = `
 ---
 apiVersion: v1

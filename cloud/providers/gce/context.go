@@ -1,63 +1,53 @@
 package gce
 
 import (
-	"context"
 	"errors"
-	"sync"
 
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 const (
-	maxInstancesPerMIG = 5 // Should be 500
-	defaultNetwork     = "default"
+	defaultNetwork = "default"
 )
 
 type ClusterManager struct {
-	ctx     context.Context
-	cluster *api.Cluster
-	conn    *cloudConnector
-	namer   namer
-	m       sync.Mutex
+	*cloud.Scope
 
-	owner string
+	conn  *cloudConnector
+	namer namer
 }
 
-var _ Interface = &ClusterManager{}
+func (cm *ClusterManager) ApplyScale() error {
+	panic("implement me")
+}
+
+var _ cloud.Interface = &ClusterManager{}
 
 const (
 	UID = "gce"
 )
 
 func init() {
-	RegisterCloudManager(UID, func(ctx context.Context) (Interface, error) { return New(ctx), nil })
+	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(ctx context.Context) Interface {
-	return &ClusterManager{ctx: ctx}
-}
-
-type paramK8sClient struct{}
-
-func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
-	cm.m.Lock()
-	defer cm.m.Unlock()
-	v := cm.ctx.Value(paramK8sClient{})
-	if kc, ok := v.(kubernetes.Interface); ok && kc != nil {
-		return kc, nil
+func New(s *cloud.Scope) cloud.Interface {
+	return &ClusterManager{
+		Scope: s,
+		namer: namer{
+			cluster: s.Cluster,
+		},
 	}
-	kc, err := NewAdminClient(cm.ctx, cm.cluster)
-
-	if err != nil {
-		return nil, err
-	}
-	cm.ctx = context.WithValue(cm.ctx, paramK8sClient{}, kc)
-	return kc, nil
 }
 
 func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
 	return errors.New("not implemented")
+}
+
+// TODO: Verify
+func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
+	//cloud.CreateCredentialSecret(cm.AdminClient, cm.Cluster)
+	return nil
 }

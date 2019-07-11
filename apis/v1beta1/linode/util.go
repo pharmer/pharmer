@@ -1,4 +1,4 @@
-package linode_config
+package linode
 
 import (
 	"encoding/json"
@@ -139,7 +139,7 @@ func EncodeClusterSpec(spec *LinodeClusterProviderSpec) (*runtime.RawExtension, 
 func SetLinodeClusterProviderConfig(cluster *clusterapi.Cluster) error {
 	conf := &LinodeMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: LinodeProviderGroupName + "/" + LinodeProviderApiVersion,
+			APIVersion: LinodeProviderGroupName + "/" + LinodeProviderAPIVersion,
 			Kind:       LinodeProviderKind,
 		},
 	}

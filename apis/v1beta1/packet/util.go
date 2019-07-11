@@ -138,7 +138,7 @@ func EncodeClusterSpec(spec *PacketClusterProviderSpec) (*runtime.RawExtension, 
 func SetPacketClusterProviderConfig(cluster *clusterapi.Cluster) error {
 	conf := &PacketMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: PacketProviderGroupName + "/" + PacketProviderApiVersion,
+			APIVersion: PacketProviderGroupName + "/" + PacketProviderAPIVersion,
 			Kind:       PacketProviderKind,
 		},
 	}
@@ -158,7 +158,7 @@ func SetPacketClusterProviderConfig(cluster *clusterapi.Cluster) error {
 func SetPacketClusterProviderStatus(cluster *clusterapi.Cluster) error {
 	conf := &PacketClusterProviderStatus{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: PacketProviderGroupName + "/" + PacketProviderApiVersion,
+			APIVersion: PacketProviderGroupName + "/" + PacketProviderAPIVersion,
 			Kind:       PacketProviderKind,
 		},
 	}

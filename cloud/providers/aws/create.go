@@ -2,21 +2,19 @@ package aws
 
 import (
 	"fmt"
-	"net"
-	"strings"
 
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
-	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
-func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+	cluster := cm.Cluster
 	spec := clusterapi_aws.AWSMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: api.AWSProviderGroupName + "/" + api.AWSProviderApiVersion,
@@ -42,38 +40,10 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 	}, nil
 }
 
-// SetOwner sets owner field of ClusterManager
-func (cm *ClusterManager) SetOwner(owner string) {
-	cm.owner = owner
-}
-
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
+func (cm *ClusterManager) SetDefaultCluster() error {
+	cluster := cm.Cluster
 	n := namer{cluster: cluster}
 
-	if err := api.AssignTypeKind(cluster); err != nil {
-		return err
-	}
-	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
-		return err
-	}
-
-	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
-
-	config.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
-	config.APIServerExtraArgs = map[string]string{
-		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
-		"kubelet-preferred-address-types": strings.Join([]string{
-			string(core.NodeInternalIP),
-			string(core.NodeInternalDNS),
-			string(core.NodeExternalDNS),
-			string(core.NodeExternalIP),
-		}, ","),
-		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
-	}
-
-	// Init spec
-	cluster.Spec.Config.Cloud.Region = cluster.Spec.Config.Cloud.Zone[0 : len(cluster.Spec.Config.Cloud.Zone)-1]
-	cluster.Spec.Config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
 	if cluster.Spec.Config.Cloud.AWS == nil {
 		cluster.Spec.Config.Cloud.AWS = &api.AWSSpec{}
 	}
@@ -88,10 +58,11 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 	cluster.Spec.Config.Cloud.AWS.VpcCIDR = "10.0.0.0/16"
 	cluster.Spec.Config.Cloud.AWS.PublicSubnetCIDR = "10.0.1.0/24"
 	cluster.Spec.Config.Cloud.AWS.PrivateSubnetCIDR = "10.0.0.0/24"
-
-	if cluster.IsMinorVersion("1.9") {
-		config.APIServerExtraArgs["admission-control"] = api.DeprecatedV19AdmissionControl
+	cluster.Spec.Config.APIServerExtraArgs = map[string]string{
+		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
 	}
+	cluster.Spec.Config.SSHUserName = "ubuntu"
+
 	// Init status
 	cluster.Status = api.PharmerClusterStatus{
 		Phase: api.ClusterPending,
@@ -99,22 +70,39 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 			AWS: &api.AWSStatus{},
 		},
 	}
-	cm.cluster = cluster
 
 	return cm.SetClusterProviderConfig()
 }
 
 func (cm *ClusterManager) SetClusterProviderConfig() error {
+	certs := cm.Certs
 	conf := &clusterapi_aws.AWSClusterProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: api.AWSProviderGroupName + "/" + api.AWSProviderApiVersion,
 			Kind:       api.AWSClusterProviderKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: cm.cluster.Name,
+			Name: cm.Cluster.Name,
 		},
-		Region:     cm.cluster.Spec.Config.Cloud.Region,
-		SSHKeyName: cm.cluster.Spec.Config.Cloud.SSHKeyName,
+		Region:     cm.Cluster.Spec.Config.Cloud.Region,
+		SSHKeyName: cm.Cluster.Spec.Config.Cloud.SSHKeyName,
+
+		CAKeyPair: clusterapi_aws.KeyPair{
+			Cert: cert.EncodeCertPEM(certs.CACert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(certs.CACert.Key),
+		},
+		EtcdCAKeyPair: clusterapi_aws.KeyPair{
+			Cert: cert.EncodeCertPEM(certs.EtcdCACert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(certs.EtcdCACert.Key),
+		},
+		FrontProxyCAKeyPair: clusterapi_aws.KeyPair{
+			Cert: cert.EncodeCertPEM(certs.FrontProxyCACert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(certs.FrontProxyCACert.Key),
+		},
+		SAKeyPair: clusterapi_aws.KeyPair{
+			Cert: cert.EncodeCertPEM(certs.ServiceAccountCert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(certs.ServiceAccountCert.Key),
+		},
 	}
 
 	rawSpec, err := clusterapi_aws.EncodeClusterSpec(conf)
@@ -122,72 +110,13 @@ func (cm *ClusterManager) SetClusterProviderConfig() error {
 		return err
 	}
 
-	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
+	cm.Cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
 
 	return nil
 }
 
-func (cm *ClusterManager) SetupCerts() error {
-	conf, err := clusterapi_aws.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
-	if err != nil {
-		return err
-	}
-
-	conf.CAKeyPair = clusterapi_aws.KeyPair{
-		Cert: cert.EncodeCertPEM(CACert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(CAKey(cm.ctx)),
-	}
-	conf.FrontProxyCAKeyPair = clusterapi_aws.KeyPair{
-		Cert: cert.EncodeCertPEM(FrontProxyCACert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(FrontProxyCAKey(cm.ctx)),
-	}
-	conf.EtcdCAKeyPair = clusterapi_aws.KeyPair{
-		Cert: cert.EncodeCertPEM(EtcdCaCert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(EtcdCaKey(cm.ctx)),
-	}
-	conf.SAKeyPair = clusterapi_aws.KeyPair{
-		Cert: cert.EncodeCertPEM(SaCert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(SaKey(cm.ctx)),
-	}
-
-	rawSpec, err := clusterapi_aws.EncodeClusterSpec(conf)
-	if err != nil {
-		return err
-	}
-
-	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
-
-	if _, err := Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// IsValid TODO:add description
-func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
-	return false, ErrNotImplemented
-}
-
-func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
-	cfg := &api.SSHConfig{
-		PrivateKey: SSHKey(cm.ctx).PrivateKey,
-		User:       "ubuntu",
-		HostPort:   int32(22),
-	}
-	for _, addr := range node.Status.Addresses {
-		if addr.Type == core.NodeExternalIP {
-			cfg.HostIP = addr.Address
-		}
-	}
-	if net.ParseIP(cfg.HostIP) == nil {
-		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
-	}
-	return cfg, nil
-}
-
-func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
-	return nil, nil
+func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
+	return kube.GetAdminConfig(cm.Cluster, cm.GetCaCertPair())
 }
 
 func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {

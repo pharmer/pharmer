@@ -1,18 +1,20 @@
 package store
 
 import (
-	"context"
 	"sync"
 
 	"github.com/golang/glog"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
+	"github.com/pharmer/pharmer/config"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 )
 
 // Factory is a function that returns a storage.Interface.
 // The config parameter provides an io.Reader handler to the factory in
 // order to load specific configurations. If no configuration is provided
 // the parameter is nil.
-type Factory func(ctx context.Context, cfg *api.PharmerConfig) (Interface, error)
+type Factory func(cfg *api.PharmerConfig) (Interface, error)
 
 // All registered cloud providers.
 var (
@@ -32,38 +34,51 @@ func RegisterProvider(name string, cloud Factory) {
 	providers[name] = cloud
 }
 
-// IsProvider returns true if name corresponds to an already registered
-// cloud provider.
-func IsProvider(name string) bool {
-	providersMutex.Lock()
-	defer providersMutex.Unlock()
-	_, found := providers[name]
-	return found
-}
-
-// Providers returns the name of all registered cloud providers in a
-// string slice
-func Providers() []string {
-	names := []string{}
-	providersMutex.Lock()
-	defer providersMutex.Unlock()
-	for name := range providers {
-		names = append(names, name)
-	}
-	return names
-}
-
 // GetProvider creates an node of the named cloud provider, or nil if
 // the name is not known.  The error return is only used if the named provider
 // was known but failed to initialize. The config parameter specifies the
 // io.Reader handler of the configuration file for the cloud provider, or nil
 // for no configuation.
-func GetProvider(name string, ctx context.Context, cfg *api.PharmerConfig) (Interface, error) {
+func getProvider(name string, cfg *api.PharmerConfig) (Interface, error) {
 	providersMutex.Lock()
 	defer providersMutex.Unlock()
 	f, found := providers[name]
 	if !found {
-		return nil, nil
+		return nil, errors.Errorf("provider %s not registered", name)
 	}
-	return f(ctx, cfg)
+	return f(cfg)
+}
+
+func GetStoreProvider(cmd *cobra.Command, owner string) (ResourceInterface, error) {
+	cfgFile, _ := config.GetConfigFile(cmd.Flags())
+	cfg, err := config.LoadConfig(cfgFile)
+	if err != nil {
+		return nil, err
+	}
+	return NewStoreProvider(cfg, owner)
+}
+
+func NewStoreInterface(cfg *api.PharmerConfig) (Interface, error) {
+	var storeType string
+	if cfg == nil {
+		storeType = fakeUID
+	} else if cfg.Store.Postgres != nil {
+		storeType = xormUID
+	} else {
+		storeType = vfsUID
+	}
+
+	store, err := getProvider(storeType, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return store, nil
+}
+
+func NewStoreProvider(cfg *api.PharmerConfig, owner string) (ResourceInterface, error) {
+	store, err := NewStoreInterface(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return store.Owner(owner), nil
 }

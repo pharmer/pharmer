@@ -1,8 +1,11 @@
 package v1beta1
 
 import (
-	"errors"
 	"testing"
+
+	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
+	"github.com/pkg/errors"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func TestErrObjectModified(t *testing.T) {
@@ -38,6 +41,107 @@ func TestErrObjectModified(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := ErrObjectModified(tt.args.err); got != tt.want {
 				t.Errorf("ErrObjectModified() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAssignTypeKind(t *testing.T) {
+	type args struct {
+		v interface{}
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "pharmerconfig",
+			args: args{
+				v: &PharmerConfig{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "cluster",
+			args: args{
+				v: &Cluster{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "credential",
+			args: args{
+				v: &v1.Credential{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "capi cluster",
+			args: args{
+				v: &v1alpha1.Cluster{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "capi machine",
+			args: args{
+				v: &v1alpha1.Machine{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "capi machineset",
+			args: args{
+				v: &v1alpha1.MachineSet{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "nil",
+			args: args{
+				v: nil,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := AssignTypeKind(tt.args.v); (err != nil) != tt.wantErr {
+				t.Errorf("AssignTypeKind() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestErrAlreadyExist(t *testing.T) {
+	type args struct {
+		err error
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "exists",
+			args: args{
+				err: errors.New("cluster already exists"),
+			},
+			want: true,
+		},
+		{
+			name: "doesn't",
+			args: args{
+				err: errors.New("abcd"),
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ErrAlreadyExist(tt.args.err); got != tt.want {
+				t.Errorf("ErrAlreadyExist() = %v, want %v", got, tt.want)
 			}
 		})
 	}

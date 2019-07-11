@@ -138,7 +138,7 @@ func EncodeClusterSpec(spec *DigitalOceanClusterProviderSpec) (*runtime.RawExten
 func SetDigitalOceanClusterProviderConfig(cluster *clusterv1.Cluster) error {
 	conf := &DigitalOceanClusterProviderSpec{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: DigitalOceanProviderGroupName + "/" + DigitalOceanProviderApiVersion,
+			APIVersion: DigitalOceanProviderGroupName + "/" + DigitalOceanProviderAPIVersion,
 			Kind:       DigitalOceanProviderKind,
 		},
 	}

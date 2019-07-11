@@ -2,10 +2,19 @@ package cloud
 
 import (
 	"io/ioutil"
-	"os/exec"
 
 	"github.com/ghodss/yaml"
+	"github.com/pharmer/pharmer/store"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
+
+func getLeaderMachine(machineStore store.MachineStore, clusterName string) (*clusterapi.Machine, error) {
+	machine, err := machineStore.Get(clusterName + "-master-0")
+	if err != nil {
+		return nil, err
+	}
+	return machine, nil
+}
 
 func ReadFileAs(path string, obj interface{}) error {
 	d, err := ioutil.ReadFile(path)
@@ -17,17 +26,4 @@ func ReadFileAs(path string, obj interface{}) error {
 		return err
 	}
 	return nil
-}
-
-func Filter(list []string, strToFilter string) (newList []string) {
-	for _, item := range list {
-		if item != strToFilter {
-			newList = append(newList, item)
-		}
-	}
-	return
-}
-
-func CopyDirectory(src, dst string) error {
-	return exec.Command("cp", "-rf", src, dst).Run()
 }

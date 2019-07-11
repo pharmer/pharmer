@@ -1,54 +1,84 @@
 package aws
 
 import (
-	"context"
-	"sync"
+	"bytes"
+	"text/template"
 
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"k8s.io/client-go/kubernetes"
 )
 
 type ClusterManager struct {
-	ctx     context.Context
-	cluster *api.Cluster
-	conn    *cloudConnector
-	// Deprecated
-	namer namer
-	m     sync.Mutex
+	*cloud.Scope
 
-	owner string
+	conn  *cloudConnector
+	namer namer
 }
 
-var _ Interface = &ClusterManager{}
+func (cm *ClusterManager) ApplyScale() error {
+	panic("implement me")
+}
+
+var _ cloud.Interface = &ClusterManager{}
 
 const (
 	UID = "aws"
 )
 
 func init() {
-	RegisterCloudManager(UID, func(ctx context.Context) (Interface, error) { return New(ctx), nil })
+	cloud.RegisterCloudManager(UID, New)
 }
 
-func New(ctx context.Context) Interface {
-	return &ClusterManager{ctx: ctx}
-}
-
-type paramK8sClient struct{}
-
-func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
-	cm.m.Lock()
-	defer cm.m.Unlock()
-
-	v := cm.ctx.Value(paramK8sClient{})
-	if kc, ok := v.(kubernetes.Interface); ok && kc != nil {
-		return kc, nil
+func New(s *cloud.Scope) cloud.Interface {
+	return &ClusterManager{
+		Scope: s,
+		namer: namer{
+			cluster: s.Cluster,
+		},
 	}
+}
 
-	kc, err := NewAdminClient(cm.ctx, cm.cluster)
+// Required for cluster-api controller
+func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
+	err := kube.CreateNamespace(kc, "aws-provider-system")
 	if err != nil {
-		return nil, err
+		return err
 	}
-	cm.ctx = context.WithValue(cm.ctx, paramK8sClient{}, kc)
-	return kc, nil
+
+	credTemplate := template.Must(template.New("aws-cred").Parse(
+		`[default]
+aws_access_key_id = {{ .AccessKeyID }}
+aws_secret_access_key = {{ .SecretAccessKey }}
+region = {{ .Region }}
+`))
+	cred, err := cm.StoreProvider.Credentials().Get(cm.Cluster.ClusterConfig().CredentialName)
+	if err != nil {
+		return err
+	}
+
+	data := cred.Spec.Data
+
+	var buf bytes.Buffer
+	err = credTemplate.Execute(&buf, struct {
+		AccessKeyID     string
+		SecretAccessKey string
+		Region          string
+	}{
+		AccessKeyID:     data["accessKeyID"],
+		SecretAccessKey: data["secretAccessKey"],
+		Region:          cm.Cluster.Spec.Config.Cloud.Region,
+	})
+	if err != nil {
+		return err
+	}
+
+	credData := buf.Bytes()
+
+	if err = kube.CreateSecret(kc, "aws-provider-manager-bootstrap-credentials", "aws-provider-system", map[string][]byte{
+		"credentials": credData,
+	}); err != nil {
+		return err
+	}
+	return nil
 }

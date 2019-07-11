@@ -21,7 +21,7 @@ type machineSetFileStore struct {
 var _ store.MachineSetStore = &machineSetFileStore{}
 
 func (s *machineSetFileStore) resourceHome() string {
-	return filepath.Join("clusters", s.cluster, "nodeGroups")
+	return filepath.Join("clusters", s.cluster, "machineset")
 }
 
 func (s *machineSetFileStore) resourceID(name string) string {
@@ -112,6 +112,12 @@ func (s *machineSetFileStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing node group name")
 	}
+
+	_, exist := s.container[s.resourceID(name)]
+	if !exist {
+		return errors.New("machineset item not found")
+	}
+
 	delete(s.container, s.resourceID(name))
 	return nil
 }

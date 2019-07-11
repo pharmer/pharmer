@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="4" failures="0" time="8.273523511">
-      <testcase name="Credential create credential should check" classname="Storage E2E Suite" time="0.201445677"></testcase>
-      <testcase name="Node Group create node group should check" classname="Storage E2E Suite" time="0.061851503"></testcase>
-      <testcase name="SSH create ssh should check " classname="Storage E2E Suite" time="0.232628675"></testcase>
-      <testcase name="Cluster create cluster should check" classname="Storage E2E Suite" time="7.704644146"></testcase>
-  </testsuite>

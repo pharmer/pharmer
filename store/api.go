@@ -13,6 +13,14 @@ import (
 
 var ErrNotImplemented = errors.New("not implemented")
 
+//var StoreProvider ResourceInterface
+
+const (
+	vfsUID  = "vfs"
+	xormUID = "xorm"
+	fakeUID = "fake"
+)
+
 type Interface interface {
 	Owner(string) ResourceInterface
 	ResourceInterface
@@ -23,7 +31,6 @@ type ResourceInterface interface {
 
 	Operations() OperationStore
 	Clusters() ClusterStore
-	NodeGroups(cluster string) NodeGroupStore
 	Machine(cluster string) MachineStore
 	MachineSet(cluster string) MachineSetStore
 	Certificates(cluster string) CertificateStore
@@ -50,15 +57,6 @@ type ClusterStore interface {
 	Update(obj *api.Cluster) (*api.Cluster, error)
 	Delete(name string) error
 	UpdateStatus(obj *api.Cluster) (*api.Cluster, error)
-}
-
-type NodeGroupStore interface {
-	List(opts metav1.ListOptions) ([]*api.NodeGroup, error)
-	Get(name string) (*api.NodeGroup, error)
-	Create(obj *api.NodeGroup) (*api.NodeGroup, error)
-	Update(obj *api.NodeGroup) (*api.NodeGroup, error)
-	Delete(name string) error
-	UpdateStatus(obj *api.NodeGroup) (*api.NodeGroup, error)
 }
 
 type MachineStore interface {

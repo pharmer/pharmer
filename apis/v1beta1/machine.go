@@ -1,10 +1,7 @@
 package v1beta1
 
 import (
-	"strings"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
@@ -16,16 +13,10 @@ const (
 
 type IPType string
 
-const (
-	IPTypeEphemeral IPType = "Ephemeral"
-	IPTypeReserved  IPType = "Reserved"
-)
-
 type NodeType string
 
 const (
-	NodeTypeRegular NodeType = "regular"
-	NodeTypeSpot    NodeType = "spot"
+	NodeTypeSpot NodeType = "spot"
 
 	MachineSlecetor = "cluster.pharmer.io/mg"
 )
@@ -33,19 +24,9 @@ const (
 type MachineRole string
 
 const (
-	MasterRole MachineRole = "Master"
-	NodeRole   MachineRole = "Node"
+	MasterMachineRole MachineRole = "Master"
+	NodeMachineRole   MachineRole = "Node"
 )
-
-func GetMachineRole(machine *clusterapi.Machine) MachineRole {
-	if _, found := machine.Labels["set"]; found {
-		l := machine.Labels["set"]
-		if strings.ToLower(l) == "master" {
-			return MasterRole
-		}
-	}
-	return NodeRole
-}
 
 type NodeSpec struct {
 	SKU              string            `json:"sku,omitempty"`
@@ -66,9 +47,4 @@ type NodeInfo struct {
 	PublicIP        string `json:"publicIP,omitempty"`
 	PrivateIP       string `json:"privateIP,omitempty"`
 	DiskId          string `json:"diskID,omitempty"`
-}
-
-type MachineProviderConfig struct {
-	Name   string   `json:"name,omitempty"`
-	Config NodeSpec `json:"config,omitempty"`
 }

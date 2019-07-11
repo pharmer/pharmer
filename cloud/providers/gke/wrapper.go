@@ -1,24 +1,21 @@
 package gke
 
 import (
-	"context"
 	"crypto/rsa"
 	"encoding/base64"
 
-	. "github.com/appscode/go/context"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
-	. "github.com/pharmer/pharmer/cloud"
-	"github.com/pkg/errors"
+	"github.com/pharmer/pharmer/apis/v1beta1/gce"
+	"github.com/pharmer/pharmer/store"
 	"gomodules.xyz/cert"
 	"google.golang.org/api/container/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func encodeCluster(ctx context.Context, cluster *api.Cluster, owner string) (*container.Cluster, error) {
-	nodeGroups, err := Store(ctx).Owner(owner).MachineSet(cluster.Name).List(metav1.ListOptions{})
+func encodeCluster(machinesetStore store.MachineSetStore, cluster *api.Cluster) (*container.Cluster, error) {
+	nodeGroups, err := machinesetStore.List(metav1.ListOptions{})
 	if err != nil {
-		err = errors.Wrap(err, ID(ctx))
 		return nil, err
 	}
 
@@ -27,7 +24,10 @@ func encodeCluster(ctx context.Context, cluster *api.Cluster, owner string) (*co
 
 	nodePools := make([]*container.NodePool, 0)
 	for _, node := range nodeGroups {
-		providerSpec := cluster.GKEProviderConfig(node.Spec.Template.Spec.ProviderSpec.Value.Raw)
+		providerSpec, err := gce.MachineConfigFromProviderSpec(node.Spec.Template.Spec.ProviderSpec)
+		if err != nil {
+			return nil, err
+		}
 		np := &container.NodePool{
 			Config: &container.NodeConfig{
 				MachineType: providerSpec.MachineType,
@@ -44,16 +44,19 @@ func encodeCluster(ctx context.Context, cluster *api.Cluster, owner string) (*co
 		nodePools = append(nodePools, np)
 	}
 	config := cluster.Spec.Config
-	clusterApi := cluster.Spec.ClusterAPI
+	clusterAPI := cluster.Spec.ClusterAPI
 
 	kluster := &container.Cluster{
-		ClusterIpv4Cidr:       clusterApi.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
+		ClusterIpv4Cidr:       clusterAPI.Spec.ClusterNetwork.Pods.CIDRBlocks[0],
 		Name:                  cluster.Name,
 		InitialClusterVersion: cluster.Spec.Config.KubernetesVersion,
 
 		MasterAuth: &container.MasterAuth{
 			Username: config.Cloud.GKE.UserName,
 			Password: config.Cloud.GKE.Password,
+			ClientCertificateConfig: &container.ClientCertificateConfig{
+				IssueClientCertificate: true,
+			},
 		},
 		Network: config.Cloud.GKE.NetworkName,
 		NetworkPolicy: &container.NetworkPolicy{
@@ -67,19 +70,17 @@ func encodeCluster(ctx context.Context, cluster *api.Cluster, owner string) (*co
 }
 
 func (cm *ClusterManager) retrieveClusterStatus(cluster *container.Cluster) error {
-	cm.cluster.Spec.ClusterAPI.Status.APIEndpoints = append(cm.cluster.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
+	cm.Cluster.Spec.ClusterAPI.Status.APIEndpoints = append(cm.Cluster.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
 		Host: cluster.Endpoint,
 		Port: 0,
 	})
 	return nil
 }
 
-func (cm *ClusterManager) StoreCertificate(cluster *container.Cluster, owner string) error {
-	certStore := Store(cm.ctx).Owner(owner).Certificates(cluster.Name)
-	config := cm.cluster.Spec.Config
-	_, caKey, err := certStore.Get(config.CACertName)
+func (cm *ClusterManager) StoreCertificate(certStore store.CertificateStore, cluster *container.Cluster) error {
+	_, caKey, err := certStore.Get(api.CACertName)
 	if err == nil {
-		if err = certStore.Delete(config.CACertName); err != nil {
+		if err = certStore.Delete(api.CACertName); err != nil {
 			return err
 		}
 	}
@@ -92,9 +93,10 @@ func (cm *ClusterManager) StoreCertificate(cluster *container.Cluster, owner str
 		return err
 	}
 
-	if err := certStore.Create(config.CACertName, crt[0], caKey); err != nil {
+	if err := certStore.Create(api.CACertName, crt[0], caKey); err != nil {
 		return err
 	}
+	cm.Certs.CACert.Cert = crt[0]
 
 	adminCert, err := base64.StdEncoding.DecodeString(cluster.MasterAuth.ClientCertificate)
 	if err != nil {

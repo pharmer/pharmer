@@ -2,43 +2,25 @@ package azure
 
 import (
 	"encoding/base64"
-	"encoding/json"
-	"net"
-	"strings"
 
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/log"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
-	. "github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
-	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func (cm *ClusterManager) GetDefaultNodeSpec(cluster *api.Cluster, sku string) (api.NodeSpec, error) {
-	if sku == "" {
-		sku = "Standard_B2ms"
+func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+	cluster := cm.Cluster
+	pubkey, privkey, err := cm.StoreProvider.SSHKeys(cluster.Name).Get(cluster.GenSSHKeyExternalID())
+	if err != nil {
+		return clusterapi.ProviderSpec{}, errors.Wrap(err, "failed to get ssh keys")
 	}
-	return api.NodeSpec{
-		SKU: sku,
-		//	DiskType:      "",
-		//	DiskSize:      100,
-	}, nil
-}
 
-func (cm *ClusterManager) SetOwner(owner string) {
-	cm.owner = owner
-}
-
-func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
-	if sku == "" {
-		sku = "Standard_B2ms"
-	}
 	spec := &capiAzure.AzureMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       api.AzureProviderMachineKind,
@@ -62,63 +44,41 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(cluster *api.Cluster, sk
 			},
 			DiskSizeGB: 30,
 		},
-		SSHPublicKey:  base64.StdEncoding.EncodeToString(SSHKey(cm.ctx).PublicKey),
-		SSHPrivateKey: base64.StdEncoding.EncodeToString(SSHKey(cm.ctx).PrivateKey),
+		SSHPublicKey:  base64.StdEncoding.EncodeToString(pubkey),
+		SSHPrivateKey: base64.StdEncoding.EncodeToString(privkey),
 	}
-	providerSpecValue, err := json.Marshal(spec)
+
+	rawSpec, err := capiAzure.EncodeMachineSpec(spec)
 	if err != nil {
-		return clusterapi.ProviderSpec{}, err
+		return clusterapi.ProviderSpec{}, errors.Wrap(err, "failed to encode machine provider spec")
 	}
 
 	return clusterapi.ProviderSpec{
-		Value: &runtime.RawExtension{
-			Raw: providerSpecValue,
-		},
+		Value: rawSpec,
 	}, nil
+
 }
 
-func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.ClusterConfig) error {
-	cm.cluster = cluster
+// TODO: add test to make sure that apiserver certSANs have internal lb adress
+func (cm *ClusterManager) SetDefaultCluster() error {
+	cluster := cm.Cluster
 	n := namer{cluster: cluster}
+	config := &cluster.Spec.Config
 
-	if err := api.AssignTypeKind(cluster); err != nil {
-		return err
-	}
-	if err := api.AssignTypeKind(cluster.Spec.ClusterAPI); err != nil {
-		return err
-	}
+	config.APIServerExtraArgs["cloud-config"] = "/etc/kubernetes/azure.json"
+	config.APIServerCertSANs = append(config.APIServerCertSANs, DefaultInternalLBIPAddress)
 
-	// Init spec
-	config.Cloud.Region = config.Cloud.Zone
-	config.Cloud.SSHKeyName = n.GenSSHKeyExternalID()
-
-	cluster.SetNetworkingDefaults(config.Cloud.NetworkProvider)
-	//config.Cloud..NonMasqueradeCIDR = "10.0.0.0/8"
-	//config.API.BindPort = kubeadmapi.DefaultAPIBindPort
-	config.APIServerCertSANs = NameGenerator(cm.ctx).ExtraNames(cluster.Name)
-	config.APIServerExtraArgs = map[string]string{
-		// ref: https://github.com/kubernetes/kubernetes/blob/d595003e0dc1b94455d1367e96e15ff67fc920fa/cmd/kube-apiserver/app/options/options.go#L99
-		"kubelet-preferred-address-types": strings.Join([]string{
-			string(core.NodeExternalDNS),
-			string(core.NodeExternalIP),
-			string(core.NodeInternalDNS),
-			string(core.NodeInternalIP),
-		}, ","),
-		"cloud-config":   "/etc/kubernetes/azure.json",
-		"cloud-provider": cluster.Spec.Config.Cloud.CloudProvider,
-	}
-	config.Cloud.CCMCredentialName = cluster.Spec.Config.CredentialName
-
-	cred, err := Store(cm.ctx).Owner(cm.owner).Credentials().Get(cluster.Spec.Config.Cloud.CCMCredentialName)
+	credentialName := cluster.Spec.Config.CredentialName
+	cred, err := cm.StoreProvider.Credentials().Get(credentialName)
 	if err != nil {
-		log.Infof("Error getting credential %q: %v", cluster.Spec.Config.Cloud.CCMCredentialName, err)
-		return err
+		return errors.Wrapf(err, "failed to get credential %q", credentialName)
 	}
 	typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
 		log.Infof("Invalid credential: %v", err)
 		return err
 	}
+	config.SSHUserName = "capi"
 
 	config.Cloud.Azure = &api.AzureSpec{
 		StorageAccountName:     n.GenStorageAccountName(),
@@ -132,18 +92,12 @@ func (cm *ClusterManager) SetDefaultCluster(cluster *api.Cluster, config *api.Cl
 		ResourceGroup:          n.ResourceGroupName(),
 	}
 
-	// Init status
-	cluster.Status = api.PharmerClusterStatus{
-		Phase: api.ClusterPending,
-		Cloud: api.CloudStatus{},
-	}
-
-	return cm.SetAzureCluster()
+	return cm.SetClusterProviderConfig()
 }
 
-// SetAzureCluster sets up Azure ClusterAPI provider specs
-func (cm *ClusterManager) SetAzureCluster() error {
-	n := namer{cluster: cm.cluster}
+func (cm *ClusterManager) SetClusterProviderConfig() error {
+	cluster := cm.Cluster
+	n := namer{cluster: cluster}
 
 	conf := &capiAzure.AzureClusterProviderSpec{
 		TypeMeta: metav1.TypeMeta{
@@ -151,10 +105,30 @@ func (cm *ClusterManager) SetAzureCluster() error {
 			Kind:       api.AzureProviderClusterKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: cm.cluster.Name,
+			Name: cluster.Name,
 		},
+		NetworkSpec:   capiAzure.NetworkSpec{},
 		ResourceGroup: n.ResourceGroupName(),
-		Location:      cm.cluster.Spec.Config.Cloud.Region,
+		Location:      cluster.Spec.Config.Cloud.Zone,
+
+		SSHPublicKey:  base64.StdEncoding.EncodeToString(cm.Certs.SSHKey.PublicKey),
+		SSHPrivateKey: base64.StdEncoding.EncodeToString(cm.Certs.SSHKey.PrivateKey),
+		CAKeyPair: capiAzure.KeyPair{
+			Cert: cert.EncodeCertPEM(cm.Certs.CACert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(cm.Certs.CACert.Key),
+		},
+		EtcdCAKeyPair: capiAzure.KeyPair{
+			Cert: cert.EncodeCertPEM(cm.Certs.EtcdCACert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(cm.Certs.EtcdCACert.Key),
+		},
+		FrontProxyCAKeyPair: capiAzure.KeyPair{
+			Cert: cert.EncodeCertPEM(cm.Certs.FrontProxyCACert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(cm.Certs.FrontProxyCACert.Key),
+		},
+		SAKeyPair: capiAzure.KeyPair{
+			Cert: cert.EncodeCertPEM(cm.Certs.ServiceAccountCert.Cert),
+			Key:  cert.EncodePrivateKeyPEM(cm.Certs.ServiceAccountCert.Key),
+		},
 	}
 
 	rawSpec, err := capiAzure.EncodeClusterSpec(conf)
@@ -162,75 +136,7 @@ func (cm *ClusterManager) SetAzureCluster() error {
 		return err
 	}
 
-	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
+	cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
 
 	return nil
-}
-
-// SetupCerts Loads necessary certs in Cluster Spec
-func (cm *ClusterManager) SetupCerts() error {
-	conf, err := capiAzure.ClusterConfigFromProviderSpec(cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec)
-	if err != nil {
-		return err
-	}
-
-	conf.CAKeyPair = capiAzure.KeyPair{
-		Cert: cert.EncodeCertPEM(CACert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(CAKey(cm.ctx)),
-	}
-	conf.FrontProxyCAKeyPair = capiAzure.KeyPair{
-		Cert: cert.EncodeCertPEM(FrontProxyCACert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(FrontProxyCAKey(cm.ctx)),
-	}
-	conf.EtcdCAKeyPair = capiAzure.KeyPair{
-		Cert: cert.EncodeCertPEM(EtcdCaCert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(EtcdCaKey(cm.ctx)),
-	}
-	conf.SAKeyPair = capiAzure.KeyPair{
-		Cert: cert.EncodeCertPEM(SaCert(cm.ctx)),
-		Key:  cert.EncodePrivateKeyPEM(SaKey(cm.ctx)),
-	}
-	conf.SSHPublicKey = base64.StdEncoding.EncodeToString(SSHKey(cm.ctx).PublicKey)
-	conf.SSHPrivateKey = base64.StdEncoding.EncodeToString(SSHKey(cm.ctx).PrivateKey)
-
-	rawSpec, err := capiAzure.EncodeClusterSpec(conf)
-	if err != nil {
-		return err
-	}
-
-	cm.cluster.Spec.ClusterAPI.Spec.ProviderSpec.Value = rawSpec
-
-	if _, err := Store(cm.ctx).Owner(cm.owner).Clusters().Update(cm.cluster); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {
-	return nil
-}
-
-func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
-	return false, ErrNotImplemented
-}
-
-func (cm *ClusterManager) GetSSHConfig(cluster *api.Cluster, node *core.Node) (*api.SSHConfig, error) {
-	cfg := &api.SSHConfig{
-		PrivateKey: SSHKey(cm.ctx).PrivateKey,
-		User:       "ubuntu",
-		HostPort:   int32(22),
-	}
-	for _, addr := range node.Status.Addresses {
-		if addr.Type == core.NodeExternalIP {
-			cfg.HostIP = addr.Address
-		}
-	}
-	if net.ParseIP(cfg.HostIP) == nil {
-		return nil, errors.Errorf("failed to detect external Ip for node %s of cluster %s", node.Name, cluster.Name)
-	}
-	return cfg, nil
-}
-
-func (cm *ClusterManager) GetKubeConfig(cluster *api.Cluster) (*api.KubeConfig, error) {
-	return nil, nil
 }

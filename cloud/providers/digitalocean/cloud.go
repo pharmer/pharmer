@@ -9,13 +9,12 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/appscode/go/context"
 	"github.com/appscode/go/log"
 	"github.com/digitalocean/godo"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	doCapi "github.com/pharmer/pharmer/apis/v1beta1/digitalocean"
-	. "github.com/pharmer/pharmer/cloud"
+	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -28,16 +27,15 @@ import (
 var errLBNotFound = errors.New("loadbalancer not found")
 
 type cloudConnector struct {
-	ctx     context.Context
-	cluster *api.Cluster
-	client  *godo.Client
-	namer   namer
+	*cloud.Scope
+	client *godo.Client
+	namer  namer
 }
 
-var _ InstanceManager = &cloudConnector{}
+func newconnector(cm *ClusterManager) (*cloudConnector, error) {
+	cluster := cm.Cluster
 
-func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*cloudConnector, error) {
-	cred, err := Store(ctx).Owner(owner).Credentials().Get(cluster.ClusterConfig().CredentialName)
+	cred, err := cm.StoreProvider.Credentials().Get(cluster.ClusterConfig().CredentialName)
 	if err != nil {
 		return nil, err
 	}
@@ -48,10 +46,13 @@ func NewConnector(ctx context.Context, cluster *api.Cluster, owner string) (*clo
 	oauthClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: typed.Token(),
 	}))
+
+	namer := namer{cluster: cluster}
+
 	conn := cloudConnector{
-		ctx:     ctx,
-		cluster: cluster,
-		client:  godo.NewClient(oauthClient),
+		Scope:  cm.Scope,
+		namer:  namer,
+		client: godo.NewClient(oauthClient),
 	}
 	if ok, msg := conn.IsUnauthorized(); !ok {
 		return nil, errors.Errorf("credential `%s` does not have necessary autheorization. Reason: %s", cluster.ClusterConfig().CredentialName, msg)
@@ -78,46 +79,16 @@ func (conn *cloudConnector) CreateCredentialSecret(kc kubernetes.Interface, data
 	return nil
 }
 
-func PrepareCloud(ctx context.Context, clusterName, owner string) (*cloudConnector, error) {
-	var err error
-	var conn *cloudConnector
-	cluster, err := Store(ctx).Owner(owner).Clusters().Get(clusterName)
-	if err != nil {
-		return conn, fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
-	}
-	//cm.cluster = cluster
-
-	if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
-		return conn, err
-	}
-	if ctx, err = LoadEtcdCertificate(ctx, cluster, owner); err != nil {
-		return nil, err
-	}
-	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
-		return conn, err
-	}
-	if ctx, err = LoadSaKey(ctx, cluster, owner); err != nil {
-		return conn, err
-	}
-
-	if conn, err = NewConnector(ctx, cluster, owner); err != nil {
-		return nil, err
-	}
-	conn.namer = namer{cluster}
-	//cm.namer = namer{cluster: cm.cluster}
-	return conn, nil
-}
-
 func (conn *cloudConnector) WaitForInstance(id int, status string) error {
 	attempt := 0
-	return wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
 		droplet, _, err := conn.client.Droplets.Get(context.TODO(), id)
 		if err != nil {
 			return false, nil
 		}
-		Logger(conn.ctx).Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, id, droplet.Status)
+		log.Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, id, droplet.Status)
 		if strings.ToLower(droplet.Status) == status {
 			return true, nil
 		}
@@ -128,7 +99,7 @@ func (conn *cloudConnector) WaitForInstance(id int, status string) error {
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) getPublicKey() (bool, int, error) {
-	key, resp, err := conn.client.Keys.GetByFingerprint(context.TODO(), SSHKey(conn.ctx).OpensshFingerprint)
+	key, resp, err := conn.client.Keys.GetByFingerprint(context.TODO(), conn.Certs.SSHKey.OpensshFingerprint)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return false, 0, nil
 	}
@@ -139,34 +110,34 @@ func (conn *cloudConnector) getPublicKey() (bool, int, error) {
 }
 
 func (conn *cloudConnector) importPublicKey() (string, error) {
-	Logger(conn.ctx).Infof("Adding SSH public key")
+	log.Infof("Adding SSH public key")
 	id, _, err := conn.client.Keys.Create(context.TODO(), &godo.KeyCreateRequest{
-		//	Name:      conn.cluster.Spec.Cloud.SSHKeyName,
-		PublicKey: string(SSHKey(conn.ctx).PublicKey),
+		//	Name:      conn.Cluster.Spec.Cloud.SSHKeyName,
+		PublicKey: string(conn.Certs.SSHKey.PublicKey),
 	})
 	if err != nil {
 		return "", err
 	}
-	Logger(conn.ctx).Info("SSH public key added")
+	log.Info("SSH public key added")
 	return strconv.Itoa(id.ID), nil
 }
 
 func (conn *cloudConnector) deleteSSHKey() error {
-	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
-		_, err := conn.client.Keys.DeleteByFingerprint(context.TODO(), SSHKey(conn.ctx).OpensshFingerprint)
+	err := wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
+		_, err := conn.client.Keys.DeleteByFingerprint(context.TODO(), conn.Certs.SSHKey.OpensshFingerprint)
 		return err == nil, nil
 	})
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("SSH key for cluster %v deleted", conn.cluster.Name)
+	log.Infof("SSH key for cluster %v deleted", conn.Cluster.Name)
 	return nil
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 
 func (conn *cloudConnector) getTags() (bool, error) {
-	tag := "KubernetesCluster:" + conn.cluster.Name
+	tag := "KubernetesCluster:" + conn.Cluster.Name
 	_, resp, err := conn.client.Tags.Get(context.TODO(), tag)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return false, nil
@@ -179,84 +150,21 @@ func (conn *cloudConnector) getTags() (bool, error) {
 }
 
 func (conn *cloudConnector) createTags() error {
-	tag := "KubernetesCluster:" + conn.cluster.Name
+	tag := "KubernetesCluster:" + conn.Cluster.Name
 	_, _, err := conn.client.Tags.Create(context.TODO(), &godo.TagCreateRequest{
 		Name: tag,
 	})
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("Tag %v created", tag)
+	log.Infof("Tag %v created", tag)
 	return nil
 }
 
-func (conn *cloudConnector) applyTag(dropletID int) error {
-	_, err := conn.client.Tags.TagResources(context.TODO(), "KubernetesCluster:"+conn.cluster.Name, &godo.TagResourcesRequest{
-		Resources: []godo.Resource{
-			{
-				ID:   strconv.Itoa(dropletID),
-				Type: godo.DropletResourceType,
-			},
-		},
-	})
-	Logger(conn.ctx).Infof("Tag %v applied to droplet %v", "KubernetesCluster:"+conn.cluster.Name, dropletID)
-	return err
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-
-func (conn *cloudConnector) getReserveIP(ip string) (bool, error) {
-	fip, resp, err := conn.client.FloatingIPs.Get(context.TODO(), ip)
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		return false, nil
-	}
-	if err != nil {
-		return false, nil
-	}
-	return fip != nil, nil
-}
-
-func (conn *cloudConnector) createReserveIP() (string, error) {
-	fip, _, err := conn.client.FloatingIPs.Create(context.TODO(), &godo.FloatingIPCreateRequest{
-		Region: conn.cluster.ClusterConfig().Cloud.Region,
-	})
-	if err != nil {
-		return "", err
-	}
-	Logger(conn.ctx).Infof("New floating ip %v reserved", fip.IP)
-	return fip.IP, nil
-}
-
-func (conn *cloudConnector) assignReservedIP(ip string, dropletID int) error {
-	_, _, err := conn.client.FloatingIPActions.Assign(context.TODO(), ip, dropletID)
-	if err != nil {
-		return errors.Wrap(err, ID(conn.ctx))
-	}
-	Logger(conn.ctx).Infof("Reserved ip %v assigned to droplet %v", ip, dropletID)
-	return nil
-}
-
-func (conn *cloudConnector) releaseReservedIP(ip string) error {
-	resp, err := conn.client.FloatingIPs.Delete(context.TODO(), ip)
-	Logger(conn.ctx).Debugln("DO response", resp, " errors", err)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	Logger(conn.ctx).Infof("Floating ip %v deleted", ip)
-	return nil
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-
-func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, token string) (*api.NodeInfo, error) {
-	script, err := conn.renderStartupScript(cluster, machine, token)
-	if err != nil {
-		return nil, err
-	}
-
+func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, script string) error {
 	machineConfig, err := doCapi.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req := &godo.DropletCreateRequest{
 		Name:   machine.Name,
@@ -264,7 +172,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 		Size:   machineConfig.Size,
 		Image:  godo.DropletCreateImage{Slug: machineConfig.Image},
 		SSHKeys: []godo.DropletCreateSSHKey{
-			{Fingerprint: SSHKey(conn.ctx).OpensshFingerprint},
+			{Fingerprint: conn.Certs.SSHKey.OpensshFingerprint},
 		},
 		PrivateNetworking: true,
 		IPv6:              false,
@@ -278,51 +186,29 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 		req.Tags = append(req.Tags, cluster.Name+"-master")
 	}
 
-	if Env(conn.ctx).IsPublic() {
-		req.SSHKeys = []godo.DropletCreateSSHKey{
-			{Fingerprint: SSHKey(conn.ctx).OpensshFingerprint},
-		}
-	}
 	host, _, err := conn.client.Droplets.Create(context.TODO(), req)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	Logger(conn.ctx).Infof("Droplet %v created", host.Name)
+	log.Infof("Droplet %v created", host.Name)
 
 	if err = conn.WaitForInstance(host.ID, "active"); err != nil {
-		return nil, err
+		return err
 	}
 
-	// load again to get IP address assigned
-	host, _, err = conn.client.Droplets.Get(context.TODO(), host.ID)
-	if err != nil {
-		return nil, err
-	}
-	node := api.NodeInfo{
-		Name:       host.Name,
-		ExternalID: strconv.Itoa(host.ID),
-	}
-	node.PublicIP, err = host.PublicIPv4()
-	if err != nil {
-		return nil, err
-	}
-	node.PrivateIP, err = host.PrivateIPv4()
-	if err != nil {
-		return nil, err
-	}
-	return &node, nil
+	return nil
 }
 
 func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*godo.Droplet, error) {
 	//identifyingMachine := machine
 
-	droplets, _, err := conn.client.Droplets.List(oauth2.NoContext, &godo.ListOptions{})
+	droplets, _, err := conn.client.Droplets.List(context.Background(), &godo.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 	for _, droplet := range droplets {
 		if droplet.Name == machine.Name {
-			d, _, err := conn.client.Droplets.Get(oauth2.NoContext, droplet.ID)
+			d, _, err := conn.client.Droplets.Get(context.Background(), droplet.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -342,7 +228,7 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	if err != nil {
 		return err
 	}
-	Logger(conn.ctx).Infof("Droplet %v deleted", dropletID)
+	log.Infof("Droplet %v deleted", dropletID)
 	return nil
 }
 
@@ -369,21 +255,11 @@ func dropletIDFromProviderID(providerID string) (int, error) {
 	return strconv.Atoi(split[2])
 }
 
-func (conn *cloudConnector) deleteInstance(ctx context.Context, id int) error {
-	_, err := conn.client.Droplets.Delete(ctx, id)
-	return err
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-
 func (conn *cloudConnector) createLoadBalancer(ctx context.Context, name string) (*godo.LoadBalancer, error) {
 	lb, err := conn.lbByName(ctx, name)
 	if err != nil {
 		if err == errLBNotFound {
-			lbRequest, err := conn.buildLoadBalancerRequest(name)
-			if err != nil {
-				return nil, err
-			}
+			lbRequest := conn.buildLoadBalancerRequest(name)
 			lb, _, err := conn.client.LoadBalancers.Create(ctx, lbRequest)
 			if err != nil {
 				return nil, err
@@ -412,21 +288,6 @@ func (conn *cloudConnector) deleteLoadBalancer(ctx context.Context, name string)
 	return err
 }
 
-func (conn *cloudConnector) addNodeToBalancer(ctx context.Context, lbName string, id int) error {
-	lb, err := conn.lbByName(ctx, lbName)
-	if err != nil {
-		return err
-	}
-	lb.DropletIDs = append(lb.DropletIDs, id)
-	_, err = conn.client.LoadBalancers.AddDroplets(ctx, lb.ID, id)
-	if err != nil {
-		return err
-	}
-	Logger(conn.ctx).Infof("Added master %v to loadbalancer %v", id, lbName)
-
-	return nil
-}
-
 func (conn *cloudConnector) lbByName(ctx context.Context, name string) (*godo.LoadBalancer, error) {
 	lbs, _, err := conn.client.LoadBalancers.List(ctx, &godo.ListOptions{})
 	if err != nil {
@@ -444,7 +305,7 @@ func (conn *cloudConnector) lbByName(ctx context.Context, name string) (*godo.Lo
 
 // buildLoadBalancerRequest returns a *godo.LoadBalancerRequest to balance
 // requests for service across nodes.
-func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*godo.LoadBalancerRequest, error) {
+func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) *godo.LoadBalancerRequest {
 
 	forwardingRules := []godo.ForwardingRule{
 		{
@@ -476,7 +337,7 @@ func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*godo.LoadB
 	//algorithm := "round_robin"
 
 	//	redirectHttpToHttps := getRedirectHttpToHttps(service)
-	clusterConfig := conn.cluster.ClusterConfig()
+	clusterConfig := conn.Cluster.ClusterConfig()
 
 	return &godo.LoadBalancerRequest{
 		Name:                lbName,
@@ -487,50 +348,46 @@ func (conn *cloudConnector) buildLoadBalancerRequest(lbName string) (*godo.LoadB
 		StickySessions:      stickySessions,
 		Algorithm:           algorithm,
 		RedirectHttpToHttps: false, //redirectHttpToHttps,
-		Tag:                 conn.cluster.Name + "-master",
-		Tags:                []string{conn.cluster.Name + "-master"},
-	}, nil
+		Tag:                 conn.Cluster.Name + "-master",
+		Tags:                []string{conn.Cluster.Name + "-master"},
+	}
 }
 
-func (conn *cloudConnector) loadBalancerUpdated(lb *godo.LoadBalancer) (bool, error) {
-	defaultSpecs, err := conn.buildLoadBalancerRequest(conn.namer.LoadBalancerName())
-	if err != nil {
-		log.Debugln("Error getting default lb specs")
-		return false, err
-	}
+func (conn *cloudConnector) loadBalancerUpdated(lb *godo.LoadBalancer) bool {
+	defaultSpecs := conn.buildLoadBalancerRequest(conn.namer.LoadBalancerName())
 
 	if lb.Algorithm != defaultSpecs.Algorithm {
-		return true, nil
+		return true
 	}
 	if lb.Region.Slug != defaultSpecs.Region {
-		return true, nil
+		return true
 	}
 	if !reflect.DeepEqual(lb.ForwardingRules, defaultSpecs.ForwardingRules) {
-		return true, nil
+		return true
 	}
 	if !reflect.DeepEqual(lb.HealthCheck, defaultSpecs.HealthCheck) {
-		return true, nil
+		return true
 	}
 	if !reflect.DeepEqual(lb.StickySessions, defaultSpecs.StickySessions) {
-		return true, nil
+		return true
 	}
 	if lb.RedirectHttpToHttps != defaultSpecs.RedirectHttpToHttps {
-		return true, nil
+		return true
 	}
 
-	return false, nil
+	return false
 }
 
 func (conn *cloudConnector) waitActive(lbID string) (*godo.LoadBalancer, error) {
 	attempt := 0
-	err := wait.PollImmediate(RetryInterval, RetryTimeout, func() (bool, error) {
+	err := wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
 		lb, _, err := conn.client.LoadBalancers.Get(context.TODO(), lbID)
 		if err != nil {
 			return false, nil
 		}
-		Logger(conn.ctx).Infof("Attempt %v: LoadBalancer `%v` is in status `%s`", attempt, lbID, lb.Status)
+		log.Infof("Attempt %v: LoadBalancer `%v` is in status `%s`", attempt, lbID, lb.Status)
 		if strings.ToLower(lb.Status) == "active" {
 			return true, nil
 		}
