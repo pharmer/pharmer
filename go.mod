@@ -39,7 +39,6 @@ require (
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
-	github.com/nats-io/jwt v0.2.8 // indirect
 	github.com/nats-io/stan.go v0.5.0
 	github.com/ncw/swift v1.0.47 // indirect
 	github.com/onsi/gomega v1.5.0
