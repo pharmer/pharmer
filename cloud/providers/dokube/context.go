@@ -71,14 +71,12 @@ func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 	return "", nil
 }
 
-func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
-	return nil
-}
-
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
+	log := cm.Logger
 	adminCert, adminKey, err := cm.StoreProvider.Certificates(cm.Cluster.Name).Get("admin")
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get admin cert and key")
+		log.Error(err, "failed to get admin certs")
+		return nil, err
 	}
 
 	cluster := cm.Cluster
@@ -115,16 +113,20 @@ func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 }
 
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
+	log := cm.Logger
 	kc, err := NewDokubeAdminClient(cm)
 	if err != nil {
+		log.Error(err, "failed to get admin client")
 		return nil, err
 	}
 	return kc, nil
 }
 
 func NewDokubeAdminClient(cm *ClusterManager) (kubernetes.Interface, error) {
+	log := cm.Logger
 	adminCert, adminKey, err := certificates.GetAdminCertificate(cm.StoreProvider.Certificates(cm.Cluster.Name))
 	if err != nil {
+		log.Error(err, "failed to get admin certs from store")
 		return nil, err
 	}
 	host := cm.Cluster.APIServerURL()

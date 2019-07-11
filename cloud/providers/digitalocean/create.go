@@ -7,13 +7,13 @@ import (
 	doCapi "github.com/pharmer/pharmer/apis/v1beta1/digitalocean"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+	log := cm.Logger
 	cluster := cm.Cluster
 	if sku == "" {
 		sku = "2gb"
@@ -22,7 +22,8 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 
 	pubkey, _, err := cm.StoreProvider.SSHKeys(cluster.Name).Get(cluster.GenSSHKeyExternalID())
 	if err != nil {
-		return clusterapi.ProviderSpec{}, errors.Wrap(err, " failed to get ssh keys")
+		log.Error(err, "failed to get ssh keys")
+		return clusterapi.ProviderSpec{}, err
 	}
 
 	spec := &doCapi.DigitalOceanMachineProviderSpec{
@@ -45,6 +46,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 
 	providerSpecValue, err := json.Marshal(spec)
 	if err != nil {
+		log.Error(err, "failed to marshal provider spec")
 		return clusterapi.ProviderSpec{}, err
 	}
 

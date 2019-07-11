@@ -3,11 +3,8 @@ package linode
 import (
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type ClusterManager struct {
@@ -42,23 +39,25 @@ func (cm *ClusterManager) ApplyScale() error {
 }
 
 func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
+	log := cm.Logger
 	cred, err := cm.GetCredential()
 	if err != nil {
+		log.Error(err, "failed to get credential from store")
 		return err
 	}
 	err = kube.CreateCredentialSecret(kc, cm.Cluster.CloudProvider(), metav1.NamespaceSystem, cred.Spec.Data)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create credential for pharmer-flex")
+		log.Error(err, "failed to create credential for pharmer-flex")
+		return err
 	}
-
-	// create ccm secret
 
 	err = kube.CreateSecret(kc, "ccm-linode", metav1.NamespaceSystem, map[string][]byte{
 		"apiToken": []byte(cred.Spec.Data["token"]),
 		"region":   []byte(cm.Cluster.ClusterConfig().Cloud.Region),
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to create ccm-secret")
+		log.Error(err, "failed to create ccm-secret")
+		return err
 	}
 	return nil
 }
@@ -67,6 +66,7 @@ func (cm *ClusterManager) SetCloudConnector() error {
 	var err error
 
 	if cm.conn, err = newconnector(cm); err != nil {
+		cm.Logger.Error(err, "failed to get linode cloud connector")
 		return err
 	}
 
@@ -75,14 +75,4 @@ func (cm *ClusterManager) SetCloudConnector() error {
 
 func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 	return ControllerManager, nil
-}
-
-func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
-	ma := NewMachineActuator(MachineActuatorParams{
-		EventRecorder: mgr.GetEventRecorderFor(Recorder),
-		Client:        mgr.GetClient(),
-		Scheme:        mgr.GetScheme(),
-	})
-	common.RegisterClusterProvisioner(UID, ma)
-	return nil
 }

@@ -53,10 +53,6 @@ func (cm *ClusterManager) AddToManager(m manager.Manager) error {
 	return nil
 }
 
-func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
-	return nil
-}
-
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 	kc, err := cm.GetEKSAdminClient()
 	if err != nil {
@@ -66,20 +62,25 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 }
 
 func (cm *ClusterManager) GetEKSAdminClient() (kubernetes.Interface, error) {
+	log := cm.Logger
+
 	resp, err := cm.conn.eks.DescribeCluster(&_eks.DescribeClusterInput{
 		Name: types.StringP(cm.Cluster.Name),
 	})
 	if err != nil {
+		log.Error(err, "failed to describe cluster")
 		return nil, err
 	}
 
 	token, err := cm.conn.getAuthenticationToken()
 	if err != nil {
+		log.Error(err, "failed to get auth token")
 		return nil, err
 	}
 
 	caData, err := base64.StdEncoding.DecodeString(*resp.Cluster.CertificateAuthority.Data)
 	if err != nil {
+		log.Error(err, "failed to decode ca-cert data")
 		return nil, err
 	}
 
@@ -95,6 +96,7 @@ func (cm *ClusterManager) GetEKSAdminClient() (kubernetes.Interface, error) {
 }
 
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
+	log := cm.Logger
 	cluster := cm.Cluster
 	var err error
 	cm.conn, err = newconnector(cm)
@@ -105,11 +107,13 @@ func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 		Name: types.StringP(cluster.Name),
 	})
 	if err != nil {
+		log.Error(err, "failed to describe cluster")
 		return nil, err
 	}
 
 	caData, err := base64.StdEncoding.DecodeString(*resp.Cluster.CertificateAuthority.Data)
 	if err != nil {
+		log.Error(err, "failed to decode ca-cert data")
 		return nil, err
 	}
 

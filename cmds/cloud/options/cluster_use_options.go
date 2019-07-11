@@ -11,7 +11,6 @@ import (
 type ClusterUseConfig struct {
 	ClusterName string
 	Overwrite   bool
-	Owner       string
 }
 
 func NewClusterUseConfig() *ClusterUseConfig {
@@ -23,7 +22,6 @@ func NewClusterUseConfig() *ClusterUseConfig {
 
 func (c *ClusterUseConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.Overwrite, "overwrite", c.Overwrite, "Overwrite context if found.")
-	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
 }
 
 func (c *ClusterUseConfig) ValidateFlags(cmd *cobra.Command, args []string) error {

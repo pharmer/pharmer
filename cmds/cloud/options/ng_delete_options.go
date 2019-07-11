@@ -10,7 +10,6 @@ import (
 
 type NodeGroupNodeDeleteConfig struct {
 	ClusterName string
-	Owner       string
 }
 
 func NewNodeGroupDeleteConfig() *NodeGroupNodeDeleteConfig {
@@ -21,7 +20,6 @@ func NewNodeGroupDeleteConfig() *NodeGroupNodeDeleteConfig {
 
 func (c *NodeGroupNodeDeleteConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.ClusterName, "cluster", "k", c.ClusterName, "Name of the Kubernetes cluster")
-	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
 }
 
 func (c *NodeGroupNodeDeleteConfig) ValidateFlags(cmd *cobra.Command, args []string) error {

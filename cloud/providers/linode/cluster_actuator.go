@@ -3,10 +3,11 @@ package linode
 import (
 	"context"
 
-	"github.com/appscode/go/log"
+	"github.com/go-logr/logr"
 	linodeApi "github.com/pharmer/pharmer/apis/v1beta1/linode"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/klog/klogr"
 	"k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/cluster"
@@ -24,7 +25,6 @@ func init() {
 		})
 		return cluster.AddWithActuator(m, actuator)
 	})
-
 }
 
 type ClusterActuator struct {
@@ -32,6 +32,7 @@ type ClusterActuator struct {
 	eventRecorder record.EventRecorder
 	scheme        *runtime.Scheme
 	cm            *ClusterManager
+	logr.Logger
 }
 
 type ClusterActuatorParams struct {
@@ -46,21 +47,24 @@ func NewClusterActuator(m manager.Manager, params ClusterActuatorParams) *Cluste
 		eventRecorder: params.EventRecorder,
 		scheme:        params.Scheme,
 		cm:            params.cm,
+		Logger: klogr.New().WithName("[cluster-actuator]").
+			WithValues("cluster-name", params.cm.Cluster.Name),
 	}
 }
 
 func (ca *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
-	log.Infoln("Reconciling cluster", cluster.Name)
+	log := ca.Logger
+	log.Info("Reconciling cluster")
 
 	lbName := ca.cm.namer.LoadBalancerName()
 	lb, err := ca.cm.conn.lbByName(lbName)
 	if err == errLBNotFound {
 		lb, err = ca.cm.conn.createLoadBalancer(lbName)
 		if err != nil {
-			log.Debugln("error creating load balancer", err)
+			log.Error(err, "error creating load balancer")
 			return err
 		}
-		log.Infof("created load balancer %q for cluster %q", lbName, ca.cm.conn.Cluster.Name)
+		log.Info("created load balancer", "lb-name", lbName)
 
 		cluster.Status.APIEndpoints = []clusterapi.APIEndpoint{
 			{
@@ -69,38 +73,40 @@ func (ca *ClusterActuator) Reconcile(cluster *clusterapi.Cluster) error {
 			},
 		}
 	} else if err != nil {
-		log.Debugln("error finding load balancer", err)
+		log.Error(err, "error finding load balancer")
 		return err
 	}
 
 	status, err := linodeApi.ClusterStatusFromProviderStatus(cluster.Status.ProviderStatus)
 	if err != nil {
-		log.Debugln("Error getting provider status", err)
+		log.Error(err, "Error getting provider status")
 		return err
 	}
 	status.Network.APIServerLB = linodeApi.DescribeLoadBalancer(lb)
 
 	if err := ca.updateClusterStatus(cluster, status); err != nil {
-		log.Debugf("Error updating cluster status for cluster %q", cluster.Name)
+		log.Error(err, "Error updating cluster status")
 		return err
 	}
 
-	log.Infoln("Reconciled cluster successfully")
+	log.Info("Reconciled cluster successfully")
 	return nil
 }
 
-func (cm *ClusterActuator) Delete(cluster *clusterapi.Cluster) error {
-	log.Infof("Delete cluster %v", cluster.Name)
+func (ca *ClusterActuator) Delete(cluster *clusterapi.Cluster) error {
+	log := ca.Logger
+	log.Info("deleting cluster")
 	return nil
 }
 
-func (cm *ClusterActuator) updateClusterStatus(cluster *clusterapi.Cluster, status *linodeApi.LinodeClusterProviderStatus) error {
+func (ca *ClusterActuator) updateClusterStatus(cluster *clusterapi.Cluster, status *linodeApi.LinodeClusterProviderStatus) error {
+	log := ca.Logger
 	raw, err := linodeApi.EncodeClusterStatus(status)
 	if err != nil {
-		log.Debugf("Error encoding cluster status for cluster %q", cluster.Name)
+		log.Error(err, "Error encoding cluster status")
 		return err
 	}
 
 	cluster.Status.ProviderStatus = raw
-	return cm.client.Status().Update(context.Background(), cluster)
+	return ca.client.Status().Update(context.Background(), cluster)
 }

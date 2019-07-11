@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/linode/linodego"
 	"github.com/pharmer/cloud/pkg/credential"
@@ -29,14 +28,17 @@ type cloudConnector struct {
 }
 
 func newconnector(cm *ClusterManager) (*cloudConnector, error) {
+	log := cm.Logger
 	cluster := cm.Cluster
 
 	cred, err := cm.GetCredential()
 	if err != nil {
+		log.Error(err, "failed to get credential from store")
 		return nil, err
 	}
 	typed := credential.Linode{CommonSpec: credential.CommonSpec(cred.Spec)}
 	if ok, err := typed.IsValid(); !ok {
+		log.Error(err, "credential is invalid", "credential", cluster.ClusterConfig())
 		return nil, errors.Errorf("credential %s is invalid. Reason: %v", cluster.ClusterConfig().CredentialName, err)
 	}
 
@@ -59,80 +61,10 @@ func newconnector(cm *ClusterManager) (*cloudConnector, error) {
 	}, nil
 }
 
-//func PrepareCloud(ctx context.Context, clusterName string, owner string) (*cloudConnector, error) {
-//	var err error
-//	var conn *cloudConnector
-//	cluster, err := store.StoreProvider.Clusters().Get(clusterName)
-//	if err != nil {
-//		return conn, fmt.Errorf("cluster `%s` does not exist. Reason: %v", clusterName, err)
-//	}
-//
-//	if ctx, err = LoadCACertificates(ctx, cluster, owner); err != nil {
-//		return conn, err
-//	}
-//
-//	if ctx, err = LoadEtcdCertificate(ctx, cluster, owner); err != nil {
-//		return nil, err
-//	}
-//
-//	if ctx, err = LoadSSHKey(ctx, cluster, owner); err != nil {
-//		return conn, err
-//	}
-//
-//	if ctx, err = LoadSaKey(ctx, cluster, owner); err != nil {
-//		return conn, err
-//	}
-//
-//	if conn, err = newconnector(cm); err != nil {
-//		return nil, err
-//	}
-//	return conn, nil
-//}
-
-func (conn *cloudConnector) DetectInstanceImage() (string, error) {
-	filter := `{"label":"Ubuntu 16.04 LTS"}`
-	listOpts := &linodego.ListOptions{PageOptions: nil, Filter: filter}
-
-	images, err := conn.client.ListImages(context.Background(), listOpts)
-	if err != nil {
-		return "", err
-	}
-
-	if len(images) == 0 {
-		return "", errors.New("image Ubuntu 16.04 LTS not found")
-	} else if len(images) > 1 {
-		return "", errors.New("multiple images found")
-	}
-
-	return images[0].ID, nil
-}
-
-func (conn *cloudConnector) DetectKernel() (string, error) {
-	kernels, err := conn.client.ListKernels(context.Background(), nil)
-	if err != nil {
-		return "", err
-	}
-	kernelID := ""
-	for _, d := range kernels {
-		if d.PVOPS {
-			if strings.HasPrefix(d.Label, "Latest 64 bit") {
-				return d.ID, nil
-			}
-			if strings.Contains(d.Label, "x86_64") && d.ID != kernelID {
-				kernelID = d.ID
-			}
-		}
-	}
-	if kernelID != "" {
-		return kernelID, nil
-	}
-	return "", errors.New("can't find Kernel")
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-
 func (conn *cloudConnector) waitForStatus(id int, status linodego.InstanceStatus) error {
+	log := conn.Logger
 	attempt := 0
+	log.Info("waiting for instance status", "status", status)
 	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
 
@@ -143,8 +75,9 @@ func (conn *cloudConnector) waitForStatus(id int, status linodego.InstanceStatus
 		if instance == nil {
 			return false, nil
 		}
-		log.Infof("Attempt %v: Instance `%v` is in status `%v`", attempt, instance.Label, instance.Status)
+		conn.Logger.V(4).Info("current instance state", "instance", instance.Label, "status", instance.Status, "attempt", attempt)
 		if instance.Status == status {
+			log.Info("current instance status", "status", status)
 			return true, nil
 		}
 		return false, nil
@@ -200,7 +133,7 @@ func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine
 		if err != nil {
 			return 0, err
 		}
-		log.Infof("Stack script for role %v created", string(machineConfig.Roles[0]))
+		conn.Logger.Info("Stack script created", "role", string(machineConfig.Roles[0]))
 		return stackScript.ID, nil
 	}
 
@@ -212,7 +145,7 @@ func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine
 		return 0, err
 	}
 
-	log.Infof("Stack script for role %v updated", string(machineConfig.Roles[0]))
+	conn.Logger.Info("Stack script updated", "role", string(machineConfig.Roles[0]))
 	return stackScript.ID, nil
 }
 
@@ -291,7 +224,7 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 		return err
 	}
 
-	log.Infof("Instance %v deleted", id)
+	conn.Logger.Info("Instance deleted", "instance-id", id)
 	return nil
 }
 
@@ -336,11 +269,9 @@ func (conn *cloudConnector) createLoadBalancer(name string) (*linodego.NodeBalan
 				return nil, err
 			}
 			return ip, nil
-
 		}
 	}
 	return lb, nil
-
 }
 
 func (conn *cloudConnector) lbByName(name string) (*linodego.NodeBalancer, error) {
@@ -419,7 +350,7 @@ func (conn *cloudConnector) addNodeToBalancer(lbName string, nodeName, ip string
 		return err
 	}
 
-	log.Infof("Added master %v to loadbalancer %v", nodeName, lbName)
+	conn.Logger.Info("Added master to the loadbalancer", "master-name", nodeName, "lb-name", lbName)
 
 	return nil
 }
@@ -445,34 +376,3 @@ func (conn *cloudConnector) deleteLoadBalancer(lbName string) error {
 
 	return conn.client.DeleteNodeBalancer(context.Background(), lb.ID)
 }
-
-/*func (conn *cloudConnector) loadBalancerUpdated(lb *godo.LoadBalancer) (bool, error) {
-	defaultSpecs, err := conn.buildLoadBalancerRequest(conn.namer.LoadBalancerName())
-	if err != nil {
-		log.Debugln("Error getting default lb specs")
-		return false, err
-	}
-
-	if lb.Algorithm != defaultSpecs.Algorithm {
-		return true, nil
-	}
-	if lb.Region.Slug != defaultSpecs.Region {
-		return true, nil
-	}
-	if !reflect.DeepEqual(lb.ForwardingRules, defaultSpecs.ForwardingRules) {
-		return true, nil
-	}
-	if !reflect.DeepEqual(lb.HealthCheck, defaultSpecs.HealthCheck) {
-		return true, nil
-	}
-	if !reflect.DeepEqual(lb.StickySessions, defaultSpecs.StickySessions) {
-		return true, nil
-	}
-	if lb.RedirectHTTPToHTTPS != defaultSpecs.RedirectHTTPToHTTPS {
-		return true, nil
-	}
-
-	return false, nil
-}*/
-
-// ---------------------------------------------------------------------------------------------------------------------

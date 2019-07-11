@@ -11,16 +11,8 @@ type namer struct {
 	cluster *api.Cluster
 }
 
-func (n namer) GenSSHKeyExternalID() string {
-	return n.cluster.Name + "-sshkey"
-}
-
 func (n namer) ResourceGroupName() string {
 	return n.cluster.Name
-}
-
-func (n namer) AvailabilitySetName() string {
-	return n.cluster.Name + "-as"
 }
 
 func (n namer) VirtualNetworkName() string {

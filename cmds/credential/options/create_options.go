@@ -12,7 +12,6 @@ type CredentialCreateConfig struct {
 	FromEnv  bool
 	FromFile string
 	Issue    bool
-	Owner    string
 }
 
 func NewCredentialCreateConfig() *CredentialCreateConfig {
@@ -29,8 +28,6 @@ func (c *CredentialCreateConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&c.FromEnv, "from-env", "l", c.FromEnv, "Load credential data from ENV.")
 	fs.StringVarP(&c.FromFile, "from-file", "f", c.FromFile, "Load credential data from file")
 	fs.BoolVar(&c.Issue, "issue", c.Issue, "Issue credential")
-
-	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
 }
 
 func (c *CredentialCreateConfig) ValidateFlags(cmd *cobra.Command, args []string) error {

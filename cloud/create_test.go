@@ -24,6 +24,7 @@ import (
 	"github.com/pharmer/pharmer/store/providers/fake"
 	_ "github.com/pharmer/pharmer/store/providers/fake"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/klogr"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -44,23 +45,23 @@ func deleteCerts(t *testing.T, s store.ResourceInterface, clusterName string) {
 
 func TestCreateCluster(t *testing.T) {
 	type args struct {
-		store   store.ResourceInterface
-		cluster *api.Cluster
+		scope *cloud.Scope
 	}
 
 	genericBeforeTest := func(t *testing.T, a args) func(*testing.T) {
+		s := a.scope
 		g := gomega.NewGomegaWithT(t)
 		return func(t *testing.T) {
 			// check if Cluster is created
-			err := a.store.Clusters().Delete(a.cluster.Name)
+			err := s.StoreProvider.Clusters().Delete(s.Cluster.Name)
 			g.Expect(err).NotTo(gomega.HaveOccurred())
 
-			deleteCerts(t, a.store, a.cluster.Name)
+			deleteCerts(t, s.StoreProvider, s.Cluster.Name)
 
-			if !api.ManagedProviders.Has(a.cluster.CloudProvider()) {
+			if !api.ManagedProviders.Has(s.Cluster.CloudProvider()) {
 				// check master machines are genereated
-				for i := 0; i < a.cluster.Spec.Config.MasterCount; i++ {
-					err = a.store.Machine(a.cluster.Name).Delete(a.cluster.MasterMachineName(i))
+				for i := 0; i < s.Cluster.Spec.Config.MasterCount; i++ {
+					err = s.StoreProvider.Machine(s.Cluster.Name).Delete(s.Cluster.MasterMachineName(i))
 					g.Expect(err).NotTo(gomega.HaveOccurred())
 				}
 			}
@@ -77,24 +78,33 @@ func TestCreateCluster(t *testing.T) {
 		{
 			name: "nil Cluster",
 			args: args{
-				cluster: nil,
+				scope: &cloud.Scope{
+					Cluster: nil,
+					Logger:  klogr.New(),
+				},
 			},
 			wantErr: true,
 			errmsg:  "missing Cluster",
 		}, {
 			name: "empty Cluster-name",
 			args: args{
-				cluster: &api.Cluster{},
+				scope: &cloud.Scope{
+					Cluster: &api.Cluster{},
+					Logger:  klogr.New(),
+				},
 			},
 			wantErr: true,
 			errmsg:  "missing Cluster name",
 		}, {
 			name: "empty kubernetes version",
 			args: args{
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "test",
+				scope: &cloud.Scope{
+					Cluster: &api.Cluster{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "test",
+						},
 					},
+					Logger: klogr.New(),
 				},
 			},
 			wantErr: true,
@@ -102,17 +112,21 @@ func TestCreateCluster(t *testing.T) {
 		}, {
 			name: "unknown provider",
 			args: args{
-				store: fake.New(),
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "unknown",
-					},
-					Spec: api.PharmerClusterSpec{
-						Config: api.ClusterConfig{
-							Cloud: api.CloudSpec{
-								CloudProvider: "unknown",
+				scope: &cloud.Scope{
+					Logger:        klogr.New(),
+					StoreProvider: fake.New(),
+					Cluster: &api.Cluster{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "unknown",
+						},
+						Spec: api.PharmerClusterSpec{
+							Config: api.ClusterConfig{
+								Cloud: api.CloudSpec{
+									CloudProvider: "unknown",
+									Zone:          "us",
+								},
+								KubernetesVersion: "1.13.4",
 							},
-							KubernetesVersion: "1.13.4",
 						},
 					},
 				},
@@ -120,56 +134,25 @@ func TestCreateCluster(t *testing.T) {
 			wantErr: true,
 			errmsg:  "cloud provider not registerd",
 		}, {
-			name: "Cluster already exists",
-			args: args{
-				store: fake.New(),
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "already-exists",
-					},
-					Spec: api.PharmerClusterSpec{
-						Config: api.ClusterConfig{
-							KubernetesVersion: "1.13.0",
-						},
-					},
-				},
-			},
-			wantErr: true,
-			errmsg:  "cluster already exists",
-			beforeTest: func(t *testing.T, a args) func(t *testing.T) {
-				_, err := a.store.Clusters().Create(&api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "already-exists",
-					},
-				})
-				if err != nil {
-					t.Errorf("failed to create Cluster: %v", err)
-				}
-
-				return func(t *testing.T) {
-					err = a.store.Clusters().Delete("already-exists")
-					if err != nil {
-						t.Errorf("failed to delete Cluster: %v", err)
-					}
-				}
-			},
-		}, {
 			name: "gce Cluster",
 			args: args{
-				store: fake.New(),
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "gce",
-					},
-					Spec: api.PharmerClusterSpec{
-						ClusterAPI: v1alpha1.Cluster{},
-						Config: api.ClusterConfig{
-							MasterCount: 3,
-							Cloud: api.CloudSpec{
-								CloudProvider: "gce",
-								Zone:          "us-central-1f",
+				scope: &cloud.Scope{
+					Logger:        klogr.New(),
+					StoreProvider: fake.New(),
+					Cluster: &api.Cluster{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "gce",
+						},
+						Spec: api.PharmerClusterSpec{
+							ClusterAPI: v1alpha1.Cluster{},
+							Config: api.ClusterConfig{
+								MasterCount: 3,
+								Cloud: api.CloudSpec{
+									CloudProvider: "gce",
+									Zone:          "us-central-1f",
+								},
+								KubernetesVersion: "1.13.1",
 							},
-							KubernetesVersion: "1.13.1",
 						},
 					},
 				},
@@ -179,20 +162,23 @@ func TestCreateCluster(t *testing.T) {
 		}, {
 			name: "aws Cluster",
 			args: args{
-				store: fake.New(),
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "aws",
-					},
-					Spec: api.PharmerClusterSpec{
-						ClusterAPI: v1alpha1.Cluster{},
-						Config: api.ClusterConfig{
-							MasterCount: 3,
-							Cloud: api.CloudSpec{
-								CloudProvider: "aws",
-								Zone:          "us-east-1b",
+				scope: &cloud.Scope{
+					Logger:        klogr.New(),
+					StoreProvider: fake.New(),
+					Cluster: &api.Cluster{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "aws",
+						},
+						Spec: api.PharmerClusterSpec{
+							ClusterAPI: v1alpha1.Cluster{},
+							Config: api.ClusterConfig{
+								MasterCount: 3,
+								Cloud: api.CloudSpec{
+									CloudProvider: "aws",
+									Zone:          "us-east-1b",
+								},
+								KubernetesVersion: "1.13.1",
 							},
-							KubernetesVersion: "1.13.1",
 						},
 					},
 				},
@@ -202,29 +188,33 @@ func TestCreateCluster(t *testing.T) {
 		}, {
 			name: "azure Cluster",
 			args: args{
-				store: fake.New(),
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "azure",
-					},
-					Spec: api.PharmerClusterSpec{
-						ClusterAPI: v1alpha1.Cluster{},
-						Config: api.ClusterConfig{
-							MasterCount: 3,
-							Cloud: api.CloudSpec{
-								CloudProvider: "azure",
-								Zone:          "us-east",
+				scope: &cloud.Scope{
+					Logger:        klogr.New(),
+					StoreProvider: fake.New(),
+					Cluster: &api.Cluster{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "azure",
+						},
+						Spec: api.PharmerClusterSpec{
+							ClusterAPI: v1alpha1.Cluster{},
+							Config: api.ClusterConfig{
+								MasterCount: 3,
+								Cloud: api.CloudSpec{
+									CloudProvider: "azure",
+									Zone:          "us-east",
+								},
+								CredentialName:    "azure-cred",
+								KubernetesVersion: "1.13.1",
 							},
-							CredentialName:    "azure-cred",
-							KubernetesVersion: "1.13.1",
 						},
 					},
 				},
 			},
 			wantErr: false,
 			beforeTest: func(t *testing.T, a args) func(t *testing.T) {
+				s := a.scope
 				g := gomega.NewGomegaWithT(t)
-				_, err := a.store.Credentials().Create(&cloudapi.Credential{
+				_, err := s.StoreProvider.Credentials().Create(&cloudapi.Credential{
 					ObjectMeta: v1.ObjectMeta{
 						Name: "azure-cred",
 					},
@@ -241,19 +231,20 @@ func TestCreateCluster(t *testing.T) {
 				g.Expect(err).NotTo(gomega.HaveOccurred())
 
 				return func(t *testing.T) {
+					s := a.scope
 					// check if load balancer ip is set
-					a.cluster.Spec.Config.APIServerCertSANs[0] = azure.DefaultInternalLBIPAddress
+					s.Cluster.Spec.Config.APIServerCertSANs[0] = azure.DefaultInternalLBIPAddress
 
 					// check if Cluster is created
-					err := a.store.Clusters().Delete(a.cluster.Name)
+					err := s.StoreProvider.Clusters().Delete(s.Cluster.Name)
 					g.Expect(err).NotTo(gomega.HaveOccurred())
 
 					// check certs are generated
-					deleteCerts(t, a.store, a.cluster.Name)
+					deleteCerts(t, s.StoreProvider, s.Cluster.Name)
 
 					// check master machines are genereated
-					for i := 0; i < a.cluster.Spec.Config.MasterCount; i++ {
-						err = a.store.Machine(a.cluster.Name).Delete(a.cluster.MasterMachineName(i))
+					for i := 0; i < s.Cluster.Spec.Config.MasterCount; i++ {
+						err = s.StoreProvider.Machine(s.Cluster.Name).Delete(s.Cluster.MasterMachineName(i))
 						g.Expect(err).NotTo(gomega.HaveOccurred())
 					}
 				}
@@ -261,20 +252,23 @@ func TestCreateCluster(t *testing.T) {
 		}, {
 			name: "gke Cluster",
 			args: args{
-				store: fake.New(),
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "gke",
-					},
-					Spec: api.PharmerClusterSpec{
-						ClusterAPI: v1alpha1.Cluster{},
-						Config: api.ClusterConfig{
-							MasterCount: 3,
-							Cloud: api.CloudSpec{
-								CloudProvider: "gke",
-								Zone:          "us-central-1f",
+				scope: &cloud.Scope{
+					Logger:        klogr.New(),
+					StoreProvider: fake.New(),
+					Cluster: &api.Cluster{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "gke",
+						},
+						Spec: api.PharmerClusterSpec{
+							ClusterAPI: v1alpha1.Cluster{},
+							Config: api.ClusterConfig{
+								MasterCount: 3,
+								Cloud: api.CloudSpec{
+									CloudProvider: "gke",
+									Zone:          "us-central-1f",
+								},
+								KubernetesVersion: "1.13.1",
 							},
-							KubernetesVersion: "1.13.1",
 						},
 					},
 				},
@@ -283,31 +277,35 @@ func TestCreateCluster(t *testing.T) {
 			beforeTest: func(t *testing.T, a args) func(t *testing.T) {
 				g := gomega.NewGomegaWithT(t)
 				return func(t *testing.T) {
+					s := a.scope
 					// check if Cluster is created
-					err := a.store.Clusters().Delete(a.cluster.Name)
+					err := s.StoreProvider.Clusters().Delete(s.Cluster.Name)
 					g.Expect(err).NotTo(gomega.HaveOccurred())
 
 					// check certs are generated
-					deleteCerts(t, a.store, a.cluster.Name)
+					deleteCerts(t, s.StoreProvider, s.Cluster.Name)
 				}
 			},
 		}, {
 			name: "aks Cluster",
 			args: args{
-				store: fake.New(),
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "aks",
-					},
-					Spec: api.PharmerClusterSpec{
-						ClusterAPI: v1alpha1.Cluster{},
-						Config: api.ClusterConfig{
-							MasterCount: 3,
-							Cloud: api.CloudSpec{
-								CloudProvider: "aks",
-								Zone:          "useast2",
+				scope: &cloud.Scope{
+					Logger:        klogr.New(),
+					StoreProvider: fake.New(),
+					Cluster: &api.Cluster{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "aks",
+						},
+						Spec: api.PharmerClusterSpec{
+							ClusterAPI: v1alpha1.Cluster{},
+							Config: api.ClusterConfig{
+								MasterCount: 3,
+								Cloud: api.CloudSpec{
+									CloudProvider: "aks",
+									Zone:          "useast2",
+								},
+								KubernetesVersion: "1.13.1",
 							},
-							KubernetesVersion: "1.13.1",
 						},
 					},
 				},
@@ -317,20 +315,23 @@ func TestCreateCluster(t *testing.T) {
 		}, {
 			name: "linode Cluster",
 			args: args{
-				store: fake.New(),
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "linode",
-					},
-					Spec: api.PharmerClusterSpec{
-						ClusterAPI: v1alpha1.Cluster{},
-						Config: api.ClusterConfig{
-							MasterCount: 3,
-							Cloud: api.CloudSpec{
-								CloudProvider: "linode",
-								Zone:          "us-east",
+				scope: &cloud.Scope{
+					Logger:        klogr.New(),
+					StoreProvider: fake.New(),
+					Cluster: &api.Cluster{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "linode",
+						},
+						Spec: api.PharmerClusterSpec{
+							ClusterAPI: v1alpha1.Cluster{},
+							Config: api.ClusterConfig{
+								MasterCount: 3,
+								Cloud: api.CloudSpec{
+									CloudProvider: "linode",
+									Zone:          "us-east",
+								},
+								KubernetesVersion: "1.13.1",
 							},
-							KubernetesVersion: "1.13.1",
 						},
 					},
 				},
@@ -340,20 +341,23 @@ func TestCreateCluster(t *testing.T) {
 		}, {
 			name: "digitalocean Cluster",
 			args: args{
-				store: fake.New(),
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "digitalocean",
-					},
-					Spec: api.PharmerClusterSpec{
-						ClusterAPI: v1alpha1.Cluster{},
-						Config: api.ClusterConfig{
-							MasterCount: 3,
-							Cloud: api.CloudSpec{
-								CloudProvider: "digitalocean",
-								Zone:          "nyc1",
+				scope: &cloud.Scope{
+					Logger:        klogr.New(),
+					StoreProvider: fake.New(),
+					Cluster: &api.Cluster{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "digitalocean",
+						},
+						Spec: api.PharmerClusterSpec{
+							ClusterAPI: v1alpha1.Cluster{},
+							Config: api.ClusterConfig{
+								MasterCount: 3,
+								Cloud: api.CloudSpec{
+									CloudProvider: "digitalocean",
+									Zone:          "nyc1",
+								},
+								KubernetesVersion: "1.13.1",
 							},
-							KubernetesVersion: "1.13.1",
 						},
 					},
 				},
@@ -363,20 +367,23 @@ func TestCreateCluster(t *testing.T) {
 		}, {
 			name: "packet Cluster",
 			args: args{
-				store: fake.New(),
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "packet",
-					},
-					Spec: api.PharmerClusterSpec{
-						ClusterAPI: v1alpha1.Cluster{},
-						Config: api.ClusterConfig{
-							MasterCount: 3,
-							Cloud: api.CloudSpec{
-								CloudProvider: "packet",
-								Zone:          "ewr1",
+				scope: &cloud.Scope{
+					Logger:        klogr.New(),
+					StoreProvider: fake.New(),
+					Cluster: &api.Cluster{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "packet",
+						},
+						Spec: api.PharmerClusterSpec{
+							ClusterAPI: v1alpha1.Cluster{},
+							Config: api.ClusterConfig{
+								MasterCount: 3,
+								Cloud: api.CloudSpec{
+									CloudProvider: "packet",
+									Zone:          "ewr1",
+								},
+								KubernetesVersion: "1.13.1",
 							},
-							KubernetesVersion: "1.13.1",
 						},
 					},
 				},
@@ -386,20 +393,23 @@ func TestCreateCluster(t *testing.T) {
 		}, {
 			name: "dokube Cluster",
 			args: args{
-				store: fake.New(),
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "dokube",
-					},
-					Spec: api.PharmerClusterSpec{
-						ClusterAPI: v1alpha1.Cluster{},
-						Config: api.ClusterConfig{
-							MasterCount: 3,
-							Cloud: api.CloudSpec{
-								CloudProvider: "dokube",
-								Zone:          "nyc1",
+				scope: &cloud.Scope{
+					Logger:        klogr.New(),
+					StoreProvider: fake.New(),
+					Cluster: &api.Cluster{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "dokube",
+						},
+						Spec: api.PharmerClusterSpec{
+							ClusterAPI: v1alpha1.Cluster{},
+							Config: api.ClusterConfig{
+								MasterCount: 3,
+								Cloud: api.CloudSpec{
+									CloudProvider: "dokube",
+									Zone:          "nyc1",
+								},
+								KubernetesVersion: "1.13.1",
 							},
-							KubernetesVersion: "1.13.1",
 						},
 					},
 				},
@@ -409,20 +419,23 @@ func TestCreateCluster(t *testing.T) {
 		}, {
 			name: "eks Cluster",
 			args: args{
-				store: fake.New(),
-				cluster: &api.Cluster{
-					ObjectMeta: v1.ObjectMeta{
-						Name: "eks",
-					},
-					Spec: api.PharmerClusterSpec{
-						ClusterAPI: v1alpha1.Cluster{},
-						Config: api.ClusterConfig{
-							MasterCount: 3,
-							Cloud: api.CloudSpec{
-								CloudProvider: "eks",
-								Zone:          "us-east-1b",
+				scope: &cloud.Scope{
+					Logger:        klogr.New(),
+					StoreProvider: fake.New(),
+					Cluster: &api.Cluster{
+						ObjectMeta: v1.ObjectMeta{
+							Name: "eks",
+						},
+						Spec: api.PharmerClusterSpec{
+							ClusterAPI: v1alpha1.Cluster{},
+							Config: api.ClusterConfig{
+								MasterCount: 3,
+								Cloud: api.CloudSpec{
+									CloudProvider: "eks",
+									Zone:          "us-east-1b",
+								},
+								KubernetesVersion: "1.13.1",
 							},
-							KubernetesVersion: "1.13.1",
 						},
 					},
 				},
@@ -439,7 +452,7 @@ func TestCreateCluster(t *testing.T) {
 				defer afterTest(t)
 			}
 
-			err := cloud.CreateCluster(tt.args.store, tt.args.cluster)
+			err := cloud.CreateCluster(tt.args.scope)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateCluster() error = %v, wantErr %v", err, tt.wantErr)
 			}

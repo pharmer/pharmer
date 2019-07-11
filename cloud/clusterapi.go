@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"text/template"
 
-	"github.com/appscode/go/log"
 	"github.com/appscode/go/wait"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud/utils/kube"
@@ -51,10 +51,12 @@ func NewClusterAPI(s *Scope, namespace string) (*ClusterAPI, error) {
 
 	bc, err := kube.GetBooststrapClient(s.Cluster, s.GetCaCertPair())
 	if err != nil {
+		s.Logger.Error(err, "failed to get bootstrap client")
 		return nil, err
 	}
 	clusterClient, err := kube.GetClusterAPIClient(s.GetCaCertPair(), s.Cluster)
 	if err != nil {
+		s.Logger.Error(err, "failed to get clusterAPI clients")
 		return nil, err
 	}
 
@@ -68,14 +70,17 @@ func NewClusterAPI(s *Scope, namespace string) (*ClusterAPI, error) {
 }
 
 func (ca *ClusterAPI) Apply(controllerManager string) error {
-	log.Infof("Deploying the addon apiserver and controller manager...")
-	if err := ca.CreateMachineController(controllerManager); err != nil {
+	log := ca.Logger
+	log.Info("Deploying the addon apiserver and controller manager")
+	if err := ca.CreateMachineController(controllerManager); err != nil &&
+		!strings.Contains(err.Error(), "Already Exists,  Ignoring") {
 		return errors.Wrap(err, "can't create machine controller")
 	}
 
 	cluster := ca.Cluster
 	if err := phases.ApplyCluster(ca.bootstrapClient, &cluster.Spec.ClusterAPI); err != nil && !api.ErrAlreadyExist(err) {
-		return errors.Wrap(err, "failed to add Cluster")
+		log.Error(err, "failed to add cluster")
+		return err
 	}
 	namespace := cluster.Spec.ClusterAPI.Namespace
 	if namespace == "" {
@@ -84,25 +89,28 @@ func (ca *ClusterAPI) Apply(controllerManager string) error {
 
 	c, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(namespace).Get(cluster.Name, metav1.GetOptions{})
 	if err != nil {
-		return errors.Wrap(err, "failed to update Cluster provider status")
+		log.Error(err, "failed to update cluster provider status")
+		return err
 	}
 
 	c.Status = cluster.Spec.ClusterAPI.Status
 	if _, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(namespace).UpdateStatus(c); err != nil && !api.ErrObjectModified(err) {
-		return errors.Wrap(err, "failed to update Cluster")
+		log.Error(err, "failed to update Cluster")
+		return err
 	}
 
 	if err := ca.updateProviderStatus(); err != nil {
-		log.Infoln(err)
-		return errors.Wrap(err, "failed to update provider status")
+		log.Error(err, "failder ot update provider status")
+		return err
 	}
 
 	masterMachine, err := getLeaderMachine(ca.StoreProvider.Machine(ca.Cluster.Name), ca.Cluster.Name)
 	if err != nil {
-		return errors.Wrap(err, "failed to get leader machine")
+		log.Error(err, "failed to get leader machine")
+		return err
 	}
 
-	log.Infof("Adding master machines...")
+	log.Info("Adding master machines...")
 	_, err = ca.clusterapiClient.ClusterV1alpha1().Machines(namespace).Create(masterMachine)
 	if err != nil && !api.ErrAlreadyExist(err) && !api.ErrObjectModified(err) {
 		return errors.Wrap(err, "failed to add master machine")
@@ -118,6 +126,8 @@ func (ca *ClusterAPI) Apply(controllerManager string) error {
 }
 
 func (ca *ClusterAPI) updateProviderStatus() error {
+	log := ca.Logger
+
 	pharmerCluster := ca.Cluster
 	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		cluster, err := ca.clusterapiClient.ClusterV1alpha1().Clusters(pharmerCluster.Spec.ClusterAPI.Namespace).Get(pharmerCluster.Name, metav1.GetOptions{})
@@ -127,7 +137,7 @@ func (ca *ClusterAPI) updateProviderStatus() error {
 		if cluster.Status.ProviderStatus != nil {
 			pharmerCluster.Spec.ClusterAPI.Status.ProviderStatus = cluster.Status.ProviderStatus
 			if _, err := ca.StoreProvider.Clusters().Update(pharmerCluster); err != nil {
-				log.Info(err)
+				log.Error(err, "failed to update cluster status")
 				return false, nil
 			}
 			return true, nil
@@ -151,12 +161,13 @@ func (ca *ClusterAPI) updateMachineStatus(namespace string, masterMachine *clust
 }
 
 func (ca *ClusterAPI) CreateMachineController(controllerManager string) error {
-	log.Infoln("creating pharmer secret")
+	log := ca.Logger
+	log.Info("creating pharmer secret")
 	if err := ca.CreatePharmerSecret(); err != nil {
 		return err
 	}
 
-	log.Infoln("creating apiserver and controller")
+	log.Info("creating apiserver and controller")
 	if err := ca.CreateAPIServerAndController(controllerManager); err != nil && !api.ErrObjectModified(err) {
 		return err
 	}

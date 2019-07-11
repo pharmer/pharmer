@@ -15,7 +15,6 @@ type NodeGroupEditConfig struct {
 	File        string
 	DoNotDelete bool
 	Output      string
-	Owner       string
 }
 
 func NewNodeGroupEditConfig() *NodeGroupEditConfig {
@@ -33,7 +32,6 @@ func (c *NodeGroupEditConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.File, "file", "f", c.File, "Load nodegroup data from file")
 	fs.BoolVarP(&c.DoNotDelete, "do-not-delete", "", c.DoNotDelete, "Set do not delete flag")
 	fs.StringVarP(&c.Output, "output", "o", c.Output, "Output format. One of: yaml|json.")
-	fs.StringVarP(&c.Owner, "owner", "", c.Owner, "Current user id")
 }
 
 func (c *NodeGroupEditConfig) ValidateFlags(cmd *cobra.Command, args []string) error {

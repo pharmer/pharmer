@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/appscode/go/log"
 	"github.com/packethost/packngo"
 	"github.com/pharmer/cloud/pkg/credential"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
@@ -22,10 +21,12 @@ type cloudConnector struct {
 }
 
 func newconnector(cm *ClusterManager) (*cloudConnector, error) {
+	log := cm.Logger
 	cluster := cm.Cluster
 
 	cred, err := cm.GetCredential()
 	if err != nil {
+		log.Error(err, "failed to get credential from store")
 		return nil, err
 	}
 	typed := credential.Packet{CommonSpec: credential.CommonSpec(cred.Spec)}
@@ -42,6 +43,8 @@ func newconnector(cm *ClusterManager) (*cloudConnector, error) {
 }
 
 func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
+	log := conn.Logger
+
 	attempt := 0
 	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
@@ -50,7 +53,7 @@ func (conn *cloudConnector) waitForInstance(deviceID, status string) error {
 		if err != nil {
 			return false, nil
 		}
-		log.Infof("Attempt %v: Instance `%v` is in status `%s`", attempt, server.ID, server.State)
+		log.Info("waiting for instance", "attempt", attempt, "instance-id", server.ID, "status", server.State)
 		if strings.ToLower(server.State) == status {
 			return true, nil
 		}
@@ -80,7 +83,8 @@ func (conn *cloudConnector) getPublicKey() (bool, string, error) {
 }
 
 func (conn *cloudConnector) importPublicKey() (string, error) {
-	log.Debugln("Adding SSH public key")
+	log := conn.Logger
+	log.Info("Adding SSH public key")
 	sk, _, err := conn.client.SSHKeys.Create(&packngo.SSHKeyCreateRequest{
 		Key:       string(conn.Certs.SSHKey.PublicKey),
 		Label:     conn.Cluster.ClusterConfig().Cloud.SSHKeyName,
@@ -94,11 +98,13 @@ func (conn *cloudConnector) importPublicKey() (string, error) {
 		}
 		return keyID, err
 	}
-	log.Debugf("Created new ssh key with fingerprint=%v", conn.Certs.SSHKey.OpensshFingerprint)
+	log.Info("Created new ssh key with fingerprint", "fingerprint", conn.Certs.SSHKey.OpensshFingerprint)
 	return sk.ID, nil
 }
 
 func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, script string) (*api.NodeInfo, error) {
+	log := conn.Logger
+
 	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return nil, err
@@ -117,7 +123,7 @@ func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, script st
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("Instance %v created", machine.Name)
+	log.Info("Instance created", "machine-name", machine.Name)
 
 	err = conn.waitForInstance(server.ID, "active")
 	if err != nil {
@@ -145,6 +151,8 @@ func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, script st
 }
 
 func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error {
+	log := conn.Logger
+
 	serverID, err := serverIDFromProviderID(providerID)
 	if err != nil {
 		return err
@@ -153,7 +161,7 @@ func (conn *cloudConnector) DeleteInstanceByProviderID(providerID string) error 
 	if err != nil {
 		return err
 	}
-	log.Infof("Server %v deleted", serverID)
+	log.Info("Instance deleted", "instance-id", serverID)
 	return nil
 }
 

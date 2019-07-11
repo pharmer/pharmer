@@ -10,10 +10,6 @@ type namer struct {
 	cluster *api.Cluster
 }
 
-func (n namer) AdminUsername() string {
-	return "pharmer"
-}
-
 func (n namer) GetStackServiceRole() string {
 	return fmt.Sprintf("EKS-%v-ServiceRole", n.cluster.Name)
 }

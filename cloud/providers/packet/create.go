@@ -13,10 +13,10 @@ import (
 )
 
 func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.MachineRole) (clusterapi.ProviderSpec, error) {
+	log := cm.Logger
 	if sku == "" {
 		sku = "baremetal_0"
 	}
-	//config := cluster.Spec.Config
 	spec := &packetconfig.PacketMachineProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: packetconfig.PacketProviderGroupName + "/" + packetconfig.PacketProviderAPIVersion,
@@ -28,6 +28,7 @@ func (cm *ClusterManager) GetDefaultMachineProviderSpec(sku string, role api.Mac
 
 	providerSpecValue, err := json.Marshal(spec)
 	if err != nil {
+		log.Error(err, "failed to marshal provider spec")
 		return clusterapi.ProviderSpec{}, err
 	}
 

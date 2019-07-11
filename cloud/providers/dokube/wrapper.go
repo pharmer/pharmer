@@ -13,8 +13,10 @@ import (
 )
 
 func (cm *ClusterManager) retrieveClusterStatus(cluster *godo.KubernetesCluster) error {
+	log := cm.Logger
 	u, err := url.Parse(cluster.Endpoint)
 	if err != nil {
+		log.Error(err, "failed to parse url", "endpoint", cluster.Endpoint)
 		return err
 	}
 	cm.Cluster.Spec.ClusterAPI.Status.APIEndpoints = append(cm.Cluster.Spec.ClusterAPI.Status.APIEndpoints, clusterapi.APIEndpoint{
@@ -25,13 +27,16 @@ func (cm *ClusterManager) retrieveClusterStatus(cluster *godo.KubernetesCluster)
 }
 
 func (cm *ClusterManager) StoreCertificate(c *godo.Client) error {
+	log := cm.Logger
 	kcc, _, err := c.Kubernetes.GetKubeConfig(context.Background(), cm.Cluster.Spec.Config.Cloud.Dokube.ClusterID)
 	if err != nil {
+		log.Error(err, "failed to get kubeconfig from digitalocean cluster")
 		return err
 	}
 
 	kc, err := clientcmd.Load(kcc.KubeconfigYAML)
 	if err != nil {
+		log.Error(err, "failed to load kubeconfig")
 		return err
 	}
 
@@ -47,22 +52,30 @@ func (cm *ClusterManager) StoreCertificate(c *godo.Client) error {
 
 	caCrt, err := cert.ParseCertsPEM(kc.Clusters[currentContext].CertificateAuthorityData)
 	if err != nil {
+		log.Error(err, "failed to parse ca-cert pem")
 		return err
 	}
 
 	if err := certStore.Create(api.CACertName, caCrt[0], caKey); err != nil {
+		log.Error(err, "failed to create ca-cert in store")
 		return err
 	}
 
 	adminCrt, err := cert.ParseCertsPEM(kc.AuthInfos[kc.Contexts[currentContext].AuthInfo].ClientCertificateData)
 	if err != nil {
+		log.Error(err, "failed to parse admin certs")
 		return err
 	}
 
 	adminKey, err := cert.ParsePrivateKeyPEM(kc.AuthInfos[kc.Contexts[currentContext].AuthInfo].ClientKeyData)
 	if err != nil {
+		log.Error(err, "failed to parse admin key")
 		return err
 	}
 	err = certStore.Create("admin", adminCrt[0], adminKey.(*rsa.PrivateKey))
-	return err
+	if err != nil {
+		log.Error(err, "failed to create admin certs & key in store")
+		return err
+	}
+	return nil
 }

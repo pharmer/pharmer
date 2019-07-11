@@ -76,10 +76,6 @@ func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 	panic("implement me")
 }
 
-func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
-	return nil
-}
-
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 	if cm.AdminClient != nil {
 		return cm.AdminClient, nil
@@ -90,19 +86,23 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 }
 
 func (cm *ClusterManager) GetAKSAdminClient() (kubernetes.Interface, error) {
+	log := cm.Logger
 	resp, err := cm.conn.managedClient.GetAccessProfile(context.Background(), cm.namer.ResourceGroupName(), cm.Cluster.Name, RoleClusterUser)
 	if err != nil {
+		log.Error(err, "failed to get access profile")
 		return nil, err
 	}
 	fmt.Println(*resp.KubeConfig)
 	kubeconfig := *resp.KubeConfig
 	kubeconfig, err = yaml.YAMLToJSON(kubeconfig)
 	if err != nil {
+		log.Error(err, "failed to convert kubeconfig from yaml to json")
 		return nil, err
 	}
 	var konfig clientcmd.Config
 	err = json.Unmarshal(kubeconfig, &konfig)
 	if err != nil {
+		log.Error(err, "failed to unmarshal kubeconfig")
 		return nil, err
 	}
 
@@ -120,26 +120,31 @@ func (cm *ClusterManager) GetAKSAdminClient() (kubernetes.Interface, error) {
 
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
 	var err error
+	log := cm.Logger
 	cluster := cm.Cluster
 	cm.namer = namer{cluster: cluster}
 	if cm.conn, err = newconnector(cm); err != nil {
+		log.Error(err, "failed to get cloud connector")
 		return nil, err
 	}
 
 	resp, err := cm.conn.managedClient.GetAccessProfile(context.Background(), cm.namer.ResourceGroupName(), cm.Cluster.Name, RoleClusterUser)
 	if err != nil {
+		log.Error(err, "failed to get access profile")
 		return nil, err
 	}
 
 	kubeconfig := *resp.KubeConfig
 	kubeconfig, err = yaml.YAMLToJSON(kubeconfig)
 	if err != nil {
+		log.Error(err, "failed to convert kubeconfig from yaml to json")
 		return nil, err
 	}
 
 	var konfig clientcmd.Config
 	err = json.Unmarshal(kubeconfig, &konfig)
 	if err != nil {
+		log.Error(err, "failed to unmarshal kubeconfig")
 		return nil, err
 	}
 	var (

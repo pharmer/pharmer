@@ -3,10 +3,8 @@ package digitalocean
 import (
 	"context"
 
-	"github.com/appscode/go/log"
 	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pharmer/pharmer/cloud"
-	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
@@ -16,6 +14,9 @@ import (
 )
 
 func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
+	log := cm.Logger.WithValues("machine-name", leaderMachine.Name)
+	log.Info("ensuring master machine")
+
 	if d, _ := cm.conn.instanceIfExists(leaderMachine); d == nil {
 		log.Info("Creating master instance")
 		nodeAddresses := make([]core.NodeAddress, 0)
@@ -34,23 +35,27 @@ func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
 
 		script, err := cloud.RenderStartupScript(cm, leaderMachine, "", customTemplate)
 		if err != nil {
+			log.Error(err, "failed to render start up script")
 			return err
 		}
 
 		err = cm.conn.CreateInstance(cm.Cluster, leaderMachine, script)
 		if err != nil {
+			log.Error(err, "failed to create instance")
 			return err
 		}
 
 		if err = cm.Cluster.SetClusterAPIEndpoints(nodeAddresses); err != nil {
+			log.Error(err, "failed to set cluster api endpoints")
 			return err
 		}
-
 	}
+	log.Info("successfully created cluster")
 
 	var err error
 	cm.Cluster, err = cm.StoreProvider.Clusters().Update(cm.Cluster)
 	if err != nil {
+		log.Error(err, "failed to update cluster in store")
 		return err
 	}
 
@@ -58,16 +63,22 @@ func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
 }
 
 func (cm *ClusterManager) PrepareCloud() error {
+	log := cm.Logger
+	log.Info("preparing cloud infra")
+
 	var found bool
 	var err error
 
 	found, _, err = cm.conn.getPublicKey()
 	if err != nil {
+		log.Error(err, "failed to get public key")
 		return err
 	}
 	if !found {
+		log.V(2).Info("public key not found, importing")
 		_, err = cm.conn.importPublicKey()
 		if err != nil {
+			log.Error(err, "failed to import public key")
 			return err
 		}
 	}
@@ -75,10 +86,12 @@ func (cm *ClusterManager) PrepareCloud() error {
 	// ignore errors, since tags are simply informational.
 	found, err = cm.conn.getTags()
 	if err != nil {
+		log.Error(err, "failed to get tags")
 		return err
 	}
 	if !found {
 		if err = cm.conn.createTags(); err != nil {
+			log.Error(err, "failed to create tags")
 			return err
 		}
 	}
@@ -87,6 +100,7 @@ func (cm *ClusterManager) PrepareCloud() error {
 	if err == errLBNotFound {
 		lb, err = cm.conn.createLoadBalancer(context.Background(), cm.namer.LoadBalancerName())
 		if err != nil {
+			log.Error(err, "failed to create loadbalancer")
 			return err
 		}
 	}
@@ -104,16 +118,21 @@ func (cm *ClusterManager) PrepareCloud() error {
 	}
 
 	if err = cm.Cluster.SetClusterAPIEndpoints(nodeAddresses); err != nil {
-		return errors.Wrap(err, "Error setting controlplane endpoints")
+		log.Error(err, "failed to set control plane endpoints")
+		return err
 	}
 
+	log.Info("successfully created cloud infra")
 	return nil
 }
 
 // Deletes master(s) and releases other cloud resources
 func (cm *ClusterManager) ApplyDelete() error {
+	log := cm.Logger
+
 	kc, err := cm.GetAdminClient()
 	if err != nil {
+		log.Error(err, "failed to get admin client")
 		return err
 	}
 	var masterInstances *core.NodeList
@@ -123,12 +142,12 @@ func (cm *ClusterManager) ApplyDelete() error {
 		}).String(),
 	})
 	if err != nil && !kerr.IsNotFound(err) {
-		log.Infof("master instance not found. Reason: %v", err)
+		log.Error(err, "master instance not found")
 	} else if err == nil {
 		for _, mi := range masterInstances.Items {
 			err = cm.conn.DeleteInstanceByProviderID(mi.Spec.ProviderID)
 			if err != nil {
-				log.Infof("Failed to delete instance %s. Reason: %s", mi.Spec.ProviderID, err)
+				log.Error(err, "Failed to delete instance", "instanceID", mi.Spec.ProviderID)
 			}
 		}
 	}
@@ -137,18 +156,20 @@ func (cm *ClusterManager) ApplyDelete() error {
 	tag := "KubernetesCluster:" + cm.Cluster.Name
 	_, err = cm.conn.client.Droplets.DeleteByTag(context.Background(), tag)
 	if err != nil {
-		log.Infof("Failed to delete resources by tag %s. Reason: %s", tag, err)
+		log.Error(err, "Failed to delete resources", "tag", tag)
 	}
-	log.Infof("Deleted droplet by tag %s", tag)
+	log.Info("Deleted droplet", "tag", tag)
 
 	// Delete SSH key
 	found, _, err := cm.conn.getPublicKey()
 	if err != nil {
+		log.Error(err, "failed to get public key")
 		return err
 	}
 	if found {
 		err = cm.conn.deleteSSHKey()
 		if err != nil {
+			log.Error(err, "failed to delete ssh key")
 			return err
 		}
 	}
@@ -156,6 +177,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 	_, err = cm.conn.lbByName(context.Background(), cm.namer.LoadBalancerName())
 	if err != errLBNotFound {
 		if err = cm.conn.deleteLoadBalancer(context.Background(), cm.namer.LoadBalancerName()); err != nil {
+			log.Error(err, "failed to delete load balancer")
 			return err
 		}
 
@@ -164,13 +186,15 @@ func (cm *ClusterManager) ApplyDelete() error {
 	cm.Cluster.Status.Phase = api.ClusterDeleted
 	_, err = cm.StoreProvider.Clusters().UpdateStatus(cm.Cluster)
 	if err != nil {
+		log.Error(err, "failed to update cluster status in store")
 		return err
 	}
 
-	log.Infof("Cluster %v deletion is deleted successfully", cm.Cluster.Name)
+	log.Info("successfully deleted cluster")
 	return err
 }
 
 func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
+	cm.Logger.Info("setting master sku", "sku", "2gb")
 	return "2gb"
 }

@@ -79,10 +79,6 @@ func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 
 var _ cloud.Interface = &ClusterManager{}
 
-func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
-	return nil
-}
-
 func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 	kc, err := cm.NewGKEAdminClient()
 	if err != nil {
@@ -92,14 +88,19 @@ func (cm *ClusterManager) GetAdminClient() (kubernetes.Interface, error) {
 }
 
 func (cm *ClusterManager) NewGKEAdminClient() (kubernetes.Interface, error) {
+	log := cm.Logger
+
 	cluster := cm.Cluster
 	adminCert, adminKey, err := certificates.GetAdminCertificate(cm.StoreProvider.Certificates(cm.Cluster.Name))
 	if err != nil {
+		log.Error(err, "failed to get admin certificates")
 		return nil, err
 	}
 	host := cluster.APIServerURL()
 	if host == "" {
-		return nil, errors.Errorf("failed to detect api server url for cluster %s", cluster.Name)
+		err = errors.Errorf("failed to detect api server url for cluster %s", cluster.Name)
+		log.Error(err, "apiserver url is empty")
+		return nil, err
 	}
 	cfg := &rest.Config{
 		Host:     host,

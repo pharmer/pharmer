@@ -13,7 +13,7 @@ import (
 
 type clusterXormStore struct {
 	engine *xorm.Engine
-	owner  string
+	owner  int64
 }
 
 var _ store.ClusterStore = &clusterXormStore{}
@@ -38,13 +38,17 @@ func (s *clusterXormStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 	return result, nil
 }
 
+// Get() takes clusterName as parameter
+// we need to get cluster from apiServer using clusterID
+// so for that case, we've to set ownerID to -1
+// it should be only used from apiserver
 func (s *clusterXormStore) Get(name string) (*api.Cluster, error) {
 	if name == "" {
 		return nil, errors.New("missing cluster name")
 	}
 
 	cluster := &Cluster{Name: name, OwnerId: s.owner}
-	if s.owner == "" {
+	if s.owner == -1 {
 		id, err := strconv.Atoi(name)
 		if err != nil {
 			return nil, err
@@ -85,7 +89,6 @@ func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 	if err != nil {
 		return nil, err
 	}
-	cluster.OwnerId = s.owner
 	_, err = s.engine.Insert(cluster)
 	return obj, err
 }

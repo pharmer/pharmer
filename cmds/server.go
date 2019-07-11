@@ -21,7 +21,6 @@ func newCmdServer() *cobra.Command {
 		Example:           "pharmer serve",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-
 			cfgFile, _ := config.GetConfigFile(cmd.Flags())
 			cfg, err := config.LoadConfig(cfgFile)
 			if err != nil {

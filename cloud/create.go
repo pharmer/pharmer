@@ -17,7 +17,13 @@ import (
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-func CreateCluster(store store.ResourceInterface, cluster *api.Cluster) error {
+func CreateCluster(s *Scope) error {
+	s.Logger = s.Logger.WithName("[create-cluster]")
+	log := s.Logger
+
+	log.Info("creating cluster")
+
+	cluster := s.Cluster
 	if cluster == nil {
 		return errors.New("missing Cluster")
 	} else if cluster.Name == "" {
@@ -26,33 +32,47 @@ func CreateCluster(store store.ResourceInterface, cluster *api.Cluster) error {
 		return errors.New("missing Cluster version")
 	}
 
-	// create should return error: Cluster already exists if Cluster already exists
-	_, err := store.Clusters().Get(cluster.Name)
-	if err == nil {
-		return errors.New("cluster already exists")
+	// set common Cluster configs
+	err := setDefaultCluster(cluster)
+	if err != nil {
+		log.Error(err, "failed to set default cluster")
+		return err
+	}
+
+	// cluster needs to be created before certs are created for xorm provider
+	// it sets clusterID which is also used in other tables
+	_, err = s.StoreProvider.Clusters().Get(cluster.Name)
+	if err != nil {
+		log.V(2).Info("cluster doesn't exists, ignoring error", "error", err.Error())
+		cluster, err = s.StoreProvider.Clusters().Create(cluster)
+		if err != nil {
+			log.Error(err, "failed to store cluster")
+			return err
+		}
 	}
 
 	// create certificates and keys
-	certs, err := certificates.CreateCertsKeys(store, cluster.Name)
+	certs, err := certificates.CreateCertsKeys(s.StoreProvider, cluster.Name)
 	if err != nil {
-		return errors.Wrap(err, "failed to create certificates")
+		log.Error(err, "failed to create certificates and ssh keys")
+		return err
 	}
 
-	scope := NewScope(NewScopeParams{
-		Cluster:       cluster,
-		Certs:         certs,
-		StoreProvider: store,
-	})
+	s.Certs = certs
 
 	// create Cluster
-	if err := createCluster(scope); err != nil {
-		return errors.Wrap(err, "failed to create certificates")
+	if err := createCluster(s); err != nil {
+		log.Error(err, "failed to create cluster")
+		return err
 	}
 
 	// create master machines
-	if err := createMasterMachines(scope); err != nil {
-		return errors.Wrap(err, "failed to create master machines")
+	if err := createMasterMachines(s); err != nil {
+		log.Error(err, "failed to create master machines")
+		return err
 	}
+
+	log.Info("successfully created cluster")
 
 	return nil
 }
@@ -64,38 +84,42 @@ func createCluster(s *Scope) error {
 		return err
 	}
 
-	// set common Cluster configs
-	err = setDefaultCluster(cluster)
-	if err != nil {
-		return errors.Wrap(err, "failed to set default Cluster")
-	}
-
 	// set cloud-specific configs
 	if err = cm.SetDefaultCluster(); err != nil {
-		return errors.Wrap(err, "failed to set provider defaults")
+		s.Logger.Error(err, "failed to set provider defaults")
+		return err
 	}
 
-	_, err = s.StoreProvider.Clusters().Create(cluster)
+	_, err = s.StoreProvider.Clusters().Update(cluster)
 	if err != nil {
-		return errors.Wrap(err, "failed to store Cluster")
+		s.Logger.Error(err, "failed to update cluster in store")
+		return err
 	}
 
 	return nil
 }
 
 func createMasterMachines(s *Scope) error {
+	if api.ManagedProviders.Has(s.Cluster.ClusterConfig().Cloud.CloudProvider) {
+		return nil
+	}
+	log := s.Logger
+	log.Info("creating master machines")
+
 	cluster := s.Cluster
-	if !api.ManagedProviders.Has(cluster.ClusterConfig().Cloud.CloudProvider) {
-		for i := 0; i < cluster.Spec.Config.MasterCount; i++ {
-			master, err := getMasterMachine(s, cluster.MasterMachineName(i))
-			if err != nil {
-				return errors.Wrap(err, "failed to create master machine")
-			}
-			if _, err = s.StoreProvider.Machine(cluster.Name).Create(master); err != nil {
-				return errors.Wrap(err, "failed to store mastet machine")
-			}
+	for i := 0; i < cluster.Spec.Config.MasterCount; i++ {
+		master, err := getMasterMachine(s, cluster.MasterMachineName(i))
+		if err != nil {
+			log.Error(err, "failed to create machine", "name", cluster.MasterMachineName(i))
+			return err
+		}
+		if _, err = s.StoreProvider.Machine(cluster.Name).Create(master); err != nil {
+			log.Error(err, "failed to create machine in store")
+			return err
 		}
 	}
+	log.Info("successfully created master machines")
+
 	return nil
 }
 
@@ -110,6 +134,8 @@ func setDefaultCluster(cluster *api.Cluster) error {
 	cluster.ObjectMeta.UID = api_types.UID(uid.String())
 	cluster.ObjectMeta.CreationTimestamp = metav1.Time{Time: time.Now()}
 	cluster.ObjectMeta.Generation = time.Now().UnixNano()
+
+	cluster.InitClusterAPI()
 
 	if err := api.AssignTypeKind(cluster); err != nil {
 		return errors.Wrap(err, "failed to assign apiversion and kind to Cluster")
@@ -177,7 +203,8 @@ func getMasterMachine(s *Scope, name string) (*clusterapi.Machine, error) {
 		},
 	}
 	if err := api.AssignTypeKind(machine); err != nil {
-		return nil, errors.Wrap(err, "failed to assign apiversion/kind to machine")
+		s.Logger.Error(err, "failed to assign apiversion/kind to machine", "name", name)
+		return nil, err
 	}
 
 	return machine, nil

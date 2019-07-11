@@ -14,7 +14,7 @@ import (
 type certificateXormStore struct {
 	engine  *xorm.Engine
 	cluster string
-	owner   string
+	owner   int64
 }
 
 var _ store.CertificateStore = &certificateXormStore{}

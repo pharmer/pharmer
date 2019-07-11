@@ -2,28 +2,22 @@ package packet
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
-	"github.com/appscode/go/log"
+	"github.com/ghodss/yaml"
 	packetconfig "github.com/pharmer/pharmer/apis/v1beta1/packet"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/klog/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/machine"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	//	"k8s.io/client-go/kubernetes"
-	"fmt"
-
-	"github.com/ghodss/yaml"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	//kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"sigs.k8s.io/cluster-api/pkg/kubeadm"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 func init() {
@@ -32,7 +26,6 @@ func init() {
 		actuator := NewMachineActuator(MachineActuatorParams{
 			EventRecorder: m.GetEventRecorderFor(Recorder),
 			Client:        m.GetClient(),
-			Scheme:        m.GetScheme(),
 			cm:            cm,
 		})
 		return machine.AddWithActuator(m, actuator)
@@ -48,7 +41,6 @@ type MachineActuator struct {
 	client        client.Client
 	kubeadm       DOClientKubeadm
 	eventRecorder record.EventRecorder
-	scheme        *runtime.Scheme
 }
 
 type MachineActuatorParams struct {
@@ -57,88 +49,101 @@ type MachineActuatorParams struct {
 	Client         client.Client
 	CloudConnector *cloudConnector
 	EventRecorder  record.EventRecorder
-	Scheme         *runtime.Scheme
 }
 
 func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
+	params.cm.Logger = klogr.New().WithName("[machine-actuator]").
+		WithValues("cluster-name", params.cm.Cluster.Name)
 	return &MachineActuator{
 		cm:            params.cm,
 		client:        params.Client,
 		kubeadm:       getKubeadm(params),
 		eventRecorder: params.EventRecorder,
-		scheme:        params.Scheme,
 	}
 }
 
 func (packet *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	log.Infof("creating machine %s", machine.Name)
+	log := packet.cm.Logger.WithValues("machine-name", machine.Name)
+	log.Info("call for creating machine")
 
 	machineConfig, err := packetconfig.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
-		return errors.Wrapf(err, "error decoding provider config for macine %s", machine.Name)
+		log.Error(err, "error decoding provider config for machine")
+		return err
 	}
 
 	if err := packet.validateMachine(machineConfig); err != nil {
-		return errors.Wrapf(err, "failed to valide machine config for machien %s", machine.Name)
+		log.Error(err, "failed to validate machine config")
+		return err
 	}
 
 	exists, err := packet.Exists(context.Background(), cluster, machine)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check existance of machine %s", machine.Name)
+		log.Error(err, "failed to check existence of machine")
+		return err
 	}
 
 	if exists {
-		log.Infof("Skipped creating a machine that already exists.")
+		log.Info("Skipped creating a machine that already exists")
 	} else {
-		log.Infof("vm not found, creating vm for machine %q", machine.Name)
+		log.Info("vm not found, creating vm for machine")
 
 		token, err := packet.getKubeadmToken()
 		if err != nil {
-			return errors.Wrap(err, "failed to generate kubeadm token")
+			log.Error(err, "failed to generate kubadm token")
+			return err
 		}
 
 		script, err := cloud.RenderStartupScript(packet.cm, machine, token, customTemplate) // ClusterManager is needed here
 		if err != nil {
+			log.Error(err, "failed to render statup script")
 			return err
 		}
 
 		_, err = packet.cm.conn.CreateInstance(machine, script)
 		if err != nil {
-			return errors.Wrap(err, "failed to create instance")
+			log.Error(err, "failed to create instance")
+			return err
 		}
 	}
 
 	// update machine provider status
 	err = packet.updateMachineStatus(machine)
 	if err != nil {
+		log.Error(err, "failed to update machine status")
 		return errors.Wrap(err, "failed to update machine status")
 	}
 
-	log.Infof("successfully created machine %s", machine.Name)
+	log.Info("successfully created machine")
 	return nil
 }
 
 func (packet *MachineActuator) updateMachineStatus(machine *clusterv1.Machine) error {
+	log := packet.cm.Logger
 	vm, err := packet.cm.conn.instanceIfExists(machine)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check existance of machine %s", machine.Name)
+		log.Error(err, "failed to check machine existence")
+		return err
 	}
 
 	status, err := packetconfig.MachineStatusFromProviderStatus(machine.Status.ProviderStatus)
 	if err != nil {
-		return errors.Wrapf(err, "failed to decode provider status of machine %s", machine.Name)
+		log.Error(err, "failed to get machine status")
+		return err
 	}
 
 	status.InstanceID = vm.ID
 
 	raw, err := packetconfig.EncodeMachineStatus(status)
 	if err != nil {
-		return errors.Wrapf(err, "failed to encode provider status for machine %q", machine.Name)
+		log.Error(err, "failed to encode provider status")
+		return err
 	}
 	machine.Status.ProviderStatus = raw
 
 	if err := packet.client.Status().Update(context.Background(), machine); err != nil {
-		return errors.Wrapf(err, "failed to update provider status for machine %s", machine.Name)
+		log.Error(err, "failed to update provider status")
+		return err
 	}
 
 	return nil
@@ -173,21 +178,22 @@ func machineProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*pack
 }
 
 func (packet *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	fmt.Println("call for deleting machine")
+	log := packet.cm.Logger.WithValues("machine-name", machine.Name)
+	log.Info("call for deleting machine")
 	var err error
 
 	instance, err := packet.cm.conn.instanceIfExists(machine)
 	if err != nil {
-		log.Infof(err.Error())
+		log.Error(err, "instance doesn't exist")
 	}
 	if instance == nil {
-		log.Infof("Skipped deleting a VM that is already deleted")
+		log.Info("Skipped deleting a VM that is already deleted")
 		return nil
 	}
 	serverId := fmt.Sprintf("packet://%v", instance.ID)
 
 	if err = packet.cm.conn.DeleteInstanceByProviderID(serverId); err != nil {
-		log.Infof("errror on deleting %v", err)
+		log.Error(err, "error deleting instance")
 	}
 
 	packet.eventRecorder.Eventf(machine, corev1.EventTypeNormal, "Deleted", "Deleted Machine %v", machine.Name)
@@ -196,42 +202,49 @@ func (packet *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Clus
 }
 
 func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	log.Infof("updating machine %s", machine.Name)
+	log := packet.cm.Logger.WithValues("machine-name", machine.Name)
+	log.Info("updating machine")
 
 	var err error
 	goalConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
-		return errors.Wrapf(err, "failed to decode machine provider spec")
+		log.Error(err, "failed to decode machine provider spec")
+		return err
 	}
 
 	if err := packet.validateMachine(goalConfig); err != nil {
-		return errors.Wrap(err, "failed to validate machine")
+		log.Error(err, "failed to validate machine")
+		return err
 	}
 
 	exists, err := packet.Exists(context.Background(), cluster, machine)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check existance of machine %s", machine.Name)
+		log.Error(err, "failed to check machine existence")
+		return err
 	}
 
 	if !exists {
-		log.Infof("vm not found, creating vm for machine %q", machine.Name)
+		log.Info("vm not found, creating vm for machine")
 		return packet.Create(context.Background(), cluster, machine)
 	}
 
 	if err := packet.updateMachineStatus(machine); err != nil {
-		return errors.Wrap(err, "failed to update machine status")
+		log.Error(err, "failed to update machine status")
+		return err
 	}
 
-	log.Infof("Successfully updated machine %q", machine.Name)
+	log.Info("Successfully updated machine")
 	return nil
 }
 
 func (packet *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	fmt.Println("call for checking machine existence", machine.Name)
+	log := packet.cm.Logger.WithValues("machine-name", machine.Name)
+	log.Info("call for checking machine existence")
 	var err error
 
 	i, err := packet.cm.conn.instanceIfExists(machine)
 	if err != nil {
+		log.Error(err, "failed to check machine existence")
 		return false, nil
 	}
 

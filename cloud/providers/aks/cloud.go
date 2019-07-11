@@ -11,7 +11,6 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/appscode/go/wait"
 	"github.com/pharmer/cloud/pkg/credential"
@@ -31,9 +30,11 @@ type cloudConnector struct {
 }
 
 func newconnector(cm *ClusterManager) (*cloudConnector, error) {
+	log := cm.Logger
 	cluster := cm.Cluster
 	cred, err := cm.StoreProvider.Credentials().Get(cluster.Spec.Config.CredentialName)
 	if err != nil {
+		log.Error(err, "failed to get credential from store")
 		return nil, err
 	}
 	typed := credential.Azure{CommonSpec: credential.CommonSpec(cred.Spec)}
@@ -44,11 +45,13 @@ func newconnector(cm *ClusterManager) (*cloudConnector, error) {
 	baseURI := azure.PublicCloud.ResourceManagerEndpoint
 	config, err := adal.NewOAuthConfig(azure.PublicCloud.ActiveDirectoryEndpoint, typed.TenantID())
 	if err != nil {
+		log.Error(err, "failed to get Oauth config")
 		return nil, err
 	}
 
 	spt, err := adal.NewServicePrincipalToken(*config, typed.ClientID(), typed.ClientSecret(), baseURI)
 	if err != nil {
+		log.Error(err, "failed to get principal token")
 		return nil, err
 	}
 
@@ -90,12 +93,14 @@ func (conn *cloudConnector) ensureResourceGroup() (resources.Group, error) {
 }
 
 func (conn *cloudConnector) deleteResourceGroup() error {
+	log := conn.Logger
 	_, err := conn.groupsClient.Delete(context.TODO(), conn.namer.ResourceGroupName())
-	log.Infof("Resource group %v deleted", conn.namer.ResourceGroupName())
+	log.Info("Resource group deleted", "resourcegroup-name", conn.namer.ResourceGroupName())
 	return err
 }
 
 func (conn *cloudConnector) upsertAKS(agentPools []cs.ManagedClusterAgentPoolProfile) error {
+	log := conn.Logger
 	cred, err := conn.StoreProvider.Credentials().Get(conn.Cluster.Spec.Config.CredentialName)
 	if err != nil {
 		return err
@@ -133,6 +138,7 @@ func (conn *cloudConnector) upsertAKS(agentPools []cs.ManagedClusterAgentPoolPro
 
 	_, err = conn.managedClient.CreateOrUpdate(context.Background(), conn.namer.ResourceGroupName(), conn.Cluster.Name, container)
 	if err != nil {
+		log.Error(err, "failed to create cluster")
 		return err
 	}
 
@@ -140,6 +146,7 @@ func (conn *cloudConnector) upsertAKS(agentPools []cs.ManagedClusterAgentPoolPro
 }
 
 func (conn *cloudConnector) WaitForClusterOperation() error {
+	log := conn.Logger
 	attempt := 0
 	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		attempt++
@@ -147,7 +154,7 @@ func (conn *cloudConnector) WaitForClusterOperation() error {
 		if err != nil {
 			return false, nil
 		}
-		log.Infof("Attempt %v: Operation %v is %v ...", attempt, *r.Name, *r.ProvisioningState)
+		log.Info("waiting for cluster operation", "attempt", attempt, "operation", *r.Name, "status", *r.ProvisioningState)
 		if *r.ProvisioningState == "Succeeded" {
 			return true, nil
 		}

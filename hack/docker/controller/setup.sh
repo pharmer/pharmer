@@ -15,23 +15,11 @@ source "$REPO_ROOT/hack/libbuild/common/pharmer_image.sh"
 APPSCODE_ENV=${APPSCODE_ENV:-dev}
 IMG=machine-controller
 
-DIST=$GOPATH/src/github.com/pharmer/pharmer/dist
-mkdir -p $DIST
-if [ -f "$DIST/.tag" ]; then
-	export $(cat $DIST/.tag | xargs)
-fi
+DIST=$GOPATH/src/github.com/pharmer/pharmer/bin
 
 clean() {
     pushd $GOPATH/src/github.com/pharmer/pharmer/hack/docker/controller
     rm pharmer Dockerfile
-    popd
-}
-
-build_binary() {
-    pushd $GOPATH/src/github.com/pharmer/pharmer
-    ./hack/builddeps.sh
-    ./hack/make.py build
-    detect_tag $DIST/.tag
     popd
 }
 
@@ -67,7 +55,7 @@ EOL
 }
 
 build() {
-    build_binary
+    make
     build_docker
 }
 

@@ -5,6 +5,7 @@ import (
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/klogr"
 	"k8s.io/sample-controller/pkg/signals"
 	clusterapis "sigs.k8s.io/cluster-api/pkg/apis"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -13,7 +14,7 @@ import (
 
 // TODO: make sure it works
 func newCmdController() *cobra.Command {
-	var ownerID, provider, clusterName string
+	var provider, clusterName string
 
 	machineSetupConfig := "/etc/machinesetup/machine_setup_configs.yaml"
 	cmd := &cobra.Command{
@@ -27,7 +28,7 @@ func newCmdController() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			storeProvider, err := store.GetStoreProvider(cmd, "")
+			storeProvider, err := store.GetStoreProvider(cmd)
 			term.ExitOnError(err)
 
 			cluster, err := storeProvider.Clusters().Get(clusterName)
@@ -38,6 +39,7 @@ func newCmdController() *cobra.Command {
 			scope := cloud.NewScope(cloud.NewScopeParams{
 				Cluster:       cluster,
 				StoreProvider: storeProvider,
+				Logger:        klogr.New().WithValues("cluster-name", clusterName),
 			})
 
 			cm, err := scope.GetCloudManager()
@@ -50,10 +52,10 @@ func newCmdController() *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			err = cm.InitializeMachineActuator(mgr)
-			if err != nil {
-				term.Fatalln(err)
-			}
+			//err = cm.InitializeMachineActuator(mgr)
+			//if err != nil {
+			//	term.Fatalln(err)
+			//}
 
 			if err := clusterapis.AddToScheme(mgr.GetScheme()); err != nil {
 				term.Fatalln(err)
@@ -72,7 +74,6 @@ func newCmdController() *cobra.Command {
 	cmd.Flags().StringVar(&machineSetupConfig, "machine-setup-config", machineSetupConfig, "path to the machine setup config")
 	cmd.Flags().StringVar(&provider, "provider", provider, "Cloud provider name")
 	cmd.Flags().StringVar(&clusterName, "cluster-name", clusterName, "Cluster name")
-	cmd.Flags().StringVarP(&ownerID, "owner", "o", ownerID, "Current user id")
 
 	return cmd
 }

@@ -11,7 +11,6 @@ import (
 type NodeGroupCreateConfig struct {
 	ClusterName string
 	Nodes       map[string]int
-	Owner       string
 }
 
 func NewNodeGroupCreateConfig() *NodeGroupCreateConfig {
@@ -24,8 +23,6 @@ func NewNodeGroupCreateConfig() *NodeGroupCreateConfig {
 func (c *NodeGroupCreateConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.ClusterName, "cluster", "k", c.ClusterName, "Name of the Kubernetes cluster")
 	fs.StringToIntVar(&c.Nodes, "nodes", c.Nodes, "Node set configuration")
-
-	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
 }
 
 func (c *NodeGroupCreateConfig) ValidateFlags(cmd *cobra.Command, args []string) error {

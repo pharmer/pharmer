@@ -53,6 +53,7 @@ spec:
         - --kubeconfig=/etc/kubernetes/admin.conf 
         env:
         image: {{ .ControllerImage }}
+        imagePullPolicy: Always        
         name: manager
         resources:
           limits:
@@ -70,6 +71,8 @@ spec:
           mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/ssh
         - name: certificates
           mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/pki
+        - name: etcd-certs
+          mountPath: /root/.pharmer/store.d/clusters/{{ .ClusterName }}/pki/etcd
         - name: cluster
           mountPath: /root/.pharmer/store.d/clusters
         - name: credential
@@ -108,6 +111,10 @@ spec:
       - name: credential
         secret:
           secretName: pharmer-cred
+          defaultMode: 256
+      - name: etcd-certs
+        secret:
+          secretName: pharmer-etcd
           defaultMode: 256
 ---
 apiVersion: v1

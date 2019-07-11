@@ -12,7 +12,6 @@ import (
 type NodeSSHConfig struct {
 	ClusterName string
 	NodeName    string
-	Owner       string
 }
 
 func NewNodeSSHConfig() *NodeSSHConfig {
@@ -24,7 +23,6 @@ func NewNodeSSHConfig() *NodeSSHConfig {
 
 func (c *NodeSSHConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVarP(&c.ClusterName, "cluster", "k", c.ClusterName, "Name of cluster")
-	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
 }
 
 func (c *NodeSSHConfig) ValidateFlags(cmd *cobra.Command, args []string) error {

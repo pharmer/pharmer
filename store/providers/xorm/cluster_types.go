@@ -14,7 +14,7 @@ type Cluster struct {
 	CreationTimestamp time.Time  `xorm:"bigint created 'created_unix'"`
 	DateModified      time.Time  `xorm:"bigint updated 'updated_unix'"`
 	DeletionTimestamp *time.Time `xorm:"bigint null 'deleted_unix'"`
-	OwnerId           string     `xorm:"text  null 'owner_id'"`
+	OwnerId           int64      `xorm:"bigint  null 'owner_id'"`
 	IsPrivate         bool       `xorm:"boolean 'is_private'"`
 }
 

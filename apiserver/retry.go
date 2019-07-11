@@ -1,63 +1,41 @@
 package apiserver
 
 import (
-	"encoding/json"
-	"fmt"
-	"strconv"
-
-	"github.com/golang/glog"
 	"github.com/nats-io/stan.go"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/apiserver/options"
-	opts "github.com/pharmer/pharmer/cmds/cloud/options"
 	"github.com/pharmer/pharmer/store"
+	"k8s.io/klog/klogr"
 )
 
 func (a *Apiserver) RetryCluster(storeProvider store.Interface) error {
 	_, err := a.natsConn.QueueSubscribe("retry-cluster", "cluster-api-retry-workers", func(msg *stan.Msg) {
-		fmt.Printf("seq = %d [redelivered = %v, acked = false]\n", msg.Sequence, msg.Redelivered)
+		log := klogr.New().WithName("[apiserver]")
 
-		operation := options.NewClusterOperation()
-		err := json.Unmarshal(msg.Data, &operation)
+		log.Info("retry operation")
+
+		log.V(4).Info("nats message", "sequence", msg.Sequence, "redelivered", msg.Redelivered,
+			"message string", string(msg.Data))
+
+		operation, scope, err := a.Init(storeProvider, msg)
 		if err != nil {
-			glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
+			log.Error(err, "failed init func")
 			return
 		}
-		if operation.OperationId == "" {
-			err := fmt.Errorf("operation id not  found")
-			glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
+
+		log = log.WithValues("operationID", operation.ID)
+		log.Info("running operation", "opeartion", operation)
+
+		if err := msg.Ack(); err != nil {
+			log.Error(err, "failed to ack msg")
 			return
 		}
 
-		obj, err := storeProvider.Operations().Get(operation.OperationId)
+		err = ApplyCluster(scope, operation)
 		if err != nil {
-			glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
+			log.Error(err, "failed to apply cluster")
+			return
 		}
 
-		if obj.State != api.OperationDone {
-			obj.State = api.OperationRunning
-			obj, err = storeProvider.Operations().Update(obj)
-			if err != nil {
-				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
-			}
-
-			owner := strconv.Itoa(int(obj.UserID))
-			cluster, err := storeProvider.Owner(owner).Clusters().Get(strconv.Itoa(int(obj.ClusterID)))
-			if err != nil {
-				glog.Errorf("seq = %d [redelivered = %v, data = %v, err = %v]\n", msg.Sequence, msg.Redelivered, msg.Data, err)
-			}
-
-			ApplyCluster(storeProvider, &opts.ApplyConfig{
-				ClusterName: cluster.Name, //strconv.Itoa(int(obj.ClusterID)),
-				Owner:       strconv.Itoa(int(obj.UserID)),
-				DryRun:      false,
-			}, obj)
-
-			if err := msg.Ack(); err != nil {
-				glog.Errorf("failed to ACK msg: %d", msg.Sequence)
-			}
-
-		}
+		log.Info("retry operation successfull")
 
 	}, stan.SetManualAckMode(), stan.DurableName("i-remember"))
 

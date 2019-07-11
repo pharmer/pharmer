@@ -22,7 +22,7 @@ const (
 )
 
 type Interface interface {
-	Owner(string) ResourceInterface
+	Owner(int64) ResourceInterface
 	ResourceInterface
 }
 

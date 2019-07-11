@@ -13,7 +13,6 @@ type ClusterBackupConfig struct {
 	ClusterName string
 	BackupDir   string
 	Sanitize    bool
-	Owner       string
 }
 
 func NewClusterBackupConfig() *ClusterBackupConfig {
@@ -27,7 +26,6 @@ func NewClusterBackupConfig() *ClusterBackupConfig {
 func (c *ClusterBackupConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.Sanitize, "sanitize", c.Sanitize, " Sanitize fields in YAML")
 	fs.StringVar(&c.BackupDir, "backup-dir", c.BackupDir, "Directory where yaml files will be saved")
-	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
 
 }
 

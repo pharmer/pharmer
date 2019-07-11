@@ -78,44 +78,60 @@ func (cm *ClusterManager) retrieveClusterStatus(cluster *container.Cluster) erro
 }
 
 func (cm *ClusterManager) StoreCertificate(certStore store.CertificateStore, cluster *container.Cluster) error {
+	log := cm.Logger
+
 	_, caKey, err := certStore.Get(api.CACertName)
 	if err == nil {
 		if err = certStore.Delete(api.CACertName); err != nil {
+			log.Error(err, "failed to delete ca-cert from store")
 			return err
 		}
 	}
 	caCert, err := base64.StdEncoding.DecodeString(cluster.MasterAuth.ClusterCaCertificate)
 	if err != nil {
+		log.Error(err, "failed to base64 decode cluster ca-cert")
 		return err
 	}
 	crt, err := cert.ParseCertsPEM(caCert)
 	if err != nil {
+		log.Error(err, "failed to parse cert pem")
 		return err
 	}
 
 	if err := certStore.Create(api.CACertName, crt[0], caKey); err != nil {
+		log.Error(err, "failed to create ca-cert in store")
 		return err
 	}
 	cm.Certs.CACert.Cert = crt[0]
 
 	adminCert, err := base64.StdEncoding.DecodeString(cluster.MasterAuth.ClientCertificate)
 	if err != nil {
+		log.Error(err, "failed to base64 decode cluster admin-cert")
 		return err
 	}
 	adminKey, err := base64.StdEncoding.DecodeString(cluster.MasterAuth.ClientKey)
 	if err != nil {
+		log.Error(err, "failed to base64 decode cluster admin-key")
 		return err
 	}
 
 	aCrt, err := cert.ParseCertsPEM(adminCert)
 	if err != nil {
+		log.Error(err, "failed to parse admin-cert PEM")
 		return err
 	}
 
 	aKey, err := cert.ParsePrivateKeyPEM(adminKey)
 	if err != nil {
+		log.Error(err, "failed to parse admin-key PEM")
 		return err
 	}
+
 	err = certStore.Create("admin", aCrt[0], aKey.(*rsa.PrivateKey))
-	return err
+	if err != nil {
+		log.Error(err, "failed to create admin-cert in store")
+		return err
+	}
+
+	return nil
 }

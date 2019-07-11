@@ -40,7 +40,7 @@ func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
 				term.Fatalln(err)
 			}
 
-			storeProvider, err := store.GetStoreProvider(cmd, opts.Owner)
+			storeProvider, err := store.GetStoreProvider(cmd)
 			term.ExitOnError(err)
 
 			if err := RunUpdateNodeGroup(storeProvider.MachineSet(opts.ClusterName), opts, outErr); err != nil {

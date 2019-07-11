@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/appscode/go/log"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/ghodss/yaml"
 	"github.com/pharmer/pharmer/apis/v1beta1/aws"
@@ -28,6 +27,7 @@ func NewEKSNodeGroupManager(scope *cloud.Scope, conn *cloudConnector, ng *cluste
 }
 
 func (igm *EKSNodeGroupManager) Apply() error {
+	log := igm.Logger
 	fileName := igm.ng.Name
 	igm.ng.Name = strings.Replace(igm.ng.Name, ".", "-", -1)
 
@@ -39,26 +39,32 @@ func (igm *EKSNodeGroupManager) Apply() error {
 	if !found {
 		params, err := igm.buildstackParams()
 		if err != nil {
+			log.Error(err, "failed to build stack params")
 			return err
 		}
 		if err = igm.conn.createStack(igm.ng.Name, NodeGroupURL, params, true); err != nil {
+			log.Error(err, "failed to node group")
 			return err
 		}
 		var ngInfo *cloudformation.Stack
 		ngInfo, err = igm.conn.getStack(igm.ng.Name)
 		if err != nil {
+			log.Error(err, "failed to get node group information")
 			return err
 		}
 		if err = igm.newNodeAuthConfigMap(igm.conn.getOutput(ngInfo, "NodeInstanceRole")); err != nil {
+			log.Error(err, "failed to get node auth configmap")
 			return err
 		}
 	} else {
 		if *igm.ng.Spec.Replicas == 0 || igm.ng.DeletionTimestamp != nil {
 			if err = igm.conn.deleteStack(igm.ng.Name); err != nil {
+				log.Error(err, "failed to delete stack")
 				return err
 			}
 			err = igm.StoreProvider.MachineSet(igm.conn.Cluster.Name).Delete(fileName)
 			if err != nil {
+				log.Error(err, "failed to delete machineset from store")
 				return err
 			}
 
@@ -66,10 +72,11 @@ func (igm *EKSNodeGroupManager) Apply() error {
 		} else {
 			params, err := igm.buildstackParams()
 			if err != nil {
+				log.Error(err, "failed to build stack params")
 				return err
 			}
 			if err = igm.conn.updateStack(igm.ng.Name, params, true); err != nil {
-				log.Infoln(err)
+				igm.conn.Logger.Error(err, "error updating stack")
 			}
 		}
 	}
@@ -77,13 +84,18 @@ func (igm *EKSNodeGroupManager) Apply() error {
 	igm.ng.Name = fileName
 	igm.ng.Status.Replicas = *igm.ng.Spec.Replicas
 	_, err = igm.StoreProvider.MachineSet(igm.conn.Cluster.Name).UpdateStatus(igm.ng)
+	if err != nil {
+		log.Error(err, "failed to update machine set status in store")
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func (igm *EKSNodeGroupManager) buildstackParams() (map[string]string, error) {
 	providerSpec, err := aws.MachineConfigFromProviderSpec(igm.ng.Spec.Template.Spec.ProviderSpec)
 	if err != nil {
+		igm.conn.Logger.Error(err, "error getting providerspec")
 		return nil, err
 	}
 	return map[string]string{
@@ -102,6 +114,7 @@ func (igm *EKSNodeGroupManager) buildstackParams() (map[string]string, error) {
 }
 
 func (igm *EKSNodeGroupManager) newNodeAuthConfigMap(arn *string) error {
+	log := igm.Logger
 	mapRoles := make([]map[string]interface{}, 1)
 	newRole := make(map[string]interface{})
 
@@ -116,6 +129,7 @@ func (igm *EKSNodeGroupManager) newNodeAuthConfigMap(arn *string) error {
 	if err == nil {
 		existingRules := configmaps.Data[EKSConfigMapRoles]
 		if err := yaml.Unmarshal([]byte(existingRules), &mapRoles); err != nil {
+			log.Error(err, "failed to unmarshal existing rules yaml")
 			return err
 		}
 	}
@@ -123,6 +137,7 @@ func (igm *EKSNodeGroupManager) newNodeAuthConfigMap(arn *string) error {
 
 	mapRolesBytes, err := yaml.Marshal(mapRoles)
 	if err != nil {
+		log.Error(err, "failed to marshal new roles yaml")
 		return err
 	}
 
@@ -135,5 +150,9 @@ func (igm *EKSNodeGroupManager) newNodeAuthConfigMap(arn *string) error {
 			in.Data[EKSConfigMapRoles] = string(mapRolesBytes)
 			return in
 		})
-	return err
+	if err != nil {
+		log.Error(err, "failed to create configmap")
+		return err
+	}
+	return nil
 }

@@ -14,7 +14,6 @@ type ClusterDeleteConfig struct {
 	KeepLBs              bool
 	DeleteDynamicVolumes bool
 	Clusters             []string
-	Owner                string
 }
 
 func NewClusterDeleteConfig() *ClusterDeleteConfig {
@@ -31,7 +30,6 @@ func (c *ClusterDeleteConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.ReleaseReservedIP, "release-reserved-ip", c.ReleaseReservedIP, "Release reserved IP")
 	fs.BoolVar(&c.KeepLBs, "keep-loadbalancers", c.KeepLBs, "Keep loadbalancers")
 	fs.BoolVar(&c.DeleteDynamicVolumes, "delete-dynamic-volumes", c.DeleteDynamicVolumes, "Delete dynamically provisioned volumes")
-	fs.StringVarP(&c.Owner, "owner", "o", c.Owner, "Current user id")
 
 }
 

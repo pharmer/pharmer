@@ -1,7 +1,6 @@
 package certificates
 
 import (
-	"github.com/appscode/go/crypto/ssh"
 	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -99,13 +98,15 @@ func CreateCertsKeys(store store.ResourceInterface, clusterName string) (*Certif
 		Key:  key,
 	}
 
-	pubKey, privKey, err := CreateSSHKey(keyStore, GenSSHKeyName(clusterName))
+	_, _, err = CreateSSHKey(keyStore, GenSSHKeyName(clusterName))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ssh keys")
 	}
-	pharmerCerts.SSHKey = &ssh.SSHKey{
-		PublicKey:  pubKey,
-		PrivateKey: privKey,
+
+	// this properly sets OpensshFingerprint values
+	pharmerCerts.SSHKey, err = LoadSSHKey(keyStore, GenSSHKeyName(clusterName))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load ssh keys")
 	}
 
 	return pharmerCerts, nil

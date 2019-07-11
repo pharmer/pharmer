@@ -10,8 +10,6 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type ClusterManager struct {
@@ -46,13 +44,16 @@ func (cm *ClusterManager) ApplyScale() error {
 }
 
 func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
+	log := cm.Logger
 	cred, err := cm.GetCredential()
 	if err != nil {
-		return errors.Wrapf(err, "failed to get cluster cred")
+		log.Error(err, "failed to get cluster credential from store")
+		return err
 	}
 	// pharmer-flex secret
 	if err := kube.CreateCredentialSecret(kc, cm.Cluster.CloudProvider(), metav1.NamespaceSystem, cred.Spec.Data); err != nil {
-		return errors.Wrapf(err, "failed to create flex-secret")
+		log.Error(err, "failed to creat4e flex-secret")
+		return err
 	}
 
 	// ccm-secret
@@ -62,6 +63,7 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 		return errors.New("credential not valid")
 	}
 	if err != nil {
+		log.Error(err, "credential is not valid")
 		return err
 	}
 	cloudConfig := &api.PacketCloudConfig{
@@ -71,12 +73,14 @@ func (cm *ClusterManager) CreateCredentials(kc kubernetes.Interface) error {
 	}
 	data, err := json.Marshal(cloudConfig)
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal cloud-config")
+		log.Error(err, "failed to json masrshal cloud config")
+		return err
 	}
 	err = kube.CreateSecret(kc, "cloud-config", metav1.NamespaceSystem, map[string][]byte{
 		"cloud-config": data,
 	})
 	if err != nil {
+		log.Error(err, "failed to create cloud config")
 		return errors.Wrapf(err, "failed to create cloud-config")
 	}
 	return nil
@@ -86,6 +90,7 @@ func (cm *ClusterManager) SetCloudConnector() error {
 	var err error
 
 	if cm.conn, err = newconnector(cm); err != nil {
+		cm.Logger.Error(err, "failed to set packet cloud connector")
 		return err
 	}
 
@@ -94,14 +99,4 @@ func (cm *ClusterManager) SetCloudConnector() error {
 
 func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 	return ControllerManager, nil
-}
-
-func (cm *ClusterManager) InitializeMachineActuator(mgr manager.Manager) error {
-	ma := NewMachineActuator(MachineActuatorParams{
-		EventRecorder: mgr.GetEventRecorderFor(Recorder),
-		Client:        mgr.GetClient(),
-		Scheme:        mgr.GetScheme(),
-	})
-	common.RegisterClusterProvisioner(UID, ma)
-	return nil
 }
