@@ -200,7 +200,6 @@ $(OUTBIN): .go/$(OUTBIN).stamp
 # Used to track state in hidden files.
 DOTFILE_IMAGE    = $(subst /,_,$(IMAGE))-$(TAG)
 
-.PHONY: container
 container: bin/.container-$(DOTFILE_IMAGE)-PROD bin/.container-$(DOTFILE_IMAGE)-DBG
 bin/.container-$(DOTFILE_IMAGE)-%: bin/$(OS)_$(ARCH)/$(BIN) $(DOCKERFILE_%)
 	@echo "container: $(IMAGE):$(TAG_$*)"
