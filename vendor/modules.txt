@@ -726,8 +726,8 @@ k8s.io/cluster-bootstrap/token/util
 # k8s.io/component-base v0.0.0-20190515024022-2354f2393ad4 => k8s.io/component-base v0.0.0-20190314000054-4a91899592f4
 k8s.io/component-base/config
 # k8s.io/klog v0.3.2 => k8s.io/klog v0.3.0
-k8s.io/klog
 k8s.io/klog/klogr
+k8s.io/klog
 # k8s.io/kube-openapi v0.0.0-20190510232812-a01b7d5d6c22 => k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/common

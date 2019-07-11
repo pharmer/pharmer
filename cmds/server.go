@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/term"
-	stan "github.com/nats-io/stan.go"
+	"github.com/nats-io/stan.go"
 	"github.com/pharmer/pharmer/apiserver"
 	"github.com/pharmer/pharmer/config"
 	"github.com/pharmer/pharmer/store"
@@ -17,6 +17,7 @@ func newCmdServer() *cobra.Command {
 	//opts := options.NewClusterCreateConfig()
 	var natsurl string
 	var clientid string
+	var logToNats bool
 	cmd := &cobra.Command{
 		Use:               "serve",
 		Short:             "Pharmer apiserver",
@@ -44,7 +45,7 @@ func newCmdServer() *cobra.Command {
 			storeProvider, err := store.NewStoreInterface(cfg)
 			term.ExitOnError(err)
 
-			err = runServer(storeProvider, conn)
+			err = runServer(storeProvider, conn, natsurl, logToNats)
 
 			//err = http.ListenAndServe(":4155", route(ctx, conn))
 			term.ExitOnError(err)
@@ -65,25 +66,26 @@ func newCmdServer() *cobra.Command {
 
 	cmd.Flags().StringVar(&natsurl, "nats-url", "nats://localhost:4222", "Nats streaming server url")
 	cmd.Flags().StringVar(&clientid, "nats-client-id", "worker-p", "Nats streaming server client id")
+	cmd.Flags().BoolVar(&logToNats, "logToNats", false, "Publish logs to nats streaming server")
 
 	return cmd
 }
 
 //const ClientID = "worker-x"
 
-func runServer(storeProvider store.Interface, conn stan.Conn) error {
+func runServer(storeProvider store.Interface, conn stan.Conn, natsurl string, logToNats bool) error {
 
 	//defer apiserver.LogCloser(conn)
 
 	server := apiserver.New(conn)
-	err := server.CreateCluster(storeProvider)
+	err := server.CreateCluster(storeProvider, natsurl, logToNats)
 	if err != nil {
 		return err
 	}
 
-	if err = server.DeleteCluster(storeProvider); err != nil {
+	if err = server.DeleteCluster(storeProvider, natsurl, logToNats); err != nil {
 		return err
 	}
 
-	return server.RetryCluster(storeProvider)
+	return server.RetryCluster(storeProvider, natsurl, logToNats)
 }

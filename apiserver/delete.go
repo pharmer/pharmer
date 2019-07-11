@@ -1,29 +1,16 @@
 package apiserver
 
 import (
-	"strconv"
-
-	stan "github.com/nats-io/stan.go"
+	"github.com/nats-io/stan.go"
 	"github.com/pharmer/pharmer/cloud"
 	"github.com/pharmer/pharmer/store"
-	natslogr "gomodules.xyz/nats-logr"
-	ulogr "gomodules.xyz/union-logr"
 )
 
-func (a *Apiserver) DeleteCluster(storeProvider store.Interface) error {
+func (a *Apiserver) DeleteCluster(storeProvider store.Interface, natsurl string, logToNats bool) error {
 	_, err := a.natsConn.QueueSubscribe("delete-cluster", "cluster-api-delete-workers", func(msg *stan.Msg) {
 		operation, scope, err := a.Init(storeProvider, msg)
 
-		opts := natslogr.Options{
-			ClusterID: "pharmer-cluster",
-			ClientID:  operation.Code,
-			NatsURL:   stan.DefaultNatsURL,
-			Subject:   scope.Cluster.Name + "-" + strconv.FormatInt(operation.UserID, 10),
-		}
-
-		logN := natslogr.NewLogger(opts)
-		ulog := ulogr.NewLogger(logN)
-
+		ulog := newLogger(operation, scope, natsurl, logToNats)
 		log := ulog.WithName("[apiserver]")
 
 		if err != nil {

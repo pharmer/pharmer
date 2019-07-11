@@ -4,7 +4,7 @@ import (
 	"io"
 	"log"
 
-	stan "github.com/nats-io/stan.go"
+	"github.com/nats-io/stan.go"
 )
 
 type Apiserver struct {
