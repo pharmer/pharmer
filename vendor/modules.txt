@@ -41,7 +41,6 @@ github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 github.com/PuerkitoBio/urlesc
 # github.com/appscode/go v0.0.0-20190523031839-1468ee3a76e8
-github.com/appscode/go/log/golog
 github.com/appscode/go/version
 github.com/appscode/go/log
 github.com/appscode/go/sets
@@ -724,8 +723,8 @@ k8s.io/cluster-bootstrap/token/util
 # k8s.io/component-base v0.0.0-20190515024022-2354f2393ad4 => k8s.io/component-base v0.0.0-20190314000054-4a91899592f4
 k8s.io/component-base/config
 # k8s.io/klog v0.3.2 => k8s.io/klog v0.3.0
-k8s.io/klog
 k8s.io/klog/klogr
+k8s.io/klog
 # k8s.io/kube-openapi v0.0.0-20190510232812-a01b7d5d6c22 => k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/common
@@ -750,8 +749,8 @@ k8s.io/utils/integer
 k8s.io/utils/buffer
 k8s.io/utils/trace
 # kmodules.xyz/client-go v0.0.0-20190524133821-9c8a87771aea
-kmodules.xyz/client-go/core/v1
 kmodules.xyz/client-go/logs
+kmodules.xyz/client-go/core/v1
 kmodules.xyz/client-go/tools/backup
 kmodules.xyz/client-go
 kmodules.xyz/client-go/meta
@@ -761,11 +760,11 @@ sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient
 sigs.k8s.io/cluster-api/cmd/clusterctl/phases
 sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset
 sigs.k8s.io/cluster-api/pkg/util
-sigs.k8s.io/cluster-api/pkg/apis/cluster/common
 sigs.k8s.io/cluster-api/pkg/controller/cluster
 sigs.k8s.io/cluster-api/pkg/controller/machine
 sigs.k8s.io/cluster-api/pkg/kubeadm
 sigs.k8s.io/cluster-api/pkg/apis
+sigs.k8s.io/cluster-api/pkg/apis/cluster/common
 sigs.k8s.io/cluster-api/cmd/clusterctl/clientcmd
 sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/bootstrap
 sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/provider
