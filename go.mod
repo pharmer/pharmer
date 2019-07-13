@@ -1,13 +1,13 @@
-module github.com/pharmer/pharmer
+module pharmer.dev/pharmer
 
 go 1.12
 
 require (
 	github.com/Azure/azure-sdk-for-go v29.0.0+incompatible
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
-	github.com/Azure/go-autorest v12.0.0+incompatible
+	github.com/Azure/go-autorest v11.1.2+incompatible
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b // indirect
-	github.com/appscode/go v0.0.0-20190523031839-1468ee3a76e8
+	github.com/appscode/go v0.0.0-20190621064509-6b292c9166e3
 	github.com/aws/aws-sdk-go v1.19.31
 	github.com/creack/goselect v0.1.0 // indirect
 	github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3 // indirect
@@ -18,9 +18,8 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.0 // indirect
 	github.com/go-openapi/jsonreference v0.19.0 // indirect
 	github.com/go-openapi/swag v0.19.0 // indirect
-	github.com/go-xorm/builder v0.0.0-20190422082613-0c156dfdb061 // indirect
-	github.com/go-xorm/core v0.6.0
-	github.com/go-xorm/xorm v0.7.0
+	github.com/go-xorm/core v0.6.2
+	github.com/go-xorm/xorm v0.7.3
 	github.com/gogo/protobuf v1.2.1
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.1.1
@@ -36,21 +35,18 @@ require (
 	github.com/linode/linodego v0.8.0
 	github.com/mailru/easyjson v0.0.0-20190403194419-1ea4449da983 // indirect
 	github.com/mattn/go-colorable v0.1.2 // indirect
-	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/nats-io/stan.go v0.5.0
 	github.com/ncw/swift v1.0.47 // indirect
 	github.com/onsi/gomega v1.5.0
 	github.com/packethost/packngo v0.1.1-0.20190507131943-1343be729ca2
-	github.com/pharmer/cloud v0.2.0
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.4 // indirect
 	github.com/prometheus/procfs v0.0.3 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/spf13/cobra v0.0.4
 	github.com/spf13/pflag v1.0.3
-	github.com/ziutek/mymysql v1.5.4 // indirect
 	go.etcd.io/bbolt v1.3.3 // indirect
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980 // indirect
@@ -76,8 +72,9 @@ require (
 	k8s.io/kubernetes v1.14.2
 	k8s.io/sample-controller v0.0.0-20190531134801-325dc0a18ed9
 	kmodules.xyz/client-go v0.0.0-20190524133821-9c8a87771aea
+	pharmer.dev/cloud v0.3.0
 	sigs.k8s.io/cluster-api v0.0.0-20190508175234-0f911c1f65a5
-	sigs.k8s.io/controller-runtime v0.2.0-alpha.1
+	sigs.k8s.io/controller-runtime v0.2.0-beta.4
 )
 
 replace (

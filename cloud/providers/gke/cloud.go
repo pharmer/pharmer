@@ -4,14 +4,14 @@ import (
 	"context"
 
 	"github.com/appscode/go/wait"
-	"github.com/pharmer/cloud/pkg/credential"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/apis/v1beta1/gce"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/container/v1"
 	"google.golang.org/api/option"
+	"pharmer.dev/cloud/pkg/credential"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/apis/v1beta1/gce"
+	"pharmer.dev/pharmer/cloud"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

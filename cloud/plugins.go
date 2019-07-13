@@ -4,8 +4,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"k8s.io/klog"
+	"pharmer.dev/pharmer/cloud/utils/certificates"
 )
 
 // Factory is a function that returns a cloud.ClusterManager.

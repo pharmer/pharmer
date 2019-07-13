@@ -3,12 +3,12 @@ package aws
 import (
 	"fmt"
 
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
-	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	clusterapi_aws "pharmer.dev/pharmer/apis/v1beta1/aws"
+	"pharmer.dev/pharmer/cloud/utils/kube"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

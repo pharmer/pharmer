@@ -6,10 +6,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/pharmer/cloud/pkg/credential"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
 	"gopkg.in/yaml.v2"
+	"pharmer.dev/cloud/pkg/credential"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cloud"
 )
 
 func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {

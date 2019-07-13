@@ -8,13 +8,13 @@ import (
 	"text/tabwriter"
 	"time"
 
-	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	"github.com/pharmer/cloud/pkg/credential"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog"
+	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	"pharmer.dev/cloud/pkg/credential"
+	api "pharmer.dev/pharmer/apis/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

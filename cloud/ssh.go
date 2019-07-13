@@ -7,12 +7,12 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/store"
 )
 
 func ExecuteTCPCommand(command, addr string, config *ssh.ClientConfig) (string, error) {

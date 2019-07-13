@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 
 	"github.com/appscode/go/crypto/rand"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/apis/v1beta1/gce"
-	"github.com/pharmer/pharmer/cloud"
 	"k8s.io/apimachinery/pkg/runtime"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/apis/v1beta1/gce"
+	"pharmer.dev/pharmer/cloud"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )

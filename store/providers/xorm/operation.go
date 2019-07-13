@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/go-xorm/xorm"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/store"
 )
 
 type operationXormStore struct {

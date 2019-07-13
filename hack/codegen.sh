@@ -3,7 +3,7 @@
 set -x
 
 GOPATH=$(go env GOPATH)
-PACKAGE_NAME=github.com/pharmer/pharmer
+PACKAGE_NAME=pharmer.dev/pharmer
 REPO_ROOT="$GOPATH/src/$PACKAGE_NAME"
 DOCKER_REPO_ROOT="/go/src/$PACKAGE_NAME"
 
@@ -26,8 +26,8 @@ docker run --rm -ti -u $(id -u):$(id -g) \
 #   -w "$DOCKER_REPO_ROOT" \
 #   appscode/protoc:release-1.13 go-to-protobuf \
 #   --go-header-file "hack/gengo/boilerplate.go.txt" \
-#   --proto-import=/go/src/github.com/pharmer/pharmer/vendor \
-#   --packages=-k8s.io/api/core/v1,github.com/pharmer/pharmer/apis/v1beta1 \
+#   --proto-import=/go/src/pharmer.dev/pharmer/vendor \
+#   --packages=-k8s.io/api/core/v1,pharmer.dev/pharmer/apis/v1beta1 \
 #   --apimachinery-packages=-k8s.io/apimachinery/pkg/apis/meta/v1
 
 popd

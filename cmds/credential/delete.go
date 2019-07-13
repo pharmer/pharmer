@@ -2,10 +2,10 @@ package credential
 
 import (
 	"github.com/appscode/go/term"
-	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	"github.com/pharmer/pharmer/cmds/credential/options"
-	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
+	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	"pharmer.dev/pharmer/cmds/credential/options"
+	"pharmer.dev/pharmer/store"
 )
 
 func NewCmdDeleteCredential() *cobra.Command {

@@ -8,23 +8,23 @@ GOPATH=$(go env GOPATH)
 SRC=$GOPATH/src
 BIN=$GOPATH/bin
 ROOT=$GOPATH
-REPO_ROOT=$GOPATH/src/github.com/pharmer/pharmer
+REPO_ROOT=$GOPATH/src/pharmer.dev/pharmer
 
 source "$REPO_ROOT/hack/libbuild/common/pharmer_image.sh"
 
 APPSCODE_ENV=${APPSCODE_ENV:-dev}
 IMG=machine-controller
 
-DIST=$GOPATH/src/github.com/pharmer/pharmer/bin
+DIST=$GOPATH/src/pharmer.dev/pharmer/bin
 
 clean() {
-    pushd $GOPATH/src/github.com/pharmer/pharmer/hack/docker/controller
+    pushd $GOPATH/src/pharmer.dev/pharmer/hack/docker/controller
     rm pharmer Dockerfile
     popd
 }
 
 build_docker() {
-    pushd $GOPATH/src/github.com/pharmer/pharmer/hack/docker/controller
+    pushd $GOPATH/src/pharmer.dev/pharmer/hack/docker/controller
     cp $DIST/pharmer/pharmer-linux-amd64 machine-controller
     chmod 755 machine-controller
 

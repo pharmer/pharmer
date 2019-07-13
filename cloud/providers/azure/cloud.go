@@ -16,10 +16,10 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
-	"github.com/pharmer/cloud/pkg/credential"
-	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
+	"pharmer.dev/cloud/pkg/credential"
+	capiAzure "pharmer.dev/pharmer/apis/v1beta1/azure"
+	"pharmer.dev/pharmer/cloud"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

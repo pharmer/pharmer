@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/appscode/go/flags"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/kubernetes/pkg/apis/core"
+	api "pharmer.dev/pharmer/apis/v1beta1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

@@ -3,10 +3,10 @@ package dokube
 import (
 	"encoding/json"
 
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	dokube_config "github.com/pharmer/pharmer/apis/v1beta1/dokube"
-	"github.com/pharmer/pharmer/cloud"
 	"k8s.io/apimachinery/pkg/runtime"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	dokube_config "pharmer.dev/pharmer/apis/v1beta1/dokube"
+	"pharmer.dev/pharmer/cloud"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

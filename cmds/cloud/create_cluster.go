@@ -2,12 +2,12 @@ package cloud
 
 import (
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cmds/cloud/options"
-	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/klogr"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cloud"
+	"pharmer.dev/pharmer/cmds/cloud/options"
+	"pharmer.dev/pharmer/store"
 )
 
 func NewCmdCreateCluster() *cobra.Command {

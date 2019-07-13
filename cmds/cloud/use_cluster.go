@@ -2,10 +2,10 @@ package cloud
 
 import (
 	"github.com/appscode/go/term"
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cmds/cloud/options"
-	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
+	"pharmer.dev/pharmer/cloud"
+	"pharmer.dev/pharmer/cmds/cloud/options"
+	"pharmer.dev/pharmer/store"
 )
 
 func NewCmdUse() *cobra.Command {

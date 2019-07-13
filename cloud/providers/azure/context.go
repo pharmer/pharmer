@@ -1,10 +1,10 @@
 package azure
 
 import (
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"k8s.io/client-go/kubernetes"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cloud"
+	"pharmer.dev/pharmer/cloud/utils/kube"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 

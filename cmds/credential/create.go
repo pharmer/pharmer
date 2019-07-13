@@ -5,18 +5,18 @@ import (
 	"time"
 
 	"github.com/appscode/go/term"
-	"github.com/pharmer/cloud/pkg/apis"
-	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	"github.com/pharmer/cloud/pkg/credential"
-	cc "github.com/pharmer/cloud/pkg/credential/cloud"
-	"github.com/pharmer/cloud/pkg/providers"
-	"github.com/pharmer/pharmer/cmds/credential/options"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/AlecAivazis/survey.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"pharmer.dev/cloud/pkg/apis"
+	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	"pharmer.dev/cloud/pkg/credential"
+	cc "pharmer.dev/cloud/pkg/credential/cloud"
+	"pharmer.dev/cloud/pkg/providers"
+	"pharmer.dev/pharmer/cmds/credential/options"
+	"pharmer.dev/pharmer/store"
 )
 
 func NewCmdCreateCredential() *cobra.Command {

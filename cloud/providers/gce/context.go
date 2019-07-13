@@ -1,8 +1,8 @@
 package gce
 
 import (
-	"github.com/pharmer/pharmer/cloud"
 	"k8s.io/client-go/kubernetes"
+	"pharmer.dev/pharmer/cloud"
 )
 
 const (

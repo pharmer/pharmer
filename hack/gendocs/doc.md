@@ -25,7 +25,7 @@ As a prerequisite, you need to have `pharmer` installed.  To install `pharmer` r
 ```console
 $ mkdir -p $(go env GOPATH)/src/github.com/pharmer
 $ cd $(go env GOPATH)/src/github.com/pharmer
-$ git clone https://github.com/pharmer/pharmer
+$ git clone https://pharmer.dev/pharmer
 $ cd pharmer
 $ ./hack/make.py
 
@@ -63,7 +63,7 @@ We want to create a cluster with following information:
 - Kubernetes version: {{ .KubernetesVersion }}
 - Credential name: [{{ .Provider.Small }}](#credential-importing)
 
-For location code and sku details click [hrere](https://github.com/pharmer/cloud/blob/master/data/json/apis/cloud.pharmer.io/v1/cloudproviders/{{ .Provider.Small }}.json)
+For location code and sku details click [hrere](https://pharmer.dev/cloud/blob/master/data/json/apis/cloud.pharmer.io/v1/cloudproviders/{{ .Provider.Small }}.json)
 
 Available options in `pharmer` to create a cluster are:
  ```console

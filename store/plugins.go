@@ -3,11 +3,11 @@ package store
 import (
 	"sync"
 
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/config"
 )
 
 // Factory is a function that returns a storage.Interface.

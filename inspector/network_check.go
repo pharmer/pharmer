@@ -7,8 +7,6 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	core "k8s.io/api/core/v1"
@@ -17,6 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cloud"
 )
 
 const (

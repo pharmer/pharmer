@@ -1,7 +1,7 @@
 package dokube
 
 import (
-	"github.com/pharmer/pharmer/cloud"
+	"pharmer.dev/pharmer/cloud"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

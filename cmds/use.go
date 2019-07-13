@@ -1,8 +1,8 @@
 package cmds
 
 import (
-	cpCmd "github.com/pharmer/pharmer/cmds/cloud"
 	"github.com/spf13/cobra"
+	cpCmd "pharmer.dev/pharmer/cmds/cloud"
 )
 
 func newCmdUse() *cobra.Command {

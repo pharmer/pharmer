@@ -3,7 +3,7 @@ package cloud
 import (
 	"text/template"
 
-	api "github.com/pharmer/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1beta1"
 )
 
 var (

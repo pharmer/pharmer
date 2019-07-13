@@ -1,8 +1,8 @@
 package aws
 
 import (
-	"github.com/pharmer/pharmer/cloud"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
+	"pharmer.dev/pharmer/cloud"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

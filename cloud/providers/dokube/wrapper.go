@@ -6,9 +6,9 @@ import (
 	"net/url"
 
 	"github.com/digitalocean/godo"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"gomodules.xyz/cert"
 	"k8s.io/client-go/tools/clientcmd"
+	api "pharmer.dev/pharmer/apis/v1beta1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

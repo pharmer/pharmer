@@ -6,9 +6,9 @@ import (
 
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/local"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/store"
 )
 
 const (

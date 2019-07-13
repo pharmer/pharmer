@@ -50,7 +50,7 @@ resources:
 - name: master
   type: git
   source:
-    uri: https://github.com/pharmer/pharmer
+    uri: https://pharmer.dev/pharmer
     branch: master
 
 - name: digitalocean

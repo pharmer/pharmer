@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	options2 "github.com/pharmer/pharmer/cmds/credential/options"
-	"github.com/pharmer/pharmer/store"
+	options2 "pharmer.dev/pharmer/cmds/credential/options"
+	"pharmer.dev/pharmer/store"
 )
 
 func TestRunUpdateCredential(t *testing.T) {

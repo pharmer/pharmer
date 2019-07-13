@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
+	"pharmer.dev/pharmer/store"
 )
 
 type sshKeyFileStore struct {

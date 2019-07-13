@@ -74,11 +74,11 @@ You can also see the stored credential from the following location:
 #### Cluster IAM User
 
  While creating cluster within AWS `pharmer` creates following IAM roles and policies
- * [IAM master policy](https://github.com/pharmer/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L6)
- * [IAM controller policy](https://github.com/pharmer/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L77)
- * [IAM master role](https://github.com/pharmer/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L160)
- * [IAM node policy](https://github.com/pharmer/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L175)
- * [IAM node role](https://github.com/pharmer/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L200)
+ * [IAM master policy](https://pharmer.dev/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L6)
+ * [IAM controller policy](https://pharmer.dev/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L77)
+ * [IAM master role](https://pharmer.dev/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L160)
+ * [IAM node policy](https://pharmer.dev/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L175)
+ * [IAM node role](https://pharmer.dev/pharmer/blob/{{ .Release }}/cloud/providers/aws/iam.go#L200)
 {{ end }}
 
 {{ define "get-machines" }}

@@ -4,12 +4,12 @@ import (
 	"io"
 
 	"github.com/appscode/go/term"
-	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	"github.com/pharmer/pharmer/cmds/credential/options"
-	"github.com/pharmer/pharmer/store"
-	"github.com/pharmer/pharmer/utils/printer"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	"pharmer.dev/pharmer/cmds/credential/options"
+	"pharmer.dev/pharmer/store"
+	"pharmer.dev/pharmer/utils/printer"
 )
 
 func NewCmdGetCredential(out io.Writer) *cobra.Command {

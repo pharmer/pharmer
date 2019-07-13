@@ -10,15 +10,15 @@ import (
 	"github.com/appscode/go/term"
 	v "github.com/appscode/go/version"
 	ga "github.com/jpillora/go-ogle-analytics"
-	_ "github.com/pharmer/pharmer/cloud/providers"
-	cpCmd "github.com/pharmer/pharmer/cmds/cloud"
-	"github.com/pharmer/pharmer/config"
-	cfgCmd "github.com/pharmer/pharmer/config/cmds"
-	_ "github.com/pharmer/pharmer/store/providers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/klog"
 	"kmodules.xyz/client-go/logs"
+	_ "pharmer.dev/pharmer/cloud/providers"
+	cpCmd "pharmer.dev/pharmer/cmds/cloud"
+	"pharmer.dev/pharmer/config"
+	cfgCmd "pharmer.dev/pharmer/config/cmds"
+	_ "pharmer.dev/pharmer/store/providers"
 )
 
 const (

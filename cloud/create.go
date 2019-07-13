@@ -6,14 +6,14 @@ import (
 
 	"github.com/appscode/go/types"
 	"github.com/google/uuid"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud/utils/certificates"
-	"github.com/pharmer/pharmer/cmds/cloud/options"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	api_types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/apis/core"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cloud/utils/certificates"
+	"pharmer.dev/pharmer/cmds/cloud/options"
+	"pharmer.dev/pharmer/store"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

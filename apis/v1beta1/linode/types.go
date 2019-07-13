@@ -2,8 +2,8 @@ package linode
 
 import (
 	"github.com/linode/linodego"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	api "pharmer.dev/pharmer/apis/v1beta1"
 )
 
 const (

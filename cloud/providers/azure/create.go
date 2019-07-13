@@ -5,12 +5,12 @@ import (
 
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/log"
-	"github.com/pharmer/cloud/pkg/credential"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"pharmer.dev/cloud/pkg/credential"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	capiAzure "pharmer.dev/pharmer/apis/v1beta1/azure"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

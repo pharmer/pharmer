@@ -13,10 +13,10 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/appscode/go/types"
 	"github.com/appscode/go/wait"
-	"github.com/pharmer/cloud/pkg/credential"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
+	"pharmer.dev/cloud/pkg/credential"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cloud"
 )
 
 type cloudConnector struct {

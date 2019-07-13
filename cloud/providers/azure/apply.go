@@ -3,14 +3,14 @@ package azure
 import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2018-12-01/network"
 	"github.com/appscode/go/log"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	capiAzure "github.com/pharmer/pharmer/apis/v1beta1/azure"
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	capiAzure "pharmer.dev/pharmer/apis/v1beta1/azure"
+	"pharmer.dev/pharmer/cloud"
+	"pharmer.dev/pharmer/cloud/utils/kube"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

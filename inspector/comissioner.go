@@ -2,14 +2,14 @@ package inspector
 
 import (
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud/utils/certificates"
-	"github.com/pharmer/pharmer/cloud/utils/kube"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cloud/utils/certificates"
+	"pharmer.dev/pharmer/cloud/utils/kube"
+	"pharmer.dev/pharmer/store"
 )
 
 type Inspector struct {

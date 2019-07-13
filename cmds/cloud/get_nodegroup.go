@@ -4,12 +4,12 @@ import (
 	"io"
 
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cmds/cloud/options"
-	"github.com/pharmer/pharmer/store"
-	"github.com/pharmer/pharmer/utils/printer"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cmds/cloud/options"
+	"pharmer.dev/pharmer/store"
+	"pharmer.dev/pharmer/utils/printer"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

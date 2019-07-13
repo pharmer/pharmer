@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"text/template"
 
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"k8s.io/client-go/kubernetes"
+	"pharmer.dev/pharmer/cloud"
+	"pharmer.dev/pharmer/cloud/utils/kube"
 )
 
 type ClusterManager struct {

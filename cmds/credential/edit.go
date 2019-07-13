@@ -9,18 +9,18 @@ import (
 
 	"github.com/appscode/go/term"
 	"github.com/ghodss/yaml"
-	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cmds/credential/options"
-	"github.com/pharmer/pharmer/store"
-	"github.com/pharmer/pharmer/utils"
-	"github.com/pharmer/pharmer/utils/editor"
-	"github.com/pharmer/pharmer/utils/printer"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/mergepatch"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	kyaml "k8s.io/apimachinery/pkg/util/yaml"
+	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	"pharmer.dev/pharmer/cloud"
+	"pharmer.dev/pharmer/cmds/credential/options"
+	"pharmer.dev/pharmer/store"
+	"pharmer.dev/pharmer/utils"
+	"pharmer.dev/pharmer/utils/editor"
+	"pharmer.dev/pharmer/utils/printer"
 )
 
 func NewCmdEditCredential(out, outErr io.Writer) *cobra.Command {

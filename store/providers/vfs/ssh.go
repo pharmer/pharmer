@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/graymeta/stow"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
+	"pharmer.dev/pharmer/store"
 )
 
 type sshKeyFileStore struct {

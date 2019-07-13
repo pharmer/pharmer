@@ -6,8 +6,8 @@ import (
 
 	"github.com/appscode/go/term"
 	"github.com/ghodss/yaml"
-	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
+	"pharmer.dev/pharmer/config"
 )
 
 func newCmdView() *cobra.Command {

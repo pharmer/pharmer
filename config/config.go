@@ -10,10 +10,10 @@ import (
 	_env "github.com/appscode/go/env"
 	"github.com/appscode/go/log"
 	"github.com/ghodss/yaml"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	flag "github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/homedir"
+	api "pharmer.dev/pharmer/apis/v1beta1"
 )
 
 func LoadConfig(configPath string) (*api.PharmerConfig, error) {

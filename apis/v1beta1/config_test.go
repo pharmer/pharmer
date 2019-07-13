@@ -3,8 +3,8 @@ package v1beta1
 import (
 	"testing"
 
-	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
 )
 
 func TestPharmerConfig_GetStoreType(t *testing.T) {

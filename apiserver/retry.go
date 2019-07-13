@@ -2,7 +2,7 @@ package apiserver
 
 import (
 	"github.com/nats-io/stan.go"
-	"github.com/pharmer/pharmer/store"
+	"pharmer.dev/pharmer/store"
 )
 
 func (a *Apiserver) RetryCluster(storeProvider store.Interface, natsurl string, logToNats bool) error {

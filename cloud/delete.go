@@ -4,13 +4,13 @@ import (
 	"time"
 
 	"github.com/appscode/go/log"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud/utils/kube"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cloud/utils/kube"
+	"pharmer.dev/pharmer/store"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 	"sigs.k8s.io/cluster-api/pkg/util"
 )

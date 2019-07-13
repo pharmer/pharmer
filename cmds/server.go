@@ -6,11 +6,11 @@ import (
 
 	"github.com/appscode/go/term"
 	"github.com/nats-io/stan.go"
-	"github.com/pharmer/pharmer/apiserver"
-	"github.com/pharmer/pharmer/config"
-	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 	natslogr "gomodules.xyz/nats-logr"
+	"pharmer.dev/pharmer/apiserver"
+	"pharmer.dev/pharmer/config"
+	"pharmer.dev/pharmer/store"
 )
 
 func newCmdServer() *cobra.Command {

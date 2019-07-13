@@ -1,8 +1,8 @@
 package gke
 
 import (
-	"github.com/pharmer/pharmer/cloud"
 	"google.golang.org/api/container/v1"
+	"pharmer.dev/pharmer/cloud"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

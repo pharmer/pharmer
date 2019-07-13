@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	doCapi "github.com/pharmer/pharmer/apis/v1beta1/digitalocean"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/klogr"
 	"k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
+	doCapi "pharmer.dev/pharmer/apis/v1beta1/digitalocean"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/client"

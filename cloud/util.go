@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 
 	"github.com/ghodss/yaml"
-	"github.com/pharmer/pharmer/store"
+	"pharmer.dev/pharmer/store"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
