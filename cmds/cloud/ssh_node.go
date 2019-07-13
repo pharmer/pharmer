@@ -5,12 +5,12 @@ import (
 	"os"
 
 	"github.com/appscode/go/term"
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cmds/cloud/options"
-	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
+	"pharmer.dev/pharmer/cloud"
+	"pharmer.dev/pharmer/cmds/cloud/options"
+	"pharmer.dev/pharmer/store"
 )
 
 func NewCmdSSH() *cobra.Command {

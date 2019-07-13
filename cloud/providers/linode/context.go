@@ -1,10 +1,10 @@
 package linode
 
 import (
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/utils/kube"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"pharmer.dev/pharmer/cloud"
+	"pharmer.dev/pharmer/cloud/utils/kube"
 )
 
 type ClusterManager struct {

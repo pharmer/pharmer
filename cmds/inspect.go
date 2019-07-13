@@ -1,8 +1,8 @@
 package cmds
 
 import (
-	inCmd "github.com/pharmer/pharmer/inspector/cmds"
 	"github.com/spf13/cobra"
+	inCmd "pharmer.dev/pharmer/inspector/cmds"
 )
 
 func NewCmdInspector() *cobra.Command {

@@ -1,12 +1,12 @@
 package gce
 
 import (
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
-	proconfig "github.com/pharmer/pharmer/apis/v1beta1/gce"
-	"github.com/pharmer/pharmer/cloud/utils/kube"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	clusterapiGCE "pharmer.dev/pharmer/apis/v1beta1/gce"
+	proconfig "pharmer.dev/pharmer/apis/v1beta1/gce"
+	"pharmer.dev/pharmer/cloud/utils/kube"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

@@ -2,9 +2,9 @@ package apiserver
 
 import (
 	"github.com/nats-io/stan.go"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cloud"
+	"pharmer.dev/pharmer/store"
 )
 
 func (a *Apiserver) CreateCluster(storeProvider store.Interface, natsurl string, logToNats bool) error {

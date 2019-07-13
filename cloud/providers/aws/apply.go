@@ -5,11 +5,11 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	clusterapi_aws "github.com/pharmer/pharmer/apis/v1beta1/aws"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	clusterapi_aws "pharmer.dev/pharmer/apis/v1beta1/aws"
+	"pharmer.dev/pharmer/cloud"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

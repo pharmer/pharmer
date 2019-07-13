@@ -3,8 +3,8 @@ package credential
 import (
 	"testing"
 
-	"github.com/pharmer/pharmer/cmds/credential/options"
-	"github.com/pharmer/pharmer/store"
+	"pharmer.dev/pharmer/cmds/credential/options"
+	"pharmer.dev/pharmer/store"
 )
 
 func Test_runDeleteCredentialCmd(t *testing.T) {

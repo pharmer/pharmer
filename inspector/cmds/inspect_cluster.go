@@ -3,11 +3,11 @@ package cmds
 import (
 	"github.com/appscode/go/flags"
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud/utils/certificates"
-	"github.com/pharmer/pharmer/inspector"
-	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cloud/utils/certificates"
+	"pharmer.dev/pharmer/inspector"
+	"pharmer.dev/pharmer/store"
 )
 
 func NewCmdInspectCluster() *cobra.Command {

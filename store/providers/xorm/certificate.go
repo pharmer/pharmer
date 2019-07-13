@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/go-xorm/xorm"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"pharmer.dev/pharmer/store"
 )
 
 type certificateXormStore struct {

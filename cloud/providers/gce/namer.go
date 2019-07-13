@@ -6,7 +6,7 @@ import (
 
 	"github.com/appscode/go/crypto/rand"
 	stringutil "github.com/appscode/go/strings"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1beta1"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

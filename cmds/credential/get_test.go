@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/onsi/gomega"
-	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	options2 "github.com/pharmer/pharmer/cmds/credential/options"
-	"github.com/pharmer/pharmer/store"
-	"github.com/pharmer/pharmer/store/providers/fake"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	options2 "pharmer.dev/pharmer/cmds/credential/options"
+	"pharmer.dev/pharmer/store"
+	"pharmer.dev/pharmer/store/providers/fake"
 )
 
 func TestRunGetCredential(t *testing.T) {

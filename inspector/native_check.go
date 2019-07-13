@@ -3,12 +3,12 @@ package inspector
 import (
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/term"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	api "pharmer.dev/pharmer/apis/v1beta1"
 )
 
 func (i *Inspector) CheckHelthStatus() error {

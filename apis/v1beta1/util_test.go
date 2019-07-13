@@ -3,8 +3,8 @@ package v1beta1
 import (
 	"testing"
 
-	v1 "github.com/pharmer/cloud/pkg/apis/cloud/v1"
 	"github.com/pkg/errors"
+	v1 "pharmer.dev/cloud/pkg/apis/cloud/v1"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

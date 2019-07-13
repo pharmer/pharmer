@@ -15,11 +15,11 @@ import (
 	_eks "github.com/aws/aws-sdk-go/service/eks"
 	_iam "github.com/aws/aws-sdk-go/service/iam"
 	_sts "github.com/aws/aws-sdk-go/service/sts"
-	"github.com/pharmer/cloud/pkg/credential"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
 	"gomodules.xyz/version"
-	"k8s.io/apimachinery/pkg/util/wait" //"github.com/pharmer/pharmer/cloud/providers/eks/assets"
+	"k8s.io/apimachinery/pkg/util/wait" //"pharmer.dev/pharmer/cloud/providers/eks/assets"
+	"pharmer.dev/cloud/pkg/credential"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cloud"
 )
 
 type cloudConnector struct {

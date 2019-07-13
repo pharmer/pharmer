@@ -1,4 +1,4 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/pharmer/pharmer)](https://goreportcard.com/report/github.com/pharmer/pharmer)
+[![Go Report Card](https://goreportcard.com/badge/pharmer.dev/pharmer)](https://goreportcard.com/report/pharmer.dev/pharmer)
 [![Build Status](https://travis-ci.org/pharmer/pharmer.svg?branch=master)](https://travis-ci.org/pharmer/pharmer)
 [![codecov](https://codecov.io/gh/pharmer/pharmer/branch/master/graph/badge.svg)](https://codecov.io/gh/pharmer/pharmer)
 [![Slack](http://slack.kubernetes.io/badge.svg)](http://slack.kubernetes.io/#pharmer)
@@ -11,7 +11,7 @@ This project is spread over 5 repositories:
 
 - [pharmer/pre-k](https://github.com/pharmer/pre-k): Contains [a set of handy commands](https://github.com/pharmer/pre-k/blob/master/docs/reference/pre-k.md) that you run before `kubeadm init`.
 
-- [pharmer/pharmer](https://github.com/pharmer/pharmer): A [Kops](https://github.com/kubernetes/kops) [like](https://github.com/pharmer/pharmer/blob/master/docs/reference/pharmer.md) cluster manager using `Kubeadm`. Supported cloud providers:
+- [pharmer/pharmer](https://pharmer.dev/pharmer): A [Kops](https://github.com/kubernetes/kops) [like](https://pharmer.dev/pharmer/blob/master/docs/reference/pharmer.md) cluster manager using `Kubeadm`. Supported cloud providers:
   - [Amazon Web Services](https://aws.amazon.com/)
   - [Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html)
   - [DigitalOcean](https://www.digitalocean.com/)
@@ -25,7 +25,7 @@ This project is spread over 5 repositories:
   - [Softlayer](http://www.softlayer.com/)
   - [Vultr](https://www.vultr.com/) -->
 
-- [pharmer/cloud-controller-manager](https://github.com/pharmer/cloud-controller-manager): Implements Cloud Controller manager for following cloud providers:
+- [pharmer/cloud-controller-manager](https://pharmer.dev/cloud-controller-manager): Implements Cloud Controller manager for following cloud providers:
   - [Linode](https://www.linode.com/)
   - [Packet](https://www.packet.net/)
   - [Digitalocean](https://digitalocean.com)

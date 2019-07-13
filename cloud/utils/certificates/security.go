@@ -6,11 +6,11 @@ import (
 	"crypto/x509"
 
 	"github.com/appscode/go/crypto/ssh"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/store"
 )
 
 func CreateCACertificates(storeProvider store.CertificateStore) (*x509.Certificate, *rsa.PrivateKey, error) {

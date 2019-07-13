@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
+	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
 )
 
 type Credential struct {

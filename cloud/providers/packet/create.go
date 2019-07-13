@@ -3,12 +3,12 @@ package packet
 import (
 	"encoding/json"
 
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	packetconfig "github.com/pharmer/pharmer/apis/v1beta1/packet"
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/cloud/utils/kube"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	packetconfig "pharmer.dev/pharmer/apis/v1beta1/packet"
+	"pharmer.dev/pharmer/cloud"
+	"pharmer.dev/pharmer/cloud/utils/kube"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

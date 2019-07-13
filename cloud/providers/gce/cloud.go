@@ -8,11 +8,6 @@ import (
 	"time"
 
 	"github.com/appscode/go/types"
-	"github.com/pharmer/cloud/pkg/credential"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	clusterapiGCE "github.com/pharmer/pharmer/apis/v1beta1/gce"
-	proconfig "github.com/pharmer/pharmer/apis/v1beta1/gce"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
@@ -20,6 +15,11 @@ import (
 	gcs "google.golang.org/api/storage/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"pharmer.dev/cloud/pkg/credential"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	clusterapiGCE "pharmer.dev/pharmer/apis/v1beta1/gce"
+	proconfig "pharmer.dev/pharmer/apis/v1beta1/gce"
+	"pharmer.dev/pharmer/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

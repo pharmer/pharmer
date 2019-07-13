@@ -8,8 +8,8 @@ import (
 	"text/tabwriter"
 
 	"github.com/appscode/go/term"
-	"github.com/pharmer/pharmer/config"
 	"github.com/spf13/cobra"
+	"pharmer.dev/pharmer/config"
 )
 
 func newCmdGet() *cobra.Command {

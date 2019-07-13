@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 
 	"github.com/appscode/go/crypto/rand"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	linodeconfig "github.com/pharmer/pharmer/apis/v1beta1/linode"
-	"github.com/pharmer/pharmer/cloud/utils/kube"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	linodeconfig "pharmer.dev/pharmer/apis/v1beta1/linode"
+	"pharmer.dev/pharmer/cloud/utils/kube"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )

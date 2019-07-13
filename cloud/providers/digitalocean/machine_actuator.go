@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/klogr"
+	"pharmer.dev/pharmer/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/machine"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -20,7 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	//kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	doCapi "github.com/pharmer/pharmer/apis/v1beta1/digitalocean"
+	doCapi "pharmer.dev/pharmer/apis/v1beta1/digitalocean"
 	"sigs.k8s.io/cluster-api/pkg/kubeadm"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

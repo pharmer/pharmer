@@ -1,9 +1,9 @@
 package certificates
 
 import (
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	"pharmer.dev/pharmer/store"
 )
 
 func GetPharmerCerts(storeProvider store.ResourceInterface, clusterName string) (*Certificates, error) {

@@ -7,13 +7,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/nats-io/stan.go"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/apiserver/options"
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
 	natslogr "gomodules.xyz/nats-logr"
 	ulogr "gomodules.xyz/union-logr"
 	"k8s.io/klog/klogr"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/apiserver/options"
+	"pharmer.dev/pharmer/cloud"
+	"pharmer.dev/pharmer/store"
 )
 
 func (a *Apiserver) Init(storeProvider store.Interface, msg *stan.Msg) (*api.Operation, *cloud.Scope, error) {

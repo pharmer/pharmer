@@ -6,19 +6,19 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	"gomodules.xyz/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
+	api "pharmer.dev/pharmer/apis/v1beta1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
-// https://github.com/pharmer/pharmer/issues/347
+// https://pharmer.dev/pharmer/issues/347
 var kubernetesCNIVersions = map[string]string{
 	"1.8.0":  "0.5.1",
 	"1.9.0":  "0.6.0",

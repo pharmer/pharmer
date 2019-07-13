@@ -1,6 +1,6 @@
 # cloud.google.com/go v0.39.0
 cloud.google.com/go/compute/metadata
-# contrib.go.opencensus.io/exporter/ocagent v0.5.0
+# contrib.go.opencensus.io/exporter/ocagent v0.4.12
 contrib.go.opencensus.io/exporter/ocagent
 # github.com/Azure/azure-sdk-for-go v29.0.0+incompatible
 github.com/Azure/azure-sdk-for-go/profiles/latest/containerservice/mgmt/containerservice
@@ -25,22 +25,24 @@ github.com/Azure/azure-sdk-for-go/services/preview/apimanagement/mgmt/2018-06-01
 # github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
 github.com/Azure/go-ansiterm/winterm
 github.com/Azure/go-ansiterm
-# github.com/Azure/go-autorest v12.0.0+incompatible
+# github.com/Azure/go-autorest v11.1.2+incompatible
 github.com/Azure/go-autorest/autorest
 github.com/Azure/go-autorest/autorest/adal
 github.com/Azure/go-autorest/autorest/azure
 github.com/Azure/go-autorest/autorest/to
 github.com/Azure/go-autorest/autorest/date
 github.com/Azure/go-autorest/autorest/validation
-github.com/Azure/go-autorest/tracing
 github.com/Azure/go-autorest/logger
+github.com/Azure/go-autorest/version
+# github.com/Azure/go-autorest/tracing v0.1.0
+github.com/Azure/go-autorest/tracing
 # github.com/JamesClonk/vultr v2.0.0+incompatible
 github.com/JamesClonk/vultr/lib
 # github.com/PuerkitoBio/purell v1.1.1
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 github.com/PuerkitoBio/urlesc
-# github.com/appscode/go v0.0.0-20190523031839-1468ee3a76e8
+# github.com/appscode/go v0.0.0-20190621064509-6b292c9166e3
 github.com/appscode/go/version
 github.com/appscode/go/log
 github.com/appscode/go/sets
@@ -140,7 +142,7 @@ github.com/dustin/go-humanize
 # github.com/emicklei/go-restful v2.9.5+incompatible
 github.com/emicklei/go-restful
 github.com/emicklei/go-restful/log
-# github.com/evanphx/json-patch v4.2.0+incompatible
+# github.com/evanphx/json-patch v4.5.0+incompatible
 github.com/evanphx/json-patch
 # github.com/fatih/color v1.7.0
 github.com/fatih/color
@@ -160,11 +162,11 @@ github.com/go-openapi/jsonreference
 github.com/go-openapi/spec
 # github.com/go-openapi/swag v0.19.0
 github.com/go-openapi/swag
-# github.com/go-xorm/builder v0.0.0-20190422082613-0c156dfdb061
+# github.com/go-xorm/builder v0.3.3
 github.com/go-xorm/builder
-# github.com/go-xorm/core v0.6.0
+# github.com/go-xorm/core v0.6.2
 github.com/go-xorm/core
-# github.com/go-xorm/xorm v0.7.0
+# github.com/go-xorm/xorm v0.7.3
 github.com/go-xorm/xorm
 # github.com/gogo/protobuf v1.2.1
 github.com/gogo/protobuf/gogoproto
@@ -226,7 +228,7 @@ github.com/graymeta/stow
 # github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc
 github.com/gregjones/httpcache
 github.com/gregjones/httpcache/diskcache
-# github.com/grpc-ecosystem/grpc-gateway v1.9.0
+# github.com/grpc-ecosystem/grpc-gateway v1.8.6
 github.com/grpc-ecosystem/grpc-gateway/runtime
 github.com/grpc-ecosystem/grpc-gateway/utilities
 github.com/grpc-ecosystem/grpc-gateway/internal
@@ -313,22 +315,6 @@ github.com/packethost/packngo
 github.com/pborman/uuid
 # github.com/peterbourgon/diskv v2.0.1+incompatible
 github.com/peterbourgon/diskv
-# github.com/pharmer/cloud v0.2.0
-github.com/pharmer/cloud/pkg/apis/cloud/v1
-github.com/pharmer/cloud/pkg/credential
-github.com/pharmer/cloud/pkg/apis
-github.com/pharmer/cloud/pkg/credential/cloud
-github.com/pharmer/cloud/pkg/providers
-github.com/pharmer/cloud/pkg/cmds/options
-github.com/pharmer/cloud/pkg/providers/aws
-github.com/pharmer/cloud/pkg/providers/azure
-github.com/pharmer/cloud/pkg/providers/digitalocean
-github.com/pharmer/cloud/pkg/providers/gce
-github.com/pharmer/cloud/pkg/providers/linode
-github.com/pharmer/cloud/pkg/providers/packet
-github.com/pharmer/cloud/pkg/providers/scaleway
-github.com/pharmer/cloud/pkg/providers/vultr
-github.com/pharmer/cloud/pkg/util
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
 # github.com/prometheus/client_golang v0.9.4
@@ -450,6 +436,8 @@ golang.org/x/text/width
 golang.org/x/time/rate
 # gomodules.xyz/cert v1.0.0
 gomodules.xyz/cert
+# gomodules.xyz/jsonpatch/v2 v2.0.0
+gomodules.xyz/jsonpatch/v2
 # gomodules.xyz/nats-logr v0.1.0
 gomodules.xyz/nats-logr
 # gomodules.xyz/union-logr v0.1.0
@@ -524,6 +512,8 @@ google.golang.org/grpc/internal/syscall
 gopkg.in/AlecAivazis/survey.v1
 gopkg.in/AlecAivazis/survey.v1/core
 gopkg.in/AlecAivazis/survey.v1/terminal
+# gopkg.in/fsnotify.v1 v1.4.7
+gopkg.in/fsnotify.v1
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
 # gopkg.in/ini.v1 v1.42.0
@@ -757,6 +747,23 @@ kmodules.xyz/client-go/core/v1
 kmodules.xyz/client-go/tools/backup
 kmodules.xyz/client-go
 kmodules.xyz/client-go/meta
+# pharmer.dev/cloud v0.3.0
+pharmer.dev/cloud/pkg/apis/cloud/v1
+pharmer.dev/cloud/pkg/credential
+pharmer.dev/cloud/pkg/apis
+pharmer.dev/cloud/pkg/credential/cloud
+pharmer.dev/cloud/pkg/providers
+pharmer.dev/cloud/pkg/apis/cloud
+pharmer.dev/cloud/pkg/cmds/options
+pharmer.dev/cloud/pkg/providers/aws
+pharmer.dev/cloud/pkg/providers/azure
+pharmer.dev/cloud/pkg/providers/digitalocean
+pharmer.dev/cloud/pkg/providers/gce
+pharmer.dev/cloud/pkg/providers/linode
+pharmer.dev/cloud/pkg/providers/packet
+pharmer.dev/cloud/pkg/providers/scaleway
+pharmer.dev/cloud/pkg/providers/vultr
+pharmer.dev/cloud/pkg/util
 # sigs.k8s.io/cluster-api v0.0.0-20190508175234-0f911c1f65a5 => github.com/pharmer/cluster-api v0.0.0-20190516113055-efd9b156f6d2
 sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1
 sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient
@@ -778,7 +785,7 @@ sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/bootstrap/existing
 sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/bootstrap/kind
 sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/bootstrap/minikube
 sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/scheme
-# sigs.k8s.io/controller-runtime v0.2.0-alpha.1
+# sigs.k8s.io/controller-runtime v0.2.0-beta.4
 sigs.k8s.io/controller-runtime/pkg/manager
 sigs.k8s.io/controller-runtime/pkg/client
 sigs.k8s.io/controller-runtime/pkg/client/config
@@ -799,6 +806,7 @@ sigs.k8s.io/controller-runtime/pkg/source
 sigs.k8s.io/controller-runtime/pkg/cache/internal
 sigs.k8s.io/controller-runtime/pkg/log
 sigs.k8s.io/controller-runtime/pkg/webhook/admission
+sigs.k8s.io/controller-runtime/pkg/webhook/internal/certwatcher
 sigs.k8s.io/controller-runtime/pkg/webhook/internal/metrics
 sigs.k8s.io/controller-runtime/pkg/internal/controller
 sigs.k8s.io/controller-runtime/pkg/predicate

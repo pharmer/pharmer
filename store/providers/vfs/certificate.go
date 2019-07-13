@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 
 	"github.com/graymeta/stow"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
+	"pharmer.dev/pharmer/store"
 )
 
 type certificateFileStore struct {

@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/term"
-	"github.com/pharmer/pharmer/cloud/utils/certificates"
-	"github.com/pharmer/pharmer/cloud/utils/kube"
-	"github.com/pharmer/pharmer/cmds/cloud/options"
-	"github.com/pharmer/pharmer/store"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"kmodules.xyz/client-go/tools/backup"
+	"pharmer.dev/pharmer/cloud/utils/certificates"
+	"pharmer.dev/pharmer/cloud/utils/kube"
+	"pharmer.dev/pharmer/cmds/cloud/options"
+	"pharmer.dev/pharmer/store"
 )
 
 type ItemList struct {
@@ -63,7 +63,7 @@ func NewCmdBackup() *cobra.Command {
 }
 
 func SearchLocalKubeConfig(clusterName string) (*rest.Config, error) {
-	// ref: https://github.com/pharmer/pharmer/blob/19db538fe51b83e807c525e2dbf28b56b7fb36e2/cloud/lib.go#L148
+	// ref: https://pharmer.dev/pharmer/blob/19db538fe51b83e807c525e2dbf28b56b7fb36e2/cloud/lib.go#L148
 	ctxName := fmt.Sprintf("cluster-admin@%s.pharmer", clusterName)
 	apiConfig, err := clientcmd.NewDefaultPathOptions().GetStartingConfig()
 	if err != nil {

@@ -14,7 +14,7 @@ mv ./kubectl /bin/kubectl
 #copy pharmer to $GOPATH
 mkdir -p $GOPATH/src/github.com/pharmer
 cp -r pharmer $GOPATH/src/github.com/pharmer
-pushd $GOPATH/src/github.com/pharmer/pharmer
+pushd $GOPATH/src/pharmer.dev/pharmer
 
 #if test_only == false, we need to build pharmer, otherwise, get pharmer from s3
 if [ -z "$test_only" ]; then
@@ -35,7 +35,7 @@ fi
 
 chmod +x $GOPATH/bin/pharmer
 
-pushd $GOPATH/src/github.com/pharmer/pharmer
+pushd $GOPATH/src/pharmer.dev/pharmer
 #name of the cluster
 NAME=pharmer-$(git rev-parse --short HEAD)
 popd

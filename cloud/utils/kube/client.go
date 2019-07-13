@@ -6,8 +6,6 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/wait"
 	"github.com/go-logr/logr"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud/utils/certificates"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	semver "gomodules.xyz/version"
@@ -17,6 +15,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cloud/utils/certificates"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )

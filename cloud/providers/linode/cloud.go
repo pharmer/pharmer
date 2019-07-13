@@ -9,13 +9,13 @@ import (
 
 	"github.com/appscode/go/types"
 	"github.com/linode/linodego"
-	"github.com/pharmer/cloud/pkg/credential"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	linode_config "github.com/pharmer/pharmer/apis/v1beta1/linode"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"pharmer.dev/cloud/pkg/credential"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	linode_config "pharmer.dev/pharmer/apis/v1beta1/linode"
+	"pharmer.dev/pharmer/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

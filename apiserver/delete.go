@@ -2,8 +2,8 @@ package apiserver
 
 import (
 	"github.com/nats-io/stan.go"
-	"github.com/pharmer/pharmer/cloud"
-	"github.com/pharmer/pharmer/store"
+	"pharmer.dev/pharmer/cloud"
+	"pharmer.dev/pharmer/store"
 )
 
 func (a *Apiserver) DeleteCluster(storeProvider store.Interface, natsurl string, logToNats bool) error {

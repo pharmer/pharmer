@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/appscode/go/log"
-	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
 	"k8s.io/apimachinery/pkg/util/mergepatch"
+	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	api "pharmer.dev/pharmer/apis/v1beta1"
 )
 
 func GetPreconditionFunc() []mergepatch.PreconditionFunc {

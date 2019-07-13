@@ -5,12 +5,12 @@ import (
 	"time"
 
 	"github.com/go-xorm/xorm"
-	cloudapi "github.com/pharmer/cloud/pkg/apis/cloud/v1"
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/store"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/store"
 )
 
 type credentialXormStore struct {

@@ -1,9 +1,9 @@
 package apiserver
 
 import (
-	api "github.com/pharmer/pharmer/apis/v1beta1"
-	"github.com/pharmer/pharmer/cloud"
 	"github.com/pkg/errors"
+	api "pharmer.dev/pharmer/apis/v1beta1"
+	"pharmer.dev/pharmer/cloud"
 )
 
 func ApplyCluster(scope *cloud.Scope, obj *api.Operation) error {
