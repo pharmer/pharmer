@@ -1,10 +1,10 @@
 package cmds
 
 import (
+	"github.com/appscode/go/signals"
 	"github.com/appscode/go/term"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/klogr"
-	"k8s.io/sample-controller/pkg/signals"
 	"pharmer.dev/pharmer/cloud"
 	"pharmer.dev/pharmer/store"
 	clusterapis "sigs.k8s.io/cluster-api/pkg/apis"

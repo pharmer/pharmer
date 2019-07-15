@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/graymeta/stow"
-	"github.com/graymeta/stow/local"
 	"github.com/pkg/errors"
+	"gomodules.xyz/stow"
+	"gomodules.xyz/stow/local"
 	api "pharmer.dev/pharmer/apis/v1beta1"
 	"pharmer.dev/pharmer/store"
 )

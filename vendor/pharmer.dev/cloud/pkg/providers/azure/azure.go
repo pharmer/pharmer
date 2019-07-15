@@ -5,8 +5,8 @@ import (
 
 	"github.com/appscode/go/log"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/resources/mgmt/subscriptions"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-06-01/subscriptions"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
@@ -17,7 +17,7 @@ import (
 
 type Client struct {
 	SubscriptionId string
-	GroupsClient   subscriptions.GroupClient
+	GroupsClient   subscriptions.Client
 	VmSizesClient  compute.VirtualMachineSizesClient
 }
 
@@ -37,7 +37,7 @@ func NewClient(opts credential.Azure) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	g.GroupsClient = subscriptions.NewGroupClient()
+	g.GroupsClient = subscriptions.NewClient()
 	g.GroupsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
 	g.VmSizesClient = compute.NewVirtualMachineSizesClient(opts.SubscriptionID())
@@ -55,6 +55,9 @@ func (g *Client) GetCredentialFormat() v1.CredentialFormat {
 
 func (g *Client) ListRegions() ([]v1.Region, error) {
 	regionList, err := g.GroupsClient.ListLocations(context.Background(), g.SubscriptionId)
+	if err != nil {
+		return nil, err
+	}
 	var regions []v1.Region
 	for _, r := range *regionList.Value {
 		region := ParseRegion(&r)
