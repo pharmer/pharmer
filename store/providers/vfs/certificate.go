@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
+	"gomodules.xyz/stow"
 	"pharmer.dev/pharmer/store"
 )
 

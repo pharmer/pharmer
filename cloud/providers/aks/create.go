@@ -3,7 +3,7 @@ package aks
 import (
 	"encoding/json"
 
-	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2017-09-30/containerservice"
+	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-06-01/containerservice"
 	"github.com/appscode/go/crypto/rand"
 	"k8s.io/apimachinery/pkg/runtime"
 	api "pharmer.dev/pharmer/apis/v1beta1"

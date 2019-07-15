@@ -68,7 +68,7 @@ func IssueAzureCredential(name string) (*api.Credential, error) {
 	client := autorest.NewClientWithUserAgent(subscriptions.UserAgent())
 	client.Authorizer = autorest.NewBearerAuthorizer(spt)
 
-	tenantsClient := subscriptions.NewTenantsGroupClientWithBaseURI(subscriptions.DefaultBaseURI)
+	tenantsClient := subscriptions.NewTenantsClientWithBaseURI(subscriptions.DefaultBaseURI)
 	tenantsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 	tenants, err := tenantsClient.List(context.TODO())
 	if err != nil {
