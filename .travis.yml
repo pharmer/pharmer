@@ -8,6 +8,8 @@ cache:
   - $HOME/.cache/go-build
   - $GOPATH/pkg/mod
 
+go_import_path: pharmer.dev/pharmer
+
 install: true
 
 script:
