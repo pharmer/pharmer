@@ -713,7 +713,7 @@ kmodules.xyz/client-go v0.0.0-20190715080709-7162a6c90b04 h1:17h0mshnlihkZMP6LqM
 kmodules.xyz/client-go v0.0.0-20190715080709-7162a6c90b04/go.mod h1:3h1/ZglH6fV2uv3p9AB1JnHUknhWniShJ7fBJfSf7Js=
 pack.ag/amqp v0.8.0/go.mod h1:4/cbmt4EJXSKlG6LCfWHoqmN0uFdy5i/+YFz+fTfhV4=
 pack.ag/amqp v0.11.0/go.mod h1:4/cbmt4EJXSKlG6LCfWHoqmN0uFdy5i/+YFz+fTfhV4=
-pharmer.dev/cloud v0.3.0 h1:JCU1dvDm/fOPA1xklphGGEhB8DLDo3HVbNABqmwCGTo=
+pharmer.dev/cloud v0.3.0 h1:E7Sm10ykO0nban5MYsU2W2jp2DWnBOBSyd25DlbI16M=
 pharmer.dev/cloud v0.3.0/go.mod h1:Sn7mc3KkdV+gSC1UkqH61TYjrUfkPXiRIugB0IMe6B8=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 sigs.k8s.io/controller-runtime v0.2.0-beta.4 h1:S1XVfRWR1MuIXZdkYx3jN8JDw+bbQxmWZroy0i87z/A=
