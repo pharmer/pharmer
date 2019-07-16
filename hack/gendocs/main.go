@@ -56,7 +56,7 @@ aliases:
 // ref: https://github.com/spf13/cobra/blob/master/doc/md_docs.md
 func main() {
 	rootCmd := cmds.NewRootCmd(nil, nil, nil, "")
-	dir := runtime.GOPath() + "/src/pharmer.dev/pharmer/docs/reference"
+	dir := runtime.GOPath() + "/src/pharmer.dev/docs/docs/reference"
 	fmt.Printf("Generating cli markdown tree in: %v\n", dir)
 	err := os.RemoveAll(dir)
 	if err != nil {
