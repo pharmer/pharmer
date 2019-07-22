@@ -56,7 +56,12 @@ func deleteAllWorkerMachines(s *Scope) error {
 	log := s.Logger
 	log.Info("Deleting non-controlplane machines")
 
-	clusterClient, err := kube.GetClusterAPIClient(s.GetCaCertPair(), s.Cluster)
+	clusterEndpoint := s.Cluster.APIServerURL()
+	if clusterEndpoint == "" {
+		return errors.Errorf("failed to detect api server url for Cluster %s", s.Cluster.Name)
+	}
+
+	clusterClient, err := kube.GetClusterAPIClient(s.StoreProvider.Certificates(s.Cluster.Name), clusterEndpoint)
 	if err != nil {
 		log.Error(err, "failed to get clusterAPI client")
 		return err

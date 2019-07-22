@@ -2,6 +2,7 @@ package cloud
 
 import (
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/klogr"
 	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
@@ -83,7 +84,12 @@ func (s *Scope) GetAdminClient() (kubernetes.Interface, error) {
 		return s.AdminClient, nil
 	}
 
-	client, err := kube.NewAdminClient(&s.Certs.CACert, s.Cluster)
+	clusterEndpoint := s.Cluster.APIServerURL()
+	if clusterEndpoint == "" {
+		return nil, errors.Errorf("failed to detect api server url for Cluster %s", s.Cluster.Name)
+	}
+
+	client, err := kube.NewAdminClient(s.StoreProvider.Certificates(s.Cluster.Name), clusterEndpoint)
 	if err != nil {
 		log.Error(err, "failed to create new kube-client")
 		return nil, err
