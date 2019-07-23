@@ -15,27 +15,32 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	api "pharmer.dev/pharmer/apis/v1beta1"
 	"pharmer.dev/pharmer/cloud/utils/certificates"
+	"pharmer.dev/pharmer/store"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
 
-func NewRestConfig(caCertPair *certificates.CertKeyPair, cluster *api.Cluster) (*rest.Config, error) {
-	adminCert, adminKey, err := certificates.CreateAdminCertificate(caCertPair.Cert, caCertPair.Key)
+func NewRestConfig(certStore store.CertificateStore, clusterEndpoint string) (*rest.Config, error) {
+	caCert, caKey, err := certStore.Get(kubeadmconsts.CACertAndKeyBaseName)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessage(err, "failed to get ca-certs")
 	}
 
-	host := cluster.APIServerURL()
-	if host == "" {
-		return nil, errors.Errorf("failed to detect api server url for Cluster %s", cluster.Name)
+	adminCert, adminKey, err := certStore.Get("admin")
+	if err != nil {
+		adminCert, adminKey, err = certificates.CreateAdminCertificate(caCert, caKey)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	cfg := &rest.Config{
-		Host: host,
+		Host: clusterEndpoint,
 		TLSClientConfig: rest.TLSClientConfig{
-			CAData:   cert.EncodeCertPEM(caCertPair.Cert),
+			CAData:   cert.EncodeCertPEM(caCert),
 			CertData: cert.EncodeCertPEM(adminCert),
 			KeyData:  cert.EncodePrivateKeyPEM(adminKey),
 		},
@@ -73,8 +78,8 @@ func NewRestConfigFromKubeConfig(in *api.KubeConfig) *rest.Config {
 
 // WARNING:
 // Returned KubeClient uses admin client cert. This should only be used for Cluster provisioning operations.
-func NewAdminClient(caCertPair *certificates.CertKeyPair, cluster *api.Cluster) (kubernetes.Interface, error) {
-	cfg, err := NewRestConfig(caCertPair, cluster)
+func NewAdminClient(certStore store.CertificateStore, clusterEndpoint string) (kubernetes.Interface, error) {
+	cfg, err := NewRestConfig(certStore, clusterEndpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -138,8 +143,8 @@ func GetAdminConfig(cluster *api.Cluster, caCertPair *certificates.CertKeyPair) 
 	return &cfg, nil
 }
 
-func GetClusterAPIClient(caCert *certificates.CertKeyPair, cluster *api.Cluster) (clientset.Interface, error) {
-	conf, err := NewRestConfig(caCert, cluster)
+func GetClusterAPIClient(certStore store.CertificateStore, clusterEndpoint string) (clientset.Interface, error) {
+	conf, err := NewRestConfig(certStore, clusterEndpoint)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get rest config")
 	}

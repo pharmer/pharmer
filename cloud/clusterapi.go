@@ -54,7 +54,13 @@ func NewClusterAPI(s *Scope, namespace string) (*ClusterAPI, error) {
 		s.Logger.Error(err, "failed to get bootstrap client")
 		return nil, err
 	}
-	clusterClient, err := kube.GetClusterAPIClient(s.GetCaCertPair(), s.Cluster)
+
+	clusterEndpoint := s.Cluster.APIServerURL()
+	if clusterEndpoint == "" {
+		return nil, errors.Errorf("failed to detect api server url for Cluster %s", s.Cluster.Name)
+	}
+
+	clusterClient, err := kube.GetClusterAPIClient(s.StoreProvider.Certificates(s.Cluster.Name), clusterEndpoint)
 	if err != nil {
 		s.Logger.Error(err, "failed to get clusterAPI clients")
 		return nil, err
