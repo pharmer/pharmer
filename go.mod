@@ -9,10 +9,9 @@ require (
 	github.com/Azure/go-autorest/autorest/adal v0.2.0
 	github.com/Azure/go-autorest/autorest/to v0.2.0
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b // indirect
-	github.com/appscode/go v0.0.0-20190621064509-6b292c9166e3
+	github.com/appscode/go v0.0.0-20190722173419-e454bf744023
 	github.com/aws/aws-sdk-go v1.20.20
 	github.com/creack/goselect v0.1.0 // indirect
-	github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3 // indirect
 	github.com/digitalocean/godo v1.14.0
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0
@@ -20,8 +19,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.0 // indirect
 	github.com/go-openapi/jsonreference v0.19.0 // indirect
 	github.com/go-openapi/swag v0.19.0 // indirect
-	github.com/go-xorm/core v0.6.2
-	github.com/go-xorm/xorm v0.7.3
+	github.com/go-xorm/xorm v0.7.4
 	github.com/gogo/protobuf v1.2.1
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.1.1
@@ -71,6 +69,7 @@ require (
 	pharmer.dev/cloud v0.3.0
 	sigs.k8s.io/cluster-api v0.0.0-20190508175234-0f911c1f65a5
 	sigs.k8s.io/controller-runtime v0.2.0-beta.4
+	xorm.io/core v0.6.3
 )
 
 replace (
