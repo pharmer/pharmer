@@ -8,13 +8,14 @@ import (
 )
 
 type Machine struct {
-	Id                int64
-	Name              string     `xorm:"text not null 'name'"`
-	Data              string     `xorm:"text not null 'data'"`
+	ID        int64
+	Name      string `xorm:"text not null 'name'"`
+	ClusterID int64  `xorm:"bigint not null 'cluster_id'"`
+	Data      string `xorm:"text not null 'data'"`
+
 	CreationTimestamp time.Time  `xorm:"bigint created 'created_unix'"`
 	DateModified      time.Time  `xorm:"bigint updated 'updated_unix'"`
 	DeletionTimestamp *time.Time `xorm:"bigint null 'deleted_unix'"`
-	ClusterId         int64      `xorm:"bigint not null 'cluster_id'"`
 }
 
 func (Machine) TableName() string {

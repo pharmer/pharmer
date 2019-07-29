@@ -8,14 +8,15 @@ import (
 )
 
 type Credential struct {
-	Id                int64
-	Name              string     `xorm:"text not null 'name'"`
-	UID               string     `xorm:"text not null 'uid'"`
-	Data              string     `xorm:"text not null 'data'"`
+	ID      int64
+	Name    string `xorm:"text not null 'name'"`
+	UID     string `xorm:"text not null 'uid'"`
+	OwnerID int64  `xorm:"bigint null 'owner_id'"`
+	Data    string `xorm:"text not null 'data'"`
+
 	CreationTimestamp time.Time  `xorm:"bigint created 'created_unix'"`
 	DateModified      time.Time  `xorm:"bigint updated 'updated_unix'"`
 	DeletionTimestamp *time.Time `xorm:"bigint null 'deleted_unix'"`
-	OwnerId           int64      `xorm:"bigint null 'owner_id'"`
 }
 
 func (Credential) TableName() string {

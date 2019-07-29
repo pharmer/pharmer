@@ -8,14 +8,15 @@ import (
 )
 
 type Cluster struct {
-	Id                int64
-	Name              string     `xorm:"text not null 'name'"`
-	Data              string     `xorm:"text not null 'data'"`
+	ID        int64
+	Name      string `xorm:"text not null 'name'"`
+	OwnerID   int64  `xorm:"bigint  null 'owner_id'"`
+	Data      string `xorm:"text not null 'data'"`
+	IsPrivate bool   `xorm:"boolean 'is_private'"`
+
 	CreationTimestamp time.Time  `xorm:"bigint created 'created_unix'"`
 	DateModified      time.Time  `xorm:"bigint updated 'updated_unix'"`
 	DeletionTimestamp *time.Time `xorm:"bigint null 'deleted_unix'"`
-	OwnerId           int64      `xorm:"bigint  null 'owner_id'"`
-	IsPrivate         bool       `xorm:"boolean 'is_private'"`
 }
 
 func (Cluster) TableName() string {
