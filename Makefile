@@ -15,9 +15,12 @@
 
 SHELL=/bin/bash -o pipefail
 
-# The binary to build (just the basename).
+GO_PKG   := pharmer.dev
+REPO     := $(notdir $(shell pwd))
 BIN      := pharmer
 COMPRESS ?= no
+
+CODE_GENERATOR_IMAGE ?= appscode/gengo:release-1.14
 
 # Where to push the docker image.
 REGISTRY ?= pharmer
@@ -121,8 +124,23 @@ version:
 	@echo commit_hash=$(commit_hash)
 	@echo commit_timestamp=$(commit_timestamp)
 
+DOCKER_REPO_ROOT := /go/src/$(GO_PKG)/$(REPO)
+
+.PHONY: gen
 gen:
-	@true
+	@echo "Generating deepcopy helpers"
+	@docker run --rm -ti                    \
+		-u $$(id -u):$$(id -g)              \
+		-v /tmp:/.cache                     \
+		-v $$(pwd):$(DOCKER_REPO_ROOT)      \
+		-w $(DOCKER_REPO_ROOT)              \
+	    --env HTTP_PROXY=$(HTTP_PROXY)      \
+	    --env HTTPS_PROXY=$(HTTPS_PROXY)    \
+		$(CODE_GENERATOR_IMAGE)             \
+		deepcopy-gen \
+			--go-header-file "hack/boilerplate.go.txt" \
+			--input-dirs "$(GO_PKG)/$(REPO)/apis/v1alpha1" \
+			--output-file-base zz_generated.deepcopy
 
 fmt: $(BUILD_DIRS)
 	@docker run                                                 \
