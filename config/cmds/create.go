@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
 	"pharmer.dev/cloud/pkg/credential"
-	api "pharmer.dev/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/config"
 )
 

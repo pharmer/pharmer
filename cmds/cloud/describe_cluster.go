@@ -7,7 +7,7 @@ import (
 	"github.com/appscode/go/term"
 	"github.com/spf13/cobra"
 	"k8s.io/kubernetes/pkg/kubectl/describe"
-	api "pharmer.dev/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/cmds/cloud/options"
 	"pharmer.dev/pharmer/store"
 	"pharmer.dev/pharmer/utils/describer"

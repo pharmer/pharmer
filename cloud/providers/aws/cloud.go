@@ -25,8 +25,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"pharmer.dev/cloud/pkg/credential"
-	api "pharmer.dev/pharmer/apis/v1beta1"
-	clusterapi_aws "pharmer.dev/pharmer/apis/v1beta1/aws"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
+	clusterapi_aws "pharmer.dev/pharmer/apis/v1alpha1/aws"
 	"pharmer.dev/pharmer/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )

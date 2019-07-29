@@ -2,7 +2,7 @@ package packet
 
 import (
 	"github.com/appscode/go/crypto/rand"
-	api "pharmer.dev/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
 )
 
 type namer struct {

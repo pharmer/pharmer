@@ -7,8 +7,8 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	api "pharmer.dev/pharmer/apis/v1beta1"
-	clusterapi_aws "pharmer.dev/pharmer/apis/v1beta1/aws"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
+	clusterapi_aws "pharmer.dev/pharmer/apis/v1alpha1/aws"
 	"pharmer.dev/pharmer/cloud"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )

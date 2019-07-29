@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	kubeadmconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	api "pharmer.dev/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
 )
 

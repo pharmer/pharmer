@@ -8,7 +8,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/klogr"
 	"k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta1"
-	linodeApi "pharmer.dev/pharmer/apis/v1beta1/linode"
+	linodeApi "pharmer.dev/pharmer/apis/v1alpha1/linode"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/client"

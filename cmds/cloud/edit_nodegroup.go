@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/mergepatch"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	kyaml "k8s.io/apimachinery/pkg/util/yaml"
-	api "pharmer.dev/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/cloud"
 	"pharmer.dev/pharmer/cmds/cloud/options"
 	"pharmer.dev/pharmer/store"

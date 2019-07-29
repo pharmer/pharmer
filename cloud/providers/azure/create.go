@@ -9,8 +9,8 @@ import (
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"pharmer.dev/cloud/pkg/credential"
-	api "pharmer.dev/pharmer/apis/v1beta1"
-	capiAzure "pharmer.dev/pharmer/apis/v1beta1/azure"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
+	capiAzure "pharmer.dev/pharmer/apis/v1alpha1/azure"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

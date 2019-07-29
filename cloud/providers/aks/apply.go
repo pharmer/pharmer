@@ -7,7 +7,7 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"pharmer.dev/pharmer/apis/v1beta1/azure"
+	"pharmer.dev/pharmer/apis/v1alpha1/azure"
 )
 
 func (cm *ClusterManager) PrepareCloud() error {

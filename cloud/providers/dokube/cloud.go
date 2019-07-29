@@ -11,8 +11,8 @@ import (
 	"golang.org/x/oauth2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"pharmer.dev/cloud/pkg/credential"
-	api "pharmer.dev/pharmer/apis/v1beta1"
-	dokube_config "pharmer.dev/pharmer/apis/v1beta1/dokube"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
+	dokube_config "pharmer.dev/pharmer/apis/v1alpha1/dokube"
 	"pharmer.dev/pharmer/cloud"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )

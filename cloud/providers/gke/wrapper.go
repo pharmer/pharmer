@@ -7,8 +7,8 @@ import (
 	"gomodules.xyz/cert"
 	"google.golang.org/api/container/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	api "pharmer.dev/pharmer/apis/v1beta1"
-	"pharmer.dev/pharmer/apis/v1beta1/gce"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
+	"pharmer.dev/pharmer/apis/v1alpha1/gce"
 	"pharmer.dev/pharmer/store"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )

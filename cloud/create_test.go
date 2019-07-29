@@ -7,7 +7,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/klogr"
 	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
-	api "pharmer.dev/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/cloud"
 	_ "pharmer.dev/pharmer/cloud/providers/aks"
 	_ "pharmer.dev/pharmer/cloud/providers/aws"

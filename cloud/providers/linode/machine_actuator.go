@@ -11,7 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/klogr"
-	linodeconfig "pharmer.dev/pharmer/apis/v1beta1/linode"
+	linodeconfig "pharmer.dev/pharmer/apis/v1alpha1/linode"
 	"pharmer.dev/pharmer/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/machine"

@@ -1,4 +1,4 @@
-package v1beta1
+package v1alpha1
 
 type SSHConfig struct {
 	PrivateKey []byte `json:"privateKey,omitempty"`

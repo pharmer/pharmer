@@ -18,7 +18,7 @@ import (
 	"gomodules.xyz/version"
 	"k8s.io/apimachinery/pkg/util/wait" //"pharmer.dev/pharmer/cloud/providers/eks/assets"
 	"pharmer.dev/cloud/pkg/credential"
-	api "pharmer.dev/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/cloud"
 )
 
