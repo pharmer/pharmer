@@ -80,7 +80,7 @@ func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *r
 	certificate.Name = name
 	certificate.ClusterName = s.cluster
 	certificate.UID = string(uuid.NewUUID())
-	certificate.CreationTimestamp = time.Now()
+	certificate.CreatedUnix = time.Now().Unix()
 	_, err = s.engine.Insert(certificate)
 
 	return err

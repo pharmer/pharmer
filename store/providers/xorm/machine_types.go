@@ -2,20 +2,19 @@ package xorm
 
 import (
 	"encoding/json"
-	"time"
 
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type Machine struct {
-	ID        int64
-	Name      string `xorm:"text not null 'name'"`
-	ClusterID int64  `xorm:"bigint not null 'cluster_id'"`
-	Data      string `xorm:"text not null 'data'"`
+	ID        int64  `xorm:"pk autoincr"`
+	Name      string `xorm:"INDEX NOT NULL"`
+	Data      string `xorm:"text NOT NULL"`
+	ClusterID int64  `xorm:"INDEX NOT NULL"`
 
-	CreationTimestamp time.Time  `xorm:"bigint created 'created_unix'"`
-	DateModified      time.Time  `xorm:"bigint updated 'updated_unix'"`
-	DeletionTimestamp *time.Time `xorm:"bigint null 'deleted_unix'"`
+	CreatedUnix int64  `xorm:"INDEX created"`
+	UpdatedUnix int64  `xorm:"INDEX updated"`
+	DeletedUnix *int64 `xorm:"null"`
 }
 
 func (Machine) TableName() string {
@@ -24,9 +23,9 @@ func (Machine) TableName() string {
 
 func encodeMachine(in *clusterapi.Machine) (*Machine, error) {
 	machine := &Machine{
-		Name:              in.Name,
-		CreationTimestamp: in.CreationTimestamp.Time,
-		DeletionTimestamp: nil,
+		Name:        in.Name,
+		CreatedUnix: in.CreationTimestamp.Time.Unix(),
+		DeletedUnix: nil,
 	}
 
 	data, err := json.Marshal(in)

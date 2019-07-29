@@ -2,21 +2,20 @@ package xorm
 
 import (
 	"encoding/json"
-	"time"
 
 	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
 )
 
 type Credential struct {
-	ID      int64
-	Name    string `xorm:"text not null 'name'"`
-	UID     string `xorm:"text not null 'uid'"`
-	OwnerID int64  `xorm:"bigint null 'owner_id'"`
-	Data    string `xorm:"text not null 'data'"`
+	ID      int64  `xorm:"pk autoincr"`
+	OwnerID int64  `xorm:"UNIQUE(s)"`
+	Name    string `xorm:"UNIQUE(s) INDEX NOT NULL"`
+	UID     string `xorm:"uid UNIQUE"`
+	Data    string `xorm:"text NOT NULL"`
 
-	CreationTimestamp time.Time  `xorm:"bigint created 'created_unix'"`
-	DateModified      time.Time  `xorm:"bigint updated 'updated_unix'"`
-	DeletionTimestamp *time.Time `xorm:"bigint null 'deleted_unix'"`
+	CreatedUnix int64  `xorm:"INDEX created"`
+	UpdatedUnix int64  `xorm:"INDEX updated"`
+	DeletedUnix *int64 `xorm:"null"`
 }
 
 func (Credential) TableName() string {
@@ -30,7 +29,7 @@ func encodeCredential(in *cloudapi.Credential) (*Credential, error) {
 		Name: in.Name,
 		//ResourceVersion:   in.ResourceVersion,
 		//Generation:        in.Generation,
-		DeletionTimestamp: nil,
+		DeletedUnix: nil,
 	}
 	/*label := map[string]string{
 		api.ResourceProviderCredential: in.Spec.Provider,

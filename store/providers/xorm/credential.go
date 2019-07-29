@@ -75,7 +75,7 @@ func (s *credentialXormStore) Create(obj *cloudapi.Credential) (*cloudapi.Creden
 	if err != nil {
 		return nil, err
 	}
-	found, err := s.engine.Get(&Credential{Name: obj.Name, DeletionTimestamp: nil, OwnerID: s.owner})
+	found, err := s.engine.Get(&Credential{Name: obj.Name, DeletedUnix: nil, OwnerID: s.owner})
 	if err != nil {
 		return nil, errors.Errorf("reason: %v", err)
 	}
