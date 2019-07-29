@@ -35,7 +35,7 @@ func (s *certificateXormStore) Get(name string) (*x509.Certificate, *rsa.Private
 	certificate := &Certificate{
 		Name:        name,
 		ClusterName: cluster.Name,
-		ClusterId:   cluster.Id,
+		ClusterID:   cluster.ID,
 	}
 	found, err := s.engine.Get(certificate)
 	if err != nil {
@@ -65,7 +65,7 @@ func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *r
 	certificate := &Certificate{
 		Name:        name,
 		ClusterName: cluster.Name,
-		ClusterId:   cluster.Id,
+		ClusterID:   cluster.ID,
 	}
 
 	found, err := s.engine.Get(certificate)
@@ -76,11 +76,11 @@ func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *r
 		return errors.Errorf("certificate `%s` already exists", name)
 	}
 	certificate = encodeCertificate(crt, key)
-	certificate.ClusterId = cluster.Id
+	certificate.ClusterID = cluster.ID
 	certificate.Name = name
 	certificate.ClusterName = s.cluster
 	certificate.UID = string(uuid.NewUUID())
-	certificate.CreationTimestamp = time.Now()
+	certificate.CreatedUnix = time.Now().Unix()
 	_, err = s.engine.Insert(certificate)
 
 	return err
@@ -99,14 +99,14 @@ func (s *certificateXormStore) Delete(name string) error {
 		return err
 	}
 
-	_, err = s.engine.Delete(&Certificate{Name: name, ClusterName: cluster.Name, ClusterId: cluster.Id})
+	_, err = s.engine.Delete(&Certificate{Name: name, ClusterName: cluster.Name, ClusterID: cluster.ID})
 	return err
 }
 
 func (s *certificateXormStore) getCluster() (*Cluster, error) {
 	cluster := &Cluster{
 		Name:    s.cluster,
-		OwnerId: s.owner,
+		OwnerID: s.owner,
 	}
 	has, err := s.engine.Get(cluster)
 	if err != nil {

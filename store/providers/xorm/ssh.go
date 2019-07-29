@@ -30,7 +30,7 @@ func (s *sshKeyXormStore) Get(name string) ([]byte, []byte, error) {
 	sshKey := &SSHKey{
 		Name:        name,
 		ClusterName: cluster.Name,
-		ClusterId:   cluster.Id,
+		ClusterID:   cluster.ID,
 	}
 	found, err := s.engine.Get(sshKey)
 	if !found {
@@ -60,7 +60,7 @@ func (s *sshKeyXormStore) Create(name string, pubKey, privKey []byte) error {
 	sshKey := &SSHKey{
 		Name:        name,
 		ClusterName: cluster.Name,
-		ClusterId:   cluster.Id,
+		ClusterID:   cluster.ID,
 	}
 	found, err := s.engine.Get(sshKey)
 	if found {
@@ -73,7 +73,7 @@ func (s *sshKeyXormStore) Create(name string, pubKey, privKey []byte) error {
 	sshKey.Name = name
 	sshKey.ClusterName = s.cluster
 	sshKey.UID = string(uuid.NewUUID())
-	sshKey.ClusterId = cluster.Id
+	sshKey.ClusterID = cluster.ID
 
 	_, err = s.engine.Insert(sshKey)
 	return err
@@ -91,14 +91,14 @@ func (s *sshKeyXormStore) Delete(name string) error {
 		return err
 	}
 
-	_, err = s.engine.Delete(&SSHKey{Name: name, ClusterName: cluster.Name, ClusterId: cluster.Id})
+	_, err = s.engine.Delete(&SSHKey{Name: name, ClusterName: cluster.Name, ClusterID: cluster.ID})
 	return err
 }
 
 func (s *sshKeyXormStore) getCluster() (*Cluster, error) {
 	cluster := &Cluster{
 		Name:    s.cluster,
-		OwnerId: s.owner,
+		OwnerID: s.owner,
 	}
 	has, err := s.engine.Get(cluster)
 	if err != nil {

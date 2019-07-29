@@ -47,13 +47,13 @@ func (s *clusterXormStore) Get(name string) (*api.Cluster, error) {
 		return nil, errors.New("missing cluster name")
 	}
 
-	cluster := &Cluster{Name: name, OwnerId: s.owner}
+	cluster := &Cluster{Name: name, OwnerID: s.owner}
 	if s.owner == -1 {
 		id, err := strconv.Atoi(name)
 		if err != nil {
 			return nil, err
 		}
-		cluster = &Cluster{Id: int64(id)}
+		cluster = &Cluster{ID: int64(id)}
 	}
 	found, err := s.engine.Get(cluster)
 	if err != nil {
@@ -76,7 +76,7 @@ func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 		return nil, err
 	}
 
-	found, err := s.engine.Get(&Cluster{Name: obj.Name, OwnerId: s.owner})
+	found, err := s.engine.Get(&Cluster{Name: obj.Name, OwnerID: s.owner})
 	if err != nil {
 		return nil, errors.Errorf("reason: %v", err)
 	}
@@ -104,7 +104,7 @@ func (s *clusterXormStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 		return nil, err
 	}
 
-	found, err := s.engine.Get(&Cluster{Name: obj.Name, OwnerId: s.owner})
+	found, err := s.engine.Get(&Cluster{Name: obj.Name, OwnerID: s.owner})
 	if err != nil {
 		return nil, errors.Errorf("reason: %v", err)
 	}
@@ -125,7 +125,7 @@ func (s *clusterXormStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing cluster name")
 	}
-	_, err := s.engine.Delete(&Cluster{Name: name, OwnerId: s.owner})
+	_, err := s.engine.Delete(&Cluster{Name: name, OwnerID: s.owner})
 	return err
 }
 
@@ -140,7 +140,7 @@ func (s *clusterXormStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 		return nil, err
 	}
 
-	cluster := &Cluster{Name: obj.Name, OwnerId: s.owner}
+	cluster := &Cluster{Name: obj.Name, OwnerID: s.owner}
 	found, err := s.engine.Get(cluster)
 	if err != nil {
 		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", obj.Name, err)

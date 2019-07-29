@@ -1,20 +1,17 @@
 package xorm
 
-import (
-	"time"
-)
-
 type SSHKey struct {
-	Id                int64
-	Name              string     `xorm:"text not null 'name'"`
-	ClusterName       string     `xorm:"text not null 'cluster_name'"`
-	UID               string     `xorm:"text not null 'uid'"`
-	PublicKey         string     `xorm:"string  not null 'public_key'"`
-	PrivateKey        string     `xorm:"string  not null 'private_key'"`
-	CreationTimestamp time.Time  `xorm:"bigint created 'created_unix'"`
-	DateModified      time.Time  `xorm:"bigint updated 'updated_unix'"`
-	DeletionTimestamp *time.Time `xorm:"bigint null 'deleted_unix'"`
-	ClusterId         int64      `xorm:"bigint not null 'cluster_id'"`
+	ID          int64
+	Name        string `xorm:"not null 'name'"`
+	ClusterID   int64  `xorm:"NOT NULL 'cluster_id'"`
+	ClusterName string `xorm:"not null 'cluster_name'"`
+	UID         string `xorm:"not null 'uid'"`
+	PublicKey   string `xorm:"text not null 'public_key'"`
+	PrivateKey  string `xorm:"text not null 'private_key'"`
+
+	CreatedUnix int64  `xorm:"INDEX created"`
+	UpdatedUnix int64  `xorm:"INDEX updated"`
+	DeletedUnix *int64 `xorm:"null"`
 }
 
 func (SSHKey) TableName() string {
@@ -23,9 +20,9 @@ func (SSHKey) TableName() string {
 
 func encodeSSHKey(pub, priv []byte) *SSHKey {
 	return &SSHKey{
-		PublicKey:         string(pub),
-		PrivateKey:        string(priv),
-		DeletionTimestamp: nil,
+		PublicKey:   string(pub),
+		PrivateKey:  string(priv),
+		DeletedUnix: nil,
 	}
 }
 

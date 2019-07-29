@@ -9,16 +9,17 @@ import (
 )
 
 type Certificate struct {
-	Id                int64
-	Name              string     `xorm:"text not null 'name'"`
-	ClusterName       string     `xorm:"text not null 'cluster_name'"`
-	UID               string     `xorm:"text not null 'uid'"`
-	Cert              string     `xorm:"text NOT NULL 'cert'"`
-	Key               string     `xorm:"text NOT NULL 'key'"`
-	CreationTimestamp time.Time  `xorm:"bigint created 'created_unix'"`
-	DateModified      time.Time  `xorm:"bigint updated 'updated_unix'"`
-	DeletionTimestamp *time.Time `xorm:"bigint null 'deleted_unix'"`
-	ClusterId         int64      `xorm:"bigint not null 'cluster_id'"`
+	ID          int64 `xorm:"pk autoincr"`
+	Name        string
+	ClusterID   int64 `xorm:"NOT NULL 'cluster_id'"`
+	ClusterName string
+	UID         string `xorm:"uid UNIQUE"`
+	Cert        string `xorm:"text NOT NULL"`
+	Key         string `xorm:"text NOT NULL"`
+
+	CreatedUnix int64  `xorm:"INDEX created"`
+	UpdatedUnix int64  `xorm:"INDEX updated"`
+	DeletedUnix *int64 `xorm:"null"`
 }
 
 func (Certificate) TableName() string {
@@ -27,10 +28,10 @@ func (Certificate) TableName() string {
 
 func encodeCertificate(crt *x509.Certificate, key *rsa.PrivateKey) *Certificate {
 	return &Certificate{
-		Cert:              string(cert.EncodeCertPEM(crt)),
-		Key:               string(cert.EncodePrivateKeyPEM(key)),
-		DateModified:      time.Now(),
-		DeletionTimestamp: nil,
+		Cert:        string(cert.EncodeCertPEM(crt)),
+		Key:         string(cert.EncodePrivateKeyPEM(key)),
+		UpdatedUnix: time.Now().Unix(),
+		DeletedUnix: nil,
 	}
 }
 

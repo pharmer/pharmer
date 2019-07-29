@@ -27,7 +27,7 @@ func (s *machineXormStore) List(opts metav1.ListOptions) ([]*clusterv1.Machine, 
 
 	result := make([]*clusterv1.Machine, 0)
 	var machines []Machine
-	err = s.engine.Where(`"cluster_id" = ?`, cluster.Id).Find(&machines)
+	err = s.engine.Where(`"cluster_id" = ?`, cluster.ID).Find(&machines)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (s *machineXormStore) Get(name string) (*clusterv1.Machine, error) {
 		return nil, err
 	}
 
-	m := &Machine{Name: name, ClusterId: cluster.Id}
+	m := &Machine{Name: name, ClusterID: cluster.ID}
 	found, err := s.engine.Get(m)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (s *machineXormStore) Create(obj *clusterv1.Machine) (*clusterv1.Machine, e
 		return nil, err
 	}
 
-	found, err := s.engine.Get(&Machine{Name: obj.Name, ClusterId: cluster.Id})
+	found, err := s.engine.Get(&Machine{Name: obj.Name, ClusterID: cluster.ID})
 	if err != nil {
 		return nil, errors.Errorf("reason: %v", err)
 	}
@@ -99,7 +99,7 @@ func (s *machineXormStore) Create(obj *clusterv1.Machine) (*clusterv1.Machine, e
 	if err != nil {
 		return nil, err
 	}
-	machine.ClusterId = cluster.Id
+	machine.ClusterID = cluster.ID
 
 	_, err = s.engine.Insert(machine)
 	return obj, err
@@ -124,7 +124,7 @@ func (s *machineXormStore) Update(obj *clusterv1.Machine) (*clusterv1.Machine, e
 		return nil, err
 	}
 
-	found, err := s.engine.Get(&Machine{Name: obj.Name, ClusterId: cluster.Id})
+	found, err := s.engine.Get(&Machine{Name: obj.Name, ClusterID: cluster.ID})
 	if err != nil {
 		return nil, errors.Errorf("reason: %v", err)
 	}
@@ -136,8 +136,8 @@ func (s *machineXormStore) Update(obj *clusterv1.Machine) (*clusterv1.Machine, e
 	if err != nil {
 		return nil, err
 	}
-	machine.ClusterId = cluster.Id
-	_, err = s.engine.Where(`name = ? AND "cluster_id" = ?`, obj.Name, cluster.Id).Update(machine)
+	machine.ClusterID = cluster.ID
+	_, err = s.engine.Where(`name = ? AND "cluster_id" = ?`, obj.Name, cluster.ID).Update(machine)
 	return obj, err
 }
 
@@ -152,7 +152,7 @@ func (s *machineXormStore) Delete(name string) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.engine.Delete(&Machine{Name: name, ClusterId: cluster.Id})
+	_, err = s.engine.Delete(&Machine{Name: name, ClusterID: cluster.ID})
 	return err
 }
 
@@ -175,7 +175,7 @@ func (s *machineXormStore) UpdateStatus(obj *clusterv1.Machine) (*clusterv1.Mach
 		return nil, err
 	}
 
-	machine := &Machine{Name: obj.Name, ClusterId: cluster.Id}
+	machine := &Machine{Name: obj.Name, ClusterID: cluster.ID}
 	found, err := s.engine.Get(machine)
 	if err != nil {
 		return nil, errors.Errorf("Machine `%s` does not exist. Reason: %v", obj.Name, err)
@@ -194,14 +194,14 @@ func (s *machineXormStore) UpdateStatus(obj *clusterv1.Machine) (*clusterv1.Mach
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.engine.Where(`name = ? AND "cluster_id" = ?`, obj.Name, cluster.Id).Update(updated)
+	_, err = s.engine.Where(`name = ? AND "cluster_id" = ?`, obj.Name, cluster.ID).Update(updated)
 	return existing, err
 }
 
 func (s *machineXormStore) getCluster() (*Cluster, error) {
 	cluster := &Cluster{
 		Name:    s.cluster,
-		OwnerId: s.owner,
+		OwnerID: s.owner,
 	}
 	has, err := s.engine.Get(cluster)
 	if err != nil {

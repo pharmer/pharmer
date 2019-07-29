@@ -44,14 +44,14 @@ func (s *credentialXormStore) Get(name string) (*cloudapi.Credential, error) {
 	}
 	cred := &Credential{
 		Name:    name,
-		OwnerId: s.owner,
+		OwnerID: s.owner,
 	}
 	if s.owner == -1 {
 		id, err := strconv.Atoi(name)
 		if err != nil {
 			return nil, err
 		}
-		cred = &Credential{Id: int64(id)}
+		cred = &Credential{ID: int64(id)}
 	}
 
 	found, err := s.engine.Get(cred)
@@ -75,7 +75,7 @@ func (s *credentialXormStore) Create(obj *cloudapi.Credential) (*cloudapi.Creden
 	if err != nil {
 		return nil, err
 	}
-	found, err := s.engine.Get(&Credential{Name: obj.Name, DeletionTimestamp: nil, OwnerId: s.owner})
+	found, err := s.engine.Get(&Credential{Name: obj.Name, DeletedUnix: nil, OwnerID: s.owner})
 	if err != nil {
 		return nil, errors.Errorf("reason: %v", err)
 	}
@@ -88,7 +88,7 @@ func (s *credentialXormStore) Create(obj *cloudapi.Credential) (*cloudapi.Creden
 		return nil, err
 	}
 	cred.UID = string(uuid.NewUUID())
-	cred.OwnerId = s.owner
+	cred.OwnerID = s.owner
 	_, err = s.engine.Insert(cred)
 
 	return obj, err
@@ -105,7 +105,7 @@ func (s *credentialXormStore) Update(obj *cloudapi.Credential) (*cloudapi.Creden
 		return nil, err
 	}
 
-	found, err := s.engine.Get(&Credential{Name: obj.Name, OwnerId: s.owner})
+	found, err := s.engine.Get(&Credential{Name: obj.Name, OwnerID: s.owner})
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +125,6 @@ func (s *credentialXormStore) Delete(name string) error {
 	if name == "" {
 		return errors.New("missing credential name")
 	}
-	_, err := s.engine.Delete(&Credential{Name: name, OwnerId: s.owner})
+	_, err := s.engine.Delete(&Credential{Name: name, OwnerID: s.owner})
 	return err
 }

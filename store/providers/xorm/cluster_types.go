@@ -2,20 +2,22 @@ package xorm
 
 import (
 	"encoding/json"
-	"time"
 
+	"github.com/appscode/go/types"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 )
 
+// Cluster represents a kubernets cluster
 type Cluster struct {
-	Id                int64
-	Name              string     `xorm:"text not null 'name'"`
-	Data              string     `xorm:"text not null 'data'"`
-	CreationTimestamp time.Time  `xorm:"bigint created 'created_unix'"`
-	DateModified      time.Time  `xorm:"bigint updated 'updated_unix'"`
-	DeletionTimestamp *time.Time `xorm:"bigint null 'deleted_unix'"`
-	OwnerId           int64      `xorm:"bigint  null 'owner_id'"`
-	IsPrivate         bool       `xorm:"boolean 'is_private'"`
+	ID        int64  `xorm:"pk autoincr"`
+	OwnerID   int64  `xorm:"UNIQUE(s)"`
+	Name      string `xorm:"UNIQUE(s) INDEX NOT NULL"`
+	Data      string `xorm:"text 'data'"`
+	IsPrivate bool   `xorm:"INDEX"`
+
+	CreatedUnix int64  `xorm:"INDEX created"`
+	UpdatedUnix int64  `xorm:"INDEX updated"`
+	DeletedUnix *int64 `xorm:"null"`
 }
 
 func (Cluster) TableName() string {
@@ -30,10 +32,10 @@ func encodeCluster(in *api.Cluster) (*Cluster, error) {
 		//UID:               string(in.UID),
 		//ResourceVersion:   in.ResourceVersion,
 		//Generation:        in.Generation,
-		DeletionTimestamp: nil,
+		DeletedUnix: nil,
 	}
 	if in.DeletionTimestamp != nil {
-		cluster.DeletionTimestamp = &in.DeletionTimestamp.Time
+		cluster.DeletedUnix = types.Int64P(in.DeletionTimestamp.Time.Unix())
 	}
 	/*labels, err := json.Marshal(in.ObjectMeta.Labels)
 	if err != nil {
