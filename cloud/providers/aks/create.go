@@ -6,8 +6,8 @@ import (
 	containersvc "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-06-01/containerservice"
 	"github.com/appscode/go/crypto/rand"
 	"k8s.io/apimachinery/pkg/runtime"
-	api "pharmer.dev/pharmer/apis/v1beta1"
-	"pharmer.dev/pharmer/apis/v1beta1/azure"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
+	"pharmer.dev/pharmer/apis/v1alpha1/azure"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

@@ -20,7 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	//kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	doCapi "pharmer.dev/pharmer/apis/v1beta1/digitalocean"
+	doCapi "pharmer.dev/pharmer/apis/v1alpha1/digitalocean"
 	"sigs.k8s.io/cluster-api/pkg/kubeadm"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

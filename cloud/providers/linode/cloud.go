@@ -13,8 +13,8 @@ import (
 	"golang.org/x/oauth2"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"pharmer.dev/cloud/pkg/credential"
-	api "pharmer.dev/pharmer/apis/v1beta1"
-	linode_config "pharmer.dev/pharmer/apis/v1beta1/linode"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
+	linode_config "pharmer.dev/pharmer/apis/v1alpha1/linode"
 	"pharmer.dev/pharmer/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )

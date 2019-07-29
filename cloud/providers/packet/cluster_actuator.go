@@ -5,7 +5,7 @@ import (
 
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/klogr"
-	packet_config "pharmer.dev/pharmer/apis/v1beta1/packet"
+	packet_config "pharmer.dev/pharmer/apis/v1alpha1/packet"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/client"

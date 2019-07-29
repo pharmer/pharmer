@@ -10,7 +10,7 @@ import (
 	natslogr "gomodules.xyz/nats-logr"
 	ulogr "gomodules.xyz/union-logr"
 	"k8s.io/klog/klogr"
-	api "pharmer.dev/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/apiserver/options"
 	"pharmer.dev/pharmer/cloud"
 	"pharmer.dev/pharmer/store"

@@ -7,13 +7,11 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
-	api "pharmer.dev/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 var ErrNotImplemented = errors.New("not implemented")
-
-//var StoreProvider ResourceInterface
 
 const (
 	vfsUID  = "vfs"
@@ -28,7 +26,6 @@ type Interface interface {
 
 type ResourceInterface interface {
 	Credentials() CredentialStore
-
 	Operations() OperationStore
 	Clusters() ClusterStore
 	Machine(cluster string) MachineStore

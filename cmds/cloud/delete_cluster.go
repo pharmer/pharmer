@@ -3,7 +3,7 @@ package cloud
 import (
 	"github.com/appscode/go/term"
 	"github.com/spf13/cobra"
-	api "pharmer.dev/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/cloud"
 	"pharmer.dev/pharmer/cmds/cloud/options"
 	"pharmer.dev/pharmer/store"

@@ -9,7 +9,7 @@ import (
 
 	"github.com/appscode/go/log"
 	"golang.org/x/crypto/ssh"
-	api "pharmer.dev/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 

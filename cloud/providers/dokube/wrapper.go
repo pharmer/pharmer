@@ -8,7 +8,7 @@ import (
 	"github.com/digitalocean/godo"
 	"gomodules.xyz/cert"
 	"k8s.io/client-go/tools/clientcmd"
-	api "pharmer.dev/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

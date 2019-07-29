@@ -6,7 +6,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/klogr"
 	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
-	api "pharmer.dev/pharmer/apis/v1beta1"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/cloud/utils/certificates"
 	"pharmer.dev/pharmer/cloud/utils/kube"
 	"pharmer.dev/pharmer/store"

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	api "pharmer.dev/pharmer/apis/v1beta1"
-	dokube_config "pharmer.dev/pharmer/apis/v1beta1/dokube"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
+	dokube_config "pharmer.dev/pharmer/apis/v1alpha1/dokube"
 	"pharmer.dev/pharmer/cloud"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )

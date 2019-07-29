@@ -5,8 +5,8 @@ import (
 
 	"github.com/appscode/go/crypto/rand"
 	"k8s.io/apimachinery/pkg/runtime"
-	api "pharmer.dev/pharmer/apis/v1beta1"
-	"pharmer.dev/pharmer/apis/v1beta1/gce"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
+	"pharmer.dev/pharmer/apis/v1alpha1/gce"
 	"pharmer.dev/pharmer/cloud"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"

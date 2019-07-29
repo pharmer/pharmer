@@ -18,7 +18,7 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/pkg/errors"
 	"pharmer.dev/cloud/pkg/credential"
-	capiAzure "pharmer.dev/pharmer/apis/v1beta1/azure"
+	capiAzure "pharmer.dev/pharmer/apis/v1alpha1/azure"
 	"pharmer.dev/pharmer/cloud"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
