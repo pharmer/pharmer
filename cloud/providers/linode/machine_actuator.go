@@ -13,7 +13,7 @@ import (
 	"k8s.io/klog/klogr"
 	linodeconfig "pharmer.dev/pharmer/apis/v1alpha1/linode"
 	"pharmer.dev/pharmer/cloud"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/machine"
 	"sigs.k8s.io/cluster-api/pkg/kubeadm"
 	"sigs.k8s.io/cluster-api/pkg/util"
@@ -63,7 +63,7 @@ func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
 	}
 }
 
-func (li *MachineActuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (li *MachineActuator) Create(ctx context.Context, cluster *clusterapi.Cluster, machine *clusterapi.Machine) error {
 	log := li.Logger.WithValues("machine-name", machine.Name)
 
 	log.Info("creating machine", "machine-name", machine.Name)
@@ -153,7 +153,7 @@ func (li *MachineActuator) getKubeadmToken() (string, error) {
 	return strings.TrimSpace(token), nil
 }
 
-func (li *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (li *MachineActuator) Delete(_ context.Context, cluster *clusterapi.Cluster, machine *clusterapi.Machine) error {
 	log := li.Logger.WithValues("machine-name", machine.Name)
 	log.Info("deleting machine", "machinej-name", machine.Name)
 
@@ -179,7 +179,7 @@ func (li *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster,
 	return nil
 }
 
-func (li *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
+func (li *MachineActuator) Update(_ context.Context, cluster *clusterapi.Cluster, goalMachine *clusterapi.Machine) error {
 	log := li.Logger.WithValues("machine-name", goalMachine.Name)
 	log.Info("updating machine", "machine-name", goalMachine.Name)
 	var err error
@@ -215,7 +215,7 @@ func (li *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 	return nil
 }
 
-func (li *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
+func (li *MachineActuator) Exists(ctx context.Context, cluster *clusterapi.Cluster, machine *clusterapi.Machine) (bool, error) {
 	log := li.Logger.WithValues("machine-name", machine.Name)
 	log.Info("checking existance of machine", "machine-name", machine.Name)
 	var err error
@@ -236,7 +236,7 @@ func getKubeadm(params MachineActuatorParams) LinodeClientKubeadm {
 	return params.Kubeadm
 }
 
-func (li *MachineActuator) updateMachineStatus(machine *clusterv1.Machine) error {
+func (li *MachineActuator) updateMachineStatus(machine *clusterapi.Machine) error {
 	log := li.Logger.WithValues("machine-name", machine.Name)
 	vm, err := li.cm.conn.instanceIfExists(machine)
 	if err != nil {

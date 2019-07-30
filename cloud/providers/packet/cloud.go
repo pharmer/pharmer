@@ -12,7 +12,7 @@ import (
 	"pharmer.dev/cloud/pkg/credential"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/cloud"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type cloudConnector struct {
@@ -102,7 +102,7 @@ func (conn *cloudConnector) importPublicKey() (string, error) {
 	return sk.ID, nil
 }
 
-func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, script string) (*api.NodeInfo, error) {
+func (conn *cloudConnector) CreateInstance(machine *clusterapi.Machine, script string) (*api.NodeInfo, error) {
 	log := conn.Logger
 
 	machineConfig, err := machineProviderFromProviderSpec(machine.Spec.ProviderSpec)
@@ -183,7 +183,7 @@ func serverIDFromProviderID(providerID string) (string, error) {
 	return split[2], nil
 }
 
-func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*packngo.Device, error) {
+func (conn *cloudConnector) instanceIfExists(machine *clusterapi.Machine) (*packngo.Device, error) {
 	devices, _, err := conn.client.Devices.List(conn.Cluster.ClusterConfig().Cloud.Project, nil)
 	if err != nil {
 		return nil, err

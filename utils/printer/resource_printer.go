@@ -15,7 +15,7 @@ import (
 	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
 	"pharmer.dev/cloud/pkg/credential"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 // ref: k8s.io/kubernetes/pkg/kubectl/resource_printer.go
@@ -161,7 +161,7 @@ func (h *HumanReadablePrinter) printCluster(item *api.Cluster, w io.Writer, opti
 	return PrintNewline(w)
 }
 
-func (h *HumanReadablePrinter) printMachineSet(item *clusterv1.MachineSet, w io.Writer, options PrintOptions) error {
+func (h *HumanReadablePrinter) printMachineSet(item *clusterapi.MachineSet, w io.Writer, options PrintOptions) error {
 	name := item.Name
 
 	if _, err := fmt.Fprintf(w, "%s\t", name); err != nil {

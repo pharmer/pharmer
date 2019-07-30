@@ -8,11 +8,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"pharmer.dev/pharmer/cloud/utils/certificates"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 // ClusterConfigFromProviderSpec unmarshals a provider config into an AWS Cluster type
-func ClusterConfigFromProviderSpec(providerConfig clusterv1.ProviderSpec) (*GCEClusterProviderSpec, error) {
+func ClusterConfigFromProviderSpec(providerConfig clusterapi.ProviderSpec) (*GCEClusterProviderSpec, error) {
 	var config GCEClusterProviderSpec
 	if providerConfig.Value == nil {
 		return &config, nil
@@ -39,7 +39,7 @@ func ClusterStatusFromProviderStatus(extension *runtime.RawExtension) (*GCEClust
 }
 
 // MachineSpecFromProviderSpec unmarshals a raw extension into an AWS machine type
-func MachineConfigFromProviderSpec(providerConfig clusterv1.ProviderSpec) (*GCEMachineProviderSpec, error) {
+func MachineConfigFromProviderSpec(providerConfig clusterapi.ProviderSpec) (*GCEMachineProviderSpec, error) {
 	var config GCEMachineProviderSpec
 	if providerConfig.Value == nil {
 		return &config, nil
@@ -109,7 +109,7 @@ func EncodeClusterSpec(spec *GCEClusterProviderSpec) (*runtime.RawExtension, err
 }
 
 // SetGCEClusterProvidreConfig sets default gce cluster providerSpec
-func SetGCEclusterProviderConfig(cluster *clusterv1.Cluster, project string, certs *certificates.Certificates) error {
+func SetGCEclusterProviderConfig(cluster *clusterapi.Cluster, project string, certs *certificates.Certificates) error {
 	conf := &GCEClusterProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GCEProviderGroupName + "/" + GCEProviderAPIVersion,

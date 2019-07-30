@@ -8,11 +8,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type machineFileStore struct {
-	container map[string]*clusterv1.Machine
+	container map[string]*clusterapi.Machine
 	cluster   string
 
 	mux sync.Mutex
@@ -28,18 +28,18 @@ func (s *machineFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *machineFileStore) List(opts metav1.ListOptions) ([]*clusterv1.Machine, error) {
+func (s *machineFileStore) List(opts metav1.ListOptions) ([]*clusterapi.Machine, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
-	result := make([]*clusterv1.Machine, 0)
+	result := make([]*clusterapi.Machine, 0)
 	for k := range s.container {
 		result = append(result, s.container[k])
 	}
 	return result, nil
 }
 
-func (s *machineFileStore) Get(name string) (*clusterv1.Machine, error) {
+func (s *machineFileStore) Get(name string) (*clusterapi.Machine, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -57,7 +57,7 @@ func (s *machineFileStore) Get(name string) (*clusterv1.Machine, error) {
 	return item, nil
 }
 
-func (s *machineFileStore) Create(obj *clusterv1.Machine) (*clusterv1.Machine, error) {
+func (s *machineFileStore) Create(obj *clusterapi.Machine) (*clusterapi.Machine, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -83,7 +83,7 @@ func (s *machineFileStore) Create(obj *clusterv1.Machine) (*clusterv1.Machine, e
 	return obj, err
 }
 
-func (s *machineFileStore) Update(obj *clusterv1.Machine) (*clusterv1.Machine, error) {
+func (s *machineFileStore) Update(obj *clusterapi.Machine) (*clusterapi.Machine, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -122,7 +122,7 @@ func (s *machineFileStore) Delete(name string) error {
 	return nil
 }
 
-func (s *machineFileStore) UpdateStatus(obj *clusterv1.Machine) (*clusterv1.Machine, error) {
+func (s *machineFileStore) UpdateStatus(obj *clusterapi.Machine) (*clusterapi.Machine, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}

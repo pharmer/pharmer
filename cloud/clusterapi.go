@@ -16,7 +16,7 @@ import (
 	"pharmer.dev/pharmer/cloud/utils/kube"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/phases"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
 
@@ -152,7 +152,7 @@ func (ca *ClusterAPI) updateProviderStatus() error {
 	})
 }
 
-func (ca *ClusterAPI) updateMachineStatus(namespace string, masterMachine *clusterv1.Machine) error {
+func (ca *ClusterAPI) updateMachineStatus(namespace string, masterMachine *clusterapi.Machine) error {
 	return wait.PollImmediate(api.RetryInterval, api.RetryTimeout, func() (bool, error) {
 		m, err := ca.clusterapiClient.ClusterV1alpha1().Machines(namespace).Get(masterMachine.Name, metav1.GetOptions{})
 		if err != nil {

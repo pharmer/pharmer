@@ -20,7 +20,7 @@ import (
 	clusterapiGCE "pharmer.dev/pharmer/apis/v1alpha1/gce"
 	proconfig "pharmer.dev/pharmer/apis/v1alpha1/gce"
 	"pharmer.dev/pharmer/cloud"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
@@ -577,7 +577,7 @@ func (conn *cloudConnector) createDisk(name, diskType string, sizeGb int64) (str
 	return name, nil
 }
 
-func (conn *cloudConnector) getMasterInstance(machine *clusterv1.Machine) (bool, error) {
+func (conn *cloudConnector) getMasterInstance(machine *clusterapi.Machine) (bool, error) {
 	if r1, err := conn.computeService.Instances.Get(conn.Cluster.Spec.Config.Cloud.Project, conn.Cluster.Spec.Config.Cloud.Zone, machine.Name).Do(); err != nil {
 		conn.Logger.Info("Retrieved master instance", "resp", r1, "error", err)
 		return false, err
@@ -585,7 +585,7 @@ func (conn *cloudConnector) getMasterInstance(machine *clusterv1.Machine) (bool,
 	return true, nil
 }
 
-func (conn *cloudConnector) createMasterIntance(machine *clusterv1.Machine, script string) (string, error) {
+func (conn *cloudConnector) createMasterIntance(machine *clusterapi.Machine, script string) (string, error) {
 	// MachineType:  "projects/tigerworks-kube/zones/us-central1-b/machineTypes/n1-standard-1",
 	// Zone:         "projects/tigerworks-kube/zones/us-central1-b",
 
@@ -683,7 +683,7 @@ func (conn *cloudConnector) createMasterIntance(machine *clusterv1.Machine, scri
 	return r1.Name, nil
 }
 
-func (conn *cloudConnector) deleteMaster(machines []*clusterv1.Machine) error {
+func (conn *cloudConnector) deleteMaster(machines []*clusterapi.Machine) error {
 	size := len(machines)
 	errorCh := make(chan error, size)
 
@@ -692,7 +692,7 @@ func (conn *cloudConnector) deleteMaster(machines []*clusterv1.Machine) error {
 	wg.Add(size)
 
 	for _, machine := range machines {
-		go func(machine *clusterv1.Machine) {
+		go func(machine *clusterapi.Machine) {
 			defer wg.Done()
 
 			conn.Logger.Info("Deleting machine", "machine-name", machine.Name)

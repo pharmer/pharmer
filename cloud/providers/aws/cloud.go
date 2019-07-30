@@ -28,7 +28,7 @@ import (
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	clusterapi_aws "pharmer.dev/pharmer/apis/v1alpha1/aws"
 	"pharmer.dev/pharmer/cloud"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
@@ -1366,7 +1366,7 @@ func (conn *cloudConnector) getMaster(name string) (bool, error) {
 	return true, err
 }
 
-func (conn *cloudConnector) startMaster(machine *clusterv1.Machine, privateSubnetID, script string) (*ec2.Instance, error) {
+func (conn *cloudConnector) startMaster(machine *clusterapi.Machine, privateSubnetID, script string) (*ec2.Instance, error) {
 	sshKeyName := conn.Cluster.Spec.Config.Cloud.SSHKeyName
 
 	if err := conn.detectUbuntuImage(); err != nil {

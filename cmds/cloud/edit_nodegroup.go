@@ -21,7 +21,7 @@ import (
 	"pharmer.dev/pharmer/utils"
 	"pharmer.dev/pharmer/utils/editor"
 	"pharmer.dev/pharmer/utils/printer"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func NewCmdEditNodeGroup(out, outErr io.Writer) *cobra.Command {
@@ -58,7 +58,7 @@ func RunUpdateNodeGroup(machinesetStore store.MachineSetStore, opts *options.Nod
 	if opts.File != "" {
 		fileName := opts.File
 
-		var local *clusterv1.MachineSet
+		var local *clusterapi.MachineSet
 		if err := cloud.ReadFileAs(fileName, &local); err != nil {
 			return err
 		}
@@ -103,7 +103,7 @@ func RunUpdateNodeGroup(machinesetStore store.MachineSetStore, opts *options.Nod
 	return editNodeGroup(machinesetStore, opts, original, errOut)
 }
 
-func editNodeGroup(machinesetStore store.MachineSetStore, opts *options.NodeGroupEditConfig, original *clusterv1.MachineSet, errOut io.Writer) error {
+func editNodeGroup(machinesetStore store.MachineSetStore, opts *options.NodeGroupEditConfig, original *clusterapi.MachineSet, errOut io.Writer) error {
 
 	o, err := printer.NewEditPrinter(opts.Output)
 	if err != nil {
@@ -168,7 +168,7 @@ func editNodeGroup(machinesetStore store.MachineSetStore, opts *options.NodeGrou
 				return nil
 			}
 
-			var updated *clusterv1.MachineSet
+			var updated *clusterapi.MachineSet
 			err = yaml.Unmarshal(editor.StripComments(edited), &updated)
 			if err != nil {
 				containsError = true
@@ -191,7 +191,7 @@ func editNodeGroup(machinesetStore store.MachineSetStore, opts *options.NodeGrou
 	return editFn()
 }
 
-func UpdateNodeGroup(machinesetStore store.MachineSetStore, original, updated *clusterv1.MachineSet) error {
+func UpdateNodeGroup(machinesetStore store.MachineSetStore, original, updated *clusterapi.MachineSet) error {
 	originalByte, err := yaml.Marshal(original)
 	if err != nil {
 		return err

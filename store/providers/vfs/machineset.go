@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type machineSetFileStore struct {
@@ -30,8 +30,8 @@ func (s *machineSetFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *machineSetFileStore) List(opts metav1.ListOptions) ([]*clusterv1.MachineSet, error) {
-	result := make([]*clusterv1.MachineSet, 0)
+func (s *machineSetFileStore) List(opts metav1.ListOptions) ([]*clusterapi.MachineSet, error) {
+	result := make([]*clusterapi.MachineSet, 0)
 	cursor := stow.CursorStart
 	for {
 		page, err := s.container.Browse(s.resourceHome()+string(os.PathSeparator), string(os.PathSeparator), cursor, pageSize)
@@ -43,7 +43,7 @@ func (s *machineSetFileStore) List(opts metav1.ListOptions) ([]*clusterv1.Machin
 			if err != nil {
 				return nil, errors.Errorf("failed to list node groups. Reason: %v", err)
 			}
-			var obj clusterv1.MachineSet
+			var obj clusterapi.MachineSet
 			err = json.NewDecoder(r).Decode(&obj)
 			if err != nil {
 				return nil, errors.Errorf("failed to list node groups. Reason: %v", err)
@@ -59,7 +59,7 @@ func (s *machineSetFileStore) List(opts metav1.ListOptions) ([]*clusterv1.Machin
 	return result, nil
 }
 
-func (s *machineSetFileStore) Get(name string) (*clusterv1.MachineSet, error) {
+func (s *machineSetFileStore) Get(name string) (*clusterapi.MachineSet, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -78,7 +78,7 @@ func (s *machineSetFileStore) Get(name string) (*clusterv1.MachineSet, error) {
 	}
 	defer r.Close()
 
-	var existing clusterv1.MachineSet
+	var existing clusterapi.MachineSet
 	err = json.NewDecoder(r).Decode(&existing)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (s *machineSetFileStore) Get(name string) (*clusterv1.MachineSet, error) {
 	return &existing, nil
 }
 
-func (s *machineSetFileStore) Create(obj *clusterv1.MachineSet) (*clusterv1.MachineSet, error) {
+func (s *machineSetFileStore) Create(obj *clusterapi.MachineSet) (*clusterapi.MachineSet, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -114,7 +114,7 @@ func (s *machineSetFileStore) Create(obj *clusterv1.MachineSet) (*clusterv1.Mach
 	return obj, err
 }
 
-func (s *machineSetFileStore) Update(obj *clusterv1.MachineSet) (*clusterv1.MachineSet, error) {
+func (s *machineSetFileStore) Update(obj *clusterapi.MachineSet) (*clusterapi.MachineSet, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -154,7 +154,7 @@ func (s *machineSetFileStore) Delete(name string) error {
 	return s.container.RemoveItem(path)
 }
 
-func (s *machineSetFileStore) UpdateStatus(obj *clusterv1.MachineSet) (*clusterv1.MachineSet, error) {
+func (s *machineSetFileStore) UpdateStatus(obj *clusterapi.MachineSet) (*clusterapi.MachineSet, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -181,7 +181,7 @@ func (s *machineSetFileStore) UpdateStatus(obj *clusterv1.MachineSet) (*clusterv
 	}
 	defer r.Close()
 
-	var existing clusterv1.MachineSet
+	var existing clusterapi.MachineSet
 	err = json.NewDecoder(r).Decode(&existing)
 	if err != nil {
 		return nil, err

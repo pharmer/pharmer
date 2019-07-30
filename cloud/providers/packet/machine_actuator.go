@@ -13,7 +13,7 @@ import (
 	"k8s.io/klog/klogr"
 	packetconfig "pharmer.dev/pharmer/apis/v1alpha1/packet"
 	"pharmer.dev/pharmer/cloud"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/controller/machine"
 	"sigs.k8s.io/cluster-api/pkg/kubeadm"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -62,7 +62,7 @@ func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
 	}
 }
 
-func (packet *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (packet *MachineActuator) Create(_ context.Context, cluster *clusterapi.Cluster, machine *clusterapi.Machine) error {
 	log := packet.cm.Logger.WithValues("machine-name", machine.Name)
 	log.Info("call for creating machine")
 
@@ -118,7 +118,7 @@ func (packet *MachineActuator) Create(_ context.Context, cluster *clusterv1.Clus
 	return nil
 }
 
-func (packet *MachineActuator) updateMachineStatus(machine *clusterv1.Machine) error {
+func (packet *MachineActuator) updateMachineStatus(machine *clusterapi.Machine) error {
 	log := packet.cm.Logger
 	vm, err := packet.cm.conn.instanceIfExists(machine)
 	if err != nil {
@@ -169,7 +169,7 @@ func (packet *MachineActuator) getKubeadmToken() (string, error) {
 	return strings.TrimSpace(token), nil
 }
 
-func machineProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*packetconfig.PacketMachineProviderSpec, error) {
+func machineProviderFromProviderSpec(providerSpec clusterapi.ProviderSpec) (*packetconfig.PacketMachineProviderSpec, error) {
 	var config packetconfig.PacketMachineProviderSpec
 	if err := yaml.Unmarshal(providerSpec.Value.Raw, &config); err != nil {
 		return nil, err
@@ -177,7 +177,7 @@ func machineProviderFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*pack
 	return &config, nil
 }
 
-func (packet *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (packet *MachineActuator) Delete(_ context.Context, cluster *clusterapi.Cluster, machine *clusterapi.Machine) error {
 	log := packet.cm.Logger.WithValues("machine-name", machine.Name)
 	log.Info("call for deleting machine")
 	var err error
@@ -201,7 +201,7 @@ func (packet *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Clus
 	return nil
 }
 
-func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (packet *MachineActuator) Update(_ context.Context, cluster *clusterapi.Cluster, machine *clusterapi.Machine) error {
 	log := packet.cm.Logger.WithValues("machine-name", machine.Name)
 	log.Info("updating machine")
 
@@ -237,7 +237,7 @@ func (packet *MachineActuator) Update(_ context.Context, cluster *clusterv1.Clus
 	return nil
 }
 
-func (packet *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
+func (packet *MachineActuator) Exists(ctx context.Context, cluster *clusterapi.Cluster, machine *clusterapi.Machine) (bool, error) {
 	log := packet.cm.Logger.WithValues("machine-name", machine.Name)
 	log.Info("call for checking machine existence")
 	var err error

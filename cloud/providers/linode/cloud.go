@@ -16,7 +16,7 @@ import (
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	linode_config "pharmer.dev/pharmer/apis/v1alpha1/linode"
 	"pharmer.dev/pharmer/cloud"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 var errLBNotFound = errors.New("loadbalancer not found")
@@ -84,7 +84,7 @@ func (conn *cloudConnector) waitForStatus(id int, status linodego.InstanceStatus
 	})
 }
 
-func (conn *cloudConnector) getStartupScriptID(machine *clusterv1.Machine) (int, error) {
+func (conn *cloudConnector) getStartupScriptID(machine *clusterapi.Machine) (int, error) {
 	machineConfig, err := linode_config.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return 0, err
@@ -106,7 +106,7 @@ func (conn *cloudConnector) getStartupScriptID(machine *clusterv1.Machine) (int,
 	return scripts[0].ID, nil
 }
 
-func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterv1.Machine, script string) (int, error) {
+func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterapi.Machine, script string) (int, error) {
 	machineConfig, err := linode_config.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return 0, err
@@ -166,7 +166,7 @@ func (conn *cloudConnector) DeleteStackScript(machineName string, role string) e
 	return nil
 }
 
-func (conn *cloudConnector) CreateInstance(machine *clusterv1.Machine, script string) (*api.NodeInfo, error) {
+func (conn *cloudConnector) CreateInstance(machine *clusterapi.Machine, script string) (*api.NodeInfo, error) {
 	if _, err := conn.createOrUpdateStackScript(machine, script); err != nil {
 		return nil, err
 	}
@@ -246,7 +246,7 @@ func instanceIDFromProviderID(providerID string) (int, error) {
 	return strconv.Atoi(split[2])
 }
 
-func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*linodego.Instance, error) {
+func (conn *cloudConnector) instanceIfExists(machine *clusterapi.Machine) (*linodego.Instance, error) {
 	lds, err := conn.client.ListInstances(context.Background(), nil)
 	if err != nil {
 		return nil, err

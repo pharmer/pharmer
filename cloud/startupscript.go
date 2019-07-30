@@ -14,7 +14,6 @@ import (
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
@@ -65,7 +64,7 @@ type TemplateData struct {
 	ControlPlaneJoin     bool
 }
 
-func NewNodeTemplateData(cm Interface, machine *clusterv1.Machine, token string) TemplateData {
+func NewNodeTemplateData(cm Interface, machine *clusterapi.Machine, token string) TemplateData {
 	certs := cm.GetCertificates()
 	cluster := cm.GetCluster()
 
@@ -97,7 +96,7 @@ func NewNodeTemplateData(cm Interface, machine *clusterv1.Machine, token string)
 	return cm.NewNodeTemplateData(machine, token, td)
 }
 
-func NewMasterTemplateData(cm Interface, machine *clusterv1.Machine, token string) TemplateData {
+func NewMasterTemplateData(cm Interface, machine *clusterapi.Machine, token string) TemplateData {
 	td := NewNodeTemplateData(cm, machine, "")
 	td.KubeletExtraArgs["node-labels"] = api.NodeLabels{
 		api.NodePoolKey: machine.Name,

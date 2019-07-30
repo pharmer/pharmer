@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type machineXormStore struct {
@@ -19,13 +19,13 @@ type machineXormStore struct {
 
 var _ store.MachineStore = &machineXormStore{}
 
-func (s *machineXormStore) List(opts metav1.ListOptions) ([]*clusterv1.Machine, error) {
+func (s *machineXormStore) List(opts metav1.ListOptions) ([]*clusterapi.Machine, error) {
 	cluster, err := s.getCluster()
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]*clusterv1.Machine, 0)
+	result := make([]*clusterapi.Machine, 0)
 	var machines []Machine
 	err = s.engine.Where(`"cluster_id" = ?`, cluster.ID).Find(&machines)
 	if err != nil {
@@ -42,7 +42,7 @@ func (s *machineXormStore) List(opts metav1.ListOptions) ([]*clusterv1.Machine, 
 	return result, nil
 }
 
-func (s *machineXormStore) Get(name string) (*clusterv1.Machine, error) {
+func (s *machineXormStore) Get(name string) (*clusterapi.Machine, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -67,7 +67,7 @@ func (s *machineXormStore) Get(name string) (*clusterv1.Machine, error) {
 	return decodeMachine(m)
 }
 
-func (s *machineXormStore) Create(obj *clusterv1.Machine) (*clusterv1.Machine, error) {
+func (s *machineXormStore) Create(obj *clusterapi.Machine) (*clusterapi.Machine, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -105,7 +105,7 @@ func (s *machineXormStore) Create(obj *clusterv1.Machine) (*clusterv1.Machine, e
 	return obj, err
 }
 
-func (s *machineXormStore) Update(obj *clusterv1.Machine) (*clusterv1.Machine, error) {
+func (s *machineXormStore) Update(obj *clusterapi.Machine) (*clusterapi.Machine, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -156,7 +156,7 @@ func (s *machineXormStore) Delete(name string) error {
 	return err
 }
 
-func (s *machineXormStore) UpdateStatus(obj *clusterv1.Machine) (*clusterv1.Machine, error) {
+func (s *machineXormStore) UpdateStatus(obj *clusterapi.Machine) (*clusterapi.Machine, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}

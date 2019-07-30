@@ -11,7 +11,7 @@ import (
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/cloud/utils/kube"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func Apply(scope *Scope) error {
@@ -328,7 +328,7 @@ func ApplyUpgrade(s *Scope) error {
 	}
 
 	Cluster := s.Cluster
-	var masterMachine *clusterv1.Machine
+	var masterMachine *clusterapi.Machine
 	masterName := fmt.Sprintf("%v-master", Cluster.Name)
 	masterMachine, err = s.StoreProvider.Machine(Cluster.Name).Get(masterName)
 	if err != nil {
@@ -358,7 +358,7 @@ func ApplyUpgrade(s *Scope) error {
 		return err
 	}
 
-	var machineSets []*clusterv1.MachineSet
+	var machineSets []*clusterapi.MachineSet
 	machineSets, err = s.StoreProvider.MachineSet(Cluster.Name).List(metav1.ListOptions{})
 	if err != nil {
 		return err
@@ -383,7 +383,7 @@ func ApplyUpgrade(s *Scope) error {
 	return err
 }
 
-func nodeCount(machineSets []*clusterv1.MachineSet) int32 {
+func nodeCount(machineSets []*clusterapi.MachineSet) int32 {
 	var count int32
 	for _, machineSet := range machineSets {
 		count += *machineSet.Spec.Replicas
