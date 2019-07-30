@@ -5,7 +5,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"pharmer.dev/pharmer/store"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type machineSetXormStore struct {
@@ -15,15 +15,15 @@ type machineSetXormStore struct {
 
 var _ store.MachineSetStore = &machineSetXormStore{}
 
-func (s *machineSetXormStore) List(opts metav1.ListOptions) ([]*clusterv1.MachineSet, error) {
+func (s *machineSetXormStore) List(opts metav1.ListOptions) ([]*clusterapi.MachineSet, error) {
 	return nil, nil
 }
 
-func (s *machineSetXormStore) Get(name string) (*clusterv1.MachineSet, error) {
+func (s *machineSetXormStore) Get(name string) (*clusterapi.MachineSet, error) {
 	return nil, nil
 }
 
-func (s *machineSetXormStore) Create(obj *clusterv1.MachineSet) (*clusterv1.MachineSet, error) {
+func (s *machineSetXormStore) Create(obj *clusterapi.MachineSet) (*clusterapi.MachineSet, error) {
 	return nil, nil
 	/*if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
@@ -56,7 +56,7 @@ func (s *machineSetXormStore) Create(obj *clusterv1.MachineSet) (*clusterv1.Mach
 	return obj, err*/
 }
 
-func (s *machineSetXormStore) Update(obj *clusterv1.MachineSet) (*clusterv1.MachineSet, error) {
+func (s *machineSetXormStore) Update(obj *clusterapi.MachineSet) (*clusterapi.MachineSet, error) {
 	return nil, nil
 }
 
@@ -71,6 +71,6 @@ func (s *machineSetXormStore) Delete(name string) error {
 	return err
 }
 
-func (s *machineSetXormStore) UpdateStatus(obj *clusterv1.MachineSet) (*clusterv1.MachineSet, error) {
+func (s *machineSetXormStore) UpdateStatus(obj *clusterapi.MachineSet) (*clusterapi.MachineSet, error) {
 	return nil, nil
 }

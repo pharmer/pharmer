@@ -5,11 +5,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 // ClusterConfigFromProviderSpec unmarshals a provider config into an DigitalOcean Cluster type
-func ClusterConfigFromProviderSpec(providerConfig clusterv1.ProviderSpec) (*DigitalOceanClusterProviderSpec, error) {
+func ClusterConfigFromProviderSpec(providerConfig clusterapi.ProviderSpec) (*DigitalOceanClusterProviderSpec, error) {
 	var config DigitalOceanClusterProviderSpec
 	if providerConfig.Value == nil {
 		return &config, nil
@@ -36,7 +36,7 @@ func ClusterStatusFromProviderStatus(extension *runtime.RawExtension) (*DigitalO
 }
 
 // MachineSpecFromProviderSpec unmarshals a raw extension into an DigitalOcean machine type
-func MachineConfigFromProviderSpec(providerConfig clusterv1.ProviderSpec) (*DigitalOceanMachineProviderSpec, error) {
+func MachineConfigFromProviderSpec(providerConfig clusterapi.ProviderSpec) (*DigitalOceanMachineProviderSpec, error) {
 	var config DigitalOceanMachineProviderSpec
 	if providerConfig.Value == nil {
 		return &config, nil
@@ -135,7 +135,7 @@ func EncodeClusterSpec(spec *DigitalOceanClusterProviderSpec) (*runtime.RawExten
 }
 
 //func (c *Cluster) SetLinodeProviderConfig(cluster *clusterapi.Cluster, config *ClusterConfig) error {
-func SetDigitalOceanClusterProviderConfig(cluster *clusterv1.Cluster) error {
+func SetDigitalOceanClusterProviderConfig(cluster *clusterapi.Cluster) error {
 	conf := &DigitalOceanClusterProviderSpec{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: DigitalOceanProviderGroupName + "/" + DigitalOceanProviderAPIVersion,
@@ -147,7 +147,7 @@ func SetDigitalOceanClusterProviderConfig(cluster *clusterv1.Cluster) error {
 		return err
 
 	}
-	cluster.Spec.ProviderSpec = clusterv1.ProviderSpec{
+	cluster.Spec.ProviderSpec = clusterapi.ProviderSpec{
 		Value: &runtime.RawExtension{
 			Raw: bytes,
 		},

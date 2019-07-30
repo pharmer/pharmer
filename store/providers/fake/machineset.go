@@ -8,11 +8,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type machineSetFileStore struct {
-	container map[string]*clusterv1.MachineSet
+	container map[string]*clusterapi.MachineSet
 	cluster   string
 
 	mux sync.Mutex
@@ -28,18 +28,18 @@ func (s *machineSetFileStore) resourceID(name string) string {
 	return filepath.Join(s.resourceHome(), name+".json")
 }
 
-func (s *machineSetFileStore) List(opts metav1.ListOptions) ([]*clusterv1.MachineSet, error) {
+func (s *machineSetFileStore) List(opts metav1.ListOptions) ([]*clusterapi.MachineSet, error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 
-	result := make([]*clusterv1.MachineSet, 0)
+	result := make([]*clusterapi.MachineSet, 0)
 	for k := range s.container {
 		result = append(result, s.container[k])
 	}
 	return result, nil
 }
 
-func (s *machineSetFileStore) Get(name string) (*clusterv1.MachineSet, error) {
+func (s *machineSetFileStore) Get(name string) (*clusterapi.MachineSet, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -57,7 +57,7 @@ func (s *machineSetFileStore) Get(name string) (*clusterv1.MachineSet, error) {
 	return item, nil
 }
 
-func (s *machineSetFileStore) Create(obj *clusterv1.MachineSet) (*clusterv1.MachineSet, error) {
+func (s *machineSetFileStore) Create(obj *clusterapi.MachineSet) (*clusterapi.MachineSet, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -83,7 +83,7 @@ func (s *machineSetFileStore) Create(obj *clusterv1.MachineSet) (*clusterv1.Mach
 	return obj, err
 }
 
-func (s *machineSetFileStore) Update(obj *clusterv1.MachineSet) (*clusterv1.MachineSet, error) {
+func (s *machineSetFileStore) Update(obj *clusterapi.MachineSet) (*clusterapi.MachineSet, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}
@@ -122,7 +122,7 @@ func (s *machineSetFileStore) Delete(name string) error {
 	return nil
 }
 
-func (s *machineSetFileStore) UpdateStatus(obj *clusterv1.MachineSet) (*clusterv1.MachineSet, error) {
+func (s *machineSetFileStore) UpdateStatus(obj *clusterapi.MachineSet) (*clusterapi.MachineSet, error) {
 	if s.cluster == "" {
 		return nil, errors.New("missing cluster name")
 	}

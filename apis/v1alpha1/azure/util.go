@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 // ClusterConfigFromProviderSpec unmarshals a provider config into an Azure Cluster type
-func ClusterConfigFromProviderSpec(providerConfig clusterv1.ProviderSpec) (*AzureClusterProviderSpec, error) {
+func ClusterConfigFromProviderSpec(providerConfig clusterapi.ProviderSpec) (*AzureClusterProviderSpec, error) {
 	var config AzureClusterProviderSpec
 	if providerConfig.Value == nil {
 		return &config, nil
@@ -35,7 +35,7 @@ func ClusterStatusFromProviderStatus(extension *runtime.RawExtension) (*AzureClu
 }
 
 // MachineSpecFromClusterSpec unmarslalls a provider config into Azure Machine type
-func MachineSpecFromProviderSpec(providerConfig clusterv1.ProviderSpec) (*AzureMachineProviderSpec, error) {
+func MachineSpecFromProviderSpec(providerConfig clusterapi.ProviderSpec) (*AzureMachineProviderSpec, error) {
 	var config AzureMachineProviderSpec
 	if providerConfig.Value == nil {
 		return &config, nil

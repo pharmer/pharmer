@@ -8,16 +8,13 @@ import (
 	"text/tabwriter"
 
 	"github.com/appscode/go/log"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+	semver "gomodules.xyz/version"
+	"k8s.io/client-go/kubernetes"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-
-	//	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
-	//client "sigs.k8s.io/Cluster-api/pkg/client/clientset_generated/clientset/typed/Cluster/v1alpha1"
-	"github.com/pkg/errors"
-	semver "gomodules.xyz/version"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type GenericUpgradeManager struct {
@@ -135,7 +132,7 @@ func (upm *GenericUpgradeManager) GetAvailableUpgrades() ([]*api.Upgrade, error)
 	return upgrades, nil
 }
 
-func (upm *GenericUpgradeManager) ExecuteSSHCommand(command string, machine *clusterv1.Machine) (string, error) {
+func (upm *GenericUpgradeManager) ExecuteSSHCommand(command string, machine *clusterapi.Machine) (string, error) {
 	cfg, err := GetSSHConfig(upm.storeProvider, upm.cluster.Name, machine.Name)
 	if err != nil {
 		return "", err
@@ -271,7 +268,7 @@ func (upm *GenericUpgradeManager) Apply() error {
 	return nil
 }
 
-func (upm *GenericUpgradeManager) MasterUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) error {
+func (upm *GenericUpgradeManager) MasterUpgrade(oldMachine *clusterapi.Machine, newMachine *clusterapi.Machine) error {
 	// ref: https://stackoverflow.com/a/2831449/244009
 	steps := []string{
 		`echo "#!/bin/bash" > /usr/bin/pharmer.sh`,
@@ -326,7 +323,7 @@ func (upm *GenericUpgradeManager) MasterUpgrade(oldMachine *clusterv1.Machine, n
 	return nil
 }
 
-func (upm *GenericUpgradeManager) NodeUpgrade(oldMachine *clusterv1.Machine, newMachine *clusterv1.Machine) (err error) {
+func (upm *GenericUpgradeManager) NodeUpgrade(oldMachine *clusterapi.Machine, newMachine *clusterapi.Machine) (err error) {
 	if oldMachine.Spec.Versions.Kubelet != newMachine.Spec.Versions.Kubelet {
 		desiredVersion, _ := semver.NewVersion(newMachine.Spec.Versions.Kubelet)
 		currentVersion, _ := semver.NewVersion(oldMachine.Spec.Versions.Kubelet)

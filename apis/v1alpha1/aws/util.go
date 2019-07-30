@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 // ClusterConfigFromProviderSpec unmarshals a provider config into an AWS Cluster type
-func ClusterConfigFromProviderSpec(providerConfig clusterv1.ProviderSpec) (*AWSClusterProviderSpec, error) {
+func ClusterConfigFromProviderSpec(providerConfig clusterapi.ProviderSpec) (*AWSClusterProviderSpec, error) {
 	var config AWSClusterProviderSpec
 	if providerConfig.Value == nil {
 		return &config, nil
@@ -35,7 +35,7 @@ func ClusterStatusFromProviderStatus(extension *runtime.RawExtension) (*AWSClust
 }
 
 // MachineSpecFromProviderSpec unmarshals a raw extension into an AWS machine type
-func MachineConfigFromProviderSpec(providerConfig clusterv1.ProviderSpec) (*AWSMachineProviderSpec, error) {
+func MachineConfigFromProviderSpec(providerConfig clusterapi.ProviderSpec) (*AWSMachineProviderSpec, error) {
 	var config AWSMachineProviderSpec
 	if providerConfig.Value == nil {
 		return &config, nil

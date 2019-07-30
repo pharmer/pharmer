@@ -9,7 +9,7 @@ import (
 	"k8s.io/kubernetes/pkg/printers"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func (d *humanReadableDescriber) describeCluster(machinesetStore store.MachineSetStore, item *api.Cluster, describerSettings describe.DescriberSettings) (string, error) {
@@ -26,7 +26,7 @@ func (d *humanReadableDescriber) describeCluster(machinesetStore store.MachineSe
 	})
 }
 
-func describeMachineSets(nodeGroups []*clusterv1.MachineSet, out io.Writer) {
+func describeMachineSets(nodeGroups []*clusterapi.MachineSet, out io.Writer) {
 	if len(nodeGroups) == 0 {
 		fmt.Fprint(out, "No NodeGroup.\n")
 		return

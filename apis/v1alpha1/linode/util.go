@@ -6,11 +6,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 // ClusterConfigFromProviderSpec unmarshals a provider config into an Linode Cluster type
-func ClusterConfigFromProviderSpec(providerConfig clusterv1.ProviderSpec) (*LinodeClusterProviderSpec, error) {
+func ClusterConfigFromProviderSpec(providerConfig clusterapi.ProviderSpec) (*LinodeClusterProviderSpec, error) {
 	var config LinodeClusterProviderSpec
 	if providerConfig.Value == nil {
 		return &config, nil
@@ -37,7 +36,7 @@ func ClusterStatusFromProviderStatus(extension *runtime.RawExtension) (*LinodeCl
 }
 
 // MachineSpecFromProviderSpec unmarshals a raw extension into an Linode machine type
-func MachineConfigFromProviderSpec(providerConfig clusterv1.ProviderSpec) (*LinodeMachineProviderSpec, error) {
+func MachineConfigFromProviderSpec(providerConfig clusterapi.ProviderSpec) (*LinodeMachineProviderSpec, error) {
 	var config LinodeMachineProviderSpec
 	if providerConfig.Value == nil {
 		return &config, nil

@@ -2,27 +2,22 @@ package digitalocean
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/klogr"
-	"pharmer.dev/pharmer/cloud"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	"sigs.k8s.io/cluster-api/pkg/controller/machine"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	//	"k8s.io/client-go/kubernetes"
-	"fmt"
-
-	corev1 "k8s.io/api/core/v1"
-
-	//kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	doCapi "pharmer.dev/pharmer/apis/v1alpha1/digitalocean"
+	"pharmer.dev/pharmer/cloud"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/controller/machine"
 	"sigs.k8s.io/cluster-api/pkg/kubeadm"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 func init() {
@@ -68,7 +63,7 @@ func NewMachineActuator(params MachineActuatorParams) *MachineActuator {
 	}
 }
 
-func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (do *MachineActuator) Create(_ context.Context, cluster *clusterapi.Cluster, machine *clusterapi.Machine) error {
 	log := do.Logger.WithValues("machine-name", machine.Name)
 	log.Info("call for creating machine")
 
@@ -123,7 +118,7 @@ func (do *MachineActuator) Create(_ context.Context, cluster *clusterv1.Cluster,
 	return nil
 }
 
-func (do *MachineActuator) updateMachineStatus(machine *clusterv1.Machine) error {
+func (do *MachineActuator) updateMachineStatus(machine *clusterapi.Machine) error {
 	log := do.Logger
 	droplet, err := do.cm.conn.instanceIfExists(machine)
 	if err != nil {
@@ -182,7 +177,7 @@ func (do *MachineActuator) getKubeadmToken() (string, error) {
 	return strings.TrimSpace(token), nil
 }
 
-func (do *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (do *MachineActuator) Delete(_ context.Context, cluster *clusterapi.Cluster, machine *clusterapi.Machine) error {
 	log := do.Logger.WithValues("machine-name", machine.Name)
 	log.Info("call for deleting machine")
 	var err error
@@ -207,7 +202,7 @@ func (do *MachineActuator) Delete(_ context.Context, cluster *clusterv1.Cluster,
 	return nil
 }
 
-func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster, goalMachine *clusterv1.Machine) error {
+func (do *MachineActuator) Update(_ context.Context, cluster *clusterapi.Cluster, goalMachine *clusterapi.Machine) error {
 	log := do.Logger.WithValues("machine-name", goalMachine.Name)
 	log.Info("call for updating machine")
 
@@ -244,7 +239,7 @@ func (do *MachineActuator) Update(_ context.Context, cluster *clusterv1.Cluster,
 	return nil
 }
 
-func (do *MachineActuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
+func (do *MachineActuator) Exists(ctx context.Context, cluster *clusterapi.Cluster, machine *clusterapi.Machine) (bool, error) {
 	log := do.Logger.WithValues("machine-name", machine.Name)
 	log.Info("Checking existence of machine")
 	var err error

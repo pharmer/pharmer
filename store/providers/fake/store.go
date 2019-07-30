@@ -8,7 +8,7 @@ import (
 	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
@@ -71,7 +71,7 @@ func (s *FakeStore) MachineSet(cluster string) store.MachineSetStore {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	if _, found := s.machineSet[cluster]; !found {
-		s.machineSet[cluster] = &machineSetFileStore{container: map[string]*clusterv1.MachineSet{}, cluster: cluster}
+		s.machineSet[cluster] = &machineSetFileStore{container: map[string]*clusterapi.MachineSet{}, cluster: cluster}
 	}
 	return s.machineSet[cluster]
 }
@@ -80,7 +80,7 @@ func (s *FakeStore) Machine(cluster string) store.MachineStore {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	if _, found := s.machine[cluster]; !found {
-		s.machine[cluster] = &machineFileStore{container: map[string]*clusterv1.Machine{}, cluster: cluster}
+		s.machine[cluster] = &machineFileStore{container: map[string]*clusterapi.Machine{}, cluster: cluster}
 	}
 	return s.machine[cluster]
 }

@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 var ErrNotImplemented = errors.New("not implemented")
@@ -57,21 +57,21 @@ type ClusterStore interface {
 }
 
 type MachineStore interface {
-	List(opts metav1.ListOptions) ([]*clusterv1.Machine, error)
-	Get(name string) (*clusterv1.Machine, error)
-	Create(obj *clusterv1.Machine) (*clusterv1.Machine, error)
-	Update(obj *clusterv1.Machine) (*clusterv1.Machine, error)
+	List(opts metav1.ListOptions) ([]*clusterapi.Machine, error)
+	Get(name string) (*clusterapi.Machine, error)
+	Create(obj *clusterapi.Machine) (*clusterapi.Machine, error)
+	Update(obj *clusterapi.Machine) (*clusterapi.Machine, error)
 	Delete(name string) error
-	UpdateStatus(obj *clusterv1.Machine) (*clusterv1.Machine, error)
+	UpdateStatus(obj *clusterapi.Machine) (*clusterapi.Machine, error)
 }
 
 type MachineSetStore interface {
-	List(opts metav1.ListOptions) ([]*clusterv1.MachineSet, error)
-	Get(name string) (*clusterv1.MachineSet, error)
-	Create(obj *clusterv1.MachineSet) (*clusterv1.MachineSet, error)
-	Update(obj *clusterv1.MachineSet) (*clusterv1.MachineSet, error)
+	List(opts metav1.ListOptions) ([]*clusterapi.MachineSet, error)
+	Get(name string) (*clusterapi.MachineSet, error)
+	Create(obj *clusterapi.MachineSet) (*clusterapi.MachineSet, error)
+	Update(obj *clusterapi.MachineSet) (*clusterapi.MachineSet, error)
 	Delete(name string) error
-	UpdateStatus(obj *clusterv1.MachineSet) (*clusterv1.MachineSet, error)
+	UpdateStatus(obj *clusterapi.MachineSet) (*clusterapi.MachineSet, error)
 }
 
 type CertificateStore interface {

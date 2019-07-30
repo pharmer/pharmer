@@ -10,7 +10,7 @@ import (
 	"pharmer.dev/pharmer/cmds/cloud/options"
 	"pharmer.dev/pharmer/store"
 	"pharmer.dev/pharmer/utils/printer"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 func NewCmdGetNodeGroup(out io.Writer) *cobra.Command {
@@ -92,8 +92,8 @@ func runGetNodeGroup(storeProvider store.ResourceInterface, opts *options.NodeGr
 }
 
 // TODO: move?
-func getMachineSetList(machinesetStore store.MachineSetStore, args ...string) ([]*clusterv1.MachineSet, error) {
-	var machineSetList []*clusterv1.MachineSet
+func getMachineSetList(machinesetStore store.MachineSetStore, args ...string) ([]*clusterapi.MachineSet, error) {
+	var machineSetList []*clusterapi.MachineSet
 	if len(args) != 0 {
 		for _, arg := range args {
 			ms, err := machinesetStore.Get(arg)

@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/cloud"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
@@ -111,7 +111,7 @@ func (cm *ClusterManager) GetMasterSKU(totalNodes int32) string {
 	return sku
 }
 
-func (cm *ClusterManager) EnsureMaster(leaderMachine *clusterv1.Machine) error {
+func (cm *ClusterManager) EnsureMaster(leaderMachine *clusterapi.Machine) error {
 	cm.Logger.Info("creating Master instance")
 
 	found, _ := cm.conn.getMasterInstance(leaderMachine)
@@ -147,7 +147,7 @@ func (cm *ClusterManager) ApplyDelete() error {
 	}
 
 	var nodeDiskNames = make([]string, 0)
-	var masterMachines []*clusterv1.Machine
+	var masterMachines []*clusterapi.Machine
 
 	for _, machine := range machines {
 		if !util.IsControlPlaneMachine(machine) {

@@ -19,7 +19,7 @@ import (
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	doCapi "pharmer.dev/pharmer/apis/v1alpha1/digitalocean"
 	"pharmer.dev/pharmer/cloud"
-	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
@@ -169,7 +169,7 @@ func (conn *cloudConnector) createTags() error {
 	return nil
 }
 
-func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterv1.Machine, script string) error {
+func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *clusterapi.Machine, script string) error {
 	log := conn.Logger
 
 	machineConfig, err := doCapi.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
@@ -212,7 +212,7 @@ func (conn *cloudConnector) CreateInstance(cluster *api.Cluster, machine *cluste
 	return nil
 }
 
-func (conn *cloudConnector) instanceIfExists(machine *clusterv1.Machine) (*godo.Droplet, error) {
+func (conn *cloudConnector) instanceIfExists(machine *clusterapi.Machine) (*godo.Droplet, error) {
 	log := conn.Logger
 
 	droplets, _, err := conn.client.Droplets.List(context.Background(), &godo.ListOptions{})
