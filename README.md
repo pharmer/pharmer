@@ -7,9 +7,7 @@
 # pharmer
 <img src="https://raw.githubusercontent.com/cncf/artwork/master/projects/kubernetes/certified-kubernetes/1.13/color/certified-kubernetes-1.13-color.png" align="right" width="200px">Kubernetes Cluster Manager for [Kubeadm](https://github.com/kubernetes/kubeadm). Think `kops using kubeadm`!
 
-This project is spread over 5 repositories:
-
-- [pharmer/pre-k](https://github.com/pharmer/pre-k): Contains [a set of handy commands](https://github.com/pharmer/pre-k/blob/master/docs/reference/pre-k.md) that you run before `kubeadm init`.
+This project is spread over 3 repositories:
 
 - [pharmer/pharmer](https://pharmer.dev/pharmer): A [Kops](https://github.com/kubernetes/kops) [like](https://pharmer.dev/pharmer/blob/master/docs/reference/pharmer.md) cluster manager using `Kubeadm`. Supported cloud providers:
   - [Amazon Web Services](https://aws.amazon.com/)
@@ -25,6 +23,8 @@ This project is spread over 5 repositories:
   - [Softlayer](http://www.softlayer.com/)
   - [Vultr](https://www.vultr.com/) -->
 
+- [pharmer/pre-k](https://github.com/pharmer/pre-k): Contains [a set of handy commands](https://github.com/pharmer/pre-k/blob/master/docs/reference/pre-k.md) that you run before `kubeadm init`.
+
 - [pharmer/cloud-controller-manager](https://pharmer.dev/cloud-controller-manager): Implements Cloud Controller manager for following cloud providers:
   - [Linode](https://www.linode.com/)
   - [Packet](https://www.packet.net/)
@@ -33,25 +33,18 @@ This project is spread over 5 repositories:
   <!-- - [Softlayer](http://www.softlayer.com/) -->
   <!-- - [Vultr](https://www.vultr.com/) -->
 
-- [pharmer/flexvolumes](https://github.com/pharmer/flexvolumes): Implements Flex Volume drivers for following cloud providers:
-  - [DigitalOcean](https://www.digitalocean.com/)
-  - [Linode](https://www.linode.com/)
-  - [Packet](https://www.packet.net/)
-
-- [pharmer/swanc](https://github.com/pharmer/swanc): StrongSwan based VPN Controller for Kubernetes
-
 ## User Guide
- - [Create & manage a Kubernetes cluster in AWS EC2](/docs/cloud/aws/README.md)
- - [Create & manage a Kubernetes cluster in Amazon EKS](/docs/cloud/eks/README.md)
- - [Create & manage a Kubernetes cluster in Google Cloud](/docs/cloud/gce/README.md)
- - [Create & manage a Kubernetes cluster in Google Kubernetes Engine](/docs/cloud/gke/README.md)
- - [Create & manage a Kubernetes cluster in Microsoft Azure](/docs/cloud/azure/README.md)
- - [Create & manage a Kubernetes cluster in Azure Kubernetes Servic](/docs/cloud/aks/README.md)
- - [Create & manage a Kubernetes cluster in DigitalOcean](/docs/cloud/digitalocean/README.md)
- - [Create & manage a Kubernetes cluster in Linode](/docs/cloud/linode/README.md)
- - [Create & manage a Kubernetes cluster in Packet](/docs/cloud/packet/README.md)
- <!-- - [Create & manage a Kubernetes cluster in Scaleway](/docs/cloud/scaleway/README.md)
- - [Create & manage a Kubernetes cluster in Vultr](/docs/cloud/vultr/README.md) -->
+ - [Create & manage a Kubernetes cluster in AWS EC2](https://github.com/pharmer/docs/tree/master/docs/guides/aws/README.md)
+ - [Create & manage a Kubernetes cluster in Amazon EKS](https://github.com/pharmer/docs/tree/master/docs/guides/eks/README.md)
+ - [Create & manage a Kubernetes cluster in Google Cloud](https://github.com/pharmer/docs/tree/master/docs/guides/gce/README.md)
+ - [Create & manage a Kubernetes cluster in Google Kubernetes Engine](https://github.com/pharmer/docs/tree/master/docs/guides/gke/README.md)
+ - [Create & manage a Kubernetes cluster in Microsoft Azure](https://github.com/pharmer/docs/tree/master/docs/guides/azure/README.md)
+ - [Create & manage a Kubernetes cluster in Azure Kubernetes Servic](https://github.com/pharmer/docs/tree/master/docs/guides/aks/README.md)
+ - [Create & manage a Kubernetes cluster in DigitalOcean](https://github.com/pharmer/docs/tree/master/docs/guides/digitalocean/README.md)
+ - [Create & manage a Kubernetes cluster in Linode](https://github.com/pharmer/docs/tree/master/docs/guides/linode/README.md)
+ - [Create & manage a Kubernetes cluster in Packet](https://github.com/pharmer/docs/tree/master/docs/guides/packet/README.md)
+ <!-- - [Create & manage a Kubernetes cluster in Scaleway](https://github.com/pharmer/docs/tree/master/docs/cloud/scaleway/README.md)
+ - [Create & manage a Kubernetes cluster in Vultr](https://github.com/pharmer/docs/tree/master/docs/cloud/vultr/README.md) -->
 
 ## Supported Versions Matrix
 
