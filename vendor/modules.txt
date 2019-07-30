@@ -48,10 +48,10 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/appscode/go v0.0.0-20190722173419-e454bf744023
 github.com/appscode/go/version
-github.com/appscode/go/log
 github.com/appscode/go/sets
 github.com/appscode/go/encoding/yaml
 github.com/appscode/go/ioutil
+github.com/appscode/go/log
 github.com/appscode/go/term
 github.com/appscode/go/types
 github.com/appscode/go/wait

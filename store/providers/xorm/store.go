@@ -81,14 +81,15 @@ func (s *XormStore) Operations() store.OperationStore {
 func newPGEngine(user, password, host string, port int64, dbName string) (*xorm.Engine, error) {
 	cnnstr := fmt.Sprintf("user=%v password=%v host=%v port=%v dbname=%v sslmode=disable",
 		user, password, host, port, dbName)
-	engine, err := xorm.NewEngine("postgres", cnnstr)
+	x, err := xorm.NewEngine("postgres", cnnstr)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	engine.SetMaxIdleConns(0)
-	engine.DB().SetConnMaxLifetime(10 * time.Minute)
+	x.SetMapper(core.GonicMapper{})
+	x.SetMaxIdleConns(0)
+	x.DB().SetConnMaxLifetime(10 * time.Minute)
 	// engine.ShowSQL(system.Env() == system.DevEnvironment)
 	//engine.ShowSQL(true)
-	engine.Logger().SetLevel(core.LOG_DEBUG)
-	return engine, nil
+	x.Logger().SetLevel(core.LOG_DEBUG)
+	return x, nil
 }
