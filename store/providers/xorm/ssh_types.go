@@ -1,8 +1,6 @@
 package xorm
 
 import (
-	"fmt"
-
 	"gomodules.xyz/secrets/types"
 )
 
@@ -29,7 +27,8 @@ func EncodeSSHKey(pub, priv []byte) (*SSHKey, error) {
 	secretId := types.RotateQuarterly()
 	cipher, err := encryptData(secretId, priv)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt: %v", err)
+		log.Error(err, "failed to encrypt ssh key")
+		return nil, err
 	}
 	return &SSHKey{
 		PublicKey:   string(pub),
@@ -42,7 +41,8 @@ func EncodeSSHKey(pub, priv []byte) (*SSHKey, error) {
 func DecodeSSHKey(in *SSHKey) ([]byte, []byte, error) {
 	data, err := decryptData(in.SecretID, in.PrivateKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to decrypt: %v", err)
+		log.Error(err, "failed to decrypt ssh key")
+		return nil, nil, err
 	}
 	return []byte(in.PublicKey), data, nil
 }

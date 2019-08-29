@@ -2,7 +2,6 @@ package xorm
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"gomodules.xyz/secrets/types"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -28,12 +27,14 @@ func EncodeMachine(in *clusterapi.Machine) (*Machine, error) {
 	secretId := types.RotateQuarterly()
 	data, err := json.Marshal(in)
 	if err != nil {
+		log.Error(err, "failed to marshal machine data")
 		return nil, err
 	}
 
 	cipher, err := encryptData(secretId, data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt: %v", err)
+		log.Error(err, "failed to encrypt machine data")
+		return nil, err
 	}
 
 	return &Machine{
@@ -48,11 +49,13 @@ func EncodeMachine(in *clusterapi.Machine) (*Machine, error) {
 func DecodeMachine(in *Machine) (*clusterapi.Machine, error) {
 	data, err := decryptData(in.SecretID, in.Data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt: %v", err)
+		log.Error(err, "failed to decrypt machine data")
+		return nil, err
 	}
 
 	var obj clusterapi.Machine
 	if err := json.Unmarshal(data, &obj); err != nil {
+		log.Error(err, "failed to unmarshal machine data")
 		return nil, err
 	}
 	return &obj, nil

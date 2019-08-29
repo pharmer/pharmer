@@ -2,7 +2,6 @@ package xorm
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"gomodules.xyz/secrets/types"
 	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
@@ -29,12 +28,14 @@ func EncodeCredential(in *cloudapi.Credential) (*Credential, error) {
 	secretId := types.RotateQuarterly()
 	data, err := json.Marshal(in)
 	if err != nil {
+		log.Error(err, "failed to marshal credential")
 		return nil, err
 	}
 
 	cipher, err := encryptData(secretId, data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt: %v", err)
+		log.Error(err, "failed to encrypt credential")
+		return nil, err
 	}
 
 	return &Credential{
@@ -48,10 +49,12 @@ func EncodeCredential(in *cloudapi.Credential) (*Credential, error) {
 func DecodeCredential(in *Credential) (*cloudapi.Credential, error) {
 	data, err := decryptData(in.SecretID, in.Data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt: %v", err)
+		log.Error(err, "failed to decrypt credential")
+		return nil, err
 	}
 	var obj cloudapi.Credential
 	if err := json.Unmarshal(data, &obj); err != nil {
+		log.Error(err, "failed to unmarshal credential")
 		return nil, err
 	}
 	return &obj, nil

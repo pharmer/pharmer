@@ -2,7 +2,6 @@ package xorm
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/appscode/go/types"
 	stypes "gomodules.xyz/secrets/types"
@@ -31,12 +30,14 @@ func EncodeCluster(in *api.Cluster) (*Cluster, error) {
 	secretId := stypes.RotateQuarterly()
 	data, err := json.Marshal(in)
 	if err != nil {
+		log.Error(err, "failed to marshal cluster data")
 		return nil, err
 	}
 
 	cipher, err := encryptData(secretId, data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt: %v", err)
+		log.Error(err, "failed to encrypt cluster data")
+		return nil, err
 	}
 
 	cluster := &Cluster{
@@ -55,10 +56,12 @@ func EncodeCluster(in *api.Cluster) (*Cluster, error) {
 func DecodeCluster(in *Cluster) (*api.Cluster, error) {
 	data, err := decryptData(in.SecretID, in.Data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt: %v", err)
+		log.Error(err, "failed to decrypt cluster data")
+		return nil, err
 	}
 	var obj api.Cluster
 	if err := json.Unmarshal(data, &obj); err != nil {
+		log.Error(err, "failed to unmarshal cluster data")
 		return nil, err
 	}
 	return &obj, nil

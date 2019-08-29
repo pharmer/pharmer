@@ -49,7 +49,8 @@ func init() {
 			q.Set("master_key_url", masterKeyURL)
 			u.RawQuery = q.Encode()
 			if err := xkms.Register(u.String(), engine); err != nil {
-				return nil, errors.Errorf("failed to register xkms keeper. Reason: %v", err)
+				log.Error(err, "failed to register xkms keeper")
+				return nil, err
 			}
 			return New(engine), nil
 		}
