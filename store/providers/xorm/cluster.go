@@ -28,7 +28,7 @@ func (s *clusterXormStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 	}
 
 	for _, cluster := range clusters {
-		decode, err := decodeCluster(&cluster)
+		decode, err := DecodeCluster(&cluster)
 		if err != nil {
 			return nil, errors.Errorf("failed to list clusters. Reason: %v", err)
 		}
@@ -62,7 +62,7 @@ func (s *clusterXormStore) Get(name string) (*api.Cluster, error) {
 	if !found {
 		return nil, errors.Errorf("cluster `%s` does not exists", name)
 	}
-	return decodeCluster(cluster)
+	return DecodeCluster(cluster)
 }
 
 func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
@@ -85,7 +85,7 @@ func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 	}
 
 	obj.CreationTimestamp = metav1.Time{Time: time.Now()}
-	cluster, err := encodeCluster(obj)
+	cluster, err := EncodeCluster(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (s *clusterXormStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 		return nil, errors.Errorf("cluster `%s` does not exists", obj.Name)
 	}
 
-	cluster, err := encodeCluster(obj)
+	cluster, err := EncodeCluster(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -148,13 +148,13 @@ func (s *clusterXormStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 	if !found {
 		return nil, errors.Errorf("cluster `%s` does not exist", obj.Name)
 	}
-	existing, err := decodeCluster(cluster)
+	existing, err := DecodeCluster(cluster)
 	if err != nil {
 		return nil, err
 	}
 	existing.Status = obj.Status
 
-	updated, err := encodeCluster(existing)
+	updated, err := EncodeCluster(existing)
 	if err != nil {
 		return nil, err
 	}

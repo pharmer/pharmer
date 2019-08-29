@@ -33,7 +33,7 @@ func (s *machineXormStore) List(opts metav1.ListOptions) ([]*clusterapi.Machine,
 	}
 
 	for _, m := range machines {
-		decode, err := decodeMachine(&m)
+		decode, err := DecodeMachine(&m)
 		if err != nil {
 			return nil, errors.Errorf("failed to list machines. Reason: %v", err)
 		}
@@ -64,7 +64,7 @@ func (s *machineXormStore) Get(name string) (*clusterapi.Machine, error) {
 		return nil, errors.Errorf("credential `%s` already exists", name)
 	}
 
-	return decodeMachine(m)
+	return DecodeMachine(m)
 }
 
 func (s *machineXormStore) Create(obj *clusterapi.Machine) (*clusterapi.Machine, error) {
@@ -95,7 +95,7 @@ func (s *machineXormStore) Create(obj *clusterapi.Machine) (*clusterapi.Machine,
 	}
 
 	obj.CreationTimestamp = metav1.Time{Time: time.Now()}
-	machine, err := encodeMachine(obj)
+	machine, err := EncodeMachine(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (s *machineXormStore) Update(obj *clusterapi.Machine) (*clusterapi.Machine,
 		return nil, errors.Errorf("machine `%s` not found", obj.Name)
 	}
 
-	machine, err := encodeMachine(obj)
+	machine, err := EncodeMachine(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -184,13 +184,13 @@ func (s *machineXormStore) UpdateStatus(obj *clusterapi.Machine) (*clusterapi.Ma
 		return nil, errors.Errorf("Machine `%s` does not exist", obj.Name)
 	}
 
-	existing, err := decodeMachine(machine)
+	existing, err := DecodeMachine(machine)
 	if err != nil {
 		return nil, err
 	}
 	existing.Status = obj.Status
 
-	updated, err := encodeMachine(existing)
+	updated, err := EncodeMachine(existing)
 	if err != nil {
 		return nil, err
 	}

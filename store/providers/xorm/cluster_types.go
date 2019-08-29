@@ -2,8 +2,10 @@ package xorm
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/appscode/go/types"
+	stypes "gomodules.xyz/secrets/types"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 )
 
@@ -12,8 +14,9 @@ type Cluster struct {
 	ID        int64  `xorm:"pk autoincr"`
 	OwnerID   int64  `xorm:"UNIQUE(s)"`
 	Name      string `xorm:"UNIQUE(s) INDEX NOT NULL"`
-	Data      string `xorm:"text 'data'"`
+	Data      []byte `xorm:"blob NOT NULL"`
 	IsPrivate bool   `xorm:"INDEX"`
+	SecretID  string
 
 	CreatedUnix int64  `xorm:"INDEX created"`
 	UpdatedUnix int64  `xorm:"INDEX updated"`
@@ -24,37 +27,38 @@ func (Cluster) TableName() string {
 	return "ac_cluster"
 }
 
-func encodeCluster(in *api.Cluster) (*Cluster, error) {
+func EncodeCluster(in *api.Cluster) (*Cluster, error) {
+	secretId := stypes.RotateQuarterly()
+	data, err := json.Marshal(in)
+	if err != nil {
+		return nil, err
+	}
+
+	cipher, err := encryptData(secretId, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt: %v", err)
+	}
+
 	cluster := &Cluster{
-		//Kind:              in.Kind,
-		//APIVersion:        in.APIVersion,
-		Name: in.Name,
-		//UID:               string(in.UID),
-		//ResourceVersion:   in.ResourceVersion,
-		//Generation:        in.Generation,
+		Name:        in.Name,
+		Data:        cipher,
+		SecretID:    secretId,
 		DeletedUnix: nil,
 	}
 	if in.DeletionTimestamp != nil {
 		cluster.DeletedUnix = types.Int64P(in.DeletionTimestamp.Time.Unix())
 	}
-	/*labels, err := json.Marshal(in.ObjectMeta.Labels)
-	if err != nil {
-		return nil, err
-	}*/
-	//cluster.Labels = string(labels)
-
-	data, err := json.Marshal(in)
-	if err != nil {
-		return nil, err
-	}
-	cluster.Data = string(data)
 
 	return cluster, nil
 }
 
-func decodeCluster(in *Cluster) (*api.Cluster, error) {
+func DecodeCluster(in *Cluster) (*api.Cluster, error) {
+	data, err := decryptData(in.SecretID, in.Data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt: %v", err)
+	}
 	var obj api.Cluster
-	if err := json.Unmarshal([]byte(in.Data), &obj); err != nil {
+	if err := json.Unmarshal(data, &obj); err != nil {
 		return nil, err
 	}
 	return &obj, nil

@@ -3,9 +3,11 @@ package xorm
 import (
 	"crypto/rsa"
 	"crypto/x509"
+	"fmt"
 	"time"
 
 	"gomodules.xyz/cert"
+	"gomodules.xyz/secrets/types"
 )
 
 type Certificate struct {
@@ -14,8 +16,9 @@ type Certificate struct {
 	ClusterID   int64 `xorm:"NOT NULL 'cluster_id'"`
 	ClusterName string
 	UID         string `xorm:"uid UNIQUE"`
-	Cert        string `xorm:"text NOT NULL"`
-	Key         string `xorm:"text NOT NULL"`
+	Cert        []byte `xorm:"blob NOT NULL"`
+	Key         []byte `xorm:"blob NOT NULL"`
+	SecretID    string
 
 	CreatedUnix int64  `xorm:"INDEX created"`
 	UpdatedUnix int64  `xorm:"INDEX updated"`
@@ -26,22 +29,51 @@ func (Certificate) TableName() string {
 	return "ac_cluster_certificate"
 }
 
-func encodeCertificate(crt *x509.Certificate, key *rsa.PrivateKey) *Certificate {
-	return &Certificate{
-		Cert:        string(cert.EncodeCertPEM(crt)),
-		Key:         string(cert.EncodePrivateKeyPEM(key)),
-		UpdatedUnix: time.Now().Unix(),
-		DeletedUnix: nil,
-	}
+func (certificate *Certificate) FillCertFields(name, uid, clusterName string, clusterId, createdAt int64) {
+	certificate.Name = name
+	certificate.UID = uid
+	certificate.ClusterName = clusterName
+	certificate.ClusterID = clusterId
+	certificate.CreatedUnix = createdAt
 }
 
-func decodeCertificate(in *Certificate) (*x509.Certificate, *rsa.PrivateKey, error) {
-	crt, err := cert.ParseCertsPEM([]byte(in.Cert))
+func EncodeCertificate(crt *x509.Certificate, key *rsa.PrivateKey) (*Certificate, error) {
+	secretId := types.RotateQuarterly()
+	certCipher, err := encryptData(secretId, cert.EncodeCertPEM(crt))
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt: %v", err)
+	}
+
+	keyCipher, err := encryptData(secretId, cert.EncodePrivateKeyPEM(key))
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt: %v", err)
+	}
+
+	return &Certificate{
+		Cert:        certCipher,
+		Key:         keyCipher,
+		SecretID:    secretId,
+		UpdatedUnix: time.Now().Unix(),
+		DeletedUnix: nil,
+	}, nil
+}
+
+func DecodeCertificate(in *Certificate) (*x509.Certificate, *rsa.PrivateKey, error) {
+	certData, err := decryptData(in.SecretID, in.Cert)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to decrypt: %v", err)
+	}
+	crt, err := cert.ParseCertsPEM(certData)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	key, err := cert.ParsePrivateKeyPEM([]byte(in.Key))
+	keyData, err := decryptData(in.SecretID, in.Key)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to decrypt: %v", err)
+	}
+
+	key, err := cert.ParsePrivateKeyPEM(keyData)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -2,16 +2,19 @@ package xorm
 
 import (
 	"encoding/json"
+	"fmt"
 
+	"gomodules.xyz/secrets/types"
 	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
 )
 
 type Credential struct {
-	ID      int64  `xorm:"pk autoincr"`
-	OwnerID int64  `xorm:"UNIQUE(s)"`
-	Name    string `xorm:"UNIQUE(s) INDEX NOT NULL"`
-	UID     string `xorm:"uid UNIQUE"`
-	Data    string `xorm:"text NOT NULL"`
+	ID       int64  `xorm:"pk autoincr"`
+	OwnerID  int64  `xorm:"UNIQUE(s)"`
+	Name     string `xorm:"UNIQUE(s) INDEX NOT NULL"`
+	UID      string `xorm:"uid UNIQUE"`
+	Data     []byte `xorm:"blob NOT NULL"`
+	SecretID string
 
 	CreatedUnix int64  `xorm:"INDEX created"`
 	UpdatedUnix int64  `xorm:"INDEX updated"`
@@ -22,37 +25,33 @@ func (Credential) TableName() string {
 	return "ac_cluster_credential"
 }
 
-func encodeCredential(in *cloudapi.Credential) (*Credential, error) {
-	cred := &Credential{
-		//Kind:              in.Kind,
-		//APIVersion:        in.APIVersion,
-		Name: in.Name,
-		//ResourceVersion:   in.ResourceVersion,
-		//Generation:        in.Generation,
-		DeletedUnix: nil,
-	}
-	/*label := map[string]string{
-		api.ResourceProviderCredential: in.Spec.Provider,
-	}
-
-	labels, err := json.Marshal(label)
-	if err != nil {
-		return nil, err
-	}
-	cred.Labels = string(labels)*/
-
+func EncodeCredential(in *cloudapi.Credential) (*Credential, error) {
+	secretId := types.RotateQuarterly()
 	data, err := json.Marshal(in)
 	if err != nil {
 		return nil, err
 	}
-	cred.Data = string(data)
 
-	return cred, nil
+	cipher, err := encryptData(secretId, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt: %v", err)
+	}
+
+	return &Credential{
+		Name:        in.Name,
+		Data:        cipher,
+		SecretID:    secretId,
+		DeletedUnix: nil,
+	}, nil
 }
 
-func decodeCredential(in *Credential) (*cloudapi.Credential, error) {
+func DecodeCredential(in *Credential) (*cloudapi.Credential, error) {
+	data, err := decryptData(in.SecretID, in.Data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt: %v", err)
+	}
 	var obj cloudapi.Credential
-	if err := json.Unmarshal([]byte(in.Data), &obj); err != nil {
+	if err := json.Unmarshal(data, &obj); err != nil {
 		return nil, err
 	}
 	return &obj, nil

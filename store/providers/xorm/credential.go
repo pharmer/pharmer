@@ -28,7 +28,7 @@ func (s *credentialXormStore) List(opts metav1.ListOptions) ([]*cloudapi.Credent
 		return nil, err
 	}
 	for _, credential := range credentials {
-		decode, err := decodeCredential(&credential)
+		decode, err := DecodeCredential(&credential)
 		if err != nil {
 			return nil, errors.Errorf("failed to list credentials. Reason: %v", err)
 		}
@@ -62,7 +62,7 @@ func (s *credentialXormStore) Get(name string) (*cloudapi.Credential, error) {
 		return nil, errors.Errorf("credential %s does not exists", name)
 	}
 
-	return decodeCredential(cred)
+	return DecodeCredential(cred)
 }
 
 func (s *credentialXormStore) Create(obj *cloudapi.Credential) (*cloudapi.Credential, error) {
@@ -83,7 +83,7 @@ func (s *credentialXormStore) Create(obj *cloudapi.Credential) (*cloudapi.Creden
 		return nil, errors.Errorf("credential `%s` already exists", obj.Name)
 	}
 	obj.CreationTimestamp = metav1.Time{Time: time.Now()}
-	cred, err := encodeCredential(obj)
+	cred, err := EncodeCredential(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (s *credentialXormStore) Update(obj *cloudapi.Credential) (*cloudapi.Creden
 		return nil, errors.Errorf("credential `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
-	cred, err := encodeCredential(obj)
+	cred, err := EncodeCredential(obj)
 	if err != nil {
 		return nil, err
 	}

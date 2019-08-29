@@ -1,5 +1,11 @@
 package xorm
 
+import (
+	"fmt"
+
+	"gomodules.xyz/secrets/types"
+)
+
 type SSHKey struct {
 	ID          int64
 	Name        string `xorm:"not null 'name'"`
@@ -7,7 +13,8 @@ type SSHKey struct {
 	ClusterName string `xorm:"not null 'cluster_name'"`
 	UID         string `xorm:"not null 'uid'"`
 	PublicKey   string `xorm:"text not null 'public_key'"`
-	PrivateKey  string `xorm:"text not null 'private_key'"`
+	PrivateKey  []byte `xorm:"blob not null 'private_key'"`
+	SecretID    string
 
 	CreatedUnix int64  `xorm:"INDEX created"`
 	UpdatedUnix int64  `xorm:"INDEX updated"`
@@ -18,14 +25,24 @@ func (SSHKey) TableName() string {
 	return "ac_cluster_ssh"
 }
 
-func encodeSSHKey(pub, priv []byte) *SSHKey {
+func EncodeSSHKey(pub, priv []byte) (*SSHKey, error) {
+	secretId := types.RotateQuarterly()
+	cipher, err := encryptData(secretId, priv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt: %v", err)
+	}
 	return &SSHKey{
 		PublicKey:   string(pub),
-		PrivateKey:  string(priv),
+		PrivateKey:  cipher,
+		SecretID:    secretId,
 		DeletedUnix: nil,
-	}
+	}, nil
 }
 
-func decodeSSHKey(in *SSHKey) ([]byte, []byte, error) {
-	return []byte(in.PublicKey), []byte(in.PrivateKey), nil
+func DecodeSSHKey(in *SSHKey) ([]byte, []byte, error) {
+	data, err := decryptData(in.SecretID, in.PrivateKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to decrypt: %v", err)
+	}
+	return []byte(in.PublicKey), data, nil
 }

@@ -44,7 +44,7 @@ func (s *certificateXormStore) Get(name string) (*x509.Certificate, *rsa.Private
 	if !found {
 		return nil, nil, errors.Errorf("certificate `%s` does not exist", name)
 	}
-	return decodeCertificate(certificate)
+	return DecodeCertificate(certificate)
 }
 
 func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *rsa.PrivateKey) error {
@@ -75,12 +75,11 @@ func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *r
 	if found {
 		return errors.Errorf("certificate `%s` already exists", name)
 	}
-	certificate = encodeCertificate(crt, key)
-	certificate.ClusterID = cluster.ID
-	certificate.Name = name
-	certificate.ClusterName = s.cluster
-	certificate.UID = string(uuid.NewUUID())
-	certificate.CreatedUnix = time.Now().Unix()
+	certificate, err = EncodeCertificate(crt, key)
+	if err != nil {
+		return err
+	}
+	certificate.FillCertFields(name, string(uuid.NewUUID()), s.cluster, cluster.ID, time.Now().Unix())
 	_, err = s.engine.Insert(certificate)
 
 	return err

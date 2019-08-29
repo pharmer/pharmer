@@ -29,11 +29,10 @@ require (
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
 	github.com/jpillora/go-ogle-analytics v0.0.0-20161213085824-14b04e0594ef
 	github.com/kr/pty v1.1.4 // indirect
-	github.com/lib/pq v1.1.1
+	github.com/lib/pq v1.2.0
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/linode/linodego v0.8.0
 	github.com/mailru/easyjson v0.0.0-20190403194419-1ea4449da983 // indirect
-	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/nats-io/stan.go v0.5.0
@@ -45,10 +44,12 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
 	go.etcd.io/bbolt v1.3.3 // indirect
+	gocloud.dev v0.16.0
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	gomodules.xyz/cert v1.0.0
 	gomodules.xyz/nats-logr v0.1.0
+	gomodules.xyz/secrets v0.1.1-0.20190826085453-748b851035cf
 	gomodules.xyz/stow v0.2.0
 	gomodules.xyz/union-logr v0.1.0
 	gomodules.xyz/version v0.0.0-20190507203204-7cec7ee542d3
