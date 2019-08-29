@@ -22,12 +22,14 @@ func init() {
 			dbCfg := cfg.Store.Postgres
 			engine, err := newPGEngine(dbCfg.User, dbCfg.Password, dbCfg.Host, dbCfg.Port, dbCfg.DbName)
 			if err != nil {
-				return nil, errors.Errorf("failed to connect xorm storage. Reason %v", err)
+				log.Error(err, "failed to connect to xorm storage")
+				return nil, err
 			}
 			log.Info("Connected to database", "db", dbCfg.DbName, "host", dbCfg.Host, "user", dbCfg.User)
 
 			if err := engine.Sync2(tables...); err != nil {
-				return nil, errors.Errorf("failed to synchronize tables. Reason %v", err)
+				log.Error(err, "failed to synchronize tables")
+				return nil, err
 			}
 
 			return New(engine), nil
