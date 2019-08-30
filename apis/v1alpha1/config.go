@@ -36,7 +36,7 @@ type PostgresSpec struct {
 	Port         int64  `json:"port,omitempty"`
 	User         string `json:"user,omitempty"`
 	Password     string `json:"password,omitempty"`
-	MasterKeyURL string `json:"master_key_url,omitempty"`
+	MasterKeyURL string `json:"masterKeyURL,omitempty"`
 }
 
 type StorageBackend struct {
