@@ -57,6 +57,7 @@ type setContextRequest struct {
 	pgPort         int64
 	pgUser         string
 	pgPassword     string
+	pgMasterKeyURL string
 }
 
 func newCmdCreate() *cobra.Command {
@@ -110,6 +111,7 @@ func newCmdCreate() *cobra.Command {
 	setCmd.Flags().Int64Var(&req.pgPort, "pg.port", int64(5432), "Postgres port number")
 	setCmd.Flags().StringVar(&req.pgUser, "pg.user", "", "Postgres database user")
 	setCmd.Flags().StringVar(&req.pgPassword, "pg.password", "", "Postgres user password")
+	setCmd.Flags().StringVar(&req.pgMasterKeyURL, "pg.master_key_url", "", "Master key url for kms")
 
 	return setCmd
 }
@@ -225,11 +227,12 @@ func setContext(req *setContextRequest, configPath string) {
 		}
 	case "postgres":
 		sb.Postgres = &api.PostgresSpec{
-			DbName:   req.pgDatabaseName,
-			Host:     req.pgHost,
-			Port:     req.pgPort,
-			User:     req.pgUser,
-			Password: req.pgPassword,
+			DbName:       req.pgDatabaseName,
+			Host:         req.pgHost,
+			Port:         req.pgPort,
+			User:         req.pgUser,
+			Password:     req.pgPassword,
+			MasterKeyURL: req.pgMasterKeyURL,
 		}
 	default:
 		term.Fatalln("Unknown provider:" + req.Provider)

@@ -37,8 +37,6 @@ func init() {
 
 			ds := fmt.Sprintf("user=%v password=%v host=%v port=%v dbname=%v sslmode=disable",
 				dbCfg.User, dbCfg.Password, dbCfg.Host, dbCfg.Port, dbCfg.DbName)
-			masterKeyURL := fmt.Sprintf("gcpkms://projects/%s/locations/%s/keyRings/%s/cryptoKeys/%s",
-				"ackube", "global", "gitea", "gitea-key")
 
 			u := url.URL{
 				Scheme: xkms.Scheme,
@@ -46,7 +44,7 @@ func init() {
 			q := u.Query()
 			q.Set("driver", core.POSTGRES)
 			q.Set("ds", ds)
-			q.Set("master_key_url", masterKeyURL)
+			q.Set("master_key_url", dbCfg.MasterKeyURL)
 			u.RawQuery = q.Encode()
 			if err := xkms.Register(u.String(), engine); err != nil {
 				log.Error(err, "failed to register xkms keeper")
