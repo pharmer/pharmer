@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	"gomodules.xyz/secrets/types"
-	"gomodules.xyz/secrets/xkms"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"pharmer.dev/pharmer/store"
 )
@@ -89,7 +88,6 @@ func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *r
 		return errors.Errorf("certificate `%s` already exists", name)
 	}
 
-	types.Config(xkms.RotateQuarterly)
 	certificate = &Certificate{
 		Name:        name,
 		ClusterID:   cluster.ID,

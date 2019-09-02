@@ -7,7 +7,6 @@ import (
 	"github.com/go-xorm/xorm"
 	"github.com/pkg/errors"
 	"gomodules.xyz/secrets/types"
-	"gomodules.xyz/secrets/xkms"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
@@ -104,7 +103,6 @@ func (s *machineXormStore) Create(obj *clusterapi.Machine) (*clusterapi.Machine,
 
 	obj.CreationTimestamp = metav1.Time{Time: time.Now()}
 
-	types.Config(xkms.RotateQuarterly)
 	data, err := json.Marshal(obj)
 	if err != nil {
 		log.Error(err, "failed to marshal machine data")
@@ -155,7 +153,6 @@ func (s *machineXormStore) Update(obj *clusterapi.Machine) (*clusterapi.Machine,
 		return nil, errors.Errorf("machine `%s` not found", obj.Name)
 	}
 
-	types.Config(xkms.RotateQuarterly)
 	data, err := json.Marshal(obj)
 	if err != nil {
 		log.Error(err, "failed to marshal machine data")
@@ -219,7 +216,6 @@ func (s *machineXormStore) UpdateStatus(obj *clusterapi.Machine) (*clusterapi.Ma
 	}
 	existing.Status = obj.Status
 
-	types.Config(xkms.RotateQuarterly)
 	data, err := json.Marshal(existing)
 	if err != nil {
 		log.Error(err, "failed to marshal machine")

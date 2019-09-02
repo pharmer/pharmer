@@ -8,7 +8,6 @@ import (
 	"github.com/go-xorm/xorm"
 	"github.com/pkg/errors"
 	"gomodules.xyz/secrets/types"
-	"gomodules.xyz/secrets/xkms"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
@@ -94,7 +93,6 @@ func (s *credentialXormStore) Create(obj *cloudapi.Credential) (*cloudapi.Creden
 	}
 	obj.CreationTimestamp = metav1.Time{Time: time.Now()}
 
-	types.Config(xkms.RotateQuarterly)
 	data, err := json.Marshal(obj)
 	if err != nil {
 		log.Error(err, "failed to marshal credential")
@@ -140,7 +138,6 @@ func (s *credentialXormStore) Update(obj *cloudapi.Credential) (*cloudapi.Creden
 		return nil, errors.Errorf("credential `%s` does not exist. Reason: %v", obj.Name, err)
 	}
 
-	types.Config(xkms.RotateQuarterly)
 	data, err := json.Marshal(obj)
 	if err != nil {
 		log.Error(err, "failed to marshal credential")

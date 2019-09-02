@@ -6,7 +6,6 @@ import (
 	"github.com/go-xorm/xorm"
 	"github.com/pkg/errors"
 	"gomodules.xyz/secrets/types"
-	"gomodules.xyz/secrets/xkms"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"pharmer.dev/pharmer/store"
 )
@@ -75,7 +74,6 @@ func (s *sshKeyXormStore) Create(name string, pubKey, privKey []byte) error {
 		return err
 	}
 
-	types.Config(xkms.RotateQuarterly)
 	sshKey = &SSHKey{
 		Name:        name,
 		ClusterID:   cluster.ID,

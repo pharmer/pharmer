@@ -21,11 +21,3 @@ type Certificate struct {
 func (Certificate) TableName() string {
 	return "ac_cluster_certificate"
 }
-
-func (certificate *Certificate) FillCertFields(name, uid, clusterName string, clusterId, createdAt int64) {
-	certificate.Name = name
-	certificate.UID = uid
-	certificate.ClusterName = clusterName
-	certificate.ClusterID = clusterId
-	certificate.CreatedUnix = createdAt
-}
