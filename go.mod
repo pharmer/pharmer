@@ -49,7 +49,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	gomodules.xyz/cert v1.0.0
 	gomodules.xyz/nats-logr v0.1.0
-	gomodules.xyz/secrets v0.1.1-0.20190826085453-748b851035cf
+	gomodules.xyz/secrets v0.2.2-0.20190902103609-7fbbd02d7e9d
 	gomodules.xyz/stow v0.2.0
 	gomodules.xyz/union-logr v0.1.0
 	gomodules.xyz/version v0.0.0-20190507203204-7cec7ee542d3

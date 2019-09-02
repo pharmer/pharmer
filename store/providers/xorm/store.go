@@ -50,6 +50,7 @@ func init() {
 				log.Error(err, "failed to register xkms keeper")
 				return nil, err
 			}
+			log.Info("xkms keeper registered successfully")
 			return New(engine), nil
 		}
 		return nil, errors.New("missing store configuration")

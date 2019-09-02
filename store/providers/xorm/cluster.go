@@ -1,11 +1,14 @@
 package xorm
 
 import (
+	"encoding/json"
 	"strconv"
 	"time"
 
 	"github.com/go-xorm/xorm"
 	"github.com/pkg/errors"
+	"gomodules.xyz/secrets/types"
+	"gomodules.xyz/secrets/xkms"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
@@ -28,11 +31,12 @@ func (s *clusterXormStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 	}
 
 	for _, cluster := range clusters {
-		decode, err := DecodeCluster(&cluster)
-		if err != nil {
-			return nil, errors.Errorf("failed to list clusters. Reason: %v", err)
+		apiCluster := new(api.Cluster)
+		if err := json.Unmarshal([]byte(cluster.Data.Data), apiCluster); err != nil {
+			log.Error(err, "failed to unmarshal cluster")
+			return nil, err
 		}
-		result = append(result, decode)
+		result = append(result, apiCluster)
 	}
 
 	return result, nil
@@ -62,7 +66,14 @@ func (s *clusterXormStore) Get(name string) (*api.Cluster, error) {
 	if !found {
 		return nil, errors.Errorf("cluster `%s` does not exists", name)
 	}
-	return DecodeCluster(cluster)
+
+	apiCluster := new(api.Cluster)
+	if err := json.Unmarshal([]byte(cluster.Data.Data), apiCluster); err != nil {
+		log.Error(err, "failed to unmarshal cluster")
+		return nil, err
+	}
+
+	return apiCluster, nil
 }
 
 func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
@@ -85,10 +96,24 @@ func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 	}
 
 	obj.CreationTimestamp = metav1.Time{Time: time.Now()}
-	cluster, err := EncodeCluster(obj)
+
+	types.Config(xkms.RotateQuarterly)
+	data, err := json.Marshal(obj)
 	if err != nil {
+		log.Error(err, "failed to marshal cluster")
 		return nil, err
 	}
+	cluster := &Cluster{
+		OwnerID: s.owner,
+		Name:    obj.Name,
+		Data: types.SecureString{
+			Data: string(data),
+		},
+		IsPrivate:   false,
+		CreatedUnix: obj.CreationTimestamp.Unix(),
+		DeletedUnix: nil,
+	}
+
 	_, err = s.engine.Insert(cluster)
 	return obj, err
 }
@@ -104,7 +129,11 @@ func (s *clusterXormStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 		return nil, err
 	}
 
-	found, err := s.engine.Get(&Cluster{Name: obj.Name, OwnerID: s.owner})
+	cluster := &Cluster{
+		Name:    obj.Name,
+		OwnerID: s.owner,
+	}
+	found, err := s.engine.Get(cluster)
 	if err != nil {
 		return nil, errors.Errorf("reason: %v", err)
 	}
@@ -112,10 +141,13 @@ func (s *clusterXormStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 		return nil, errors.Errorf("cluster `%s` does not exists", obj.Name)
 	}
 
-	cluster, err := EncodeCluster(obj)
+	types.Config(xkms.RotateQuarterly)
+	data, err := json.Marshal(obj)
 	if err != nil {
+		log.Error(err, "failed to marshal cluster")
 		return nil, err
 	}
+	cluster.Data.Data = string(data)
 
 	_, err = s.engine.Where(`name = ?`, obj.Name).Update(cluster)
 	return obj, err
@@ -148,16 +180,23 @@ func (s *clusterXormStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 	if !found {
 		return nil, errors.Errorf("cluster `%s` does not exist", obj.Name)
 	}
-	existing, err := DecodeCluster(cluster)
-	if err != nil {
+
+	existing := new(api.Cluster)
+	if err := json.Unmarshal([]byte(cluster.Data.Data), existing); err != nil {
+		log.Error(err, "failed to unmarshal cluster")
 		return nil, err
 	}
 	existing.Status = obj.Status
 
-	updated, err := EncodeCluster(existing)
+	types.Config(xkms.RotateQuarterly)
+	data, err := json.Marshal(existing)
 	if err != nil {
+		log.Error(err, "failed to marshal cluster")
 		return nil, err
 	}
-	_, err = s.engine.Where(`name = ?`, obj.Name).Where(`"owner_id"=?`, s.owner).Update(updated)
+
+	cluster.Data.Data = string(data)
+
+	_, err = s.engine.Where(`name = ?`, obj.Name).Where(`"owner_id"=?`, s.owner).Update(cluster)
 	return existing, err
 }

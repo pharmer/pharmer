@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
+	"time"
 
 	"gomodules.xyz/secrets/types"
 
@@ -219,4 +220,19 @@ type SecretKey struct {
 	Key types.SecureString `xorm:"text"`
 
 	CreatedUnix int64 `xorm:"INDEX created"`
+}
+
+// ref: https://play.golang.org/p/vMssfd6ZY8e
+
+func RotateDaily() string {
+	return Scheme + "://" + time.Now().UTC().Format("2006-01-02")
+}
+
+func RotateMonthly() string {
+	return Scheme + "://" + time.Now().UTC().Format("2006-01")
+}
+
+func RotateQuarterly() string {
+	t := time.Now().UTC()
+	return Scheme + "://" + fmt.Sprintf("%d-Q%d", t.Year(), (t.Month()-1)/3+1)
 }

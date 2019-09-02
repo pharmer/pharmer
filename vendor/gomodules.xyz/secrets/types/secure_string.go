@@ -42,7 +42,6 @@ func (s *SecureString) FromDB(data []byte) error {
 func (s *SecureString) ToDB() ([]byte, error) {
 	m.RLock()
 	fn := urlFn
-	rotate := rotateURL
 	m.RUnlock()
 
 	if s.URL == "" {
@@ -51,8 +50,6 @@ func (s *SecureString) ToDB() ([]byte, error) {
 		} else {
 			s.URL = fn()
 		}
-	} else if rotate && fn != nil {
-		s.URL = fn()
 	}
 
 	ctx := context.Background()

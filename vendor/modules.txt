@@ -457,7 +457,7 @@ gomodules.xyz/cert
 gomodules.xyz/jsonpatch/v2
 # gomodules.xyz/nats-logr v0.1.0
 gomodules.xyz/nats-logr
-# gomodules.xyz/secrets v0.1.1-0.20190826085453-748b851035cf
+# gomodules.xyz/secrets v0.2.2-0.20190902103609-7fbbd02d7e9d
 gomodules.xyz/secrets/types
 gomodules.xyz/secrets/xkms
 # gomodules.xyz/stow v0.2.0

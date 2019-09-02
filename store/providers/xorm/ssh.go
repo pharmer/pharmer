@@ -1,8 +1,12 @@
 package xorm
 
 import (
+	"time"
+
 	"github.com/go-xorm/xorm"
 	"github.com/pkg/errors"
+	"gomodules.xyz/secrets/types"
+	"gomodules.xyz/secrets/xkms"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"pharmer.dev/pharmer/store"
 )
@@ -39,7 +43,8 @@ func (s *sshKeyXormStore) Get(name string) ([]byte, []byte, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	return DecodeSSHKey(sshKey)
+
+	return []byte(sshKey.PublicKey), []byte(sshKey.PrivateKey.Data), nil
 }
 
 func (s *sshKeyXormStore) Create(name string, pubKey, privKey []byte) error {
@@ -69,14 +74,20 @@ func (s *sshKeyXormStore) Create(name string, pubKey, privKey []byte) error {
 	if err != nil {
 		return err
 	}
-	sshKey, err = EncodeSSHKey(pubKey, privKey)
-	if err != nil {
-		return err
+
+	types.Config(xkms.RotateQuarterly)
+	sshKey = &SSHKey{
+		Name:        name,
+		ClusterID:   cluster.ID,
+		ClusterName: cluster.Name,
+		UID:         string(uuid.NewUUID()),
+		PublicKey:   string(pubKey),
+		PrivateKey: types.SecureString{
+			Data: string(privKey),
+		},
+		CreatedUnix: time.Now().Unix(),
+		DeletedUnix: nil,
 	}
-	sshKey.Name = name
-	sshKey.ClusterName = s.cluster
-	sshKey.UID = string(uuid.NewUUID())
-	sshKey.ClusterID = cluster.ID
 
 	_, err = s.engine.Insert(sshKey)
 	return err
