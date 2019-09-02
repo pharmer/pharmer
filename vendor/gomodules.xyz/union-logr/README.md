@@ -36,7 +36,7 @@ func main(){
 For using [union-logr](https://github.com/gomodules/union-logr), you just need to do the followings:
 
 - Define some logger (i.e.: `glogr`, `klogr` etc.)
-- Pass those logger to `ulogr.NewUnionLogger` and use it like you are using a single logger.
+- Pass those logger to `ulogr.NewLogger` and use it like you are using a single logger.
 
 Thus, you can use multiple loggers at a time using a single [union-logr](https://github.com/gomodules/union-logr). 
 

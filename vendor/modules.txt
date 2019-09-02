@@ -27,10 +27,10 @@ github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-06-01/subscriptio
 # github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
 github.com/Azure/go-ansiterm/winterm
 github.com/Azure/go-ansiterm
-# github.com/Azure/go-autorest/autorest v0.5.0
+# github.com/Azure/go-autorest/autorest v0.7.0
 github.com/Azure/go-autorest/autorest
 github.com/Azure/go-autorest/autorest/azure
-# github.com/Azure/go-autorest/autorest/adal v0.2.0
+# github.com/Azure/go-autorest/autorest/adal v0.4.0
 github.com/Azure/go-autorest/autorest/adal
 # github.com/Azure/go-autorest/autorest/date v0.1.0
 github.com/Azure/go-autorest/autorest/date
@@ -40,7 +40,7 @@ github.com/Azure/go-autorest/autorest/to
 github.com/Azure/go-autorest/autorest/validation
 # github.com/Azure/go-autorest/logger v0.1.0
 github.com/Azure/go-autorest/logger
-# github.com/Azure/go-autorest/tracing v0.1.0
+# github.com/Azure/go-autorest/tracing v0.4.0
 github.com/Azure/go-autorest/tracing
 # github.com/JamesClonk/vultr v2.0.0+incompatible
 github.com/JamesClonk/vultr/lib
@@ -48,7 +48,7 @@ github.com/JamesClonk/vultr/lib
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 github.com/PuerkitoBio/urlesc
-# github.com/appscode/go v0.0.0-20190722173419-e454bf744023
+# github.com/appscode/go v0.0.0-20190808133642-1d4ef1f1c1e0
 github.com/appscode/go/version
 github.com/appscode/go/sets
 github.com/appscode/go/encoding/yaml
@@ -228,7 +228,7 @@ github.com/gorilla/websocket
 # github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc
 github.com/gregjones/httpcache
 github.com/gregjones/httpcache/diskcache
-# github.com/grpc-ecosystem/grpc-gateway v1.9.2
+# github.com/grpc-ecosystem/grpc-gateway v1.9.5
 github.com/grpc-ecosystem/grpc-gateway/runtime
 github.com/grpc-ecosystem/grpc-gateway/utilities
 github.com/grpc-ecosystem/grpc-gateway/internal
@@ -457,7 +457,7 @@ gomodules.xyz/cert
 gomodules.xyz/jsonpatch/v2
 # gomodules.xyz/nats-logr v0.1.0
 gomodules.xyz/nats-logr
-# gomodules.xyz/secrets v0.2.2-0.20190902103609-7fbbd02d7e9d
+# gomodules.xyz/secrets v0.2.2
 gomodules.xyz/secrets/types
 gomodules.xyz/secrets/xkms
 # gomodules.xyz/stow v0.2.0
@@ -469,7 +469,7 @@ gomodules.xyz/stow/swift
 gomodules.xyz/stow
 # gomodules.xyz/union-logr v0.1.0
 gomodules.xyz/union-logr
-# gomodules.xyz/version v0.0.0-20190507203204-7cec7ee542d3
+# gomodules.xyz/version v0.1.0
 gomodules.xyz/version
 # google.golang.org/api v0.7.0
 google.golang.org/api/compute/v1
