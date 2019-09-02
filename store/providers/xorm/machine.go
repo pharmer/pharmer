@@ -161,7 +161,9 @@ func (s *machineXormStore) Update(obj *clusterapi.Machine) (*clusterapi.Machine,
 		log.Error(err, "failed to marshal machine data")
 		return nil, err
 	}
-	machine.Data.Data = string(data)
+	machine.Data = types.SecureString{
+		Data: string(data),
+	}
 
 	_, err = s.engine.Where(`name = ? AND "cluster_id" = ?`, obj.Name, cluster.ID).Update(machine)
 	return obj, err
@@ -224,7 +226,9 @@ func (s *machineXormStore) UpdateStatus(obj *clusterapi.Machine) (*clusterapi.Ma
 		return nil, err
 	}
 
-	machine.Data.Data = string(data)
+	machine.Data = types.SecureString{
+		Data: string(data),
+	}
 
 	_, err = s.engine.Where(`name = ? AND "cluster_id" = ?`, obj.Name, cluster.ID).Update(machine)
 	return existing, err

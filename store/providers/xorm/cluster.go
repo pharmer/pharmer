@@ -147,7 +147,9 @@ func (s *clusterXormStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 		log.Error(err, "failed to marshal cluster")
 		return nil, err
 	}
-	cluster.Data.Data = string(data)
+	cluster.Data = types.SecureString{
+		Data: string(data),
+	}
 
 	_, err = s.engine.Where(`name = ?`, obj.Name).Update(cluster)
 	return obj, err
@@ -195,7 +197,9 @@ func (s *clusterXormStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 		return nil, err
 	}
 
-	cluster.Data.Data = string(data)
+	cluster.Data = types.SecureString{
+		Data: string(data),
+	}
 
 	_, err = s.engine.Where(`name = ?`, obj.Name).Where(`"owner_id"=?`, s.owner).Update(cluster)
 	return existing, err

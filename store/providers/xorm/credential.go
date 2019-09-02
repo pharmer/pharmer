@@ -147,7 +147,9 @@ func (s *credentialXormStore) Update(obj *cloudapi.Credential) (*cloudapi.Creden
 		return nil, err
 	}
 
-	cred.Data.Data = string(data)
+	cred.Data = types.SecureString{
+		Data: string(data),
+	}
 
 	_, err = s.engine.Where(`name = ?`, cred.Name).Where(`"ownerId"=?`, s.owner).Update(cred)
 	return obj, err
