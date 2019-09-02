@@ -9,6 +9,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	_ "gocloud.dev/secrets/gcpkms"
+	"gomodules.xyz/secrets/types"
 	"gomodules.xyz/secrets/xkms"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
@@ -50,6 +51,7 @@ func init() {
 				log.Error(err, "failed to register xkms keeper")
 				return nil, err
 			}
+			types.Config(xkms.RotateQuarterly)
 			log.Info("xkms keeper registered successfully")
 			return New(engine), nil
 		}

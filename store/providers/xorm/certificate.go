@@ -46,7 +46,7 @@ func (s *certificateXormStore) Get(name string) (*x509.Certificate, *rsa.Private
 	if !found {
 		return nil, nil, errors.Errorf("certificate `%s` does not exist", name)
 	}
-	crt, err := cert.ParseCertsPEM([]byte(certificate.Cert.Data))
+	crt, err := cert.ParseCertsPEM([]byte(certificate.Cert))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -91,7 +91,7 @@ func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *r
 		ClusterID:   cluster.ID,
 		ClusterName: cluster.Name,
 		UID:         string(uuid.NewUUID()),
-		Cert:        types.SecureString{Data: string(cert.EncodeCertPEM(crt))},
+		Cert:        string(cert.EncodeCertPEM(crt)),
 		Key:         types.SecureString{Data: string(cert.EncodePrivateKeyPEM(key))},
 		CreatedUnix: time.Now().Unix(),
 		DeletedUnix: nil,

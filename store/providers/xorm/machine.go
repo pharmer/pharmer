@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-xorm/xorm"
 	"github.com/pkg/errors"
-	"gomodules.xyz/secrets/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
@@ -36,7 +35,7 @@ func (s *machineXormStore) List(opts metav1.ListOptions) ([]*clusterapi.Machine,
 
 	for _, m := range machines {
 		apiMachine := new(clusterapi.Machine)
-		if err := json.Unmarshal([]byte(m.Data.Data), apiMachine); err != nil {
+		if err := json.Unmarshal([]byte(m.Data), apiMachine); err != nil {
 			return nil, err
 		}
 		result = append(result, apiMachine)
@@ -67,7 +66,7 @@ func (s *machineXormStore) Get(name string) (*clusterapi.Machine, error) {
 	}
 
 	apiMachine := new(clusterapi.Machine)
-	if err := json.Unmarshal([]byte(m.Data.Data), apiMachine); err != nil {
+	if err := json.Unmarshal([]byte(m.Data), apiMachine); err != nil {
 		return nil, err
 	}
 	return apiMachine, nil
@@ -107,10 +106,8 @@ func (s *machineXormStore) Create(obj *clusterapi.Machine) (*clusterapi.Machine,
 		return nil, err
 	}
 	machine := &Machine{
-		Name: obj.Name,
-		Data: types.SecureString{
-			Data: string(data),
-		},
+		Name:        obj.Name,
+		Data:        string(data),
 		ClusterID:   cluster.ID,
 		CreatedUnix: obj.CreationTimestamp.Unix(),
 		DeletedUnix: nil,
@@ -155,9 +152,7 @@ func (s *machineXormStore) Update(obj *clusterapi.Machine) (*clusterapi.Machine,
 	if err != nil {
 		return nil, err
 	}
-	machine.Data = types.SecureString{
-		Data: string(data),
-	}
+	machine.Data = string(data)
 
 	_, err = s.engine.Where(`name = ? AND "cluster_id" = ?`, obj.Name, cluster.ID).Update(machine)
 	return obj, err
@@ -207,7 +202,7 @@ func (s *machineXormStore) UpdateStatus(obj *clusterapi.Machine) (*clusterapi.Ma
 	}
 
 	existing := new(clusterapi.Machine)
-	if err := json.Unmarshal([]byte(machine.Data.Data), existing); err != nil {
+	if err := json.Unmarshal([]byte(machine.Data), existing); err != nil {
 		return nil, err
 	}
 	existing.Status = obj.Status
@@ -216,10 +211,7 @@ func (s *machineXormStore) UpdateStatus(obj *clusterapi.Machine) (*clusterapi.Ma
 	if err != nil {
 		return nil, err
 	}
-
-	machine.Data = types.SecureString{
-		Data: string(data),
-	}
+	machine.Data = string(data)
 
 	_, err = s.engine.Where(`name = ? AND "cluster_id" = ?`, obj.Name, cluster.ID).Update(machine)
 	return existing, err

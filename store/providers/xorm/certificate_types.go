@@ -10,7 +10,7 @@ type Certificate struct {
 	ClusterID   int64 `xorm:"NOT NULL 'cluster_id'"`
 	ClusterName string
 	UID         string             `xorm:"uid UNIQUE"`
-	Cert        types.SecureString `xorm:"text NOT NULL"`
+	Cert        string             `xorm:"text NOT NULL"`
 	Key         types.SecureString `xorm:"text NOT NULL"`
 
 	CreatedUnix int64  `xorm:"INDEX created"`
