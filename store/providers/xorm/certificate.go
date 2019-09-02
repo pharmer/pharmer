@@ -48,12 +48,10 @@ func (s *certificateXormStore) Get(name string) (*x509.Certificate, *rsa.Private
 	}
 	crt, err := cert.ParseCertsPEM([]byte(certificate.Cert.Data))
 	if err != nil {
-		log.Error(err, "failed to parse private key data")
 		return nil, nil, err
 	}
 	key, err := cert.ParsePrivateKeyPEM([]byte(certificate.Key.Data))
 	if err != nil {
-		log.Error(err, "failed to parse private key data")
 		return nil, nil, err
 	}
 	return crt[0], key.(*rsa.PrivateKey), nil

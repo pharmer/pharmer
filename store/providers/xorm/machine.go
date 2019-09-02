@@ -37,7 +37,6 @@ func (s *machineXormStore) List(opts metav1.ListOptions) ([]*clusterapi.Machine,
 	for _, m := range machines {
 		apiMachine := new(clusterapi.Machine)
 		if err := json.Unmarshal([]byte(m.Data.Data), apiMachine); err != nil {
-			log.Error(err, "failed to unmarshal machine")
 			return nil, err
 		}
 		result = append(result, apiMachine)
@@ -105,7 +104,6 @@ func (s *machineXormStore) Create(obj *clusterapi.Machine) (*clusterapi.Machine,
 
 	data, err := json.Marshal(obj)
 	if err != nil {
-		log.Error(err, "failed to marshal machine data")
 		return nil, err
 	}
 	machine := &Machine{
@@ -155,7 +153,6 @@ func (s *machineXormStore) Update(obj *clusterapi.Machine) (*clusterapi.Machine,
 
 	data, err := json.Marshal(obj)
 	if err != nil {
-		log.Error(err, "failed to marshal machine data")
 		return nil, err
 	}
 	machine.Data = types.SecureString{
@@ -211,14 +208,12 @@ func (s *machineXormStore) UpdateStatus(obj *clusterapi.Machine) (*clusterapi.Ma
 
 	existing := new(clusterapi.Machine)
 	if err := json.Unmarshal([]byte(machine.Data.Data), existing); err != nil {
-		log.Error(err, "failed to unmarshal machine")
 		return nil, err
 	}
 	existing.Status = obj.Status
 
 	data, err := json.Marshal(existing)
 	if err != nil {
-		log.Error(err, "failed to marshal machine")
 		return nil, err
 	}
 

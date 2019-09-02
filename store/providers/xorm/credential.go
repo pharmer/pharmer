@@ -33,7 +33,6 @@ func (s *credentialXormStore) List(opts metav1.ListOptions) ([]*cloudapi.Credent
 	for _, credential := range credentials {
 		apiCred := new(cloudapi.Credential)
 		if err := json.Unmarshal([]byte(credential.Data.Data), apiCred); err != nil {
-			log.Error(err, "failed to unmarshal credential")
 			return nil, err
 		}
 		result = append(result, apiCred)
@@ -67,7 +66,6 @@ func (s *credentialXormStore) Get(name string) (*cloudapi.Credential, error) {
 	}
 	apiCred := new(cloudapi.Credential)
 	if err := json.Unmarshal([]byte(cred.Data.Data), apiCred); err != nil {
-		log.Error(err, "failed to unmarshal credential")
 		return nil, err
 	}
 
@@ -95,7 +93,6 @@ func (s *credentialXormStore) Create(obj *cloudapi.Credential) (*cloudapi.Creden
 
 	data, err := json.Marshal(obj)
 	if err != nil {
-		log.Error(err, "failed to marshal credential")
 		return nil, err
 	}
 
@@ -140,7 +137,6 @@ func (s *credentialXormStore) Update(obj *cloudapi.Credential) (*cloudapi.Creden
 
 	data, err := json.Marshal(obj)
 	if err != nil {
-		log.Error(err, "failed to marshal credential")
 		return nil, err
 	}
 

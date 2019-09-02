@@ -32,7 +32,6 @@ func (s *clusterXormStore) List(opts metav1.ListOptions) ([]*api.Cluster, error)
 	for _, cluster := range clusters {
 		apiCluster := new(api.Cluster)
 		if err := json.Unmarshal([]byte(cluster.Data.Data), apiCluster); err != nil {
-			log.Error(err, "failed to unmarshal cluster")
 			return nil, err
 		}
 		result = append(result, apiCluster)
@@ -68,7 +67,6 @@ func (s *clusterXormStore) Get(name string) (*api.Cluster, error) {
 
 	apiCluster := new(api.Cluster)
 	if err := json.Unmarshal([]byte(cluster.Data.Data), apiCluster); err != nil {
-		log.Error(err, "failed to unmarshal cluster")
 		return nil, err
 	}
 
@@ -98,7 +96,6 @@ func (s *clusterXormStore) Create(obj *api.Cluster) (*api.Cluster, error) {
 
 	data, err := json.Marshal(obj)
 	if err != nil {
-		log.Error(err, "failed to marshal cluster")
 		return nil, err
 	}
 	cluster := &Cluster{
@@ -141,7 +138,6 @@ func (s *clusterXormStore) Update(obj *api.Cluster) (*api.Cluster, error) {
 
 	data, err := json.Marshal(obj)
 	if err != nil {
-		log.Error(err, "failed to marshal cluster")
 		return nil, err
 	}
 	cluster.Data = types.SecureString{
@@ -182,14 +178,12 @@ func (s *clusterXormStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 
 	existing := new(api.Cluster)
 	if err := json.Unmarshal([]byte(cluster.Data.Data), existing); err != nil {
-		log.Error(err, "failed to unmarshal cluster")
 		return nil, err
 	}
 	existing.Status = obj.Status
 
 	data, err := json.Marshal(existing)
 	if err != nil {
-		log.Error(err, "failed to marshal cluster")
 		return nil, err
 	}
 
