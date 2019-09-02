@@ -2,11 +2,15 @@ package xorm
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/go-xorm/xorm"
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
+	_ "gocloud.dev/secrets/gcpkms"
+	"gomodules.xyz/secrets/types"
+	"gomodules.xyz/secrets/xkms"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
 	"xorm.io/core"
@@ -32,6 +36,23 @@ func init() {
 				return nil, err
 			}
 
+			ds := fmt.Sprintf("user=%v password=%v host=%v port=%v dbname=%v sslmode=disable",
+				dbCfg.User, dbCfg.Password, dbCfg.Host, dbCfg.Port, dbCfg.DbName)
+
+			u := url.URL{
+				Scheme: xkms.Scheme,
+			}
+			q := u.Query()
+			q.Set("driver", core.POSTGRES)
+			q.Set("ds", ds)
+			q.Set("master_key_url", dbCfg.MasterKeyURL)
+			u.RawQuery = q.Encode()
+			if err := xkms.Register(u.String(), engine); err != nil {
+				log.Error(err, "failed to register xkms keeper")
+				return nil, err
+			}
+			types.Config(xkms.RotateQuarterly)
+			log.Info("xkms keeper registered successfully")
 			return New(engine), nil
 		}
 		return nil, errors.New("missing store configuration")

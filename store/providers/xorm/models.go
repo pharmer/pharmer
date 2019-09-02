@@ -1,6 +1,9 @@
 package xorm
 
-import "k8s.io/klog/klogr"
+import (
+	"gomodules.xyz/secrets/xkms"
+	"k8s.io/klog/klogr"
+)
 
 var (
 	tables []interface{}
@@ -14,5 +17,6 @@ func init() {
 		new(Cluster),
 		new(Machine),
 		new(SSHKey),
+		new(xkms.SecretKey),
 	)
 }

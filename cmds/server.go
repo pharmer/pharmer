@@ -2,15 +2,19 @@ package cmds
 
 import (
 	"flag"
-	"fmt"
 
 	"github.com/appscode/go/term"
 	"github.com/nats-io/stan.go"
 	"github.com/spf13/cobra"
 	natslogr "gomodules.xyz/nats-logr"
+	"k8s.io/klog/klogr"
 	"pharmer.dev/pharmer/apiserver"
 	"pharmer.dev/pharmer/config"
 	"pharmer.dev/pharmer/store"
+)
+
+var (
+	log = klogr.New().WithName("[pharmer-serve]")
 )
 
 func newCmdServer() *cobra.Command {
@@ -32,7 +36,6 @@ func newCmdServer() *cobra.Command {
 			if cfg.Store.Postgres == nil {
 				term.Fatalln("Use postgres as storage provider")
 			}
-			fmt.Println(natsurl)
 
 			conn, err := stan.Connect(
 				"pharmer-cluster",
@@ -41,6 +44,8 @@ func newCmdServer() *cobra.Command {
 			)
 			defer apiserver.LogCloser(conn)
 			term.ExitOnError(err)
+
+			log.Info("Connected to nats streaming server", "natsurl", natsurl, "clusterID", "pharmer-cluster", "clientID", clientid)
 
 			storeProvider, err := store.NewStoreInterface(cfg)
 			term.ExitOnError(err)

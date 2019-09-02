@@ -7,6 +7,8 @@ import (
 
 	"github.com/go-xorm/xorm"
 	"github.com/pkg/errors"
+	"gomodules.xyz/cert"
+	"gomodules.xyz/secrets/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"pharmer.dev/pharmer/store"
 )
@@ -44,7 +46,15 @@ func (s *certificateXormStore) Get(name string) (*x509.Certificate, *rsa.Private
 	if !found {
 		return nil, nil, errors.Errorf("certificate `%s` does not exist", name)
 	}
-	return decodeCertificate(certificate)
+	crt, err := cert.ParseCertsPEM([]byte(certificate.Cert))
+	if err != nil {
+		return nil, nil, err
+	}
+	key, err := cert.ParsePrivateKeyPEM([]byte(certificate.Key.Data))
+	if err != nil {
+		return nil, nil, err
+	}
+	return crt[0], key.(*rsa.PrivateKey), nil
 }
 
 func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *rsa.PrivateKey) error {
@@ -75,12 +85,18 @@ func (s *certificateXormStore) Create(name string, crt *x509.Certificate, key *r
 	if found {
 		return errors.Errorf("certificate `%s` already exists", name)
 	}
-	certificate = encodeCertificate(crt, key)
-	certificate.ClusterID = cluster.ID
-	certificate.Name = name
-	certificate.ClusterName = s.cluster
-	certificate.UID = string(uuid.NewUUID())
-	certificate.CreatedUnix = time.Now().Unix()
+
+	certificate = &Certificate{
+		Name:        name,
+		ClusterID:   cluster.ID,
+		ClusterName: cluster.Name,
+		UID:         string(uuid.NewUUID()),
+		Cert:        string(cert.EncodeCertPEM(crt)),
+		Key:         types.SecureString{Data: string(cert.EncodePrivateKeyPEM(key))},
+		CreatedUnix: time.Now().Unix(),
+		DeletedUnix: nil,
+	}
+
 	_, err = s.engine.Insert(certificate)
 
 	return err

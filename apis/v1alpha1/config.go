@@ -31,11 +31,12 @@ type SwiftSpec struct {
 }
 
 type PostgresSpec struct {
-	DbName   string `json:"database,omitempty"`
-	Host     string `json:"host,omitempty"`
-	Port     int64  `json:"port,omitempty"`
-	User     string `json:"user,omitempty"`
-	Password string `json:"password,omitempty"`
+	DbName       string `json:"database,omitempty"`
+	Host         string `json:"host,omitempty"`
+	Port         int64  `json:"port,omitempty"`
+	User         string `json:"user,omitempty"`
+	Password     string `json:"password,omitempty"`
+	MasterKeyURL string `json:"masterKeyURL,omitempty"`
 }
 
 type StorageBackend struct {

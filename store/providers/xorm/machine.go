@@ -1,6 +1,7 @@
 package xorm
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/go-xorm/xorm"
@@ -33,11 +34,11 @@ func (s *machineXormStore) List(opts metav1.ListOptions) ([]*clusterapi.Machine,
 	}
 
 	for _, m := range machines {
-		decode, err := decodeMachine(&m)
-		if err != nil {
-			return nil, errors.Errorf("failed to list machines. Reason: %v", err)
+		apiMachine := new(clusterapi.Machine)
+		if err := json.Unmarshal([]byte(m.Data), apiMachine); err != nil {
+			return nil, err
 		}
-		result = append(result, decode)
+		result = append(result, apiMachine)
 	}
 	return result, nil
 }
@@ -64,7 +65,11 @@ func (s *machineXormStore) Get(name string) (*clusterapi.Machine, error) {
 		return nil, errors.Errorf("credential `%s` already exists", name)
 	}
 
-	return decodeMachine(m)
+	apiMachine := new(clusterapi.Machine)
+	if err := json.Unmarshal([]byte(m.Data), apiMachine); err != nil {
+		return nil, err
+	}
+	return apiMachine, nil
 }
 
 func (s *machineXormStore) Create(obj *clusterapi.Machine) (*clusterapi.Machine, error) {
@@ -95,11 +100,18 @@ func (s *machineXormStore) Create(obj *clusterapi.Machine) (*clusterapi.Machine,
 	}
 
 	obj.CreationTimestamp = metav1.Time{Time: time.Now()}
-	machine, err := encodeMachine(obj)
+
+	data, err := json.Marshal(obj)
 	if err != nil {
 		return nil, err
 	}
-	machine.ClusterID = cluster.ID
+	machine := &Machine{
+		Name:        obj.Name,
+		Data:        string(data),
+		ClusterID:   cluster.ID,
+		CreatedUnix: obj.CreationTimestamp.Unix(),
+		DeletedUnix: nil,
+	}
 
 	_, err = s.engine.Insert(machine)
 	return obj, err
@@ -124,7 +136,11 @@ func (s *machineXormStore) Update(obj *clusterapi.Machine) (*clusterapi.Machine,
 		return nil, err
 	}
 
-	found, err := s.engine.Get(&Machine{Name: obj.Name, ClusterID: cluster.ID})
+	machine := &Machine{
+		Name:      obj.Name,
+		ClusterID: cluster.ID,
+	}
+	found, err := s.engine.Get(machine)
 	if err != nil {
 		return nil, errors.Errorf("reason: %v", err)
 	}
@@ -132,11 +148,12 @@ func (s *machineXormStore) Update(obj *clusterapi.Machine) (*clusterapi.Machine,
 		return nil, errors.Errorf("machine `%s` not found", obj.Name)
 	}
 
-	machine, err := encodeMachine(obj)
+	data, err := json.Marshal(obj)
 	if err != nil {
 		return nil, err
 	}
-	machine.ClusterID = cluster.ID
+	machine.Data = string(data)
+
 	_, err = s.engine.Where(`name = ? AND "cluster_id" = ?`, obj.Name, cluster.ID).Update(machine)
 	return obj, err
 }
@@ -184,17 +201,19 @@ func (s *machineXormStore) UpdateStatus(obj *clusterapi.Machine) (*clusterapi.Ma
 		return nil, errors.Errorf("Machine `%s` does not exist", obj.Name)
 	}
 
-	existing, err := decodeMachine(machine)
-	if err != nil {
+	existing := new(clusterapi.Machine)
+	if err := json.Unmarshal([]byte(machine.Data), existing); err != nil {
 		return nil, err
 	}
 	existing.Status = obj.Status
 
-	updated, err := encodeMachine(existing)
+	data, err := json.Marshal(existing)
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.engine.Where(`name = ? AND "cluster_id" = ?`, obj.Name, cluster.ID).Update(updated)
+	machine.Data = string(data)
+
+	_, err = s.engine.Where(`name = ? AND "cluster_id" = ?`, obj.Name, cluster.ID).Update(machine)
 	return existing, err
 }
 
