@@ -17,17 +17,23 @@ import (
 )
 
 func (a *Apiserver) Init(storeProvider store.Interface, msg *stan.Msg) (*api.Operation, *cloud.Scope, error) {
+	log := klogr.New()
+
 	operation := options.NewClusterOperation()
 	err := json.Unmarshal(msg.Data, &operation)
 	if err != nil {
+		log.Error(err, "error unmarshaling operation")
 		return nil, nil, err
 	}
 	if operation.OperationId == "" {
 		return nil, nil, errors.New("operation ID can't be nil")
 	}
 
+	log = log.WithValues("operation-id", operation.OperationId)
+
 	obj, err := storeProvider.Operations().Get(operation.OperationId)
 	if err != nil {
+		log.Error(err, "error getting operation id")
 		return nil, nil, err
 	}
 
@@ -35,6 +41,7 @@ func (a *Apiserver) Init(storeProvider store.Interface, msg *stan.Msg) (*api.Ope
 	// if we need to ge cluster usnig ClusterID, then we've to set ownerID as -1
 	cluster, err := storeProvider.Owner(-1).Clusters().Get(strconv.Itoa(int(obj.ClusterID)))
 	if err != nil {
+		log.Error(err, "error getting cluster")
 		return nil, nil, err
 	}
 

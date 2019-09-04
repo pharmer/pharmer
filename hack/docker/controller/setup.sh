@@ -25,7 +25,7 @@ clean() {
 
 build_docker() {
     pushd $GOPATH/src/pharmer.dev/pharmer/hack/docker/controller
-    cp $DIST/pharmer/pharmer-linux-amd64 machine-controller
+    cp $DIST/linux_amd64/pharmer machine-controller
     chmod 755 machine-controller
 
     cat >Dockerfile <<EOL

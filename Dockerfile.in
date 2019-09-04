@@ -1,8 +1,12 @@
 FROM {ARG_FROM}
 
-ADD bin/{ARG_OS}_{ARG_ARCH}/{ARG_BIN} /{ARG_BIN}
+RUN apt-get update && \
+    apt-get install -y curl
+RUN curl -fsSL https://dl.k8s.io/release/v1.14.2/bin/linux/amd64/kubeadm > /usr/bin/kubeadm
+RUN curl -fsSL https://dl.k8s.io/release/v1.14.2/bin/linux/amd64/kubectl > /usr/bin/kubectl
+RUN chmod a+rx /usr/bin/kubeadm
+RUN chmod a+rx /usr/bin/kubectl
 
-# This would be nicer as `nobody:nobody` but distroless has no such entries.
-USER 65535:65535
+ADD bin/{ARG_OS}_{ARG_ARCH}/{ARG_BIN} /{ARG_BIN}
 
 ENTRYPOINT ["/{ARG_BIN}"]

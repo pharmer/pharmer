@@ -3,7 +3,9 @@ FROM {ARG_FROM}
 RUN apt-get update && \
     apt-get install -y curl
 RUN curl -fsSL https://dl.k8s.io/release/v1.13.2/bin/linux/amd64/kubeadm > /usr/bin/kubeadm
+RUN curl -fsSL https://dl.k8s.io/release/v1.13.2/bin/linux/amd64/kubectl > /usr/bin/kubectl
 RUN chmod a+rx /usr/bin/kubeadm
+RUN chmod a+rx /usr/bin/kubectl
 
 ADD bin/{ARG_OS}_{ARG_ARCH}/{ARG_BIN} /{ARG_BIN}
 

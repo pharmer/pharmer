@@ -20,10 +20,10 @@ func LoadConfig(configPath string) (*api.PharmerConfig, error) {
 	if _, err := os.Stat(configPath); err != nil {
 		return nil, err
 	}
-	err := os.Chmod(configPath, 0600)
-	if err != nil {
-		return nil, err
-	}
+	//err := os.Chmod(configPath, 0600)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	config := &api.PharmerConfig{}
 	bytes, err := ioutil.ReadFile(configPath)
