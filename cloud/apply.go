@@ -153,6 +153,16 @@ func ApplyCreate(scope *Scope) error {
 		}
 	}
 
+	ns, err := scope.AdminClient.CoreV1().Namespaces().Get(metav1.NamespaceSystem, metav1.GetOptions{})
+	if err != nil {
+		log.Error(err, "failed to get `kube-system` namespace")
+		return err
+	}
+	if cluster, err = scope.StoreProvider.Clusters().UpdateUUID(cluster, string(ns.UID)); err != nil {
+		log.Error(err, "failed to update cluster uuid in store")
+		return err
+	}
+
 	cluster.Status.Phase = api.ClusterReady
 	if _, err = scope.StoreProvider.Clusters().UpdateStatus(cluster); err != nil {
 		log.Error(err, "failed to update cluster status in store")
