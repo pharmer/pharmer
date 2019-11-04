@@ -1,3 +1,18 @@
+/*
+Copyright The Pharmer Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package dokube
 
 import (
@@ -5,15 +20,16 @@ import (
 	"strconv"
 	"time"
 
+	"pharmer.dev/cloud/pkg/credential"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
+	dokube_config "pharmer.dev/pharmer/apis/v1alpha1/dokube"
+	"pharmer.dev/pharmer/cloud"
+
 	"github.com/appscode/go/wait"
 	"github.com/digitalocean/godo"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"pharmer.dev/cloud/pkg/credential"
-	api "pharmer.dev/pharmer/apis/v1alpha1"
-	dokube_config "pharmer.dev/pharmer/apis/v1alpha1/dokube"
-	"pharmer.dev/pharmer/cloud"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

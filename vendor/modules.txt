@@ -361,11 +361,11 @@ go.opencensus.io/plugin/ochttp
 go.opencensus.io/plugin/ochttp/propagation/tracecontext
 go.opencensus.io/stats/view
 go.opencensus.io/trace
+go.opencensus.io
 go.opencensus.io/plugin/ocgrpc
+go.opencensus.io/resource
 go.opencensus.io/stats
 go.opencensus.io/tag
-go.opencensus.io
-go.opencensus.io/resource
 go.opencensus.io/trace/tracestate
 go.opencensus.io/plugin/ochttp/propagation/b3
 go.opencensus.io/trace/propagation
@@ -376,17 +376,17 @@ go.opencensus.io/stats/internal
 go.opencensus.io/internal
 go.opencensus.io/trace/internal
 # gocloud.dev v0.16.0
-gocloud.dev/secrets
 gocloud.dev/secrets/gcpkms
+gocloud.dev/gcerrors
+gocloud.dev/gcp
 gocloud.dev/internal/gcerr
+gocloud.dev/internal/useragent
+gocloud.dev/secrets
+gocloud.dev/secrets/localsecrets
+gocloud.dev/internal/retry
 gocloud.dev/internal/oc
 gocloud.dev/internal/openurl
 gocloud.dev/secrets/driver
-gocloud.dev/gcerrors
-gocloud.dev/gcp
-gocloud.dev/internal/useragent
-gocloud.dev/secrets/localsecrets
-gocloud.dev/internal/retry
 # golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/terminal

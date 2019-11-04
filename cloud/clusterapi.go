@@ -1,3 +1,18 @@
+/*
+Copyright The Pharmer Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package cloud
 
 import (
@@ -7,13 +22,14 @@ import (
 	"strings"
 	"text/template"
 
+	api "pharmer.dev/pharmer/apis/v1alpha1"
+	"pharmer.dev/pharmer/cloud/utils/kube"
+
 	"github.com/appscode/go/wait"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadmconsts "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	api "pharmer.dev/pharmer/apis/v1alpha1"
-	"pharmer.dev/pharmer/cloud/utils/kube"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/clusterdeployer/clusterclient"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/phases"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
