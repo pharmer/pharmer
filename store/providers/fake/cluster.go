@@ -136,3 +136,25 @@ func (s *clusterFileStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 	s.container[id] = existing
 	return existing, err
 }
+
+func (s *clusterFileStore) UpdateUUID(obj *api.Cluster, uuid string) (*api.Cluster, error) {
+	if obj == nil {
+		return nil, errors.New("missing cluster")
+	} else if obj.Name == "" {
+		return nil, errors.New("missing cluster name")
+	}
+	err := api.AssignTypeKind(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	id := s.resourceID(obj.Name)
+	if _, ok := s.container[id]; !ok {
+		return nil, errors.Errorf("cluster `%s` does not exist", obj.Name)
+	}
+
+	return obj, err
+}

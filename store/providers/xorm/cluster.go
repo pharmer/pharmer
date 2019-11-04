@@ -194,3 +194,32 @@ func (s *clusterXormStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 	_, err = s.engine.Where(`name = ?`, obj.Name).Where(`"owner_id"=?`, s.owner).Update(cluster)
 	return existing, err
 }
+
+func (s *clusterXormStore) UpdateUUID(obj *api.Cluster, uuid string) (*api.Cluster, error) {
+	if obj == nil {
+		return nil, errors.New("missing cluster")
+	} else if obj.Name == "" {
+		return nil, errors.New("missing cluster name")
+	}
+	err := api.AssignTypeKind(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	cluster := &Cluster{
+		Name:    obj.Name,
+		OwnerID: s.owner,
+	}
+	found, err := s.engine.Get(cluster)
+	if err != nil {
+		return nil, errors.Errorf("reason: %v", err)
+	}
+	if !found {
+		return nil, errors.Errorf("cluster `%s` does not exists", obj.Name)
+	}
+
+	cluster.UUID = uuid
+
+	_, err = s.engine.Where(`name = ?`, obj.Name).Update(cluster)
+	return obj, err
+}

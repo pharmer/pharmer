@@ -184,3 +184,23 @@ func (s *clusterFileStore) UpdateStatus(obj *api.Cluster) (*api.Cluster, error) 
 	_, err = s.container.Put(id, bytes.NewBuffer(data), int64(len(data)), nil)
 	return &existing, err
 }
+
+func (s *clusterFileStore) UpdateUUID(obj *api.Cluster, uuid string) (*api.Cluster, error) {
+	if obj == nil {
+		return nil, errors.New("missing cluster")
+	} else if obj.Name == "" {
+		return nil, errors.New("missing cluster name")
+	}
+	err := api.AssignTypeKind(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	id := s.resourceID(obj.Name)
+	_, err = s.container.Item(id)
+	if err != nil {
+		return nil, errors.Errorf("cluster `%s` does not exist. Reason: %v", obj.Name, err)
+	}
+
+	return obj, nil
+}

@@ -54,6 +54,7 @@ type ClusterStore interface {
 	Update(obj *api.Cluster) (*api.Cluster, error)
 	Delete(name string) error
 	UpdateStatus(obj *api.Cluster) (*api.Cluster, error)
+	UpdateUUID(obj *api.Cluster, uuid string) (*api.Cluster, error)
 }
 
 type MachineStore interface {
