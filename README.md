@@ -1,5 +1,5 @@
 [![Go Report Card](https://goreportcard.com/badge/pharmer.dev/pharmer)](https://goreportcard.com/report/pharmer.dev/pharmer)
-[![Build Status](https://travis-ci.org/pharmer/pharmer.svg?branch=master)](https://travis-ci.org/pharmer/pharmer)
+[![Build Status](https://github.com/stashed/pharmer/pharmer/CI/badge.svg)](https://github.com/pharmer/pharmer/actions?workflow=CI)
 [![codecov](https://codecov.io/gh/pharmer/pharmer/branch/master/graph/badge.svg)](https://codecov.io/gh/pharmer/pharmer)
 [![Slack](http://slack.kubernetes.io/badge.svg)](http://slack.kubernetes.io/#pharmer)
 [![Twitter](https://img.shields.io/twitter/follow/appscodehq.svg?style=social&logo=twitter&label=Follow)](https://twitter.com/intent/follow?screen_name=AppsCodeHQ)
