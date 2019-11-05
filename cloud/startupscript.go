@@ -55,13 +55,9 @@ var kubernetesCNIVersions = map[string]string{
 }
 
 var prekVersions = map[string]string{
-	"1.8.0":  "1.8.0",
-	"1.9.0":  "1.9.0",
-	"1.10.0": "1.10.0",
-	"1.11.0": "1.12.0-alpha.3",
-	"1.12.0": "1.12.0-alpha.3",
-	"1.13.0": "1.13.0",
-	"1.14.0": "1.14.0",
+	"1.12.0": "https://cdn.appscode.com/binaries/pre-k/1.12.0-alpha.3/pre-k-linux-amd64",
+	"1.13.0": "https://cdn.appscode.com/binaries/pre-k/1.13.0/pre-k-linux-amd64",
+	"1.14.0": "https://github.com/pharmer/pre-k/releases/download/v1.14.0/pre-k_linux_amd64",
 }
 
 type TemplateData struct {

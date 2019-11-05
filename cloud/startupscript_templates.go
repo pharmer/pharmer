@@ -43,7 +43,9 @@ exec_until_success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
 apt-get update -y
 exec_until_success 'apt-get install -y {{ .PackageList }}'
 
-{{ template "download-prek" . }}
+curl -fsSL --retry 5 -o pre-k {{ .PrekVersion }} \
+	&& chmod +x pre-k \
+	&& mv pre-k /usr/bin/
 
 
 timedatectl set-timezone Etc/UTC
@@ -294,20 +296,5 @@ kubectl apply \
 kubectl apply \
   -f https://raw.githubusercontent.com/pharmer/addons/release-1.13.1/flannel/v0.9.1/kube-vxlan.yml \
   --kubeconfig /etc/kubernetes/admin.conf
-`))
-
-	prekDownload = template.Must(StartupScriptTemplate.New("download-prek").Parse(`
-curl -fsSL --retry 5 -o pre-k {{ template "prek-url" . }} \
-&& chmod +x pre-k \
-&& mv pre-k /usr/bin/
-`))
-
-	// TODO: Remove this if else block from 1.15+ releases, we'll be uploading artifacts to github
-	prekDownloadURL = template.Must(StartupScriptTemplate.New("prek-url").Parse(`
-{{- if eq .PrekVersion "1.14.0" -}}
-https://github.com/pharmer/pre-k/releases/download/v1.14.0/pre-k_linux_amd64
-{{- else -}}
-https://cdn.appscode.com/binaries/pre-k/{{ .PrekVersion }}/pre-k-linux-amd64
-{{- end -}}
 `))
 )
