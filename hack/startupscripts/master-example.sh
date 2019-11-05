@@ -1,4 +1,19 @@
 #!/bin/bash
+
+# Copyright The Pharmer Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set -x
 set -o errexit
 set -o nounset
@@ -23,8 +38,8 @@ apt-get update -y
 apt-get install -y cron docker.io ebtables git glusterfs-client haveged kubectl kubelet nfs-common socat kubeadm ntp || true
 
 curl -Lo pre-k https://cdn.appscode.com/binaries/pre-k/0.1.0-alpha.6/pre-k-linux-amd64 &&
-  chmod +x pre-k &&
-  mv pre-k /usr/bin/
+    chmod +x pre-k &&
+    mv pre-k /usr/bin/
 
 systemctl enable docker
 systemctl start docker
@@ -140,21 +155,21 @@ unifiedControlPlaneImage: ""
 EOF
 
 pre-k merge master-config \
-  --config=/etc/kubernetes/kubeadm/base.yaml \
-  --apiserver-advertise-address=$(pre-k get public-ips --all=false) \
-  --apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
-  --apiserver-cert-extra-sans=$(pre-k get private-ips) \
-  --apiserver-cert-extra-sans= \
-  >/etc/kubernetes/kubeadm/config.yaml
+    --config=/etc/kubernetes/kubeadm/base.yaml \
+    --apiserver-advertise-address=$(pre-k get public-ips --all=false) \
+    --apiserver-cert-extra-sans=$(pre-k get public-ips --routable) \
+    --apiserver-cert-extra-sans=$(pre-k get private-ips) \
+    --apiserver-cert-extra-sans= \
+    >/etc/kubernetes/kubeadm/config.yaml
 kubeadm init --config=/etc/kubernetes/kubeadm/config.yaml --skip-token-print
 
 kubectl apply \
-  -f https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml \
-  --kubeconfig /etc/kubernetes/admin.conf
+    -f https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml \
+    --kubeconfig /etc/kubernetes/admin.conf
 
 kubectl apply \
-  -f https://raw.githubusercontent.com/pharmer/addons/release-1.13.1/kubeadm-probe/ds.yaml \
-  --kubeconfig /etc/kubernetes/admin.conf
+    -f https://raw.githubusercontent.com/pharmer/addons/release-1.13.1/kubeadm-probe/ds.yaml \
+    --kubeconfig /etc/kubernetes/admin.conf
 
 mkdir -p ~/.kube
 sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config

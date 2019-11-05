@@ -1,3 +1,18 @@
+/*
+Copyright The Pharmer Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package linode
 
 import (
@@ -7,15 +22,16 @@ import (
 	"strconv"
 	"strings"
 
+	"pharmer.dev/cloud/pkg/credential"
+	api "pharmer.dev/pharmer/apis/v1alpha1"
+	linode_config "pharmer.dev/pharmer/apis/v1alpha1/linode"
+	"pharmer.dev/pharmer/cloud"
+
 	"github.com/appscode/go/types"
 	"github.com/linode/linodego"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"pharmer.dev/cloud/pkg/credential"
-	api "pharmer.dev/pharmer/apis/v1alpha1"
-	linode_config "pharmer.dev/pharmer/apis/v1alpha1/linode"
-	"pharmer.dev/pharmer/cloud"
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -106,6 +122,7 @@ func (conn *cloudConnector) getStartupScriptID(machine *clusterapi.Machine) (int
 	return scripts[0].ID, nil
 }
 
+//nolint:unparam
 func (conn *cloudConnector) createOrUpdateStackScript(machine *clusterapi.Machine, script string) (int, error) {
 	machineConfig, err := linode_config.MachineConfigFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
