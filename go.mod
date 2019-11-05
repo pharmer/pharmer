@@ -9,7 +9,7 @@ require (
 	github.com/Azure/go-autorest/autorest/adal v0.4.0
 	github.com/Azure/go-autorest/autorest/to v0.2.0
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b // indirect
-	github.com/appscode/go v0.0.0-20190808133642-1d4ef1f1c1e0
+	github.com/appscode/go v0.0.0-20191025021232-311ac347b3ef
 	github.com/aws/aws-sdk-go v1.20.20
 	github.com/creack/goselect v0.1.0 // indirect
 	github.com/digitalocean/godo v1.14.0
@@ -22,6 +22,7 @@ require (
 	github.com/go-xorm/xorm v0.7.4
 	github.com/gogo/protobuf v1.2.1
 	github.com/golang/protobuf v1.3.2 // indirect
+	github.com/google/go-cmp v0.3.0
 	github.com/google/uuid v1.1.1
 	github.com/gophercloud/gophercloud v0.0.0-20190515011819-1992d5238d78 // indirect
 	github.com/hashicorp/go-hclog v0.9.2 // indirect
@@ -47,7 +48,7 @@ require (
 	gocloud.dev v0.16.0
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-	gomodules.xyz/cert v1.0.0
+	gomodules.xyz/cert v1.0.1
 	gomodules.xyz/nats-logr v0.1.0
 	gomodules.xyz/secrets v0.2.2
 	gomodules.xyz/stow v0.2.0

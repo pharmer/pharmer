@@ -19,12 +19,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"text/template"
 
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/cloud/utils/kube"
 
+	v "github.com/appscode/go/version"
 	"github.com/appscode/go/wait"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
@@ -36,8 +38,14 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
 
-const (
-	MachineControllerImage = "pharmer/machine-controller:0.3.0"
+var (
+	MachineControllerImage = func() string {
+		img := os.Getenv("MACHINE_CONTROLLER_IMAGE")
+		if img != "" {
+			return img
+		}
+		return fmt.Sprintf("pharmer/machine-controller:%s", v.Version)
+	}()
 )
 
 type ClusterAPI struct {
