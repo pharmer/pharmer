@@ -135,7 +135,7 @@ exec_until_success 'add-apt-repository -y ppa:gluster/glusterfs-3.10'
 apt-get update -y
 exec_until_success 'apt-get install -y {{ .PackageList }}'
 
-curl -fsSL --retry 5 -o pre-k https://cdn.appscode.com/binaries/pre-k/{{ .PrekVersion }}/pre-k-linux-amd64 \
+curl -fsSL --retry 5 -o pre-k {{ .PrekVersion }} \
 	&& chmod +x pre-k \
 	&& mv pre-k /usr/bin/
 
