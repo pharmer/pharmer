@@ -38,15 +38,13 @@ import (
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 )
 
-var (
-	MachineControllerImage = func() string {
-		img := os.Getenv("MACHINE_CONTROLLER_IMAGE")
-		if img != "" {
-			return img
-		}
-		return fmt.Sprintf("pharmer/pharmer:%s", v.Version)
-	}()
-)
+func MachineControllerImage() string {
+	img := os.Getenv("MACHINE_CONTROLLER_IMAGE")
+	if img != "" {
+		return img
+	}
+	return fmt.Sprintf("pharmer/pharmer:%s", v.Version.Version)
+}
 
 type ClusterAPI struct {
 	*Scope
@@ -290,7 +288,7 @@ func (ca *ClusterAPI) CreateAPIServerAndController(controllerManager string) err
 		ClusterName:         cluster.Name,
 		Provider:            cluster.ClusterConfig().Cloud.CloudProvider,
 		ControllerNamespace: ca.namespace,
-		ControllerImage:     MachineControllerImage,
+		ControllerImage:     MachineControllerImage(),
 	})
 	if err != nil {
 		return err

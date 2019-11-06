@@ -52,7 +52,7 @@ func (cm *ClusterManager) GetClusterAPIComponents() (string, error) {
 		SSHPrivateKey:   base64.StdEncoding.EncodeToString(cm.Certs.SSHKey.PrivateKey),
 		SSHPublicKey:    base64.StdEncoding.EncodeToString(cm.Certs.SSHKey.PublicKey),
 		SSHUser:         base64.StdEncoding.EncodeToString([]byte("clusterapi")),
-		ControllerImage: cloud.MachineControllerImage,
+		ControllerImage: cloud.MachineControllerImage(),
 	})
 	if err != nil {
 		return "", err
