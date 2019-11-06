@@ -357,7 +357,7 @@ qa:
 		echo "Are you trying to 'release' binaries to prod?"; \
 		exit 1;                                               \
 	fi
-	@$(MAKE) clean all-push docker-manifest --no-print-directory
+	@$(MAKE) clean all-build all-push docker-manifest --no-print-directory
 
 .PHONY: release
 release:
@@ -369,7 +369,7 @@ release:
 		echo "apply tag to release binaries and/or docker images."; \
 		exit 1;                                                     \
 	fi
-	@$(MAKE) clean all-push docker-manifest --no-print-directory
+	@$(MAKE) clean all-build all-push docker-manifest --no-print-directory
 
 .PHONY: clean
 clean:
