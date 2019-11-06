@@ -44,7 +44,7 @@ var (
 		if img != "" {
 			return img
 		}
-		return fmt.Sprintf("pharmer/machine-controller:%s", v.Version)
+		return fmt.Sprintf("pharmer/pharmer:%s", v.Version)
 	}()
 )
 
