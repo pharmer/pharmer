@@ -106,5 +106,6 @@ exec_until_success "$cmd"
 #Deploy provisioner
 cmd='kubectl apply --kubeconfig /etc/kubernetes/admin.conf -f https://raw.githubusercontent.com/pharmer/addons/release-1.13.1/cloud-storage/{{ .Provider }}/provisioner.yaml'
 exec_until_success "$cmd"
+{{ end }}
 `
 )
