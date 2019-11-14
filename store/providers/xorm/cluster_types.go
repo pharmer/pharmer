@@ -22,7 +22,7 @@ import (
 // Cluster represents a kubernets cluster
 type Cluster struct {
 	ID        int64              `xorm:"pk autoincr"`
-	UUID      string             `xorm:"uuid UNIQUE"`
+	UUID      string             `xorm:"text UNIQUE"`
 	OwnerID   int64              `xorm:"UNIQUE(s)"`
 	Name      string             `xorm:"UNIQUE(s) INDEX NOT NULL"`
 	Data      types.SecureString `xorm:"text NOT NULL"`
