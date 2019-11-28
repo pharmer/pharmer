@@ -26,7 +26,7 @@ import (
 
 	"github.com/appscode/go/term"
 	"github.com/spf13/cobra"
-	"k8s.io/kubernetes/pkg/kubectl/describe"
+	"k8s.io/kubectl/pkg/describe"
 )
 
 func NewCmdDescribeCluster(out io.Writer) *cobra.Command {

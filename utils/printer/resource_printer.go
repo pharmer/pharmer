@@ -23,7 +23,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	cloudapi "pharmer.dev/cloud/apis/cloud/v1"
 	"pharmer.dev/cloud/pkg/credential"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 
@@ -34,7 +34,7 @@ import (
 	clusterapi "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
-// ref: k8s.io/kubernetes/pkg/kubectl/resource_printer.go
+// ref: k8s.io/kubectl/resource_printer.go
 
 const (
 	tabwriterMinWidth = 10

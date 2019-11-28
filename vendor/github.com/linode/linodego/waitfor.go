@@ -18,6 +18,7 @@ func (client Client) WaitForInstanceStatus(ctx context.Context, instanceID int, 
 
 	ticker := time.NewTicker(client.millisecondsPerPoll * time.Millisecond)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
@@ -44,6 +45,7 @@ func (client Client) WaitForInstanceDiskStatus(ctx context.Context, instanceID i
 
 	ticker := time.NewTicker(client.millisecondsPerPoll * time.Millisecond)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
@@ -53,6 +55,7 @@ func (client Client) WaitForInstanceDiskStatus(ctx context.Context, instanceID i
 			if err != nil {
 				return nil, err
 			}
+
 			for _, disk := range disks {
 				disk := disk
 				if disk.ID == diskID {
@@ -60,10 +63,10 @@ func (client Client) WaitForInstanceDiskStatus(ctx context.Context, instanceID i
 					if complete {
 						return &disk, nil
 					}
+
 					break
 				}
 			}
-
 		case <-ctx.Done():
 			return nil, fmt.Errorf("Error waiting for Instance %d Disk %d status %s: %s", instanceID, diskID, status, ctx.Err())
 		}
@@ -78,6 +81,7 @@ func (client Client) WaitForVolumeStatus(ctx context.Context, volumeID int, stat
 
 	ticker := time.NewTicker(client.millisecondsPerPoll * time.Millisecond)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
@@ -104,6 +108,7 @@ func (client Client) WaitForSnapshotStatus(ctx context.Context, instanceID int, 
 
 	ticker := time.NewTicker(client.millisecondsPerPoll * time.Millisecond)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
@@ -132,6 +137,7 @@ func (client Client) WaitForVolumeLinodeID(ctx context.Context, volumeID int, li
 
 	ticker := time.NewTicker(client.millisecondsPerPoll * time.Millisecond)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
@@ -148,7 +154,6 @@ func (client Client) WaitForVolumeLinodeID(ctx context.Context, volumeID int, li
 			case *volume.LinodeID == *linodeID:
 				return volume, nil
 			}
-
 		case <-ctx.Done():
 			return nil, fmt.Errorf("Error waiting for Volume %d to have Instance %v: %s", volumeID, linodeID, ctx.Err())
 		}
@@ -158,6 +163,7 @@ func (client Client) WaitForVolumeLinodeID(ctx context.Context, volumeID int, li
 // WaitForEventFinished waits for an entity action to reach the 'finished' state
 // before returning. It will timeout with an error after timeoutSeconds.
 // If the event indicates a failure both the failed event and the error will be returned.
+// nolint
 func (client Client) WaitForEventFinished(ctx context.Context, id interface{}, entityType EntityType, action EventAction, minStart time.Time, timeoutSeconds int) (*Event, error) {
 	titledEntityType := strings.Title(string(entityType))
 	filterStruct := map[string]interface{}{

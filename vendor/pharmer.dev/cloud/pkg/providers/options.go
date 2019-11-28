@@ -1,15 +1,31 @@
+/*
+Copyright The Pharmer Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package providers
 
 import (
 	"fmt"
 	"os"
 
+	"pharmer.dev/cloud/apis"
+	v1 "pharmer.dev/cloud/apis/cloud/v1"
+	"pharmer.dev/cloud/pkg/credential"
+
 	"github.com/appscode/go/flags"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"pharmer.dev/cloud/pkg/apis"
-	v1 "pharmer.dev/cloud/pkg/apis/cloud/v1"
-	"pharmer.dev/cloud/pkg/credential"
 )
 
 type Options struct {
@@ -79,27 +95,20 @@ func (c *Options) ValidateFlags(cmd *cobra.Command, args []string) error {
 	switch c.Provider {
 	case apis.GCE:
 		required = c.GCE.RequiredFlags()
-		break
 	case apis.DigitalOcean:
 		required = c.Do.RequiredFlags()
-		break
 	case apis.Packet:
 		required = c.Packet.RequiredFlags()
-		break
 	case apis.AWS:
 		required = c.AWS.RequiredFlags()
 	case apis.Azure:
 		required = c.Azure.RequiredFlags()
-		break
 	case apis.Vultr:
 		required = c.Vultr.RequiredFlags()
-		break
 	case apis.Linode:
 		required = c.Linode.RequiredFlags()
-		break
 	case apis.Scaleway:
 		required = c.Scaleway.RequiredFlags()
-		break
 	default:
 		fmt.Println("missing --provider flag")
 		os.Exit(1)

@@ -22,7 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
-	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	cloudapi "pharmer.dev/cloud/apis/cloud/v1"
 	"pharmer.dev/pharmer/cloud"
 	"pharmer.dev/pharmer/cmds/credential/options"
 	"pharmer.dev/pharmer/store"

@@ -18,7 +18,7 @@ package v1alpha1
 import (
 	"testing"
 
-	v1 "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	v1 "pharmer.dev/cloud/apis/cloud/v1"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
