@@ -19,7 +19,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	cloudapi "pharmer.dev/cloud/apis/cloud/v1"
 	"pharmer.dev/cloud/pkg/credential"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/config"

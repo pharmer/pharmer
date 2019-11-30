@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"pharmer.dev/cloud/pkg/apis"
-	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	"pharmer.dev/cloud/apis"
+	cloudapi "pharmer.dev/cloud/apis/cloud/v1"
 	"pharmer.dev/cloud/pkg/credential"
 	cc "pharmer.dev/cloud/pkg/credential/cloud"
 	"pharmer.dev/cloud/pkg/providers"

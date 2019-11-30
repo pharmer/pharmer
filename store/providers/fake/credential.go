@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	cloudapi "pharmer.dev/cloud/apis/cloud/v1"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 	"pharmer.dev/pharmer/store"
 

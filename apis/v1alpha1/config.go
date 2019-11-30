@@ -16,7 +16,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	cloudapi "pharmer.dev/cloud/apis/cloud/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

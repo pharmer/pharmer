@@ -587,7 +587,7 @@ type ScalewayServer struct {
 	// Organization is the owner of the server
 	Organization string `json:"organization,omitempty"`
 
-	// CommercialType is the commercial type of the server (i.e: C1, C2[SML], START1-S)
+	// CommercialType is the commercial type of the server (i.e: DEV1-[S|M|L|XL], GP1-[XS|S|M|L|XL], RENDER-S)
 	CommercialType string `json:"commercial_type,omitempty"`
 
 	// Location of the server
@@ -689,7 +689,7 @@ type ScalewayServerDefinition struct {
 	// Organization is the owner of the server
 	Organization string `json:"organization"`
 
-	// CommercialType is the commercial type of the server (i.e: C1, C2[SML], START1-S)
+	// CommercialType is the commercial type of the server (i.e: DEV1-[S|M|L|XL], GP1-[XS|S|M|L|XL], RENDER-S)
 	CommercialType string `json:"commercial_type"`
 
 	PublicIP string `json:"public_ip,omitempty"`
@@ -2248,6 +2248,20 @@ func (s *ScalewayAPI) GetImageID(needle, arch string) (*ScalewayImageIdentifier,
 	if len(images) == 0 {
 		return nil, fmt.Errorf("No such image (zone %s, arch %s) : %s", s.Region, arch, needle)
 	}
+
+	// If one image is an exact match we pick it
+	for _, image := range images {
+		if image.CodeName() == "image:"+needle {
+			return &ScalewayImageIdentifier{
+				Identifier: image.Identifier,
+				Arch:       image.Arch,
+				// FIXME region, owner hardcoded
+				Region: image.Region,
+				Owner:  "",
+			}, nil
+		}
+	}
+
 	return nil, showResolverResults(needle, images)
 }
 

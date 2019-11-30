@@ -20,7 +20,7 @@ import (
 	"k8s.io/cli-runtime/pkg/printers"
 )
 
-// ref: k8s.io/kubernetes/pkg/kubectl/resource_printer.go
+// ref: k8s.io/kubectl/resource_printer.go
 
 func NewPrinter(format string) (printers.ResourcePrinter, error) {
 	humanReadablePrinter := NewHumanReadablePrinter(PrintOptions{

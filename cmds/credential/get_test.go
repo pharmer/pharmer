@@ -19,7 +19,7 @@ import (
 	"bytes"
 	"testing"
 
-	v1 "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	v1 "pharmer.dev/cloud/apis/cloud/v1"
 	options2 "pharmer.dev/pharmer/cmds/credential/options"
 	"pharmer.dev/pharmer/store"
 	"pharmer.dev/pharmer/store/providers/fake"

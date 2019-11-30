@@ -21,7 +21,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog"
-	"k8s.io/kubernetes/pkg/kubectl/describe"
+	"k8s.io/kubectl/pkg/describe"
 )
 
 type Describer interface {

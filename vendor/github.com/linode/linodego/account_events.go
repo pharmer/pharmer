@@ -87,14 +87,17 @@ const (
 	ActionLinodeDeleteIP           EventAction = "linode_deleteip"
 	ActionLinodeMigrate            EventAction = "linode_migrate"
 	ActionLinodeMutate             EventAction = "linode_mutate"
+	ActionLinodeMutateCreate       EventAction = "linode_mutate_create"
 	ActionLinodeReboot             EventAction = "linode_reboot"
 	ActionLinodeRebuild            EventAction = "linode_rebuild"
 	ActionLinodeResize             EventAction = "linode_resize"
+	ActionLinodeResizeCreate       EventAction = "linode_resize_create"
 	ActionLinodeShutdown           EventAction = "linode_shutdown"
 	ActionLinodeSnapshot           EventAction = "linode_snapshot"
 	ActionLinodeConfigCreate       EventAction = "linode_config_create"
 	ActionLinodeConfigDelete       EventAction = "linode_config_delete"
 	ActionLinodeConfigUpdate       EventAction = "linode_config_update"
+	ActionLishBoot                 EventAction = "lish_boot"
 	ActionLongviewClientCreate     EventAction = "longviewclient_create"
 	ActionLongviewClientDelete     EventAction = "longviewclient_delete"
 	ActionLongviewClientUpdate     EventAction = "longviewclient_update"
@@ -175,6 +178,7 @@ func (EventsPagedResponse) endpoint(c *Client) string {
 	if err != nil {
 		panic(err)
 	}
+
 	return endpoint
 }
 
@@ -184,7 +188,9 @@ func (e Event) endpointWithID(c *Client) string {
 	if err != nil {
 		panic(err)
 	}
+
 	endpoint = fmt.Sprintf("%s/%d", endpoint, e.ID)
+
 	return endpoint
 }
 
@@ -199,12 +205,15 @@ func (resp *EventsPagedResponse) appendData(r *EventsPagedResponse) {
 func (c *Client) ListEvents(ctx context.Context, opts *ListOptions) ([]Event, error) {
 	response := EventsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
+
 	for i := range response.Data {
 		response.Data[i].fixDates()
 	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	return response.Data, nil
 }
 
@@ -214,11 +223,14 @@ func (c *Client) GetEvent(ctx context.Context, id int) (*Event, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	e = fmt.Sprintf("%s/%d", e, id)
 	r, err := c.R(ctx).SetResult(&Event{}).Get(e)
+
 	if err != nil {
 		return nil, err
 	}
+
 	return r.Result().(*Event).fixDates(), nil
 }
 
@@ -226,6 +238,7 @@ func (c *Client) GetEvent(ctx context.Context, id int) (*Event, error) {
 func (e *Event) fixDates() *Event {
 	e.Created, _ = parseDates(e.CreatedStr)
 	e.TimeRemaining = unmarshalTimeRemaining(e.TimeRemainingMsg)
+
 	return e
 }
 
@@ -274,6 +287,7 @@ func unmarshalTimeRemaining(m json.RawMessage) *int {
 	}
 
 	log.Println("[WARN] Unexpected unmarshalTimeRemaining value: ", jsonBytes)
+
 	return nil
 }
 
@@ -281,17 +295,23 @@ func unmarshalTimeRemaining(m json.RawMessage) *int {
 func durationToSeconds(s string) (int, error) {
 	multipliers := [3]int{60 * 60, 60, 1}
 	segs := strings.Split(s, ":")
+
 	if len(segs) > len(multipliers) {
 		return 0, fmt.Errorf("too many ':' separators in time duration: %s", s)
 	}
+
 	var d int
+
 	l := len(segs)
+
 	for i := 0; i < l; i++ {
 		m, err := strconv.Atoi(segs[i])
 		if err != nil {
 			return 0, err
 		}
+
 		d += m * multipliers[i+len(multipliers)-l]
 	}
+
 	return d, nil
 }

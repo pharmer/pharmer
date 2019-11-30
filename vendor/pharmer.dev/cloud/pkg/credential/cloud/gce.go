@@ -1,3 +1,18 @@
+/*
+Copyright The Pharmer Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package cloud
 
 import (
@@ -15,6 +30,8 @@ import (
 	"golang.org/x/oauth2/google"
 	crmgr "google.golang.org/api/cloudresourcemanager/v1"
 	iam "google.golang.org/api/iam/v1"
+	"google.golang.org/api/option"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )
 
 // https://developers.google.com/identity/protocols/OAuth2InstalledApp
@@ -30,7 +47,7 @@ func IssueGCECredential(name string) error {
 	if err != nil {
 		return err
 	}
-	defer listener.Close()
+	defer utilruntime.Must(listener.Close())
 	log.Infoln("Oauth2 callback receiver listening on", listener.Addr())
 
 	gauthConfig = goauth2.Config{
@@ -47,7 +64,7 @@ func IssueGCECredential(name string) error {
 	codeURL := gauthConfig.AuthCodeURL("/", promptSelectAccount)
 
 	log.Infoln("Auhtorization code URL:", codeURL)
-	open.Start(codeURL)
+	utilruntime.Must(open.Start(codeURL))
 
 	http.HandleFunc("/", handleGoogleAuth)
 	return http.Serve(listener, nil)
@@ -62,11 +79,10 @@ func handleGoogleAuth(w http.ResponseWriter, r *http.Request) {
 	token, err := gauthConfig.Exchange(context.Background(), code)
 	term.ExitOnError(err)
 
-	client := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{
+	source := option.WithTokenSource(oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: token.AccessToken,
 	}))
-
-	rmgrClient, err := crmgr.New(client)
+	rmgrClient, err := crmgr.NewService(context.Background(), source)
 	term.ExitOnError(err)
 
 	// Enable API: https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=tigerworks-kube
@@ -87,7 +103,7 @@ func handleGoogleAuth(w http.ResponseWriter, r *http.Request) {
 	}
 	_, project := term.List(projects)
 
-	iamClient, err := iam.New(client)
+	iamClient, err := iam.NewService(context.Background(), source)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -119,5 +135,6 @@ func handleGoogleAuth(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Write(data)
+	_, err = w.Write(data)
+	term.ExitOnError(err)
 }

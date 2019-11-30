@@ -21,7 +21,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1 "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	v1 "pharmer.dev/cloud/apis/cloud/v1"
 
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )

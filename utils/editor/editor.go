@@ -31,7 +31,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/klog"
-	"k8s.io/kubernetes/pkg/kubectl/util/term"
+	"k8s.io/kubectl/pkg/util/term"
 )
 
 const defaultEditor = "nano"

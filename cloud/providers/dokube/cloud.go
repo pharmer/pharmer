@@ -217,9 +217,10 @@ func (conn *cloudConnector) adjustNodePool(ng *clusterapi.MachineSet) error {
 		log.Error(err, "failed to get nodepool id from name")
 		return err
 	}
+	count := int(*ng.Spec.Replicas)
 	_, _, err = conn.client.Kubernetes.UpdateNodePool(context.Background(), conn.Cluster.Spec.Config.Cloud.Dokube.ClusterID, npID, &godo.KubernetesNodePoolUpdateRequest{
 		Name:  ng.Name,
-		Count: int(*ng.Spec.Replicas),
+		Count: &count,
 	})
 	if err != nil {
 		log.Error(err, "failed to update node pool")

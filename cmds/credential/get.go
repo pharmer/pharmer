@@ -18,7 +18,7 @@ package credential
 import (
 	"io"
 
-	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	cloudapi "pharmer.dev/cloud/apis/cloud/v1"
 	"pharmer.dev/pharmer/cmds/credential/options"
 	"pharmer.dev/pharmer/store"
 	"pharmer.dev/pharmer/utils/printer"

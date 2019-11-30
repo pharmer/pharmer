@@ -19,7 +19,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 
-	cloudapi "pharmer.dev/cloud/pkg/apis/cloud/v1"
+	cloudapi "pharmer.dev/cloud/apis/cloud/v1"
 	api "pharmer.dev/pharmer/apis/v1alpha1"
 
 	"github.com/pkg/errors"
