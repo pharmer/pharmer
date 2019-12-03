@@ -36,13 +36,13 @@ type CredentialField struct {
 }
 
 // +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:nonNamespaced
-// +genclient:skipVerbs=updateStatus,watch
-// +kubebuilder:object:root=true
-
-// CredentialFormat is the Schema for the credentialformats API
+// +genclient:skipVerbs=updateStatus
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:path=credentialformats,singular=credentialformat,scope=Cluster,categories={pharmer,appscode}
 type CredentialFormat struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

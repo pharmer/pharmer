@@ -28,14 +28,16 @@ type CloudProviderSpec struct {
 	KubernetesVersions []KubernetesVersion `json:"kubernetesVersions,omitempty"`
 }
 
+// CloudProvider is the Schema for the cloudproviders API
+
 // +genclient
+// +genclient:nonNamespaced
+// +genclient:skipVerbs=updateStatus
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +genclient:nonNamespaced
-// +genclient:skipVerbs=updateStatus,watch
-// +kubebuilder:object:root=true
 
-// CloudProvider is the Schema for the cloudproviders API
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:path=cloudproviders,singular=cloudprovider,scope=Cluster,categories={pharmer,appscode}
 type CloudProvider struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

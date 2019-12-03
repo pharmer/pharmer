@@ -47,7 +47,7 @@ require (
 	k8s.io/kubectl v0.0.0-20191114113550-6123e1c827f7
 	k8s.io/kubernetes v1.16.3
 	kmodules.xyz/client-go v0.0.0-20191127054604-26981530831d
-	pharmer.dev/cloud v0.3.1-0.20191128150741-482e8818e686
+	pharmer.dev/cloud v0.4.0
 	sigs.k8s.io/cluster-api v0.2.7
 	sigs.k8s.io/controller-runtime v0.4.0
 	xorm.io/core v0.6.3

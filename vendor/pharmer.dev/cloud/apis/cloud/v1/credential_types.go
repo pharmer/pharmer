@@ -35,13 +35,16 @@ type CredentialSpec struct {
 	Data     map[string]string `json:"data"`
 }
 
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +genclient:nonNamespaced
-// +kubebuilder:object:root=true
-
 // Credential is the Schema for the credentials API
+
+// +genclient
+// +genclient:nonNamespaced
+// +genclient:skipVerbs=updateStatus
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:path=credentials,singular=credential,scope=Cluster,categories={pharmer,appscode}
 type Credential struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -28,14 +28,16 @@ type KubernetesVersionSpec struct {
 	Envs       map[string]bool `json:"envs,omitempty"`
 }
 
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +genclient:nonNamespaced
-// +genclient:skipVerbs=updateStatus,watch
-// +kubebuilder:object:root=true
-
 // KubernetesVersion is the Schema for the kubernetesversions API
+
+// +genclient
+// +genclient:nonNamespaced
+// +genclient:skipVerbs=updateStatus
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:path=kubernetesversions,singular=kubernetesversion,scope=Cluster,categories={pharmer,appscode}
 type KubernetesVersion struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

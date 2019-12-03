@@ -37,12 +37,13 @@ type MachineTypeSpec struct {
 // MachineType is the Schema for the machinetypes API
 
 // +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:nonNamespaced
-// +genclient:skipVerbs=updateStatus,watch
+// +genclient:skipVerbs=updateStatus
 // +k8s:openapi-gen=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:path=machinetypes,singular=machinetype,scope=Cluster,categories={pharmer,appscode}
 // +kubebuilder:printcolumn:name="SKU",type="string",JSONPath=".spec.sku"
 // +kubebuilder:printcolumn:name="CPU",type="string",JSONPath=".spec.cpu"
 // +kubebuilder:printcolumn:name="RAM",type="string",JSONPath=".spec.ram"
