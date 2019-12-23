@@ -58,7 +58,7 @@ func NewCmdBackup() *cobra.Command {
 				caCert, caKey, err := storeProvider.Certificates(cluster.Name).Get("ca")
 				term.ExitOnError(err)
 
-				c2, err := kube.GetAdminConfig(cluster, &certificates.CertKeyPair{Cert: caCert, Key: caKey})
+				c2, err := kube.GetAdminConfig(storeProvider.Certificates(cluster.Name), cluster, &certificates.CertKeyPair{Cert: caCert, Key: caKey})
 
 				if err != nil {
 					term.Fatalln(err)

@@ -131,7 +131,7 @@ func (cm *ClusterManager) SetClusterProviderConfig() error {
 }
 
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
-	return kube.GetAdminConfig(cm.Cluster, cm.GetCaCertPair())
+	return kube.GetAdminConfig(cm.StoreProvider.Certificates(cm.Cluster.Name), cm.Cluster, cm.GetCaCertPair())
 }
 
 func (cm *ClusterManager) SetDefaults(cluster *api.Cluster) error {

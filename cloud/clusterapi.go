@@ -71,7 +71,7 @@ func NewClusterAPI(s *Scope, namespace string) (*ClusterAPI, error) {
 		return nil, err
 	}
 
-	bc, err := kube.GetBooststrapClient(s.Cluster, s.GetCaCertPair())
+	bc, err := kube.GetBooststrapClient(s.StoreProvider.Certificates(s.Cluster.Name), s.Cluster, s.GetCaCertPair())
 	if err != nil {
 		s.Logger.Error(err, "failed to get bootstrap client")
 		return nil, err

@@ -298,7 +298,7 @@ func ApplyScale(s *Scope) error {
 		return err
 	}
 
-	bc, err := kube.GetBooststrapClient(s.Cluster, s.GetCaCertPair())
+	bc, err := kube.GetBooststrapClient(s.StoreProvider.Certificates(s.Cluster.Name), s.Cluster, s.GetCaCertPair())
 	if err != nil {
 		log.Error(err, "failed to get bootstrap clients")
 		return err
@@ -365,7 +365,7 @@ func ApplyUpgrade(s *Scope) error {
 	masterMachine.Spec.Versions.Kubelet = Cluster.Spec.Config.KubernetesVersion
 
 	var bc clusterclient.Client
-	bc, err = kube.GetBooststrapClient(s.Cluster, s.GetCaCertPair())
+	bc, err = kube.GetBooststrapClient(s.StoreProvider.Certificates(s.Cluster.Name), s.Cluster, s.GetCaCertPair())
 	if err != nil {
 		return err
 	}

@@ -70,5 +70,5 @@ func (cm *ClusterManager) IsValid(cluster *api.Cluster) (bool, error) {
 }
 
 func (cm *ClusterManager) GetKubeConfig() (*api.KubeConfig, error) {
-	return kube.GetAdminConfig(cm.Cluster, cm.GetCaCertPair())
+	return kube.GetAdminConfig(cm.StoreProvider.Certificates(cm.Cluster.Name), cm.Cluster, cm.GetCaCertPair())
 }

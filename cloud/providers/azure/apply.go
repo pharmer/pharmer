@@ -237,7 +237,7 @@ func (cm *ClusterManager) EnsureMaster(leaderMachine *v1alpha1.Machine) error {
 		}
 	}
 
-	kubeConfig, err := kube.GetAdminConfig(cm.Cluster, cm.GetCaCertPair())
+	kubeConfig, err := kube.GetAdminConfig(cm.StoreProvider.Certificates(cm.Cluster.Name), cm.Cluster, cm.GetCaCertPair())
 	if err != nil {
 		return err
 	}
