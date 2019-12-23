@@ -16,6 +16,8 @@ limitations under the License.
 package kube
 
 import (
+	"crypto/rsa"
+	"crypto/x509"
 	"fmt"
 
 	api "pharmer.dev/pharmer/apis/v1alpha1"
@@ -102,9 +104,9 @@ func NewAdminClient(certStore store.CertificateStore, clusterEndpoint string) (k
 	return kubernetes.NewForConfig(cfg)
 }
 
-func GetBooststrapClient(cluster *api.Cluster, caCert *certificates.CertKeyPair) (clusterclient.Client, error) {
+func GetBooststrapClient(certStore store.CertificateStore, cluster *api.Cluster, caCert *certificates.CertKeyPair) (clusterclient.Client, error) {
 	clientFactory := clusterclient.NewFactory()
-	kubeConifg, err := GetAdminConfig(cluster, caCert)
+	kubeConifg, err := GetAdminConfig(certStore, cluster, caCert)
 	if err != nil {
 		return nil, err
 	}
@@ -121,8 +123,23 @@ func GetBooststrapClient(cluster *api.Cluster, caCert *certificates.CertKeyPair)
 	return bootstrapClient, nil
 }
 
-func GetAdminConfig(cluster *api.Cluster, caCertPair *certificates.CertKeyPair) (*api.KubeConfig, error) {
-	adminCert, adminKey, err := certificates.CreateAdminCertificate(caCertPair.Cert, caCertPair.Key)
+func GetAdminCert(certStore store.CertificateStore) (*x509.Certificate, *x509.Certificate, *rsa.PrivateKey, error) {
+	caCert, caKey, err := certStore.Get(kubeadmconsts.CACertAndKeyBaseName)
+	if err != nil {
+		return nil, nil, nil, errors.WithMessage(err, "failed to get ca-certs")
+	}
+	adminCert, adminKey, err := certStore.Get("admin")
+	if err != nil {
+		adminCert, adminKey, err = certificates.CreateAdminCertificate(caCert, caKey)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	}
+	return caCert, adminCert, adminKey, nil
+}
+
+func GetAdminConfig(certStore store.CertificateStore, cluster *api.Cluster, caCertPair *certificates.CertKeyPair) (*api.KubeConfig, error) {
+	_, adminCert, adminKey, err := GetAdminCert(certStore)
 	if err != nil {
 		return nil, err
 	}
