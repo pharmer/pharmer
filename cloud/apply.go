@@ -169,7 +169,7 @@ func ApplyCreate(scope *Scope) error {
 		}
 	}
 
-	ns, err := scope.AdminClient.CoreV1().Namespaces().Get(metav1.NamespaceSystem, metav1.GetOptions{})
+	ns, err := kubeClient.CoreV1().Namespaces().Get(metav1.NamespaceSystem, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err, "failed to get `kube-system` namespace")
 		return err
