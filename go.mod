@@ -16,6 +16,7 @@ require (
 	github.com/gogo/protobuf v1.2.2-0.20190730201129-28a6bbf47e48
 	github.com/google/uuid v1.1.1
 	github.com/jpillora/go-ogle-analytics v0.0.0-20161213085824-14b04e0594ef
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/lib/pq v1.2.0
 	github.com/linode/linodego v0.12.1
 	github.com/nats-io/stan.go v0.5.0
